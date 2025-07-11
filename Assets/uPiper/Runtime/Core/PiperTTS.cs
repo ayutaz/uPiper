@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Unity.Sentis;
 using uPiper.Phonemizers;
+using uPiper.Sentis;
 
 namespace uPiper.Core
 {
@@ -12,8 +13,7 @@ namespace uPiper.Core
         private PiperConfig _config;
         private bool _isInitialized;
         private IPhonemizer _phonemizer;
-        private Model _sentisModel;
-        private IWorker _sentisWorker;
+        private SentisAudioGenerator _audioGenerator;
         
         public bool IsInitialized => _isInitialized;
         public PiperConfig CurrentConfig => _config;
@@ -37,8 +37,9 @@ namespace uPiper.Core
 
             try
             {
-                // Load ONNX model
-                await LoadModelAsync(config.ModelPath);
+                // Initialize audio generator
+                _audioGenerator = new SentisAudioGenerator(config.SentisBackend);
+                await _audioGenerator.LoadModelAsync(config.ModelPath);
 
                 // Initialize phonemizer based on language
                 InitializePhonemizer(config.Language);
@@ -82,8 +83,11 @@ namespace uPiper.Core
                     Debug.Log($"[uPiper] Phonemized text: {string.Join(" ", phonemes)}");
                 }
 
+                // Convert phonemes to IDs (placeholder - should use proper mapping)
+                var phonemeIds = ConvertPhonemesToIds(phonemes);
+                
                 // Generate audio using Sentis
-                var audioData = await GenerateAudioFromPhonemesAsync(phonemes);
+                var audioData = await _audioGenerator.GenerateAudioAsync(phonemeIds);
 
                 // Create AudioClip
                 var audioClip = CreateAudioClip(audioData, text);
@@ -99,16 +103,11 @@ namespace uPiper.Core
             }
         }
 
-        private async Task LoadModelAsync(string modelPath)
+        private int[] ConvertPhonemesToIds(string[] phonemes)
         {
-            await Task.Run(() =>
-            {
-                // Load the ONNX model
-                _sentisModel = ModelLoader.Load(modelPath);
-                
-                // Create worker with specified backend
-                _sentisWorker = WorkerFactory.CreateWorker(_config.SentisBackend, _sentisModel);
-            });
+            // TODO: Implement proper phoneme to ID mapping
+            // For now, use simple character code mapping
+            return phonemes.SelectMany(p => p.Select(c => (int)c)).ToArray();
         }
 
         private void InitializePhonemizer(string language)
@@ -118,18 +117,6 @@ namespace uPiper.Core
             _phonemizer = new PlaceholderPhonemizer();
         }
 
-        private async Task<float[]> GenerateAudioFromPhonemesAsync(string[] phonemes)
-        {
-            // TODO: Implement actual Sentis inference
-            // This is a placeholder implementation
-            await Task.Yield();
-            
-            // Generate silence for now
-            int sampleCount = _config.SampleRate * 2; // 2 seconds
-            var audioData = new float[sampleCount];
-            
-            return audioData;
-        }
 
         private AudioClip CreateAudioClip(float[] audioData, string name)
         {
@@ -147,16 +134,8 @@ namespace uPiper.Core
 
         public void Dispose()
         {
-            if (_sentisWorker != null)
-            {
-                _sentisWorker.Dispose();
-                _sentisWorker = null;
-            }
-
-            if (_sentisModel != null)
-            {
-                _sentisModel = null;
-            }
+            _audioGenerator?.Dispose();
+            _audioGenerator = null;
 
             _phonemizer?.Dispose();
             _phonemizer = null;
