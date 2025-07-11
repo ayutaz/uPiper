@@ -93,8 +93,8 @@ namespace uPiper.Sentis
                     }
 
                     // Convert tensor to float array
-                    var result = new float[output.shape.length];
-                    output.DownloadToArray(result);
+                    output.CompleteOperationsAndDownload();
+                    var result = output.ToReadOnlyArray();
 
                     // Dispose tensors
                     phonemeInput.Dispose();
