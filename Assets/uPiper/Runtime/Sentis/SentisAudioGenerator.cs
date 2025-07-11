@@ -68,9 +68,14 @@ namespace uPiper.Sentis
                 try
                 {
                     // Create input tensors
-                    var phonemeInput = new TensorInt(new TensorShape(1, phonemeIds.Length), phonemeIds);
-                    var speakerInput = new TensorInt(new TensorShape(1), new[] { speakerId });
-                    var lengthScaleInput = new TensorFloat(new TensorShape(1), new[] { lengthScale });
+                    var phonemeInput = TensorInt.AllocNoData(new TensorShape(1, phonemeIds.Length));
+                    phonemeInput.CompleteAllocation(phonemeIds);
+                    
+                    var speakerInput = TensorInt.AllocNoData(new TensorShape(1));
+                    speakerInput.CompleteAllocation(new[] { speakerId });
+                    
+                    var lengthScaleInput = TensorFloat.AllocNoData(new TensorShape(1));
+                    lengthScaleInput.CompleteAllocation(new[] { lengthScale });
 
                     // Set inputs
                     _worker.SetInput("phoneme_ids", phonemeInput);
@@ -79,10 +84,9 @@ namespace uPiper.Sentis
                     
                     // Execute the model
                     _worker.Schedule();
-                    _worker.FlushSchedule();
 
                     // Get output audio
-                    var output = _worker.PeekOutput() as TensorFloat;
+                    var output = _worker.PeekOutput("audio") as TensorFloat;
                     if (output == null)
                     {
                         throw new Exception("Failed to get audio output from model");
