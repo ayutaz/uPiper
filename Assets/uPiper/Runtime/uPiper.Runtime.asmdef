@@ -1,0 +1,24 @@
+{
+    "name": "uPiper.Runtime",
+    "rootNamespace": "uPiper",
+    "references": [
+        "Unity.Sentis",
+        "Unity.Collections",
+        "Unity.Burst"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.sentis",
+            "expression": "2.1.0",
+            "define": "UPIPER_SENTIS_2_1_OR_NEWER"
+        }
+    ],
+    "noEngineReferences": false
+}
