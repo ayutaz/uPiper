@@ -153,4 +153,7 @@ sysinfo.txt
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
+# Test models (large files)
+/Assets/StreamingAssets/uPiper/Models/*.onnx
+
 # End of https://www.toptal.com/developers/gitignore/api/unity,rider
