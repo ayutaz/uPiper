@@ -1,0 +1,48 @@
+name: Test Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      testMode:
+        description: 'Test mode'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - playmode
+          - editmode
+
+jobs:
+  run-tests:
+    name: Run Unity Tests (${{ inputs.testMode }})
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Cache Library
+      uses: actions/cache@v3
+      with:
+        path: Library
+        key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+        restore-keys: |
+          Library-
+          
+    - name: Run tests
+      uses: game-ci/unity-test-runner@v4
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      with:
+        unityVersion: 6000.0.35f1
+        testMode: ${{ inputs.testMode }}
+        artifactsPath: test-results
+        customParameters: -debugCodeOptimization
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: Test results (${{ inputs.testMode }})
+        path: test-results
