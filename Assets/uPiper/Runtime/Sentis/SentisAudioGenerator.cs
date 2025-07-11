@@ -85,23 +85,34 @@ namespace uPiper.Sentis
                     // Execute the model
                     _worker.Schedule();
 
-                    // Get output audio
-                    var output = _worker.PeekOutput() as Tensor<float>;
-                    if (output == null)
+                    // Get output audio tensor
+                    var outputTensor = _worker.PeekOutput();
+                    
+                    // Get tensor shape and create result array
+                    var shape = outputTensor.shape;
+                    var dataLength = shape.length;
+                    var result = new float[dataLength];
+                    
+                    // Read tensor data
+                    if (outputTensor is Tensor<float> floatTensor)
                     {
-                        throw new Exception("Failed to get audio output from model");
+                        // Access data directly
+                        for (int i = 0; i < dataLength; i++)
+                        {
+                            result[i] = floatTensor[i];
+                        }
                     }
-
-                    // Convert tensor to float array
-                    output.CompleteOperationsAndDownload();
-                    var result = output.ToReadOnlyArray();
-
+                    else
+                    {
+                        throw new Exception("Output tensor is not a float tensor");
+                    }
+                    
                     // Dispose tensors
                     phonemeInput.Dispose();
                     speakerInput.Dispose();
                     lengthScaleInput.Dispose();
-                    output.Dispose();
-
+                    outputTensor.Dispose();
+                    
                     return result;
                 }
                 catch (Exception ex)
