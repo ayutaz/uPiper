@@ -86,17 +86,15 @@ namespace uPiper.Sentis
                     _worker.Schedule();
 
                     // Get output audio
-                    var output = _worker.PeekOutput("audio") as Tensor<float>;
+                    var output = _worker.PeekOutput() as Tensor<float>;
                     if (output == null)
                     {
                         throw new Exception("Failed to get audio output from model");
                     }
 
                     // Convert tensor to float array
-                    output.MakeReadable();
-                    var audioData = output.ToReadOnlyArray();
-                    var result = new float[audioData.Length];
-                    audioData.CopyTo(result, 0);
+                    var result = new float[output.shape.length];
+                    output.DownloadToArray(result);
 
                     // Dispose tensors
                     phonemeInput.Dispose();
@@ -131,14 +129,20 @@ namespace uPiper.Sentis
             };
 
             // Get input/output names from the model
-            foreach (var input in _model.inputs)
+            if (_model.inputs != null)
             {
-                metadata.InputNames.Add(input.name);
+                foreach (var input in _model.inputs)
+                {
+                    metadata.InputNames.Add(input.name);
+                }
             }
 
-            foreach (var output in _model.outputs)
+            if (_model.outputs != null)
             {
-                metadata.OutputNames.Add(output.name);
+                foreach (var output in _model.outputs)
+                {
+                    metadata.OutputNames.Add(output.name);
+                }
             }
 
             return metadata;
