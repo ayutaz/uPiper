@@ -12,7 +12,7 @@ namespace uPiper.Sentis
     public class SentisAudioGenerator : IDisposable
     {
         private Model _model;
-        private IWorker _worker;
+        private Worker _worker;
         private readonly BackendType _backendType;
         private bool _isInitialized;
 
@@ -41,7 +41,7 @@ namespace uPiper.Sentis
                     _model = ModelLoader.Load(modelPath);
                     
                     // Create worker with specified backend
-                    _worker = WorkerFactory.CreateWorker(_backendType, _model);
+                    _worker = new Worker(_model, _backendType);
                     
                     _isInitialized = true;
                     Debug.Log($"[uPiper] Loaded model from: {modelPath}");
@@ -72,13 +72,14 @@ namespace uPiper.Sentis
                     var speakerInput = new TensorInt(new TensorShape(1), new[] { speakerId });
                     var lengthScaleInput = new TensorFloat(new TensorShape(1), new[] { lengthScale });
 
+                    // Set inputs
+                    _worker.SetInput("phoneme_ids", phonemeInput);
+                    _worker.SetInput("speaker_id", speakerInput);
+                    _worker.SetInput("length_scale", lengthScaleInput);
+                    
                     // Execute the model
-                    _worker.Execute(new Dictionary<string, Tensor>
-                    {
-                        { "phoneme_ids", phonemeInput },
-                        { "speaker_id", speakerInput },
-                        { "length_scale", lengthScaleInput }
-                    });
+                    _worker.Schedule();
+                    _worker.FlushSchedule();
 
                     // Get output audio
                     var output = _worker.PeekOutput() as TensorFloat;
