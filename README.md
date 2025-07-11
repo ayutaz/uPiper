@@ -1,7 +1,5 @@
-# UnityTemplateRepository
-Unity Project template Repository
-
-# Demo
+# uPiper
+[piper-plus]()のUnityプラグイン
 
 # requirements
-* Unity 2022.2.0f1
+* Unity 6000.0.35f1
