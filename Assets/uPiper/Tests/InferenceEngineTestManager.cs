@@ -47,9 +47,12 @@ namespace uPiper.Tests
             
             yield return new WaitForSeconds(0.5f);
             
+            bool errorOccurred = false;
+            string errorMessage = "";
+            
+            // Step 1: Test Tensor creation
             try
             {
-                // Step 1: Test Tensor creation
                 testStatus = "Testing Tensor creation...";
                 Debug.Log("Step 1: Creating test tensors");
                 
@@ -61,22 +64,43 @@ namespace uPiper.Tests
                     Debug.Log($"Tensor created successfully with shape: {testTensor.shape}");
                     Debug.Log($"Tensor data: [{testTensor[0]}, {testTensor[1]}, {testTensor[2]}, {testTensor[3]}]");
                 }
-                
-                yield return new WaitForSeconds(0.5f);
-                
-                // Step 2: Check available backends
-                testStatus = "Checking available backends...";
-                Debug.Log("Step 2: Enumerating available backends");
-                
-                var backends = System.Enum.GetValues(typeof(BackendType));
-                foreach (BackendType backend in backends)
+            }
+            catch (System.Exception e)
+            {
+                errorOccurred = true;
+                errorMessage = e.Message;
+                Debug.LogError($"Step 1 failed: {e}");
+            }
+            
+            yield return new WaitForSeconds(0.5f);
+            
+            // Step 2: Check available backends
+            if (!errorOccurred)
+            {
+                try
                 {
-                    Debug.Log($"Available backend: {backend}");
+                    testStatus = "Checking available backends...";
+                    Debug.Log("Step 2: Enumerating available backends");
+                    
+                    var backends = System.Enum.GetValues(typeof(BackendType));
+                    foreach (BackendType backend in backends)
+                    {
+                        Debug.Log($"Available backend: {backend}");
+                    }
                 }
-                
-                yield return new WaitForSeconds(0.5f);
-                
-                // Step 3: Model loading test (requires actual ONNX model)
+                catch (System.Exception e)
+                {
+                    errorOccurred = true;
+                    errorMessage = e.Message;
+                    Debug.LogError($"Step 2 failed: {e}");
+                }
+            }
+            
+            yield return new WaitForSeconds(0.5f);
+            
+            // Step 3: Model loading test (requires actual ONNX model)
+            if (!errorOccurred)
+            {
                 testStatus = "Model loading test...";
                 Debug.Log("Step 3: Model loading test");
                 
@@ -87,16 +111,19 @@ namespace uPiper.Tests
                 
                 Debug.LogWarning("Model loading skipped - requires valid ONNX model in Resources folder");
                 Debug.Log("To test full inference: Add a valid .onnx file to Resources folder");
-                
+            }
+            
+            if (errorOccurred)
+            {
+                testStatus = $"Test failed: {errorMessage}";
+                testPassed = false;
+                Debug.LogError("=== Test Failed! See error logs above ===");
+            }
+            else
+            {
                 testStatus = "Basic tests completed!";
                 testPassed = true;
                 Debug.Log("=== Basic Tests Passed! Inference Engine package is properly installed ===");
-            }
-            catch (System.Exception e)
-            {
-                testStatus = $"Test failed: {e.Message}";
-                testPassed = false;
-                Debug.LogError($"Test failed with error: {e}");
             }
             
             yield return new WaitForSeconds(1f);
@@ -107,7 +134,7 @@ namespace uPiper.Tests
             testWorker?.Dispose();
             testWorker = null;
             
-            testModel?.Dispose();
+            // Model doesn't have Dispose method in current API
             testModel = null;
         }
 
