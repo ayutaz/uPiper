@@ -35,8 +35,6 @@ jobs:
         unityVersion: 6000.0.35f1
         testMode: editmode
         artifactsPath: test-results
-        githubToken: ${{ secrets.GITHUB_TOKEN }}
-        checkName: Unity Test Results
         
     - uses: actions/upload-artifact@v4
       if: always()
