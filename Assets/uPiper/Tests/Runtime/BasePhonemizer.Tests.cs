@@ -5,7 +5,7 @@ using uPiper.Phonemizers;
 namespace uPiper.Tests
 {
     [TestFixture]
-    public class BasePhonemizer Tests
+    public class BasePhonemizer_Tests
     {
         private class TestPhonemizer : BasePhonemizer
         {
