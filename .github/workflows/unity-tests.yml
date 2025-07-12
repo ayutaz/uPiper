@@ -102,6 +102,7 @@ jobs:
       id: tests
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_LICENSE_CONTENT: ${{ secrets.UNITY_LICENSE }}
       with:
         unityVersion: ${{ matrix.unity-version }}
         testMode: all
