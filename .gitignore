@@ -162,3 +162,7 @@ Assets/uPiper/Native/build/
 
 # macOS
 .DS_Store
+
+# IDE settings (complete directory)
+.idea/
+*.iml
