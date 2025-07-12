@@ -10,8 +10,6 @@ jobs:
   test:
     name: Unity Test Runner
     runs-on: ubuntu-latest
-    # Unity 6のライセンス問題が解決されるまで一時的にCIをスキップ
-    if: false  # TODO: Unity 6ライセンス設定後に削除
     
     steps:
     - uses: actions/checkout@v4
@@ -26,7 +24,7 @@ jobs:
         restore-keys: |
           Library-
           
-    # Unity 6 対応のDockerイメージ準備（タスク0.1のCI/CD部分）
+    # Unity 6対応 - game-ci/unity-test-runnerを使用
     - name: Run Unity Tests
       uses: game-ci/unity-test-runner@v4
       env:
@@ -39,6 +37,7 @@ jobs:
         artifactsPath: test-results
         githubToken: ${{ secrets.GITHUB_TOKEN }}
         checkName: Unity Test Results
+        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.*'
         
     - uses: actions/upload-artifact@v4
       if: always()
