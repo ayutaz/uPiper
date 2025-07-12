@@ -119,7 +119,7 @@ namespace uPiper.Tests
         [Test]
         public void BasePhonemizer_CacheEviction_WhenLimitReached()
         {
-            var phonemizer = new MockPhonemizer(useCache: true, maxCacheSize: 3);
+            var phonemizer = new MockPhonemizer(useCache: true, maxCacheEntries: 3);
             
             phonemizer.Phonemize("text1", "ja");
             phonemizer.Phonemize("text2", "ja");
