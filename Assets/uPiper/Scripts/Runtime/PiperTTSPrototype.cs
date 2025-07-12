@@ -79,9 +79,11 @@ namespace uPiper.Runtime
                 Debug.Log($"Loading Piper TTS model: {modelName}");
                 
                 // モデル設定を読み込む
-                var configAsset = Resources.Load<TextAsset>($"{modelName}.onnx.json");
+                // Resources.Load では拡張子を含めない
+                var configAsset = Resources.Load<TextAsset>($"{modelName}.onnx");
                 if (configAsset != null)
                 {
+                    Debug.Log($"Config JSON loaded, length: {configAsset.text.Length}");
                     var configJson = JObject.Parse(configAsset.text);
                     LoadPhonemeMapFromJson(configJson);
                     
@@ -91,6 +93,10 @@ namespace uPiper.Runtime
                         sampleRate = configJson["audio"]["sample_rate"].Value<int>();
                         Debug.Log($"Loaded config: sample rate: {sampleRate}");
                     }
+                }
+                else
+                {
+                    Debug.LogError($"Config file not found: {modelName}.onnx in Resources");
                 }
                 
                 // ONNXモデルを読み込む
