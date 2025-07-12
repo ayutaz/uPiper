@@ -52,6 +52,11 @@ namespace uPiper.Core
         public int TimeoutMs { get; set; } = 5000;
 
         /// <summary>
+        /// Test mode - skips actual model loading
+        /// </summary>
+        public bool TestMode { get; set; } = false;
+
+        /// <summary>
         /// Validates the configuration
         /// </summary>
         /// <returns>True if valid, false otherwise</returns>

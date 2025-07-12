@@ -37,9 +37,12 @@ namespace uPiper.Core
 
             try
             {
-                // Initialize audio generator
-                _audioGenerator = new SentisAudioGenerator(config.SentisBackend);
-                await _audioGenerator.LoadModelAsync(config.ModelPath);
+                // Initialize audio generator (skip in test mode)
+                if (!config.TestMode)
+                {
+                    _audioGenerator = new SentisAudioGenerator(config.SentisBackend);
+                    await _audioGenerator.LoadModelAsync(config.ModelPath);
+                }
 
                 // Initialize phonemizer based on language
                 InitializePhonemizer(config.Language);
@@ -84,11 +87,22 @@ namespace uPiper.Core
                     Debug.Log($"[uPiper] Phonemized text: {string.Join(" ", phonemes)}");
                 }
 
-                // Convert phonemes to IDs (placeholder - should use proper mapping)
-                var phonemeIds = ConvertPhonemesToIds(phonemes);
+                // Generate audio
+                float[] audioData;
                 
-                // Generate audio using Sentis
-                var audioData = await _audioGenerator.GenerateAudioAsync(phonemeIds);
+                if (_config.TestMode)
+                {
+                    // Generate test audio (1 second of silence)
+                    audioData = new float[_config.SampleRate];
+                }
+                else
+                {
+                    // Convert phonemes to IDs (placeholder - should use proper mapping)
+                    var phonemeIds = ConvertPhonemesToIds(phonemes);
+                    
+                    // Generate audio using Sentis
+                    audioData = await _audioGenerator.GenerateAudioAsync(phonemeIds);
+                }
 
                 // Create AudioClip
                 var audioClip = CreateAudioClip(audioData, text);
@@ -135,8 +149,11 @@ namespace uPiper.Core
 
         public void Dispose()
         {
-            _audioGenerator?.Dispose();
-            _audioGenerator = null;
+            if (!_config?.TestMode ?? true)
+            {
+                _audioGenerator?.Dispose();
+                _audioGenerator = null;
+            }
 
             _phonemizer?.Dispose();
             _phonemizer = null;

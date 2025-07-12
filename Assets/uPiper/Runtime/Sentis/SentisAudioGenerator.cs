@@ -84,7 +84,6 @@ namespace uPiper.Sentis
                     
                     // Execute the model
                     _worker.Schedule();
-                    _worker.FlushSchedule(); // Wait for completion
 
                     // Get output audio tensor
                     var outputTensor = _worker.PeekOutput();
