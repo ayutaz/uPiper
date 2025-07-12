@@ -59,8 +59,8 @@ jobs:
       if: always()
       with:
         files: |
-          test-results/*.xml
-          test-results/**/*.xml
+          test-results/editmode-results.xml
+          test-results/playmode-results.xml
         check_name: Unity Test Results
         comment_mode: off
         report_individual_runs: true
@@ -118,6 +118,12 @@ jobs:
               echo "- Total Tests: $total" >> $GITHUB_STEP_SUMMARY
               echo "- Passed: $passed ✅" >> $GITHUB_STEP_SUMMARY
               echo "- Failed: $failed ❌" >> $GITHUB_STEP_SUMMARY
+              
+              # test-suiteの総数も表示
+              suite_total=$(xmllint --xpath "//test-suite[@type='TestFixture']/@testcasecount" "$file" 2>/dev/null | sed 's/testcasecount="//g' | sed 's/"//g' | paste -sd+ | bc 2>/dev/null || echo "0")
+              if [ "$suite_total" != "0" ]; then
+                echo "- Test Suite Total: $suite_total" >> $GITHUB_STEP_SUMMARY
+              fi
             else
               echo "Test results found in: $file" >> $GITHUB_STEP_SUMMARY
             fi
