@@ -7,8 +7,83 @@ on:
     branches: [ main, develop ]
 
 jobs:
+  build-native-libraries:
+    name: Build Native Libraries
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact-name: linux-x64-libraries
+          - os: windows-latest
+            artifact-name: windows-x64-libraries
+          - os: macos-latest
+            artifact-name: macos-universal-libraries
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    # Windows build
+    - name: Setup MSYS2 (Windows)
+      if: runner.os == 'Windows'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-g++
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-ninja
+    
+    - name: Build on Windows
+      if: runner.os == 'Windows'
+      shell: msys2 {0}
+      run: |
+        cd Assets/uPiper/Native
+        mkdir -p Build
+        cd Build
+        cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --config Release
+    
+    # Linux build
+    - name: Install Dependencies (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake ninja-build
+    
+    - name: Build on Linux
+      if: runner.os == 'Linux'
+      run: |
+        cd Assets/uPiper/Native
+        chmod +x build.sh
+        ./build.sh
+    
+    # macOS build
+    - name: Install Dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: brew install cmake ninja
+    
+    - name: Build on macOS
+      if: runner.os == 'macOS'
+      run: |
+        cd Assets/uPiper/Native
+        chmod +x build.sh
+        ./build.sh
+    
+    - name: Upload Native Libraries
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact-name }}
+        path: Assets/uPiper/Plugins/
+        retention-days: 7
+
   test:
     name: Run Unity Tests
+    needs: build-native-libraries
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -19,6 +94,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         lfs: true
+    
+    - name: Download Native Libraries
+      uses: actions/download-artifact@v4
+      with:
+        path: Assets/uPiper/Plugins
+        pattern: '*-libraries'
+        merge-multiple: true
         
     - name: Create Unity license file
       run: |
@@ -89,3 +171,61 @@ jobs:
         fi
         
         echo "All model files validated successfully!"
+
+  release-artifacts:
+    name: Create Release Package
+    needs: [build-native-libraries, test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download all native libraries
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        pattern: '*-libraries'
+    
+    - name: Create Unity Package
+      run: |
+        mkdir -p package/uPiper
+        
+        # Copy package contents
+        cp -r Assets/uPiper/* package/uPiper/
+        
+        # Copy native libraries from artifacts
+        mkdir -p package/uPiper/Plugins
+        cp -r artifacts/*-libraries/* package/uPiper/Plugins/ || true
+        
+        # Create package.json
+        cat > package/uPiper/package.json << EOF
+        {
+          "name": "com.ayutaz.upiper",
+          "version": "0.1.0-alpha",
+          "displayName": "uPiper TTS",
+          "description": "Unity Text-to-Speech plugin using Piper with Japanese support",
+          "unity": "6000.0",
+          "dependencies": {
+            "com.unity.sentis": "2.1.2"
+          },
+          "keywords": ["tts", "text-to-speech", "piper", "japanese", "audio"],
+          "author": {
+            "name": "ayutaz",
+            "url": "https://github.com/ayutaz"
+          }
+        }
+        EOF
+        
+        # Create archive
+        cd package
+        zip -r ../uPiper-Unity-Package.zip uPiper
+        cd ..
+    
+    - name: Upload Unity Package
+      uses: actions/upload-artifact@v4
+      with:
+        name: uPiper-Unity-Package
+        path: uPiper-Unity-Package.zip
+        retention-days: 30

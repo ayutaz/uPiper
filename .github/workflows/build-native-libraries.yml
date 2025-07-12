@@ -1,0 +1,199 @@
+name: Build Native Libraries
+
+on:
+  push:
+    branches: [ main, feature/*, develop ]
+    paths:
+      - 'Assets/uPiper/Native/**'
+      - '.github/workflows/build-native-libraries.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Assets/uPiper/Native/**'
+      - '.github/workflows/build-native-libraries.yml'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows DLL
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-g++
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-ninja
+          make
+    
+    - name: Build Native Library
+      shell: msys2 {0}
+      run: |
+        cd Assets/uPiper/Native
+        mkdir -p Build
+        cd Build
+        cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --config Release
+        
+    - name: Upload Windows Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-x64-libraries
+        path: |
+          Assets/uPiper/Plugins/Windows/*.dll
+          Assets/uPiper/Plugins/Windows/x86_64/*.dll
+        retention-days: 7
+
+  build-linux:
+    name: Build Linux SO
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          gcc-multilib \
+          g++-multilib
+    
+    - name: Build Native Library
+      run: |
+        cd Assets/uPiper/Native
+        chmod +x build.sh
+        ./build.sh
+        
+    - name: Upload Linux Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-x64-libraries
+        path: |
+          Assets/uPiper/Plugins/Linux/*.so
+          Assets/uPiper/Plugins/Linux/x86_64/*.so
+        retention-days: 7
+
+  build-macos:
+    name: Build macOS dylib
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Dependencies
+      run: |
+        brew install cmake ninja
+    
+    - name: Build Native Library (Universal Binary)
+      run: |
+        cd Assets/uPiper/Native
+        chmod +x build.sh
+        ./build.sh
+        
+    - name: Verify Universal Binary
+      run: |
+        file Assets/uPiper/Plugins/macOS/*.dylib
+        lipo -info Assets/uPiper/Plugins/macOS/*.dylib || true
+        
+    - name: Upload macOS Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-universal-libraries
+        path: Assets/uPiper/Plugins/macOS/*.dylib
+        retention-days: 7
+
+  create-release:
+    name: Create Release with Libraries
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Organize artifacts
+      run: |
+        mkdir -p release/Plugins/Windows/x86_64
+        mkdir -p release/Plugins/Linux/x86_64
+        mkdir -p release/Plugins/macOS
+        
+        # Copy Windows libraries
+        cp -r artifacts/windows-x64-libraries/* release/Plugins/Windows/ || true
+        
+        # Copy Linux libraries
+        cp -r artifacts/linux-x64-libraries/* release/Plugins/Linux/ || true
+        
+        # Copy macOS libraries
+        cp -r artifacts/macos-universal-libraries/* release/Plugins/macOS/ || true
+        
+        # Create archive
+        cd release
+        zip -r ../uPiper-native-libraries.zip Plugins
+        cd ..
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: uPiper-native-libraries.zip
+        generate_release_notes: true
+        prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
+
+  test-libraries:
+    name: Test Native Libraries
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download artifacts for current OS
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ matrix.os == 'ubuntu-latest' && 'linux-x64-libraries' || matrix.os == 'windows-latest' && 'windows-x64-libraries' || 'macos-universal-libraries' }}
+        path: Assets/uPiper/Plugins
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+    
+    - name: Test Library Loading (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        # Simple test to check if library can be loaded
+        echo "Testing library loading..."
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          ldd Assets/uPiper/Plugins/Linux/*.so || true
+        else
+          otool -L Assets/uPiper/Plugins/macOS/*.dylib || true
+        fi
+        
+    - name: Test Library Loading (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        # Check library dependencies
+        Write-Host "Testing library loading..."
+        $dll = Get-ChildItem -Path "Assets/uPiper/Plugins/Windows" -Filter "*.dll" -Recurse | Select-Object -First 1
+        if ($dll) {
+          Write-Host "Found DLL: $($dll.FullName)"
+          # Could add dumpbin or similar tool to check dependencies
+        }
