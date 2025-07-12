@@ -29,7 +29,7 @@ namespace uPiper.Runtime
         
         private Model model;
         private Worker worker;
-        private Dictionary<string, int> phonemeIdMap;
+        private Dictionary<string, int> phonemeIdMap = new Dictionary<string, int>();
         
         // 日本語の音素マッピング（簡易版）
         // 実際にはOpenJTalkなどの音素化エンジンが必要
@@ -120,9 +120,7 @@ namespace uPiper.Runtime
 
         private void LoadPhonemeMap(PiperModelConfig config)
         {
-            phonemeIdMap = new Dictionary<string, int>();
-            
-            // JSONの音素マップを辞書に変換
+            // 音素マップを初期化（ハードコード版）
             // 実際の実装では適切なJSONパーサーを使用
             phonemeIdMap["_"] = 0;  // pad
             phonemeIdMap["^"] = 1;  // bos
@@ -137,6 +135,8 @@ namespace uPiper.Runtime
             phonemeIdMap["a"] = 7;
             phonemeIdMap["w"] = 56;
             phonemeIdMap["s"] = 41;
+            
+            Debug.Log($"Loaded phoneme map with {phonemeIdMap.Count} entries");
         }
 
         [ContextMenu("Generate TTS")]
@@ -185,8 +185,17 @@ namespace uPiper.Runtime
         {
             var phonemeIds = new List<int>();
             
+            // phonemeIdMapが空の場合は警告
+            if (phonemeIdMap.Count == 0)
+            {
+                Debug.LogWarning("Phoneme ID map is empty. Using default values.");
+                // デフォルト値を返す
+                return new int[] { 1, 25, 11, 50, 8, 31, 8, 47, 7, 2 }; // "こんにちは"の仮の音素ID
+            }
+            
             // BOS (beginning of sentence)
-            phonemeIds.Add(phonemeIdMap["^"]);
+            if (phonemeIdMap.TryGetValue("^", out int bosId))
+                phonemeIds.Add(bosId);
             
             // テキストを音素に変換（簡易実装）
             foreach (char c in text)
@@ -205,7 +214,8 @@ namespace uPiper.Runtime
             }
             
             // EOS (end of sentence)
-            phonemeIds.Add(phonemeIdMap["$"]);
+            if (phonemeIdMap.TryGetValue("$", out int eosId))
+                phonemeIds.Add(eosId);
             
             return phonemeIds.ToArray();
         }
