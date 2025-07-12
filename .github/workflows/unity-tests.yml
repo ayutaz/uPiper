@@ -40,7 +40,6 @@ jobs:
         testMode: all
         artifactsPath: test-results
         coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport'
-        customParameters: '-testResults test-results/unity-test-results.xml'
         
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
@@ -60,10 +59,29 @@ jobs:
       if: always()
       with:
         files: |
+          test-results/*.xml
           test-results/**/*.xml
         check_name: Unity Test Results
         comment_mode: off
+        report_individual_runs: true
         
+    # テスト結果のデバッグ情報
+    - name: Debug Test Results
+      if: always()
+      run: |
+        echo "=== Test Results Directory Contents ==="
+        find test-results -type f -name "*.xml" | head -20
+        
+        echo ""
+        echo "=== XML File Contents Sample ==="
+        for file in test-results/*.xml test-results/**/*.xml; do
+          if [ -f "$file" ]; then
+            echo "File: $file"
+            head -50 "$file" | grep -E "(test-suite|test-case|TestCase|TestSuite)" || echo "No test elements found"
+            echo "---"
+          fi
+        done
+    
     # テスト結果のサマリーを作成
     - name: Create Test Summary
       if: always()
@@ -71,31 +89,41 @@ jobs:
         echo "## Unity Test Results Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
+        # テスト結果ファイルを検索
+        echo "### Test Result Files" >> $GITHUB_STEP_SUMMARY
+        find test-results -type f -name "*.xml" | while read file; do
+          echo "- $file" >> $GITHUB_STEP_SUMMARY
+        done
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
         # XMLファイルから結果を抽出
-        if [ -d "test-results" ]; then
-          for file in test-results/**/*.xml; do
-            if [ -f "$file" ]; then
-              echo "### $(basename $file .xml)" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
+        for file in test-results/*.xml test-results/**/*.xml; do
+          if [ -f "$file" ]; then
+            echo "### $(basename $file .xml)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # 簡易的な結果表示（XMLパース）
+            if command -v xmllint &> /dev/null; then
+              total=$(xmllint --xpath "count(//test-case)" "$file" 2>/dev/null || echo "0")
+              passed=$(xmllint --xpath "count(//test-case[@result='Passed'])" "$file" 2>/dev/null || echo "0")
+              failed=$(xmllint --xpath "count(//test-case[@result='Failed'])" "$file" 2>/dev/null || echo "0")
               
-              # 簡易的な結果表示（XMLパース）
-              if command -v xmllint &> /dev/null; then
-                total=$(xmllint --xpath "count(//test-case)" "$file" 2>/dev/null || echo "0")
-                passed=$(xmllint --xpath "count(//test-case[@result='Passed'])" "$file" 2>/dev/null || echo "0")
-                failed=$(xmllint --xpath "count(//test-case[@result='Failed'])" "$file" 2>/dev/null || echo "0")
-                
-                echo "- Total Tests: $total" >> $GITHUB_STEP_SUMMARY
-                echo "- Passed: $passed ✅" >> $GITHUB_STEP_SUMMARY
-                echo "- Failed: $failed ❌" >> $GITHUB_STEP_SUMMARY
-              else
-                echo "Test results found in: $file" >> $GITHUB_STEP_SUMMARY
+              # test-caseが見つからない場合、TestCaseも試す
+              if [ "$total" = "0" ]; then
+                total=$(xmllint --xpath "count(//TestCase)" "$file" 2>/dev/null || echo "0")
+                passed=$(xmllint --xpath "count(//TestCase[@result='Passed'])" "$file" 2>/dev/null || echo "0")
+                failed=$(xmllint --xpath "count(//TestCase[@result='Failed'])" "$file" 2>/dev/null || echo "0")
               fi
-              echo "" >> $GITHUB_STEP_SUMMARY
+              
+              echo "- Total Tests: $total" >> $GITHUB_STEP_SUMMARY
+              echo "- Passed: $passed ✅" >> $GITHUB_STEP_SUMMARY
+              echo "- Failed: $failed ❌" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "Test results found in: $file" >> $GITHUB_STEP_SUMMARY
             fi
-          done
-        else
-          echo "No test results found." >> $GITHUB_STEP_SUMMARY
-        fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
         
     # カバレッジレポートをアップロード
     - name: Upload Coverage Report
