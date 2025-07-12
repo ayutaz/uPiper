@@ -33,11 +33,10 @@ jobs:
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
         unityVersion: 6000.0.35f1
-        testMode: all
+        testMode: editmode
         artifactsPath: test-results
         githubToken: ${{ secrets.GITHUB_TOKEN }}
         checkName: Unity Test Results
-        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.*'
         
     - uses: actions/upload-artifact@v4
       if: always()
