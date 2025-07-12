@@ -80,8 +80,6 @@ jobs:
     name: Run Unity Tests
     needs: build-native-libraries
     runs-on: ubuntu-latest
-    # Unity 6ライセンス認証の問題のため一時的に無効化
-    if: false
     strategy:
       matrix:
         unity-version: [6000.0.35f1]
@@ -99,7 +97,53 @@ jobs:
         pattern: '*-libraries'
         merge-multiple: true
         
-    - name: Run tests
+    - name: Create Unity license file  
+      run: |
+        mkdir -p $RUNNER_TEMP/.Unity
+        echo "${{ secrets.UNITY_LICENSE }}" > $RUNNER_TEMP/.Unity/Unity_lic.ulf
+        
+    - name: Run tests (Docker method)
+      run: |
+        docker run \
+          --rm \
+          -v "$GITHUB_WORKSPACE":/project \
+          -v "$RUNNER_TEMP/.Unity":/root/.local/share/unity3d/Unity \
+          -w /project \
+          -e UNITY_LICENSE_CONTENT="${{ secrets.UNITY_LICENSE }}" \
+          unityci/editor:ubuntu-6000.0.35f1-linux-il2cpp-3 \
+          /bin/bash -c "
+            echo 'Activating Unity license...'
+            unity-editor \
+              -batchmode \
+              -nographics \
+              -quit \
+              -logFile - \
+              -manualLicenseFile /root/.local/share/unity3d/Unity/Unity_lic.ulf || true
+            
+            echo 'Running Unity tests...'
+            unity-editor \
+              -batchmode \
+              -nographics \
+              -projectPath /project \
+              -runTests \
+              -testPlatform editmode \
+              -testResults /project/test-results/editmode-results.xml \
+              -logFile -
+              
+            unity-editor \
+              -batchmode \
+              -nographics \
+              -projectPath /project \
+              -runTests \
+              -testPlatform playmode \
+              -testResults /project/test-results/playmode-results.xml \
+              -logFile -
+          "
+          
+      continue-on-error: true
+      
+    - name: Run tests (fallback to game-ci)
+      if: failure()
       uses: game-ci/unity-test-runner@v4
       id: tests
       env:
