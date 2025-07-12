@@ -9,6 +9,9 @@
 # Ignore entire .idea directory
 .idea/
 
+# Ignore Claude configuration
+.claude/
+
 # User-specific stuff
 .idea/**/workspace.xml
 .idea/**/tasks.xml
