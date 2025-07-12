@@ -12,8 +12,8 @@ namespace uPiper.Tests
             public int CallCount { get; private set; }
             public List<string> ProcessedTexts { get; } = new List<string>();
 
-            public MockPhonemizer(bool useCache = true, int maxCacheSize = 1000) 
-                : base(useCache, maxCacheSize)
+            public MockPhonemizer(bool useCache = true, int maxCacheEntries = 1000) 
+                : base(useCache, maxCacheEntries)
             {
             }
 

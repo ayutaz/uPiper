@@ -14,10 +14,15 @@ namespace uPiper.Phonemizers
         protected readonly int _maxCacheSize;
         private readonly object _cacheLock = new object();
 
-        protected BasePhonemizer(bool useCache = true, int maxCacheSize = 1000)
+        /// <summary>
+        /// Creates a new BasePhonemizer instance
+        /// </summary>
+        /// <param name="useCache">Whether to cache phonemization results</param>
+        /// <param name="maxCacheEntries">Maximum number of entries to keep in cache</param>
+        protected BasePhonemizer(bool useCache = true, int maxCacheEntries = 1000)
         {
             _useCache = useCache;
-            _maxCacheSize = maxCacheSize;
+            _maxCacheSize = maxCacheEntries;
             _cache = new Dictionary<string, string[]>();
         }
 

@@ -6,7 +6,8 @@
 #include <fstream>
 #include <sstream>
 #include <memory>
-#include <thread>
+#include <cstdio>
+#include <array>
 #include <mutex>
 
 #ifdef _WIN32
@@ -18,11 +19,12 @@
 #else
     #include <unistd.h>
     #include <sys/stat.h>
+    #include <sys/types.h>
     #define PATH_SEPARATOR "/"
 #endif
 
-// Thread-local error message
-thread_local std::string g_last_error;
+// Global error message with mutex protection
+static std::string g_last_error;
 
 // Mutex for thread safety
 std::mutex g_mutex;

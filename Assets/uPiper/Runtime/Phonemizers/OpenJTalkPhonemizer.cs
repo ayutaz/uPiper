@@ -15,8 +15,8 @@ namespace uPiper.Phonemizers
         private readonly object _lockObject = new object();
         private bool _isInitialized;
 
-        public OpenJTalkPhonemizer(bool useCache = true, int maxCacheSize = 1000) 
-            : base(useCache, maxCacheSize)
+        public OpenJTalkPhonemizer(bool useCache = true, int maxCacheEntries = 1000) 
+            : base(useCache, maxCacheEntries)
         {
         }
 

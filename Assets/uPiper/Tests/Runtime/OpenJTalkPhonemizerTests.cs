@@ -63,7 +63,7 @@ namespace uPiper.Tests
         public void OpenJTalkPhonemizer_CacheSettings()
         {
             // Test with cache enabled
-            var phonemizerWithCache = new OpenJTalkPhonemizer(useCache: true, maxCacheSize: 100);
+            var phonemizerWithCache = new OpenJTalkPhonemizer(useCache: true, maxCacheEntries: 100);
             Assert.IsNotNull(phonemizerWithCache);
             phonemizerWithCache.Dispose();
             
