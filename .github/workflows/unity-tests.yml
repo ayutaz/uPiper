@@ -80,6 +80,8 @@ jobs:
     name: Run Unity Tests
     needs: build-native-libraries
     runs-on: ubuntu-latest
+    # Unity 6ライセンス認証の問題のため一時的に無効化
+    if: false
     strategy:
       matrix:
         unity-version: [6000.0.35f1]
@@ -102,7 +104,6 @@ jobs:
       id: tests
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        UNITY_LICENSE_CONTENT: ${{ secrets.UNITY_LICENSE }}
       with:
         unityVersion: ${{ matrix.unity-version }}
         testMode: all
