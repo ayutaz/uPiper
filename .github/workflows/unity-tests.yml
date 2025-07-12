@@ -1,0 +1,43 @@
+name: Unity Tests
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Unity Test Runner
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+        
+    - name: Cache Library
+      uses: actions/cache@v4
+      with:
+        path: Library
+        key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+        restore-keys: |
+          Library-
+          
+    # Unity 6 対応のDockerイメージ準備（タスク0.1のCI/CD部分）
+    - name: Run Unity Tests
+      uses: game-ci/unity-test-runner@v4
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      with:
+        unityVersion: 6000.0.35f1
+        testMode: all
+        artifactsPath: test-results
+        githubToken: ${{ secrets.GITHUB_TOKEN }}
+        
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: Test results
+        path: test-results
+        retention-days: 7
