@@ -1,7 +1,5 @@
 using System.Linq;
 using NUnit.Framework;
-using UnityEditor;
-using UnityEditor.PackageManager;
 using UnityEngine;
 
 namespace uPiper.Tests.Editor
@@ -15,7 +13,7 @@ namespace uPiper.Tests.Editor
         public void CheckInferenceEnginePackageVersion()
         {
             // パッケージ情報を確認
-            var packageInfo = PackageInfo.FindForAssembly(
+            var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(
                 typeof(Unity.InferenceEngine.Model).Assembly
             );
             
@@ -43,7 +41,7 @@ namespace uPiper.Tests.Editor
             
             if (burstAssembly != null)
             {
-                var packageInfo = PackageInfo.FindForAssembly(burstAssembly);
+                var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(burstAssembly);
                 if (packageInfo != null)
                 {
                     Debug.Log($"Burst package version: {packageInfo.version}");
