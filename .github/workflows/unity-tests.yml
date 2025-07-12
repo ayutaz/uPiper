@@ -97,11 +97,17 @@ jobs:
         pattern: '*-libraries'
         merge-multiple: true
         
+    - name: Create license file
+      run: |
+        mkdir -p ${{ runner.temp }}/.Unity
+        echo "${{ secrets.UNITY_LICENSE }}" > ${{ runner.temp }}/.Unity/Unity_lic.ulf
+        
     - name: Run tests
       uses: game-ci/unity-test-runner@v4
       id: tests
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_LICENSE_FILE: ${{ runner.temp }}/.Unity/Unity_lic.ulf
       with:
         unityVersion: ${{ matrix.unity-version }}
         testMode: all
