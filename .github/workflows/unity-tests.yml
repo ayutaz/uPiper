@@ -102,14 +102,11 @@ jobs:
       id: tests
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
         unityVersion: ${{ matrix.unity-version }}
         testMode: all
         artifactsPath: test-results
         coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport'
-        customParameters: '-nographics'
         
     - name: Upload test results
       uses: actions/upload-artifact@v4
