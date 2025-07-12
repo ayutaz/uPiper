@@ -2,7 +2,8 @@
     "name": "uPiper.Runtime",
     "rootNamespace": "uPiper.Runtime",
     "references": [
-        "Unity.InferenceEngine"
+        "Unity.InferenceEngine",
+        "Newtonsoft.Json"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

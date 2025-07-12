@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.InferenceEngine;
 using UnityEngine;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace uPiper.Runtime
 {
@@ -80,10 +82,15 @@ namespace uPiper.Runtime
                 var configAsset = Resources.Load<TextAsset>($"{modelName}.onnx.json");
                 if (configAsset != null)
                 {
-                    var config = JsonUtility.FromJson<PiperModelConfig>(configAsset.text);
-                    LoadPhonemeMap(config);
-                    Debug.Log($"Loaded config: {config.num_symbols} symbols, sample rate: {config.audio.sample_rate}");
-                    sampleRate = config.audio.sample_rate;
+                    var configJson = JObject.Parse(configAsset.text);
+                    LoadPhonemeMapFromJson(configJson);
+                    
+                    // サンプルレートを取得
+                    if (configJson["audio"]?["sample_rate"] != null)
+                    {
+                        sampleRate = configJson["audio"]["sample_rate"].Value<int>();
+                        Debug.Log($"Loaded config: sample rate: {sampleRate}");
+                    }
                 }
                 
                 // ONNXモデルを読み込む
@@ -118,25 +125,45 @@ namespace uPiper.Runtime
             }
         }
 
-        private void LoadPhonemeMap(PiperModelConfig config)
+        private void LoadPhonemeMapFromJson(JObject configJson)
         {
-            // 音素マップを初期化（ハードコード版）
-            // 実際の実装では適切なJSONパーサーを使用
-            phonemeIdMap["_"] = 0;  // pad
-            phonemeIdMap["^"] = 1;  // bos
-            phonemeIdMap["$"] = 2;  // eos
-            phonemeIdMap["k"] = 25;
-            phonemeIdMap["o"] = 11;
-            phonemeIdMap["n"] = 50;
-            phonemeIdMap["N"] = 22;
-            phonemeIdMap["i"] = 8;
-            phonemeIdMap["t"] = 31;
-            phonemeIdMap["h"] = 47;
-            phonemeIdMap["a"] = 7;
-            phonemeIdMap["w"] = 56;
-            phonemeIdMap["s"] = 41;
+            phonemeIdMap.Clear();
             
-            Debug.Log($"Loaded phoneme map with {phonemeIdMap.Count} entries");
+            // phoneme_id_map をパース
+            var phonemeIdMapJson = configJson["phoneme_id_map"] as JObject;
+            if (phonemeIdMapJson != null)
+            {
+                foreach (var kvp in phonemeIdMapJson)
+                {
+                    string phoneme = kvp.Key;
+                    var idArray = kvp.Value as JArray;
+                    if (idArray != null && idArray.Count > 0)
+                    {
+                        int id = idArray[0].Value<int>();
+                        phonemeIdMap[phoneme] = id;
+                    }
+                }
+                
+                Debug.Log($"Loaded phoneme map with {phonemeIdMap.Count} entries from JSON");
+            }
+            else
+            {
+                // フォールバック: ハードコード版
+                Debug.LogWarning("Failed to parse phoneme_id_map from JSON. Using fallback values.");
+                phonemeIdMap["_"] = 0;  // pad
+                phonemeIdMap["^"] = 1;  // bos
+                phonemeIdMap["$"] = 2;  // eos
+                phonemeIdMap["k"] = 25;
+                phonemeIdMap["o"] = 11;
+                phonemeIdMap["n"] = 50;
+                phonemeIdMap["N"] = 22;
+                phonemeIdMap["i"] = 8;
+                phonemeIdMap["t"] = 31;
+                phonemeIdMap["h"] = 47;
+                phonemeIdMap["a"] = 7;
+                phonemeIdMap["w"] = 56;
+                phonemeIdMap["s"] = 41;
+            }
         }
 
         [ContextMenu("Generate TTS")]
@@ -305,22 +332,6 @@ namespace uPiper.Runtime
             }
             
             GUILayout.EndArea();
-        }
-    }
-
-    // Piper モデル設定の簡易版
-    [Serializable]
-    public class PiperModelConfig
-    {
-        public AudioConfig audio;
-        public int num_symbols;
-        public int num_speakers;
-        
-        [Serializable]
-        public class AudioConfig
-        {
-            public int sample_rate;
-            public string quality;
         }
     }
 }
