@@ -18,11 +18,30 @@ namespace uPiper.Tests.Integration
         {
             _modelsPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "Models");
             
+            // In test environment, streamingAssetsPath might be different
+            if (!Directory.Exists(_modelsPath))
+            {
+                // Try alternative paths
+                var alternativePath = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "Models");
+                if (Directory.Exists(alternativePath))
+                {
+                    _modelsPath = alternativePath;
+                }
+                else
+                {
+                    Debug.LogError($"Models directory not found at: {_modelsPath} or {alternativePath}");
+                }
+            }
+            
             // Verify models exist
             Assert.IsTrue(Directory.Exists(_modelsPath), $"Models directory not found at: {_modelsPath}");
             
             var jaModelPath = Path.Combine(_modelsPath, "ja_JP-test-medium.onnx");
             var enModelPath = Path.Combine(_modelsPath, "test_voice.onnx");
+            
+            // Log paths for debugging
+            Debug.Log($"[Test Setup] Looking for Japanese model at: {jaModelPath}");
+            Debug.Log($"[Test Setup] Looking for English model at: {enModelPath}");
             
             Assert.IsTrue(File.Exists(jaModelPath), $"Japanese model not found at: {jaModelPath}");
             Assert.IsTrue(File.Exists(enModelPath), $"English model not found at: {enModelPath}");
@@ -54,10 +73,24 @@ namespace uPiper.Tests.Integration
 
             var initTask = tts.InitializeAsync(config);
             
-            // Wait for initialization
-            while (!initTask.IsCompleted)
+            // Wait for initialization with timeout
+            float timeout = 5f; // 5 seconds timeout
+            float elapsed = 0f;
+            while (!initTask.IsCompleted && elapsed < timeout)
             {
+                elapsed += Time.deltaTime;
                 yield return null;
+            }
+            
+            if (!initTask.IsCompleted)
+            {
+                Assert.Fail($"Initialization timed out after {timeout} seconds");
+            }
+            
+            // Check for task exceptions
+            if (initTask.IsFaulted)
+            {
+                Assert.Fail($"Initialization failed with exception: {initTask.Exception?.GetBaseException().Message}");
             }
 
             Assert.IsFalse(errorOccurred, $"Error during initialization: {errorMessage}");
@@ -82,9 +115,16 @@ namespace uPiper.Tests.Integration
 
             // Initialize
             var initTask = tts.InitializeAsync(config);
-            while (!initTask.IsCompleted)
+            float initTimeout = 5f;
+            float initElapsed = 0f;
+            while (!initTask.IsCompleted && initElapsed < initTimeout)
             {
+                initElapsed += Time.deltaTime;
                 yield return null;
+            }
+            if (!initTask.IsCompleted)
+            {
+                Assert.Fail($"Initialization timed out after {initTimeout} seconds");
             }
 
             Assert.IsTrue(tts.IsInitialized);
@@ -93,9 +133,16 @@ namespace uPiper.Tests.Integration
             const string testText = "こんにちは、世界";
             var generateTask = tts.GenerateSpeechAsync(testText, "ja");
             
-            while (!generateTask.IsCompleted)
+            float genTimeout = 10f; // 10 seconds for generation
+            float genElapsed = 0f;
+            while (!generateTask.IsCompleted && genElapsed < genTimeout)
             {
+                genElapsed += Time.deltaTime;
                 yield return null;
+            }
+            if (!generateTask.IsCompleted)
+            {
+                Assert.Fail($"Speech generation timed out after {genTimeout} seconds");
             }
 
             var audioClip = generateTask.Result;
@@ -139,9 +186,16 @@ namespace uPiper.Tests.Integration
 
             var initTask = tts.InitializeAsync(config);
             
-            while (!initTask.IsCompleted)
+            float timeout = 5f;
+            float elapsed = 0f;
+            while (!initTask.IsCompleted && elapsed < timeout)
             {
+                elapsed += Time.deltaTime;
                 yield return null;
+            }
+            if (!initTask.IsCompleted)
+            {
+                Assert.Fail($"Initialization timed out after {timeout} seconds");
             }
 
             Assert.IsTrue(tts.IsInitialized);
@@ -150,9 +204,16 @@ namespace uPiper.Tests.Integration
             const string testText = "Hello, world!";
             var generateTask = tts.GenerateSpeechAsync(testText, "en");
             
-            while (!generateTask.IsCompleted)
+            float genTimeout = 10f;
+            float genElapsed = 0f;
+            while (!generateTask.IsCompleted && genElapsed < genTimeout)
             {
+                genElapsed += Time.deltaTime;
                 yield return null;
+            }
+            if (!generateTask.IsCompleted)
+            {
+                Assert.Fail($"Speech generation timed out after {genTimeout} seconds");
             }
 
             var audioClip = generateTask.Result;
@@ -190,9 +251,16 @@ namespace uPiper.Tests.Integration
             };
 
             var initTask = tts.InitializeAsync(config);
-            while (!initTask.IsCompleted)
+            float timeout = 5f;
+            float elapsed = 0f;
+            while (!initTask.IsCompleted && elapsed < timeout)
             {
+                elapsed += Time.deltaTime;
                 yield return null;
+            }
+            if (!initTask.IsCompleted)
+            {
+                Assert.Fail($"Initialization timed out after {timeout} seconds");
             }
 
             const string testText = "テスト";
@@ -200,14 +268,18 @@ namespace uPiper.Tests.Integration
             // First generation
             var sw1 = System.Diagnostics.Stopwatch.StartNew();
             var task1 = tts.GenerateSpeechAsync(testText, "ja");
-            while (!task1.IsCompleted) yield return null;
+            float t1 = 0f;
+            while (!task1.IsCompleted && t1 < 10f) { t1 += Time.deltaTime; yield return null; }
+            if (!task1.IsCompleted) Assert.Fail("First generation timed out");
             sw1.Stop();
             var firstTime = sw1.ElapsedMilliseconds;
 
             // Second generation (should be faster due to cache)
             var sw2 = System.Diagnostics.Stopwatch.StartNew();
             var task2 = tts.GenerateSpeechAsync(testText, "ja");
-            while (!task2.IsCompleted) yield return null;
+            float t2 = 0f;
+            while (!task2.IsCompleted && t2 < 10f) { t2 += Time.deltaTime; yield return null; }
+            if (!task2.IsCompleted) Assert.Fail("Second generation timed out");
             sw2.Stop();
             var secondTime = sw2.ElapsedMilliseconds;
 

@@ -76,6 +76,7 @@ namespace uPiper.Core
             try
             {
                 // Convert text to phonemes
+                // Note: Phonemization should not access Unity APIs
                 var phonemes = await Task.Run(() => _phonemizer.Phonemize(text, language));
 
                 if (_config.EnableDebugLogging)
