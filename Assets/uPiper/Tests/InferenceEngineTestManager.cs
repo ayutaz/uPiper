@@ -18,7 +18,10 @@ namespace uPiper.Tests
         [SerializeField] private bool testPassed = false;
         [SerializeField] private string testStatus = "Not started";
         
+        // Model and Worker instances (for future use when ONNX model is available)
+        #pragma warning disable 0414
         private Model testModel;
+        #pragma warning restore 0414
         private Worker testWorker;
 
         void Start()

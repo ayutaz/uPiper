@@ -79,19 +79,14 @@ namespace uPiper.Tests.Runtime
         [Test]
         public void CheckInferenceEngineVersion()
         {
-            // バージョン情報の確認（利用可能な場合）
+            // バージョン情報の確認
             Debug.Log("Unity AI Interface (Inference Engine) is available");
             
-            // パッケージ情報を確認
-            var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(
-                typeof(Unity.InferenceEngine.Model).Assembly
-            );
+            // Runtime では Assembly 情報のみ確認
+            var assembly = typeof(Unity.InferenceEngine.Model).Assembly;
+            Assert.IsNotNull(assembly, "Inference Engine assembly should be loaded");
             
-            if (packageInfo != null)
-            {
-                Debug.Log($"Inference Engine version: {packageInfo.version}");
-                Assert.IsNotNull(packageInfo.version, "Package version should be available");
-            }
+            Debug.Log($"Assembly: {assembly.FullName}");
         }
     }
 }
