@@ -35,10 +35,70 @@ jobs:
         unityVersion: 6000.0.35f1
         testMode: all
         artifactsPath: test-results
+        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport'
+        customParameters: '-testResults test-results/unity-test-results.xml'
         
-    - uses: actions/upload-artifact@v4
+    # テスト結果をJUnit形式で保存
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: Test results
-        path: test-results
+        name: Test Results - Unity
+        path: |
+          test-results/**/*.xml
+          test-results/**/*.html
+          test-results/**/*.json
+        retention-days: 7
+        
+    # GitHub Actions UI でテスト結果を表示
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: |
+          test-results/**/*.xml
+        check_name: Unity Test Results
+        comment_mode: off
+        
+    # テスト結果のサマリーを作成
+    - name: Create Test Summary
+      if: always()
+      run: |
+        echo "## Unity Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # XMLファイルから結果を抽出
+        if [ -d "test-results" ]; then
+          for file in test-results/**/*.xml; do
+            if [ -f "$file" ]; then
+              echo "### $(basename $file .xml)" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              
+              # 簡易的な結果表示（XMLパース）
+              if command -v xmllint &> /dev/null; then
+                total=$(xmllint --xpath "count(//test-case)" "$file" 2>/dev/null || echo "0")
+                passed=$(xmllint --xpath "count(//test-case[@result='Passed'])" "$file" 2>/dev/null || echo "0")
+                failed=$(xmllint --xpath "count(//test-case[@result='Failed'])" "$file" 2>/dev/null || echo "0")
+                
+                echo "- Total Tests: $total" >> $GITHUB_STEP_SUMMARY
+                echo "- Passed: $passed ✅" >> $GITHUB_STEP_SUMMARY
+                echo "- Failed: $failed ❌" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "Test results found in: $file" >> $GITHUB_STEP_SUMMARY
+              fi
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+        else
+          echo "No test results found." >> $GITHUB_STEP_SUMMARY
+        fi
+        
+    # カバレッジレポートをアップロード
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: Coverage Report
+        path: |
+          test-results/CodeCoverage/**
         retention-days: 7
