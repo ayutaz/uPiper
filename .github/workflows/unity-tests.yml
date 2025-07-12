@@ -10,6 +10,8 @@ jobs:
   test:
     name: Unity Test Runner
     runs-on: ubuntu-latest
+    # Unity 6のライセンス問題が解決されるまで一時的にCIをスキップ
+    if: false  # TODO: Unity 6ライセンス設定後に削除
     
     steps:
     - uses: actions/checkout@v4
@@ -29,11 +31,14 @@ jobs:
       uses: game-ci/unity-test-runner@v4
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
         unityVersion: 6000.0.35f1
         testMode: all
         artifactsPath: test-results
         githubToken: ${{ secrets.GITHUB_TOKEN }}
+        checkName: Unity Test Results
         
     - uses: actions/upload-artifact@v4
       if: always()

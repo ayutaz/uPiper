@@ -1,0 +1,52 @@
+name: Basic Checks
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  validate:
+    name: Validate Project Structure
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check Unity project structure
+      run: |
+        echo "Checking Unity project structure..."
+        
+        # Check required directories
+        for dir in Assets Packages ProjectSettings; do
+          if [ ! -d "$dir" ]; then
+            echo "Error: Required directory '$dir' not found"
+            exit 1
+          fi
+        done
+        
+        # Check required files
+        for file in ProjectSettings/ProjectSettings.asset Packages/manifest.json; do
+          if [ ! -f "$file" ]; then
+            echo "Error: Required file '$file' not found"
+            exit 1
+          fi
+        done
+        
+        echo "✅ Unity project structure is valid"
+        
+    - name: Validate manifest.json
+      run: |
+        echo "Validating Packages/manifest.json..."
+        python3 -m json.tool Packages/manifest.json > /dev/null
+        echo "✅ manifest.json is valid JSON"
+        
+    - name: Check Unity version
+      run: |
+        echo "Checking Unity version in ProjectSettings..."
+        if grep -q "m_EditorVersion: 6000.0.35f1" ProjectSettings/ProjectVersion.txt 2>/dev/null; then
+          echo "✅ Unity version is 6000.0.35f1"
+        else
+          echo "⚠️  Unity version check skipped (ProjectVersion.txt will be created when opened in Unity)"
+        fi
