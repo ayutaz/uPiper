@@ -30,6 +30,23 @@ jobs:
         cmake .. -G "Visual Studio 17 2022" -A x64
         cmake --build . --config Release
         
+    - name: Copy DLL to expected location
+      shell: cmd
+      run: |
+        echo "=== Searching for built DLL ==="
+        dir /s /b Assets\uPiper\Native\Build\*.dll
+        
+        echo "=== Creating output directory ==="
+        if not exist Assets\uPiper\Plugins\Windows mkdir Assets\uPiper\Plugins\Windows
+        if not exist Assets\uPiper\Plugins\Windows\x86_64 mkdir Assets\uPiper\Plugins\Windows\x86_64
+        
+        echo "=== Copying DLL ==="
+        copy Assets\uPiper\Native\Build\Release\*.dll Assets\uPiper\Plugins\Windows\ 2>nul
+        copy Assets\uPiper\Native\Build\*.dll Assets\uPiper\Plugins\Windows\ 2>nul
+        
+        echo "=== Final output ==="
+        dir Assets\uPiper\Plugins\Windows\
+        
     - name: Upload Windows Artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -168,10 +185,28 @@ jobs:
       run: |
         # Simple test to check if library can be loaded
         echo "Testing library loading..."
+        echo "Current directory: $(pwd)"
+        echo "Directory structure:"
+        find Assets/uPiper/Plugins -type f -name "*.so" -o -name "*.dylib" | head -20
+        
         if [ "$RUNNER_OS" == "Linux" ]; then
-          ldd Assets/uPiper/Plugins/Linux/*.so || true
+          echo "=== Linux library test ==="
+          for lib in Assets/uPiper/Plugins/Linux/*.so Assets/uPiper/Plugins/Linux/x86_64/*.so; do
+            if [ -f "$lib" ]; then
+              echo "Testing: $lib"
+              ldd "$lib" || true
+              echo "---"
+            fi
+          done
         else
-          otool -L Assets/uPiper/Plugins/macOS/*.dylib || true
+          echo "=== macOS library test ==="
+          for lib in Assets/uPiper/Plugins/macOS/*.dylib; do
+            if [ -f "$lib" ]; then
+              echo "Testing: $lib"
+              otool -L "$lib" || true
+              echo "---"
+            fi
+          done
         fi
         
     - name: Test Library Loading (Windows)
@@ -180,8 +215,20 @@ jobs:
       run: |
         # Check library dependencies
         Write-Host "Testing library loading..."
-        $dll = Get-ChildItem -Path "Assets/uPiper/Plugins/Windows" -Filter "*.dll" -Recurse | Select-Object -First 1
-        if ($dll) {
+        Write-Host "Current directory: $(Get-Location)"
+        Write-Host "Directory contents:"
+        Get-ChildItem -Path "Assets/uPiper/Plugins" -Recurse | Format-Table Name, FullName
+        
+        # Look for DLL files
+        $dlls = Get-ChildItem -Path "Assets/uPiper/Plugins" -Filter "*.dll" -Recurse
+        if ($dlls.Count -eq 0) {
+          Write-Error "No DLL files found!"
+          exit 1
+        }
+        
+        foreach ($dll in $dlls) {
           Write-Host "Found DLL: $($dll.FullName)"
-          # Could add dumpbin or similar tool to check dependencies
+          # Basic file info
+          Write-Host "  Size: $($dll.Length) bytes"
+          Write-Host "  Directory: $($dll.DirectoryName)"
         }

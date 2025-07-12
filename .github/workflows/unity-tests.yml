@@ -35,6 +35,13 @@ jobs:
         cd Build
         cmake .. -G "Visual Studio 17 2022" -A x64
         cmake --build . --config Release
+        
+        echo "=== Copying DLL to Plugins directory ==="
+        cd ..\..\..
+        if not exist Assets\uPiper\Plugins\Windows mkdir Assets\uPiper\Plugins\Windows
+        copy Assets\uPiper\Native\Build\Release\*.dll Assets\uPiper\Plugins\Windows\ 2>nul
+        copy Assets\uPiper\Native\Build\*.dll Assets\uPiper\Plugins\Windows\ 2>nul
+        dir Assets\uPiper\Plugins\Windows\
     
     # Linux build
     - name: Install Dependencies (Linux)
