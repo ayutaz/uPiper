@@ -10,6 +10,11 @@ namespace uPiper.Core
     public class CacheStatistics
     {
         /// <summary>
+        /// Bytes per megabyte conversion constant
+        /// </summary>
+        private const float BytesPerMB = 1024f * 1024f;
+
+        /// <summary>
         /// Total number of cached entries
         /// </summary>
         public int EntryCount { get; set; }
@@ -22,7 +27,7 @@ namespace uPiper.Core
         /// <summary>
         /// Total cache size in MB
         /// </summary>
-        public float TotalSizeMB => TotalSizeBytes / (1024f * 1024f);
+        public float TotalSizeMB => TotalSizeBytes / BytesPerMB;
 
         /// <summary>
         /// Number of cache hits
@@ -54,7 +59,7 @@ namespace uPiper.Core
         /// <summary>
         /// Maximum cache size in MB
         /// </summary>
-        public float MaxSizeMB => MaxSizeBytes / (1024f * 1024f);
+        public float MaxSizeMB => MaxSizeBytes / BytesPerMB;
 
         /// <summary>
         /// Cache usage percentage (0.0 to 1.0)
