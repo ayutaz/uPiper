@@ -110,5 +110,64 @@ namespace uPiper.Tests.Runtime.Core
             // Assert
             Assert.AreEqual("Test Voice (ja)", result);
         }
+        
+        [Test]
+        public void DefaultValues_AreCorrect()
+        {
+            // Arrange & Act
+            var config = new PiperVoiceConfig();
+            
+            // Assert
+            Assert.AreEqual(22050, config.SampleRate);
+            Assert.AreEqual(VoiceGender.Neutral, config.Gender);
+            Assert.AreEqual(VoiceAge.Adult, config.AgeGroup);
+            Assert.AreEqual(SpeakingStyle.Normal, config.Style);
+            Assert.AreEqual(ModelQuality.Medium, config.Quality);
+            Assert.IsTrue(config.SupportsStreaming);
+        }
+        
+        [Test]
+        public void VoiceGender_EnumValues()
+        {
+            // Assert
+            Assert.AreEqual(0, (int)VoiceGender.Neutral);
+            Assert.AreEqual(1, (int)VoiceGender.Male);
+            Assert.AreEqual(2, (int)VoiceGender.Female);
+        }
+        
+        [Test]
+        public void VoiceAge_EnumValues()
+        {
+            // Assert
+            Assert.AreEqual(0, (int)VoiceAge.Child);
+            Assert.AreEqual(1, (int)VoiceAge.Teen);
+            Assert.AreEqual(2, (int)VoiceAge.Adult);
+            Assert.AreEqual(3, (int)VoiceAge.Senior);
+        }
+        
+        [Test]
+        public void ModelQuality_EnumValues()
+        {
+            // Assert
+            Assert.AreEqual(0, (int)ModelQuality.Low);
+            Assert.AreEqual(1, (int)ModelQuality.Medium);
+            Assert.AreEqual(2, (int)ModelQuality.High);
+            Assert.AreEqual(3, (int)ModelQuality.Ultra);
+        }
+        
+        [Test]
+        public void FromModelPath_HandlesSimpleFileName()
+        {
+            // Act
+            var config = PiperVoiceConfig.FromModelPath(
+                "model.onnx",
+                "model.json"
+            );
+            
+            // Assert
+            Assert.AreEqual("model", config.VoiceId);
+            Assert.AreEqual("model", config.DisplayName);
+            // Language parsing fails for simple names, which is expected
+        }
     }
 }
