@@ -144,5 +144,42 @@ namespace uPiper.Tests.Runtime.Core
             combined.GetData(data, 0);
             Assert.AreEqual(new float[] { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f }, data);
         }
+        
+        [Test]
+        public void TextSegmentAndStartTime_AreStoredCorrectly()
+        {
+            // Arrange & Act
+            var chunk = new AudioChunk(
+                new float[100], 
+                22050, 
+                1, 
+                0, 
+                false,
+                "Hello world",
+                1.5f
+            );
+            
+            // Assert
+            Assert.AreEqual("Hello world", chunk.TextSegment);
+            Assert.AreEqual(1.5f, chunk.StartTime);
+        }
+        
+        [Test]
+        public void ToAudioClip_HandlesStereoAudio()
+        {
+            // Arrange
+            var samples = new float[44100]; // 1 second of stereo at 22050Hz
+            var chunk = new AudioChunk(samples, 22050, 2, 0, false);
+            
+            // Act
+            var clip = chunk.ToAudioClip("StereoTest");
+            
+            // Assert
+            Assert.IsNotNull(clip);
+            Assert.AreEqual("StereoTest", clip.name);
+            Assert.AreEqual(22050, clip.frequency);
+            Assert.AreEqual(2, clip.channels);
+            Assert.AreEqual(22050, clip.samples); // 44100 total samples / 2 channels
+        }
     }
 }

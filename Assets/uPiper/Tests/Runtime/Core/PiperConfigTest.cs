@@ -74,5 +74,27 @@ namespace uPiper.Tests.Runtime.Core
             // Act & Assert
             Assert.DoesNotThrow(() => config.Validate());
         }
+        
+        [Test]
+        public void AdvancedSettings_HaveCorrectDefaults()
+        {
+            // Arrange
+            var config = new PiperConfig();
+            
+            // Assert
+            Assert.AreEqual(30000, config.TimeoutMs);
+            Assert.IsFalse(config.EnableMultiThreadedInference);
+            Assert.AreEqual(1, config.InferenceBatchSize);
+        }
+        
+        [Test]
+        public void InferenceBackend_EnumValues()
+        {
+            // Assert all enum values are defined
+            Assert.AreEqual(0, (int)InferenceBackend.Auto);
+            Assert.AreEqual(1, (int)InferenceBackend.CPU);
+            Assert.AreEqual(2, (int)InferenceBackend.GPUCompute);
+            Assert.AreEqual(3, (int)InferenceBackend.GPUPixel);
+        }
     }
 }

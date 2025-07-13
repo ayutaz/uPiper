@@ -216,5 +216,34 @@ namespace uPiper.Tests.Runtime.Core
             Assert.IsTrue(result.Contains("200 misses"));
             Assert.IsTrue(result.Contains("25"));
         }
+        
+        [Test]
+        public void TimeSinceLastClear_CalculatesCorrectly()
+        {
+            // Arrange
+            var stats = new CacheStatistics();
+            var testTime = DateTime.Now.AddMinutes(-5);
+            stats.LastClearTime = testTime;
+            
+            // Act
+            var timeSince = stats.TimeSinceLastClear;
+            
+            // Assert
+            Assert.GreaterOrEqual(timeSince.TotalMinutes, 4.9);
+            Assert.LessOrEqual(timeSince.TotalMinutes, 5.1);
+        }
+        
+        [Test]
+        public void RecordEviction_DefaultParameter()
+        {
+            // Arrange
+            var stats = new CacheStatistics { EvictionCount = 10 };
+            
+            // Act
+            stats.RecordEviction(); // Using default count = 1
+            
+            // Assert
+            Assert.AreEqual(11, stats.EvictionCount);
+        }
     }
 }
