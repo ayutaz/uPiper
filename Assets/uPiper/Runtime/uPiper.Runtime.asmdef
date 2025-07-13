@@ -1,0 +1,24 @@
+{
+    "name": "uPiper.Runtime",
+    "rootNamespace": "uPiper",
+    "references": [
+        "Unity.InferenceEngine",
+        "Unity.Burst",
+        "Newtonsoft.Json"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.ai.inference",
+            "expression": "2.2.0",
+            "define": "UNITY_AI_INTERFACE_2_2_OR_NEWER"
+        }
+    ],
+    "noEngineReferences": false
+}
