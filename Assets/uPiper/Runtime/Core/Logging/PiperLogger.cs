@@ -24,6 +24,11 @@ namespace uPiper.Core.Logging
         private static LogLevel minimumLevel = LogLevel.Info;
         
         /// <summary>
+        /// Get current minimum log level
+        /// </summary>
+        public static LogLevel MinimumLevel => minimumLevel;
+        
+        /// <summary>
         /// Set minimum log level
         /// </summary>
         public static void SetMinimumLevel(LogLevel level)
