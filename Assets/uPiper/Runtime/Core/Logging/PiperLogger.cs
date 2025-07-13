@@ -1,5 +1,5 @@
-using Unity.Logging;
-using Unity.Logging.Sinks;
+using UnityEngine;
+using System.Diagnostics;
 
 namespace uPiper.Core.Logging
 {
@@ -8,75 +8,84 @@ namespace uPiper.Core.Logging
     /// </summary>
     public static class PiperLogger
     {
-        private static Logger logger;
+        private const string LOG_PREFIX = "[uPiper]";
         
         /// <summary>
-        /// Logger instance for uPiper
+        /// Log level enumeration
         /// </summary>
-        public static Logger Logger
+        public enum LogLevel
         {
-            get
-            {
-                if (logger == null)
-                {
-                    Initialize();
-                }
-                return logger;
-            }
+            Debug = 0,
+            Info = 1,
+            Warning = 2,
+            Error = 3
         }
         
-        /// <summary>
-        /// Initialize the logger with default configuration
-        /// </summary>
-        public static void Initialize()
-        {
-            var config = new LoggerConfig();
-            
-            // Configure minimum log level based on debug setting
-            #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            config.MinimumLevel = LogLevel.Debug;
-            #else
-            config.MinimumLevel = LogLevel.Info;
-            #endif
-            
-            // Add Unity console sink
-            config.WriteTo.UnityDebugLog();
-            
-            // Create logger
-            logger = new Logger(config);
-        }
-        
-        /// <summary>
-        /// Configure the logger with custom settings
-        /// </summary>
-        public static void Configure(LoggerConfig config)
-        {
-            logger?.Dispose();
-            logger = new Logger(config);
-        }
+        private static LogLevel minimumLevel = LogLevel.Info;
         
         /// <summary>
         /// Set minimum log level
         /// </summary>
         public static void SetMinimumLevel(LogLevel level)
         {
-            if (logger != null)
+            minimumLevel = level;
+        }
+        
+        /// <summary>
+        /// Log debug message
+        /// </summary>
+        [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
+        public static void LogDebug(string message, params object[] args)
+        {
+            if (minimumLevel <= LogLevel.Debug)
             {
-                var config = new LoggerConfig();
-                config.MinimumLevel = level;
-                config.WriteTo.UnityDebugLog();
-                logger.Dispose();
-                logger = new Logger(config);
+                UnityEngine.Debug.Log($"{LOG_PREFIX} {string.Format(message, args)}");
             }
         }
         
         /// <summary>
-        /// Cleanup logger resources
+        /// Log info message
         /// </summary>
-        public static void Shutdown()
+        public static void LogInfo(string message, params object[] args)
         {
-            logger?.Dispose();
-            logger = null;
+            if (minimumLevel <= LogLevel.Info)
+            {
+                UnityEngine.Debug.Log($"{LOG_PREFIX} {string.Format(message, args)}");
+            }
+        }
+        
+        /// <summary>
+        /// Log warning message
+        /// </summary>
+        public static void LogWarning(string message, params object[] args)
+        {
+            if (minimumLevel <= LogLevel.Warning)
+            {
+                UnityEngine.Debug.LogWarning($"{LOG_PREFIX} {string.Format(message, args)}");
+            }
+        }
+        
+        /// <summary>
+        /// Log error message
+        /// </summary>
+        public static void LogError(string message, params object[] args)
+        {
+            if (minimumLevel <= LogLevel.Error)
+            {
+                UnityEngine.Debug.LogError($"{LOG_PREFIX} {string.Format(message, args)}");
+            }
+        }
+        
+        /// <summary>
+        /// Initialize logger (for compatibility)
+        /// </summary>
+        public static void Initialize()
+        {
+            #if UNITY_EDITOR || DEVELOPMENT_BUILD
+            minimumLevel = LogLevel.Debug;
+            #else
+            minimumLevel = LogLevel.Info;
+            #endif
         }
     }
 }

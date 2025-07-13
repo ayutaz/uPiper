@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using Unity.Logging;
 using uPiper.Core.Logging;
 
 namespace uPiper.Core
@@ -137,19 +136,19 @@ namespace uPiper.Core
         {
             if (string.IsNullOrEmpty(VoiceId))
             {
-                PiperLogger.Logger.LogError("Voice ID is required");
+                PiperLogger.LogError("Voice ID is required");
                 return false;
             }
 
             if (string.IsNullOrEmpty(ModelPath))
             {
-                PiperLogger.Logger.LogError("Model path is required");
+                PiperLogger.LogError("Model path is required");
                 return false;
             }
 
             if (string.IsNullOrEmpty(Language))
             {
-                PiperLogger.Logger.LogError("Language is required");
+                PiperLogger.LogError("Language is required");
                 return false;
             }
 

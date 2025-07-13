@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using Unity.Logging;
 using uPiper.Core.Logging;
 
 namespace uPiper.Core
@@ -149,14 +148,13 @@ namespace uPiper.Core
         /// </summary>
         public void LogStatistics()
         {
-            var log = PiperLogger.Logger;
-            log.LogInfo("[uPiper Cache Statistics]");
-            log.LogInfo($"  Entries: {EntryCount}");
-            log.LogInfo($"  Size: {TotalSizeMB:F2} / {MaxSizeMB:F2} MB ({UsagePercentage:P0} used)");
-            log.LogInfo($"  Hit Rate: {HitRate:P1} ({HitCount} hits, {MissCount} misses)");
-            log.LogInfo($"  Average Entry Size: {AverageEntrySizeBytes:F0} bytes");
-            log.LogInfo($"  Evictions: {EvictionCount}");
-            log.LogInfo($"  Time Since Last Clear: {TimeSinceLastClear:g}");
+            PiperLogger.LogInfo("[Cache Statistics]");
+            PiperLogger.LogInfo("  Entries: {0}", EntryCount);
+            PiperLogger.LogInfo("  Size: {0:F2} / {1:F2} MB ({2:P0} used)", TotalSizeMB, MaxSizeMB, UsagePercentage);
+            PiperLogger.LogInfo("  Hit Rate: {0:P1} ({1} hits, {2} misses)", HitRate, HitCount, MissCount);
+            PiperLogger.LogInfo("  Average Entry Size: {0:F0} bytes", AverageEntrySizeBytes);
+            PiperLogger.LogInfo("  Evictions: {0}", EvictionCount);
+            PiperLogger.LogInfo("  Time Since Last Clear: {0:g}", TimeSinceLastClear);
         }
     }
 }
