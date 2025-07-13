@@ -1,5 +1,7 @@
 using System;
 using UnityEngine;
+using Unity.Logging;
+using uPiper.Core.Logging;
 
 namespace uPiper.Core
 {
@@ -111,7 +113,7 @@ namespace uPiper.Core
 
             if (SampleRate != 16000 && SampleRate != 22050 && SampleRate != 44100 && SampleRate != 48000)
             {
-                Debug.LogWarning($"Non-standard sample rate {SampleRate}Hz. Recommended: 22050Hz or 16000Hz");
+                PiperLogger.Logger.LogWarning($"Non-standard sample rate {SampleRate}Hz. Recommended: 22050Hz or 16000Hz");
             }
 
             if (WorkerThreads == 0)

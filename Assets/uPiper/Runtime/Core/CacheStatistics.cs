@@ -1,5 +1,7 @@
 using System;
 using UnityEngine;
+using Unity.Logging;
+using uPiper.Core.Logging;
 
 namespace uPiper.Core
 {
@@ -147,13 +149,14 @@ namespace uPiper.Core
         /// </summary>
         public void LogStatistics()
         {
-            Debug.Log($"[uPiper Cache Statistics]");
-            Debug.Log($"  Entries: {EntryCount}");
-            Debug.Log($"  Size: {TotalSizeMB:F2} / {MaxSizeMB:F2} MB ({UsagePercentage:P0} used)");
-            Debug.Log($"  Hit Rate: {HitRate:P1} ({HitCount} hits, {MissCount} misses)");
-            Debug.Log($"  Average Entry Size: {AverageEntrySizeBytes:F0} bytes");
-            Debug.Log($"  Evictions: {EvictionCount}");
-            Debug.Log($"  Time Since Last Clear: {TimeSinceLastClear:g}");
+            var log = PiperLogger.Logger;
+            log.LogInfo("[uPiper Cache Statistics]");
+            log.LogInfo($"  Entries: {EntryCount}");
+            log.LogInfo($"  Size: {TotalSizeMB:F2} / {MaxSizeMB:F2} MB ({UsagePercentage:P0} used)");
+            log.LogInfo($"  Hit Rate: {HitRate:P1} ({HitCount} hits, {MissCount} misses)");
+            log.LogInfo($"  Average Entry Size: {AverageEntrySizeBytes:F0} bytes");
+            log.LogInfo($"  Evictions: {EvictionCount}");
+            log.LogInfo($"  Time Since Last Clear: {TimeSinceLastClear:g}");
         }
     }
 }
