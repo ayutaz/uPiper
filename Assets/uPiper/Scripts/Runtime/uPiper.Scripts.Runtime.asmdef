@@ -1,5 +1,6 @@
 {
     "name": "uPiper.Scripts.Runtime",
+    // Note: rootNamespace is intentionally set to uPiper.Runtime for backward compatibility
     "rootNamespace": "uPiper.Runtime",
     "references": [
         "Unity.InferenceEngine",

@@ -103,7 +103,7 @@ namespace uPiper.Core
         public static AudioClip CombineChunks(AudioChunk[] chunks, string name = "CombinedAudio")
         {
             if (chunks == null || chunks.Length == 0)
-                throw new ArgumentException("No chunks to combine");
+                throw new ArgumentException("No chunks to combine", nameof(chunks));
 
             // Validate all chunks have same format
             var firstChunk = chunks[0];
