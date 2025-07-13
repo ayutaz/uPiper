@@ -4,6 +4,7 @@
     "references": [
         "Unity.InferenceEngine",
         "Unity.Burst",
+        "Unity.Logging",
         "Newtonsoft.Json"
     ],
     "includePlatforms": [],
