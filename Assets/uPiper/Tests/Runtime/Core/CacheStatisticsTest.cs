@@ -208,13 +208,13 @@ namespace uPiper.Tests.Runtime.Core
             var result = stats.ToString();
             
             // Assert
-            Assert.IsTrue(result.Contains("100 entries"));
-            Assert.IsTrue(result.Contains("50.00/100.00 MB"));
-            Assert.IsTrue(result.Contains("50%"));  // Check for percentage value
-            Assert.IsTrue(result.Contains("80.0%"));
-            Assert.IsTrue(result.Contains("800 hits"));
-            Assert.IsTrue(result.Contains("200 misses"));
-            Assert.IsTrue(result.Contains("25"));
+            Assert.IsTrue(result.Contains("100 entries"), $"Expected '100 entries' in: {result}");
+            Assert.IsTrue(result.Contains("50.00/100.00 MB"), $"Expected '50.00/100.00 MB' in: {result}");
+            Assert.IsTrue(result.Contains("(50%)"), $"Expected '(50%)' in: {result}");  // P0 format includes parentheses
+            Assert.IsTrue(result.Contains("80.0%"), $"Expected '80.0%' in: {result}");
+            Assert.IsTrue(result.Contains("800 hits"), $"Expected '800 hits' in: {result}");
+            Assert.IsTrue(result.Contains("200 misses"), $"Expected '200 misses' in: {result}");
+            Assert.IsTrue(result.Contains("25"), $"Expected '25' in: {result}");
         }
         
         [Test]
