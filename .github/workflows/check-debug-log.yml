@@ -1,0 +1,57 @@
+name: Check Debug.Log Usage
+
+on:
+  pull_request:
+    paths:
+      - '**.cs'
+      - '!Assets/uPiper/Runtime/Core/Logging/PiperLogger.cs'
+
+jobs:
+  check-debug-log:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Check for Debug.Log usage
+      run: |
+        echo "Checking for Debug.Log usage in C# files..."
+        
+        # Find all C# files except PiperLogger.cs
+        files=$(find . -name "*.cs" -type f | grep -v "PiperLogger.cs" | grep -v ".git")
+        
+        found_issues=false
+        
+        for file in $files; do
+          # Check for Debug.Log, Debug.LogWarning, Debug.LogError
+          if grep -n "Debug\.\(Log\|LogWarning\|LogError\|LogException\|LogAssertion\|LogFormat\)" "$file"; then
+            echo "❌ Found Debug.Log usage in: $file"
+            echo "   Please use PiperLogger instead:"
+            echo "   - Debug.Log() → PiperLogger.LogInfo()"
+            echo "   - Debug.LogWarning() → PiperLogger.LogWarning()"
+            echo "   - Debug.LogError() → PiperLogger.LogError()"
+            found_issues=true
+          fi
+        done
+        
+        if [ "$found_issues" = true ]; then
+          echo ""
+          echo "⚠️  Debug.Log usage detected!"
+          echo "Please replace all Debug.Log calls with PiperLogger."
+          exit 1
+        else
+          echo "✅ No Debug.Log usage found!"
+        fi
+        
+    - name: Comment PR
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '⚠️ **Debug.Log Usage Detected**\n\nThis PR contains direct usage of `Debug.Log`. Please use `PiperLogger` instead for consistent logging.\n\nSee the workflow logs for specific locations.'
+          })

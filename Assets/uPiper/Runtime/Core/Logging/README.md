@@ -1,6 +1,6 @@
 # uPiper Logging
 
-uPiperではUnity Loggingパッケージ（com.unity.logging）を使用して統一されたログシステムを提供します。
+uPiperでは統一されたログシステムを提供するため、軽量なログラッパーを実装しています。
 
 ## 使用方法
 
@@ -8,14 +8,13 @@ uPiperではUnity Loggingパッケージ（com.unity.logging）を使用して�
 using uPiper.Core.Logging;
 
 // ログ出力
-PiperLogger.Logger.LogInfo("Information message");
-PiperLogger.Logger.LogWarning("Warning message");
-PiperLogger.Logger.LogError("Error message");
-PiperLogger.Logger.LogDebug("Debug message");
+PiperLogger.LogInfo("Information message");
+PiperLogger.LogWarning("Warning message");
+PiperLogger.LogError("Error message");
+PiperLogger.LogDebug("Debug message");
 
-// 構造化ログ
-PiperLogger.Logger.LogInfo("Loading model {ModelPath} for language {Language}", 
-    modelPath, language);
+// パラメータ付きログ
+PiperLogger.LogInfo("Loading model {0} for language {1}", modelPath, language);
 ```
 
 ## ログレベル
@@ -30,22 +29,18 @@ PiperLogger.Logger.LogInfo("Loading model {ModelPath} for language {Language}",
 
 ```csharp
 // 最小ログレベルの変更
-PiperLogger.SetMinimumLevel(LogLevel.Warning);
+PiperLogger.SetMinimumLevel(PiperLogger.LogLevel.Warning);
 
-// カスタム設定
-var config = new LoggerConfig();
-config.MinimumLevel = LogLevel.Debug;
-config.WriteTo.UnityDebugLog();
-config.WriteTo.File("upiper.log");
-PiperLogger.Configure(config);
+// 初期化（オプション - 自動的に行われます）
+PiperLogger.Initialize();
 ```
 
 ## Unity Debug.Logとの違い
 
-- **構造化ログ**: パラメータを個別に渡せる
-- **パフォーマンス**: 条件付きコンパイルで本番ビルドでの負荷を削減
-- **フィルタリング**: ログレベルによる動的フィルタリング
-- **拡張性**: カスタムシンクの追加が可能
+- **統一されたプレフィックス**: 全てのログに[uPiper]プレフィックスが付く
+- **パフォーマンス**: LogDebugは条件付きコンパイルで本番ビルドでは除外
+- **ログレベルフィルタリング**: 動的にログレベルを変更可能
+- **シンプルな実装**: Unity標準のDebug.Logをラップ
 
 ## 移行ガイド
 
@@ -56,7 +51,7 @@ Debug.LogWarning($"Sample rate {rate}Hz is non-standard");
 Debug.LogError("Failed to load: " + error.Message);
 
 // After
-PiperLogger.Logger.LogInfo("Loading model: {ModelPath}", modelPath);
-PiperLogger.Logger.LogWarning("Sample rate {Rate}Hz is non-standard", rate);
-PiperLogger.Logger.LogError("Failed to load: {Error}", error.Message);
+PiperLogger.LogInfo("Loading model: {0}", modelPath);
+PiperLogger.LogWarning("Sample rate {0}Hz is non-standard", rate);
+PiperLogger.LogError("Failed to load: {0}", error.Message);
 ```
