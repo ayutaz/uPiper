@@ -2,7 +2,7 @@ using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
-using uPiper.Scripts.Runtime;
+using uPiper.Runtime;
 
 namespace uPiper.Tests.Runtime
 {
