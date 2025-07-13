@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using UnityEngine.TestTools;
 using uPiper.Core;
 
 namespace uPiper.Tests.Runtime.Core
@@ -63,7 +64,7 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act & Assert
-            // Unity Logging doesn't integrate with LogAssert, so we'll just check the return value
+            LogAssert.Expect(UnityEngine.LogType.Error, "[uPiper] Voice ID is required");
             Assert.IsFalse(config.Validate());
         }
         
@@ -78,7 +79,7 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act & Assert
-            // Unity Logging doesn't integrate with LogAssert, so we'll just check the return value
+            LogAssert.Expect(UnityEngine.LogType.Error, "[uPiper] Model path is required");
             Assert.IsFalse(config.Validate());
         }
         
@@ -93,7 +94,7 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act & Assert
-            // Unity Logging doesn't integrate with LogAssert, so we'll just check the return value
+            LogAssert.Expect(UnityEngine.LogType.Error, "[uPiper] Language is required");
             Assert.IsFalse(config.Validate());
         }
         
