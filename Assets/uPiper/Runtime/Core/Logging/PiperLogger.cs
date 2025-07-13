@@ -44,7 +44,9 @@ namespace uPiper.Core.Logging
         {
             if (minimumLevel <= LogLevel.Debug)
             {
-                UnityEngine.Debug.Log($"{LOG_PREFIX} {string.Format(message, args)}");
+                if (message == null) message = string.Empty;
+                string formattedMessage = args != null && args.Length > 0 ? string.Format(message, args) : message;
+                UnityEngine.Debug.Log($"{LOG_PREFIX} {formattedMessage}");
             }
         }
         
@@ -55,7 +57,9 @@ namespace uPiper.Core.Logging
         {
             if (minimumLevel <= LogLevel.Info)
             {
-                UnityEngine.Debug.Log($"{LOG_PREFIX} {string.Format(message, args)}");
+                if (message == null) message = string.Empty;
+                string formattedMessage = args != null && args.Length > 0 ? string.Format(message, args) : message;
+                UnityEngine.Debug.Log($"{LOG_PREFIX} {formattedMessage}");
             }
         }
         
@@ -66,7 +70,9 @@ namespace uPiper.Core.Logging
         {
             if (minimumLevel <= LogLevel.Warning)
             {
-                UnityEngine.Debug.LogWarning($"{LOG_PREFIX} {string.Format(message, args)}");
+                if (message == null) message = string.Empty;
+                string formattedMessage = args != null && args.Length > 0 ? string.Format(message, args) : message;
+                UnityEngine.Debug.LogWarning($"{LOG_PREFIX} {formattedMessage}");
             }
         }
         
@@ -77,7 +83,9 @@ namespace uPiper.Core.Logging
         {
             if (minimumLevel <= LogLevel.Error)
             {
-                UnityEngine.Debug.LogError($"{LOG_PREFIX} {string.Format(message, args)}");
+                if (message == null) message = string.Empty;
+                string formattedMessage = args != null && args.Length > 0 ? string.Format(message, args) : message;
+                UnityEngine.Debug.LogError($"{LOG_PREFIX} {formattedMessage}");
             }
         }
         
