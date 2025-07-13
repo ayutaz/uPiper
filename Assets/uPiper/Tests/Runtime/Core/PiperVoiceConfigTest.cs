@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using UnityEngine.TestTools;
 using uPiper.Core;
 
 namespace uPiper.Tests.Runtime.Core
@@ -63,6 +64,7 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act & Assert
+            UnityEngine.TestTools.LogAssert.Expect(UnityEngine.LogType.Error, "Voice ID is required");
             Assert.IsFalse(config.Validate());
         }
         
@@ -77,6 +79,7 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act & Assert
+            UnityEngine.TestTools.LogAssert.Expect(UnityEngine.LogType.Error, "Model path is required");
             Assert.IsFalse(config.Validate());
         }
         
@@ -91,6 +94,7 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act & Assert
+            UnityEngine.TestTools.LogAssert.Expect(UnityEngine.LogType.Error, "Language is required");
             Assert.IsFalse(config.Validate());
         }
         
