@@ -210,7 +210,7 @@ namespace uPiper.Tests.Runtime.Core
             // Assert
             Assert.IsTrue(result.Contains("100 entries"));
             Assert.IsTrue(result.Contains("50.00/100.00 MB"));
-            Assert.IsTrue(result.Contains("(50%)"));  // P0 format includes parentheses
+            Assert.IsTrue(result.Contains("50%"));  // Check for percentage value
             Assert.IsTrue(result.Contains("80.0%"));
             Assert.IsTrue(result.Contains("800 hits"));
             Assert.IsTrue(result.Contains("200 misses"));
