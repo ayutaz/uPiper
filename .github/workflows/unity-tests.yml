@@ -39,7 +39,7 @@ jobs:
         unityVersion: 6000.0.35f1
         testMode: all
         artifactsPath: test-results
-        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport'
+        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.Runtime,+uPiper.Scripts.Runtime,-uPiper.Tests.*'
         
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
@@ -140,3 +140,47 @@ jobs:
         path: |
           test-results/CodeCoverage/**
         retention-days: 7
+    
+    # コードカバレッジチェック
+    - name: Check Code Coverage
+      if: always()
+      run: |
+        # カバレッジサマリーファイルを探す
+        coverage_file="test-results/CodeCoverage/Report/Summary.xml"
+        if [ -f "$coverage_file" ]; then
+          echo "### Code Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # XMLからカバレッジ情報を抽出
+          if command -v xmllint &> /dev/null; then
+            line_coverage=$(xmllint --xpath "string(//CoverageSession/Summary/@sequenceCoverage)" "$coverage_file" 2>/dev/null || echo "0")
+            branch_coverage=$(xmllint --xpath "string(//CoverageSession/Summary/@branchCoverage)" "$coverage_file" 2>/dev/null || echo "0")
+            
+            # パーセンテージに変換（0-1の値を0-100に）
+            line_percent=$(echo "scale=1; $line_coverage * 100" | bc 2>/dev/null || echo "0")
+            branch_percent=$(echo "scale=1; $branch_coverage * 100" | bc 2>/dev/null || echo "0")
+            
+            echo "- Line Coverage: $line_percent%" >> $GITHUB_STEP_SUMMARY
+            echo "- Branch Coverage: $branch_percent%" >> $GITHUB_STEP_SUMMARY
+            
+            # カバレッジバッジデータを環境変数に保存
+            echo "LINE_COVERAGE=$line_percent" >> $GITHUB_ENV
+            echo "BRANCH_COVERAGE=$branch_percent" >> $GITHUB_ENV
+          else
+            echo "xmllint not available, skipping coverage parsing" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "Coverage report not found at: $coverage_file" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+    # Codecovにカバレッジをアップロード
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: always()
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        directory: test-results/CodeCoverage
+        files: '**/Summary.xml'
+        flags: unittests
+        name: uPiper
+        fail_ci_if_error: false
