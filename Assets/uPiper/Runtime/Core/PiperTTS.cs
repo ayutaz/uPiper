@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using Unity.InferenceEngine;
 using uPiper.Core.Logging;
 
 namespace uPiper.Core
@@ -25,6 +27,16 @@ namespace uPiper.Core
         private event Action<string> _onInitialized;
         private event Action<PiperException> _onError;
         private event Action<float> _onProcessingProgress;
+        
+        // Inference Engine related
+        private BackendType _inferenceBackend;
+        private readonly Dictionary<string, Model> _loadedModels;
+        private readonly Dictionary<string, Worker> _workers;
+        private readonly Queue<Worker> _workerPool;
+        
+        // Cache system
+        private readonly Dictionary<string, byte[]> _phonemeCache;
+        private long _currentCacheSize;
 
         #endregion
 
@@ -164,6 +176,13 @@ namespace uPiper.Core
             _isInitialized = false;
             _isDisposed = false;
             
+            // Initialize collections
+            _loadedModels = new Dictionary<string, Model>();
+            _workers = new Dictionary<string, Worker>();
+            _workerPool = new Queue<Worker>();
+            _phonemeCache = new Dictionary<string, byte[]>();
+            _currentCacheSize = 0;
+            
             // Validate configuration on construction
             _config.Validate();
             
@@ -192,8 +211,23 @@ namespace uPiper.Core
             {
                 PiperLogger.LogInfo("Starting PiperTTS initialization...");
                 
-                // TODO: Implement actual initialization logic in Phase 1.2.3
-                await Task.Delay(100, cancellationToken); // Simulate initialization
+                // Initialize Inference Engine backend
+                await InitializeInferenceEngineAsync(cancellationToken);
+                
+                // Initialize worker thread pool if multi-threaded inference is enabled
+                if (_config.EnableMultiThreadedInference && _config.WorkerThreads > 1)
+                {
+                    await InitializeWorkerPoolAsync(cancellationToken);
+                }
+                
+                // Validate runtime environment
+                ValidateRuntimeEnvironment();
+                
+                // Initialize cache system if enabled
+                if (_config.EnablePhonemeCache)
+                {
+                    InitializeCacheSystem();
+                }
                 
                 lock (_lockObject)
                 {
@@ -426,6 +460,27 @@ namespace uPiper.Core
             {
                 lock (_lockObject)
                 {
+                    // Dispose workers
+                    foreach (var worker in _workers.Values)
+                    {
+                        worker?.Dispose();
+                    }
+                    _workers.Clear();
+                    
+                    // Dispose worker pool
+                    while (_workerPool.Count > 0)
+                    {
+                        var worker = _workerPool.Dequeue();
+                        worker?.Dispose();
+                    }
+                    
+                    // Dispose models
+                    foreach (var model in _loadedModels.Values)
+                    {
+                        model?.Dispose();
+                    }
+                    _loadedModels.Clear();
+                    
                     // Clear event handlers
                     _onInitialized = null;
                     _onError = null;
@@ -433,6 +488,10 @@ namespace uPiper.Core
                     
                     // Clear voices
                     _voices.Clear();
+                    
+                    // Clear cache
+                    _phonemeCache.Clear();
+                    _currentCacheSize = 0;
                     
                     _isInitialized = false;
                     _isDisposed = true;
@@ -462,6 +521,92 @@ namespace uPiper.Core
         {
             if (!_isInitialized)
                 throw new InvalidOperationException("PiperTTS is not initialized. Call InitializeAsync first.");
+        }
+        
+        /// <summary>
+        /// Initialize the Inference Engine backend
+        /// </summary>
+        private async Task InitializeInferenceEngineAsync(CancellationToken cancellationToken)
+        {
+            PiperLogger.LogInfo("Initializing Inference Engine backend...");
+            
+            // Map PiperConfig backend to Unity Inference Engine backend
+            _inferenceBackend = _config.Backend switch
+            {
+                InferenceBackend.CPU => BackendType.CPU,
+                InferenceBackend.GPUCompute => BackendType.GPUCompute,
+                InferenceBackend.GPUPixel => BackendType.GPUPixel,
+                InferenceBackend.Auto => BackendType.CPU, // Default to CPU for now
+                _ => BackendType.CPU
+            };
+            
+            // Validate backend is supported
+            var supportedBackends = Worker.GetSupportedBackendTypes();
+            if (!supportedBackends.Contains(_inferenceBackend))
+            {
+                PiperLogger.LogWarning("Backend {0} not supported, falling back to CPU", _inferenceBackend);
+                _inferenceBackend = BackendType.CPU;
+            }
+            
+            PiperLogger.LogInfo("Inference Engine initialized with backend: {0}", _inferenceBackend);
+            
+            // Small delay to simulate async initialization
+            await Task.Delay(10, cancellationToken);
+        }
+        
+        /// <summary>
+        /// Initialize worker thread pool
+        /// </summary>
+        private async Task InitializeWorkerPoolAsync(CancellationToken cancellationToken)
+        {
+            PiperLogger.LogInfo("Initializing worker pool with {0} threads", _config.WorkerThreads);
+            
+            // Worker pool initialization will be implemented when we have actual models
+            // For now, just log the intention
+            await Task.Delay(10, cancellationToken);
+            
+            PiperLogger.LogInfo("Worker pool initialization completed");
+        }
+        
+        /// <summary>
+        /// Validate runtime environment
+        /// </summary>
+        private void ValidateRuntimeEnvironment()
+        {
+            PiperLogger.LogInfo("Validating runtime environment...");
+            
+            // Check Unity version
+            var unityVersion = Application.unityVersion;
+            PiperLogger.LogInfo("Unity version: {0}", unityVersion);
+            
+            // Check platform
+            var platform = Application.platform;
+            PiperLogger.LogInfo("Platform: {0}", platform);
+            
+            // Check if running in editor
+            if (Application.isEditor)
+            {
+                PiperLogger.LogInfo("Running in Unity Editor");
+            }
+            
+            // Check system info
+            PiperLogger.LogInfo("System Memory: {0}MB", SystemInfo.systemMemorySize);
+            PiperLogger.LogInfo("Processor Count: {0}", SystemInfo.processorCount);
+            PiperLogger.LogInfo("Graphics Device: {0}", SystemInfo.graphicsDeviceName);
+        }
+        
+        /// <summary>
+        /// Initialize cache system
+        /// </summary>
+        private void InitializeCacheSystem()
+        {
+            PiperLogger.LogInfo("Initializing cache system with max size: {0}MB", _config.MaxCacheSizeMB);
+            
+            // Clear any existing cache
+            _phonemeCache.Clear();
+            _currentCacheSize = 0;
+            
+            PiperLogger.LogInfo("Cache system initialized");
         }
 
         #endregion
