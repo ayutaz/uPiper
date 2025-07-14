@@ -142,6 +142,13 @@ jobs:
           CodeCoverage/**
         retention-days: 7
     
+    # XMLパース用ツールをインストール
+    - name: Install XML tools
+      if: always()
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libxml2-utils bc
+        
     # コードカバレッジチェック
     - name: Check Code Coverage
       if: always()
@@ -164,6 +171,8 @@ jobs:
         if [ -f "$coverage_file" ]; then
           echo "### Code Coverage Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage report found at: $coverage_file" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           
           # XMLからカバレッジ情報を抽出
           if command -v xmllint &> /dev/null; then
@@ -174,17 +183,31 @@ jobs:
             line_percent=$(echo "scale=1; $line_coverage * 100" | bc 2>/dev/null || echo "0")
             branch_percent=$(echo "scale=1; $branch_coverage * 100" | bc 2>/dev/null || echo "0")
             
-            echo "- Line Coverage: $line_percent%" >> $GITHUB_STEP_SUMMARY
-            echo "- Branch Coverage: $branch_percent%" >> $GITHUB_STEP_SUMMARY
+            echo "📋 **Coverage Results:**" >> $GITHUB_STEP_SUMMARY
+            echo "- **Line Coverage**: $line_percent%" >> $GITHUB_STEP_SUMMARY
+            echo "- **Branch Coverage**: $branch_percent%" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # カバレッジが低い場合の警告
+            if (( $(echo "$line_percent < 50" | bc -l) )); then
+              echo "⚠️ **Warning**: Line coverage is below 50%" >> $GITHUB_STEP_SUMMARY
+            fi
             
             # カバレッジバッジデータを環境変数に保存
             echo "LINE_COVERAGE=$line_percent" >> $GITHUB_ENV
             echo "BRANCH_COVERAGE=$branch_percent" >> $GITHUB_ENV
           else
-            echo "xmllint not available, skipping coverage parsing" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Error**: xmllint not available, cannot parse coverage data" >> $GITHUB_STEP_SUMMARY
+            echo "Please check if XML tools are properly installed" >> $GITHUB_STEP_SUMMARY
           fi
         else
-          echo "Coverage report not found at: $coverage_file" >> $GITHUB_STEP_SUMMARY
+          echo "❌ **Error**: Coverage report not found" >> $GITHUB_STEP_SUMMARY
+          echo "Expected location: $coverage_file" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Available coverage files:" >> $GITHUB_STEP_SUMMARY
+          find . -name "*coverage*.xml" -o -name "*Coverage*.xml" | head -10 | while read f; do
+            echo "- $f" >> $GITHUB_STEP_SUMMARY
+          done
         fi
         
     # Codecovにカバレッジをアップロード
