@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<test-run id="2" testcasecount="2" result="Passed" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2025-07-14 16:21:30Z" end-time="2025-07-14 16:21:30Z" duration="0.0469645">
-  <test-suite type="TestSuite" id="1000" name="uPiper" fullname="uPiper" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:21:30Z" end-time="2025-07-14 16:21:30Z" duration="0.046965" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+<test-run id="2" testcasecount="2" result="Passed" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2025-07-14 16:40:00Z" end-time="2025-07-14 16:40:00Z" duration="0.0462385">
+  <test-suite type="TestSuite" id="1000" name="uPiper" fullname="uPiper" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:40:00Z" end-time="2025-07-14 16:40:00Z" duration="0.046239" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
     <properties>
       <property name="platform" value="EditMode" />
     </properties>
-    <test-suite type="Assembly" id="1009" name="uPiper.Tests.Editor.dll" fullname="/github/workspace/Library/ScriptAssemblies/uPiper.Tests.Editor.dll" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:21:30Z" end-time="2025-07-14 16:21:30Z" duration="0.040911" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <test-suite type="Assembly" id="1009" name="uPiper.Tests.Editor.dll" fullname="/github/workspace/Library/ScriptAssemblies/uPiper.Tests.Editor.dll" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:40:00Z" end-time="2025-07-14 16:40:00Z" duration="0.040294" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
       <properties>
-        <property name="_PID" value="2245" />
+        <property name="_PID" value="2226" />
         <property name="_APPDOMAIN" value="Unity Child Domain" />
         <property name="platform" value="EditMode" />
         <property name="EditorOnly" value="True" />
       </properties>
-      <test-suite type="TestSuite" id="1010" name="uPiper" fullname="uPiper" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:21:30Z" end-time="2025-07-14 16:21:30Z" duration="0.040390" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <test-suite type="TestSuite" id="1010" name="uPiper" fullname="uPiper" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:40:00Z" end-time="2025-07-14 16:40:00Z" duration="0.039687" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
         <properties />
-        <test-suite type="TestSuite" id="1011" name="Tests" fullname="uPiper.Tests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:21:30Z" end-time="2025-07-14 16:21:30Z" duration="0.040111" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <test-suite type="TestSuite" id="1011" name="Tests" fullname="uPiper.Tests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:40:00Z" end-time="2025-07-14 16:40:00Z" duration="0.039411" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
           <properties />
-          <test-suite type="TestSuite" id="1012" name="Editor" fullname="uPiper.Tests.Editor" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:21:30Z" end-time="2025-07-14 16:21:30Z" duration="0.039703" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <test-suite type="TestSuite" id="1012" name="Editor" fullname="uPiper.Tests.Editor" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:40:00Z" end-time="2025-07-14 16:40:00Z" duration="0.039074" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
             <properties />
-            <test-suite type="TestFixture" id="1006" name="InferenceEngineEditorTest" fullname="uPiper.Tests.Editor.InferenceEngineEditorTest" classname="uPiper.Tests.Editor.InferenceEngineEditorTest" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:21:30Z" end-time="2025-07-14 16:21:30Z" duration="0.038498" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestFixture" id="1006" name="InferenceEngineEditorTest" fullname="uPiper.Tests.Editor.InferenceEngineEditorTest" classname="uPiper.Tests.Editor.InferenceEngineEditorTest" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:40:00Z" end-time="2025-07-14 16:40:00Z" duration="0.037833" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
               <properties />
-              <test-case id="1008" name="CheckBurstPackageVersion" fullname="uPiper.Tests.Editor.InferenceEngineEditorTest.CheckBurstPackageVersion" methodname="CheckBurstPackageVersion" classname="uPiper.Tests.Editor.InferenceEngineEditorTest" runstate="Runnable" seed="1572792614" result="Passed" start-time="2025-07-14 16:21:30Z" end-time="2025-07-14 16:21:30Z" duration="0.016622" asserts="0">
+              <test-case id="1008" name="CheckBurstPackageVersion" fullname="uPiper.Tests.Editor.InferenceEngineEditorTest.CheckBurstPackageVersion" methodname="CheckBurstPackageVersion" classname="uPiper.Tests.Editor.InferenceEngineEditorTest" runstate="Runnable" seed="562639871" result="Passed" start-time="2025-07-14 16:40:00Z" end-time="2025-07-14 16:40:00Z" duration="0.016774" asserts="0">
                 <properties>
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
@@ -27,7 +27,7 @@
                 <output><![CDATA[Burst package version: 1.8.20
 ]]></output>
               </test-case>
-              <test-case id="1007" name="CheckInferenceEnginePackageVersion" fullname="uPiper.Tests.Editor.InferenceEngineEditorTest.CheckInferenceEnginePackageVersion" methodname="CheckInferenceEnginePackageVersion" classname="uPiper.Tests.Editor.InferenceEngineEditorTest" runstate="Runnable" seed="479254570" result="Passed" start-time="2025-07-14 16:21:30Z" end-time="2025-07-14 16:21:30Z" duration="0.005111" asserts="0">
+              <test-case id="1007" name="CheckInferenceEnginePackageVersion" fullname="uPiper.Tests.Editor.InferenceEngineEditorTest.CheckInferenceEnginePackageVersion" methodname="CheckInferenceEnginePackageVersion" classname="uPiper.Tests.Editor.InferenceEngineEditorTest" runstate="Runnable" seed="876464392" result="Passed" start-time="2025-07-14 16:40:00Z" end-time="2025-07-14 16:40:00Z" duration="0.005030" asserts="0">
                 <properties>
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
