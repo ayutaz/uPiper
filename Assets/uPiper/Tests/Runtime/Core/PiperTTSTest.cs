@@ -39,6 +39,7 @@ namespace uPiper.Tests.Runtime.Core
             Assert.IsFalse(_piperTTS.IsInitialized);
             Assert.IsFalse(_piperTTS.IsProcessing);
             Assert.IsNull(_piperTTS.CurrentVoiceId);
+            Assert.IsNull(_piperTTS.CurrentVoice);
             Assert.IsEmpty(_piperTTS.AvailableVoices);
         }
         
@@ -68,11 +69,11 @@ namespace uPiper.Tests.Runtime.Core
         {
             // Arrange
             bool eventFired = false;
-            string eventMessage = null;
-            _piperTTS.OnInitialized += msg => 
+            bool eventResult = false;
+            _piperTTS.OnInitialized += result => 
             {
                 eventFired = true;
-                eventMessage = msg;
+                eventResult = result;
             };
             
             // Act
@@ -81,7 +82,7 @@ namespace uPiper.Tests.Runtime.Core
             // Assert
             Assert.IsTrue(_piperTTS.IsInitialized);
             Assert.IsTrue(eventFired);
-            Assert.AreEqual("Initialization completed", eventMessage);
+            Assert.IsTrue(eventResult);
         });
         
         [UnityTest]
@@ -131,12 +132,27 @@ namespace uPiper.Tests.Runtime.Core
                 SampleRate = 22050
             };
             
+            bool eventFired = false;
+            PiperVoiceConfig loadedVoice = null;
+            _piperTTS.OnVoiceLoaded += v =>
+            {
+                eventFired = true;
+                loadedVoice = v;
+            };
+            
             // Act
             await _piperTTS.LoadVoiceAsync(voice);
             
             // Assert
             Assert.Contains("test-voice", _piperTTS.AvailableVoices.ToList());
             Assert.AreEqual("test-voice", _piperTTS.CurrentVoiceId); // First loaded voice becomes current
+            Assert.IsTrue(eventFired);
+            Assert.AreEqual(voice.VoiceId, loadedVoice.VoiceId);
+            
+            // Check GetAvailableVoices()
+            var availableVoices = _piperTTS.GetAvailableVoices();
+            Assert.AreEqual(1, availableVoices.Count);
+            Assert.AreEqual("test-voice", availableVoices[0].VoiceId);
         });
         
         [UnityTest]
@@ -345,6 +361,72 @@ namespace uPiper.Tests.Runtime.Core
             Assert.Greater(chunks.Count, 0);
             Assert.IsTrue(chunks.Last().IsLastChunk);
             Assert.AreEqual(22050, chunks.First().SampleRate);
+        });
+        
+        [UnityTest]
+        public async Task GenerateAudioAsync_WithVoiceConfig_Overload() => await UniTask.Run(async () =>
+        {
+            // Arrange
+            await _piperTTS.InitializeAsync();
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-voice-2",
+                ModelPath = "test2.onnx",
+                Language = "en",
+                SampleRate = 16000
+            };
+            
+            // Act
+            var audioClip = await _piperTTS.GenerateAudioAsync("Hello", voice);
+            
+            // Assert
+            Assert.IsNotNull(audioClip);
+            Assert.AreEqual(16000, audioClip.frequency); // Should use the provided voice's sample rate
+        });
+        
+        [UnityTest]
+        public async Task GenerateAudio_WithVoiceConfig_Overload() => await UniTask.Run(async () =>
+        {
+            // Arrange
+            await _piperTTS.InitializeAsync();
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-voice-3",
+                ModelPath = "test3.onnx",
+                Language = "en",
+                SampleRate = 44100
+            };
+            
+            // Act
+            var audioClip = _piperTTS.GenerateAudio("Test", voice);
+            
+            // Assert
+            Assert.IsNotNull(audioClip);
+        });
+        
+        [UnityTest]
+        public async Task StreamAudioAsync_WithVoiceConfig_Overload() => await UniTask.Run(async () =>
+        {
+            // Arrange
+            await _piperTTS.InitializeAsync();
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-voice-4",
+                ModelPath = "test4.onnx",
+                Language = "ja",
+                SampleRate = 48000
+            };
+            
+            // Act
+            var chunks = new List<AudioChunk>();
+            await foreach (var chunk in _piperTTS.StreamAudioAsync("Test", voice))
+            {
+                chunks.Add(chunk);
+            }
+            
+            // Assert
+            Assert.Greater(chunks.Count, 0);
+            Assert.AreEqual(48000, chunks.First().SampleRate);
         });
         
         #endregion
