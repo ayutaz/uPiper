@@ -2,15 +2,16 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using uPiper.Core.Logging;
+using TMPro;
 
 namespace uPiper.Samples.WebGLDemo
 {
     public class WebGLDemoUI : MonoBehaviour
     {
         [Header("UI Elements")]
-        [SerializeField] private InputField textInput;
+        [SerializeField] private TMP_InputField textInput;
         [SerializeField] private Button generateButton;
-        [SerializeField] private Text statusText;
+        [SerializeField] private TextMeshProUGUI statusText;
         [SerializeField] private Slider progressSlider;
         [SerializeField] private AudioSource audioSource;
 

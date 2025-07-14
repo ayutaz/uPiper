@@ -1,0 +1,17 @@
+{
+    "name": "uPiper.Samples.WebGLDemo",
+    "rootNamespace": "uPiper.Samples.WebGLDemo",
+    "references": [
+        "uPiper.Runtime",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
