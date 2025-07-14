@@ -39,7 +39,8 @@ jobs:
         unityVersion: 6000.0.35f1
         testMode: all
         artifactsPath: test-results
-        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport'
+        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.Runtime,+uPiper.Scripts.Runtime,-uPiper.Tests*'
+        customParameters: '-enableCodeCoverage'
         
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
@@ -138,5 +139,105 @@ jobs:
       with:
         name: Coverage Report
         path: |
-          test-results/CodeCoverage/**
+          CodeCoverage/**
         retention-days: 7
+    
+    # XMLパース用ツールをインストール
+    - name: Install XML tools
+      if: always()
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libxml2-utils bc
+        
+    # コードカバレッジチェック
+    - name: Check Code Coverage
+      if: always()
+      run: |
+        # カバレッジサマリーファイルを探す
+        echo "=== Looking for coverage files ==="
+        find . -name "*.xml" -type f | grep -i coverage || echo "No coverage files found"
+        echo "=== Coverage directory structure ==="
+        ls -la CodeCoverage/ 2>/dev/null || echo "CodeCoverage directory not found"
+        
+        # Unity Code CoverageはOpenCover形式のXMLを生成
+        # TestCoverageResults_*.xmlファイルを探す
+        coverage_file=$(find CodeCoverage -name "TestCoverageResults_*.xml" -type f | head -1)
+        
+        # ファイルが見つからない場合、Summary.xmlを探す
+        if [ -z "$coverage_file" ] || [ ! -f "$coverage_file" ]; then
+          coverage_file="CodeCoverage/Report/Summary.xml"
+        fi
+        
+        echo "Looking for coverage file: $coverage_file"
+        
+        if [ -f "$coverage_file" ]; then
+          echo "### Code Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📁 Coverage file: \`$coverage_file\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # XMLからカバレッジ情報を抽出
+          if command -v xmllint &> /dev/null; then
+            # 名前空間を無視してXPathを使用
+            line_coverage=$(xmllint --xpath "string(//*[local-name()='CoverageSession']/*[local-name()='Summary']/@sequenceCoverage)" "$coverage_file" 2>/dev/null || echo "")
+            branch_coverage=$(xmllint --xpath "string(//*[local-name()='CoverageSession']/*[local-name()='Summary']/@branchCoverage)" "$coverage_file" 2>/dev/null || echo "")
+            
+            # 値が取得できない場合のデバッグ
+            if [ -z "$line_coverage" ]; then
+              echo "⚠️ Debug: Could not find coverage attributes" >> $GITHUB_STEP_SUMMARY
+              echo "<details><summary>XML structure (first 30 lines)</summary>" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`xml" >> $GITHUB_STEP_SUMMARY
+              xmllint --format "$coverage_file" 2>/dev/null | head -30 >> $GITHUB_STEP_SUMMARY || echo "Could not display XML" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              echo "</details>" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              line_coverage="0"
+            fi
+            
+            if [ -z "$branch_coverage" ]; then
+              branch_coverage="0"
+            fi
+            
+            # Unity Code Coverageは既にパーセンテージ形式なのでそのまま使用
+            line_percent=$line_coverage
+            branch_percent=$branch_coverage
+            
+            echo "📋 **Coverage Results:**" >> $GITHUB_STEP_SUMMARY
+            echo "- **Line Coverage**: $line_percent%" >> $GITHUB_STEP_SUMMARY
+            echo "- **Branch Coverage**: $branch_percent%" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # カバレッジが低い場合の警告
+            if (( $(echo "$line_percent < 50" | bc -l) )); then
+              echo "⚠️ **Warning**: Line coverage is below 50%" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # カバレッジバッジデータを環境変数に保存
+            echo "LINE_COVERAGE=$line_percent" >> $GITHUB_ENV
+            echo "BRANCH_COVERAGE=$branch_percent" >> $GITHUB_ENV
+          else
+            echo "❌ **Error**: xmllint not available, cannot parse coverage data" >> $GITHUB_STEP_SUMMARY
+            echo "Please check if XML tools are properly installed" >> $GITHUB_STEP_SUMMARY
+          fi
+        else
+          echo "❌ **Error**: Coverage report not found" >> $GITHUB_STEP_SUMMARY
+          echo "Expected location: $coverage_file" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Available coverage files:" >> $GITHUB_STEP_SUMMARY
+          find . -name "*coverage*.xml" -o -name "*Coverage*.xml" | head -10 | while read f; do
+            echo "- $f" >> $GITHUB_STEP_SUMMARY
+          done
+        fi
+        
+    # Codecovにカバレッジをアップロード
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: always()
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        directory: ./
+        files: 'CodeCoverage/**/*.xml'
+        flags: unittests
+        name: uPiper
+        fail_ci_if_error: false
