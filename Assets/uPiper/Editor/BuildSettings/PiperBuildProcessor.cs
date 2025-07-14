@@ -58,7 +58,8 @@ namespace uPiper.Editor.BuildSettings
             
             // WebGL固有の設定
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
-            PlayerSettings.WebGL.template = "PROJECT:Minimal";
+            // Unity 6ではデフォルトテンプレートを使用
+            PlayerSettings.WebGL.template = "APPLICATION:Default";
             
             // メモリサイズの設定（ONNXモデルのため大きめに）
             PlayerSettings.WebGL.memorySize = 512;
