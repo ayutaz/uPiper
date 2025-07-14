@@ -135,18 +135,55 @@ namespace uPiper.Editor
             var image = infoPanel.AddComponent<UnityEngine.UI.Image>();
             image.color = new Color(0.2f, 0.2f, 0.2f, 0.9f);
             
-            // Info Text
+            // Info Text (TextMeshProを使用)
             GameObject textObj = new GameObject("InfoText");
             textObj.transform.SetParent(infoPanel.transform, false);
             
-            var text = textObj.AddComponent<UnityEngine.UI.Text>();
-            text.text = "uPiper WebGL Demo\n\n" +
-                       "このシーンはWebGLデモ用のシーンです。\n\n" +
-                       "実際のTTS機能は Phase 1.2 で実装予定です。\n\n" +
-                       "現在は UI レイアウトのプレビューのみ表示されています。";
-            text.fontSize = 24;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.color = Color.white;
+            // TextMeshProUGUIを動的に作成
+            var textType = System.Type.GetType("TMPro.TextMeshProUGUI, Unity.TextMeshPro");
+            if (textType != null)
+            {
+                var text = textObj.AddComponent(textType);
+                
+                // リフレクションでプロパティを設定
+                var textProp = textType.GetProperty("text");
+                textProp?.SetValue(text, "uPiper WebGL Demo\n\n" +
+                           "このシーンはWebGLデモ用のシーンです。\n\n" +
+                           "実際のTTS機能は Phase 1.2 で実装予定です。\n\n" +
+                           "現在は UI レイアウトのプレビューのみ表示されています。");
+                
+                var fontSizeProp = textType.GetProperty("fontSize");
+                fontSizeProp?.SetValue(text, 24f);
+                
+                var alignmentProp = textType.GetProperty("alignment");
+                if (alignmentProp != null)
+                {
+                    // TextAlignmentOptions.Center の値を設定
+                    var alignmentType = System.Type.GetType("TMPro.TextAlignmentOptions, Unity.TextMeshPro");
+                    if (alignmentType != null)
+                    {
+                        var centerValue = System.Enum.Parse(alignmentType, "Center");
+                        alignmentProp.SetValue(text, centerValue);
+                    }
+                }
+                
+                var colorProp = textType.GetProperty("color");
+                colorProp?.SetValue(text, Color.white);
+            }
+            else
+            {
+                // TextMeshProが利用できない場合はLegacy Textを使用
+                var text = textObj.AddComponent<UnityEngine.UI.Text>();
+                text.text = "uPiper WebGL Demo\n\n" +
+                           "このシーンはWebGLデモ用のシーンです。\n\n" +
+                           "実際のTTS機能は Phase 1.2 で実装予定です。\n\n" +
+                           "現在は UI レイアウトのプレビューのみ表示されています。";
+                text.fontSize = 24;
+                text.alignment = TextAnchor.MiddleCenter;
+                text.color = Color.white;
+                
+                Debug.LogWarning("[uPiper] TextMeshPro not found. Using legacy Text component.");
+            }
             
             var textRect = textObj.GetComponent<RectTransform>();
             textRect.anchorMin = Vector2.zero;
