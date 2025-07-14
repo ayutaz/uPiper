@@ -565,13 +565,15 @@ namespace uPiper.Core
                         audioData[i] = 0f; // Silence for now
                     }
                     
-                    var chunk = new AudioChunk
-                    {
-                        Data = audioData,
-                        SampleRate = _config.SampleRate,
-                        Channels = 1,
-                        IsLastChunk = (processedSentences == totalSentences - 1)
-                    };
+                    var chunk = new AudioChunk(
+                        samples: audioData,
+                        sampleRate: _config.SampleRate,
+                        channels: 1,
+                        chunkIndex: processedSentences,
+                        isFinal: (processedSentences == totalSentences - 1),
+                        textSegment: sentence,
+                        startTime: processedSentences * 0.1f
+                    );
                     
                     processedSentences++;
                     _onProcessingProgress?.Invoke((float)processedSentences / totalSentences);
@@ -819,14 +821,16 @@ namespace uPiper.Core
             
             lock (_lockObject)
             {
-                return new CacheStatistics
+                var stats = new CacheStatistics
                 {
-                    TotalItems = _phonemeCache.Count,
+                    EntryCount = _phonemeCache.Count,
                     TotalSizeBytes = _currentCacheSize,
                     HitCount = 0, // TODO: Track hits
                     MissCount = 0, // TODO: Track misses
-                    EvictionCount = 0 // TODO: Track evictions
+                    EvictionCount = 0, // TODO: Track evictions
+                    MaxSizeBytes = _config.MaxCacheSizeMB * 1024L * 1024L
                 };
+                return stats;
             }
         }
 
@@ -894,11 +898,7 @@ namespace uPiper.Core
                         worker?.Dispose();
                     }
                     
-                    // Dispose models
-                    foreach (var model in _loadedModels.Values)
-                    {
-                        model?.Dispose();
-                    }
+                    // Clear models (Model doesn't have Dispose method)
                     _loadedModels.Clear();
                     
                     // Clear event handlers
@@ -961,13 +961,8 @@ namespace uPiper.Core
                 _ => BackendType.CPU
             };
             
-            // Validate backend is supported
-            var supportedBackends = Worker.GetSupportedBackendTypes();
-            if (!supportedBackends.Contains(_inferenceBackend))
-            {
-                PiperLogger.LogWarning("Backend {0} not supported, falling back to CPU", _inferenceBackend);
-                _inferenceBackend = BackendType.CPU;
-            }
+            // For now, just log the selected backend
+            // TODO: Add backend validation when Worker API is available
             
             PiperLogger.LogInfo("Inference Engine initialized with backend: {0}", _inferenceBackend);
             
