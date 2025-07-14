@@ -38,6 +38,9 @@ namespace uPiper.Core
         // Cache system
         private readonly Dictionary<string, byte[]> _phonemeCache;
         private long _currentCacheSize;
+        private long _cacheHitCount;
+        private long _cacheMissCount;
+        private long _cacheEvictionCount;
 
         #endregion
 
@@ -221,6 +224,9 @@ namespace uPiper.Core
             _workerPool = new Queue<Worker>();
             _phonemeCache = new Dictionary<string, byte[]>();
             _currentCacheSize = 0;
+            _cacheHitCount = 0;
+            _cacheMissCount = 0;
+            _cacheEvictionCount = 0;
             
             // Validate configuration on construction
             _config.Validate();
@@ -428,13 +434,21 @@ namespace uPiper.Core
                 if (_config.EnablePhonemeCache)
                 {
                     var cacheKey = GenerateCacheKey(text, _currentVoiceId);
-                    if (_phonemeCache.ContainsKey(cacheKey))
+                    lock (_lockObject)
                     {
-                        PiperLogger.LogInfo("Cache hit for text");
-                        _onProcessingProgress?.Invoke(1.0f);
-                        
-                        // TODO: Convert cached data to AudioClip
-                        return CreateDummyAudioClip(text);
+                        if (_phonemeCache.ContainsKey(cacheKey))
+                        {
+                            _cacheHitCount++;
+                            PiperLogger.LogInfo("Cache hit for text");
+                            _onProcessingProgress?.Invoke(1.0f);
+                            
+                            // TODO: Convert cached data to AudioClip
+                            return CreateDummyAudioClip(text);
+                        }
+                        else
+                        {
+                            _cacheMissCount++;
+                        }
                     }
                 }
                 
@@ -794,6 +808,7 @@ namespace uPiper.Core
                         var evictedSize = _phonemeCache[firstKey].Length;
                         _phonemeCache.Remove(firstKey);
                         _currentCacheSize -= evictedSize;
+                        _cacheEvictionCount++;
                         PiperLogger.LogInfo("Evicted cache entry to make room");
                     }
                     
@@ -825,9 +840,9 @@ namespace uPiper.Core
                 {
                     EntryCount = _phonemeCache.Count,
                     TotalSizeBytes = _currentCacheSize,
-                    HitCount = 0, // TODO: Track hits
-                    MissCount = 0, // TODO: Track misses
-                    EvictionCount = 0, // TODO: Track evictions
+                    HitCount = _cacheHitCount,
+                    MissCount = _cacheMissCount,
+                    EvictionCount = _cacheEvictionCount,
                     MaxSizeBytes = _config.MaxCacheSizeMB * 1024L * 1024L
                 };
                 return stats;
@@ -913,6 +928,9 @@ namespace uPiper.Core
                     // Clear cache
                     _phonemeCache.Clear();
                     _currentCacheSize = 0;
+                    _cacheHitCount = 0;
+                    _cacheMissCount = 0;
+                    _cacheEvictionCount = 0;
                     
                     _isInitialized = false;
                     _isDisposed = true;
@@ -1021,6 +1039,9 @@ namespace uPiper.Core
             // Clear any existing cache
             _phonemeCache.Clear();
             _currentCacheSize = 0;
+            _cacheHitCount = 0;
+            _cacheMissCount = 0;
+            _cacheEvictionCount = 0;
             
             PiperLogger.LogInfo("Cache system initialized");
         }
@@ -1069,25 +1090,25 @@ namespace uPiper.Core
             
             // Simple sentence splitting (can be improved with proper NLP)
             var sentenceEnders = new[] { '.', '!', '?', '。', '！', '？' };
-            var currentSentence = "";
+            var currentSentence = new System.Text.StringBuilder();
             
             foreach (char c in text)
             {
-                currentSentence += c;
+                currentSentence.Append(c);
                 
                 if (sentenceEnders.Contains(c))
                 {
-                    var trimmed = currentSentence.Trim();
+                    var trimmed = currentSentence.ToString().Trim();
                     if (!string.IsNullOrEmpty(trimmed))
                     {
                         sentences.Add(trimmed);
                     }
-                    currentSentence = "";
+                    currentSentence.Clear();
                 }
             }
             
             // Add any remaining text
-            var remaining = currentSentence.Trim();
+            var remaining = currentSentence.ToString().Trim();
             if (!string.IsNullOrEmpty(remaining))
             {
                 sentences.Add(remaining);
