@@ -58,6 +58,9 @@ namespace uPiper.Editor
                 EditorSceneManager.OpenScene(tempPath);
                 Debug.Log($"[uPiper] Opened WebGL Demo Scene (temporary copy)");
                 
+                // シーンにセットアップコンポーネントを追加
+                SetupDemoScene();
+                
                 // Build Settingsへの追加は手動で行うように案内
                 if (!IsSceneInBuildSettings(WEBGL_DEMO_SCENE_PATH))
                 {
@@ -94,6 +97,18 @@ namespace uPiper.Editor
                     Debug.Log($"[uPiper] Added {path} to .gitignore");
                 }
             }
+        }
+        
+        private static void SetupDemoScene()
+        {
+            // SetupGameObjectを作成
+            GameObject setupObj = new GameObject("_SceneSetup");
+            var setupComponent = setupObj.AddComponent<uPiper.Samples.WebGLDemo.WebGLDemoSceneSetup>();
+            
+            // セットアップを実行
+            setupComponent.SetupScene();
+            
+            Debug.Log($"[uPiper] Demo scene UI setup completed");
         }
         
         private static bool IsSceneInBuildSettings(string scenePath)
