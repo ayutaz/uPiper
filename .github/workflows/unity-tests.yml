@@ -62,8 +62,8 @@ jobs:
         artifactsPath: test-results
         githubToken: ${{ github.token }}
         checkName: Unity Test Results
-        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.Runtime,+uPiper.Scripts.Runtime,-uPiper.Tests*'
-        customParameters: '-enableCodeCoverage -runTests -testPlatform playmode -testPlatform editmode'
+        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.*,-uPiper.Tests.*'
+        customParameters: '-enableCodeCoverage'
         
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
@@ -152,6 +152,7 @@ jobs:
         name: Coverage Report
         path: |
           CodeCoverage/**
+          test-results/**/CodeCoverage/**
         retention-days: 7
     
     # XMLパース用ツールをインストール
@@ -172,10 +173,15 @@ jobs:
         ls -la CodeCoverage/ 2>/dev/null || echo "CodeCoverage directory not found"
         
         # Unity Code CoverageはOpenCover形式のXMLを生成
-        # TestCoverageResults_*.xmlファイルを探す
-        coverage_file=$(find CodeCoverage -name "TestCoverageResults_*.xml" -type f | head -1)
+        # game-ci/unity-test-runnerはワークスペース内に出力する
+        coverage_file=$(find . -path "./CodeCoverage/*" -name "TestCoverageResults_*.xml" -type f | head -1)
         
-        # ファイルが見つからない場合、Summary.xmlを探す
+        # ファイルが見つからない場合、test-resultsディレクトリ内も探す
+        if [ -z "$coverage_file" ] || [ ! -f "$coverage_file" ]; then
+          coverage_file=$(find test-results -name "*Coverage*.xml" -type f | head -1)
+        fi
+        
+        # それでも見つからない場合、デフォルトパスを試す
         if [ -z "$coverage_file" ] || [ ! -f "$coverage_file" ]; then
           coverage_file="CodeCoverage/Report/Summary.xml"
         fi
