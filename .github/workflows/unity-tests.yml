@@ -28,6 +28,20 @@ jobs:
         restore-keys: |
           Library-
           
+    # プロジェクト構造をデバッグ
+    - name: Debug Project Structure
+      run: |
+        echo "Current directory: $(pwd)"
+        echo "GitHub Workspace: ${{ github.workspace }}"
+        echo "Directory contents:"
+        ls -la
+        echo ""
+        echo "Assets directory:"
+        ls -la Assets/ || echo "Assets directory not found"
+        echo ""
+        echo "ProjectSettings directory:"
+        ls -la ProjectSettings/ || echo "ProjectSettings directory not found"
+        
     # Unity 6対応 - game-ci/unity-test-runnerを使用
     - name: Run Unity Tests
       uses: game-ci/unity-test-runner@v4
@@ -37,11 +51,10 @@ jobs:
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
         unityVersion: 6000.0.35f1
-        projectPath: ${{ github.workspace }}
         testMode: all
         artifactsPath: test-results
         coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.Runtime,+uPiper.Scripts.Runtime,-uPiper.Tests*'
-        customParameters: '-enableCodeCoverage -projectPath ${{ github.workspace }}'
+        customParameters: '-enableCodeCoverage'
         
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
