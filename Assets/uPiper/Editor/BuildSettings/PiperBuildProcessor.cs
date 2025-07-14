@@ -64,10 +64,7 @@ namespace uPiper.Editor.BuildSettings
             // メモリサイズの設定（ONNXモデルのため大きめに）
             PlayerSettings.WebGL.memorySize = 512;
             
-            // WebAssemblyストリーミングを有効化
-            #if UNITY_2021_2_OR_NEWER
-            PlayerSettings.WebGL.wasmArithmeticExceptions = WebGLWasmArithmeticExceptions.Throw;
-            #endif
+            // Unity 6ではWebAssembly算術例外は常に無視される
         }
 
         private void ConfigureWindowsBuild()
@@ -75,7 +72,7 @@ namespace uPiper.Editor.BuildSettings
             PiperLogger.LogInfo("[PiperBuildProcessor] Configuring Windows build settings");
             
             // Windows固有の設定
-            PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.Standalone, ApiCompatibilityLevel.NET_Standard);
+            PlayerSettings.SetApiCompatibilityLevel(UnityEditor.Build.NamedBuildTarget.Standalone, ApiCompatibilityLevel.NET_Standard);
         }
 
         private void ConfigureMacOSBuild()
@@ -91,7 +88,7 @@ namespace uPiper.Editor.BuildSettings
             PiperLogger.LogInfo("[PiperBuildProcessor] Configuring Linux build settings");
             
             // Linux固有の設定
-            PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.Standalone, ApiCompatibilityLevel.NET_Standard);
+            PlayerSettings.SetApiCompatibilityLevel(UnityEditor.Build.NamedBuildTarget.Standalone, ApiCompatibilityLevel.NET_Standard);
         }
 
         private void ValidateONNXModels()
