@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
-using uPiper.Core;
+using uPiper.Core.Logging;
 
 namespace uPiper.Samples.WebGLDemo
 {
