@@ -101,14 +101,60 @@ namespace uPiper.Editor
         
         private static void SetupDemoScene()
         {
-            // SetupGameObjectを作成
-            GameObject setupObj = new GameObject("_SceneSetup");
-            var setupComponent = setupObj.AddComponent<uPiper.Samples.WebGLDemo.WebGLDemoSceneSetup>();
+            Debug.Log("[uPiper] Setting up WebGL demo scene UI...");
             
-            // セットアップを実行
-            setupComponent.SetupScene();
+            // Canvas を作成
+            GameObject canvasObj = GameObject.Find("Canvas");
+            if (canvasObj == null)
+            {
+                canvasObj = new GameObject("Canvas");
+                var canvas = canvasObj.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+                canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+            }
+
+            // EventSystem を作成
+            if (GameObject.Find("EventSystem") == null)
+            {
+                GameObject eventSystem = new GameObject("EventSystem");
+                eventSystem.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                eventSystem.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+
+            // Demo Info Panel を作成
+            GameObject infoPanel = new GameObject("DemoInfoPanel");
+            infoPanel.transform.SetParent(canvasObj.transform, false);
             
-            Debug.Log($"[uPiper] Demo scene UI setup completed");
+            var rectTransform = infoPanel.AddComponent<RectTransform>();
+            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            rectTransform.sizeDelta = new Vector2(600, 400);
+            rectTransform.anchoredPosition = Vector2.zero;
+            
+            var image = infoPanel.AddComponent<UnityEngine.UI.Image>();
+            image.color = new Color(0.2f, 0.2f, 0.2f, 0.9f);
+            
+            // Info Text
+            GameObject textObj = new GameObject("InfoText");
+            textObj.transform.SetParent(infoPanel.transform, false);
+            
+            var text = textObj.AddComponent<UnityEngine.UI.Text>();
+            text.text = "uPiper WebGL Demo\n\n" +
+                       "このシーンはWebGLデモ用のシーンです。\n\n" +
+                       "実際のTTS機能は Phase 1.2 で実装予定です。\n\n" +
+                       "現在は UI レイアウトのプレビューのみ表示されています。";
+            text.fontSize = 24;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = Color.white;
+            
+            var textRect = textObj.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.sizeDelta = new Vector2(-40, -40);
+            textRect.anchoredPosition = Vector2.zero;
+            
+            Debug.Log("[uPiper] Demo scene UI setup completed");
         }
         
         private static bool IsSceneInBuildSettings(string scenePath)
