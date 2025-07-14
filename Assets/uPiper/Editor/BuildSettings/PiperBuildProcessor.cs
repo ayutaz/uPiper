@@ -4,6 +4,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using System.IO;
 using System.Linq;
+using uPiper.Core.Logging;
 
 namespace uPiper.Editor.BuildSettings
 {
@@ -63,7 +64,9 @@ namespace uPiper.Editor.BuildSettings
             PlayerSettings.WebGL.memorySize = 512;
             
             // WebAssemblyストリーミングを有効化
+            #if UNITY_2021_2_OR_NEWER
             PlayerSettings.WebGL.wasmArithmeticExceptions = WebGLWasmArithmeticExceptions.Throw;
+            #endif
         }
 
         private void ConfigureWindowsBuild()
@@ -71,7 +74,7 @@ namespace uPiper.Editor.BuildSettings
             PiperLogger.LogInfo("[PiperBuildProcessor] Configuring Windows build settings");
             
             // Windows固有の設定
-            PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.Standalone, ApiCompatibilityLevel.NET_Standard_2_1);
+            PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.Standalone, ApiCompatibilityLevel.NET_Standard);
         }
 
         private void ConfigureMacOSBuild()
@@ -87,7 +90,7 @@ namespace uPiper.Editor.BuildSettings
             PiperLogger.LogInfo("[PiperBuildProcessor] Configuring Linux build settings");
             
             // Linux固有の設定
-            PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.Standalone, ApiCompatibilityLevel.NET_Standard_2_1);
+            PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.Standalone, ApiCompatibilityLevel.NET_Standard);
         }
 
         private void ValidateONNXModels()
