@@ -159,29 +159,49 @@ jobs:
         echo "=== Coverage directory structure ==="
         ls -la CodeCoverage/ 2>/dev/null || echo "CodeCoverage directory not found"
         
-        coverage_file="CodeCoverage/Report/Summary.xml"
-        # 他の可能なパスも試す
-        if [ ! -f "$coverage_file" ]; then
-          coverage_file=$(find CodeCoverage -name "Summary.xml" -type f | head -1)
+        # Unity Code CoverageはOpenCover形式のXMLを生成
+        # TestCoverageResults_*.xmlファイルを探す
+        coverage_file=$(find CodeCoverage -name "TestCoverageResults_*.xml" -type f | head -1)
+        
+        # ファイルが見つからない場合、Summary.xmlを探す
+        if [ -z "$coverage_file" ] || [ ! -f "$coverage_file" ]; then
+          coverage_file="CodeCoverage/Report/Summary.xml"
         fi
-        if [ ! -f "$coverage_file" ]; then
-          coverage_file=$(find . -name "*TestCoverageResults*.xml" -type f | head -1)
-        fi
+        
+        echo "Looking for coverage file: $coverage_file"
         
         if [ -f "$coverage_file" ]; then
           echo "### Code Coverage Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Coverage report found at: $coverage_file" >> $GITHUB_STEP_SUMMARY
+          echo "📁 Coverage file: \`$coverage_file\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           # XMLからカバレッジ情報を抽出
           if command -v xmllint &> /dev/null; then
-            line_coverage=$(xmllint --xpath "string(//CoverageSession/Summary/@sequenceCoverage)" "$coverage_file" 2>/dev/null || echo "0")
-            branch_coverage=$(xmllint --xpath "string(//CoverageSession/Summary/@branchCoverage)" "$coverage_file" 2>/dev/null || echo "0")
+            # 名前空間を無視してXPathを使用
+            line_coverage=$(xmllint --xpath "string(//*[local-name()='CoverageSession']/*[local-name()='Summary']/@sequenceCoverage)" "$coverage_file" 2>/dev/null || echo "")
+            branch_coverage=$(xmllint --xpath "string(//*[local-name()='CoverageSession']/*[local-name()='Summary']/@branchCoverage)" "$coverage_file" 2>/dev/null || echo "")
             
-            # パーセンテージに変換（0-1の値を0-100に）
-            line_percent=$(echo "scale=1; $line_coverage * 100" | bc 2>/dev/null || echo "0")
-            branch_percent=$(echo "scale=1; $branch_coverage * 100" | bc 2>/dev/null || echo "0")
+            # 値が取得できない場合のデバッグ
+            if [ -z "$line_coverage" ]; then
+              echo "⚠️ Debug: Could not find coverage attributes" >> $GITHUB_STEP_SUMMARY
+              echo "<details><summary>XML structure (first 30 lines)</summary>" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`xml" >> $GITHUB_STEP_SUMMARY
+              xmllint --format "$coverage_file" 2>/dev/null | head -30 >> $GITHUB_STEP_SUMMARY || echo "Could not display XML" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              echo "</details>" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              line_coverage="0"
+            fi
+            
+            if [ -z "$branch_coverage" ]; then
+              branch_coverage="0"
+            fi
+            
+            # Unity Code Coverageは既にパーセンテージ形式なのでそのまま使用
+            line_percent=$line_coverage
+            branch_percent=$branch_coverage
             
             echo "📋 **Coverage Results:**" >> $GITHUB_STEP_SUMMARY
             echo "- **Line Coverage**: $line_percent%" >> $GITHUB_STEP_SUMMARY
