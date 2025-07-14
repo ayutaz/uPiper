@@ -21,14 +21,56 @@ namespace uPiper.Editor
                 return;
             }
 
-            // Samples~内のシーンを直接開く
+            // Tempディレクトリにコピーして開く（差分を避けるため）
+            string tempPath = "Assets/Temp/WebGLDemoScene_Temp.unity";
+            
             if (File.Exists(WEBGL_DEMO_SCENE_PATH))
             {
-                EditorSceneManager.OpenScene(WEBGL_DEMO_SCENE_PATH);
-                Debug.Log($"[uPiper] Opened WebGL Demo Scene");
+                // Tempディレクトリを作成
+                string tempDir = Path.GetDirectoryName(tempPath);
+                if (!Directory.Exists(tempDir))
+                {
+                    Directory.CreateDirectory(tempDir);
+                    
+                    // Temp.metaファイルを作成
+                    string metaPath = tempDir + ".meta";
+                    File.WriteAllText(metaPath, 
+                        "fileFormatVersion: 2\n" +
+                        "guid: " + System.Guid.NewGuid().ToString("N") + "\n" +
+                        "folderAsset: yes\n" +
+                        "DefaultImporter:\n" +
+                        "  externalObjects: {}\n" +
+                        "  userData: \n" +
+                        "  assetBundleName: \n" +
+                        "  assetBundleVariant: \n");
+                }
                 
-                // Build Settingsに自動追加
-                AddSceneToBuildSettings(WEBGL_DEMO_SCENE_PATH);
+                // シーンをコピー
+                File.Copy(WEBGL_DEMO_SCENE_PATH, tempPath, true);
+                
+                // Tempフォルダを.gitignoreに追加されていることを確認
+                AddToGitIgnore("Assets/Temp/");
+                
+                // メタファイルをリフレッシュ
+                AssetDatabase.Refresh();
+                
+                // コピーしたシーンを開く
+                EditorSceneManager.OpenScene(tempPath);
+                Debug.Log($"[uPiper] Opened WebGL Demo Scene (temporary copy)");
+                
+                // Build Settingsへの追加は手動で行うように案内
+                if (!IsSceneInBuildSettings(WEBGL_DEMO_SCENE_PATH))
+                {
+                    EditorUtility.DisplayDialog(
+                        "Build Settings",
+                        "WebGL Demo Scene is not in Build Settings.\n\n" +
+                        "To build with this scene:\n" +
+                        "1. File > Build Settings\n" +
+                        "2. Add Open Scenes\n" +
+                        "3. Or use 'uPiper > Build > Configure Build Settings'",
+                        "OK"
+                    );
+                }
             }
             else
             {
@@ -38,6 +80,26 @@ namespace uPiper.Editor
                     "OK"
                 );
             }
+        }
+        
+        private static void AddToGitIgnore(string path)
+        {
+            string gitignorePath = ".gitignore";
+            if (File.Exists(gitignorePath))
+            {
+                string content = File.ReadAllText(gitignorePath);
+                if (!content.Contains(path))
+                {
+                    File.AppendAllText(gitignorePath, $"\n# Temporary demo scenes\n{path}\n");
+                    Debug.Log($"[uPiper] Added {path} to .gitignore");
+                }
+            }
+        }
+        
+        private static bool IsSceneInBuildSettings(string scenePath)
+        {
+            var scenes = EditorBuildSettings.scenes;
+            return System.Array.Exists(scenes, s => s.path == scenePath);
         }
         
         private static void AddSceneToBuildSettings(string scenePath)
