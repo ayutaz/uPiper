@@ -985,7 +985,16 @@ namespace uPiper.Core
             PiperLogger.LogInfo("Inference Engine initialized with backend: {0}", _inferenceBackend);
             
             // Small delay to simulate async initialization
-            await Task.Delay(10, cancellationToken);
+            // Note: Task.Delay can cause issues in Unity Test Framework
+            if (!Application.isEditor || Application.isPlaying)
+            {
+                await Task.Delay(10, cancellationToken);
+            }
+            else
+            {
+                // In test environment, use Task.Yield instead
+                await Task.Yield();
+            }
         }
         
         /// <summary>
@@ -997,7 +1006,15 @@ namespace uPiper.Core
             
             // Worker pool initialization will be implemented when we have actual models
             // For now, just log the intention
-            await Task.Delay(10, cancellationToken);
+            if (!Application.isEditor || Application.isPlaying)
+            {
+                await Task.Delay(10, cancellationToken);
+            }
+            else
+            {
+                // In test environment, use Task.Yield instead
+                await Task.Yield();
+            }
             
             PiperLogger.LogInfo("Worker pool initialization completed");
         }
