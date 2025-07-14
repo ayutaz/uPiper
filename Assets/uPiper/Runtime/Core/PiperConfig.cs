@@ -10,6 +10,31 @@ namespace uPiper.Core
     [Serializable]
     public class PiperConfig
     {
+        #region Constants
+        
+        // Cache size limits
+        private const int MinCacheSizeMB = 10;
+        private const int MaxCacheSizeMBThreshold = 500;
+        
+        // Sample rate bounds
+        private const int MinSampleRate = 8000;
+        private const int MaxSampleRate = 48000;
+        
+        // Worker thread limits
+        private const int MaxWorkerThreads = 16;
+        
+        // Timeout limits
+        private const int MinRecommendedTimeoutMs = 1000;
+        
+        // Batch size limits
+        private const int MinBatchSize = 1;
+        private const int MaxBatchSize = 32;
+        
+        // RMS level limits
+        private const float MaxRMSLevel = 0f;
+        private const float MinRMSLevel = -40f;
+        
+        #endregion
         [Header("General Settings")]
         
         /// <summary>
@@ -108,21 +133,21 @@ namespace uPiper.Core
         public void Validate()
         {
             // Cache size validation
-            if (MaxCacheSizeMB < 10)
+            if (MaxCacheSizeMB < MinCacheSizeMB)
             {
-                PiperLogger.LogWarning("MaxCacheSizeMB too small ({0}MB), setting to minimum 10MB", MaxCacheSizeMB);
-                MaxCacheSizeMB = 10;
+                PiperLogger.LogWarning("MaxCacheSizeMB too small ({0}MB), setting to minimum {1}MB", MaxCacheSizeMB, MinCacheSizeMB);
+                MaxCacheSizeMB = MinCacheSizeMB;
             }
-            else if (MaxCacheSizeMB > 500)
+            else if (MaxCacheSizeMB > MaxCacheSizeMBThreshold)
             {
-                PiperLogger.LogWarning("MaxCacheSizeMB too large ({0}MB), setting to maximum 500MB", MaxCacheSizeMB);
-                MaxCacheSizeMB = 500;
+                PiperLogger.LogWarning("MaxCacheSizeMB too large ({0}MB), setting to maximum {1}MB", MaxCacheSizeMB, MaxCacheSizeMBThreshold);
+                MaxCacheSizeMB = MaxCacheSizeMBThreshold;
             }
 
             // Sample rate validation
-            if (SampleRate < 8000 || SampleRate > 48000)
+            if (SampleRate < MinSampleRate || SampleRate > MaxSampleRate)
             {
-                throw new PiperException($"Invalid sample rate: {SampleRate}Hz. Must be between 8000-48000Hz");
+                throw new PiperException($"Invalid sample rate: {SampleRate}Hz. Must be between {MinSampleRate}-{MaxSampleRate}Hz");
             }
             
             if (SampleRate != 16000 && SampleRate != 22050 && SampleRate != 44100 && SampleRate != 48000)
@@ -141,9 +166,9 @@ namespace uPiper.Core
                 WorkerThreads = Mathf.Max(1, SystemInfo.processorCount - 1);
                 PiperLogger.LogInfo("Auto-detected {0} worker threads", WorkerThreads);
             }
-            else if (WorkerThreads > 16)
+            else if (WorkerThreads > MaxWorkerThreads)
             {
-                PiperLogger.LogWarning("WorkerThreads ({0}) exceeds recommended maximum of 16", WorkerThreads);
+                PiperLogger.LogWarning("WorkerThreads ({0}) exceeds recommended maximum of {1}", WorkerThreads, MaxWorkerThreads);
             }
 
             // Language validation
@@ -164,35 +189,35 @@ namespace uPiper.Core
                 throw new PiperException($"Invalid TimeoutMs: {TimeoutMs}. Must be >= 0");
             }
             
-            if (TimeoutMs > 0 && TimeoutMs < 1000)
+            if (TimeoutMs > 0 && TimeoutMs < MinRecommendedTimeoutMs)
             {
-                PiperLogger.LogWarning("TimeoutMs ({0}ms) is very short. Recommended minimum: 1000ms", TimeoutMs);
+                PiperLogger.LogWarning("TimeoutMs ({0}ms) is very short. Recommended minimum: {1}ms", TimeoutMs, MinRecommendedTimeoutMs);
             }
 
             // Batch size validation
-            if (InferenceBatchSize < 1)
+            if (InferenceBatchSize < MinBatchSize)
             {
-                PiperLogger.LogWarning("InferenceBatchSize too small ({0}), setting to 1", InferenceBatchSize);
-                InferenceBatchSize = 1;
+                PiperLogger.LogWarning("InferenceBatchSize too small ({0}), setting to {1}", InferenceBatchSize, MinBatchSize);
+                InferenceBatchSize = MinBatchSize;
             }
-            else if (InferenceBatchSize > 32)
+            else if (InferenceBatchSize > MaxBatchSize)
             {
-                PiperLogger.LogWarning("InferenceBatchSize too large ({0}), setting to 32", InferenceBatchSize);
-                InferenceBatchSize = 32;
+                PiperLogger.LogWarning("InferenceBatchSize too large ({0}), setting to {1}", InferenceBatchSize, MaxBatchSize);
+                InferenceBatchSize = MaxBatchSize;
             }
 
             // RMS level validation
             if (NormalizeAudio)
             {
-                if (TargetRMSLevel > 0)
+                if (TargetRMSLevel > MaxRMSLevel)
                 {
-                    PiperLogger.LogWarning("TargetRMSLevel ({0}dB) is positive, setting to 0dB", TargetRMSLevel);
-                    TargetRMSLevel = 0f;
+                    PiperLogger.LogWarning("TargetRMSLevel ({0}dB) is positive, setting to {1}dB", TargetRMSLevel, MaxRMSLevel);
+                    TargetRMSLevel = MaxRMSLevel;
                 }
-                else if (TargetRMSLevel < -40f)
+                else if (TargetRMSLevel < MinRMSLevel)
                 {
-                    PiperLogger.LogWarning("TargetRMSLevel ({0}dB) is too low, setting to -40dB", TargetRMSLevel);
-                    TargetRMSLevel = -40f;
+                    PiperLogger.LogWarning("TargetRMSLevel ({0}dB) is too low, setting to {1}dB", TargetRMSLevel, MinRMSLevel);
+                    TargetRMSLevel = MinRMSLevel;
                 }
             }
 

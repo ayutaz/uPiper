@@ -47,7 +47,7 @@ namespace uPiper.Editor
             {
                 if (GUILayout.Button("Initialize PiperTTS"))
                 {
-                    InitializePiperTTS();
+                    _ = InitializePiperTTSAsync();
                 }
             }
             
@@ -61,7 +61,7 @@ namespace uPiper.Editor
                 
                 if (GUILayout.Button("Load Test Voice"))
                 {
-                    LoadTestVoice();
+                    _ = LoadTestVoiceAsync();
                 }
                 
                 if (_piperTTS != null && _piperTTS.CurrentVoice != null)
@@ -81,12 +81,12 @@ namespace uPiper.Editor
                 {
                     if (GUILayout.Button("Generate Audio"))
                     {
-                        GenerateAudio();
+                        _ = GenerateAudioAsync();
                     }
                     
                     if (GUILayout.Button("Stream Audio"))
                     {
-                        StreamAudio();
+                        _ = StreamAudioAsync();
                     }
                 }
                 
@@ -109,7 +109,7 @@ namespace uPiper.Editor
                 
                 if (GUILayout.Button("Preload Text"))
                 {
-                    PreloadText();
+                    _ = PreloadTextAsync();
                 }
                 
                 if (GUILayout.Button("Get Cache Stats"))
@@ -143,7 +143,7 @@ namespace uPiper.Editor
             }
         }
         
-        private async void InitializePiperTTS()
+        private async Task InitializePiperTTSAsync()
         {
             try
             {
@@ -187,7 +187,7 @@ namespace uPiper.Editor
             }
         }
         
-        private async void LoadTestVoice()
+        private async Task LoadTestVoiceAsync()
         {
             try
             {
@@ -212,7 +212,7 @@ namespace uPiper.Editor
             }
         }
         
-        private async void GenerateAudio()
+        private async Task GenerateAudioAsync()
         {
             try
             {
@@ -234,7 +234,7 @@ namespace uPiper.Editor
             }
         }
         
-        private async void StreamAudio()
+        private async Task StreamAudioAsync()
         {
             try
             {
@@ -261,7 +261,7 @@ namespace uPiper.Editor
             }
         }
         
-        private async void PreloadText()
+        private async Task PreloadTextAsync()
         {
             try
             {
