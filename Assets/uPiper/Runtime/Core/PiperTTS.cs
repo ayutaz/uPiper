@@ -358,9 +358,63 @@ namespace uPiper.Core
             if (string.IsNullOrWhiteSpace(text))
                 throw new ArgumentNullException(nameof(text));
             
-            // TODO: Implement in Phase 1.2.4
-            await Task.Delay(100, cancellationToken);
-            throw new NotImplementedException("GenerateAudioAsync will be implemented in Phase 1.2.4");
+            if (string.IsNullOrEmpty(_currentVoiceId))
+                throw new InvalidOperationException("No voice selected. Load a voice first.");
+            
+            try
+            {
+                IsProcessing = true;
+                PiperLogger.LogInfo("Generating audio for text: \"{0}\" (length: {1})", 
+                    text.Length > 50 ? text.Substring(0, 50) + "..." : text, 
+                    text.Length);
+                
+                // Report initial progress
+                _onProcessingProgress?.Invoke(0.1f);
+                
+                // Check cache first if enabled
+                if (_config.EnablePhonemeCache)
+                {
+                    var cacheKey = GenerateCacheKey(text, _currentVoiceId);
+                    if (_phonemeCache.ContainsKey(cacheKey))
+                    {
+                        PiperLogger.LogInfo("Cache hit for text");
+                        _onProcessingProgress?.Invoke(1.0f);
+                        
+                        // TODO: Convert cached data to AudioClip
+                        return CreateDummyAudioClip(text);
+                    }
+                }
+                
+                _onProcessingProgress?.Invoke(0.3f);
+                
+                // TODO: Implement actual phonemization and synthesis
+                // For now, create a dummy audio clip
+                await Task.Delay(200, cancellationToken); // Simulate processing
+                
+                _onProcessingProgress?.Invoke(0.8f);
+                
+                var audioClip = CreateDummyAudioClip(text);
+                
+                _onProcessingProgress?.Invoke(1.0f);
+                PiperLogger.LogInfo("Audio generation completed");
+                
+                return audioClip;
+            }
+            catch (OperationCanceledException)
+            {
+                PiperLogger.LogWarning("Audio generation was cancelled");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                var piperEx = new PiperException("Failed to generate audio", ex);
+                _onError?.Invoke(piperEx);
+                throw piperEx;
+            }
+            finally
+            {
+                IsProcessing = false;
+            }
         }
 
         /// <summary>
@@ -368,8 +422,53 @@ namespace uPiper.Core
         /// </summary>
         public AudioClip GenerateAudio(string text)
         {
-            // TODO: Implement in Phase 1.2.4
-            throw new NotImplementedException("GenerateAudio will be implemented in Phase 1.2.4");
+            ThrowIfDisposed();
+            ThrowIfNotInitialized();
+            
+            if (string.IsNullOrWhiteSpace(text))
+                throw new ArgumentNullException(nameof(text));
+            
+            if (string.IsNullOrEmpty(_currentVoiceId))
+                throw new InvalidOperationException("No voice selected. Load a voice first.");
+            
+            try
+            {
+                IsProcessing = true;
+                PiperLogger.LogInfo("Generating audio synchronously for text length: {0}", text.Length);
+                
+                // For synchronous version, we'll use the async method internally
+                // In a real implementation, this would use native synchronous methods
+                var task = Task.Run(async () => await GenerateAudioAsync(text));
+                
+                if (_config.TimeoutMs > 0)
+                {
+                    if (!task.Wait(_config.TimeoutMs))
+                    {
+                        throw new TimeoutException($"Audio generation timed out after {_config.TimeoutMs}ms");
+                    }
+                }
+                else
+                {
+                    task.Wait();
+                }
+                
+                return task.Result;
+            }
+            catch (AggregateException ae)
+            {
+                // Unwrap the aggregate exception
+                var innerEx = ae.InnerException;
+                if (innerEx is PiperException)
+                    throw innerEx;
+                
+                var piperEx = new PiperException("Failed to generate audio", innerEx);
+                _onError?.Invoke(piperEx);
+                throw piperEx;
+            }
+            finally
+            {
+                IsProcessing = false;
+            }
         }
 
         /// <summary>
@@ -385,9 +484,54 @@ namespace uPiper.Core
             if (string.IsNullOrWhiteSpace(text))
                 throw new ArgumentNullException(nameof(text));
             
-            // TODO: Implement in Phase 1.2.4
-            await Task.Delay(100, cancellationToken);
-            yield break;
+            if (string.IsNullOrEmpty(_currentVoiceId))
+                throw new InvalidOperationException("No voice selected. Load a voice first.");
+            
+            PiperLogger.LogInfo("Starting audio streaming for text length: {0}", text.Length);
+            
+            try
+            {
+                IsProcessing = true;
+                
+                // Split text into chunks for streaming
+                var sentences = SplitIntoSentences(text);
+                var totalSentences = sentences.Count;
+                var processedSentences = 0;
+                
+                foreach (var sentence in sentences)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    
+                    // Simulate processing delay
+                    await Task.Delay(100, cancellationToken);
+                    
+                    // Create a dummy audio chunk
+                    var audioData = new float[_config.SampleRate / 10]; // 0.1 second of audio
+                    for (int i = 0; i < audioData.Length; i++)
+                    {
+                        audioData[i] = 0f; // Silence for now
+                    }
+                    
+                    var chunk = new AudioChunk
+                    {
+                        Data = audioData,
+                        SampleRate = _config.SampleRate,
+                        Channels = 1,
+                        IsLastChunk = (processedSentences == totalSentences - 1)
+                    };
+                    
+                    processedSentences++;
+                    _onProcessingProgress?.Invoke((float)processedSentences / totalSentences);
+                    
+                    yield return chunk;
+                }
+                
+                PiperLogger.LogInfo("Audio streaming completed");
+            }
+            finally
+            {
+                IsProcessing = false;
+            }
         }
 
         /// <summary>
@@ -401,9 +545,67 @@ namespace uPiper.Core
             if (string.IsNullOrWhiteSpace(text))
                 throw new ArgumentNullException(nameof(text));
             
-            // TODO: Implement caching logic
-            await Task.Delay(10, cancellationToken);
-            PiperLogger.LogInfo("Text preloaded for caching");
+            if (string.IsNullOrEmpty(_currentVoiceId))
+                throw new InvalidOperationException("No voice selected. Load a voice first.");
+            
+            if (!_config.EnablePhonemeCache)
+            {
+                PiperLogger.LogWarning("Phoneme cache is disabled. PreloadTextAsync has no effect.");
+                return;
+            }
+            
+            var cacheKey = GenerateCacheKey(text, _currentVoiceId);
+            
+            lock (_lockObject)
+            {
+                if (_phonemeCache.ContainsKey(cacheKey))
+                {
+                    PiperLogger.LogInfo("Text already in cache");
+                    return;
+                }
+            }
+            
+            try
+            {
+                PiperLogger.LogInfo("Preloading text for caching (length: {0})", text.Length);
+                
+                // TODO: Implement actual phonemization
+                // For now, just simulate with delay
+                await Task.Delay(50, cancellationToken);
+                
+                // Create dummy phoneme data
+                var dummyData = new byte[text.Length * 2]; // Rough estimate
+                
+                lock (_lockObject)
+                {
+                    // Check cache size limit
+                    var dataSize = dummyData.Length;
+                    var maxCacheBytes = _config.MaxCacheSizeMB * 1024 * 1024;
+                    
+                    // Evict old entries if needed
+                    while (_currentCacheSize + dataSize > maxCacheBytes && _phonemeCache.Count > 0)
+                    {
+                        // Simple FIFO eviction (should be LRU in production)
+                        var firstKey = _phonemeCache.Keys.First();
+                        var evictedSize = _phonemeCache[firstKey].Length;
+                        _phonemeCache.Remove(firstKey);
+                        _currentCacheSize -= evictedSize;
+                        PiperLogger.LogInfo("Evicted cache entry to make room");
+                    }
+                    
+                    // Add to cache
+                    _phonemeCache[cacheKey] = dummyData;
+                    _currentCacheSize += dataSize;
+                    
+                    PiperLogger.LogInfo("Text preloaded and cached (cache size: {0:F2}MB)", 
+                        _currentCacheSize / (1024.0 * 1024.0));
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                PiperLogger.LogWarning("Text preloading was cancelled");
+                throw;
+            }
         }
 
         /// <summary>
@@ -413,15 +615,17 @@ namespace uPiper.Core
         {
             ThrowIfDisposed();
             
-            // TODO: Implement actual cache statistics
-            return new CacheStatistics
+            lock (_lockObject)
             {
-                TotalItems = 0,
-                TotalSizeBytes = 0,
-                HitCount = 0,
-                MissCount = 0,
-                EvictionCount = 0
-            };
+                return new CacheStatistics
+                {
+                    TotalItems = _phonemeCache.Count,
+                    TotalSizeBytes = _currentCacheSize,
+                    HitCount = 0, // TODO: Track hits
+                    MissCount = 0, // TODO: Track misses
+                    EvictionCount = 0 // TODO: Track evictions
+                };
+            }
         }
 
         /// <summary>
@@ -431,8 +635,22 @@ namespace uPiper.Core
         {
             ThrowIfDisposed();
             
-            // TODO: Implement cache clearing
-            PiperLogger.LogInfo("Cache cleared");
+            lock (_lockObject)
+            {
+                var previousSize = _currentCacheSize;
+                _phonemeCache.Clear();
+                _currentCacheSize = 0;
+                
+                if (previousSize > 0)
+                {
+                    PiperLogger.LogInfo("Cache cleared ({0:F2}MB freed)", 
+                        previousSize / (1024.0 * 1024.0));
+                }
+                else
+                {
+                    PiperLogger.LogInfo("Cache cleared (was already empty)");
+                }
+            }
         }
 
         #endregion
@@ -607,6 +825,83 @@ namespace uPiper.Core
             _currentCacheSize = 0;
             
             PiperLogger.LogInfo("Cache system initialized");
+        }
+        
+        /// <summary>
+        /// Generate cache key for text and voice combination
+        /// </summary>
+        private string GenerateCacheKey(string text, string voiceId)
+        {
+            // Simple hash-based cache key
+            var combined = $"{text}|{voiceId}";
+            return combined.GetHashCode().ToString();
+        }
+        
+        /// <summary>
+        /// Create a dummy audio clip for testing
+        /// </summary>
+        private AudioClip CreateDummyAudioClip(string text)
+        {
+            // Calculate duration based on text length (rough estimate)
+            var estimatedDuration = Mathf.Max(1f, text.Length * 0.06f); // ~60ms per character
+            var sampleCount = (int)(estimatedDuration * _config.SampleRate);
+            
+            // Create silent audio clip for now
+            var audioClip = AudioClip.Create(
+                "TTS_Output",
+                sampleCount,
+                1, // Mono
+                _config.SampleRate,
+                false
+            );
+            
+            // Fill with silence
+            var data = new float[sampleCount];
+            audioClip.SetData(data, 0);
+            
+            return audioClip;
+        }
+        
+        /// <summary>
+        /// Split text into sentences for streaming
+        /// </summary>
+        private List<string> SplitIntoSentences(string text)
+        {
+            var sentences = new List<string>();
+            
+            // Simple sentence splitting (can be improved with proper NLP)
+            var sentenceEnders = new[] { '.', '!', '?', '。', '！', '？' };
+            var currentSentence = "";
+            
+            foreach (char c in text)
+            {
+                currentSentence += c;
+                
+                if (sentenceEnders.Contains(c))
+                {
+                    var trimmed = currentSentence.Trim();
+                    if (!string.IsNullOrEmpty(trimmed))
+                    {
+                        sentences.Add(trimmed);
+                    }
+                    currentSentence = "";
+                }
+            }
+            
+            // Add any remaining text
+            var remaining = currentSentence.Trim();
+            if (!string.IsNullOrEmpty(remaining))
+            {
+                sentences.Add(remaining);
+            }
+            
+            // If no sentences found, return the whole text
+            if (sentences.Count == 0 && !string.IsNullOrWhiteSpace(text))
+            {
+                sentences.Add(text);
+            }
+            
+            return sentences;
         }
 
         #endregion

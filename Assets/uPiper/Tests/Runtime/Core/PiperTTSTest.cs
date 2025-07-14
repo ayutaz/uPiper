@@ -267,42 +267,84 @@ namespace uPiper.Tests.Runtime.Core
         #region TTS Stub Tests
         
         [UnityTest]
-        public async Task GenerateAudioAsync_NotImplemented_ThrowsNotImplementedException() => await UniTask.Run(async () =>
+        public async Task GenerateAudioAsync_NoVoiceLoaded_ThrowsInvalidOperationException() => await UniTask.Run(async () =>
         {
             // Arrange
             await _piperTTS.InitializeAsync();
             
             // Act & Assert
-            await AssertAsync.ThrowsAsync<NotImplementedException>(
+            await AssertAsync.ThrowsAsync<InvalidOperationException>(
                 async () => await _piperTTS.GenerateAudioAsync("test")
             );
         });
         
         [UnityTest]
-        public async Task GenerateAudio_NotImplemented_ThrowsNotImplementedException() => await UniTask.Run(async () =>
+        public async Task GenerateAudioAsync_WithVoice_ReturnsAudioClip() => await UniTask.Run(async () =>
         {
             // Arrange
             await _piperTTS.InitializeAsync();
+            await _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            {
+                VoiceId = "test-voice",
+                ModelPath = "test.onnx",
+                Language = "ja",
+                SampleRate = 22050
+            });
             
-            // Act & Assert
-            Assert.Throws<NotImplementedException>(() => _piperTTS.GenerateAudio("test"));
+            // Act
+            var audioClip = await _piperTTS.GenerateAudioAsync("Hello, world!");
+            
+            // Assert
+            Assert.IsNotNull(audioClip);
+            Assert.AreEqual(22050, audioClip.frequency);
+            Assert.AreEqual(1, audioClip.channels); // Mono
+            Assert.Greater(audioClip.samples, 0);
         });
         
         [UnityTest]
-        public async Task StreamAudioAsync_NotImplemented_ReturnsEmpty() => await UniTask.Run(async () =>
+        public async Task GenerateAudio_WithVoice_ReturnsAudioClip() => await UniTask.Run(async () =>
         {
             // Arrange
             await _piperTTS.InitializeAsync();
+            await _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            {
+                VoiceId = "test-voice",
+                ModelPath = "test.onnx",
+                Language = "ja",
+                SampleRate = 22050
+            });
+            
+            // Act
+            var audioClip = _piperTTS.GenerateAudio("test");
+            
+            // Assert
+            Assert.IsNotNull(audioClip);
+        });
+        
+        [UnityTest]
+        public async Task StreamAudioAsync_WithVoice_ReturnsChunks() => await UniTask.Run(async () =>
+        {
+            // Arrange
+            await _piperTTS.InitializeAsync();
+            await _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            {
+                VoiceId = "test-voice",
+                ModelPath = "test.onnx",
+                Language = "ja",
+                SampleRate = 22050
+            });
             
             // Act
             var chunks = new List<AudioChunk>();
-            await foreach (var chunk in _piperTTS.StreamAudioAsync("test"))
+            await foreach (var chunk in _piperTTS.StreamAudioAsync("Hello. World!"))
             {
                 chunks.Add(chunk);
             }
             
             // Assert
-            Assert.IsEmpty(chunks);
+            Assert.Greater(chunks.Count, 0);
+            Assert.IsTrue(chunks.Last().IsLastChunk);
+            Assert.AreEqual(22050, chunks.First().SampleRate);
         });
         
         #endregion
@@ -329,6 +371,40 @@ namespace uPiper.Tests.Runtime.Core
             // Act & Assert
             Assert.DoesNotThrow(() => _piperTTS.ClearCache());
         }
+        
+        [UnityTest]
+        public async Task PreloadTextAsync_WithVoice_UpdatesCache() => await UniTask.Run(async () =>
+        {
+            // Arrange
+            await _piperTTS.InitializeAsync();
+            await _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            {
+                VoiceId = "test-voice",
+                ModelPath = "test.onnx",
+                Language = "ja",
+                SampleRate = 22050
+            });
+            
+            // Act
+            await _piperTTS.PreloadTextAsync("Test text for caching");
+            var stats = _piperTTS.GetCacheStatistics();
+            
+            // Assert
+            Assert.AreEqual(1, stats.TotalItems);
+            Assert.Greater(stats.TotalSizeBytes, 0);
+        });
+        
+        [UnityTest]
+        public async Task PreloadTextAsync_WithoutVoice_ThrowsInvalidOperationException() => await UniTask.Run(async () =>
+        {
+            // Arrange
+            await _piperTTS.InitializeAsync();
+            
+            // Act & Assert
+            await AssertAsync.ThrowsAsync<InvalidOperationException>(
+                async () => await _piperTTS.PreloadTextAsync("test")
+            );
+        });
         
         #endregion
         
