@@ -359,7 +359,7 @@ namespace uPiper.Tests.Runtime.Core
             
             // Assert
             Assert.Greater(chunks.Count, 0);
-            Assert.IsTrue(chunks.Last().IsLastChunk);
+            Assert.IsTrue(chunks.Last().IsFinal);
             Assert.AreEqual(22050, chunks.First().SampleRate);
         });
         
@@ -440,7 +440,7 @@ namespace uPiper.Tests.Runtime.Core
             var stats = _piperTTS.GetCacheStatistics();
             
             // Assert
-            Assert.AreEqual(0, stats.TotalItems);
+            Assert.AreEqual(0, stats.EntryCount);
             Assert.AreEqual(0, stats.TotalSizeBytes);
             Assert.AreEqual(0, stats.HitCount);
             Assert.AreEqual(0, stats.MissCount);
@@ -472,7 +472,7 @@ namespace uPiper.Tests.Runtime.Core
             var stats = _piperTTS.GetCacheStatistics();
             
             // Assert
-            Assert.AreEqual(1, stats.TotalItems);
+            Assert.AreEqual(1, stats.EntryCount);
             Assert.Greater(stats.TotalSizeBytes, 0);
         });
         
