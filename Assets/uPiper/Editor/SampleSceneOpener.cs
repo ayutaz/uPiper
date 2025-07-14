@@ -12,7 +12,7 @@ namespace uPiper.Editor
     {
         private const string WEBGL_DEMO_SCENE_PATH = "Assets/uPiper/Samples~/WebGLDemo/WebGLDemoScene.unity";
         
-        [MenuItem("uPiper/Open WebGL Demo Scene %#d")]  // Ctrl/Cmd + Shift + D
+        [MenuItem("uPiper/Open WebGL Demo Scene")]
         public static void OpenWebGLDemoScene()
         {
             // 現在のシーンに変更がある場合は保存を促す
@@ -21,33 +21,22 @@ namespace uPiper.Editor
                 return;
             }
 
-            // Samples~内のシーンが存在するか確認
+            // Samples~内のシーンを直接開く
             if (File.Exists(WEBGL_DEMO_SCENE_PATH))
             {
-                // シーンを開く
                 EditorSceneManager.OpenScene(WEBGL_DEMO_SCENE_PATH);
-                Debug.Log($"[uPiper] Opened WebGL Demo Scene from: {WEBGL_DEMO_SCENE_PATH}");
+                Debug.Log($"[uPiper] Opened WebGL Demo Scene");
                 
                 // Build Settingsに自動追加
                 AddSceneToBuildSettings(WEBGL_DEMO_SCENE_PATH);
-                return;
-            }
-            
-            // Samples~に無い場合は、コピーして開く
-            string targetPath = "Assets/Samples/uPiper/WebGLDemo";
-            string targetScenePath = Path.Combine(targetPath, "WebGLDemoScene.unity");
-            
-            if (File.Exists(targetScenePath))
-            {
-                // すでにコピー済みの場合は開く
-                EditorSceneManager.OpenScene(targetScenePath);
-                Debug.Log($"[uPiper] Opened WebGL Demo Scene from: {targetScenePath}");
-                AddSceneToBuildSettings(targetScenePath);
             }
             else
             {
-                // コピーして開く
-                CopySamplesAndOpenScene();
+                EditorUtility.DisplayDialog(
+                    "Scene Not Found",
+                    $"WebGL Demo Scene not found at:\n{WEBGL_DEMO_SCENE_PATH}",
+                    "OK"
+                );
             }
         }
         
@@ -63,50 +52,6 @@ namespace uPiper.Editor
                 scenes.Add(new EditorBuildSettingsScene(scenePath, true));
                 EditorBuildSettings.scenes = scenes.ToArray();
                 Debug.Log($"[uPiper] Added {scenePath} to Build Settings");
-            }
-        }
-        
-        private static void CopySamplesAndOpenScene()
-        {
-            string sourcePath = "Assets/uPiper/Samples~";
-            string targetPath = "Assets/Samples/uPiper";
-            
-            if (!Directory.Exists(sourcePath))
-            {
-                EditorUtility.DisplayDialog(
-                    "Samples Not Found",
-                    $"Samples directory not found at:\n{sourcePath}",
-                    "OK"
-                );
-                return;
-            }
-            
-            // ターゲットディレクトリを作成
-            if (!Directory.Exists(targetPath))
-            {
-                Directory.CreateDirectory(targetPath);
-            }
-            
-            // WebGLDemoをコピー
-            string sourceDemo = Path.Combine(sourcePath, "WebGLDemo");
-            string targetDemo = Path.Combine(targetPath, "WebGLDemo");
-            
-            if (Directory.Exists(sourceDemo))
-            {
-                CopyDirectory(sourceDemo, targetDemo);
-                
-                // メタファイルをリフレッシュ
-                AssetDatabase.Refresh();
-                
-                Debug.Log($"[uPiper] Copied samples to: {targetPath}");
-                
-                // コピーしたシーンを開く
-                string copiedScenePath = Path.Combine(targetDemo, "WebGLDemoScene.unity");
-                if (File.Exists(copiedScenePath))
-                {
-                    EditorSceneManager.OpenScene(copiedScenePath);
-                    AddSceneToBuildSettings(copiedScenePath);
-                }
             }
         }
         
