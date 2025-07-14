@@ -39,7 +39,8 @@ jobs:
         unityVersion: 6000.0.35f1
         testMode: all
         artifactsPath: test-results
-        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.Runtime,+uPiper.Scripts.Runtime,-uPiper.Tests.*'
+        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.Runtime,+uPiper.Scripts.Runtime,-uPiper.Tests*'
+        customParameters: '-enableCodeCoverage'
         
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
@@ -146,7 +147,18 @@ jobs:
       if: always()
       run: |
         # カバレッジサマリーファイルを探す
+        echo "=== Looking for coverage files ==="
+        find test-results -name "*.xml" -type f | grep -i coverage || echo "No coverage files found"
+        
         coverage_file="test-results/CodeCoverage/Report/Summary.xml"
+        # 他の可能なパスも試す
+        if [ ! -f "$coverage_file" ]; then
+          coverage_file=$(find test-results -name "Summary.xml" -type f | head -1)
+        fi
+        if [ ! -f "$coverage_file" ]; then
+          coverage_file=$(find test-results -name "*coverage*.xml" -type f | head -1)
+        fi
+        
         if [ -f "$coverage_file" ]; then
           echo "### Code Coverage Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
