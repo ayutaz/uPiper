@@ -55,15 +55,15 @@ jobs:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        PROJECT_PATH: .
       with:
         unityVersion: 6000.0.35f1
         testMode: all
-        projectPath: .
         artifactsPath: test-results
         githubToken: ${{ github.token }}
         checkName: Unity Test Results
         coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.Runtime,+uPiper.Scripts.Runtime,-uPiper.Tests*'
-        customParameters: '-enableCodeCoverage'
+        customParameters: '-enableCodeCoverage -runTests -testPlatform playmode -testPlatform editmode'
         
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
