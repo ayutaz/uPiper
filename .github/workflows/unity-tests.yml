@@ -139,7 +139,7 @@ jobs:
       with:
         name: Coverage Report
         path: |
-          test-results/CodeCoverage/**
+          CodeCoverage/**
         retention-days: 7
     
     # コードカバレッジチェック
@@ -148,15 +148,17 @@ jobs:
       run: |
         # カバレッジサマリーファイルを探す
         echo "=== Looking for coverage files ==="
-        find test-results -name "*.xml" -type f | grep -i coverage || echo "No coverage files found"
+        find . -name "*.xml" -type f | grep -i coverage || echo "No coverage files found"
+        echo "=== Coverage directory structure ==="
+        ls -la CodeCoverage/ 2>/dev/null || echo "CodeCoverage directory not found"
         
-        coverage_file="test-results/CodeCoverage/Report/Summary.xml"
+        coverage_file="CodeCoverage/Report/Summary.xml"
         # 他の可能なパスも試す
         if [ ! -f "$coverage_file" ]; then
-          coverage_file=$(find test-results -name "Summary.xml" -type f | head -1)
+          coverage_file=$(find CodeCoverage -name "Summary.xml" -type f | head -1)
         fi
         if [ ! -f "$coverage_file" ]; then
-          coverage_file=$(find test-results -name "*coverage*.xml" -type f | head -1)
+          coverage_file=$(find . -name "*TestCoverageResults*.xml" -type f | head -1)
         fi
         
         if [ -f "$coverage_file" ]; then
@@ -191,8 +193,8 @@ jobs:
       if: always()
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        directory: test-results/CodeCoverage
-        files: '**/Summary.xml'
+        directory: ./
+        files: 'CodeCoverage/**/*.xml'
         flags: unittests
         name: uPiper
         fail_ci_if_error: false
