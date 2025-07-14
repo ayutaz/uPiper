@@ -41,6 +41,12 @@ jobs:
         echo ""
         echo "ProjectSettings directory:"
         ls -la ProjectSettings/ || echo "ProjectSettings directory not found"
+        echo ""
+        echo "Test assemblies:"
+        find Assets -name "*.asmdef" | grep -i test || echo "No test assemblies found"
+        echo ""
+        echo "Test scripts:"
+        find Assets -name "*Test*.cs" | head -10 || echo "No test scripts found"
         
     # Unity 6対応 - game-ci/unity-test-runnerを使用
     - name: Run Unity Tests
@@ -52,7 +58,10 @@ jobs:
       with:
         unityVersion: 6000.0.35f1
         testMode: all
+        projectPath: .
         artifactsPath: test-results
+        githubToken: ${{ github.token }}
+        checkName: Unity Test Results
         coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.Runtime,+uPiper.Scripts.Runtime,-uPiper.Tests*'
         customParameters: '-enableCodeCoverage'
         
@@ -68,17 +77,6 @@ jobs:
           test-results/**/*.json
         retention-days: 7
         
-    # GitHub Actions UI でテスト結果を表示
-    - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      if: always()
-      with:
-        files: |
-          test-results/editmode-results.xml
-          test-results/playmode-results.xml
-        check_name: Unity Test Results
-        comment_mode: off
-        report_individual_runs: true
         
     # テスト結果のデバッグ情報
     - name: Debug Test Results
