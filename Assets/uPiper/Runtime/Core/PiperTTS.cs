@@ -24,7 +24,8 @@ namespace uPiper.Core
         private readonly object _lockObject = new object();
         
         // Event backing fields
-        private event Action<string> _onInitialized;
+        private event Action<bool> _onInitialized;
+        private event Action<PiperVoiceConfig> _onVoiceLoaded;
         private event Action<PiperException> _onError;
         private event Action<float> _onProcessingProgress;
         
@@ -52,6 +53,23 @@ namespace uPiper.Core
                 lock (_lockObject)
                 {
                     return _currentVoiceId;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Currently loaded voice configuration
+        /// </summary>
+        public PiperVoiceConfig CurrentVoice
+        {
+            get
+            {
+                lock (_lockObject)
+                {
+                    if (string.IsNullOrEmpty(_currentVoiceId) || !_voices.ContainsKey(_currentVoiceId))
+                        return null;
+                    
+                    return _voices[_currentVoiceId];
                 }
             }
         }
@@ -101,7 +119,7 @@ namespace uPiper.Core
         /// <summary>
         /// Event fired when initialization completes
         /// </summary>
-        public event Action<string> OnInitialized
+        public event Action<bool> OnInitialized
         {
             add 
             { 
@@ -115,6 +133,27 @@ namespace uPiper.Core
                 lock (_lockObject)
                 {
                     _onInitialized -= value;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Event fired when voice is loaded
+        /// </summary>
+        public event Action<PiperVoiceConfig> OnVoiceLoaded
+        {
+            add
+            {
+                lock (_lockObject)
+                {
+                    _onVoiceLoaded += value;
+                }
+            }
+            remove
+            {
+                lock (_lockObject)
+                {
+                    _onVoiceLoaded -= value;
                 }
             }
         }
@@ -235,7 +274,7 @@ namespace uPiper.Core
                 }
                 
                 PiperLogger.LogInfo("PiperTTS initialized successfully");
-                _onInitialized?.Invoke("Initialization completed");
+                _onInitialized?.Invoke(true);
             }
             catch (OperationCanceledException)
             {
@@ -285,6 +324,7 @@ namespace uPiper.Core
                 }
                 
                 PiperLogger.LogInfo("Voice loaded successfully: {0}", voice.VoiceId);
+                _onVoiceLoaded?.Invoke(voice);
             }
             catch (OperationCanceledException)
             {
@@ -340,6 +380,19 @@ namespace uPiper.Core
                 }
                 
                 throw new PiperException($"Voice not found: {voiceId}");
+            }
+        }
+        
+        /// <summary>
+        /// Get available voices
+        /// </summary>
+        public IReadOnlyList<PiperVoiceConfig> GetAvailableVoices()
+        {
+            ThrowIfDisposed();
+            
+            lock (_lockObject)
+            {
+                return new List<PiperVoiceConfig>(_voices.Values);
             }
         }
 
@@ -535,6 +588,155 @@ namespace uPiper.Core
         }
 
         /// <summary>
+        /// Generate audio from text with specific voice configuration (synchronous)
+        /// </summary>
+        public AudioClip GenerateAudio(string text, PiperVoiceConfig voiceConfig)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotInitialized();
+            
+            if (string.IsNullOrWhiteSpace(text))
+                throw new ArgumentNullException(nameof(text));
+            
+            if (voiceConfig == null)
+                throw new ArgumentNullException(nameof(voiceConfig));
+            
+            // Temporarily switch voice
+            var previousVoiceId = _currentVoiceId;
+            
+            try
+            {
+                // Load voice if not already loaded
+                lock (_lockObject)
+                {
+                    if (!_voices.ContainsKey(voiceConfig.VoiceId))
+                    {
+                        // Load synchronously (block on async)
+                        var loadTask = LoadVoiceAsync(voiceConfig);
+                        loadTask.Wait();
+                    }
+                    
+                    _currentVoiceId = voiceConfig.VoiceId;
+                }
+                
+                // Generate audio with the specified voice
+                return GenerateAudio(text);
+            }
+            finally
+            {
+                // Restore previous voice
+                lock (_lockObject)
+                {
+                    _currentVoiceId = previousVoiceId;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Generate audio from text with specific voice configuration (asynchronous)
+        /// </summary>
+        public async Task<AudioClip> GenerateAudioAsync(string text, PiperVoiceConfig voiceConfig, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotInitialized();
+            
+            if (string.IsNullOrWhiteSpace(text))
+                throw new ArgumentNullException(nameof(text));
+            
+            if (voiceConfig == null)
+                throw new ArgumentNullException(nameof(voiceConfig));
+            
+            // Temporarily switch voice
+            var previousVoiceId = _currentVoiceId;
+            
+            try
+            {
+                // Load voice if not already loaded
+                bool needsLoad;
+                lock (_lockObject)
+                {
+                    needsLoad = !_voices.ContainsKey(voiceConfig.VoiceId);
+                }
+                
+                if (needsLoad)
+                {
+                    await LoadVoiceAsync(voiceConfig, cancellationToken);
+                }
+                
+                lock (_lockObject)
+                {
+                    _currentVoiceId = voiceConfig.VoiceId;
+                }
+                
+                // Generate audio with the specified voice
+                return await GenerateAudioAsync(text, cancellationToken);
+            }
+            finally
+            {
+                // Restore previous voice
+                lock (_lockObject)
+                {
+                    _currentVoiceId = previousVoiceId;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Stream audio generation with specific voice configuration
+        /// </summary>
+        public async IAsyncEnumerable<AudioChunk> StreamAudioAsync(
+            string text, 
+            PiperVoiceConfig voiceConfig,
+            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotInitialized();
+            
+            if (string.IsNullOrWhiteSpace(text))
+                throw new ArgumentNullException(nameof(text));
+            
+            if (voiceConfig == null)
+                throw new ArgumentNullException(nameof(voiceConfig));
+            
+            // Temporarily switch voice
+            var previousVoiceId = _currentVoiceId;
+            
+            try
+            {
+                // Load voice if not already loaded
+                bool needsLoad;
+                lock (_lockObject)
+                {
+                    needsLoad = !_voices.ContainsKey(voiceConfig.VoiceId);
+                }
+                
+                if (needsLoad)
+                {
+                    await LoadVoiceAsync(voiceConfig, cancellationToken);
+                }
+                
+                lock (_lockObject)
+                {
+                    _currentVoiceId = voiceConfig.VoiceId;
+                }
+                
+                // Stream audio with the specified voice
+                await foreach (var chunk in StreamAudioAsync(text, cancellationToken))
+                {
+                    yield return chunk;
+                }
+            }
+            finally
+            {
+                // Restore previous voice
+                lock (_lockObject)
+                {
+                    _currentVoiceId = previousVoiceId;
+                }
+            }
+        }
+        
+        /// <summary>
         /// Preload resources for a text
         /// </summary>
         public async Task PreloadTextAsync(string text, CancellationToken cancellationToken = default)
@@ -701,6 +903,7 @@ namespace uPiper.Core
                     
                     // Clear event handlers
                     _onInitialized = null;
+                    _onVoiceLoaded = null;
                     _onError = null;
                     _onProcessingProgress = null;
                     
