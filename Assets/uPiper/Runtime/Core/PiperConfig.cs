@@ -107,18 +107,96 @@ namespace uPiper.Core
         /// </summary>
         public void Validate()
         {
+            // Cache size validation
             if (MaxCacheSizeMB < 10)
+            {
+                PiperLogger.LogWarning("MaxCacheSizeMB too small ({0}MB), setting to minimum 10MB", MaxCacheSizeMB);
                 MaxCacheSizeMB = 10;
+            }
+            else if (MaxCacheSizeMB > 500)
+            {
+                PiperLogger.LogWarning("MaxCacheSizeMB too large ({0}MB), setting to maximum 500MB", MaxCacheSizeMB);
+                MaxCacheSizeMB = 500;
+            }
 
+            // Sample rate validation
+            if (SampleRate < 8000 || SampleRate > 48000)
+            {
+                throw new PiperException($"Invalid sample rate: {SampleRate}Hz. Must be between 8000-48000Hz");
+            }
+            
             if (SampleRate != 16000 && SampleRate != 22050 && SampleRate != 44100 && SampleRate != 48000)
             {
                 PiperLogger.LogWarning("Non-standard sample rate {0}Hz. Recommended: 22050Hz or 16000Hz", SampleRate);
             }
 
+            // Worker threads validation
+            if (WorkerThreads < 0)
+            {
+                throw new PiperException($"Invalid WorkerThreads: {WorkerThreads}. Must be >= 0");
+            }
+            
             if (WorkerThreads == 0)
             {
                 WorkerThreads = Mathf.Max(1, SystemInfo.processorCount - 1);
+                PiperLogger.LogInfo("Auto-detected {0} worker threads", WorkerThreads);
             }
+            else if (WorkerThreads > 16)
+            {
+                PiperLogger.LogWarning("WorkerThreads ({0}) exceeds recommended maximum of 16", WorkerThreads);
+            }
+
+            // Language validation
+            if (string.IsNullOrWhiteSpace(DefaultLanguage))
+            {
+                throw new PiperException("DefaultLanguage cannot be null or empty");
+            }
+            
+            DefaultLanguage = DefaultLanguage.ToLowerInvariant().Trim();
+            if (DefaultLanguage.Length != 2 && DefaultLanguage.Length != 5) // e.g., "ja" or "ja-JP"
+            {
+                PiperLogger.LogWarning("Unusual language code format: '{0}'. Expected format: 'ja' or 'ja-JP'", DefaultLanguage);
+            }
+
+            // Timeout validation
+            if (TimeoutMs < 0)
+            {
+                throw new PiperException($"Invalid TimeoutMs: {TimeoutMs}. Must be >= 0");
+            }
+            
+            if (TimeoutMs > 0 && TimeoutMs < 1000)
+            {
+                PiperLogger.LogWarning("TimeoutMs ({0}ms) is very short. Recommended minimum: 1000ms", TimeoutMs);
+            }
+
+            // Batch size validation
+            if (InferenceBatchSize < 1)
+            {
+                PiperLogger.LogWarning("InferenceBatchSize too small ({0}), setting to 1", InferenceBatchSize);
+                InferenceBatchSize = 1;
+            }
+            else if (InferenceBatchSize > 32)
+            {
+                PiperLogger.LogWarning("InferenceBatchSize too large ({0}), setting to 32", InferenceBatchSize);
+                InferenceBatchSize = 32;
+            }
+
+            // RMS level validation
+            if (NormalizeAudio)
+            {
+                if (TargetRMSLevel > 0)
+                {
+                    PiperLogger.LogWarning("TargetRMSLevel ({0}dB) is positive, setting to 0dB", TargetRMSLevel);
+                    TargetRMSLevel = 0f;
+                }
+                else if (TargetRMSLevel < -40f)
+                {
+                    PiperLogger.LogWarning("TargetRMSLevel ({0}dB) is too low, setting to -40dB", TargetRMSLevel);
+                    TargetRMSLevel = -40f;
+                }
+            }
+
+            PiperLogger.LogInfo("PiperConfig validated successfully");
         }
     }
 
