@@ -164,12 +164,13 @@ namespace uPiper.Tests.Runtime.Core
         {
             // Assert
             Assert.AreEqual(0, (int)SpeakingStyle.Normal);
-            Assert.AreEqual(1, (int)SpeakingStyle.Cheerful);
-            Assert.AreEqual(2, (int)SpeakingStyle.Calm);
-            Assert.AreEqual(3, (int)SpeakingStyle.Sad);
-            Assert.AreEqual(4, (int)SpeakingStyle.Angry);
-            Assert.AreEqual(5, (int)SpeakingStyle.Whisper);
-            Assert.AreEqual(6, (int)SpeakingStyle.Excited);
+            Assert.AreEqual(1, (int)SpeakingStyle.Happy);
+            Assert.AreEqual(2, (int)SpeakingStyle.Sad);
+            Assert.AreEqual(3, (int)SpeakingStyle.Angry);
+            Assert.AreEqual(4, (int)SpeakingStyle.Fearful);
+            Assert.AreEqual(5, (int)SpeakingStyle.Surprised);
+            Assert.AreEqual(6, (int)SpeakingStyle.Disgusted);
+            Assert.AreEqual(7, (int)SpeakingStyle.Neutral);
         }
         
         [Test]
