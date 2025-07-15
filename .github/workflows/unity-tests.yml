@@ -28,6 +28,26 @@ jobs:
         restore-keys: |
           Library-
           
+    # プロジェクト構造をデバッグ
+    - name: Debug Project Structure
+      run: |
+        echo "Current directory: $(pwd)"
+        echo "GitHub Workspace: ${{ github.workspace }}"
+        echo "Directory contents:"
+        ls -la
+        echo ""
+        echo "Assets directory:"
+        ls -la Assets/ || echo "Assets directory not found"
+        echo ""
+        echo "ProjectSettings directory:"
+        ls -la ProjectSettings/ || echo "ProjectSettings directory not found"
+        echo ""
+        echo "Test assemblies:"
+        find Assets -name "*.asmdef" | grep -i test || echo "No test assemblies found"
+        echo ""
+        echo "Test scripts:"
+        find Assets -name "*Test*.cs" | head -10 || echo "No test scripts found"
+        
     # Unity 6対応 - game-ci/unity-test-runnerを使用
     - name: Run Unity Tests
       uses: game-ci/unity-test-runner@v4
@@ -35,11 +55,14 @@ jobs:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        PROJECT_PATH: .
       with:
         unityVersion: 6000.0.35f1
         testMode: all
         artifactsPath: test-results
-        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.Runtime,+uPiper.Scripts.Runtime,-uPiper.Tests*'
+        githubToken: ${{ github.token }}
+        checkName: Unity Test Results
+        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.*,-uPiper.Tests.*'
         customParameters: '-enableCodeCoverage'
         
     # テスト結果をJUnit形式で保存
@@ -54,17 +77,6 @@ jobs:
           test-results/**/*.json
         retention-days: 7
         
-    # GitHub Actions UI でテスト結果を表示
-    - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      if: always()
-      with:
-        files: |
-          test-results/editmode-results.xml
-          test-results/playmode-results.xml
-        check_name: Unity Test Results
-        comment_mode: off
-        report_individual_runs: true
         
     # テスト結果のデバッグ情報
     - name: Debug Test Results
@@ -140,6 +152,7 @@ jobs:
         name: Coverage Report
         path: |
           CodeCoverage/**
+          test-results/**/CodeCoverage/**
         retention-days: 7
     
     # XMLパース用ツールをインストール
@@ -160,10 +173,15 @@ jobs:
         ls -la CodeCoverage/ 2>/dev/null || echo "CodeCoverage directory not found"
         
         # Unity Code CoverageはOpenCover形式のXMLを生成
-        # TestCoverageResults_*.xmlファイルを探す
-        coverage_file=$(find CodeCoverage -name "TestCoverageResults_*.xml" -type f | head -1)
+        # game-ci/unity-test-runnerはワークスペース内に出力する
+        coverage_file=$(find . -path "./CodeCoverage/*" -name "TestCoverageResults_*.xml" -type f | head -1)
         
-        # ファイルが見つからない場合、Summary.xmlを探す
+        # ファイルが見つからない場合、test-resultsディレクトリ内も探す
+        if [ -z "$coverage_file" ] || [ ! -f "$coverage_file" ]; then
+          coverage_file=$(find test-results -name "*Coverage*.xml" -type f | head -1)
+        fi
+        
+        # それでも見つからない場合、デフォルトパスを試す
         if [ -z "$coverage_file" ] || [ ! -f "$coverage_file" ]; then
           coverage_file="CodeCoverage/Report/Summary.xml"
         fi
