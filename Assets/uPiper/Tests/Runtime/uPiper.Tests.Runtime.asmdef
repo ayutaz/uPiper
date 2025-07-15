@@ -3,12 +3,13 @@
     "rootNamespace": "uPiper.Tests.Runtime",
     "references": [
         "UnityEngine.TestRunner",
-        "UnityEditor.TestRunner",
         "Unity.InferenceEngine",
         "uPiper.Runtime",
         "uPiper.Scripts.Runtime"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
