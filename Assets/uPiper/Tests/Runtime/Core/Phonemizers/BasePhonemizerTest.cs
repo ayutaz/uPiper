@@ -167,6 +167,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             _phonemizer.SimulateError = true;
             
+            // Expect error log from background thread
+            LogAssert.Expect(LogType.Error, "[uPiper] Phonemization failed: Simulated error");
+            
             // Unity Test Framework doesn't support Assert.ThrowsAsync properly
             // Using synchronous method instead
             var ex = Assert.Throws<PiperPhonemizationException>(
