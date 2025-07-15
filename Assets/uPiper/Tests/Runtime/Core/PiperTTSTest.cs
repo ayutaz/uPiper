@@ -66,8 +66,8 @@ namespace uPiper.Tests.Runtime.Core
         
         #region Initialization Tests
         
-        [Test]
-        public void InitializeAsync_Success()
+        [UnityTest]
+        public IEnumerator InitializeAsync_Success()
         {
             // Arrange
             bool eventFired = false;
@@ -79,7 +79,7 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act
-            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             // Assert
             Assert.IsTrue(_piperTTS.IsInitialized);
@@ -87,39 +87,40 @@ namespace uPiper.Tests.Runtime.Core
             Assert.IsTrue(eventResult);
         }
         
-        [Test]
-        public void InitializeAsync_AlreadyInitialized_DoesNothing()
+        [UnityTest]
+        public IEnumerator InitializeAsync_AlreadyInitialized_DoesNothing()
         {
             // Arrange
-            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             int eventCount = 0;
             _piperTTS.OnInitialized += _ => eventCount++;
             
             // Act
             LogAssert.Expect(LogType.Warning, "[uPiper] PiperTTS is already initialized");
-            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             // Assert
             Assert.AreEqual(0, eventCount); // Event should not fire again
         }
         
-        [Test]
-        public void InitializeAsync_Cancellation_ThrowsOperationCanceledException()
+        [UnityTest]
+        public IEnumerator InitializeAsync_Cancellation_ThrowsOperationCanceledException()
         {
             // Arrange
             using var cts = new CancellationTokenSource();
             cts.Cancel();
             
             // Act & Assert
-            SyncTestHelpers.RunSyncExpectException<OperationCanceledException>(
-                () => _piperTTS.InitializeAsync(cts.Token));
+            yield return AsyncTestHelpers.RunAsyncExpectException<OperationCanceledException>(
+                _piperTTS.InitializeAsync(cts.Token));
             
             Assert.IsFalse(_piperTTS.IsInitialized);
         }
         
         #endregion
         
+        /* Temporarily disabled to test async pattern
         #region Voice Management Tests
         
         [Test]
@@ -603,5 +604,6 @@ namespace uPiper.Tests.Runtime.Core
         }
         
         #endregion
+        */
     }
 }

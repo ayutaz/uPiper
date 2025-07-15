@@ -18,8 +18,15 @@ namespace uPiper.Tests.Runtime.Helpers
         /// </summary>
         public static IEnumerator RunAsync(Task task, float timeout = 5f)
         {
+            if (task == null)
+            {
+                Assert.Fail("Task is null");
+                yield break;
+            }
+            
             var startTime = Time.realtimeSinceStartup;
             
+            // Poll the task completion state
             while (!task.IsCompleted)
             {
                 if (Time.realtimeSinceStartup - startTime > timeout)
@@ -28,21 +35,27 @@ namespace uPiper.Tests.Runtime.Helpers
                     yield break;
                 }
                 
+                // Yield control back to Unity Test Framework
                 yield return null;
             }
             
+            // Handle task completion states
             if (task.IsFaulted)
             {
                 if (task.Exception != null)
                 {
-                    throw task.Exception.GetBaseException();
+                    // Properly unwrap and throw the exception
+                    var ex = task.Exception.GetBaseException();
+                    throw ex;
                 }
                 Assert.Fail("Task faulted without exception");
             }
             else if (task.IsCanceled)
             {
-                Assert.Fail("Task was canceled");
+                throw new OperationCanceledException("Task was canceled");
             }
+            
+            // Task completed successfully
         }
         
         /// <summary>
