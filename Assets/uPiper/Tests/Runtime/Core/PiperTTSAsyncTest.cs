@@ -255,7 +255,7 @@ namespace uPiper.Tests.Runtime.Core
             Assert.IsTrue(chunks.Last().IsFinal);
             Assert.AreEqual(22050, chunks.First().SampleRate);
         }
-        */
+        
         #endregion
     }
 }
