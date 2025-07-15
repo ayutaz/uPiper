@@ -143,8 +143,9 @@ namespace uPiper.Core.Phonemizers
         /// </summary>
         public virtual PhonemeResult Phonemize(string text, string language = "ja")
         {
-            // Run async method synchronously
-            return Task.Run(async () => await PhonemizeAsync(text, language)).GetAwaiter().GetResult();
+            // Run async method synchronously using a thread pool task
+            // This prevents deadlocks in Unity's synchronization context
+            return Task.Run(() => PhonemizeAsync(text, language)).Result;
         }
 
         /// <summary>
