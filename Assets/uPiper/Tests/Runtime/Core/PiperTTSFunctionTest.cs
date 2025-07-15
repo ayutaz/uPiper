@@ -32,7 +32,6 @@ namespace uPiper.Tests.Runtime.Core
         {
             Assert.IsNotNull(_piperTTS);
             Assert.IsFalse(_piperTTS.IsInitialized);
-            Assert.IsFalse(_piperTTS.IsDisposed);
         }
         
         [Test]
@@ -52,9 +51,9 @@ namespace uPiper.Tests.Runtime.Core
         }
         
         [Test]
-        public void IsDisposed_BeforeDispose_ReturnsFalse()
+        public void IsProcessing_BeforeProcessing_ReturnsFalse()
         {
-            Assert.IsFalse(_piperTTS.IsDisposed);
+            Assert.IsFalse(_piperTTS.IsProcessing);
         }
         
         [Test]
@@ -76,10 +75,9 @@ namespace uPiper.Tests.Runtime.Core
         #region Dispose Tests
         
         [Test]
-        public void Dispose_SetsIsDisposedToTrue()
+        public void Dispose_DoesNotThrow()
         {
-            _piperTTS.Dispose();
-            Assert.IsTrue(_piperTTS.IsDisposed);
+            Assert.DoesNotThrow(() => _piperTTS.Dispose());
         }
         
         [Test]
@@ -113,21 +111,21 @@ namespace uPiper.Tests.Runtime.Core
         }
         
         [Test]
-        public void OnVoiceUnloaded_CanSubscribeAndUnsubscribe()
-        {
-            void Handler(string voiceId) { }
-            
-            Assert.DoesNotThrow(() => _piperTTS.OnVoiceUnloaded += Handler);
-            Assert.DoesNotThrow(() => _piperTTS.OnVoiceUnloaded -= Handler);
-        }
-        
-        [Test]
-        public void OnErrorOccurred_CanSubscribeAndUnsubscribe()
+        public void OnError_CanSubscribeAndUnsubscribe()
         {
             void Handler(PiperException error) { }
             
-            Assert.DoesNotThrow(() => _piperTTS.OnErrorOccurred += Handler);
-            Assert.DoesNotThrow(() => _piperTTS.OnErrorOccurred -= Handler);
+            Assert.DoesNotThrow(() => _piperTTS.OnError += Handler);
+            Assert.DoesNotThrow(() => _piperTTS.OnError -= Handler);
+        }
+        
+        [Test]
+        public void OnProcessingProgress_CanSubscribeAndUnsubscribe()
+        {
+            void Handler(float progress) { }
+            
+            Assert.DoesNotThrow(() => _piperTTS.OnProcessingProgress += Handler);
+            Assert.DoesNotThrow(() => _piperTTS.OnProcessingProgress -= Handler);
         }
         
         #endregion
@@ -135,21 +133,15 @@ namespace uPiper.Tests.Runtime.Core
         #region Voice Config Tests
         
         [Test]
-        public void SetVoice_BeforeInitialization_ThrowsInvalidOperationException()
+        public void SetCurrentVoice_BeforeInitialization_ThrowsInvalidOperationException()
         {
-            Assert.Throws<InvalidOperationException>(() => _piperTTS.SetVoice("test-voice"));
+            Assert.Throws<InvalidOperationException>(() => _piperTTS.SetCurrentVoice("test-voice"));
         }
         
         [Test]
-        public void UnloadVoice_BeforeInitialization_ThrowsInvalidOperationException()
+        public void CurrentVoice_BeforeLoadingVoice_ReturnsNull()
         {
-            Assert.Throws<InvalidOperationException>(() => _piperTTS.UnloadVoice("test-voice"));
-        }
-        
-        [Test]
-        public void UnloadAllVoices_BeforeInitialization_ThrowsInvalidOperationException()
-        {
-            Assert.Throws<InvalidOperationException>(() => _piperTTS.UnloadAllVoices());
+            Assert.IsNull(_piperTTS.CurrentVoice);
         }
         
         #endregion
@@ -161,7 +153,7 @@ namespace uPiper.Tests.Runtime.Core
         {
             var stats = _piperTTS.GetCacheStatistics();
             Assert.IsNotNull(stats);
-            Assert.AreEqual(0, stats.CurrentSize);
+            Assert.AreEqual(0, stats.TotalSizeBytes);
             Assert.AreEqual(0, stats.HitCount);
             Assert.AreEqual(0, stats.MissCount);
             Assert.AreEqual(0f, stats.HitRate);
@@ -175,19 +167,18 @@ namespace uPiper.Tests.Runtime.Core
         
         #endregion
         
-        #region Config Tests
+        #region Additional Property Tests
         
         [Test]
-        public void UpdateConfig_WithValidConfig_DoesNotThrow()
+        public void CurrentVoice_ReturnsNullWhenNoVoiceLoaded()
         {
-            var newConfig = PiperConfig.CreateDefault();
-            Assert.DoesNotThrow(() => _piperTTS.UpdateConfig(newConfig));
+            Assert.IsNull(_piperTTS.CurrentVoice);
         }
         
         [Test]
-        public void UpdateConfig_WithNullConfig_ThrowsArgumentNullException()
+        public void IsProcessing_InitiallyFalse()
         {
-            Assert.Throws<ArgumentNullException>(() => _piperTTS.UpdateConfig(null));
+            Assert.IsFalse(_piperTTS.IsProcessing);
         }
         
         #endregion
