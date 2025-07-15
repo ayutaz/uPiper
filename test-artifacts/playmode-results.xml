@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<test-run id="2" testcasecount="130" result="Failed(Child)" total="130" passed="110" failed="20" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:39:35Z" duration="95.7505031">
-  <test-suite type="TestSuite" id="1152" name="uPiper" fullname="uPiper" runstate="Runnable" testcasecount="130" result="Failed" site="Child" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:39:35Z" duration="95.750503" total="130" passed="110" failed="20" inconclusive="0" skipped="0" asserts="0">
+<test-run id="2" testcasecount="130" result="Failed(Child)" total="130" passed="110" failed="20" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:52:56Z" duration="95.7960246">
+  <test-suite type="TestSuite" id="1152" name="uPiper" fullname="uPiper" runstate="Runnable" testcasecount="130" result="Failed" site="Child" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:52:56Z" duration="95.796025" total="130" passed="110" failed="20" inconclusive="0" skipped="0" asserts="0">
     <properties>
       <property name="platform" value="PlayMode" />
     </properties>
     <failure>
       <message><![CDATA[One or more child tests had errors]]></message>
     </failure>
-    <test-suite type="Assembly" id="1147" name="uPiper.Tests.Runtime.dll" fullname="/github/workspace/Library/ScriptAssemblies/uPiper.Tests.Runtime.dll" runstate="Runnable" testcasecount="130" result="Failed" site="Child" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:39:35Z" duration="95.738780" total="130" passed="110" failed="20" inconclusive="0" skipped="0" asserts="0">
+    <test-suite type="Assembly" id="1147" name="uPiper.Tests.Runtime.dll" fullname="/github/workspace/Library/ScriptAssemblies/uPiper.Tests.Runtime.dll" runstate="Runnable" testcasecount="130" result="Failed" site="Child" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:52:56Z" duration="95.780859" total="130" passed="110" failed="20" inconclusive="0" skipped="0" asserts="0">
       <properties>
-        <property name="_PID" value="1632" />
+        <property name="_PID" value="1653" />
         <property name="_APPDOMAIN" value="Unity Child Domain" />
         <property name="platform" value="PlayMode" />
         <property name="EditorOnly" value="False" />
@@ -17,217 +17,217 @@
       <failure>
         <message><![CDATA[One or more child tests had errors]]></message>
       </failure>
-      <test-suite type="TestSuite" id="1148" name="uPiper" fullname="uPiper" runstate="Runnable" testcasecount="130" result="Failed" site="Child" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:39:35Z" duration="95.737800" total="130" passed="110" failed="20" inconclusive="0" skipped="0" asserts="0">
+      <test-suite type="TestSuite" id="1148" name="uPiper" fullname="uPiper" runstate="Runnable" testcasecount="130" result="Failed" site="Child" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:52:56Z" duration="95.779938" total="130" passed="110" failed="20" inconclusive="0" skipped="0" asserts="0">
         <properties />
         <failure>
           <message><![CDATA[One or more child tests had errors]]></message>
         </failure>
-        <test-suite type="TestSuite" id="1149" name="Tests" fullname="uPiper.Tests" runstate="Runnable" testcasecount="130" result="Failed" site="Child" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:39:35Z" duration="95.737286" total="130" passed="110" failed="20" inconclusive="0" skipped="0" asserts="0">
+        <test-suite type="TestSuite" id="1149" name="Tests" fullname="uPiper.Tests" runstate="Runnable" testcasecount="130" result="Failed" site="Child" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:52:56Z" duration="95.779536" total="130" passed="110" failed="20" inconclusive="0" skipped="0" asserts="0">
           <properties />
           <failure>
             <message><![CDATA[One or more child tests had errors]]></message>
           </failure>
-          <test-suite type="TestSuite" id="1150" name="Runtime" fullname="uPiper.Tests.Runtime" runstate="Runnable" testcasecount="130" result="Failed" site="Child" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:39:35Z" duration="95.736731" total="130" passed="110" failed="20" inconclusive="0" skipped="0" asserts="0">
+          <test-suite type="TestSuite" id="1150" name="Runtime" fullname="uPiper.Tests.Runtime" runstate="Runnable" testcasecount="130" result="Failed" site="Child" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:52:56Z" duration="95.779036" total="130" passed="110" failed="20" inconclusive="0" skipped="0" asserts="0">
             <properties />
             <failure>
               <message><![CDATA[One or more child tests had errors]]></message>
             </failure>
-            <test-suite type="TestSuite" id="1151" name="Core" fullname="uPiper.Tests.Runtime.Core" runstate="Runnable" testcasecount="119" result="Failed" site="Child" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:39:35Z" duration="95.591242" total="119" passed="99" failed="20" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestSuite" id="1151" name="Core" fullname="uPiper.Tests.Runtime.Core" runstate="Runnable" testcasecount="119" result="Failed" site="Child" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:52:55Z" duration="95.632531" total="119" passed="99" failed="20" inconclusive="0" skipped="0" asserts="0">
               <properties />
               <failure>
                 <message><![CDATA[One or more child tests had errors]]></message>
               </failure>
-              <test-suite type="TestFixture" id="1018" name="AudioChunkTest" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" testcasecount="11" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.068796" total="11" passed="11" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <test-suite type="TestFixture" id="1018" name="AudioChunkTest" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" testcasecount="11" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.112717" total="11" passed="11" failed="0" inconclusive="0" skipped="0" asserts="0">
                 <properties />
-                <test-case id="1027" name="CombineChunks_CombinesCorrectly" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.CombineChunks_CombinesCorrectly" methodname="CombineChunks_CombinesCorrectly" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="432122910" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.033138" asserts="0">
+                <test-case id="1027" name="CombineChunks_CombinesCorrectly" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.CombineChunks_CombinesCorrectly" methodname="CombineChunks_CombinesCorrectly" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="780611188" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.060346" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1024" name="CombineChunks_ThrowsForNullOrEmpty" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.CombineChunks_ThrowsForNullOrEmpty" methodname="CombineChunks_ThrowsForNullOrEmpty" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="1456796107" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.005068" asserts="0">
+                <test-case id="1024" name="CombineChunks_ThrowsForNullOrEmpty" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.CombineChunks_ThrowsForNullOrEmpty" methodname="CombineChunks_ThrowsForNullOrEmpty" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="857716968" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.005599" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1026" name="CombineChunks_ValidatesChannels" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.CombineChunks_ValidatesChannels" methodname="CombineChunks_ValidatesChannels" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="511473299" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000711" asserts="0">
+                <test-case id="1026" name="CombineChunks_ValidatesChannels" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.CombineChunks_ValidatesChannels" methodname="CombineChunks_ValidatesChannels" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="181098733" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000755" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1025" name="CombineChunks_ValidatesSampleRate" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.CombineChunks_ValidatesSampleRate" methodname="CombineChunks_ValidatesSampleRate" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="859387611" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000484" asserts="0">
+                <test-case id="1025" name="CombineChunks_ValidatesSampleRate" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.CombineChunks_ValidatesSampleRate" methodname="CombineChunks_ValidatesSampleRate" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="837702557" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000559" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1019" name="Constructor_ValidatesParameters" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.Constructor_ValidatesParameters" methodname="Constructor_ValidatesParameters" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="611766734" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.001037" asserts="0">
+                <test-case id="1019" name="Constructor_ValidatesParameters" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.Constructor_ValidatesParameters" methodname="Constructor_ValidatesParameters" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="74057252" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001086" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1020" name="Duration_CalculatedCorrectly" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.Duration_CalculatedCorrectly" methodname="Duration_CalculatedCorrectly" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="2029783712" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.001341" asserts="0">
+                <test-case id="1020" name="Duration_CalculatedCorrectly" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.Duration_CalculatedCorrectly" methodname="Duration_CalculatedCorrectly" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="2135928842" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001457" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1021" name="Duration_CalculatedCorrectlyForStereo" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.Duration_CalculatedCorrectlyForStereo" methodname="Duration_CalculatedCorrectlyForStereo" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="201011646" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000279" asserts="0">
+                <test-case id="1021" name="Duration_CalculatedCorrectlyForStereo" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.Duration_CalculatedCorrectlyForStereo" methodname="Duration_CalculatedCorrectlyForStereo" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="1172077418" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000286" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1028" name="TextSegmentAndStartTime_AreStoredCorrectly" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.TextSegmentAndStartTime_AreStoredCorrectly" methodname="TextSegmentAndStartTime_AreStoredCorrectly" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="1326020791" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000370" asserts="0">
+                <test-case id="1028" name="TextSegmentAndStartTime_AreStoredCorrectly" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.TextSegmentAndStartTime_AreStoredCorrectly" methodname="TextSegmentAndStartTime_AreStoredCorrectly" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="1755231198" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000373" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1022" name="ToAudioClip_CreatesValidClip" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.ToAudioClip_CreatesValidClip" methodname="ToAudioClip_CreatesValidClip" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="1614574889" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000641" asserts="0">
+                <test-case id="1022" name="ToAudioClip_CreatesValidClip" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.ToAudioClip_CreatesValidClip" methodname="ToAudioClip_CreatesValidClip" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="1594473792" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000675" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1029" name="ToAudioClip_HandlesStereoAudio" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.ToAudioClip_HandlesStereoAudio" methodname="ToAudioClip_HandlesStereoAudio" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="1986559727" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000578" asserts="0">
+                <test-case id="1029" name="ToAudioClip_HandlesStereoAudio" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.ToAudioClip_HandlesStereoAudio" methodname="ToAudioClip_HandlesStereoAudio" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="1336501231" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000538" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1023" name="ToAudioClip_UsesDefaultName" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.ToAudioClip_UsesDefaultName" methodname="ToAudioClip_UsesDefaultName" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="1093822110" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000384" asserts="0">
+                <test-case id="1023" name="ToAudioClip_UsesDefaultName" fullname="uPiper.Tests.Runtime.Core.AudioChunkTest.ToAudioClip_UsesDefaultName" methodname="ToAudioClip_UsesDefaultName" classname="uPiper.Tests.Runtime.Core.AudioChunkTest" runstate="Runnable" seed="586434743" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000422" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
               </test-suite>
-              <test-suite type="TestFixture" id="1030" name="CacheStatisticsTest" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" testcasecount="16" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.018042" total="16" passed="16" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <test-suite type="TestFixture" id="1030" name="CacheStatisticsTest" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" testcasecount="16" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.037050" total="16" passed="16" failed="0" inconclusive="0" skipped="0" asserts="0">
                 <properties />
-                <test-case id="1037" name="AverageEntrySizeBytes_CalculatesCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.AverageEntrySizeBytes_CalculatesCorrectly" methodname="AverageEntrySizeBytes_CalculatesCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="934157070" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000584" asserts="0">
+                <test-case id="1037" name="AverageEntrySizeBytes_CalculatesCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.AverageEntrySizeBytes_CalculatesCorrectly" methodname="AverageEntrySizeBytes_CalculatesCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="987300957" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000707" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1038" name="AverageEntrySizeBytes_ReturnsZeroWhenNoEntries" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.AverageEntrySizeBytes_ReturnsZeroWhenNoEntries" methodname="AverageEntrySizeBytes_ReturnsZeroWhenNoEntries" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="683212739" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000249" asserts="0">
+                <test-case id="1038" name="AverageEntrySizeBytes_ReturnsZeroWhenNoEntries" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.AverageEntrySizeBytes_ReturnsZeroWhenNoEntries" methodname="AverageEntrySizeBytes_ReturnsZeroWhenNoEntries" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1123518402" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000277" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1033" name="HitRate_CalculatesCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.HitRate_CalculatesCorrectly" methodname="HitRate_CalculatesCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1052017730" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000530" asserts="0">
+                <test-case id="1033" name="HitRate_CalculatesCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.HitRate_CalculatesCorrectly" methodname="HitRate_CalculatesCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1774217912" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000595" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1034" name="HitRate_ReturnsZeroWhenNoRequests" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.HitRate_ReturnsZeroWhenNoRequests" methodname="HitRate_ReturnsZeroWhenNoRequests" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1998189982" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000232" asserts="0">
+                <test-case id="1034" name="HitRate_ReturnsZeroWhenNoRequests" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.HitRate_ReturnsZeroWhenNoRequests" methodname="HitRate_ReturnsZeroWhenNoRequests" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1674075021" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.003277" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1032" name="MaxSizeMB_CalculatesCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.MaxSizeMB_CalculatesCorrectly" methodname="MaxSizeMB_CalculatesCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1868029857" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000439" asserts="0">
+                <test-case id="1032" name="MaxSizeMB_CalculatesCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.MaxSizeMB_CalculatesCorrectly" methodname="MaxSizeMB_CalculatesCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="185143143" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000453" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1046" name="RecordEviction_DefaultParameter" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.RecordEviction_DefaultParameter" methodname="RecordEviction_DefaultParameter" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="2094374467" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000850" asserts="0">
+                <test-case id="1046" name="RecordEviction_DefaultParameter" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.RecordEviction_DefaultParameter" methodname="RecordEviction_DefaultParameter" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1201420841" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000995" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1041" name="RecordEviction_IncrementsEvictionCount" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.RecordEviction_IncrementsEvictionCount" methodname="RecordEviction_IncrementsEvictionCount" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="310798884" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000249" asserts="0">
+                <test-case id="1041" name="RecordEviction_IncrementsEvictionCount" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.RecordEviction_IncrementsEvictionCount" methodname="RecordEviction_IncrementsEvictionCount" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="593053534" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001863" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1039" name="RecordHit_IncrementsHitCount" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.RecordHit_IncrementsHitCount" methodname="RecordHit_IncrementsHitCount" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1881007295" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000341" asserts="0">
+                <test-case id="1039" name="RecordHit_IncrementsHitCount" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.RecordHit_IncrementsHitCount" methodname="RecordHit_IncrementsHitCount" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="854823521" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000326" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1040" name="RecordMiss_IncrementsMissCount" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.RecordMiss_IncrementsMissCount" methodname="RecordMiss_IncrementsMissCount" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="879554893" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000325" asserts="0">
+                <test-case id="1040" name="RecordMiss_IncrementsMissCount" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.RecordMiss_IncrementsMissCount" methodname="RecordMiss_IncrementsMissCount" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1106165291" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000333" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1042" name="Reset_ClearsAllStatistics" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.Reset_ClearsAllStatistics" methodname="Reset_ClearsAllStatistics" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1585809242" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.003190" asserts="0">
+                <test-case id="1042" name="Reset_ClearsAllStatistics" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.Reset_ClearsAllStatistics" methodname="Reset_ClearsAllStatistics" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="940667239" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002924" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1045" name="TimeSinceLastClear_CalculatesCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.TimeSinceLastClear_CalculatesCorrectly" methodname="TimeSinceLastClear_CalculatesCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1694524682" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000972" asserts="0">
+                <test-case id="1045" name="TimeSinceLastClear_CalculatesCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.TimeSinceLastClear_CalculatesCorrectly" methodname="TimeSinceLastClear_CalculatesCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="848997201" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000938" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1044" name="ToString_FormatsCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.ToString_FormatsCorrectly" methodname="ToString_FormatsCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="675376795" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.002879" asserts="0">
+                <test-case id="1044" name="ToString_FormatsCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.ToString_FormatsCorrectly" methodname="ToString_FormatsCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="654297416" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002676" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1031" name="TotalSizeMB_CalculatesCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.TotalSizeMB_CalculatesCorrectly" methodname="TotalSizeMB_CalculatesCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="550697311" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000252" asserts="0">
+                <test-case id="1031" name="TotalSizeMB_CalculatesCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.TotalSizeMB_CalculatesCorrectly" methodname="TotalSizeMB_CalculatesCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="765067127" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000247" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1043" name="UpdateSize_UpdatesValues" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.UpdateSize_UpdatesValues" methodname="UpdateSize_UpdatesValues" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="78141006" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000398" asserts="0">
+                <test-case id="1043" name="UpdateSize_UpdatesValues" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.UpdateSize_UpdatesValues" methodname="UpdateSize_UpdatesValues" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="966339333" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000352" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1035" name="UsagePercentage_CalculatesCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.UsagePercentage_CalculatesCorrectly" methodname="UsagePercentage_CalculatesCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1329983941" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000449" asserts="0">
+                <test-case id="1035" name="UsagePercentage_CalculatesCorrectly" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.UsagePercentage_CalculatesCorrectly" methodname="UsagePercentage_CalculatesCorrectly" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="1174337619" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000240" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1036" name="UsagePercentage_ReturnsZeroWhenMaxSizeIsZero" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.UsagePercentage_ReturnsZeroWhenMaxSizeIsZero" methodname="UsagePercentage_ReturnsZeroWhenMaxSizeIsZero" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="578850339" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000247" asserts="0">
+                <test-case id="1036" name="UsagePercentage_ReturnsZeroWhenMaxSizeIsZero" fullname="uPiper.Tests.Runtime.Core.CacheStatisticsTest.UsagePercentage_ReturnsZeroWhenMaxSizeIsZero" methodname="UsagePercentage_ReturnsZeroWhenMaxSizeIsZero" classname="uPiper.Tests.Runtime.Core.CacheStatisticsTest" runstate="Runnable" seed="211048379" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000261" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
               </test-suite>
-              <test-suite type="TestFixture" id="1047" name="PiperConfigTest" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" testcasecount="28" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.081527" total="28" passed="28" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <test-suite type="TestFixture" id="1047" name="PiperConfigTest" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" testcasecount="28" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.086099" total="28" passed="28" failed="0" inconclusive="0" skipped="0" asserts="0">
                 <properties />
-                <test-case id="1057" name="AdvancedSettings_HaveCorrectDefaults" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.AdvancedSettings_HaveCorrectDefaults" methodname="AdvancedSettings_HaveCorrectDefaults" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="860553603" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000999" asserts="0">
+                <test-case id="1057" name="AdvancedSettings_HaveCorrectDefaults" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.AdvancedSettings_HaveCorrectDefaults" methodname="AdvancedSettings_HaveCorrectDefaults" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1682462258" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001013" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1048" name="CreateDefault_ReturnsValidConfig" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.CreateDefault_ReturnsValidConfig" methodname="CreateDefault_ReturnsValidConfig" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1575509492" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.001786" asserts="0">
+                <test-case id="1048" name="CreateDefault_ReturnsValidConfig" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.CreateDefault_ReturnsValidConfig" methodname="CreateDefault_ReturnsValidConfig" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="292300185" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001738" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1058" name="InferenceBackend_EnumValues" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.InferenceBackend_EnumValues" methodname="InferenceBackend_EnumValues" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="76032481" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000272" asserts="0">
+                <test-case id="1058" name="InferenceBackend_EnumValues" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.InferenceBackend_EnumValues" methodname="InferenceBackend_EnumValues" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1423234818" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000279" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-suite type="ParameterizedMethod" id="1056" name="Validate_AcceptsStandardSampleRates" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AcceptsStandardSampleRates" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" testcasecount="4" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.015548" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <test-suite type="ParameterizedMethod" id="1056" name="Validate_AcceptsStandardSampleRates" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AcceptsStandardSampleRates" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" testcasecount="4" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.021549" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
                   <properties />
-                  <test-case id="1052" name="Validate_AcceptsStandardSampleRates(16000)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AcceptsStandardSampleRates(16000)" methodname="Validate_AcceptsStandardSampleRates" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1210150082" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.006644" asserts="0">
+                  <test-case id="1052" name="Validate_AcceptsStandardSampleRates(16000)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AcceptsStandardSampleRates(16000)" methodname="Validate_AcceptsStandardSampleRates" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1099082513" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.013398" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
@@ -236,7 +236,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                   </test-case>
-                  <test-case id="1053" name="Validate_AcceptsStandardSampleRates(22050)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AcceptsStandardSampleRates(22050)" methodname="Validate_AcceptsStandardSampleRates" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1161683504" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.002461" asserts="0">
+                  <test-case id="1053" name="Validate_AcceptsStandardSampleRates(22050)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AcceptsStandardSampleRates(22050)" methodname="Validate_AcceptsStandardSampleRates" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="851305031" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002123" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
@@ -245,7 +245,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                   </test-case>
-                  <test-case id="1054" name="Validate_AcceptsStandardSampleRates(44100)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AcceptsStandardSampleRates(44100)" methodname="Validate_AcceptsStandardSampleRates" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1233699029" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.002374" asserts="0">
+                  <test-case id="1054" name="Validate_AcceptsStandardSampleRates(44100)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AcceptsStandardSampleRates(44100)" methodname="Validate_AcceptsStandardSampleRates" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="382591362" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002310" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
@@ -254,7 +254,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                   </test-case>
-                  <test-case id="1055" name="Validate_AcceptsStandardSampleRates(48000)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AcceptsStandardSampleRates(48000)" methodname="Validate_AcceptsStandardSampleRates" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1755567230" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.002377" asserts="0">
+                  <test-case id="1055" name="Validate_AcceptsStandardSampleRates(48000)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AcceptsStandardSampleRates(48000)" methodname="Validate_AcceptsStandardSampleRates" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="142772739" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002030" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
@@ -264,7 +264,7 @@
 ]]></output>
                   </test-case>
                 </test-suite>
-                <test-case id="1073" name="Validate_AdjustsInvalidBatchSize" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AdjustsInvalidBatchSize" methodname="Validate_AdjustsInvalidBatchSize" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="2138675470" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.005669" asserts="0">
+                <test-case id="1073" name="Validate_AdjustsInvalidBatchSize" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AdjustsInvalidBatchSize" methodname="Validate_AdjustsInvalidBatchSize" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="940607554" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.005375" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -274,7 +274,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-case id="1049" name="Validate_AdjustsInvalidCacheSize" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AdjustsInvalidCacheSize" methodname="Validate_AdjustsInvalidCacheSize" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1974849461" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.003211" asserts="0">
+                <test-case id="1049" name="Validate_AdjustsInvalidCacheSize" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AdjustsInvalidCacheSize" methodname="Validate_AdjustsInvalidCacheSize" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="803701477" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002815" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -284,7 +284,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-case id="1074" name="Validate_AdjustsLargeBatchSize" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AdjustsLargeBatchSize" methodname="Validate_AdjustsLargeBatchSize" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="870927099" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.003292" asserts="0">
+                <test-case id="1074" name="Validate_AdjustsLargeBatchSize" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AdjustsLargeBatchSize" methodname="Validate_AdjustsLargeBatchSize" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="2007036503" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002832" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -294,7 +294,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-case id="1059" name="Validate_AdjustsLargeCacheSize" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AdjustsLargeCacheSize" methodname="Validate_AdjustsLargeCacheSize" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1792767060" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.003245" asserts="0">
+                <test-case id="1059" name="Validate_AdjustsLargeCacheSize" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AdjustsLargeCacheSize" methodname="Validate_AdjustsLargeCacheSize" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1202135935" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002893" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -304,7 +304,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-case id="1076" name="Validate_AdjustsLowRMSLevel" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AdjustsLowRMSLevel" methodname="Validate_AdjustsLowRMSLevel" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="408681466" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.003882" asserts="0">
+                <test-case id="1076" name="Validate_AdjustsLowRMSLevel" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AdjustsLowRMSLevel" methodname="Validate_AdjustsLowRMSLevel" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="267717371" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002898" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -314,7 +314,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-case id="1075" name="Validate_AdjustsPositiveRMSLevel" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AdjustsPositiveRMSLevel" methodname="Validate_AdjustsPositiveRMSLevel" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1977390842" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.003252" asserts="0">
+                <test-case id="1075" name="Validate_AdjustsPositiveRMSLevel" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_AdjustsPositiveRMSLevel" methodname="Validate_AdjustsPositiveRMSLevel" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="846037894" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002848" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -324,7 +324,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-case id="1077" name="Validate_IgnoresRMSLevelWhenNotNormalizing" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_IgnoresRMSLevelWhenNotNormalizing" methodname="Validate_IgnoresRMSLevelWhenNotNormalizing" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="592859232" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.002262" asserts="0">
+                <test-case id="1077" name="Validate_IgnoresRMSLevelWhenNotNormalizing" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_IgnoresRMSLevelWhenNotNormalizing" methodname="Validate_IgnoresRMSLevelWhenNotNormalizing" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1299557949" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002117" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -333,7 +333,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-case id="1078" name="Validate_LogsSuccessMessage" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_LogsSuccessMessage" methodname="Validate_LogsSuccessMessage" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="97123184" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.002365" asserts="0">
+                <test-case id="1078" name="Validate_LogsSuccessMessage" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_LogsSuccessMessage" methodname="Validate_LogsSuccessMessage" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="826789847" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002014" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -342,7 +342,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-case id="1069" name="Validate_NormalizesLanguageCode" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_NormalizesLanguageCode" methodname="Validate_NormalizesLanguageCode" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="97389538" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.002230" asserts="0">
+                <test-case id="1069" name="Validate_NormalizesLanguageCode" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_NormalizesLanguageCode" methodname="Validate_NormalizesLanguageCode" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="419618958" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001906" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -351,7 +351,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-case id="1051" name="Validate_SetsWorkerThreadsAutomatically" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_SetsWorkerThreadsAutomatically" methodname="Validate_SetsWorkerThreadsAutomatically" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1164126468" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.002777" asserts="0">
+                <test-case id="1051" name="Validate_SetsWorkerThreadsAutomatically" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_SetsWorkerThreadsAutomatically" methodname="Validate_SetsWorkerThreadsAutomatically" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1126952411" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002354" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -360,9 +360,9 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-suite type="ParameterizedMethod" id="1068" name="Validate_ThrowsForInvalidLanguage" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidLanguage" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" testcasecount="3" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.006961" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <test-suite type="ParameterizedMethod" id="1068" name="Validate_ThrowsForInvalidLanguage" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidLanguage" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" testcasecount="3" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.006465" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
                   <properties />
-                  <test-case id="1065" name="Validate_ThrowsForInvalidLanguage(null)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidLanguage(null)" methodname="Validate_ThrowsForInvalidLanguage" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="264415294" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.002921" asserts="0">
+                  <test-case id="1065" name="Validate_ThrowsForInvalidLanguage(null)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidLanguage(null)" methodname="Validate_ThrowsForInvalidLanguage" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1050906328" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002725" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
@@ -370,7 +370,7 @@
                     <output><![CDATA[[uPiper] Auto-detected 3 worker threads
 ]]></output>
                   </test-case>
-                  <test-case id="1066" name="Validate_ThrowsForInvalidLanguage(&quot;&quot;)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidLanguage(&quot;&quot;)" methodname="Validate_ThrowsForInvalidLanguage" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="968282700" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.001288" asserts="0">
+                  <test-case id="1066" name="Validate_ThrowsForInvalidLanguage(&quot;&quot;)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidLanguage(&quot;&quot;)" methodname="Validate_ThrowsForInvalidLanguage" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1093166818" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001131" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
@@ -378,7 +378,7 @@
                     <output><![CDATA[[uPiper] Auto-detected 3 worker threads
 ]]></output>
                   </test-case>
-                  <test-case id="1067" name="Validate_ThrowsForInvalidLanguage(&quot;   &quot;)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidLanguage(&quot;   &quot;)" methodname="Validate_ThrowsForInvalidLanguage" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1042768795" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.001212" asserts="0">
+                  <test-case id="1067" name="Validate_ThrowsForInvalidLanguage(&quot;   &quot;)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidLanguage(&quot;   &quot;)" methodname="Validate_ThrowsForInvalidLanguage" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1683272415" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001116" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
@@ -387,22 +387,22 @@
 ]]></output>
                   </test-case>
                 </test-suite>
-                <test-suite type="ParameterizedMethod" id="1062" name="Validate_ThrowsForInvalidSampleRate" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidSampleRate" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.001707" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <test-suite type="ParameterizedMethod" id="1062" name="Validate_ThrowsForInvalidSampleRate" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidSampleRate" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001935" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
                   <properties />
-                  <test-case id="1060" name="Validate_ThrowsForInvalidSampleRate(7999)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidSampleRate(7999)" methodname="Validate_ThrowsForInvalidSampleRate" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1671648570" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000551" asserts="0">
+                  <test-case id="1060" name="Validate_ThrowsForInvalidSampleRate(7999)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidSampleRate(7999)" methodname="Validate_ThrowsForInvalidSampleRate" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1382980381" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000659" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
                     </properties>
                   </test-case>
-                  <test-case id="1061" name="Validate_ThrowsForInvalidSampleRate(48001)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidSampleRate(48001)" methodname="Validate_ThrowsForInvalidSampleRate" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1449603765" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000199" asserts="0">
+                  <test-case id="1061" name="Validate_ThrowsForInvalidSampleRate(48001)" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForInvalidSampleRate(48001)" methodname="Validate_ThrowsForInvalidSampleRate" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="227712987" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000192" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
                     </properties>
                   </test-case>
                 </test-suite>
-                <test-case id="1071" name="Validate_ThrowsForNegativeTimeout" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForNegativeTimeout" methodname="Validate_ThrowsForNegativeTimeout" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1592139757" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.001796" asserts="0">
+                <test-case id="1071" name="Validate_ThrowsForNegativeTimeout" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForNegativeTimeout" methodname="Validate_ThrowsForNegativeTimeout" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="983305289" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001661" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -410,13 +410,13 @@
                   <output><![CDATA[[uPiper] Auto-detected 3 worker threads
 ]]></output>
                 </test-case>
-                <test-case id="1063" name="Validate_ThrowsForNegativeWorkerThreads" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForNegativeWorkerThreads" methodname="Validate_ThrowsForNegativeWorkerThreads" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1763067230" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000486" asserts="0">
+                <test-case id="1063" name="Validate_ThrowsForNegativeWorkerThreads" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_ThrowsForNegativeWorkerThreads" methodname="Validate_ThrowsForNegativeWorkerThreads" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1513029247" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000472" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1050" name="Validate_WarnsAboutNonStandardSampleRate" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_WarnsAboutNonStandardSampleRate" methodname="Validate_WarnsAboutNonStandardSampleRate" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="757456605" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.003651" asserts="0">
+                <test-case id="1050" name="Validate_WarnsAboutNonStandardSampleRate" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_WarnsAboutNonStandardSampleRate" methodname="Validate_WarnsAboutNonStandardSampleRate" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="961989223" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.003145" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -426,7 +426,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-case id="1064" name="Validate_WarnsForExcessiveWorkerThreads" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_WarnsForExcessiveWorkerThreads" methodname="Validate_WarnsForExcessiveWorkerThreads" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1200183918" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.002250" asserts="0">
+                <test-case id="1064" name="Validate_WarnsForExcessiveWorkerThreads" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_WarnsForExcessiveWorkerThreads" methodname="Validate_WarnsForExcessiveWorkerThreads" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="690044191" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001912" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -435,7 +435,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-case id="1072" name="Validate_WarnsForShortTimeout" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_WarnsForShortTimeout" methodname="Validate_WarnsForShortTimeout" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="107387565" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.003198" asserts="0">
+                <test-case id="1072" name="Validate_WarnsForShortTimeout" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_WarnsForShortTimeout" methodname="Validate_WarnsForShortTimeout" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="1737154193" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002757" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -445,7 +445,7 @@
 [uPiper] PiperConfig validated successfully
 ]]></output>
                 </test-case>
-                <test-case id="1070" name="Validate_WarnsForUnusualLanguageFormat" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_WarnsForUnusualLanguageFormat" methodname="Validate_WarnsForUnusualLanguageFormat" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="867854494" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.003197" asserts="0">
+                <test-case id="1070" name="Validate_WarnsForUnusualLanguageFormat" fullname="uPiper.Tests.Runtime.Core.PiperConfigTest.Validate_WarnsForUnusualLanguageFormat" methodname="Validate_WarnsForUnusualLanguageFormat" classname="uPiper.Tests.Runtime.Core.PiperConfigTest" runstate="Runnable" seed="631509039" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.002740" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -456,84 +456,84 @@
 ]]></output>
                 </test-case>
               </test-suite>
-              <test-suite type="TestFixture" id="1079" name="PiperExceptionTest" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" testcasecount="12" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.011081" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <test-suite type="TestFixture" id="1079" name="PiperExceptionTest" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" testcasecount="12" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.014804" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
                 <properties />
-                <test-case id="1091" name="AllErrorCodes_AreDefined" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.AllErrorCodes_AreDefined" methodname="AllErrorCodes_AreDefined" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="1322084744" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.001895" asserts="0">
+                <test-case id="1091" name="AllErrorCodes_AreDefined" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.AllErrorCodes_AreDefined" methodname="AllErrorCodes_AreDefined" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="1451624562" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001896" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1088" name="PiperConfigurationException_SetsCorrectErrorCode" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperConfigurationException_SetsCorrectErrorCode" methodname="PiperConfigurationException_SetsCorrectErrorCode" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="999203436" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000482" asserts="0">
+                <test-case id="1088" name="PiperConfigurationException_SetsCorrectErrorCode" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperConfigurationException_SetsCorrectErrorCode" methodname="PiperConfigurationException_SetsCorrectErrorCode" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="1627845018" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000521" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1080" name="PiperException_BasicConstructor" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperException_BasicConstructor" methodname="PiperException_BasicConstructor" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="1723754684" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000473" asserts="0">
+                <test-case id="1080" name="PiperException_BasicConstructor" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperException_BasicConstructor" methodname="PiperException_BasicConstructor" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="288975054" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000454" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1083" name="PiperException_WithContext" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperException_WithContext" methodname="PiperException_WithContext" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="242458959" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000349" asserts="0">
+                <test-case id="1083" name="PiperException_WithContext" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperException_WithContext" methodname="PiperException_WithContext" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="847269592" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000373" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1082" name="PiperException_WithErrorCode" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperException_WithErrorCode" methodname="PiperException_WithErrorCode" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="971719607" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000298" asserts="0">
+                <test-case id="1082" name="PiperException_WithErrorCode" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperException_WithErrorCode" methodname="PiperException_WithErrorCode" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="2136319005" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000292" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1081" name="PiperException_WithInnerException" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperException_WithInnerException" methodname="PiperException_WithInnerException" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="697196780" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000555" asserts="0">
+                <test-case id="1081" name="PiperException_WithInnerException" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperException_WithInnerException" methodname="PiperException_WithInnerException" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="68021542" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000572" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1086" name="PiperInferenceException_SetsCorrectErrorCode" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperInferenceException_SetsCorrectErrorCode" methodname="PiperInferenceException_SetsCorrectErrorCode" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="132039543" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000343" asserts="0">
+                <test-case id="1086" name="PiperInferenceException_SetsCorrectErrorCode" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperInferenceException_SetsCorrectErrorCode" methodname="PiperInferenceException_SetsCorrectErrorCode" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="694825281" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000312" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1084" name="PiperInitializationException_SetsCorrectErrorCode" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperInitializationException_SetsCorrectErrorCode" methodname="PiperInitializationException_SetsCorrectErrorCode" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="1268934680" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000357" asserts="0">
+                <test-case id="1084" name="PiperInitializationException_SetsCorrectErrorCode" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperInitializationException_SetsCorrectErrorCode" methodname="PiperInitializationException_SetsCorrectErrorCode" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="38026648" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000359" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1085" name="PiperModelLoadException_StoresModelPath" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperModelLoadException_StoresModelPath" methodname="PiperModelLoadException_StoresModelPath" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="936476026" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000429" asserts="0">
+                <test-case id="1085" name="PiperModelLoadException_StoresModelPath" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperModelLoadException_StoresModelPath" methodname="PiperModelLoadException_StoresModelPath" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="1846527733" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000553" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1087" name="PiperPhonemizationException_StoresInputData" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperPhonemizationException_StoresInputData" methodname="PiperPhonemizationException_StoresInputData" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="1799320612" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000503" asserts="0">
+                <test-case id="1087" name="PiperPhonemizationException_StoresInputData" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperPhonemizationException_StoresInputData" methodname="PiperPhonemizationException_StoresInputData" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="141141346" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000518" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1089" name="PiperPlatformNotSupportedException_FormatsMessage" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperPlatformNotSupportedException_FormatsMessage" methodname="PiperPlatformNotSupportedException_FormatsMessage" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="311543631" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000448" asserts="0">
+                <test-case id="1089" name="PiperPlatformNotSupportedException_FormatsMessage" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperPlatformNotSupportedException_FormatsMessage" methodname="PiperPlatformNotSupportedException_FormatsMessage" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="1675420989" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000421" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1090" name="PiperTimeoutException_FormatsMessage" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperTimeoutException_FormatsMessage" methodname="PiperTimeoutException_FormatsMessage" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="1832811525" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000447" asserts="0">
+                <test-case id="1090" name="PiperTimeoutException_FormatsMessage" fullname="uPiper.Tests.Runtime.Core.PiperExceptionTest.PiperTimeoutException_FormatsMessage" methodname="PiperTimeoutException_FormatsMessage" classname="uPiper.Tests.Runtime.Core.PiperExceptionTest" runstate="Runnable" seed="1877691587" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000500" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
               </test-suite>
-              <test-suite type="TestFixture" id="1092" name="PiperLoggerTest" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" testcasecount="11" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:38:00Z" duration="0.031690" total="11" passed="11" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <test-suite type="TestFixture" id="1092" name="PiperLoggerTest" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" testcasecount="11" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.037713" total="11" passed="11" failed="0" inconclusive="0" skipped="0" asserts="0">
                 <properties />
-                <test-case id="1101" name="Initialize_SetsCorrectDefaultLevel" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.Initialize_SetsCorrectDefaultLevel" methodname="Initialize_SetsCorrectDefaultLevel" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="835269929" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.005697" asserts="0">
+                <test-case id="1101" name="Initialize_SetsCorrectDefaultLevel" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.Initialize_SetsCorrectDefaultLevel" methodname="Initialize_SetsCorrectDefaultLevel" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="1382469169" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.013377" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -541,7 +541,7 @@
                   <output><![CDATA[[uPiper] Debug should work
 ]]></output>
                 </test-case>
-                <test-case id="1097" name="LogDebug_InEditor_OutputsDebugMessage" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogDebug_InEditor_OutputsDebugMessage" methodname="LogDebug_InEditor_OutputsDebugMessage" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="472132584" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.001301" asserts="0">
+                <test-case id="1097" name="LogDebug_InEditor_OutputsDebugMessage" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogDebug_InEditor_OutputsDebugMessage" methodname="LogDebug_InEditor_OutputsDebugMessage" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="574344511" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001283" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -549,7 +549,7 @@
                   <output><![CDATA[[uPiper] Debug message
 ]]></output>
                 </test-case>
-                <test-case id="1096" name="LogError_WithValidMessage_OutputsError" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogError_WithValidMessage_OutputsError" methodname="LogError_WithValidMessage_OutputsError" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="274485228" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.008797" asserts="0">
+                <test-case id="1096" name="LogError_WithValidMessage_OutputsError" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogError_WithValidMessage_OutputsError" methodname="LogError_WithValidMessage_OutputsError" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="396408121" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001798" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -557,7 +557,7 @@
                   <output><![CDATA[[uPiper] Test error message
 ]]></output>
                 </test-case>
-                <test-case id="1094" name="LogInfo_WithParameters_FormatsCorrectly" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogInfo_WithParameters_FormatsCorrectly" methodname="LogInfo_WithParameters_FormatsCorrectly" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="940177939" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:37:59Z" duration="0.000909" asserts="0">
+                <test-case id="1094" name="LogInfo_WithParameters_FormatsCorrectly" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogInfo_WithParameters_FormatsCorrectly" methodname="LogInfo_WithParameters_FormatsCorrectly" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="942576318" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001318" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -565,7 +565,7 @@
                   <output><![CDATA[[uPiper] Loading model: test.onnx for language: ja
 ]]></output>
                 </test-case>
-                <test-case id="1093" name="LogInfo_WithValidMessage_OutputsToConsole" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogInfo_WithValidMessage_OutputsToConsole" methodname="LogInfo_WithValidMessage_OutputsToConsole" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="1073903874" result="Passed" start-time="2025-07-14 16:37:59Z" end-time="2025-07-14 16:38:00Z" duration="0.000884" asserts="0">
+                <test-case id="1093" name="LogInfo_WithValidMessage_OutputsToConsole" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogInfo_WithValidMessage_OutputsToConsole" methodname="LogInfo_WithValidMessage_OutputsToConsole" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="1547305918" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001239" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -573,7 +573,7 @@
                   <output><![CDATA[[uPiper] Test info message
 ]]></output>
                 </test-case>
-                <test-case id="1095" name="LogWarning_WithValidMessage_OutputsWarning" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogWarning_WithValidMessage_OutputsWarning" methodname="LogWarning_WithValidMessage_OutputsWarning" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="1016261554" result="Passed" start-time="2025-07-14 16:38:00Z" end-time="2025-07-14 16:38:00Z" duration="0.001213" asserts="0">
+                <test-case id="1095" name="LogWarning_WithValidMessage_OutputsWarning" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogWarning_WithValidMessage_OutputsWarning" methodname="LogWarning_WithValidMessage_OutputsWarning" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="1716158958" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001381" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -581,7 +581,7 @@
                   <output><![CDATA[[uPiper] Test warning message
 ]]></output>
                 </test-case>
-                <test-case id="1103" name="LogWithEmptyParameters_HandlesGracefully" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogWithEmptyParameters_HandlesGracefully" methodname="LogWithEmptyParameters_HandlesGracefully" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="1214148128" result="Passed" start-time="2025-07-14 16:38:00Z" end-time="2025-07-14 16:38:00Z" duration="0.001256" asserts="0">
+                <test-case id="1103" name="LogWithEmptyParameters_HandlesGracefully" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogWithEmptyParameters_HandlesGracefully" methodname="LogWithEmptyParameters_HandlesGracefully" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="1489028750" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001314" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -589,7 +589,7 @@
                   <output><![CDATA[[uPiper] Message with {0} parameters
 ]]></output>
                 </test-case>
-                <test-case id="1102" name="LogWithNullMessage_HandlesGracefully" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogWithNullMessage_HandlesGracefully" methodname="LogWithNullMessage_HandlesGracefully" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="660187925" result="Passed" start-time="2025-07-14 16:38:00Z" end-time="2025-07-14 16:38:00Z" duration="0.001251" asserts="0">
+                <test-case id="1102" name="LogWithNullMessage_HandlesGracefully" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.LogWithNullMessage_HandlesGracefully" methodname="LogWithNullMessage_HandlesGracefully" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="524756334" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001339" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -597,7 +597,7 @@
                   <output><![CDATA[[uPiper] 
 ]]></output>
                 </test-case>
-                <test-case id="1100" name="SetMinimumLevel_ToDebug_AllowsAllMessages" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.SetMinimumLevel_ToDebug_AllowsAllMessages" methodname="SetMinimumLevel_ToDebug_AllowsAllMessages" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="1096819801" result="Passed" start-time="2025-07-14 16:38:00Z" end-time="2025-07-14 16:38:00Z" duration="0.004141" asserts="0">
+                <test-case id="1100" name="SetMinimumLevel_ToDebug_AllowsAllMessages" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.SetMinimumLevel_ToDebug_AllowsAllMessages" methodname="SetMinimumLevel_ToDebug_AllowsAllMessages" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="953198162" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.004079" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -608,25 +608,25 @@
 [uPiper] Error test
 ]]></output>
                 </test-case>
-                <test-case id="1099" name="SetMinimumLevel_ToError_FiltersWarningMessages" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.SetMinimumLevel_ToError_FiltersWarningMessages" methodname="SetMinimumLevel_ToError_FiltersWarningMessages" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="68889173" result="Passed" start-time="2025-07-14 16:38:00Z" end-time="2025-07-14 16:38:00Z" duration="0.000834" asserts="0">
+                <test-case id="1099" name="SetMinimumLevel_ToError_FiltersWarningMessages" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.SetMinimumLevel_ToError_FiltersWarningMessages" methodname="SetMinimumLevel_ToError_FiltersWarningMessages" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="1216696682" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.001071" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1098" name="SetMinimumLevel_ToWarning_FiltersInfoMessages" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.SetMinimumLevel_ToWarning_FiltersInfoMessages" methodname="SetMinimumLevel_ToWarning_FiltersInfoMessages" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="74488490" result="Passed" start-time="2025-07-14 16:38:00Z" end-time="2025-07-14 16:38:00Z" duration="0.000312" asserts="0">
+                <test-case id="1098" name="SetMinimumLevel_ToWarning_FiltersInfoMessages" fullname="uPiper.Tests.Runtime.Core.PiperLoggerTest.SetMinimumLevel_ToWarning_FiltersInfoMessages" methodname="SetMinimumLevel_ToWarning_FiltersInfoMessages" classname="uPiper.Tests.Runtime.Core.PiperLoggerTest" runstate="Runnable" seed="924707863" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.000392" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
               </test-suite>
-              <test-suite type="TestFixture" id="1104" name="PiperTTSTest" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" testcasecount="29" result="Failed" site="Child" start-time="2025-07-14 16:38:00Z" end-time="2025-07-14 16:39:35Z" duration="95.295295" total="29" passed="9" failed="20" inconclusive="0" skipped="0" asserts="0">
+              <test-suite type="TestFixture" id="1104" name="PiperTTSTest" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" testcasecount="29" result="Failed" site="Child" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:52:55Z" duration="95.266000" total="29" passed="9" failed="20" inconclusive="0" skipped="0" asserts="0">
                 <properties />
                 <failure>
                   <message><![CDATA[One or more child tests had errors]]></message>
                 </failure>
-                <test-case id="1128" name="ClearCache_DoesNotThrow" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.ClearCache_DoesNotThrow" methodname="ClearCache_DoesNotThrow" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1907556283" result="Passed" start-time="2025-07-14 16:38:00Z" end-time="2025-07-14 16:38:00Z" duration="0.006967" asserts="0">
+                <test-case id="1128" name="ClearCache_DoesNotThrow" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.ClearCache_DoesNotThrow" methodname="ClearCache_DoesNotThrow" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="115359769" result="Passed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:20Z" duration="0.006914" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -638,7 +638,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1133" name="ConcurrentAccess_IsThreadSafe" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.ConcurrentAccess_IsThreadSafe" methodname="ConcurrentAccess_IsThreadSafe" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="161172777" result="Failed" start-time="2025-07-14 16:38:00Z" end-time="2025-07-14 16:38:05Z" duration="5.024307" asserts="0">
+                <test-case id="1133" name="ConcurrentAccess_IsThreadSafe" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.ConcurrentAccess_IsThreadSafe" methodname="ConcurrentAccess_IsThreadSafe" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="261427226" result="Failed" start-time="2025-07-14 16:51:20Z" end-time="2025-07-14 16:51:25Z" duration="5.034080" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -660,7 +660,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1107" name="Constructor_ValidatesConfig" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.Constructor_ValidatesConfig" methodname="Constructor_ValidatesConfig" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="190234194" result="Passed" start-time="2025-07-14 16:38:05Z" end-time="2025-07-14 16:38:05Z" duration="0.003596" asserts="0">
+                <test-case id="1107" name="Constructor_ValidatesConfig" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.Constructor_ValidatesConfig" methodname="Constructor_ValidatesConfig" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1806682197" result="Passed" start-time="2025-07-14 16:51:25Z" end-time="2025-07-14 16:51:25Z" duration="0.004140" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -671,7 +671,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1106" name="Constructor_WithNullConfig_ThrowsArgumentNullException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.Constructor_WithNullConfig_ThrowsArgumentNullException" methodname="Constructor_WithNullConfig_ThrowsArgumentNullException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1915031744" result="Passed" start-time="2025-07-14 16:38:05Z" end-time="2025-07-14 16:38:05Z" duration="0.003548" asserts="0">
+                <test-case id="1106" name="Constructor_WithNullConfig_ThrowsArgumentNullException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.Constructor_WithNullConfig_ThrowsArgumentNullException" methodname="Constructor_WithNullConfig_ThrowsArgumentNullException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="757308363" result="Passed" start-time="2025-07-14 16:51:25Z" end-time="2025-07-14 16:51:25Z" duration="0.003879" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -682,7 +682,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1105" name="Constructor_WithValidConfig_CreatesInstance" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.Constructor_WithValidConfig_CreatesInstance" methodname="Constructor_WithValidConfig_CreatesInstance" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="707822227" result="Passed" start-time="2025-07-14 16:38:05Z" end-time="2025-07-14 16:38:05Z" duration="0.004587" asserts="0">
+                <test-case id="1105" name="Constructor_WithValidConfig_CreatesInstance" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.Constructor_WithValidConfig_CreatesInstance" methodname="Constructor_WithValidConfig_CreatesInstance" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="2100198488" result="Passed" start-time="2025-07-14 16:51:25Z" end-time="2025-07-14 16:51:25Z" duration="0.005327" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -693,7 +693,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1131" name="Dispose_CanBeCalledMultipleTimes" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.Dispose_CanBeCalledMultipleTimes" methodname="Dispose_CanBeCalledMultipleTimes" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="421683046" result="Passed" start-time="2025-07-14 16:38:05Z" end-time="2025-07-14 16:38:05Z" duration="0.003791" asserts="0">
+                <test-case id="1131" name="Dispose_CanBeCalledMultipleTimes" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.Dispose_CanBeCalledMultipleTimes" methodname="Dispose_CanBeCalledMultipleTimes" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1136341897" result="Passed" start-time="2025-07-14 16:51:25Z" end-time="2025-07-14 16:51:25Z" duration="0.004168" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -704,7 +704,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1132" name="Dispose_PreventsOperations" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.Dispose_PreventsOperations" methodname="Dispose_PreventsOperations" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1208541202" result="Failed" start-time="2025-07-14 16:38:05Z" end-time="2025-07-14 16:38:10Z" duration="5.020391" asserts="0">
+                <test-case id="1132" name="Dispose_PreventsOperations" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.Dispose_PreventsOperations" methodname="Dispose_PreventsOperations" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1248624885" result="Failed" start-time="2025-07-14 16:51:25Z" end-time="2025-07-14 16:51:30Z" duration="5.008303" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -726,7 +726,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1122" name="GenerateAudio_WithVoice_ReturnsAudioClip" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GenerateAudio_WithVoice_ReturnsAudioClip" methodname="GenerateAudio_WithVoice_ReturnsAudioClip" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="270015378" result="Failed" start-time="2025-07-14 16:38:10Z" end-time="2025-07-14 16:38:15Z" duration="5.017507" asserts="0">
+                <test-case id="1122" name="GenerateAudio_WithVoice_ReturnsAudioClip" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GenerateAudio_WithVoice_ReturnsAudioClip" methodname="GenerateAudio_WithVoice_ReturnsAudioClip" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="415165146" result="Failed" start-time="2025-07-14 16:51:30Z" end-time="2025-07-14 16:51:35Z" duration="5.013949" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -748,7 +748,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1125" name="GenerateAudio_WithVoiceConfig_Overload" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GenerateAudio_WithVoiceConfig_Overload" methodname="GenerateAudio_WithVoiceConfig_Overload" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="327155304" result="Failed" start-time="2025-07-14 16:38:15Z" end-time="2025-07-14 16:38:20Z" duration="5.020673" asserts="0">
+                <test-case id="1125" name="GenerateAudio_WithVoiceConfig_Overload" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GenerateAudio_WithVoiceConfig_Overload" methodname="GenerateAudio_WithVoiceConfig_Overload" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1044484499" result="Failed" start-time="2025-07-14 16:51:35Z" end-time="2025-07-14 16:51:40Z" duration="5.009788" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -770,7 +770,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1120" name="GenerateAudioAsync_NoVoiceLoaded_ThrowsInvalidOperationException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GenerateAudioAsync_NoVoiceLoaded_ThrowsInvalidOperationException" methodname="GenerateAudioAsync_NoVoiceLoaded_ThrowsInvalidOperationException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="494381041" result="Failed" start-time="2025-07-14 16:38:20Z" end-time="2025-07-14 16:38:25Z" duration="5.010622" asserts="0">
+                <test-case id="1120" name="GenerateAudioAsync_NoVoiceLoaded_ThrowsInvalidOperationException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GenerateAudioAsync_NoVoiceLoaded_ThrowsInvalidOperationException" methodname="GenerateAudioAsync_NoVoiceLoaded_ThrowsInvalidOperationException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="2029250298" result="Failed" start-time="2025-07-14 16:51:40Z" end-time="2025-07-14 16:51:45Z" duration="5.012192" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -792,7 +792,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1121" name="GenerateAudioAsync_WithVoice_ReturnsAudioClip" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GenerateAudioAsync_WithVoice_ReturnsAudioClip" methodname="GenerateAudioAsync_WithVoice_ReturnsAudioClip" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1790040645" result="Failed" start-time="2025-07-14 16:38:25Z" end-time="2025-07-14 16:38:30Z" duration="5.016439" asserts="0">
+                <test-case id="1121" name="GenerateAudioAsync_WithVoice_ReturnsAudioClip" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GenerateAudioAsync_WithVoice_ReturnsAudioClip" methodname="GenerateAudioAsync_WithVoice_ReturnsAudioClip" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1808184168" result="Failed" start-time="2025-07-14 16:51:45Z" end-time="2025-07-14 16:51:50Z" duration="5.018030" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -814,7 +814,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1124" name="GenerateAudioAsync_WithVoiceConfig_Overload" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GenerateAudioAsync_WithVoiceConfig_Overload" methodname="GenerateAudioAsync_WithVoiceConfig_Overload" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="999993354" result="Failed" start-time="2025-07-14 16:38:30Z" end-time="2025-07-14 16:38:35Z" duration="5.015976" asserts="0">
+                <test-case id="1124" name="GenerateAudioAsync_WithVoiceConfig_Overload" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GenerateAudioAsync_WithVoiceConfig_Overload" methodname="GenerateAudioAsync_WithVoiceConfig_Overload" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1103066843" result="Failed" start-time="2025-07-14 16:51:50Z" end-time="2025-07-14 16:51:55Z" duration="5.014280" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -836,7 +836,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1127" name="GetCacheStatistics_ReturnsEmptyStats" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GetCacheStatistics_ReturnsEmptyStats" methodname="GetCacheStatistics_ReturnsEmptyStats" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="863495001" result="Passed" start-time="2025-07-14 16:38:35Z" end-time="2025-07-14 16:38:35Z" duration="0.011225" asserts="0">
+                <test-case id="1127" name="GetCacheStatistics_ReturnsEmptyStats" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GetCacheStatistics_ReturnsEmptyStats" methodname="GetCacheStatistics_ReturnsEmptyStats" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="2095362013" result="Passed" start-time="2025-07-14 16:51:55Z" end-time="2025-07-14 16:51:55Z" duration="0.011709" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -847,7 +847,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1118" name="GetVoiceConfig_Success" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GetVoiceConfig_Success" methodname="GetVoiceConfig_Success" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="169814365" result="Failed" start-time="2025-07-14 16:38:35Z" end-time="2025-07-14 16:38:40Z" duration="5.014554" asserts="0">
+                <test-case id="1118" name="GetVoiceConfig_Success" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GetVoiceConfig_Success" methodname="GetVoiceConfig_Success" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="124948858" result="Failed" start-time="2025-07-14 16:51:55Z" end-time="2025-07-14 16:52:00Z" duration="5.013396" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -869,7 +869,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1119" name="GetVoiceConfig_UnknownVoice_ThrowsPiperException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GetVoiceConfig_UnknownVoice_ThrowsPiperException" methodname="GetVoiceConfig_UnknownVoice_ThrowsPiperException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="233263205" result="Passed" start-time="2025-07-14 16:38:40Z" end-time="2025-07-14 16:38:40Z" duration="0.002967" asserts="0">
+                <test-case id="1119" name="GetVoiceConfig_UnknownVoice_ThrowsPiperException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.GetVoiceConfig_UnknownVoice_ThrowsPiperException" methodname="GetVoiceConfig_UnknownVoice_ThrowsPiperException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="981000788" result="Passed" start-time="2025-07-14 16:52:00Z" end-time="2025-07-14 16:52:00Z" duration="0.002818" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -880,7 +880,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1109" name="InitializeAsync_AlreadyInitialized_DoesNothing" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.InitializeAsync_AlreadyInitialized_DoesNothing" methodname="InitializeAsync_AlreadyInitialized_DoesNothing" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="781435737" result="Failed" start-time="2025-07-14 16:38:40Z" end-time="2025-07-14 16:38:45Z" duration="5.006013" asserts="0">
+                <test-case id="1109" name="InitializeAsync_AlreadyInitialized_DoesNothing" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.InitializeAsync_AlreadyInitialized_DoesNothing" methodname="InitializeAsync_AlreadyInitialized_DoesNothing" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="469065703" result="Failed" start-time="2025-07-14 16:52:00Z" end-time="2025-07-14 16:52:05Z" duration="5.005754" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -902,7 +902,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1110" name="InitializeAsync_Cancellation_ThrowsOperationCanceledException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.InitializeAsync_Cancellation_ThrowsOperationCanceledException" methodname="InitializeAsync_Cancellation_ThrowsOperationCanceledException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="401530870" result="Failed" start-time="2025-07-14 16:38:45Z" end-time="2025-07-14 16:38:45Z" duration="0.014062" asserts="0">
+                <test-case id="1110" name="InitializeAsync_Cancellation_ThrowsOperationCanceledException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.InitializeAsync_Cancellation_ThrowsOperationCanceledException" methodname="InitializeAsync_Cancellation_ThrowsOperationCanceledException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1501390644" result="Failed" start-time="2025-07-14 16:52:05Z" end-time="2025-07-14 16:52:05Z" duration="0.013338" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -924,7 +924,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1108" name="InitializeAsync_Success" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.InitializeAsync_Success" methodname="InitializeAsync_Success" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="2052247237" result="Failed" start-time="2025-07-14 16:38:45Z" end-time="2025-07-14 16:38:50Z" duration="5.005639" asserts="0">
+                <test-case id="1108" name="InitializeAsync_Success" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.InitializeAsync_Success" methodname="InitializeAsync_Success" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="31561845" result="Failed" start-time="2025-07-14 16:52:05Z" end-time="2025-07-14 16:52:10Z" duration="5.005717" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -946,7 +946,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1114" name="LoadVoiceAsync_InvalidVoice_ThrowsPiperException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.LoadVoiceAsync_InvalidVoice_ThrowsPiperException" methodname="LoadVoiceAsync_InvalidVoice_ThrowsPiperException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="967192608" result="Failed" start-time="2025-07-14 16:38:50Z" end-time="2025-07-14 16:38:55Z" duration="5.005643" asserts="0">
+                <test-case id="1114" name="LoadVoiceAsync_InvalidVoice_ThrowsPiperException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.LoadVoiceAsync_InvalidVoice_ThrowsPiperException" methodname="LoadVoiceAsync_InvalidVoice_ThrowsPiperException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1989314196" result="Failed" start-time="2025-07-14 16:52:10Z" end-time="2025-07-14 16:52:15Z" duration="5.005581" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -968,7 +968,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1112" name="LoadVoiceAsync_NotInitialized_ThrowsInvalidOperationException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.LoadVoiceAsync_NotInitialized_ThrowsInvalidOperationException" methodname="LoadVoiceAsync_NotInitialized_ThrowsInvalidOperationException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="997393883" result="Passed" start-time="2025-07-14 16:38:55Z" end-time="2025-07-14 16:38:55Z" duration="0.005664" asserts="0">
+                <test-case id="1112" name="LoadVoiceAsync_NotInitialized_ThrowsInvalidOperationException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.LoadVoiceAsync_NotInitialized_ThrowsInvalidOperationException" methodname="LoadVoiceAsync_NotInitialized_ThrowsInvalidOperationException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="462284933" result="Passed" start-time="2025-07-14 16:52:15Z" end-time="2025-07-14 16:52:15Z" duration="0.005476" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -979,7 +979,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1113" name="LoadVoiceAsync_NullVoice_ThrowsArgumentNullException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.LoadVoiceAsync_NullVoice_ThrowsArgumentNullException" methodname="LoadVoiceAsync_NullVoice_ThrowsArgumentNullException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="218477272" result="Failed" start-time="2025-07-14 16:38:55Z" end-time="2025-07-14 16:39:00Z" duration="5.005494" asserts="0">
+                <test-case id="1113" name="LoadVoiceAsync_NullVoice_ThrowsArgumentNullException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.LoadVoiceAsync_NullVoice_ThrowsArgumentNullException" methodname="LoadVoiceAsync_NullVoice_ThrowsArgumentNullException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="664238372" result="Failed" start-time="2025-07-14 16:52:15Z" end-time="2025-07-14 16:52:20Z" duration="5.005316" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1001,7 +1001,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1111" name="LoadVoiceAsync_Success" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.LoadVoiceAsync_Success" methodname="LoadVoiceAsync_Success" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1309290739" result="Failed" start-time="2025-07-14 16:39:00Z" end-time="2025-07-14 16:39:05Z" duration="5.005882" asserts="0">
+                <test-case id="1111" name="LoadVoiceAsync_Success" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.LoadVoiceAsync_Success" methodname="LoadVoiceAsync_Success" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1931568179" result="Failed" start-time="2025-07-14 16:52:20Z" end-time="2025-07-14 16:52:25Z" duration="5.005864" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1023,7 +1023,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1130" name="PreloadTextAsync_WithoutVoice_ThrowsInvalidOperationException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.PreloadTextAsync_WithoutVoice_ThrowsInvalidOperationException" methodname="PreloadTextAsync_WithoutVoice_ThrowsInvalidOperationException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="2058735344" result="Failed" start-time="2025-07-14 16:39:05Z" end-time="2025-07-14 16:39:10Z" duration="5.006101" asserts="0">
+                <test-case id="1130" name="PreloadTextAsync_WithoutVoice_ThrowsInvalidOperationException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.PreloadTextAsync_WithoutVoice_ThrowsInvalidOperationException" methodname="PreloadTextAsync_WithoutVoice_ThrowsInvalidOperationException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1986518592" result="Failed" start-time="2025-07-14 16:52:25Z" end-time="2025-07-14 16:52:30Z" duration="5.005619" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1045,7 +1045,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1129" name="PreloadTextAsync_WithVoice_UpdatesCache" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.PreloadTextAsync_WithVoice_UpdatesCache" methodname="PreloadTextAsync_WithVoice_UpdatesCache" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="2037197246" result="Failed" start-time="2025-07-14 16:39:10Z" end-time="2025-07-14 16:39:15Z" duration="5.007878" asserts="0">
+                <test-case id="1129" name="PreloadTextAsync_WithVoice_UpdatesCache" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.PreloadTextAsync_WithVoice_UpdatesCache" methodname="PreloadTextAsync_WithVoice_UpdatesCache" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1985070874" result="Failed" start-time="2025-07-14 16:52:30Z" end-time="2025-07-14 16:52:35Z" duration="5.005519" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1067,7 +1067,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1116" name="SetCurrentVoice_NotInitialized_ThrowsInvalidOperationException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.SetCurrentVoice_NotInitialized_ThrowsInvalidOperationException" methodname="SetCurrentVoice_NotInitialized_ThrowsInvalidOperationException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="559937820" result="Passed" start-time="2025-07-14 16:39:15Z" end-time="2025-07-14 16:39:15Z" duration="0.003966" asserts="0">
+                <test-case id="1116" name="SetCurrentVoice_NotInitialized_ThrowsInvalidOperationException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.SetCurrentVoice_NotInitialized_ThrowsInvalidOperationException" methodname="SetCurrentVoice_NotInitialized_ThrowsInvalidOperationException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1844696991" result="Passed" start-time="2025-07-14 16:52:35Z" end-time="2025-07-14 16:52:35Z" duration="0.002699" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1078,7 +1078,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1115" name="SetCurrentVoice_Success" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.SetCurrentVoice_Success" methodname="SetCurrentVoice_Success" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1171744956" result="Failed" start-time="2025-07-14 16:39:15Z" end-time="2025-07-14 16:39:20Z" duration="5.007607" asserts="0">
+                <test-case id="1115" name="SetCurrentVoice_Success" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.SetCurrentVoice_Success" methodname="SetCurrentVoice_Success" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="2074632867" result="Failed" start-time="2025-07-14 16:52:35Z" end-time="2025-07-14 16:52:40Z" duration="5.005448" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1100,7 +1100,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1117" name="SetCurrentVoice_UnknownVoice_ThrowsPiperException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.SetCurrentVoice_UnknownVoice_ThrowsPiperException" methodname="SetCurrentVoice_UnknownVoice_ThrowsPiperException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="193364779" result="Failed" start-time="2025-07-14 16:39:20Z" end-time="2025-07-14 16:39:25Z" duration="5.007590" asserts="0">
+                <test-case id="1117" name="SetCurrentVoice_UnknownVoice_ThrowsPiperException" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.SetCurrentVoice_UnknownVoice_ThrowsPiperException" methodname="SetCurrentVoice_UnknownVoice_ThrowsPiperException" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="404021001" result="Failed" start-time="2025-07-14 16:52:40Z" end-time="2025-07-14 16:52:45Z" duration="5.005237" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1122,7 +1122,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1123" name="StreamAudioAsync_WithVoice_ReturnsChunks" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.StreamAudioAsync_WithVoice_ReturnsChunks" methodname="StreamAudioAsync_WithVoice_ReturnsChunks" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1458335097" result="Failed" start-time="2025-07-14 16:39:25Z" end-time="2025-07-14 16:39:30Z" duration="5.008265" asserts="0">
+                <test-case id="1123" name="StreamAudioAsync_WithVoice_ReturnsChunks" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.StreamAudioAsync_WithVoice_ReturnsChunks" methodname="StreamAudioAsync_WithVoice_ReturnsChunks" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="1340847295" result="Failed" start-time="2025-07-14 16:52:45Z" end-time="2025-07-14 16:52:50Z" duration="5.005610" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1144,7 +1144,7 @@
 [uPiper] PiperTTS disposed
 ]]></output>
                 </test-case>
-                <test-case id="1126" name="StreamAudioAsync_WithVoiceConfig_Overload" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.StreamAudioAsync_WithVoiceConfig_Overload" methodname="StreamAudioAsync_WithVoiceConfig_Overload" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="676448137" result="Failed" start-time="2025-07-14 16:39:30Z" end-time="2025-07-14 16:39:35Z" duration="5.007894" asserts="0">
+                <test-case id="1126" name="StreamAudioAsync_WithVoiceConfig_Overload" fullname="uPiper.Tests.Runtime.Core.PiperTTSTest.StreamAudioAsync_WithVoiceConfig_Overload" methodname="StreamAudioAsync_WithVoiceConfig_Overload" classname="uPiper.Tests.Runtime.Core.PiperTTSTest" runstate="Runnable" seed="426236360" result="Failed" start-time="2025-07-14 16:52:50Z" end-time="2025-07-14 16:52:55Z" duration="5.005608" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1167,7 +1167,7 @@
 ]]></output>
                 </test-case>
               </test-suite>
-              <test-suite type="TestFixture" id="1134" name="PiperVoiceConfigTest" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" testcasecount="12" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.078380" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <test-suite type="TestFixture" id="1134" name="PiperVoiceConfigTest" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" testcasecount="12" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.070128" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
                 <properties />
                 <output><![CDATA[[uPiper] Validating runtime environment...
 [uPiper] Unity version: 6000.0.35f1
@@ -1360,43 +1360,43 @@
 [uPiper] Cache system initialized
 [uPiper] PiperTTS initialized successfully
 ]]></output>
-                <test-case id="1142" name="DefaultValues_AreCorrect" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.DefaultValues_AreCorrect" methodname="DefaultValues_AreCorrect" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="631217630" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000425" asserts="0">
+                <test-case id="1142" name="DefaultValues_AreCorrect" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.DefaultValues_AreCorrect" methodname="DefaultValues_AreCorrect" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="1010438117" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.000397" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1136" name="FromModelPath_HandlesEnglishModel" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.FromModelPath_HandlesEnglishModel" methodname="FromModelPath_HandlesEnglishModel" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="2069017192" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000484" asserts="0">
+                <test-case id="1136" name="FromModelPath_HandlesEnglishModel" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.FromModelPath_HandlesEnglishModel" methodname="FromModelPath_HandlesEnglishModel" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="1576212689" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.000443" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1146" name="FromModelPath_HandlesSimpleFileName" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.FromModelPath_HandlesSimpleFileName" methodname="FromModelPath_HandlesSimpleFileName" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="763101659" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000219" asserts="0">
+                <test-case id="1146" name="FromModelPath_HandlesSimpleFileName" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.FromModelPath_HandlesSimpleFileName" methodname="FromModelPath_HandlesSimpleFileName" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="582036556" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.000215" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1135" name="FromModelPath_ParsesFileNameCorrectly" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.FromModelPath_ParsesFileNameCorrectly" methodname="FromModelPath_ParsesFileNameCorrectly" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="1369294506" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000261" asserts="0">
+                <test-case id="1135" name="FromModelPath_ParsesFileNameCorrectly" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.FromModelPath_ParsesFileNameCorrectly" methodname="FromModelPath_ParsesFileNameCorrectly" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="92987638" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.000249" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1145" name="ModelQuality_EnumValues" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.ModelQuality_EnumValues" methodname="ModelQuality_EnumValues" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="1742061081" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000230" asserts="0">
+                <test-case id="1145" name="ModelQuality_EnumValues" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.ModelQuality_EnumValues" methodname="ModelQuality_EnumValues" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="940563045" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.000235" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1141" name="ToString_ReturnsFormattedString" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.ToString_ReturnsFormattedString" methodname="ToString_ReturnsFormattedString" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="1066291535" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000310" asserts="0">
+                <test-case id="1141" name="ToString_ReturnsFormattedString" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.ToString_ReturnsFormattedString" methodname="ToString_ReturnsFormattedString" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="1494327457" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.000286" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1140" name="Validate_ReturnsFalseForMissingLanguage" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.Validate_ReturnsFalseForMissingLanguage" methodname="Validate_ReturnsFalseForMissingLanguage" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="694479427" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.001056" asserts="0">
+                <test-case id="1140" name="Validate_ReturnsFalseForMissingLanguage" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.Validate_ReturnsFalseForMissingLanguage" methodname="Validate_ReturnsFalseForMissingLanguage" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="1298728464" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.001026" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1404,7 +1404,7 @@
                   <output><![CDATA[[uPiper] Language is required
 ]]></output>
                 </test-case>
-                <test-case id="1139" name="Validate_ReturnsFalseForMissingModelPath" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.Validate_ReturnsFalseForMissingModelPath" methodname="Validate_ReturnsFalseForMissingModelPath" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="105869570" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000872" asserts="0">
+                <test-case id="1139" name="Validate_ReturnsFalseForMissingModelPath" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.Validate_ReturnsFalseForMissingModelPath" methodname="Validate_ReturnsFalseForMissingModelPath" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="1344271090" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.000817" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1412,7 +1412,7 @@
                   <output><![CDATA[[uPiper] Model path is required
 ]]></output>
                 </test-case>
-                <test-case id="1138" name="Validate_ReturnsFalseForMissingVoiceId" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.Validate_ReturnsFalseForMissingVoiceId" methodname="Validate_ReturnsFalseForMissingVoiceId" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="196352628" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000883" asserts="0">
+                <test-case id="1138" name="Validate_ReturnsFalseForMissingVoiceId" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.Validate_ReturnsFalseForMissingVoiceId" methodname="Validate_ReturnsFalseForMissingVoiceId" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="393746012" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.000821" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1420,19 +1420,19 @@
                   <output><![CDATA[[uPiper] Voice ID is required
 ]]></output>
                 </test-case>
-                <test-case id="1137" name="Validate_ReturnsTrueForValidConfig" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.Validate_ReturnsTrueForValidConfig" methodname="Validate_ReturnsTrueForValidConfig" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="1984125964" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000228" asserts="0">
+                <test-case id="1137" name="Validate_ReturnsTrueForValidConfig" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.Validate_ReturnsTrueForValidConfig" methodname="Validate_ReturnsTrueForValidConfig" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="1218322164" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.000202" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1144" name="VoiceAge_EnumValues" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.VoiceAge_EnumValues" methodname="VoiceAge_EnumValues" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="326382648" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000223" asserts="0">
+                <test-case id="1144" name="VoiceAge_EnumValues" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.VoiceAge_EnumValues" methodname="VoiceAge_EnumValues" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="677773795" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.000246" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1143" name="VoiceGender_EnumValues" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.VoiceGender_EnumValues" methodname="VoiceGender_EnumValues" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="852166353" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000192" asserts="0">
+                <test-case id="1143" name="VoiceGender_EnumValues" fullname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest.VoiceGender_EnumValues" methodname="VoiceGender_EnumValues" classname="uPiper.Tests.Runtime.Core.PiperVoiceConfigTest" runstate="Runnable" seed="1258520778" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.000199" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
@@ -1440,27 +1440,27 @@
                 </test-case>
               </test-suite>
             </test-suite>
-            <test-suite type="TestFixture" id="1004" name="InferenceEngineBasicTest" fullname="uPiper.Tests.Runtime.InferenceEngineBasicTest" classname="uPiper.Tests.Runtime.InferenceEngineBasicTest" runstate="Runnable" testcasecount="5" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.014693" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestFixture" id="1004" name="InferenceEngineBasicTest" fullname="uPiper.Tests.Runtime.InferenceEngineBasicTest" classname="uPiper.Tests.Runtime.InferenceEngineBasicTest" runstate="Runnable" testcasecount="5" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.014124" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
               <properties />
-              <test-case id="1006" name="InferenceEngine_CanCreateTensor" fullname="uPiper.Tests.Runtime.InferenceEngineBasicTest.InferenceEngine_CanCreateTensor" methodname="InferenceEngine_CanCreateTensor" classname="uPiper.Tests.Runtime.InferenceEngineBasicTest" runstate="Runnable" seed="1901257256" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.002353" asserts="0">
+              <test-case id="1006" name="InferenceEngine_CanCreateTensor" fullname="uPiper.Tests.Runtime.InferenceEngineBasicTest.InferenceEngine_CanCreateTensor" methodname="InferenceEngine_CanCreateTensor" classname="uPiper.Tests.Runtime.InferenceEngineBasicTest" runstate="Runnable" seed="755374071" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.002214" asserts="0">
                 <properties>
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
               </test-case>
-              <test-case id="1007" name="InferenceEngine_CanCreateWorker" fullname="uPiper.Tests.Runtime.InferenceEngineBasicTest.InferenceEngine_CanCreateWorker" methodname="InferenceEngine_CanCreateWorker" classname="uPiper.Tests.Runtime.InferenceEngineBasicTest" runstate="Runnable" seed="204192211" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.001862" asserts="0">
+              <test-case id="1007" name="InferenceEngine_CanCreateWorker" fullname="uPiper.Tests.Runtime.InferenceEngineBasicTest.InferenceEngine_CanCreateWorker" methodname="InferenceEngine_CanCreateWorker" classname="uPiper.Tests.Runtime.InferenceEngineBasicTest" runstate="Runnable" seed="1639278216" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.001812" asserts="0">
                 <properties>
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
               </test-case>
-              <test-case id="1005" name="InferenceEngine_NamespaceExists" fullname="uPiper.Tests.Runtime.InferenceEngineBasicTest.InferenceEngine_NamespaceExists" methodname="InferenceEngine_NamespaceExists" classname="uPiper.Tests.Runtime.InferenceEngineBasicTest" runstate="Runnable" seed="1267461895" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000242" asserts="0">
+              <test-case id="1005" name="InferenceEngine_NamespaceExists" fullname="uPiper.Tests.Runtime.InferenceEngineBasicTest.InferenceEngine_NamespaceExists" methodname="InferenceEngine_NamespaceExists" classname="uPiper.Tests.Runtime.InferenceEngineBasicTest" runstate="Runnable" seed="1498452558" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.000234" asserts="0">
                 <properties>
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
               </test-case>
-              <test-case id="1008" name="InferenceEngine_SupportedBackends" fullname="uPiper.Tests.Runtime.InferenceEngineBasicTest.InferenceEngine_SupportedBackends" methodname="InferenceEngine_SupportedBackends" classname="uPiper.Tests.Runtime.InferenceEngineBasicTest" runstate="Runnable" seed="938021179" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.002088" asserts="0">
+              <test-case id="1008" name="InferenceEngine_SupportedBackends" fullname="uPiper.Tests.Runtime.InferenceEngineBasicTest.InferenceEngine_SupportedBackends" methodname="InferenceEngine_SupportedBackends" classname="uPiper.Tests.Runtime.InferenceEngineBasicTest" runstate="Runnable" seed="633572658" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.002039" asserts="0">
                 <properties>
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
@@ -1468,7 +1468,7 @@
                 <output><![CDATA[Available backends: GPUCompute, GPUPixel, CPU
 ]]></output>
               </test-case>
-              <test-case id="1009" name="InferenceEngine_TensorOperations" fullname="uPiper.Tests.Runtime.InferenceEngineBasicTest.InferenceEngine_TensorOperations" methodname="InferenceEngine_TensorOperations" classname="uPiper.Tests.Runtime.InferenceEngineBasicTest" runstate="Runnable" seed="1858855695" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.006015" asserts="0">
+              <test-case id="1009" name="InferenceEngine_TensorOperations" fullname="uPiper.Tests.Runtime.InferenceEngineBasicTest.InferenceEngine_TensorOperations" methodname="InferenceEngine_TensorOperations" classname="uPiper.Tests.Runtime.InferenceEngineBasicTest" runstate="Runnable" seed="1427334944" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.005787" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
@@ -1476,9 +1476,9 @@
                 </properties>
               </test-case>
             </test-suite>
-            <test-suite type="TestFixture" id="1010" name="ONNXModelLoaderTest" fullname="uPiper.Tests.Runtime.ONNXModelLoaderTest" classname="uPiper.Tests.Runtime.ONNXModelLoaderTest" runstate="Runnable" testcasecount="3" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.008263" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestFixture" id="1010" name="ONNXModelLoaderTest" fullname="uPiper.Tests.Runtime.ONNXModelLoaderTest" classname="uPiper.Tests.Runtime.ONNXModelLoaderTest" runstate="Runnable" testcasecount="3" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.008004" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
               <properties />
-              <test-case id="1013" name="CheckInferenceEngineVersion" fullname="uPiper.Tests.Runtime.ONNXModelLoaderTest.CheckInferenceEngineVersion" methodname="CheckInferenceEngineVersion" classname="uPiper.Tests.Runtime.ONNXModelLoaderTest" runstate="Runnable" seed="674062948" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.002664" asserts="0">
+              <test-case id="1013" name="CheckInferenceEngineVersion" fullname="uPiper.Tests.Runtime.ONNXModelLoaderTest.CheckInferenceEngineVersion" methodname="CheckInferenceEngineVersion" classname="uPiper.Tests.Runtime.ONNXModelLoaderTest" runstate="Runnable" seed="1375207458" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.002521" asserts="0">
                 <properties>
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
@@ -1487,7 +1487,7 @@
 Assembly: Unity.InferenceEngine, Version=2.2.1.0, Culture=neutral, PublicKeyToken=null
 ]]></output>
               </test-case>
-              <test-case id="1012" name="LoadONNXModel_CanLoadModel" fullname="uPiper.Tests.Runtime.ONNXModelLoaderTest.LoadONNXModel_CanLoadModel" methodname="LoadONNXModel_CanLoadModel" classname="uPiper.Tests.Runtime.ONNXModelLoaderTest" runstate="Runnable" seed="1363430182" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.002431" asserts="0">
+              <test-case id="1012" name="LoadONNXModel_CanLoadModel" fullname="uPiper.Tests.Runtime.ONNXModelLoaderTest.LoadONNXModel_CanLoadModel" methodname="LoadONNXModel_CanLoadModel" classname="uPiper.Tests.Runtime.ONNXModelLoaderTest" runstate="Runnable" seed="1395692080" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.002356" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
@@ -1497,7 +1497,7 @@ Assembly: Unity.InferenceEngine, Version=2.2.1.0, Culture=neutral, PublicKeyToke
 To test ONNX loading: Place a valid .onnx file in Resources folder and load it as ModelAsset
 ]]></output>
               </test-case>
-              <test-case id="1011" name="LoadONNXModel_FileExists" fullname="uPiper.Tests.Runtime.ONNXModelLoaderTest.LoadONNXModel_FileExists" methodname="LoadONNXModel_FileExists" classname="uPiper.Tests.Runtime.ONNXModelLoaderTest" runstate="Runnable" seed="769881597" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.001697" asserts="0">
+              <test-case id="1011" name="LoadONNXModel_FileExists" fullname="uPiper.Tests.Runtime.ONNXModelLoaderTest.LoadONNXModel_FileExists" methodname="LoadONNXModel_FileExists" classname="uPiper.Tests.Runtime.ONNXModelLoaderTest" runstate="Runnable" seed="1954160454" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:55Z" duration="0.001715" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
@@ -1505,9 +1505,9 @@ To test ONNX loading: Place a valid .onnx file in Resources folder and load it a
                 </properties>
               </test-case>
             </test-suite>
-            <test-suite type="TestFixture" id="1014" name="TTSPrototypeTest" fullname="uPiper.Tests.Runtime.TTSPrototypeTest" classname="uPiper.Tests.Runtime.TTSPrototypeTest" runstate="Runnable" testcasecount="3" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.121194" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestFixture" id="1014" name="TTSPrototypeTest" fullname="uPiper.Tests.Runtime.TTSPrototypeTest" classname="uPiper.Tests.Runtime.TTSPrototypeTest" runstate="Runnable" testcasecount="3" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:56Z" duration="0.120105" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
               <properties />
-              <test-case id="1015" name="MinimalTTSPrototype_CanGenerateAudio" fullname="uPiper.Tests.Runtime.TTSPrototypeTest.MinimalTTSPrototype_CanGenerateAudio" methodname="MinimalTTSPrototype_CanGenerateAudio" classname="uPiper.Tests.Runtime.TTSPrototypeTest" runstate="Runnable" seed="356627655" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.118376" asserts="0">
+              <test-case id="1015" name="MinimalTTSPrototype_CanGenerateAudio" fullname="uPiper.Tests.Runtime.TTSPrototypeTest.MinimalTTSPrototype_CanGenerateAudio" methodname="MinimalTTSPrototype_CanGenerateAudio" classname="uPiper.Tests.Runtime.TTSPrototypeTest" runstate="Runnable" seed="626673040" result="Passed" start-time="2025-07-14 16:52:55Z" end-time="2025-07-14 16:52:56Z" duration="0.117649" asserts="0">
                 <properties>
                   <property name="_JOINTYPE" value="UnityCombinatorial" />
                   <property name="retryIteration" value="0" />
@@ -1519,7 +1519,6 @@ Phoneme IDs: [23, 45, 67, 12, 89, 34, 56, 78, 90, 11...]
 Generated waveform samples: 44100
 Created AudioClip: MinimalTTS_Output, 22050Hz, 2s
 === TTS Prototype Success ===
-There are no audio listeners in the scene. Please ensure there is always one audio listener in the scene
 There are no audio listeners in the scene. Please ensure there is always one audio listener in the scene
 === Minimal TTS Prototype ===
 Fixed phoneme IDs count: 50
@@ -1534,15 +1533,16 @@ There are no audio listeners in the scene. Please ensure there is always one aud
 There are no audio listeners in the scene. Please ensure there is always one audio listener in the scene
 There are no audio listeners in the scene. Please ensure there is always one audio listener in the scene
 There are no audio listeners in the scene. Please ensure there is always one audio listener in the scene
+There are no audio listeners in the scene. Please ensure there is always one audio listener in the scene
 ]]></output>
               </test-case>
-              <test-case id="1016" name="PiperTTSPrototype_PhonemeMapping" fullname="uPiper.Tests.Runtime.TTSPrototypeTest.PiperTTSPrototype_PhonemeMapping" methodname="PiperTTSPrototype_PhonemeMapping" classname="uPiper.Tests.Runtime.TTSPrototypeTest" runstate="Runnable" seed="829132804" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.001135" asserts="0">
+              <test-case id="1016" name="PiperTTSPrototype_PhonemeMapping" fullname="uPiper.Tests.Runtime.TTSPrototypeTest.PiperTTSPrototype_PhonemeMapping" methodname="PiperTTSPrototype_PhonemeMapping" classname="uPiper.Tests.Runtime.TTSPrototypeTest" runstate="Runnable" seed="1432176159" result="Passed" start-time="2025-07-14 16:52:56Z" end-time="2025-07-14 16:52:56Z" duration="0.000861" asserts="0">
                 <properties>
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />
                 </properties>
               </test-case>
-              <test-case id="1017" name="TTSPrototype_WaveformGeneration" fullname="uPiper.Tests.Runtime.TTSPrototypeTest.TTSPrototype_WaveformGeneration" methodname="TTSPrototype_WaveformGeneration" classname="uPiper.Tests.Runtime.TTSPrototypeTest" runstate="Runnable" seed="1764694695" result="Passed" start-time="2025-07-14 16:39:35Z" end-time="2025-07-14 16:39:35Z" duration="0.000260" asserts="0">
+              <test-case id="1017" name="TTSPrototype_WaveformGeneration" fullname="uPiper.Tests.Runtime.TTSPrototypeTest.TTSPrototype_WaveformGeneration" methodname="TTSPrototype_WaveformGeneration" classname="uPiper.Tests.Runtime.TTSPrototypeTest" runstate="Runnable" seed="1387891612" result="Passed" start-time="2025-07-14 16:52:56Z" end-time="2025-07-14 16:52:56Z" duration="0.000239" asserts="0">
                 <properties>
                   <property name="retryIteration" value="0" />
                   <property name="repeatIteration" value="0" />

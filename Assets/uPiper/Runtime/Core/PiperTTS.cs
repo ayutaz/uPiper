@@ -257,12 +257,12 @@ namespace uPiper.Core
                 PiperLogger.LogInfo("Starting PiperTTS initialization...");
                 
                 // Initialize Inference Engine backend
-                await InitializeInferenceEngineAsync(cancellationToken);
+                await InitializeInferenceEngineAsync(cancellationToken).ConfigureAwait(false);
                 
                 // Initialize worker thread pool if multi-threaded inference is enabled
                 if (_config.EnableMultiThreadedInference && _config.WorkerThreads > 1)
                 {
-                    await InitializeWorkerPoolAsync(cancellationToken);
+                    await InitializeWorkerPoolAsync(cancellationToken).ConfigureAwait(false);
                 }
                 
                 // Validate runtime environment
@@ -967,34 +967,25 @@ namespace uPiper.Core
         /// </summary>
         private async Task InitializeInferenceEngineAsync(CancellationToken cancellationToken)
         {
-            PiperLogger.LogInfo("Initializing Inference Engine backend...");
-            
-            // Map PiperConfig backend to Unity Inference Engine backend
-            _inferenceBackend = _config.Backend switch
+            await Task.Run(() =>
             {
-                InferenceBackend.CPU => BackendType.CPU,
-                InferenceBackend.GPUCompute => BackendType.GPUCompute,
-                InferenceBackend.GPUPixel => BackendType.GPUPixel,
-                InferenceBackend.Auto => BackendType.CPU, // Default to CPU for now
-                _ => BackendType.CPU
-            };
-            
-            // For now, just log the selected backend
-            // TODO: Add backend validation when Worker API is available
-            
-            PiperLogger.LogInfo("Inference Engine initialized with backend: {0}", _inferenceBackend);
-            
-            // Small delay to simulate async initialization
-            // Note: Task.Delay can cause issues in Unity Test Framework
-            if (!Application.isEditor || Application.isPlaying)
-            {
-                await Task.Delay(10, cancellationToken);
-            }
-            else
-            {
-                // In test environment, use Task.Yield instead
-                await Task.Yield();
-            }
+                PiperLogger.LogInfo("Initializing Inference Engine backend...");
+                
+                // Map PiperConfig backend to Unity Inference Engine backend
+                _inferenceBackend = _config.Backend switch
+                {
+                    InferenceBackend.CPU => BackendType.CPU,
+                    InferenceBackend.GPUCompute => BackendType.GPUCompute,
+                    InferenceBackend.GPUPixel => BackendType.GPUPixel,
+                    InferenceBackend.Auto => BackendType.CPU, // Default to CPU for now
+                    _ => BackendType.CPU
+                };
+                
+                // For now, just log the selected backend
+                // TODO: Add backend validation when Worker API is available
+                
+                PiperLogger.LogInfo("Inference Engine initialized with backend: {0}", _inferenceBackend);
+            }, cancellationToken).ConfigureAwait(false);
         }
         
         /// <summary>
@@ -1002,21 +993,15 @@ namespace uPiper.Core
         /// </summary>
         private async Task InitializeWorkerPoolAsync(CancellationToken cancellationToken)
         {
-            PiperLogger.LogInfo("Initializing worker pool with {0} threads", _config.WorkerThreads);
-            
-            // Worker pool initialization will be implemented when we have actual models
-            // For now, just log the intention
-            if (!Application.isEditor || Application.isPlaying)
+            await Task.Run(() =>
             {
-                await Task.Delay(10, cancellationToken);
-            }
-            else
-            {
-                // In test environment, use Task.Yield instead
-                await Task.Yield();
-            }
-            
-            PiperLogger.LogInfo("Worker pool initialization completed");
+                PiperLogger.LogInfo("Initializing worker pool with {0} threads", _config.WorkerThreads);
+                
+                // Worker pool initialization will be implemented when we have actual models
+                // For now, just log the intention
+                
+                PiperLogger.LogInfo("Worker pool initialization completed");
+            }, cancellationToken).ConfigureAwait(false);
         }
         
         /// <summary>
