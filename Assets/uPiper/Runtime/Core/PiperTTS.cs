@@ -256,6 +256,9 @@ namespace uPiper.Core
             {
                 PiperLogger.LogInfo("Starting PiperTTS initialization...");
                 
+                // Validate runtime environment first (must be on main thread)
+                ValidateRuntimeEnvironment();
+                
                 // Initialize Inference Engine backend
                 await InitializeInferenceEngineAsync(cancellationToken).ConfigureAwait(false);
                 
@@ -264,9 +267,6 @@ namespace uPiper.Core
                 {
                     await InitializeWorkerPoolAsync(cancellationToken).ConfigureAwait(false);
                 }
-                
-                // Validate runtime environment
-                ValidateRuntimeEnvironment();
                 
                 // Initialize cache system if enabled
                 if (_config.EnablePhonemeCache)
@@ -1025,10 +1025,18 @@ namespace uPiper.Core
                 PiperLogger.LogInfo("Running in Unity Editor");
             }
             
-            // Check system info
-            PiperLogger.LogInfo("System Memory: {0}MB", SystemInfo.systemMemorySize);
-            PiperLogger.LogInfo("Processor Count: {0}", SystemInfo.processorCount);
-            PiperLogger.LogInfo("Graphics Device: {0}", SystemInfo.graphicsDeviceName);
+            // Check system info (skip in test environment to avoid main thread issues)
+            try
+            {
+                PiperLogger.LogInfo("System Memory: {0}MB", SystemInfo.systemMemorySize);
+                PiperLogger.LogInfo("Processor Count: {0}", SystemInfo.processorCount);
+                PiperLogger.LogInfo("Graphics Device: {0}", SystemInfo.graphicsDeviceName);
+            }
+            catch (UnityException ex)
+            {
+                // This can happen in test environment when not on main thread
+                PiperLogger.LogWarning("Could not retrieve system info: {0}", ex.Message);
+            }
         }
         
         /// <summary>
