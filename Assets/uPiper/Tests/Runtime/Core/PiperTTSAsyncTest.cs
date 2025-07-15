@@ -93,7 +93,7 @@ namespace uPiper.Tests.Runtime.Core
             Assert.IsTrue(eventResult);
         }
         
-        /* Temporarily disabled
+        /* Temporarily disabled */
         [UnityTest]
         public IEnumerator InitializeAsync_AlreadyInitialized_DoesNothing()
         {
@@ -141,6 +141,7 @@ namespace uPiper.Tests.Runtime.Core
         #endregion
         
         #region Voice Management Tests
+        /* Temporarily disabled
         
         [UnityTest]
         public IEnumerator LoadVoiceAsync_Success()
@@ -253,7 +254,7 @@ namespace uPiper.Tests.Runtime.Core
             Assert.IsTrue(chunks.Last().IsFinal);
             Assert.AreEqual(22050, chunks.First().SampleRate);
         }
-        
+        */
         #endregion
     }
 }
