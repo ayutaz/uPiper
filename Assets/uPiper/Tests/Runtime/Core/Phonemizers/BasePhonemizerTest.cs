@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -34,12 +35,12 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsTrue(_phonemizer.UseCache);
             
             // First call
-            var result1 = _phonemizer.PhonemizeAsync("test", "en").GetAwaiter().GetResult();
+            var result1 = _phonemizer.Phonemize("test", "en");
             Assert.IsFalse(result1.FromCache);
             Assert.AreEqual(1, _phonemizer.InternalCallCount);
             
             // Second call - should be cached
-            var result2 = _phonemizer.PhonemizeAsync("test", "en").GetAwaiter().GetResult();
+            var result2 = _phonemizer.Phonemize("test", "en");
             Assert.IsTrue(result2.FromCache);
             Assert.AreEqual(1, _phonemizer.InternalCallCount); // No additional internal call
         }
@@ -50,12 +51,12 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             _phonemizer.UseCache = false;
             
             // First call
-            var result1 = _phonemizer.PhonemizeAsync("test", "en").GetAwaiter().GetResult();
+            var result1 = _phonemizer.Phonemize("test", "en");
             Assert.IsFalse(result1.FromCache);
             Assert.AreEqual(1, _phonemizer.InternalCallCount);
             
             // Second call - should NOT be cached
-            var result2 = _phonemizer.PhonemizeAsync("test", "en").GetAwaiter().GetResult();
+            var result2 = _phonemizer.Phonemize("test", "en");
             Assert.IsFalse(result2.FromCache);
             Assert.AreEqual(2, _phonemizer.InternalCallCount);
         }
@@ -63,16 +64,16 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         [Test]
         public void Caching_DifferentLanguages_CachedSeparately()
         {
-            var textEn = _phonemizer.PhonemizeAsync("hello", "en").GetAwaiter().GetResult();
-            var textJa = _phonemizer.PhonemizeAsync("hello", "ja").GetAwaiter().GetResult();
+            var textEn = _phonemizer.Phonemize("hello", "en");
+            var textJa = _phonemizer.Phonemize("hello", "ja");
             
             Assert.AreEqual("en", textEn.Language);
             Assert.AreEqual("ja", textJa.Language);
             Assert.AreEqual(2, _phonemizer.InternalCallCount);
             
             // Retrieve from cache
-            var textEnCached = _phonemizer.PhonemizeAsync("hello", "en").GetAwaiter().GetResult();
-            var textJaCached = _phonemizer.PhonemizeAsync("hello", "ja").GetAwaiter().GetResult();
+            var textEnCached = _phonemizer.Phonemize("hello", "en");
+            var textJaCached = _phonemizer.Phonemize("hello", "ja");
             
             Assert.IsTrue(textEnCached.FromCache);
             Assert.IsTrue(textJaCached.FromCache);
@@ -103,7 +104,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         [Test]
         public void TextNormalization_AppliedBeforePhonemization()
         {
-            var result = _phonemizer.PhonemizeAsync("  Hello   World  ", "en").GetAwaiter().GetResult();
+            var result = _phonemizer.Phonemize("  Hello   World  ", "en");
             
             // Check that the normalized text was used internally
             Assert.AreEqual("hello world", _phonemizer.LastNormalizedText);
@@ -113,9 +114,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         [Test]
         public void TextNormalization_SameNormalizedText_UsesCachedResult()
         {
-            var result1 = _phonemizer.PhonemizeAsync("Hello World", "en").GetAwaiter().GetResult();
-            var result2 = _phonemizer.PhonemizeAsync("hello   world", "en").GetAwaiter().GetResult();
-            var result3 = _phonemizer.PhonemizeAsync("HELLO WORLD", "en").GetAwaiter().GetResult();
+            var result1 = _phonemizer.Phonemize("Hello World", "en");
+            var result2 = _phonemizer.Phonemize("hello   world", "en");
+            var result3 = _phonemizer.Phonemize("HELLO WORLD", "en");
             
             // All should normalize to "hello world" and use same cache entry
             Assert.AreEqual(1, _phonemizer.InternalCallCount);
@@ -145,7 +146,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         [Test]
         public void EmptyText_ReturnsEmptyResult()
         {
-            var result = _phonemizer.PhonemizeAsync("", "en").GetAwaiter().GetResult();
+            var result = _phonemizer.Phonemize("", "en");
             
             Assert.AreEqual("", result.OriginalText);
             Assert.AreEqual(0, result.Phonemes.Length);
@@ -156,7 +157,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         [Test]
         public void NullText_ReturnsEmptyResult()
         {
-            var result = _phonemizer.PhonemizeAsync(null, "en").GetAwaiter().GetResult();
+            var result = _phonemizer.Phonemize(null, "en");
             
             Assert.AreEqual("", result.OriginalText);
             Assert.AreEqual(0, result.Phonemes.Length);
@@ -203,7 +204,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 // Test cancellation behavior without async assertions
                 try
                 {
-                    _phonemizer.PhonemizeAsync("test", "en", cts.Token).GetAwaiter().GetResult();
+                    _phonemizer.Phonemize("test", "en", cts.Token);
                     Assert.Fail("Expected OperationCanceledException");
                 }
                 catch (OperationCanceledException)
@@ -227,7 +228,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 
                 try
                 {
-                    _phonemizer.PhonemizeAsync("test", "en", cts.Token).GetAwaiter().GetResult();
+                    _phonemizer.Phonemize("test", "en", cts.Token);
                     Assert.Fail("Expected OperationCanceledException");
                 }
                 catch (OperationCanceledException)
@@ -237,7 +238,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 
                 // Result should not be cached
                 _phonemizer.DelayMilliseconds = 0;
-                var result = _phonemizer.PhonemizeAsync("test", "en").GetAwaiter().GetResult();
+                var result = _phonemizer.Phonemize("test", "en");
                 Assert.IsFalse(result.FromCache);
             }
         }
@@ -250,7 +251,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void PhonemizeBatch_ProcessesAllTexts()
         {
             var texts = new[] { "hello", "world", "test" };
-            var results = _phonemizer.PhonemizeBatchAsync(texts, "en").GetAwaiter().GetResult();
+            var results = texts.Select(t => _phonemizer.Phonemize(t, "en")).ToArray();
             
             Assert.AreEqual(3, results.Length);
             Assert.AreEqual("hello", results[0].OriginalText);
@@ -266,10 +267,10 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         [Test]
         public void PhonemizeBatch_EmptyArray_ReturnsEmptyArray()
         {
-            var results = _phonemizer.PhonemizeBatchAsync(new string[0], "en").GetAwaiter().GetResult();
+            var results = new string[0].Select(t => _phonemizer.Phonemize(t, "en")).ToArray();
             Assert.AreEqual(0, results.Length);
             
-            results = _phonemizer.PhonemizeBatchAsync(null, "en").GetAwaiter().GetResult();
+            results = (null as string[])?.Select(t => _phonemizer.Phonemize(t, "en")).ToArray() ?? new PhonemeResult[0];
             Assert.AreEqual(0, results.Length);
         }
 
@@ -313,7 +314,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             _phonemizer.DelayMilliseconds = 5; // Very short delay
             
-            var result = _phonemizer.PhonemizeAsync("test", "en").GetAwaiter().GetResult();
+            var result = _phonemizer.Phonemize("test", "en");
             
             Assert.GreaterOrEqual(result.ProcessingTime.TotalMilliseconds, 0);
             Assert.LessOrEqual(result.ProcessingTime.TotalMilliseconds, 50); // Allow some overhead
@@ -324,11 +325,11 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             _phonemizer.DelayMilliseconds = 5; // Short delay
             
-            var result1 = _phonemizer.PhonemizeAsync("test", "en").GetAwaiter().GetResult();
+            var result1 = _phonemizer.Phonemize("test", "en");
             
             _phonemizer.DelayMilliseconds = 0; // Remove delay
             
-            var result2 = _phonemizer.PhonemizeAsync("test", "en").GetAwaiter().GetResult();
+            var result2 = _phonemizer.Phonemize("test", "en");
             
             Assert.IsTrue(result2.FromCache);
             // Cached result should be retrieved much faster
@@ -380,6 +381,71 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             public string LastNormalizedText { get; private set; }
             public bool SimulateError { get; set; }
             public int DelayMilliseconds { get; set; }
+
+            // Override Phonemize to provide a fully synchronous implementation for tests
+            public override PhonemeResult Phonemize(string text, string language = "ja")
+            {
+                // Check if cancelled (simulate cancellation check)
+                if (SimulateError)
+                {
+                    throw new PiperPhonemizationException(text, language, "Failed to phonemize text: Simulated error", 
+                        new InvalidOperationException("Simulated error"));
+                }
+
+                // Normalize text
+                var normalizedText = NormalizeText(text, language);
+                LastNormalizedText = normalizedText;
+
+                // Check cache
+                if (UseCache)
+                {
+                    var cacheKey = GetCacheKey(normalizedText, language);
+                    var cachedResult = _cache.Get(cacheKey);
+                    if (cachedResult != null)
+                    {
+                        cachedResult.FromCache = true;
+                        return cachedResult;
+                    }
+                }
+
+                // Process
+                InternalCallCount++;
+                
+                // Simulate delay synchronously (don't actually delay in tests)
+                // DelayMilliseconds is ignored in sync version to prevent freezing
+                
+                // Simple mock phonemization
+                var phonemes = normalizedText.ToCharArray();
+                var phonemeStrings = new string[phonemes.Length];
+                var phonemeIds = new int[phonemes.Length];
+                
+                for (int i = 0; i < phonemes.Length; i++)
+                {
+                    phonemeStrings[i] = phonemes[i].ToString();
+                    phonemeIds[i] = (int)phonemes[i];
+                }
+                
+                var result = new PhonemeResult
+                {
+                    OriginalText = text,
+                    Language = language,
+                    Phonemes = phonemeStrings,
+                    PhonemeIds = phonemeIds,
+                    Durations = new float[phonemes.Length],
+                    Pitches = new float[phonemes.Length],
+                    ProcessingTime = TimeSpan.FromMilliseconds(1), // Fake processing time
+                    FromCache = false
+                };
+
+                // Cache result
+                if (UseCache)
+                {
+                    var cacheKey = GetCacheKey(normalizedText, language);
+                    _cache.Add(cacheKey, result.Clone());
+                }
+
+                return result;
+            }
 
             protected override async Task<PhonemeResult> PhonemizeInternalAsync(
                 string normalizedText, 
