@@ -160,6 +160,19 @@ namespace uPiper.Tests.Runtime.Core
         }
         
         [Test]
+        public void SpeakingStyle_EnumValues()
+        {
+            // Assert
+            Assert.AreEqual(0, (int)SpeakingStyle.Normal);
+            Assert.AreEqual(1, (int)SpeakingStyle.Cheerful);
+            Assert.AreEqual(2, (int)SpeakingStyle.Calm);
+            Assert.AreEqual(3, (int)SpeakingStyle.Sad);
+            Assert.AreEqual(4, (int)SpeakingStyle.Angry);
+            Assert.AreEqual(5, (int)SpeakingStyle.Whisper);
+            Assert.AreEqual(6, (int)SpeakingStyle.Excited);
+        }
+        
+        [Test]
         public void FromModelPath_HandlesSimpleFileName()
         {
             // Act
