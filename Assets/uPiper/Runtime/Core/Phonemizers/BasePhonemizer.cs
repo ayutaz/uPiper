@@ -81,7 +81,7 @@ namespace uPiper.Core.Phonemizers
 
             if (!IsLanguageSupported(language))
             {
-                throw new PiperPhonemizationException($"Language '{language}' is not supported by {Name}", text, language);
+                throw new PiperPhonemizationException(text, language, $"Language '{language}' is not supported by {Name}");
             }
 
             var sw = Stopwatch.StartNew();
@@ -134,7 +134,7 @@ namespace uPiper.Core.Phonemizers
             catch (Exception ex)
             {
                 PiperLogger.LogError($"Phonemization failed: {ex.Message}");
-                throw new PiperPhonemizationException($"Failed to phonemize text: {ex.Message}", text, language, ex);
+                throw new PiperPhonemizationException(text, language, $"Failed to phonemize text: {ex.Message}", ex);
             }
         }
 
