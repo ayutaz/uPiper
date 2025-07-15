@@ -131,8 +131,10 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         [Test]
         public void UnsupportedLanguage_ThrowsException()
         {
-            var ex = Assert.ThrowsAsync<PiperPhonemizationException>(
-                async () => await _phonemizer.PhonemizeAsync("test", "unsupported")
+            // Unity Test Framework doesn't support Assert.ThrowsAsync properly
+            // Using synchronous method instead
+            var ex = Assert.Throws<PiperPhonemizationException>(
+                () => _phonemizer.Phonemize("test", "unsupported")
             );
             
             Assert.That(ex.Message, Does.Contain("not supported"));
@@ -165,8 +167,10 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             _phonemizer.SimulateError = true;
             
-            var ex = Assert.ThrowsAsync<PiperPhonemizationException>(
-                async () => await _phonemizer.PhonemizeAsync("test", "en")
+            // Unity Test Framework doesn't support Assert.ThrowsAsync properly
+            // Using synchronous method instead
+            var ex = Assert.Throws<PiperPhonemizationException>(
+                () => _phonemizer.Phonemize("test", "en")
             );
             
             Assert.That(ex.Message, Does.Contain("Failed to phonemize"));
@@ -185,9 +189,18 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             {
                 cts.Cancel();
                 
-                Assert.ThrowsAsync<OperationCanceledException>(
-                    async () => await _phonemizer.PhonemizeAsync("test", "en", cts.Token)
-                );
+                // Unity Test Framework doesn't support Assert.ThrowsAsync properly
+                // Test cancellation behavior without async assertions
+                try
+                {
+                    var task = _phonemizer.PhonemizeAsync("test", "en", cts.Token);
+                    task.Wait();
+                    Assert.Fail("Expected OperationCanceledException");
+                }
+                catch (AggregateException ae)
+                {
+                    Assert.IsInstanceOf<OperationCanceledException>(ae.InnerException);
+                }
             }
         }
 

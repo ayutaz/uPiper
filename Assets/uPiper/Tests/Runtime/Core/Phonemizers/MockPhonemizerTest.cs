@@ -126,8 +126,10 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             var exception = new InvalidOperationException("Test error");
             _phonemizer.SimulateError("error text", exception);
             
-            Assert.ThrowsAsync<InvalidOperationException>(
-                async () => await _phonemizer.PhonemizeAsync("error text", "en")
+            // Unity Test Framework doesn't support Assert.ThrowsAsync properly
+            // Using synchronous method instead
+            Assert.Throws<InvalidOperationException>(
+                () => _phonemizer.Phonemize("error text", "en")
             );
         }
 
@@ -258,15 +260,24 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         }
 
         [Test]
-        public async Task CancellationToken_CancelsOperation()
+        public void CancellationToken_CancelsOperation()
         {
             using (var cts = new CancellationTokenSource())
             {
                 cts.Cancel();
                 
-                Assert.ThrowsAsync<OperationCanceledException>(
-                    async () => await _phonemizer.PhonemizeAsync("test", "en", cts.Token)
-                );
+                // Unity Test Framework doesn't support Assert.ThrowsAsync properly
+                // Test cancellation behavior without async assertions
+                try
+                {
+                    var task = _phonemizer.PhonemizeAsync("test", "en", cts.Token);
+                    task.Wait();
+                    Assert.Fail("Expected OperationCanceledException");
+                }
+                catch (AggregateException ae)
+                {
+                    Assert.IsInstanceOf<OperationCanceledException>(ae.InnerException);
+                }
             }
         }
 
