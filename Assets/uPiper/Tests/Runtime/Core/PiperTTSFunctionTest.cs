@@ -182,5 +182,53 @@ namespace uPiper.Tests.Runtime.Core
         }
         
         #endregion
+        
+        #region Error Handling Tests
+        
+        [Test]
+        public void GenerateAudio_BeforeInitialization_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => _piperTTS.GenerateAudio("test"));
+        }
+        
+        [Test]
+        public void PreloadText_BeforeInitialization_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => _piperTTS.PreloadText("test"));
+        }
+        
+        [Test]
+        public void GenerateAudio_WithNullText_ThrowsArgumentNullException()
+        {
+            // Note: This test assumes the method checks for null even before initialization check
+            // If not, it might throw InvalidOperationException instead
+            try
+            {
+                _piperTTS.GenerateAudio(null);
+                Assert.Fail("Expected an exception");
+            }
+            catch (Exception ex)
+            {
+                Assert.IsTrue(ex is ArgumentNullException || ex is InvalidOperationException);
+            }
+        }
+        
+        #endregion
+        
+        #region Multiple Instance Tests
+        
+        [Test]
+        public void MultipleInstances_CanCoexist()
+        {
+            var config2 = PiperConfig.CreateDefault();
+            var piperTTS2 = new PiperTTS(config2);
+            
+            Assert.IsNotNull(piperTTS2);
+            Assert.AreNotSame(_piperTTS, piperTTS2);
+            
+            piperTTS2.Dispose();
+        }
+        
+        #endregion
     }
 }

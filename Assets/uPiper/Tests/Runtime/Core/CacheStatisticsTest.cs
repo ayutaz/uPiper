@@ -245,5 +245,24 @@ namespace uPiper.Tests.Runtime.Core
             // Assert
             Assert.AreEqual(11, stats.EvictionCount);
         }
+        
+        [Test]
+        public void LogStatistics_ExecutesWithoutError()
+        {
+            // Arrange
+            var stats = new CacheStatistics
+            {
+                EntryCount = 10,
+                TotalSizeBytes = 1024 * 1024,
+                MaxSizeBytes = 2 * 1024 * 1024,
+                HitCount = 80,
+                MissCount = 20,
+                EvictionCount = 5
+            };
+            stats.Reset(); // Set LastClearTime
+            
+            // Act & Assert - Should not throw
+            Assert.DoesNotThrow(() => stats.LogStatistics());
+        }
     }
 }
