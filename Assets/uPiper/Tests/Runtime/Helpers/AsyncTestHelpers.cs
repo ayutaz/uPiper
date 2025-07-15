@@ -107,37 +107,46 @@ namespace uPiper.Tests.Runtime.Helpers
         {
             var enumerator = enumerable.GetAsyncEnumerator(cancellationToken);
             var startTime = Time.realtimeSinceStartup;
+            bool completed = false;
             
-            try
+            // Main enumeration logic
+            while (!completed)
             {
-                while (true)
+                var moveNextTask = enumerator.MoveNextAsync();
+                
+                while (!moveNextTask.IsCompleted)
                 {
-                    var moveNextTask = enumerator.MoveNextAsync();
-                    
-                    while (!moveNextTask.IsCompleted)
+                    if (Time.realtimeSinceStartup - startTime > timeout)
                     {
-                        if (Time.realtimeSinceStartup - startTime > timeout)
+                        // Clean up before failing
+                        var cleanupTask = enumerator.DisposeAsync();
+                        while (!cleanupTask.IsCompleted)
                         {
-                            Assert.Fail($"Async enumeration did not complete within {timeout} seconds");
-                            yield break;
+                            yield return null;
                         }
                         
-                        yield return null;
+                        Assert.Fail($"Async enumeration did not complete within {timeout} seconds");
+                        yield break;
                     }
                     
-                    if (!moveNextTask.Result)
-                        break;
-                    
+                    yield return null;
+                }
+                
+                if (!moveNextTask.Result)
+                {
+                    completed = true;
+                }
+                else
+                {
                     results.Add(enumerator.Current);
                 }
             }
-            finally
+            
+            // Dispose enumerator
+            var disposeTask = enumerator.DisposeAsync();
+            while (!disposeTask.IsCompleted)
             {
-                var disposeTask = enumerator.DisposeAsync();
-                while (!disposeTask.IsCompleted)
-                {
-                    yield return null;
-                }
+                yield return null;
             }
         }
         
