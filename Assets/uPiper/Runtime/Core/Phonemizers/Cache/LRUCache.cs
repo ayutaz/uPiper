@@ -274,8 +274,8 @@ namespace uPiper.Core.Phonemizers.Cache
             {
                 if (disposing)
                 {
-                    _lock?.Dispose();
                     Clear();
+                    _lock?.Dispose();
                 }
                 _disposed = true;
             }
