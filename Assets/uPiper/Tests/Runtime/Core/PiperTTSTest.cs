@@ -8,6 +8,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using uPiper.Core;
+using uPiper.Tests.Runtime.Helpers;
 
 namespace uPiper.Tests.Runtime.Core
 {
@@ -65,8 +66,8 @@ namespace uPiper.Tests.Runtime.Core
         
         #region Initialization Tests
         
-        [Test]
-        public void InitializeAsync_Success()
+        [UnityTest]
+        public IEnumerator InitializeAsync_Success()
         {
             // Arrange
             bool eventFired = false;
@@ -78,49 +79,42 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act
-            var task = _piperTTS.InitializeAsync();
-            Assert.IsTrue(task.Wait(TimeSpan.FromSeconds(5)), "Task should complete within timeout");
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             // Assert
-            Assert.IsTrue(task.IsCompleted && !task.IsFaulted && !task.IsCanceled);
             Assert.IsTrue(_piperTTS.IsInitialized);
             Assert.IsTrue(eventFired);
             Assert.IsTrue(eventResult);
         }
         
-        [Test]
-        public void InitializeAsync_AlreadyInitialized_DoesNothing()
+        [UnityTest]
+        public IEnumerator InitializeAsync_AlreadyInitialized_DoesNothing()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Initial task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             int eventCount = 0;
             _piperTTS.OnInitialized += _ => eventCount++;
             
             // Act
             LogAssert.Expect(LogType.Warning, "[uPiper] PiperTTS is already initialized");
-            var task = _piperTTS.InitializeAsync();
-            Assert.IsTrue(task.Wait(TimeSpan.FromSeconds(5)), "Task should complete within timeout");
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             // Assert
-            Assert.IsTrue(task.IsCompleted && !task.IsFaulted && !task.IsCanceled);
             Assert.AreEqual(0, eventCount); // Event should not fire again
         }
         
-        [Test]
-        public void InitializeAsync_Cancellation_ThrowsOperationCanceledException()
+        [UnityTest]
+        public IEnumerator InitializeAsync_Cancellation_ThrowsOperationCanceledException()
         {
             // Arrange
             using var cts = new CancellationTokenSource();
             cts.Cancel();
             
             // Act & Assert
-            var task = _piperTTS.InitializeAsync(cts.Token);
-            Assert.Throws<AggregateException>(() => task.Wait(TimeSpan.FromSeconds(1)));
-            Assert.IsTrue(task.IsFaulted);
-            Assert.IsTrue(task.Exception.InnerException is OperationCanceledException);
+            yield return AsyncTestHelpers.RunAsyncExpectException<OperationCanceledException>(
+                _piperTTS.InitializeAsync(cts.Token));
+            
             Assert.IsFalse(_piperTTS.IsInitialized);
         }
         
@@ -128,13 +122,11 @@ namespace uPiper.Tests.Runtime.Core
         
         #region Voice Management Tests
         
-        [Test]
-        public void LoadVoiceAsync_Success()
+        [UnityTest]
+        public IEnumerator LoadVoiceAsync_Success()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             var voice = new PiperVoiceConfig
             {
@@ -153,11 +145,9 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act
-            var loadTask = _piperTTS.LoadVoiceAsync(voice);
-            Assert.IsTrue(loadTask.Wait(TimeSpan.FromSeconds(5)), "Load task should complete");
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(voice));
             
             // Assert
-            Assert.IsTrue(loadTask.IsCompleted && !loadTask.IsFaulted && !loadTask.IsCanceled);
             Assert.Contains("test-voice", _piperTTS.AvailableVoices.ToList());
             Assert.AreEqual("test-voice", _piperTTS.CurrentVoiceId); // First loaded voice becomes current
             Assert.IsTrue(eventFired);
@@ -169,8 +159,8 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual("test-voice", availableVoices[0].VoiceId);
         }
         
-        [Test]
-        public void LoadVoiceAsync_NotInitialized_ThrowsInvalidOperationException()
+        [UnityTest]
+        public IEnumerator LoadVoiceAsync_NotInitialized_ThrowsInvalidOperationException()
         {
             // Arrange
             var voice = new PiperVoiceConfig
@@ -182,34 +172,26 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act & Assert
-            var task = _piperTTS.LoadVoiceAsync(voice);
-            Assert.Throws<AggregateException>(() => task.Wait(TimeSpan.FromSeconds(1)));
-            Assert.IsTrue(task.IsFaulted);
-            Assert.IsTrue(task.Exception.InnerException is InvalidOperationException);
+            yield return AsyncTestHelpers.RunAsyncExpectException<InvalidOperationException>(
+                _piperTTS.LoadVoiceAsync(voice));
         }
         
-        [Test]
-        public void LoadVoiceAsync_NullVoice_ThrowsArgumentNullException()
+        [UnityTest]
+        public IEnumerator LoadVoiceAsync_NullVoice_ThrowsArgumentNullException()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             // Act & Assert
-            var task = _piperTTS.LoadVoiceAsync(null);
-            Assert.Throws<AggregateException>(() => task.Wait(TimeSpan.FromSeconds(1)));
-            Assert.IsTrue(task.IsFaulted);
-            Assert.IsTrue(task.Exception.InnerException is ArgumentNullException);
+            yield return AsyncTestHelpers.RunAsyncExpectException<ArgumentNullException>(
+                _piperTTS.LoadVoiceAsync(null));
         }
         
-        [Test]
-        public void LoadVoiceAsync_InvalidVoice_ThrowsPiperException()
+        [UnityTest]
+        public IEnumerator LoadVoiceAsync_InvalidVoice_ThrowsPiperException()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             var invalidVoice = new PiperVoiceConfig
             {
@@ -220,39 +202,31 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act & Assert
-            var task = _piperTTS.LoadVoiceAsync(invalidVoice);
-            Assert.Throws<AggregateException>(() => task.Wait(TimeSpan.FromSeconds(1)));
-            Assert.IsTrue(task.IsFaulted);
-            Assert.IsTrue(task.Exception.InnerException is PiperException);
+            yield return AsyncTestHelpers.RunAsyncExpectException<PiperException>(
+                _piperTTS.LoadVoiceAsync(invalidVoice));
         }
         
-        [Test]
-        public void SetCurrentVoice_Success()
+        [UnityTest]
+        public IEnumerator SetCurrentVoice_Success()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
-            var voice1Task = _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(new PiperVoiceConfig
             {
                 VoiceId = "voice1",
                 ModelPath = "test1.onnx",
                 Language = "ja",
                 SampleRate = 22050
-            });
-            Assert.IsTrue(voice1Task.Wait(TimeSpan.FromSeconds(5)), "Voice1 task should complete");
-            Assert.IsTrue(voice1Task.IsCompleted && !voice1Task.IsFaulted && !voice1Task.IsCanceled);
+            }));
             
-            var voice2Task = _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(new PiperVoiceConfig
             {
                 VoiceId = "voice2",
                 ModelPath = "test2.onnx",
                 Language = "en",
                 SampleRate = 22050
-            });
-            Assert.IsTrue(voice2Task.Wait(TimeSpan.FromSeconds(5)), "Voice2 task should complete");
-            Assert.IsTrue(voice2Task.IsCompleted && !voice2Task.IsFaulted && !voice2Task.IsCanceled);
+            }));
             
             // Act
             _piperTTS.SetCurrentVoice("voice2");
@@ -268,25 +242,21 @@ namespace uPiper.Tests.Runtime.Core
             Assert.Throws<InvalidOperationException>(() => _piperTTS.SetCurrentVoice("test"));
         }
         
-        [Test]
-        public void SetCurrentVoice_UnknownVoice_ThrowsPiperException()
+        [UnityTest]
+        public IEnumerator SetCurrentVoice_UnknownVoice_ThrowsPiperException()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             // Act & Assert
             Assert.Throws<PiperException>(() => _piperTTS.SetCurrentVoice("unknown"));
         }
         
-        [Test]
-        public void GetVoiceConfig_Success()
+        [UnityTest]
+        public IEnumerator GetVoiceConfig_Success()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             var voice = new PiperVoiceConfig
             {
@@ -295,9 +265,7 @@ namespace uPiper.Tests.Runtime.Core
                 Language = "ja",
                 SampleRate = 22050
             };
-            var loadTask = _piperTTS.LoadVoiceAsync(voice);
-            Assert.IsTrue(loadTask.Wait(TimeSpan.FromSeconds(5)), "Load task should complete");
-            Assert.IsTrue(loadTask.IsCompleted && !loadTask.IsFaulted && !loadTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(voice));
             
             // Act
             var retrieved = _piperTTS.GetVoiceConfig("test-voice");
@@ -319,69 +287,57 @@ namespace uPiper.Tests.Runtime.Core
         
         #region TTS Stub Tests
         
-        [Test]
-        public void GenerateAudioAsync_NoVoiceLoaded_ThrowsInvalidOperationException()
+        [UnityTest]
+        public IEnumerator GenerateAudioAsync_NoVoiceLoaded_ThrowsInvalidOperationException()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             // Act & Assert
-            var task = _piperTTS.GenerateAudioAsync("test");
-            Assert.Throws<AggregateException>(() => task.Wait(TimeSpan.FromSeconds(1)));
-            Assert.IsTrue(task.IsFaulted);
-            Assert.IsTrue(task.Exception.InnerException is InvalidOperationException);
+            yield return AsyncTestHelpers.RunAsyncExpectException<InvalidOperationException>(
+                _piperTTS.GenerateAudioAsync("test"));
         }
         
-        [Test]
-        public void GenerateAudioAsync_WithVoice_ReturnsAudioClip()
+        [UnityTest]
+        public IEnumerator GenerateAudioAsync_WithVoice_ReturnsAudioClip()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
-            var voiceTask = _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(new PiperVoiceConfig
             {
                 VoiceId = "test-voice",
                 ModelPath = "test.onnx",
                 Language = "ja",
                 SampleRate = 22050
-            });
-            Assert.IsTrue(voiceTask.Wait(TimeSpan.FromSeconds(5)), "Voice task should complete");
-            Assert.IsTrue(voiceTask.IsCompleted && !voiceTask.IsFaulted && !voiceTask.IsCanceled);
+            }));
             
             // Act
-            var audioTask = _piperTTS.GenerateAudioAsync("Hello, world!");
-            Assert.IsTrue(audioTask.Wait(TimeSpan.FromSeconds(5)), "Audio task should complete");
+            AudioClip audioClip = null;
+            yield return AsyncTestHelpers.RunAsync(
+                _piperTTS.GenerateAudioAsync("Hello, world!"),
+                result => audioClip = result);
             
             // Assert
-            Assert.IsTrue(audioTask.IsCompleted && !audioTask.IsFaulted && !audioTask.IsCanceled);
-            var audioClip = audioTask.Result;
             Assert.IsNotNull(audioClip);
             Assert.AreEqual(22050, audioClip.frequency);
             Assert.AreEqual(1, audioClip.channels); // Mono
             Assert.Greater(audioClip.samples, 0);
         }
         
-        [Test]
-        public void GenerateAudio_WithVoice_ReturnsAudioClip()
+        [UnityTest]
+        public IEnumerator GenerateAudio_WithVoice_ReturnsAudioClip()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
-            var voiceTask = _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(new PiperVoiceConfig
             {
                 VoiceId = "test-voice",
                 ModelPath = "test.onnx",
                 Language = "ja",
                 SampleRate = 22050
-            });
-            Assert.IsTrue(voiceTask.Wait(TimeSpan.FromSeconds(5)), "Voice task should complete");
-            Assert.IsTrue(voiceTask.IsCompleted && !voiceTask.IsFaulted && !voiceTask.IsCanceled);
+            }));
             
             // Act
             var audioClip = _piperTTS.GenerateAudio("test");
@@ -390,37 +346,25 @@ namespace uPiper.Tests.Runtime.Core
             Assert.IsNotNull(audioClip);
         }
         
-        [Test]
-        public void StreamAudioAsync_WithVoice_ReturnsChunks()
+        [UnityTest]
+        public IEnumerator StreamAudioAsync_WithVoice_ReturnsChunks()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
-            var voiceTask = _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(new PiperVoiceConfig
             {
                 VoiceId = "test-voice",
                 ModelPath = "test.onnx",
                 Language = "ja",
                 SampleRate = 22050
-            });
-            Assert.IsTrue(voiceTask.Wait(TimeSpan.FromSeconds(5)), "Voice task should complete");
-            Assert.IsTrue(voiceTask.IsCompleted && !voiceTask.IsFaulted && !voiceTask.IsCanceled);
+            }));
             
             // Act
             var chunks = new List<AudioChunk>();
-            var enumerator = _piperTTS.StreamAudioAsync("Hello. World!").GetAsyncEnumerator();
-            
-            while (true)
-            {
-                var moveNextTask = enumerator.MoveNextAsync().AsTask();
-                if (!moveNextTask.Wait(TimeSpan.FromSeconds(5)))
-                    break;
-                if (!moveNextTask.Result)
-                    break;
-                chunks.Add(enumerator.Current);
-            }
+            yield return AsyncTestHelpers.ConsumeAsyncEnumerable(
+                _piperTTS.StreamAudioAsync("Hello. World!"),
+                chunks);
             
             // Assert
             Assert.Greater(chunks.Count, 0);
@@ -428,13 +372,11 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual(22050, chunks.First().SampleRate);
         }
         
-        [Test]
-        public void GenerateAudioAsync_WithVoiceConfig_Overload()
+        [UnityTest]
+        public IEnumerator GenerateAudioAsync_WithVoiceConfig_Overload()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             var voice = new PiperVoiceConfig
             {
@@ -445,23 +387,21 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act
-            var audioTask = _piperTTS.GenerateAudioAsync("Hello", voice);
-            Assert.IsTrue(audioTask.Wait(TimeSpan.FromSeconds(5)), "Audio task should complete");
+            AudioClip audioClip = null;
+            yield return AsyncTestHelpers.RunAsync(
+                _piperTTS.GenerateAudioAsync("Hello", voice),
+                result => audioClip = result);
             
             // Assert
-            Assert.IsTrue(audioTask.IsCompleted && !audioTask.IsFaulted && !audioTask.IsCanceled);
-            var audioClip = audioTask.Result;
             Assert.IsNotNull(audioClip);
             Assert.AreEqual(16000, audioClip.frequency); // Should use the provided voice's sample rate
         }
         
-        [Test]
-        public void GenerateAudio_WithVoiceConfig_Overload()
+        [UnityTest]
+        public IEnumerator GenerateAudio_WithVoiceConfig_Overload()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             var voice = new PiperVoiceConfig
             {
@@ -478,13 +418,11 @@ namespace uPiper.Tests.Runtime.Core
             Assert.IsNotNull(audioClip);
         }
         
-        [Test]
-        public void StreamAudioAsync_WithVoiceConfig_Overload()
+        [UnityTest]
+        public IEnumerator StreamAudioAsync_WithVoiceConfig_Overload()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             var voice = new PiperVoiceConfig
             {
@@ -496,17 +434,9 @@ namespace uPiper.Tests.Runtime.Core
             
             // Act
             var chunks = new List<AudioChunk>();
-            var enumerator = _piperTTS.StreamAudioAsync("Test", voice).GetAsyncEnumerator();
-            
-            while (true)
-            {
-                var moveNextTask = enumerator.MoveNextAsync().AsTask();
-                if (!moveNextTask.Wait(TimeSpan.FromSeconds(5)))
-                    break;
-                if (!moveNextTask.Result)
-                    break;
-                chunks.Add(enumerator.Current);
-            }
+            yield return AsyncTestHelpers.ConsumeAsyncEnumerable(
+                _piperTTS.StreamAudioAsync("Test", voice),
+                chunks);
             
             // Assert
             Assert.Greater(chunks.Count, 0);
@@ -538,28 +468,23 @@ namespace uPiper.Tests.Runtime.Core
             Assert.DoesNotThrow(() => _piperTTS.ClearCache());
         }
         
-        [Test]
-        public void PreloadTextAsync_WithVoice_UpdatesCache()
+        [UnityTest]
+        public IEnumerator PreloadTextAsync_WithVoice_UpdatesCache()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
-            var voiceTask = _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(new PiperVoiceConfig
             {
                 VoiceId = "test-voice",
                 ModelPath = "test.onnx",
                 Language = "ja",
                 SampleRate = 22050
-            });
-            Assert.IsTrue(voiceTask.Wait(TimeSpan.FromSeconds(5)), "Voice task should complete");
-            Assert.IsTrue(voiceTask.IsCompleted && !voiceTask.IsFaulted && !voiceTask.IsCanceled);
+            }));
             
             // Act
-            var preloadTask = _piperTTS.PreloadTextAsync("Test text for caching");
-            Assert.IsTrue(preloadTask.Wait(TimeSpan.FromSeconds(5)), "Preload task should complete");
-            Assert.IsTrue(preloadTask.IsCompleted && !preloadTask.IsFaulted && !preloadTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(
+                _piperTTS.PreloadTextAsync("Test text for caching"));
             
             var stats = _piperTTS.GetCacheStatistics();
             
@@ -568,19 +493,15 @@ namespace uPiper.Tests.Runtime.Core
             Assert.Greater(stats.TotalSizeBytes, 0);
         }
         
-        [Test]
-        public void PreloadTextAsync_WithoutVoice_ThrowsInvalidOperationException()
+        [UnityTest]
+        public IEnumerator PreloadTextAsync_WithoutVoice_ThrowsInvalidOperationException()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             // Act & Assert
-            var task = _piperTTS.PreloadTextAsync("test");
-            Assert.Throws<AggregateException>(() => task.Wait(TimeSpan.FromSeconds(1)));
-            Assert.IsTrue(task.IsFaulted);
-            Assert.IsTrue(task.Exception.InnerException is InvalidOperationException);
+            yield return AsyncTestHelpers.RunAsyncExpectException<InvalidOperationException>(
+                _piperTTS.PreloadTextAsync("test"));
         }
         
         #endregion
@@ -599,36 +520,30 @@ namespace uPiper.Tests.Runtime.Core
             });
         }
         
-        [Test]
-        public void Dispose_PreventsOperations()
+        [UnityTest]
+        public IEnumerator Dispose_PreventsOperations()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             _piperTTS.Dispose();
             
             // Act & Assert
             Assert.Throws<ObjectDisposedException>(() => _piperTTS.ClearCache());
             
-            var task = _piperTTS.InitializeAsync();
-            Assert.Throws<AggregateException>(() => task.Wait(TimeSpan.FromSeconds(1)));
-            Assert.IsTrue(task.IsFaulted);
-            Assert.IsTrue(task.Exception.InnerException is ObjectDisposedException);
+            yield return AsyncTestHelpers.RunAsyncExpectException<ObjectDisposedException>(
+                _piperTTS.InitializeAsync());
         }
         
         #endregion
         
         #region Thread Safety Tests
         
-        [Test]
-        public void ConcurrentAccess_IsThreadSafe()
+        [UnityTest]
+        public IEnumerator ConcurrentAccess_IsThreadSafe()
         {
             // Arrange
-            var initTask = _piperTTS.InitializeAsync();
-            Assert.IsTrue(initTask.Wait(TimeSpan.FromSeconds(5)), "Init task should complete");
-            Assert.IsTrue(initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
             
             var tasks = new List<Task>();
             var errors = new List<Exception>();
@@ -669,7 +584,7 @@ namespace uPiper.Tests.Runtime.Core
                 }));
             }
             
-            Assert.IsTrue(Task.WaitAll(tasks.ToArray(), TimeSpan.FromSeconds(30)), "All tasks should complete");
+            yield return AsyncTestHelpers.RunAllAsync(tasks.ToArray(), 30f);
             
             // Assert
             Assert.IsEmpty(errors, "No exceptions should occur during concurrent access");
