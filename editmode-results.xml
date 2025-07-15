@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="2" result="Passed" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2025-07-14 12:38:26Z" end-time="2025-07-14 12:38:26Z" duration="0.0454968">
+  <test-suite type="TestSuite" id="1000" name="uPiper" fullname="uPiper" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 12:38:26Z" end-time="2025-07-14 12:38:26Z" duration="0.045497" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1009" name="uPiper.Tests.Editor.dll" fullname="/github/workspace/Library/ScriptAssemblies/uPiper.Tests.Editor.dll" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 12:38:26Z" end-time="2025-07-14 12:38:26Z" duration="0.039588" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="2073" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1010" name="uPiper" fullname="uPiper" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 12:38:26Z" end-time="2025-07-14 12:38:26Z" duration="0.039036" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1011" name="Tests" fullname="uPiper.Tests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 12:38:26Z" end-time="2025-07-14 12:38:26Z" duration="0.038778" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1012" name="Editor" fullname="uPiper.Tests.Editor" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 12:38:26Z" end-time="2025-07-14 12:38:26Z" duration="0.038449" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1006" name="InferenceEngineEditorTest" fullname="uPiper.Tests.Editor.InferenceEngineEditorTest" classname="uPiper.Tests.Editor.InferenceEngineEditorTest" runstate="Runnable" testcasecount="2" result="Passed" start-time="2025-07-14 12:38:26Z" end-time="2025-07-14 12:38:26Z" duration="0.037229" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1008" name="CheckBurstPackageVersion" fullname="uPiper.Tests.Editor.InferenceEngineEditorTest.CheckBurstPackageVersion" methodname="CheckBurstPackageVersion" classname="uPiper.Tests.Editor.InferenceEngineEditorTest" runstate="Runnable" seed="646874903" result="Passed" start-time="2025-07-14 12:38:26Z" end-time="2025-07-14 12:38:26Z" duration="0.016262" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Burst package version: 1.8.20
+]]></output>
+              </test-case>
+              <test-case id="1007" name="CheckInferenceEnginePackageVersion" fullname="uPiper.Tests.Editor.InferenceEngineEditorTest.CheckInferenceEnginePackageVersion" methodname="CheckInferenceEnginePackageVersion" classname="uPiper.Tests.Editor.InferenceEngineEditorTest" runstate="Runnable" seed="1066313388" result="Passed" start-time="2025-07-14 12:38:26Z" end-time="2025-07-14 12:38:26Z" duration="0.005127" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Inference Engine package: com.unity.ai.inference
+Version: 2.2.1
+Display Name: Inference Engine
+[Code Coverage] Code coverage results were not saved. Visited sequence points not found. 
+Included Assemblies: uPiper.*
+Excluded Assemblies: uPiper.Tests.*
+Included Paths: <Not specified>
+Excluded Paths: <Not specified>
+[Code Coverage] Code Coverage Report was generated in /github/workspace/CodeCoverage/Report
+Included Assemblies: uPiper.*
+Excluded Assemblies: uPiper.Tests.*
+Included Paths: <Not specified>
+Excluded Paths: <Not specified>
+Saving results to: /root/.config/unity3d/com_yousan/uPiper/TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

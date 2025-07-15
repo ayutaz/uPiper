@@ -68,7 +68,7 @@ jobs:
         unityVersion: 6000.0.35f1
         targetPlatform: ${{ matrix.targetPlatform }}
         buildName: uPiper
-        buildPath: build/${{ matrix.targetPlatform }}
+        buildsPath: build
         
     # ビルド成果物をアップロード
     - name: Upload build artifacts
