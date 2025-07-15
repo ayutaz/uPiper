@@ -74,6 +74,10 @@ namespace uPiper.Core.Phonemizers
                 {
                     OriginalText = text ?? string.Empty,
                     Language = language,
+                    Phonemes = Array.Empty<string>(),
+                    PhonemeIds = Array.Empty<int>(),
+                    Durations = Array.Empty<float>(),
+                    Pitches = Array.Empty<float>(),
                     ProcessingTime = TimeSpan.Zero,
                     FromCache = false
                 };
