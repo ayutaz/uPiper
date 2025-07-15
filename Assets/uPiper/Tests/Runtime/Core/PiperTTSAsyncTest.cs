@@ -231,24 +231,20 @@ namespace uPiper.Tests.Runtime.Core
             var asyncEnumerable = _piperTTS.StreamAudioAsync("Hello. World!");
             var enumerator = asyncEnumerable.GetAsyncEnumerator();
             
-            try
+            while (true)
             {
-                while (true)
-                {
-                    var moveNextTask = enumerator.MoveNextAsync().AsTask();
-                    yield return WaitForTask(moveNextTask);
+                var moveNextTask = enumerator.MoveNextAsync().AsTask();
+                yield return WaitForTask(moveNextTask);
+                
+                if (!moveNextTask.Result)
+                    break;
                     
-                    if (!moveNextTask.Result)
-                        break;
-                        
-                    chunks.Add(enumerator.Current);
-                }
+                chunks.Add(enumerator.Current);
             }
-            finally
-            {
-                var disposeTask = enumerator.DisposeAsync().AsTask();
-                yield return WaitForTask(disposeTask);
-            }
+            
+            // Dispose enumerator
+            var disposeTask = enumerator.DisposeAsync().AsTask();
+            yield return WaitForTask(disposeTask);
             
             // Assert
             Assert.Greater(chunks.Count, 0);
