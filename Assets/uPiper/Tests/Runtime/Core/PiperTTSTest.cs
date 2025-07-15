@@ -66,8 +66,8 @@ namespace uPiper.Tests.Runtime.Core
         
         #region Initialization Tests
         
-        [UnityTest]
-        public IEnumerator InitializeAsync_Success()
+        [Test]
+        public void InitializeAsync_Success()
         {
             // Arrange
             bool eventFired = false;
@@ -79,7 +79,7 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             // Assert
             Assert.IsTrue(_piperTTS.IsInitialized);
@@ -87,33 +87,33 @@ namespace uPiper.Tests.Runtime.Core
             Assert.IsTrue(eventResult);
         }
         
-        [UnityTest]
-        public IEnumerator InitializeAsync_AlreadyInitialized_DoesNothing()
+        [Test]
+        public void InitializeAsync_AlreadyInitialized_DoesNothing()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             int eventCount = 0;
             _piperTTS.OnInitialized += _ => eventCount++;
             
             // Act
             LogAssert.Expect(LogType.Warning, "[uPiper] PiperTTS is already initialized");
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             // Assert
             Assert.AreEqual(0, eventCount); // Event should not fire again
         }
         
-        [UnityTest]
-        public IEnumerator InitializeAsync_Cancellation_ThrowsOperationCanceledException()
+        [Test]
+        public void InitializeAsync_Cancellation_ThrowsOperationCanceledException()
         {
             // Arrange
             using var cts = new CancellationTokenSource();
             cts.Cancel();
             
             // Act & Assert
-            yield return AsyncTestHelpers.RunAsyncExpectException<OperationCanceledException>(
-                _piperTTS.InitializeAsync(cts.Token));
+            SyncTestHelpers.RunSyncExpectException<OperationCanceledException>(
+                () => _piperTTS.InitializeAsync(cts.Token));
             
             Assert.IsFalse(_piperTTS.IsInitialized);
         }
@@ -122,11 +122,11 @@ namespace uPiper.Tests.Runtime.Core
         
         #region Voice Management Tests
         
-        [UnityTest]
-        public IEnumerator LoadVoiceAsync_Success()
+        [Test]
+        public void LoadVoiceAsync_Success()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             var voice = new PiperVoiceConfig
             {
@@ -145,7 +145,7 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(voice));
+            SyncTestHelpers.RunSync(() => _piperTTS.LoadVoiceAsync(voice));
             
             // Assert
             Assert.Contains("test-voice", _piperTTS.AvailableVoices.ToList());
@@ -159,8 +159,8 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual("test-voice", availableVoices[0].VoiceId);
         }
         
-        [UnityTest]
-        public IEnumerator LoadVoiceAsync_NotInitialized_ThrowsInvalidOperationException()
+        [Test]
+        public void LoadVoiceAsync_NotInitialized_ThrowsInvalidOperationException()
         {
             // Arrange
             var voice = new PiperVoiceConfig
@@ -172,26 +172,26 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act & Assert
-            yield return AsyncTestHelpers.RunAsyncExpectException<InvalidOperationException>(
-                _piperTTS.LoadVoiceAsync(voice));
+            SyncTestHelpers.RunSyncExpectException<InvalidOperationException>(
+                () => _piperTTS.LoadVoiceAsync(voice));
         }
         
-        [UnityTest]
-        public IEnumerator LoadVoiceAsync_NullVoice_ThrowsArgumentNullException()
+        [Test]
+        public void LoadVoiceAsync_NullVoice_ThrowsArgumentNullException()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             // Act & Assert
-            yield return AsyncTestHelpers.RunAsyncExpectException<ArgumentNullException>(
-                _piperTTS.LoadVoiceAsync(null));
+            SyncTestHelpers.RunSyncExpectException<ArgumentNullException>(
+                () => _piperTTS.LoadVoiceAsync(null));
         }
         
-        [UnityTest]
-        public IEnumerator LoadVoiceAsync_InvalidVoice_ThrowsPiperException()
+        [Test]
+        public void LoadVoiceAsync_InvalidVoice_ThrowsPiperException()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             var invalidVoice = new PiperVoiceConfig
             {
@@ -202,17 +202,17 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act & Assert
-            yield return AsyncTestHelpers.RunAsyncExpectException<PiperException>(
-                _piperTTS.LoadVoiceAsync(invalidVoice));
+            SyncTestHelpers.RunSyncExpectException<PiperException>(
+                () => _piperTTS.LoadVoiceAsync(invalidVoice));
         }
         
-        [UnityTest]
-        public IEnumerator SetCurrentVoice_Success()
+        [Test]
+        public void SetCurrentVoice_Success()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            SyncTestHelpers.RunSync(() => _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
             {
                 VoiceId = "voice1",
                 ModelPath = "test1.onnx",
@@ -220,7 +220,7 @@ namespace uPiper.Tests.Runtime.Core
                 SampleRate = 22050
             }));
             
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            SyncTestHelpers.RunSync(() => _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
             {
                 VoiceId = "voice2",
                 ModelPath = "test2.onnx",
@@ -242,21 +242,21 @@ namespace uPiper.Tests.Runtime.Core
             Assert.Throws<InvalidOperationException>(() => _piperTTS.SetCurrentVoice("test"));
         }
         
-        [UnityTest]
-        public IEnumerator SetCurrentVoice_UnknownVoice_ThrowsPiperException()
+        [Test]
+        public void SetCurrentVoice_UnknownVoice_ThrowsPiperException()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             // Act & Assert
             Assert.Throws<PiperException>(() => _piperTTS.SetCurrentVoice("unknown"));
         }
         
-        [UnityTest]
-        public IEnumerator GetVoiceConfig_Success()
+        [Test]
+        public void GetVoiceConfig_Success()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             var voice = new PiperVoiceConfig
             {
@@ -265,7 +265,7 @@ namespace uPiper.Tests.Runtime.Core
                 Language = "ja",
                 SampleRate = 22050
             };
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(voice));
+            SyncTestHelpers.RunSync(() => _piperTTS.LoadVoiceAsync(voice));
             
             // Act
             var retrieved = _piperTTS.GetVoiceConfig("test-voice");
@@ -287,24 +287,24 @@ namespace uPiper.Tests.Runtime.Core
         
         #region TTS Stub Tests
         
-        [UnityTest]
-        public IEnumerator GenerateAudioAsync_NoVoiceLoaded_ThrowsInvalidOperationException()
+        [Test]
+        public void GenerateAudioAsync_NoVoiceLoaded_ThrowsInvalidOperationException()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             // Act & Assert
-            yield return AsyncTestHelpers.RunAsyncExpectException<InvalidOperationException>(
-                _piperTTS.GenerateAudioAsync("test"));
+            SyncTestHelpers.RunSyncExpectException<InvalidOperationException>(
+                () => _piperTTS.GenerateAudioAsync("test"));
         }
         
-        [UnityTest]
-        public IEnumerator GenerateAudioAsync_WithVoice_ReturnsAudioClip()
+        [Test]
+        public void GenerateAudioAsync_WithVoice_ReturnsAudioClip()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            SyncTestHelpers.RunSync(() => _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
             {
                 VoiceId = "test-voice",
                 ModelPath = "test.onnx",
@@ -313,10 +313,7 @@ namespace uPiper.Tests.Runtime.Core
             }));
             
             // Act
-            AudioClip audioClip = null;
-            yield return AsyncTestHelpers.RunAsync(
-                _piperTTS.GenerateAudioAsync("Hello, world!"),
-                result => audioClip = result);
+            var audioClip = SyncTestHelpers.RunSync(() => _piperTTS.GenerateAudioAsync("Hello, world!"));
             
             // Assert
             Assert.IsNotNull(audioClip);
@@ -325,13 +322,13 @@ namespace uPiper.Tests.Runtime.Core
             Assert.Greater(audioClip.samples, 0);
         }
         
-        [UnityTest]
-        public IEnumerator GenerateAudio_WithVoice_ReturnsAudioClip()
+        [Test]
+        public void GenerateAudio_WithVoice_ReturnsAudioClip()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            SyncTestHelpers.RunSync(() => _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
             {
                 VoiceId = "test-voice",
                 ModelPath = "test.onnx",
@@ -346,13 +343,13 @@ namespace uPiper.Tests.Runtime.Core
             Assert.IsNotNull(audioClip);
         }
         
-        [UnityTest]
-        public IEnumerator StreamAudioAsync_WithVoice_ReturnsChunks()
+        [Test]
+        public void StreamAudioAsync_WithVoice_ReturnsChunks()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            SyncTestHelpers.RunSync(() => _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
             {
                 VoiceId = "test-voice",
                 ModelPath = "test.onnx",
@@ -362,9 +359,18 @@ namespace uPiper.Tests.Runtime.Core
             
             // Act
             var chunks = new List<AudioChunk>();
-            yield return AsyncTestHelpers.ConsumeAsyncEnumerable(
-                _piperTTS.StreamAudioAsync("Hello. World!"),
-                chunks);
+            var enumerator = _piperTTS.StreamAudioAsync("Hello. World!").GetAsyncEnumerator();
+            try
+            {
+                while (SyncTestHelpers.RunSync(() => enumerator.MoveNextAsync().AsTask()))
+                {
+                    chunks.Add(enumerator.Current);
+                }
+            }
+            finally
+            {
+                SyncTestHelpers.RunSync(() => enumerator.DisposeAsync().AsTask());
+            }
             
             // Assert
             Assert.Greater(chunks.Count, 0);
@@ -372,11 +378,11 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual(22050, chunks.First().SampleRate);
         }
         
-        [UnityTest]
-        public IEnumerator GenerateAudioAsync_WithVoiceConfig_Overload()
+        [Test]
+        public void GenerateAudioAsync_WithVoiceConfig_Overload()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             var voice = new PiperVoiceConfig
             {
@@ -387,21 +393,18 @@ namespace uPiper.Tests.Runtime.Core
             };
             
             // Act
-            AudioClip audioClip = null;
-            yield return AsyncTestHelpers.RunAsync(
-                _piperTTS.GenerateAudioAsync("Hello", voice),
-                result => audioClip = result);
+            var audioClip = SyncTestHelpers.RunSync(() => _piperTTS.GenerateAudioAsync("Hello", voice));
             
             // Assert
             Assert.IsNotNull(audioClip);
             Assert.AreEqual(16000, audioClip.frequency); // Should use the provided voice's sample rate
         }
         
-        [UnityTest]
-        public IEnumerator GenerateAudio_WithVoiceConfig_Overload()
+        [Test]
+        public void GenerateAudio_WithVoiceConfig_Overload()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             var voice = new PiperVoiceConfig
             {
@@ -418,11 +421,11 @@ namespace uPiper.Tests.Runtime.Core
             Assert.IsNotNull(audioClip);
         }
         
-        [UnityTest]
-        public IEnumerator StreamAudioAsync_WithVoiceConfig_Overload()
+        [Test]
+        public void StreamAudioAsync_WithVoiceConfig_Overload()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             var voice = new PiperVoiceConfig
             {
@@ -434,9 +437,18 @@ namespace uPiper.Tests.Runtime.Core
             
             // Act
             var chunks = new List<AudioChunk>();
-            yield return AsyncTestHelpers.ConsumeAsyncEnumerable(
-                _piperTTS.StreamAudioAsync("Test", voice),
-                chunks);
+            var enumerator = _piperTTS.StreamAudioAsync("Test", voice).GetAsyncEnumerator();
+            try
+            {
+                while (SyncTestHelpers.RunSync(() => enumerator.MoveNextAsync().AsTask()))
+                {
+                    chunks.Add(enumerator.Current);
+                }
+            }
+            finally
+            {
+                SyncTestHelpers.RunSync(() => enumerator.DisposeAsync().AsTask());
+            }
             
             // Assert
             Assert.Greater(chunks.Count, 0);
@@ -468,13 +480,13 @@ namespace uPiper.Tests.Runtime.Core
             Assert.DoesNotThrow(() => _piperTTS.ClearCache());
         }
         
-        [UnityTest]
-        public IEnumerator PreloadTextAsync_WithVoice_UpdatesCache()
+        [Test]
+        public void PreloadTextAsync_WithVoice_UpdatesCache()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.LoadVoiceAsync(new PiperVoiceConfig
+            SyncTestHelpers.RunSync(() => _piperTTS.LoadVoiceAsync(new PiperVoiceConfig
             {
                 VoiceId = "test-voice",
                 ModelPath = "test.onnx",
@@ -483,8 +495,7 @@ namespace uPiper.Tests.Runtime.Core
             }));
             
             // Act
-            yield return AsyncTestHelpers.RunAsync(
-                _piperTTS.PreloadTextAsync("Test text for caching"));
+            SyncTestHelpers.RunSync(() => _piperTTS.PreloadTextAsync("Test text for caching"));
             
             var stats = _piperTTS.GetCacheStatistics();
             
@@ -493,15 +504,15 @@ namespace uPiper.Tests.Runtime.Core
             Assert.Greater(stats.TotalSizeBytes, 0);
         }
         
-        [UnityTest]
-        public IEnumerator PreloadTextAsync_WithoutVoice_ThrowsInvalidOperationException()
+        [Test]
+        public void PreloadTextAsync_WithoutVoice_ThrowsInvalidOperationException()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             // Act & Assert
-            yield return AsyncTestHelpers.RunAsyncExpectException<InvalidOperationException>(
-                _piperTTS.PreloadTextAsync("test"));
+            SyncTestHelpers.RunSyncExpectException<InvalidOperationException>(
+                () => _piperTTS.PreloadTextAsync("test"));
         }
         
         #endregion
@@ -520,30 +531,30 @@ namespace uPiper.Tests.Runtime.Core
             });
         }
         
-        [UnityTest]
-        public IEnumerator Dispose_PreventsOperations()
+        [Test]
+        public void Dispose_PreventsOperations()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             _piperTTS.Dispose();
             
             // Act & Assert
             Assert.Throws<ObjectDisposedException>(() => _piperTTS.ClearCache());
             
-            yield return AsyncTestHelpers.RunAsyncExpectException<ObjectDisposedException>(
-                _piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSyncExpectException<ObjectDisposedException>(
+                () => _piperTTS.InitializeAsync());
         }
         
         #endregion
         
         #region Thread Safety Tests
         
-        [UnityTest]
-        public IEnumerator ConcurrentAccess_IsThreadSafe()
+        [Test]
+        public void ConcurrentAccess_IsThreadSafe()
         {
             // Arrange
-            yield return AsyncTestHelpers.RunAsync(_piperTTS.InitializeAsync());
+            SyncTestHelpers.RunSync(() => _piperTTS.InitializeAsync());
             
             var tasks = new List<Task>();
             var errors = new List<Exception>();
@@ -584,7 +595,7 @@ namespace uPiper.Tests.Runtime.Core
                 }));
             }
             
-            yield return AsyncTestHelpers.RunAllAsync(tasks.ToArray(), 30f);
+            Task.WaitAll(tasks.ToArray(), TimeSpan.FromSeconds(30));
             
             // Assert
             Assert.IsEmpty(errors, "No exceptions should occur during concurrent access");
