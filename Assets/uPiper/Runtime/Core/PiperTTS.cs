@@ -260,12 +260,12 @@ namespace uPiper.Core
                 ValidateRuntimeEnvironment();
                 
                 // Initialize Inference Engine backend
-                await InitializeInferenceEngineAsync(cancellationToken).ConfigureAwait(false);
+                await InitializeInferenceEngineAsync(cancellationToken);
                 
                 // Initialize worker thread pool if multi-threaded inference is enabled
                 if (_config.EnableMultiThreadedInference && _config.WorkerThreads > 1)
                 {
-                    await InitializeWorkerPoolAsync(cancellationToken).ConfigureAwait(false);
+                    await InitializeWorkerPoolAsync(cancellationToken);
                 }
                 
                 // Initialize cache system if enabled
@@ -505,18 +505,24 @@ namespace uPiper.Core
                 
                 // For synchronous version, we'll use the async method internally
                 // In a real implementation, this would use native synchronous methods
-                var task = Task.Run(async () => await GenerateAudioAsync(text));
+                var task = GenerateAudioAsync(text);
                 
-                if (_config.TimeoutMs > 0)
+                // Use a simple polling loop to wait for completion
+                var startTime = DateTime.UtcNow;
+                var timeout = _config.TimeoutMs > 0 ? TimeSpan.FromMilliseconds(_config.TimeoutMs) : TimeSpan.FromMinutes(5);
+                
+                while (!task.IsCompleted)
                 {
-                    if (!task.Wait(_config.TimeoutMs))
+                    if (DateTime.UtcNow - startTime > timeout)
                     {
-                        throw new TimeoutException($"Audio generation timed out after {_config.TimeoutMs}ms");
+                        throw new TimeoutException($"Audio generation timed out after {timeout.TotalMilliseconds}ms");
                     }
+                    System.Threading.Thread.Yield();
                 }
-                else
+                
+                if (task.IsFaulted)
                 {
-                    task.Wait();
+                    throw task.Exception.GetBaseException();
                 }
                 
                 return task.Result;
@@ -967,25 +973,25 @@ namespace uPiper.Core
         /// </summary>
         private async Task InitializeInferenceEngineAsync(CancellationToken cancellationToken)
         {
-            await Task.Run(() =>
+            PiperLogger.LogInfo("Initializing Inference Engine backend...");
+            
+            // Map PiperConfig backend to Unity Inference Engine backend
+            _inferenceBackend = _config.Backend switch
             {
-                PiperLogger.LogInfo("Initializing Inference Engine backend...");
-                
-                // Map PiperConfig backend to Unity Inference Engine backend
-                _inferenceBackend = _config.Backend switch
-                {
-                    InferenceBackend.CPU => BackendType.CPU,
-                    InferenceBackend.GPUCompute => BackendType.GPUCompute,
-                    InferenceBackend.GPUPixel => BackendType.GPUPixel,
-                    InferenceBackend.Auto => BackendType.CPU, // Default to CPU for now
-                    _ => BackendType.CPU
-                };
-                
-                // For now, just log the selected backend
-                // TODO: Add backend validation when Worker API is available
-                
-                PiperLogger.LogInfo("Inference Engine initialized with backend: {0}", _inferenceBackend);
-            }, cancellationToken).ConfigureAwait(false);
+                InferenceBackend.CPU => BackendType.CPU,
+                InferenceBackend.GPUCompute => BackendType.GPUCompute,
+                InferenceBackend.GPUPixel => BackendType.GPUPixel,
+                InferenceBackend.Auto => BackendType.CPU, // Default to CPU for now
+                _ => BackendType.CPU
+            };
+            
+            // For now, just log the selected backend
+            // TODO: Add backend validation when Worker API is available
+            
+            PiperLogger.LogInfo("Inference Engine initialized with backend: {0}", _inferenceBackend);
+            
+            // Small delay to simulate async operation
+            await Task.Yield();
         }
         
         /// <summary>
@@ -993,15 +999,15 @@ namespace uPiper.Core
         /// </summary>
         private async Task InitializeWorkerPoolAsync(CancellationToken cancellationToken)
         {
-            await Task.Run(() =>
-            {
-                PiperLogger.LogInfo("Initializing worker pool with {0} threads", _config.WorkerThreads);
-                
-                // Worker pool initialization will be implemented when we have actual models
-                // For now, just log the intention
-                
-                PiperLogger.LogInfo("Worker pool initialization completed");
-            }, cancellationToken).ConfigureAwait(false);
+            PiperLogger.LogInfo("Initializing worker pool with {0} threads", _config.WorkerThreads);
+            
+            // Worker pool initialization will be implemented when we have actual models
+            // For now, just log the intention
+            
+            PiperLogger.LogInfo("Worker pool initialization completed");
+            
+            // Small delay to simulate async operation
+            await Task.Yield();
         }
         
         /// <summary>
