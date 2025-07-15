@@ -374,6 +374,23 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Simple cache for testing
             private readonly Dictionary<string, PhonemeResult> _testCache = new Dictionary<string, PhonemeResult>();
 
+            public override void ClearCache()
+            {
+                base.ClearCache();
+                _testCache.Clear();
+            }
+
+            public override CacheStatistics GetCacheStatistics()
+            {
+                // Return simple statistics based on test cache
+                return new CacheStatistics
+                {
+                    EntryCount = _testCache.Count,
+                    HitCount = 0, // Not tracked in simple implementation
+                    MissCount = 0 // Not tracked in simple implementation
+                };
+            }
+
             // Override Phonemize to provide a fully synchronous implementation for tests
             public override PhonemeResult Phonemize(string text, string language = "ja")
             {
@@ -409,7 +426,8 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
 
                 // For testing, we'll use a simplified synchronous implementation
                 // that bypasses the async pipeline to avoid deadlocks
-                var normalizedText = text.Trim().ToLower(); // Simple normalization
+                // Normalize: trim, lowercase, and collapse multiple spaces
+                var normalizedText = System.Text.RegularExpressions.Regex.Replace(text.Trim().ToLower(), @"\s+", " ");
                 LastNormalizedText = normalizedText;
 
                 // Check cache
