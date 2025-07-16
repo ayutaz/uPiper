@@ -213,6 +213,7 @@ int surface_index_common_prefix_search(const SurfaceIndex* index,
         for (int len = 1; len <= 10 && pos < text_len && result_count < max_results; len++) {
             // Move to next character boundary
             int char_len = utf8_char_len((unsigned char)text[pos]);
+            if (char_len <= 0) char_len = 1;  // Safety check
             pos += char_len;
             
             if (pos > text_len) break;
@@ -246,8 +247,9 @@ int surface_index_common_prefix_search(const SurfaceIndex* index,
         }
         
         // Move to next character
-        int char_len = utf8_char_len((unsigned char)text[pos]);
-        pos += char_len;
+        int char_len = utf8_char_len((unsigned char)text[start_pos]);
+        if (char_len <= 0) char_len = 1;  // Safety check
+        start_pos += char_len;
     }
     
     return result_count;

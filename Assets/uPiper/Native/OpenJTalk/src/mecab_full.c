@@ -243,7 +243,19 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
     
     // Build lattice for each position
     for (size_t pos = 0; pos < text_len; ) {
+        if (getenv("DEBUG_MECAB")) {
+            printf("DEBUG: build_lattice pos=%zu, text_len=%zu\n", pos, text_len);
+        }
+        
         int char_len = utf8_char_len((unsigned char)text[pos]);
+        
+        // Safety check to prevent infinite loop
+        if (char_len <= 0) {
+            if (getenv("DEBUG_MECAB")) {
+                printf("ERROR: Invalid UTF-8 character at position %zu\n", pos);
+            }
+            char_len = 1;  // Skip invalid byte
+        }
         
         // Decode UTF-8 to codepoint
         uint32_t codepoint = 0;

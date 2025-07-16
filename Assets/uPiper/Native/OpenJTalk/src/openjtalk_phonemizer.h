@@ -58,7 +58,10 @@ typedef enum {
     PHONEME_DY = 36,    // でぃ
     PHONEME_TY = 37,    // てぃ
     
-    PHONEME_COUNT = 38
+    PHONEME_COUNT = 38,
+    
+    // Special value for unknown phonemes
+    PHONEME_UNKNOWN = 99
 } PhonemeID;
 
 // Phoneme with accent information

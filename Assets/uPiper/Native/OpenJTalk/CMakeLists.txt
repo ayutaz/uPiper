@@ -23,24 +23,40 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+# Build options
+option(BUILD_FULL_VERSION "Build full version with dictionary support" ON)
+
 # Source files
-set(SOURCES
-    src/openjtalk_wrapper_light.c
-    src/openjtalk_phonemizer.c
-    src/mecab_light.c
-    src/mecab_light_impl.c
-    src/mecab_dict_loader.c
-    src/mecab_darts.c
-    src/mecab_full.c
-    src/surface_index.c
-    src/memory_pool.c
-    src/error_handling.c
-)
+if(BUILD_FULL_VERSION)
+    set(SOURCES
+        src/openjtalk_wrapper_full.c
+        src/openjtalk_phonemizer.c
+        src/phoneme_converter.c
+        src/mecab_light.c
+        src/mecab_light_impl.c
+        src/mecab_dict_loader.c
+        src/mecab_darts.c
+        src/mecab_full.c
+        src/surface_index.c
+        src/memory_pool.c
+        src/error_handling.c
+    )
+else()
+    set(SOURCES
+        src/openjtalk_wrapper_light.c
+        src/openjtalk_phonemizer.c
+        src/mecab_light.c
+        src/mecab_light_impl.c
+        src/memory_pool.c
+        src/error_handling.c
+    )
+endif()
 
 # Header files
 set(HEADERS
     include/openjtalk_wrapper.h
     src/openjtalk_phonemizer.h
+    src/phoneme_converter.h
     src/phoneme_mapping.h
     src/kanji_mapping.h
     src/mecab_light.h
@@ -139,5 +155,11 @@ if(BUILD_TESTS)
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test_openjtalk_api.c)
         add_executable(test_openjtalk_api test/test_openjtalk_api.c)
         target_link_libraries(test_openjtalk_api openjtalk_wrapper)
+    endif()
+    
+    # Build full phonemization test
+    if(BUILD_FULL_VERSION)
+        add_executable(test_phonemize_full test/test_phonemize_full.c src/openjtalk_phonemizer.c)
+        target_link_libraries(test_phonemize_full openjtalk_wrapper)
     endif()
 endif()

@@ -179,7 +179,9 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     fclose(matrix_file);
     
     // Build surface form index instead of using Darts
-    printf("Building surface form index...\n");
+    if (getenv("DEBUG_SURFACE_INDEX")) {
+        printf("Building surface form index...\n");
+    }
     dict->surface_index = surface_index_create(dict->sys_header.lexsize * 2);
     if (dict->surface_index) {
         SurfaceIndex* index = (SurfaceIndex*)dict->surface_index;
@@ -196,14 +198,16 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
             }
             
             // Progress indicator
-            if ((i + 1) % 100000 == 0) {
+            if (getenv("DEBUG_SURFACE_INDEX") && (i + 1) % 100000 == 0) {
                 printf("  Indexed %u/%u tokens", i + 1, dict->sys_header.lexsize);
                 fflush(stdout);
             }
         }
         
-        printf("\nIndexed %u surface forms from %u tokens\n", 
-               index->entry_count, dict->sys_header.lexsize);
+        if (getenv("DEBUG_SURFACE_INDEX")) {
+            printf("\nIndexed %u surface forms from %u tokens\n", 
+                   index->entry_count, dict->sys_header.lexsize);
+        }
     }
     
     // Also load unk Darts for unknown word processing
