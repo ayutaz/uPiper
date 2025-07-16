@@ -1,0 +1,11 @@
+fileFormatVersion: 2
+guid: ce4df7945cee4278aec5bba9d485d20a
+MonoImporter:
+  externalObjects: Assets/uPiper/Runtime/Core/Phonemizers/IPhonemizer.cs
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
