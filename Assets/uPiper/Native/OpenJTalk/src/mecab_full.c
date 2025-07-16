@@ -171,16 +171,17 @@ static MecabFullNode* get_node(MecabFull* mecab) {
 // Add node to lattice
 static void add_node_to_lattice(MecabFull* mecab, MecabFullNode* node, 
                                 int begin_pos, int end_pos) {
+    // Store positions in node
+    node->begin_pos = begin_pos;
+    node->end_pos = end_pos;
+    
     // Add to begin list
     node->next = mecab->lattice->begin_node_list[begin_pos];
     mecab->lattice->begin_node_list[begin_pos] = node;
     
     // Add to end list
-    MecabFullNode** end_list = &mecab->lattice->end_node_list[end_pos];
-    while (*end_list) {
-        end_list = &(*end_list)->prev;
-    }
-    *end_list = node;
+    node->enext = mecab->lattice->end_node_list[end_pos];
+    mecab->lattice->end_node_list[end_pos] = node;
 }
 
 // Parse feature string
@@ -335,27 +336,24 @@ static MecabFullNode* viterbi(MecabFull* mecab) {
                 MecabFullNode* best_prev = NULL;
                 
                 // Check all nodes ending at current position
-                for (size_t prev_pos = 0; prev_pos < pos; prev_pos++) {
-                    MecabFullNode* prev = mecab->lattice->begin_node_list[prev_pos];
-                    
-                    while (prev) {
-                        // Check if prev node connects to current position
-                        if (prev_pos + prev->length == pos) {
-                            // Calculate cost
-                            int cost = prev->cost + node->cost;
-                            
-                            // Add connection cost
-                            int conn_cost = mecab_dict_get_connection_cost(
-                                mecab->dict, prev->rcAttr, node->lcAttr);
-                            cost += conn_cost;
-                            
-                            if (cost < best_cost) {
-                                best_cost = cost;
-                                best_prev = prev;
-                            }
+                MecabFullNode* prev = mecab->lattice->end_node_list[node->begin_pos];
+                
+                while (prev) {
+                    if (prev->end_pos == node->begin_pos) {
+                        // Calculate cost
+                        int cost = prev->cost + node->cost;
+                        
+                        // Add connection cost
+                        int conn_cost = mecab_dict_get_connection_cost(
+                            mecab->dict, prev->rcAttr, node->lcAttr);
+                        cost += conn_cost;
+                        
+                        if (cost < best_cost) {
+                            best_cost = cost;
+                            best_prev = prev;
                         }
-                        prev = prev->next;
                     }
+                    prev = prev->enext;
                 }
                 
                 node->cost = best_cost;

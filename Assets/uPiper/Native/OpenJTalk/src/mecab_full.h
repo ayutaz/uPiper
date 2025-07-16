@@ -32,8 +32,9 @@ struct MecabFullNode {
     int length;                 // Length in bytes
     MecabFullFeature feature;   // Feature information
     int cost;                   // Cost
-    MecabFullNode* next;        // Next node
-    MecabFullNode* prev;        // Previous node
+    MecabFullNode* next;        // Next node in begin list
+    MecabFullNode* enext;       // Next node in end list
+    MecabFullNode* prev;        // Previous node in best path
     
     // Internal use
     uint16_t lcAttr;            // Left context attribute
@@ -42,6 +43,8 @@ struct MecabFullNode {
     uint16_t char_type;         // Character type
     uint32_t token_idx;         // Token index in dictionary
     bool is_unk;                // Is unknown word
+    int begin_pos;              // Begin position in text
+    int end_pos;                // End position in text
 };
 
 // Lattice structure for Viterbi
