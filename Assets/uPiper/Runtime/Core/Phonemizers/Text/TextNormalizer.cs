@@ -60,6 +60,12 @@ namespace uPiper.Core.Phonemizers.Text
                 return false;
             }
 
+            // Check if text has leading/trailing spaces
+            if (text != text.Trim())
+            {
+                return true;
+            }
+
             // Check for common normalization needs
             if (MultipleSpacesRegex.IsMatch(text) || 
                 LineBreaksRegex.IsMatch(text) || 
@@ -141,12 +147,14 @@ namespace uPiper.Core.Phonemizers.Text
             text = text.ToLowerInvariant();
 
             // Expand common contractions
+            text = text.Replace("can't", "can not");
+            text = text.Replace("won't", "will not");
+            text = text.Replace("n't", " not");
             text = text.Replace("'s", " is");
             text = text.Replace("'re", " are");
             text = text.Replace("'ve", " have");
             text = text.Replace("'ll", " will");
             text = text.Replace("'d", " would");
-            text = text.Replace("n't", " not");
 
             // Remove possessive apostrophes
             text = text.Replace("'", "");

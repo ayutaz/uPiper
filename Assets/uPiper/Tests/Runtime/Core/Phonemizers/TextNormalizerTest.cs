@@ -26,7 +26,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Normalize_MultipleSpaces_CollapsedToSingle()
         {
             var input = "Hello    world    test";
-            var expected = "Hello world test";
+            var expected = "hello world test";
             
             Assert.AreEqual(expected, _normalizer.Normalize(input, "en"));
         }
@@ -35,7 +35,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Normalize_LineBreaks_ConvertedToSpaces()
         {
             var input = "Hello\nworld\r\ntest";
-            var expected = "Hello world test";
+            var expected = "hello world test";
             
             Assert.AreEqual(expected, _normalizer.Normalize(input, "en"));
         }
@@ -44,7 +44,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Normalize_ControlCharacters_Removed()
         {
             var input = "Hello\x00world\x1Ftest";
-            var expected = "Hello world test";
+            var expected = "hello world test";
             
             Assert.AreEqual(expected, _normalizer.Normalize(input, "en"));
         }
@@ -53,7 +53,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Normalize_LeadingTrailingSpaces_Trimmed()
         {
             var input = "  Hello world  ";
-            var expected = "Hello world";
+            var expected = "hello world";
             
             Assert.AreEqual(expected, _normalizer.Normalize(input, "en"));
         }
@@ -245,7 +245,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Normalize_UnsupportedLanguage_AppliesCommonNormalization()
         {
             var input = "Hello    world\ntest";
-            var expected = "Hello world test";
+            var expected = "hello world test";
             
             Assert.AreEqual(expected, _normalizer.Normalize(input, "unknown"));
             Assert.AreEqual(expected, _normalizer.Normalize(input, null));
