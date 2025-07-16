@@ -13,6 +13,18 @@ static int utf8_char_len(unsigned char c) {
     return 1;
 }
 
+// Count UTF-8 characters in string with byte length
+static size_t utf8_strlen_n(const char* str, size_t n) {
+    size_t count = 0;
+    size_t pos = 0;
+    while (pos < n && str[pos]) {
+        int len = utf8_char_len((unsigned char)str[pos]);
+        pos += len;
+        count++;
+    }
+    return count;
+}
+
 // Parse feature string into MecabFullFeature structure
 static void parse_feature_internal(MecabFullFeature* feature, const char* feature_str) {
     if (!feature || !feature_str) return;
@@ -223,13 +235,23 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
     mecab->node_pool_used = 0;
     
     size_t text_len = strlen(text);
-    if (text_len >= mecab->lattice->capacity) {
+    size_t char_count = 0;
+    
+    // Count UTF-8 characters
+    const char* p = text;
+    while (*p) {
+        int len = utf8_char_len((unsigned char)*p);
+        p += len;
+        char_count++;
+    }
+    
+    if (char_count >= mecab->lattice->capacity) {
         // Resize lattice
         // TODO: Implement lattice resizing
         return false;
     }
     
-    mecab->lattice->length = text_len;
+    mecab->lattice->length = char_count;
     
     // Add BOS node
     MecabFullNode* bos = get_node(mecab);
@@ -242,9 +264,10 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
     add_node_to_lattice(mecab, bos, 0, 0);
     
     // Build lattice for each position
+    size_t char_pos = 0;  // Character position (for lattice)
     for (size_t pos = 0; pos < text_len; ) {
         if (getenv("DEBUG_MECAB")) {
-            printf("DEBUG: build_lattice pos=%zu, text_len=%zu\n", pos, text_len);
+            printf("DEBUG: build_lattice byte_pos=%zu, char_pos=%zu, text_len=%zu\n", pos, char_pos, text_len);
         }
         
         int char_len = utf8_char_len((unsigned char)text[pos]);
@@ -302,7 +325,10 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
                 parse_feature_internal(&node->feature, feature);
             }
             
-            add_node_to_lattice(mecab, node, pos, pos + node->length);
+            // Calculate character positions
+            size_t start_char_pos = char_pos;
+            size_t end_char_pos = char_pos + utf8_strlen_n(text + pos, node->length);
+            add_node_to_lattice(mecab, node, start_char_pos, end_char_pos);
         }
         
         // If no matches found, create unknown word node
@@ -331,7 +357,7 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
                             parse_feature_internal(&unk_node->feature, feature);
                         }
                         
-                        add_node_to_lattice(mecab, unk_node, pos, pos + char_len);
+                        add_node_to_lattice(mecab, unk_node, char_pos, char_pos + 1);
                     }
                 }
             } else {
@@ -348,12 +374,13 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
                     strncpy(unk_node->feature.pos, "名詞", sizeof(unk_node->feature.pos) - 1);
                     strncpy(unk_node->feature.pos_detail1, "一般", sizeof(unk_node->feature.pos_detail1) - 1);
                     
-                    add_node_to_lattice(mecab, unk_node, pos, pos + char_len);
+                    add_node_to_lattice(mecab, unk_node, char_pos, char_pos + 1);
                 }
             }
         }
         
         pos += char_len;
+        char_pos++;
     }
     
     // Add EOS node
@@ -364,7 +391,7 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
     eos->lcAttr = 0;
     eos->rcAttr = 0;
     eos->cost = 0;
-    add_node_to_lattice(mecab, eos, text_len, text_len);
+    add_node_to_lattice(mecab, eos, char_count, char_count);
     
     return true;
 }
@@ -376,6 +403,17 @@ static MecabFullNode* viterbi(MecabFull* mecab) {
     // Forward pass
     for (size_t pos = 0; pos <= len; pos++) {
         MecabFullNode* node = mecab->lattice->begin_node_list[pos];
+        
+        if (getenv("DEBUG_MECAB")) {
+            printf("DEBUG: Viterbi at position %zu\n", pos);
+            MecabFullNode* n = mecab->lattice->begin_node_list[pos];
+            int count = 0;
+            while (n) {
+                printf("  begin_node[%d]: surface='%.*s', begin=%d, end=%d\n", 
+                       count++, n->length, n->surface, n->begin_pos, n->end_pos);
+                n = n->next;
+            }
+        }
         
         while (node) {
             if (pos == 0) {
@@ -410,6 +448,10 @@ static MecabFullNode* viterbi(MecabFull* mecab) {
                 
                 node->cost = best_cost;
                 node->prev = best_prev;
+                
+                if (getenv("DEBUG_MECAB") && node->length == 0) {
+                    printf("  EOS node: cost=%d, prev=%p\n", node->cost, (void*)node->prev);
+                }
             }
             
             node = node->next;
@@ -418,11 +460,31 @@ static MecabFullNode* viterbi(MecabFull* mecab) {
     
     // Find EOS node
     MecabFullNode* eos = mecab->lattice->begin_node_list[len];
+    if (getenv("DEBUG_MECAB")) {
+        printf("DEBUG: Looking for EOS at position %zu\n", len);
+        MecabFullNode* n = eos;
+        int count = 0;
+        while (n) {
+            printf("  Node %d: length=%zu, cost=%d\n", count++, n->length, n->cost);
+            n = n->next;
+        }
+    }
+    
     while (eos && eos->length != 0) {
         eos = eos->next;
     }
     
-    if (!eos || !eos->prev) {
+    if (!eos) {
+        if (getenv("DEBUG_MECAB")) {
+            printf("ERROR: No EOS node found\n");
+        }
+        return NULL;
+    }
+    
+    if (!eos->prev) {
+        if (getenv("DEBUG_MECAB")) {
+            printf("ERROR: EOS node has no previous node\n");
+        }
         return NULL;
     }
     
