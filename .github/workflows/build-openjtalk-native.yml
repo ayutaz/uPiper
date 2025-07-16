@@ -42,7 +42,7 @@ jobs:
         cd Assets\uPiper\Native\OpenJTalk
         if not exist build\windows\${{ matrix.arch }} mkdir build\windows\${{ matrix.arch }}
         cd build\windows\${{ matrix.arch }}
-        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\Assets\uPiper\Native\OpenJTalk\output\windows\${{ matrix.arch }}" ..\..\..\..
+        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release ..\..\..\..
     
     - name: Build
       shell: cmd
@@ -66,8 +66,8 @@ jobs:
       shell: bash
       run: |
         mkdir -p artifacts/windows/${{ matrix.arch }}
-        cp Assets/uPiper/Native/OpenJTalk/output/windows/${{ matrix.arch }}/bin/*.dll artifacts/windows/${{ matrix.arch }}/
-        cp Assets/uPiper/Native/OpenJTalk/output/windows/${{ matrix.arch }}/include/*.h artifacts/
+        cp Assets/uPiper/Native/OpenJTalk/build/windows/${{ matrix.arch }}/bin/*.dll artifacts/windows/${{ matrix.arch }}/ || true
+        cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/ || true
     
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
