@@ -43,6 +43,10 @@ void phoneme_converter_destroy(PhonemeConverter* converter);
 PhonemeSequence* phoneme_converter_convert(PhonemeConverter* converter, 
                                            MecabFullNode* nodes);
 
+// Convert with accent and timing
+PhonemeSequence* phoneme_converter_convert_with_prosody(PhonemeConverter* converter, 
+                                                         MecabFullNode* nodes);
+
 // Get phoneme string representation (for debugging)
 const char* phoneme_sequence_to_string(PhonemeSequence* seq, char* buffer, size_t buffer_size);
 

@@ -32,6 +32,8 @@ if(BUILD_FULL_VERSION)
         src/openjtalk_wrapper_full.c
         src/openjtalk_phonemizer.c
         src/phoneme_converter.c
+        src/accent_estimator.c
+        src/phoneme_timing.c
         src/mecab_light.c
         src/mecab_light_impl.c
         src/mecab_dict_loader.c

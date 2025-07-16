@@ -1,4 +1,7 @@
 #include "phoneme_converter.h"
+#include "accent_estimator.h"
+#include "phoneme_timing.h"
+#include "openjtalk_phonemizer.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -60,6 +63,10 @@ struct PhonemeConverter {
     // Configuration
     uint32_t default_phoneme_duration;  // Default duration in ms
     bool use_accent_info;               // Whether to use accent information
+    
+    // Components
+    AccentEstimator* accent_estimator;
+    PhonemeTimingCalculator* timing_calculator;
 };
 
 // UTF-8 utilities
@@ -177,11 +184,36 @@ PhonemeConverter* phoneme_converter_create(void) {
     converter->default_phoneme_duration = 50;  // 50ms default
     converter->use_accent_info = true;
     
+    // Create accent estimator
+    converter->accent_estimator = accent_estimator_create();
+    if (!converter->accent_estimator) {
+        free(converter);
+        return NULL;
+    }
+    
+    // Create timing calculator
+    converter->timing_calculator = phoneme_timing_create();
+    if (!converter->timing_calculator) {
+        accent_estimator_destroy(converter->accent_estimator);
+        free(converter);
+        return NULL;
+    }
+    
     return converter;
 }
 
 // Destroy converter
 void phoneme_converter_destroy(PhonemeConverter* converter) {
+    if (!converter) return;
+    
+    if (converter->accent_estimator) {
+        accent_estimator_destroy(converter->accent_estimator);
+    }
+    
+    if (converter->timing_calculator) {
+        phoneme_timing_destroy(converter->timing_calculator);
+    }
+    
     free(converter);
 }
 
@@ -271,4 +303,128 @@ const char* phoneme_sequence_to_string(PhonemeSequence* seq, char* buffer, size_
     }
     
     return buffer;
+}
+
+// Convert string to phoneme ID
+static PhonemeID phoneme_string_to_id(const char* phoneme) {
+    if (!phoneme) return PHONEME_UNKNOWN;
+    
+    if (strcmp(phoneme, "pau") == 0) return PHONEME_PAU;
+    if (strcmp(phoneme, "sil") == 0) return PHONEME_SIL;
+    if (strcmp(phoneme, "cl") == 0) return PHONEME_CL;
+    
+    if (strcmp(phoneme, "a") == 0) return PHONEME_A;
+    if (strcmp(phoneme, "i") == 0) return PHONEME_I;
+    if (strcmp(phoneme, "u") == 0) return PHONEME_U;
+    if (strcmp(phoneme, "e") == 0) return PHONEME_E;
+    if (strcmp(phoneme, "o") == 0) return PHONEME_O;
+    
+    if (strcmp(phoneme, "k") == 0) return PHONEME_K;
+    if (strcmp(phoneme, "g") == 0) return PHONEME_G;
+    if (strcmp(phoneme, "s") == 0) return PHONEME_S;
+    if (strcmp(phoneme, "z") == 0) return PHONEME_Z;
+    if (strcmp(phoneme, "t") == 0) return PHONEME_T;
+    if (strcmp(phoneme, "d") == 0) return PHONEME_D;
+    if (strcmp(phoneme, "n") == 0) return PHONEME_N;
+    if (strcmp(phoneme, "N") == 0) return PHONEME_N;  // Moraic N
+    if (strcmp(phoneme, "h") == 0) return PHONEME_H;
+    if (strcmp(phoneme, "b") == 0) return PHONEME_B;
+    if (strcmp(phoneme, "p") == 0) return PHONEME_P;
+    if (strcmp(phoneme, "m") == 0) return PHONEME_M;
+    if (strcmp(phoneme, "y") == 0) return PHONEME_Y;
+    if (strcmp(phoneme, "r") == 0) return PHONEME_R;
+    if (strcmp(phoneme, "w") == 0) return PHONEME_W;
+    if (strcmp(phoneme, "f") == 0) return PHONEME_F;
+    if (strcmp(phoneme, "v") == 0) return PHONEME_V;
+    if (strcmp(phoneme, "j") == 0) return PHONEME_J;
+    
+    return PHONEME_UNKNOWN;
+}
+
+// Convert with accent and timing
+PhonemeSequence* phoneme_converter_convert_with_prosody(PhonemeConverter* converter, 
+                                                         MecabFullNode* nodes) {
+    if (!converter || !nodes) return NULL;
+    
+    // First, do basic conversion
+    PhonemeSequence* seq = phoneme_converter_convert(converter, nodes);
+    if (!seq) return NULL;
+    
+    // Process each word for accent
+    MecabFullNode* node = nodes;
+    size_t phoneme_offset = 0;
+    
+    while (node) {
+        // Skip BOS/EOS and punctuation
+        if (node->length == 0 || strstr(node->feature.pos, "記号")) {
+            // Count phonemes for this node
+            if (phoneme_offset < seq->count && 
+                strcmp(seq->phonemes[phoneme_offset].phoneme, "pau") == 0) {
+                phoneme_offset++;
+            }
+            node = node->next;
+            continue;
+        }
+        
+        // Estimate accent for this word
+        AccentInfo accent_info = accent_estimator_estimate(
+            converter->accent_estimator,
+            node->surface,
+            node->feature.reading,
+            node->feature.pos,
+            node->feature.pos_detail1
+        );
+        
+        // Count phonemes for this word
+        size_t word_phoneme_count = 0;
+        size_t start_offset = phoneme_offset;
+        
+        // Skip to next pause or end
+        while (phoneme_offset < seq->count && 
+               strcmp(seq->phonemes[phoneme_offset].phoneme, "pau") != 0) {
+            word_phoneme_count++;
+            phoneme_offset++;
+        }
+        
+        // Apply timing to phonemes of this word
+        if (word_phoneme_count > 0) {
+            // Create PhonemeInfo array for timing calculation
+            PhonemeInfo* phoneme_infos = (PhonemeInfo*)calloc(word_phoneme_count, sizeof(PhonemeInfo));
+            if (phoneme_infos) {
+                // Convert to PhonemeInfo
+                for (size_t i = 0; i < word_phoneme_count; i++) {
+                    phoneme_infos[i].id = phoneme_string_to_id(seq->phonemes[start_offset + i].phoneme);
+                    phoneme_infos[i].accent_type = 0;
+                    phoneme_infos[i].mora_position = 0;
+                    phoneme_infos[i].duration = 0.0f;
+                }
+                
+                // Calculate timing
+                phoneme_timing_calculate_sequence(
+                    converter->timing_calculator,
+                    phoneme_infos,
+                    word_phoneme_count,
+                    &accent_info
+                );
+                
+                // Apply results back to sequence
+                for (size_t i = 0; i < word_phoneme_count; i++) {
+                    seq->phonemes[start_offset + i].duration_ms = (uint32_t)(phoneme_infos[i].duration * 1000);
+                    seq->phonemes[start_offset + i].accent_type = phoneme_infos[i].accent_type;
+                }
+                
+                free(phoneme_infos);
+            }
+        }
+        
+        // Skip the pause if present
+        if (phoneme_offset < seq->count && 
+            strcmp(seq->phonemes[phoneme_offset].phoneme, "pau") == 0) {
+            phoneme_offset++;
+        }
+        
+        node = node->next;
+    }
+    
+    return seq;
 }

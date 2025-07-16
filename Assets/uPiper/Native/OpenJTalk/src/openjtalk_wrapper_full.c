@@ -152,8 +152,8 @@ PhonemeResult* openjtalk_phonemize(void* handle, const char* text) {
         h->last_sequence = NULL;
     }
     
-    // Convert to phonemes
-    h->last_sequence = phoneme_converter_convert(h->converter, nodes);
+    // Convert to phonemes with prosody
+    h->last_sequence = phoneme_converter_convert_with_prosody(h->converter, nodes);
     mecab_full_free_nodes(h->mecab, nodes);
     
     if (!h->last_sequence) {
