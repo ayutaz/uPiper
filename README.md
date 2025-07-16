@@ -33,9 +33,5 @@
 - Windows (x64)
 - macOS
 - Linux (x64)
-- WebGL ※
 
-※ WebGLプラットフォームについての注意事項：
-- OpenJTalkネイティブライブラリはWebGLでは動作しません
-- 日本語音素化機能は現在WebGLではサポートされていません
-- 詳細は[Issue #17](https://github.com/ayutaz/uPiper/issues/17)を参照してください
+※ WebGLサポートについては[Issue #17](https://github.com/ayutaz/uPiper/issues/17)を参照してください
