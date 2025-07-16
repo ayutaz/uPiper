@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using uPiper.Core;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Implementations;
 
