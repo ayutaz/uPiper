@@ -25,10 +25,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Source files for light implementation
 set(SOURCES
-    src/openjtalk_wrapper_light.c
+    src/openjtalk_wrapper_v2.c
     src/openjtalk_phonemizer.c
-    src/mecab_light.c
-    src/mecab_light_impl.c
     src/memory_pool.c
     src/error_handling.c
 )
@@ -38,10 +36,7 @@ set(HEADERS
     include/openjtalk_wrapper.h
     src/openjtalk_phonemizer.h
     src/phoneme_mapping.h
-    src/kanji_mapping.h
     src/mecab_light.h
-    src/mecab_light_impl.h
-    src/mecab_dict_minimal.h
     src/memory_pool.h
     src/error_handling.h
 )
@@ -124,12 +119,6 @@ message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")
 # Test executable
 option(BUILD_TESTS "Build test programs" ON)
 if(BUILD_TESTS)
-    add_executable(test_openjtalk test/test_openjtalk.c)
-    target_link_libraries(test_openjtalk openjtalk_wrapper)
-    
-    # Build API test
-    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test_openjtalk_api.c)
-        add_executable(test_openjtalk_api test/test_openjtalk_api.c)
-        target_link_libraries(test_openjtalk_api openjtalk_wrapper)
-    endif()
+    add_executable(test_openjtalk_light test/test_openjtalk_light.c)
+    target_link_libraries(test_openjtalk_light openjtalk_wrapper)
 endif()

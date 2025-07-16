@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(openjtalk_wrapper VERSION 2.0.0)
+project(openjtalk_wrapper VERSION 1.0.0)
 
 # C standard
 set(CMAKE_C_STANDARD 99)
@@ -23,12 +23,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Source files for light implementation
+# Source files
 set(SOURCES
-    src/openjtalk_wrapper_light.c
-    src/openjtalk_phonemizer.c
-    src/mecab_light.c
-    src/mecab_light_impl.c
+    src/openjtalk_wrapper.c
+    src/phonemizer.c
     src/memory_pool.c
     src/error_handling.c
 )
@@ -36,12 +34,7 @@ set(SOURCES
 # Header files
 set(HEADERS
     include/openjtalk_wrapper.h
-    src/openjtalk_phonemizer.h
-    src/phoneme_mapping.h
-    src/kanji_mapping.h
-    src/mecab_light.h
-    src/mecab_light_impl.h
-    src/mecab_dict_minimal.h
+    src/phonemizer_internal.h
     src/memory_pool.h
     src/error_handling.h
 )
@@ -116,20 +109,14 @@ else()
 endif()
 
 # Print build configuration
-message(STATUS "Building OpenJTalk Wrapper (Light Implementation)")
+message(STATUS "Building OpenJTalk Wrapper")
 message(STATUS "  Platform: ${PLATFORM_NAME}")
 message(STATUS "  Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
-# Test executable
+# Test executable (optional)
 option(BUILD_TESTS "Build test programs" ON)
 if(BUILD_TESTS)
     add_executable(test_openjtalk test/test_openjtalk.c)
     target_link_libraries(test_openjtalk openjtalk_wrapper)
-    
-    # Build API test
-    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test_openjtalk_api.c)
-        add_executable(test_openjtalk_api test/test_openjtalk_api.c)
-        target_link_libraries(test_openjtalk_api openjtalk_wrapper)
-    endif()
 endif()
