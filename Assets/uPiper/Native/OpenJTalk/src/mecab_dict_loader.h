@@ -96,6 +96,9 @@ typedef struct MecabFullDictionary {
     bool use_mmap;            // Whether using memory mapping
     void* mmap_addr[4];       // mmap addresses for cleanup
     size_t mmap_size[4];      // mmap sizes for cleanup
+    
+    // Surface form index (built at load time)
+    void* surface_index;      // Hash table for surface form lookup
 } MecabFullDictionary;
 
 // Dictionary loading functions

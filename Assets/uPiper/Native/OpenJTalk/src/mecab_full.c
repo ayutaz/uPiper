@@ -13,6 +13,57 @@ static int utf8_char_len(unsigned char c) {
     return 1;
 }
 
+// Parse feature string into MecabFullFeature structure
+static void parse_feature_internal(MecabFullFeature* feature, const char* feature_str) {
+    if (!feature || !feature_str) return;
+    
+    // Clear feature
+    memset(feature, 0, sizeof(MecabFullFeature));
+    
+    // Parse CSV format: POS,detail1,detail2,detail3,detail4,detail5,surface,reading,pronunciation
+    char buffer[1024];
+    strncpy(buffer, feature_str, sizeof(buffer) - 1);
+    buffer[sizeof(buffer) - 1] = '\0';
+    
+    char* fields[16];
+    int field_count = 0;
+    
+    char* token = strtok(buffer, ",");
+    while (token && field_count < 16) {
+        fields[field_count++] = token;
+        token = strtok(NULL, ",");
+    }
+    
+    // Copy fields
+    if (field_count > 0 && strcmp(fields[0], "*") != 0) {
+        strncpy(feature->pos, fields[0], sizeof(feature->pos) - 1);
+    }
+    if (field_count > 1 && strcmp(fields[1], "*") != 0) {
+        strncpy(feature->pos_detail1, fields[1], sizeof(feature->pos_detail1) - 1);
+    }
+    if (field_count > 2 && strcmp(fields[2], "*") != 0) {
+        strncpy(feature->pos_detail2, fields[2], sizeof(feature->pos_detail2) - 1);
+    }
+    if (field_count > 3 && strcmp(fields[3], "*") != 0) {
+        strncpy(feature->pos_detail3, fields[3], sizeof(feature->pos_detail3) - 1);
+    }
+    if (field_count > 4 && strcmp(fields[4], "*") != 0) {
+        strncpy(feature->ctype, fields[4], sizeof(feature->ctype) - 1);
+    }
+    if (field_count > 5 && strcmp(fields[5], "*") != 0) {
+        strncpy(feature->cform, fields[5], sizeof(feature->cform) - 1);
+    }
+    if (field_count > 6 && strcmp(fields[6], "*") != 0) {
+        strncpy(feature->base, fields[6], sizeof(feature->base) - 1);
+    }
+    if (field_count > 7 && strcmp(fields[7], "*") != 0) {
+        strncpy(feature->reading, fields[7], sizeof(feature->reading) - 1);
+    }
+    if (field_count > 8 && strcmp(fields[8], "*") != 0) {
+        strncpy(feature->pronunciation, fields[8], sizeof(feature->pronunciation) - 1);
+    }
+}
+
 // Create lattice
 static Lattice* lattice_create(size_t capacity) {
     Lattice* lattice = (Lattice*)calloc(1, sizeof(Lattice));
@@ -198,17 +249,40 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
         // TODO: Properly decode UTF-8 to codepoint
         uint32_t char_type = mecab_dict_get_char_category(mecab->dict, codepoint);
         
-        // Lookup words in dictionary
-        DictMatch matches[256];
-        int match_count = 0;
+        // Common prefix search in dictionary
+        DictMatch dict_matches[256];
+        int match_count = mecab_dict_common_prefix_search(
+            mecab->dict, 
+            text + pos, 
+            text_len - pos, 
+            dict_matches, 
+            256
+        );
         
-        // Try different lengths
-        for (int len = char_len; len <= (int)(text_len - pos) && len <= 255; len += char_len) {
-            // Common prefix search in dictionary
-            // TODO: Implement proper dictionary search
+        // Add dictionary matches to lattice
+        for (int i = 0; i < match_count; i++) {
+            MecabFullNode* node = get_node(mecab);
+            if (!node) continue;
             
-            // For now, create unknown word node
-            if (len == char_len && match_count == 0) {
+            node->surface = text + pos;
+            node->length = dict_matches[i].length;
+            node->is_unk = dict_matches[i].is_unk;
+            node->lcAttr = dict_matches[i].token->lcAttr;
+            node->rcAttr = dict_matches[i].token->rcAttr;
+            node->posid = dict_matches[i].token->posid;
+            node->cost = dict_matches[i].token->wcost;
+            
+            // Parse feature string
+            const char* feature = mecab_dict_get_feature(mecab->dict, dict_matches[i].token);
+            if (feature) {
+                parse_feature_internal(&node->feature, feature);
+            }
+            
+            add_node_to_lattice(mecab, node, pos, pos + node->length);
+        }
+        
+        // If no matches found, create unknown word node
+        if (match_count == 0) {
                 MecabFullNode* unk_node = get_node(mecab);
                 if (unk_node) {
                     unk_node->surface = text + pos;
@@ -225,7 +299,6 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
                     add_node_to_lattice(mecab, unk_node, pos, pos + char_len);
                 }
             }
-        }
         
         pos += char_len;
     }

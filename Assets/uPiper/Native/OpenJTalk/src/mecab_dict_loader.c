@@ -1,5 +1,6 @@
 #include "mecab_dict_loader.h"
 #include "mecab_darts.h"
+#include "surface_index.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -150,6 +151,76 @@ static CharDef* load_char_def(const char* filename) {
     
     free(data);
     return char_def;
+}
+
+// Extract surface form from feature string
+static const char* extract_surface_form(const char* feature, char* buffer, size_t bufsize) {
+    // Feature format: POS1,POS2,...,surface,reading,pronunciation,...
+    // Count 6 commas to get to surface
+    const char* p = feature;
+    int comma_count = 0;
+    
+    while (*p && comma_count < 6) {
+        if (*p == ',') comma_count++;
+        p++;
+    }
+    
+    if (comma_count < 6 || *p == '\0') return NULL;
+    
+    // Extract until next comma
+    const char* start = p;
+    const char* end = strchr(p, ',');
+    if (!end) return NULL;
+    
+    size_t len = end - start;
+    if (len >= bufsize) len = bufsize - 1;
+    
+    strncpy(buffer, start, len);
+    buffer[len] = '\0';
+    
+    return buffer;
+}
+
+// Build surface form index for dictionary
+static SurfaceIndex* build_surface_index(const MecabFullDictionary* dict) {
+    if (!dict) return NULL;
+    
+    fprintf(stderr, "Building surface form index...\n");
+    
+    // Create index
+    SurfaceIndex* index = surface_index_create(dict->sys_header.lexsize);
+    if (!index) return NULL;
+    
+    // Get token array
+    size_t token_offset = sizeof(DictionaryHeader) + dict->sys_header.dsize;
+    const Token* tokens = (const Token*)((uint8_t*)dict->sys_data + token_offset);
+    
+    char surface_buffer[256];
+    uint32_t indexed_count = 0;
+    
+    // Index all tokens
+    for (uint32_t i = 0; i < dict->sys_header.lexsize; i++) {
+        const Token* token = &tokens[i];
+        const char* feature = mecab_dict_get_feature(dict, token);
+        if (!feature) continue;
+        
+        const char* surface = extract_surface_form(feature, surface_buffer, sizeof(surface_buffer));
+        if (surface && *surface != '\0' && *surface != '*') {
+            if (surface_index_add(index, surface, i)) {
+                indexed_count++;
+            }
+        }
+        
+        // Progress indicator
+        if ((i + 1) % 100000 == 0) {
+            fprintf(stderr, "  Indexed %u/%u tokens\r", i + 1, dict->sys_header.lexsize);
+        }
+    }
+    
+    fprintf(stderr, "\nIndexed %u surface forms from %u tokens\n", 
+            index->entry_count, indexed_count);
+    
+    return index;
 }
 
 // Load matrix
@@ -314,6 +385,13 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
         goto error;
     }
     
+    // Build surface form index since Darts doesn't seem to work with pyopenjtalk format
+    dict->surface_index = build_surface_index(dict);
+    if (!dict->surface_index) {
+        fprintf(stderr, "mecab_dict_load: Warning - Failed to build surface index\n");
+        // Continue anyway - can fall back to linear search
+    }
+    
     return dict;
     
 error:
@@ -366,6 +444,11 @@ void mecab_dict_free_full(MecabFullDictionary* dict) {
             free(dict->pos_names[i]);
         }
         free(dict->pos_names);
+    }
+    
+    // Free surface index
+    if (dict->surface_index) {
+        surface_index_destroy((SurfaceIndex*)dict->surface_index);
     }
     
     free(dict);
@@ -452,17 +535,42 @@ int mecab_dict_common_prefix_search(const MecabFullDictionary* dict,
     
     int total_results = 0;
     
-    // Search in system dictionary
-    if (dict->sys_darts) {
-        DartsResult darts_results[256];
-        int count = darts_common_prefix_search(dict->sys_darts, text, len, 
-                                               darts_results, 256);
+    // Use surface index if available
+    if (dict->surface_index) {
+        SurfaceMatch surface_matches[256];
+        int count = surface_index_common_prefix_search(
+            (SurfaceIndex*)dict->surface_index, 
+            text, len, 
+            surface_matches, 
+            max_results < 256 ? max_results : 256
+        );
         
         for (int i = 0; i < count && total_results < max_results; i++) {
-            results[total_results].token = mecab_dict_get_token(dict, darts_results[i].value, false);
-            results[total_results].length = darts_results[i].length;
-            results[total_results].is_unk = false;
-            total_results++;
+            // For each surface match, add all token variations
+            for (uint32_t j = 0; j < surface_matches[i].count && total_results < max_results; j++) {
+                uint32_t token_idx = surface_matches[i].indices[j];
+                results[total_results].token = mecab_dict_get_token(dict, token_idx, false);
+                results[total_results].length = surface_matches[i].length;
+                results[total_results].is_unk = false;
+                total_results++;
+            }
+            
+            // Free allocated surface string
+            free((char*)surface_matches[i].surface);
+        }
+    } else {
+        // Fall back to Darts if surface index not available
+        if (dict->sys_darts) {
+            DartsResult darts_results[256];
+            int count = darts_common_prefix_search(dict->sys_darts, text, len, 
+                                                   darts_results, 256);
+            
+            for (int i = 0; i < count && total_results < max_results; i++) {
+                results[total_results].token = mecab_dict_get_token(dict, darts_results[i].value, false);
+                results[total_results].length = darts_results[i].length;
+                results[total_results].is_unk = false;
+                total_results++;
+            }
         }
     }
     

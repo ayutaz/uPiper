@@ -32,6 +32,7 @@ set(SOURCES
     src/mecab_dict_loader.c
     src/mecab_darts.c
     src/mecab_full.c
+    src/surface_index.c
     src/memory_pool.c
     src/error_handling.c
 )
@@ -48,6 +49,7 @@ set(HEADERS
     src/mecab_dict_loader.h
     src/mecab_darts.h
     src/mecab_full.h
+    src/surface_index.h
     src/memory_pool.h
     src/error_handling.h
 )
