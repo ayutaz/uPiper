@@ -113,15 +113,15 @@ MecabDictionary* mecab_dict_create_minimal(void) {
         dst->cost = src->cost;
         dst->pos_id = src->pos;
         
-        // Store surface (actually storing reading for now)
-        dst->reading_offset = string_offset;
-        strcpy(&dict->string_table[string_offset], src->reading);
-        string_offset += strlen(src->reading) + 1;
-        
-        // Store base form (same as surface for now)
+        // Store base form (surface)
         dst->base_offset = string_offset;
         strcpy(&dict->string_table[string_offset], src->surface);
         string_offset += strlen(src->surface) + 1;
+        
+        // Store reading
+        dst->reading_offset = string_offset;
+        strcpy(&dict->string_table[string_offset], src->reading);
+        string_offset += strlen(src->reading) + 1;
     }
     
     // Create hash table for fast lookup
@@ -157,6 +157,15 @@ const DictEntry* mecab_dict_lookup(MecabDictionary* dict,
     uint32_t hash = mecab_hash_string(surface, length);
     uint32_t idx = hash % dict->hash_table_size;
     
+    // Debug output
+    #ifdef DEBUG_MECAB
+    printf("Looking up: '");
+    for (int i = 0; i < length; i++) {
+        printf("%c", surface[i]);
+    }
+    printf("' (len=%d, hash=%u, idx=%u)\n", length, hash, idx);
+    #endif
+    
     // Linear probing
     while (dict->hash_table[idx] != 0) {
         int entry_idx = dict->hash_table[idx] - 1;
@@ -167,12 +176,19 @@ const DictEntry* mecab_dict_lookup(MecabDictionary* dict,
             // Verify actual string match
             const char* base = &dict->string_table[entry->base_offset];
             if (strncmp(base, surface, length) == 0 && base[length] == '\0') {
+                #ifdef DEBUG_MECAB
+                printf("  -> Found: '%s'\n", base);
+                #endif
                 return entry;
             }
         }
         
         idx = (idx + 1) % dict->hash_table_size;
     }
+    
+    #ifdef DEBUG_MECAB
+    printf("  -> Not found\n");
+    #endif
     
     return NULL;
 }
@@ -316,30 +332,23 @@ LatticeNode* mecab_impl_parse(struct MecabLightImpl* impl, const char* input) {
     // Build lattice
     for (int pos = 0; pos < input_len; ) {
         int char_len = mecab_get_char_length(&input[pos]);
-        CharType char_type = mecab_get_char_type(&input[pos]);
         
-        // Try to find words starting at this position
-        bool found_word = false;
+        // Always add single character as unknown (fallback)
+        add_lattice_node(impl, &input[pos], char_len, NULL, pos, pos + char_len);
         
-        // Try different lengths
-        for (int len = char_len; len <= input_len - pos && len <= 30; len += char_len) {
+        // Try to find dictionary words starting at this position
+        for (int len = char_len; len <= input_len - pos && len <= 30; ) {
             const DictEntry* entry = mecab_dict_lookup(impl->dict, &input[pos], len);
             if (entry) {
                 add_lattice_node(impl, &input[pos], len, entry, pos, pos + len);
-                found_word = true;
             }
             
-            // For single character, always add as unknown
-            if (len == char_len && !found_word) {
-                // Create unknown word entry
-                add_lattice_node(impl, &input[pos], char_len, NULL, pos, pos + char_len);
-                found_word = true;
-            }
-            
-            // Don't extend beyond character type boundary
+            // Move to next character boundary
             if (pos + len < input_len) {
-                CharType next_type = mecab_get_char_type(&input[pos + len]);
-                if (next_type != char_type) break;
+                int next_char_len = mecab_get_char_length(&input[pos + len]);
+                len += next_char_len;
+            } else {
+                break;
             }
         }
         
@@ -363,12 +372,12 @@ LatticeNode* mecab_impl_parse(struct MecabLightImpl* impl, const char* input) {
                 int best_cost = INT_MAX;
                 LatticeNode* best_prev = NULL;
                 
-                // Check all nodes ending at current position
-                for (int prev_pos = 0; prev_pos < pos; prev_pos++) {
+                // Check all nodes ending at current node's begin position
+                for (int prev_pos = 0; prev_pos <= node->begin_pos; prev_pos++) {
                     LatticeNode* prev = impl->begin_node_list[prev_pos];
                     
                     while (prev) {
-                        if (prev->end_pos == pos) {
+                        if (prev->end_pos == node->begin_pos) {
                             int cost = prev->cost;
                             
                             // Add word cost
@@ -406,16 +415,37 @@ LatticeNode* mecab_impl_parse(struct MecabLightImpl* impl, const char* input) {
     }
     
     // Backtrack from EOS to get best path
-    LatticeNode* best_path = NULL;
-    LatticeNode* current = eos;
+    if (!eos || !eos->prev) {
+        return NULL;  // No valid path found
+    }
     
-    while (current && current->begin_pos > 0) {
-        LatticeNode* prev = current->prev;
-        if (prev) {
-            current->prev = best_path;
-            best_path = current;
+    // Build path in correct order
+    LatticeNode* path[1000];  // Temporary array
+    int path_len = 0;
+    
+    LatticeNode* current = eos->prev;  // Skip EOS node
+    while (current && !(current->begin_pos == 0 && current->end_pos == 0)) {
+        path[path_len++] = current;
+        current = current->prev;
+    }
+    
+    // Link nodes in forward order
+    LatticeNode* best_path = NULL;
+    LatticeNode* tail = NULL;
+    
+    for (int i = path_len - 1; i >= 0; i--) {
+        LatticeNode* node = path[i];
+        node->prev = tail;
+        if (tail) {
+            tail->next = node;
+        } else {
+            best_path = node;
         }
-        current = prev;
+        tail = node;
+    }
+    
+    if (tail) {
+        tail->next = NULL;
     }
     
     return best_path;
@@ -473,7 +503,7 @@ MecabNode* mecab_impl_lattice_to_nodes(struct MecabLightImpl* impl,
         }
         tail = node;
         
-        current = current->prev;  // Note: we reversed the list during backtracking
+        current = current->next;  // Follow the forward chain
     }
     
     return head;

@@ -35,9 +35,9 @@ void* openjtalk_create(const char* dict_path) {
         return NULL;
     }
     
-    // Initialize with dictionary (optional for light version)
-    if (dict_path && !openjtalk_phonemizer_initialize(handle->phonemizer, dict_path)) {
-        handle->last_error = OPENJTALK_ERROR_DICTIONARY_NOT_FOUND;
+    // Initialize phonemizer (dictionary path is optional)
+    if (!openjtalk_phonemizer_initialize(handle->phonemizer, dict_path)) {
+        handle->last_error = OPENJTALK_ERROR_INITIALIZATION_FAILED;
         openjtalk_phonemizer_destroy(handle->phonemizer);
         free(handle);
         return NULL;

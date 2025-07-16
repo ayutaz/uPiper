@@ -188,6 +188,11 @@ int openjtalk_phonemizer_phonemize(OpenJTalkPhonemizer* phonemizer,
         return -1;
     }
     
+    if (getenv("DEBUG_MECAB")) {
+        printf("\n=== Phonemize: '%s' ===\n", text);
+        printf("Mecab available: %s\n", phonemizer->mecab ? "YES" : "NO");
+    }
+    
     // Reset memory pool
     memory_pool_reset(phonemizer->memory_pool);
     
@@ -208,8 +213,14 @@ int openjtalk_phonemizer_phonemize(OpenJTalkPhonemizer* phonemizer,
     
     // Use Mecab for morphological analysis if available
     if (phonemizer->mecab) {
+        if (getenv("DEBUG_MECAB")) {
+            printf("Using Mecab to parse: '%s'\n", normalized);
+        }
         MecabNode* nodes = mecab_light_parse(phonemizer->mecab, normalized);
         if (nodes) {
+            if (getenv("DEBUG_MECAB")) {
+                printf("Mecab parse successful\n");
+            }
             MecabNode* current = nodes;
             
             while (current && phoneme_count < max_phonemes - 1) {

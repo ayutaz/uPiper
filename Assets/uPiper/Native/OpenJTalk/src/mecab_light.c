@@ -71,6 +71,19 @@ MecabNode* mecab_light_parse(MecabLight* mecab, const char* text) {
     // Convert to MecabNode list
     MecabNode* nodes = mecab_impl_lattice_to_nodes(mecab->impl, lattice);
     
+    // Debug output
+    if (getenv("DEBUG_MECAB")) {
+        printf("Mecab parse result for '%s':\n", text);
+        MecabNode* debug_node = nodes;
+        while (debug_node) {
+            printf("  surface='%s', pos='%s', reading='%s'\n",
+                   debug_node->surface,
+                   debug_node->feature.pos,
+                   debug_node->feature.reading);
+            debug_node = debug_node->next;
+        }
+    }
+    
     return nodes;
 }
 
