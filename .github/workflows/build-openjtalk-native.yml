@@ -31,44 +31,36 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup Developer Command Prompt
+    - name: Setup MSVC
       uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: ${{ matrix.arch }}
     
-    - name: Install Ninja
-      shell: bash
-      run: |
-        choco install ninja
-    
     - name: Configure CMake
-      shell: bash
+      shell: cmd
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
-        mkdir -p build/windows/${{ matrix.arch }}
-        cd build/windows/${{ matrix.arch }}
-        cmake -G "Ninja" \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/Assets/uPiper/Native/OpenJTalk/output/windows/${{ matrix.arch }}" \
-              ../../..
+        cd Assets\uPiper\Native\OpenJTalk
+        if not exist build\windows\${{ matrix.arch }} mkdir build\windows\${{ matrix.arch }}
+        cd build\windows\${{ matrix.arch }}
+        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\Assets\uPiper\Native\OpenJTalk\output\windows\${{ matrix.arch }}" ..\..\..\..
     
     - name: Build
-      shell: bash
+      shell: cmd
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build/windows/${{ matrix.arch }}
-        cmake --build . --config Release
+        cd Assets\uPiper\Native\OpenJTalk\build\windows\${{ matrix.arch }}
+        nmake
     
     - name: Install
-      shell: bash
+      shell: cmd
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build/windows/${{ matrix.arch }}
-        cmake --install . --config Release
+        cd Assets\uPiper\Native\OpenJTalk\build\windows\${{ matrix.arch }}
+        nmake install
     
     - name: Run Tests
-      shell: bash
+      shell: cmd
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build/windows/${{ matrix.arch }}
-        ./Release/test_openjtalk.exe
+        cd Assets\uPiper\Native\OpenJTalk\build\windows\${{ matrix.arch }}
+        bin\test_openjtalk.exe
     
     - name: Prepare Artifacts
       shell: bash
