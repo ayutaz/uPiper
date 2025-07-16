@@ -36,6 +36,9 @@ jobs:
       with:
         arch: ${{ matrix.arch }}
     
+    - name: Install CMake
+      uses: lukka/get-cmake@latest
+    
     - name: Configure CMake
       shell: cmd
       run: |
