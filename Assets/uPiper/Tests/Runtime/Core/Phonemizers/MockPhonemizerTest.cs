@@ -133,9 +133,10 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             {
                 // Unity Test Framework doesn't support Assert.ThrowsAsync properly
                 // Using synchronous method instead
-                Assert.Throws<InvalidOperationException>(
+                var ex = Assert.Throws<PiperPhonemizationException>(
                     () => _phonemizer.Phonemize("error text", "en")
                 );
+                Assert.IsInstanceOf<InvalidOperationException>(ex.InnerException);
             }
             finally
             {
