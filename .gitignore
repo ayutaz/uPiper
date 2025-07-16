@@ -163,3 +163,12 @@ sysinfo.txt
 
 # Temporary demo scenes
 Assets/Temp/
+
+# Native Build Outputs
+Assets/uPiper/Native/OpenJTalk/build/
+Assets/uPiper/Native/OpenJTalk/output/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+Makefile
