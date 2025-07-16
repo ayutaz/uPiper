@@ -11,7 +11,7 @@ namespace uPiper.Core.Phonemizers.Text
     public class TextNormalizer : ITextNormalizer
     {
         // Regex patterns for normalization
-        private static readonly Regex MultipleSpacesRegex = new Regex(@"\s+", RegexOptions.Compiled);
+        private static readonly Regex MultipleSpacesRegex = new Regex(@"\s{2,}", RegexOptions.Compiled);
         private static readonly Regex LineBreaksRegex = new Regex(@"[\r\n]+", RegexOptions.Compiled);
         private static readonly Regex ControlCharsRegex = new Regex(@"[\x00-\x1F\x7F]", RegexOptions.Compiled);
         
