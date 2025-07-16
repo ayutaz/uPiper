@@ -1,0 +1,11 @@
+fileFormatVersion: 2
+guid: ae904cb7c3c4447f828a1cf97dc00bb5
+MonoImporter:
+  externalObjects: Assets/uPiper/Runtime/Core/Phonemizers/Cache/LRUCache.cs
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

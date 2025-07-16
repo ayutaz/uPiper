@@ -1,0 +1,11 @@
+fileFormatVersion: 2
+guid: 5b5801559e294e9fbe49473cb53bc34c
+MonoImporter:
+  externalObjects: Assets/uPiper/Runtime/Core/Phonemizers/Implementations/MockPhonemizer.cs
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
