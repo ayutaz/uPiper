@@ -30,18 +30,18 @@ namespace uPiper.Core.Phonemizers.Text
 
             var normalized = text;
 
-            // Common normalization for all languages
-            normalized = NormalizeCommon(normalized);
-
-            // Language-specific normalization
+            // Language-specific normalization first (before common normalization)
             normalized = language?.ToLowerInvariant() switch
             {
                 "ja" => NormalizeJapanese(normalized),
                 "en" => NormalizeEnglish(normalized),
                 "zh" => NormalizeChinese(normalized),
                 "ko" => NormalizeKorean(normalized),
-                _ => normalized
+                _ => normalized.ToLowerInvariant() // Default: convert to lowercase for unsupported languages
             };
+
+            // Common normalization for all languages
+            normalized = NormalizeCommon(normalized);
 
             PiperLogger.LogDebug($"Text normalized: \"{text}\" -> \"{normalized}\" ({language})");
             return normalized;
@@ -98,10 +98,7 @@ namespace uPiper.Core.Phonemizers.Text
             text = MultipleSpacesRegex.Replace(text, " ");
 
             // Trim
-            text = text.Trim();
-            
-            // Convert to lowercase for all languages (common normalization)
-            return text.ToLowerInvariant();
+            return text.Trim();
         }
 
         /// <summary>
@@ -146,22 +143,23 @@ namespace uPiper.Core.Phonemizers.Text
         /// </summary>
         private string NormalizeEnglish(string text)
         {
-            // Text is already lowercase from common normalization
-
+            // Convert to lowercase for contraction expansion
+            var lowerText = text.ToLowerInvariant();
+            
             // Expand common contractions
-            text = text.Replace("can't", "can not");
-            text = text.Replace("won't", "will not");
-            text = text.Replace("n't", " not");
-            text = text.Replace("'s", " is");
-            text = text.Replace("'re", " are");
-            text = text.Replace("'ve", " have");
-            text = text.Replace("'ll", " will");
-            text = text.Replace("'d", " would");
+            lowerText = lowerText.Replace("can't", "can not");
+            lowerText = lowerText.Replace("won't", "will not");
+            lowerText = lowerText.Replace("n't", " not");
+            lowerText = lowerText.Replace("'s", " is");
+            lowerText = lowerText.Replace("'re", " are");
+            lowerText = lowerText.Replace("'ve", " have");
+            lowerText = lowerText.Replace("'ll", " will");
+            lowerText = lowerText.Replace("'d", " would");
 
             // Remove possessive apostrophes
-            text = text.Replace("'", "");
+            lowerText = lowerText.Replace("'", "");
 
-            return text;
+            return lowerText;
         }
 
         /// <summary>
@@ -226,8 +224,8 @@ namespace uPiper.Core.Phonemizers.Text
         /// </summary>
         private bool NeedsEnglishNormalization(string text)
         {
-            // Check for contractions
-            return text.Contains("'");
+            // Check for contractions or uppercase letters
+            return text.Contains("'") || text != text.ToLowerInvariant();
         }
     }
 }
