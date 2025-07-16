@@ -41,7 +41,9 @@ jobs:
           - StandaloneWindows64
           - StandaloneOSX
           - StandaloneLinux64
-          - WebGL
+          # WebGL is temporarily disabled due to native plugin incompatibility
+          # See Issue #17 for WebGL support tracking
+          # - WebGL
     
     steps:
     - uses: actions/checkout@v4
@@ -79,53 +81,54 @@ jobs:
         retention-days: 7
         
   # WebGLビルドをGitHub Pagesにデプロイ
-  deploy-pages:
-    name: Deploy to GitHub Pages
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-      
-    steps:
-    - name: Download WebGL build
-      uses: actions/download-artifact@v4
-      with:
-        name: Build-WebGL
-        path: ./public
-        
-    # index.htmlの調整（必要に応じて）
-    - name: Prepare WebGL build for Pages
-      run: |
-        # Unity WebGLビルドのディレクトリ構造を確認
-        echo "=== WebGL build structure ==="
-        find ./public -type f -name "*.html" | head -10
-        
-        # index.htmlがルートにない場合は移動
-        if [ ! -f "./public/index.html" ]; then
-          # Unity 6のWebGLビルドの標準的な場所を確認
-          if [ -f "./public/uPiper/index.html" ]; then
-            echo "Moving Unity WebGL build to root"
-            mv ./public/uPiper/* ./public/
-            rmdir ./public/uPiper
-          fi
-        fi
-        
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-      
-    - name: Upload Pages artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: ./public
-        
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+  # Temporarily disabled until WebGL support is implemented (Issue #17)
+  # deploy-pages:
+  #   name: Deploy to GitHub Pages
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   permissions:
+  #     pages: write
+  #     id-token: write
+  #   environment:
+  #     name: github-pages
+  #     url: ${{ steps.deployment.outputs.page_url }}
+  #     
+  #   steps:
+  #   - name: Download WebGL build
+  #     uses: actions/download-artifact@v4
+  #     with:
+  #       name: Build-WebGL
+  #       path: ./public
+  #       
+  #   # index.htmlの調整（必要に応じて）
+  #   - name: Prepare WebGL build for Pages
+  #     run: |
+  #       # Unity WebGLビルドのディレクトリ構造を確認
+  #       echo "=== WebGL build structure ==="
+  #       find ./public -type f -name "*.html" | head -10
+  #       
+  #       # index.htmlがルートにない場合は移動
+  #       if [ ! -f "./public/index.html" ]; then
+  #         # Unity 6のWebGLビルドの標準的な場所を確認
+  #         if [ -f "./public/uPiper/index.html" ]; then
+  #           echo "Moving Unity WebGL build to root"
+  #           mv ./public/uPiper/* ./public/
+  #           rmdir ./public/uPiper
+  #         fi
+  #       fi
+  #       
+  #   - name: Setup Pages
+  #     uses: actions/configure-pages@v4
+  #     
+  #   - name: Upload Pages artifact
+  #     uses: actions/upload-pages-artifact@v3
+  #     with:
+  #       path: ./public
+  #       
+  #   - name: Deploy to GitHub Pages
+  #     id: deployment
+  #     uses: actions/deploy-pages@v4
       
   # リリース作成（タグプッシュ時）
   create-release:
