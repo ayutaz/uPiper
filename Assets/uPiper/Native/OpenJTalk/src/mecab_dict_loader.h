@@ -5,6 +5,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// Magic numbers for dictionary files
+#define MAGIC_ID 0xE954A1B6
+#define UNK_MAGIC_ID 0xEF71994D
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,6 +62,12 @@ typedef struct {
 // Forward declaration
 typedef struct Darts Darts;
 
+// Character map structure
+typedef struct {
+    uint32_t code;
+    uint32_t category;
+} CharMap;
+
 // Complete dictionary structure
 typedef struct MecabFullDictionary {
     // Dictionary headers
@@ -70,7 +80,13 @@ typedef struct MecabFullDictionary {
     size_t sys_size;          // System dictionary size
     size_t unk_size;          // Unknown word dictionary size
     
+    // Token arrays
+    const Token* sys_tokens;  // System dictionary tokens
+    const Token* unk_tokens;  // Unknown word tokens
+    
     // Features
+    const char* sys_features; // System dictionary features
+    const char* unk_features; // Unknown word features
     const char* feature_str;  // Feature string pool
     size_t feature_size;      // Feature string pool size
     
@@ -80,9 +96,16 @@ typedef struct MecabFullDictionary {
     
     // Character definition
     CharDef* char_def;
+    uint32_t char_def_count;
+    CharMap* char_map;
+    uint32_t char_map_count;
+    uint8_t* char_property;
     
     // Connection cost matrix
     Matrix* matrix;
+    int16_t* matrix_data;     // Matrix data
+    uint16_t matrix_lsize;    // Left size
+    uint16_t matrix_rsize;    // Right size
     
     // POS information
     uint32_t pos_num;         // Number of POS tags
@@ -118,15 +141,19 @@ const char* mecab_dict_get_feature(const MecabFullDictionary* dict,
                                    const Token* token);
 int16_t mecab_dict_get_connection_cost(const MecabFullDictionary* dict,
                                        uint16_t left_id, uint16_t right_id);
-uint32_t mecab_dict_get_char_category(const MecabFullDictionary* dict, 
-                                      uint32_t codepoint);
-
 // Dictionary search functions
 typedef struct {
     const Token* token;
     uint32_t length;
     bool is_unk;
 } DictMatch;
+
+uint32_t mecab_dict_get_char_category(const MecabFullDictionary* dict, 
+                                      uint32_t codepoint);
+
+// Unknown word processing
+int mecab_dict_get_unknown_tokens(const MecabFullDictionary* dict, uint32_t char_type,
+                                  DictMatch* matches, int max_matches);
 
 int mecab_dict_common_prefix_search(const MecabFullDictionary* dict,
                                     const char* text, size_t len,

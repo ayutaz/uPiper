@@ -4,449 +4,250 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-#ifdef _WIN32
-    #include <windows.h>
-    #define PATH_SEPARATOR "\\"
-#else
-    #include <sys/mman.h>
-    #include <unistd.h>
-    #define PATH_SEPARATOR "/"
-#endif
-
-// Magic numbers for dictionary files (from actual dictionary)
-#define DIC_MAGIC_ID 0xE954A1B6     // Magic for sys.dic
-#define UNK_MAGIC_ID 0xEF71994D     // Magic for unk.dic
-#define MATRIX_MAGIC_ID 0xEF718F77
-
-// Load binary file into memory
-static void* load_file(const char* filename, size_t* size) {
-    FILE* fp = fopen(filename, "rb");
-    if (!fp) {
+// Load dictionary
+MecabFullDictionary* mecab_dict_load(const char* dict_path) {
+    MecabFullDictionary* dict = (MecabFullDictionary*)calloc(1, sizeof(MecabFullDictionary));
+    if (!dict) return NULL;
+    
+    char path_buffer[512];
+    
+    // Load system dictionary
+    snprintf(path_buffer, sizeof(path_buffer), "%s/sys.dic", dict_path);
+    FILE* sys_file = fopen(path_buffer, "rb");
+    if (!sys_file) {
+        fprintf(stderr, "Failed to open sys.dic: %s\n", path_buffer);
+        free(dict);
+        return NULL;
+    }
+    
+    // Read header
+    if (fread(&dict->sys_header, sizeof(DictionaryHeader), 1, sys_file) != 1) {
+        fprintf(stderr, "Failed to read sys.dic header\n");
+        fclose(sys_file);
+        free(dict);
+        return NULL;
+    }
+    
+    // Validate magic number
+    if (dict->sys_header.magic != MAGIC_ID) {
+        fprintf(stderr, "Invalid magic number in sys.dic: 0x%X (expected 0x%X)\n", 
+                dict->sys_header.magic, MAGIC_ID);
+        fclose(sys_file);
+        free(dict);
         return NULL;
     }
     
     // Get file size
-    fseek(fp, 0, SEEK_END);
-    *size = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
+    fseek(sys_file, 0, SEEK_END);
+    size_t file_size = ftell(sys_file);
+    fseek(sys_file, 0, SEEK_SET);
     
-    // Allocate memory
-    void* data = malloc(*size);
-    if (!data) {
-        fclose(fp);
+    // Memory map the file
+    int fd = fileno(sys_file);
+    void* mapped = mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (mapped == MAP_FAILED) {
+        fprintf(stderr, "Failed to mmap sys.dic\n");
+        fclose(sys_file);
+        free(dict);
         return NULL;
     }
     
-    // Read file
-    if (fread(data, 1, *size, fp) != *size) {
-        free(data);
-        fclose(fp);
+    dict->sys_data = mapped;
+    dict->sys_size = file_size;
+    fclose(sys_file);
+    
+    // Set up pointers
+    const uint8_t* data = (const uint8_t*)dict->sys_data;
+    size_t offset = sizeof(DictionaryHeader);
+    
+    // Skip Darts data
+    offset += dict->sys_header.dsize;
+    
+    // Tokens
+    dict->sys_tokens = (const Token*)(data + offset);
+    offset += dict->sys_header.tsize;
+    
+    // Features
+    dict->sys_features = (const char*)(data + offset);
+    
+    // Load unknown word dictionary
+    snprintf(path_buffer, sizeof(path_buffer), "%s/unk.dic", dict_path);
+    FILE* unk_file = fopen(path_buffer, "rb");
+    if (!unk_file) {
+        fprintf(stderr, "Failed to open unk.dic: %s\n", path_buffer);
+        munmap(dict->sys_data, dict->sys_size);
+        free(dict);
         return NULL;
     }
     
-    fclose(fp);
-    return data;
-}
-
-// Memory map file (more efficient for large files)
-static void* mmap_file(const char* filename, size_t* size) {
-#ifdef _WIN32
-    // Windows implementation
-    HANDLE hFile = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, 
-                              NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hFile == INVALID_HANDLE_VALUE) {
+    // Read unk header
+    if (fread(&dict->unk_header, sizeof(DictionaryHeader), 1, unk_file) != 1) {
+        fprintf(stderr, "Failed to read unk.dic header\n");
+        fclose(unk_file);
+        munmap(dict->sys_data, dict->sys_size);
+        free(dict);
         return NULL;
     }
     
-    LARGE_INTEGER file_size;
-    if (!GetFileSizeEx(hFile, &file_size)) {
-        CloseHandle(hFile);
-        return NULL;
-    }
-    *size = (size_t)file_size.QuadPart;
-    
-    HANDLE hMapping = CreateFileMappingA(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    if (!hMapping) {
-        CloseHandle(hFile);
+    // Validate unk magic number
+    if (dict->unk_header.magic != UNK_MAGIC_ID && dict->unk_header.magic != MAGIC_ID) {
+        fprintf(stderr, "Invalid magic number in unk.dic: 0x%X\n", dict->unk_header.magic);
+        fclose(unk_file);
+        munmap(dict->sys_data, dict->sys_size);
+        free(dict);
         return NULL;
     }
     
-    void* addr = MapViewOfFile(hMapping, FILE_MAP_READ, 0, 0, 0);
-    CloseHandle(hMapping);
-    CloseHandle(hFile);
+    // Get unk file size
+    fseek(unk_file, 0, SEEK_END);
+    size_t unk_file_size = ftell(unk_file);
+    fseek(unk_file, 0, SEEK_SET);
     
-    return addr;
-#else
-    // Unix implementation
-    int fd = open(filename, O_RDONLY);
-    if (fd < 0) {
+    // Memory map unk file
+    int unk_fd = fileno(unk_file);
+    void* unk_mapped = mmap(NULL, unk_file_size, PROT_READ, MAP_PRIVATE, unk_fd, 0);
+    if (unk_mapped == MAP_FAILED) {
+        fprintf(stderr, "Failed to mmap unk.dic\n");
+        fclose(unk_file);
+        munmap(dict->sys_data, dict->sys_size);
+        free(dict);
         return NULL;
     }
     
-    struct stat st;
-    if (fstat(fd, &st) < 0) {
-        close(fd);
-        return NULL;
-    }
-    *size = st.st_size;
+    dict->unk_data = unk_mapped;
+    dict->unk_size = unk_file_size;
+    fclose(unk_file);
     
-    void* addr = mmap(NULL, *size, PROT_READ, MAP_PRIVATE, fd, 0);
-    close(fd);
+    // Set up unk pointers
+    const uint8_t* unk_data = (const uint8_t*)dict->unk_data;
+    size_t unk_offset = sizeof(DictionaryHeader);
     
-    if (addr == MAP_FAILED) {
-        return NULL;
-    }
+    // Skip unk Darts data
+    unk_offset += dict->unk_header.dsize;
     
-    return addr;
-#endif
-}
-
-// Unmap memory mapped file
-static void munmap_file(void* addr, size_t size) {
-#ifdef _WIN32
-    UnmapViewOfFile(addr);
-#else
-    munmap(addr, size);
-#endif
-}
-
-// Load character definition
-static CharDef* load_char_def(const char* filename) {
-    size_t size;
-    void* data = load_file(filename, &size);
-    if (!data) {
+    // Unk tokens
+    dict->unk_tokens = (const Token*)(unk_data + unk_offset);
+    unk_offset += dict->unk_header.tsize;
+    
+    // Unk features
+    dict->unk_features = (const char*)(unk_data + unk_offset);
+    
+    // Load matrix
+    snprintf(path_buffer, sizeof(path_buffer), "%s/matrix.bin", dict_path);
+    FILE* matrix_file = fopen(path_buffer, "rb");
+    if (!matrix_file) {
+        fprintf(stderr, "Failed to open matrix.bin: %s\n", path_buffer);
+        munmap(dict->sys_data, dict->sys_size);
+        munmap(dict->unk_data, dict->unk_size);
+        free(dict);
         return NULL;
     }
     
-    CharDef* char_def = (CharDef*)calloc(1, sizeof(CharDef));
-    if (!char_def) {
-        free(data);
+    // Read matrix header
+    uint16_t lsize, rsize;
+    if (fread(&lsize, sizeof(uint16_t), 1, matrix_file) != 1 ||
+        fread(&rsize, sizeof(uint16_t), 1, matrix_file) != 1) {
+        fprintf(stderr, "Failed to read matrix header\n");
+        fclose(matrix_file);
+        munmap(dict->sys_data, dict->sys_size);
+        munmap(dict->unk_data, dict->unk_size);
+        free(dict);
         return NULL;
     }
     
-    // Parse binary format
-    uint32_t* ptr = (uint32_t*)data;
-    char_def->category_num = *ptr++;
+    dict->matrix_lsize = lsize;
+    dict->matrix_rsize = rsize;
     
-    // Allocate category names
-    char_def->category_names = (char**)calloc(char_def->category_num, sizeof(char*));
-    
-    // Read category names
-    char* str_ptr = (char*)ptr;
-    for (uint32_t i = 0; i < char_def->category_num; i++) {
-        char_def->category_names[i] = strdup(str_ptr);
-        str_ptr += strlen(str_ptr) + 1;
+    // Allocate and read matrix
+    size_t matrix_size = (size_t)lsize * rsize * sizeof(int16_t);
+    dict->matrix_data = (int16_t*)malloc(matrix_size);
+    if (!dict->matrix_data || fread(dict->matrix_data, matrix_size, 1, matrix_file) != 1) {
+        fprintf(stderr, "Failed to read matrix data\n");
+        fclose(matrix_file);
+        free(dict->matrix_data);
+        munmap(dict->sys_data, dict->sys_size);
+        munmap(dict->unk_data, dict->unk_size);
+        free(dict);
+        return NULL;
     }
     
-    // Align to 4 bytes
-    ptr = (uint32_t*)(((uintptr_t)str_ptr + 3) & ~3);
+    fclose(matrix_file);
     
-    // Read character mappings
-    char_def->char_num = *ptr++;
-    char_def->char_map = (uint32_t*)malloc(char_def->char_num * sizeof(uint32_t));
-    memcpy(char_def->char_map, ptr, char_def->char_num * sizeof(uint32_t));
-    
-    free(data);
-    return char_def;
-}
-
-// Extract surface form from feature string
-static const char* extract_surface_form(const char* feature, char* buffer, size_t bufsize) {
-    // Feature format: POS1,POS2,...,surface,reading,pronunciation,...
-    // Count 6 commas to get to surface
-    const char* p = feature;
-    int comma_count = 0;
-    
-    while (*p && comma_count < 6) {
-        if (*p == ',') comma_count++;
-        p++;
-    }
-    
-    if (comma_count < 6 || *p == '\0') return NULL;
-    
-    // Extract until next comma
-    const char* start = p;
-    const char* end = strchr(p, ',');
-    if (!end) return NULL;
-    
-    size_t len = end - start;
-    if (len >= bufsize) len = bufsize - 1;
-    
-    strncpy(buffer, start, len);
-    buffer[len] = '\0';
-    
-    return buffer;
-}
-
-// Build surface form index for dictionary
-static SurfaceIndex* build_surface_index(const MecabFullDictionary* dict) {
-    if (!dict) return NULL;
-    
-    fprintf(stderr, "Building surface form index...\n");
-    
-    // Create index
-    SurfaceIndex* index = surface_index_create(dict->sys_header.lexsize);
-    if (!index) return NULL;
-    
-    // Get token array
-    size_t token_offset = sizeof(DictionaryHeader) + dict->sys_header.dsize;
-    const Token* tokens = (const Token*)((uint8_t*)dict->sys_data + token_offset);
-    
-    char surface_buffer[256];
-    uint32_t indexed_count = 0;
-    
-    // Index all tokens
-    for (uint32_t i = 0; i < dict->sys_header.lexsize; i++) {
-        const Token* token = &tokens[i];
-        const char* feature = mecab_dict_get_feature(dict, token);
-        if (!feature) continue;
+    // Build surface form index instead of using Darts
+    printf("Building surface form index...\n");
+    dict->surface_index = surface_index_create(dict->sys_header.lexsize * 2);
+    if (dict->surface_index) {
+        SurfaceIndex* index = (SurfaceIndex*)dict->surface_index;
         
-        const char* surface = extract_surface_form(feature, surface_buffer, sizeof(surface_buffer));
-        if (surface && *surface != '\0' && *surface != '*') {
-            if (surface_index_add(index, surface, i)) {
-                indexed_count++;
+        // Add all tokens to surface index
+        for (uint32_t i = 0; i < dict->sys_header.lexsize; i++) {
+            const Token* token = &dict->sys_tokens[i];
+            const char* feature = dict->sys_features + token->feature;
+            
+            // Extract surface form from feature string
+            char surface[256];
+            if (extract_surface_from_feature(feature, surface, sizeof(surface))) {
+                surface_index_add(index, surface, i);
+            }
+            
+            // Progress indicator
+            if ((i + 1) % 100000 == 0) {
+                printf("  Indexed %u/%u tokens", i + 1, dict->sys_header.lexsize);
+                fflush(stdout);
             }
         }
         
-        // Progress indicator
-        if ((i + 1) % 100000 == 0) {
-            fprintf(stderr, "  Indexed %u/%u tokens\r", i + 1, dict->sys_header.lexsize);
-        }
+        printf("\nIndexed %u surface forms from %u tokens\n", 
+               index->entry_count, dict->sys_header.lexsize);
     }
     
-    fprintf(stderr, "\nIndexed %u surface forms from %u tokens\n", 
-            index->entry_count, indexed_count);
-    
-    return index;
-}
-
-// Load matrix
-static Matrix* load_matrix(const char* filename) {
-    size_t size;
-    void* data = mmap_file(filename, &size);
-    if (!data) {
-        return NULL;
-    }
-    
-    Matrix* matrix = (Matrix*)calloc(1, sizeof(Matrix));
-    if (!matrix) {
-        munmap_file(data, size);
-        return NULL;
-    }
-    
-    // Parse binary format
-    uint16_t* ptr = (uint16_t*)data;
-    matrix->lsize = *ptr++;
-    matrix->rsize = *ptr++;
-    
-    // Point directly to mmap'd data
-    matrix->matrix = (int16_t*)ptr;
-    
-    return matrix;
-}
-
-// Load POS definitions
-static bool load_pos_def(MecabFullDictionary* dict, const char* filename) {
-    FILE* fp = fopen(filename, "r");
-    if (!fp) {
-        return false;
-    }
-    
-    // Count lines
-    dict->pos_num = 0;
-    char line[1024];
-    while (fgets(line, sizeof(line), fp)) {
-        dict->pos_num++;
-    }
-    
-    // Allocate POS names
-    dict->pos_names = (char**)calloc(dict->pos_num, sizeof(char*));
-    
-    // Read POS names
-    rewind(fp);
-    uint32_t i = 0;
-    while (fgets(line, sizeof(line), fp) && i < dict->pos_num) {
-        // Remove newline
-        char* p = strchr(line, '\n');
-        if (p) *p = '\0';
-        
-        // Skip empty lines
-        if (strlen(line) == 0) continue;
-        
-        // Store POS name (format: "index,name")
-        char* comma = strchr(line, ',');
-        if (comma) {
-            dict->pos_names[i] = strdup(comma + 1);
-        }
-        i++;
-    }
-    
-    fclose(fp);
-    return true;
-}
-
-// Validate dictionary header
-bool mecab_dict_validate_header(const DictionaryHeader* header) {
-    return header->magic == DIC_MAGIC_ID;
-}
-
-// Main dictionary loading function
-MecabFullDictionary* mecab_dict_load(const char* dict_path) {
-    MecabFullDictionary* dict = (MecabFullDictionary*)calloc(1, sizeof(MecabFullDictionary));
-    if (!dict) {
-        fprintf(stderr, "mecab_dict_load: Failed to allocate dictionary\n");
-        return NULL;
-    }
-    
-    char filepath[1024];
-    
-    // Load system dictionary
-    snprintf(filepath, sizeof(filepath), "%s%ssys.dic", dict_path, PATH_SEPARATOR);
-    dict->sys_data = mmap_file(filepath, &dict->sys_size);
-    if (!dict->sys_data) {
-        fprintf(stderr, "mecab_dict_load: Failed to mmap %s\n", filepath);
-        goto error;
-    }
-    dict->use_mmap = true;
-    dict->mmap_addr[0] = dict->sys_data;
-    dict->mmap_size[0] = dict->sys_size;
-    
-    // Parse system dictionary header
-    memcpy(&dict->sys_header, dict->sys_data, sizeof(DictionaryHeader));
-    if (!mecab_dict_validate_header(&dict->sys_header)) {
-        fprintf(stderr, "mecab_dict_load: Invalid sys.dic header (magic: 0x%08X)\n", dict->sys_header.magic);
-        goto error;
-    }
-    
-    // Load unknown word dictionary
-    snprintf(filepath, sizeof(filepath), "%s%sunk.dic", dict_path, PATH_SEPARATOR);
-    dict->unk_data = mmap_file(filepath, &dict->unk_size);
-    if (!dict->unk_data) {
-        fprintf(stderr, "mecab_dict_load: Failed to mmap %s\n", filepath);
-        goto error;
-    }
-    dict->mmap_addr[1] = dict->unk_data;
-    dict->mmap_size[1] = dict->unk_size;
-    
-    // Parse unknown word dictionary header
-    memcpy(&dict->unk_header, dict->unk_data, sizeof(DictionaryHeader));
-    // Unknown word dictionary has different magic number
-    if (dict->unk_header.magic != UNK_MAGIC_ID) {
-        fprintf(stderr, "mecab_dict_load: Invalid unk.dic header (magic: 0x%08X, expected: 0x%08X)\n", 
-                dict->unk_header.magic, UNK_MAGIC_ID);
-        goto error;
-    }
-    
-    // Load character definition
-    snprintf(filepath, sizeof(filepath), "%s%schar.bin", dict_path, PATH_SEPARATOR);
-    dict->char_def = load_char_def(filepath);
-    if (!dict->char_def) {
-        fprintf(stderr, "mecab_dict_load: Failed to load %s\n", filepath);
-        goto error;
-    }
-    
-    // Load matrix
-    snprintf(filepath, sizeof(filepath), "%s%smatrix.bin", dict_path, PATH_SEPARATOR);
-    dict->matrix = load_matrix(filepath);
-    if (!dict->matrix) {
-        fprintf(stderr, "mecab_dict_load: Failed to load %s\n", filepath);
-        goto error;
-    }
-    dict->mmap_addr[2] = dict->matrix->matrix;
-    dict->mmap_size[2] = dict->matrix->lsize * dict->matrix->rsize * sizeof(int16_t) + 4;
-    
-    // Load POS definitions
-    snprintf(filepath, sizeof(filepath), "%s%spos-id.def", dict_path, PATH_SEPARATOR);
-    if (!load_pos_def(dict, filepath)) {
-        // POS definitions are optional
-    }
-    
-    // Set feature string pointer
-    // Features are located after header + darts + tokens
-    size_t feature_offset = sizeof(DictionaryHeader) + dict->sys_header.dsize + dict->sys_header.tsize;
-    dict->feature_str = (const char*)dict->sys_data + feature_offset;
-    dict->feature_size = dict->sys_header.fsize;
-    
-    // Load Darts for fast dictionary lookup
-    const uint8_t* sys_ptr = (const uint8_t*)dict->sys_data + sizeof(DictionaryHeader);
-    dict->sys_darts = darts_load(sys_ptr, dict->sys_header.dsize);
-    if (!dict->sys_darts) {
-        fprintf(stderr, "mecab_dict_load: Failed to load sys Darts\n");
-        goto error;
-    }
-    
-    const uint8_t* unk_ptr = (const uint8_t*)dict->unk_data + sizeof(DictionaryHeader);
-    dict->unk_darts = darts_load(unk_ptr, dict->unk_header.dsize);
-    if (!dict->unk_darts) {
-        fprintf(stderr, "mecab_dict_load: Failed to load unk Darts\n");
-        goto error;
-    }
-    
-    // Build surface form index since Darts doesn't seem to work with pyopenjtalk format
-    dict->surface_index = build_surface_index(dict);
-    if (!dict->surface_index) {
-        fprintf(stderr, "mecab_dict_load: Warning - Failed to build surface index\n");
-        // Continue anyway - can fall back to linear search
-    }
+    // Also load unk Darts for unknown word processing
+    dict->unk_darts = darts_load((const uint8_t*)dict->unk_data + sizeof(DictionaryHeader),
+                                 dict->unk_header.dsize);
     
     return dict;
-    
-error:
-    mecab_dict_free_full(dict);
-    return NULL;
 }
 
 // Free dictionary
+void mecab_dict_free_minimal(MecabFullDictionary* dict) {
+    if (!dict) return;
+    
+    // Only free non-const allocations
+    free(dict->matrix_data);
+    free(dict->char_property);
+    free(dict->char_map);
+    free(dict->char_def);
+    
+    darts_free(dict->sys_darts);
+    darts_free(dict->unk_darts);
+    
+    free(dict);
+}
+
+// Free full dictionary (with mmap)
 void mecab_dict_free_full(MecabFullDictionary* dict) {
     if (!dict) return;
     
-    // Unmap memory mapped files
-    if (dict->use_mmap) {
-        for (int i = 0; i < 4; i++) {
-            if (dict->mmap_addr[i] && dict->mmap_size[i] > 0) {
-                munmap_file(dict->mmap_addr[i], dict->mmap_size[i]);
-            }
-        }
-    } else {
-        free(dict->sys_data);
-        free(dict->unk_data);
+    if (dict->sys_data) {
+        munmap((void*)dict->sys_data, dict->sys_size);
+    }
+    if (dict->unk_data) {
+        munmap((void*)dict->unk_data, dict->unk_size);
     }
     
-    // Free character definition
-    if (dict->char_def) {
-        for (uint32_t i = 0; i < dict->char_def->category_num; i++) {
-            free(dict->char_def->category_names[i]);
-        }
-        free(dict->char_def->category_names);
-        free(dict->char_def->char_map);
-        free(dict->char_def);
-    }
+    free(dict->matrix_data);
+    free(dict->char_property);
+    free(dict->char_map);
+    free(dict->char_def);
     
-    // Free matrix
-    if (dict->matrix && !dict->use_mmap) {
-        free(dict->matrix);
-    }
+    darts_free(dict->sys_darts);
+    darts_free(dict->unk_darts);
     
-    // Free Darts
-    if (dict->sys_darts) {
-        darts_free(dict->sys_darts);
-    }
-    if (dict->unk_darts) {
-        darts_free(dict->unk_darts);
-    }
-    
-    // Free POS names
-    if (dict->pos_names) {
-        for (uint32_t i = 0; i < dict->pos_num; i++) {
-            free(dict->pos_names[i]);
-        }
-        free(dict->pos_names);
-    }
-    
-    // Free surface index
     if (dict->surface_index) {
         surface_index_destroy((SurfaceIndex*)dict->surface_index);
     }
@@ -454,22 +255,18 @@ void mecab_dict_free_full(MecabFullDictionary* dict) {
     free(dict);
 }
 
-// Get token from dictionary
+// Get token by index
 const Token* mecab_dict_get_token(const MecabFullDictionary* dict, 
                                   uint32_t index, bool is_unk) {
     if (!dict) return NULL;
     
-    const DictionaryHeader* header = is_unk ? &dict->unk_header : &dict->sys_header;
-    const void* data = is_unk ? dict->unk_data : dict->sys_data;
-    
-    if (index >= header->lexsize) {
-        return NULL;
+    if (is_unk) {
+        if (index >= dict->unk_header.lexsize) return NULL;
+        return &dict->unk_tokens[index];
+    } else {
+        if (index >= dict->sys_header.lexsize) return NULL;
+        return &dict->sys_tokens[index];
     }
-    
-    // Tokens are located after header + darts
-    size_t token_offset = sizeof(DictionaryHeader) + header->dsize;
-    const Token* tokens = (const Token*)((uint8_t*)data + token_offset);
-    return &tokens[index];
 }
 
 // Get feature string
@@ -477,23 +274,82 @@ const char* mecab_dict_get_feature(const MecabFullDictionary* dict,
                                    const Token* token) {
     if (!dict || !token) return NULL;
     
-    if (token->feature >= dict->feature_size) {
-        return "";
+    // Determine which dictionary the token belongs to
+    if (token >= dict->sys_tokens && 
+        token < dict->sys_tokens + dict->sys_header.lexsize) {
+        return dict->sys_features + token->feature;
+    } else if (token >= dict->unk_tokens && 
+               token < dict->unk_tokens + dict->unk_header.lexsize) {
+        return dict->unk_features + token->feature;
     }
     
-    return dict->feature_str + token->feature;
+    return NULL;
 }
 
 // Get connection cost
 int16_t mecab_dict_get_connection_cost(const MecabFullDictionary* dict,
                                        uint16_t left_id, uint16_t right_id) {
-    if (!dict || !dict->matrix) return 0;
+    if (!dict || !dict->matrix_data) return 0;
     
-    if (left_id >= dict->matrix->lsize || right_id >= dict->matrix->rsize) {
+    if (left_id >= dict->matrix_lsize || right_id >= dict->matrix_rsize) {
         return 0;
     }
     
-    return dict->matrix->matrix[left_id * dict->matrix->rsize + right_id];
+    return dict->matrix_data[left_id * dict->matrix_rsize + right_id];
+}
+
+// Dictionary lookup - using surface index
+int mecab_dict_common_prefix_search(const MecabFullDictionary* dict, 
+                                    const char* str, size_t len,
+                                    DictMatch* results, int max_results) {
+    if (!dict || !str || !results || max_results <= 0) return 0;
+    
+    if (dict->surface_index) {
+        // Use surface index for lookup
+        SurfaceIndex* index = (SurfaceIndex*)dict->surface_index;
+        SurfaceMatch matches[32];
+        int match_count = surface_index_common_prefix_search(index, str, len, matches, 32);
+        
+        int total_results = 0;
+        for (int i = 0; i < match_count && total_results < max_results; i++) {
+            uint32_t count;
+            const uint32_t* indices = surface_index_lookup(index, matches[i].surface, &count);
+            
+            if (indices && count > 0) {
+                // Add first few matches
+                for (uint32_t j = 0; j < count && total_results < max_results; j++) {
+                    results[total_results].token = mecab_dict_get_token(dict, indices[j], false);
+                    results[total_results].length = matches[i].length;
+                    results[total_results].is_unk = false;
+                    total_results++;
+                }
+            }
+            
+            // Free allocated surface string
+            free((char*)matches[i].surface);
+        }
+        
+        return total_results;
+    }
+    
+    // Fallback to Darts if available
+    if (dict->sys_darts) {
+        DartsResult darts_results[256];
+        int count = darts_common_prefix_search(dict->sys_darts, str, len, 
+                                               darts_results, 256);
+        
+        int total_results = 0;
+        for (int i = 0; i < count && total_results < max_results; i++) {
+            results[total_results].token = mecab_dict_get_token(dict, darts_results[i].value, false);
+            results[total_results].length = darts_results[i].length;
+            results[total_results].is_unk = false;
+            total_results++;
+        }
+        
+        return total_results;
+    }
+    
+    return 0;
 }
 
 // Get character category
@@ -503,82 +359,59 @@ uint32_t mecab_dict_get_char_category(const MecabFullDictionary* dict,
     
     // Binary search in character map
     // TODO: Implement binary search for efficiency
-    for (uint32_t i = 0; i < dict->char_def->char_num; i += 3) {
-        uint32_t start = dict->char_def->char_map[i];
-        uint32_t end = dict->char_def->char_map[i + 1];
-        uint32_t category = dict->char_def->char_map[i + 2];
-        
-        if (codepoint >= start && codepoint <= end) {
-            return category;
+    size_t left = 0;
+    size_t right = dict->char_map_count;
+    
+    while (left < right) {
+        size_t mid = (left + right) / 2;
+        if (dict->char_map[mid].code < codepoint) {
+            left = mid + 1;
+        } else if (dict->char_map[mid].code > codepoint) {
+            right = mid;
+        } else {
+            return dict->char_map[mid].category;
         }
     }
     
-    return 0; // DEFAULT category
+    // Not found, return default category
+    // TODO: Implement proper default category from char.bin
+    return 0;
 }
 
-// Get POS name
-const char* mecab_dict_get_pos_name(const MecabFullDictionary* dict, uint16_t posid) {
-    if (!dict || !dict->pos_names || posid >= dict->pos_num) {
-        return "不明";
-    }
-    
-    return dict->pos_names[posid];
-}
-
-// Common prefix search implementation
-int mecab_dict_common_prefix_search(const MecabFullDictionary* dict,
-                                    const char* text, size_t len,
-                                    DictMatch* results, int max_results) {
-    if (!dict || !text || !results || max_results <= 0) {
-        return 0;
-    }
+// Unknown word processing
+int mecab_dict_lookup_unknown(const MecabFullDictionary* dict,
+                              const char* str, size_t len,
+                              DictMatch* results, int max_results) {
+    if (!dict || !str || !results || max_results <= 0) return 0;
     
     int total_results = 0;
     
-    // Use surface index if available
-    if (dict->surface_index) {
-        SurfaceMatch surface_matches[256];
-        int count = surface_index_common_prefix_search(
-            (SurfaceIndex*)dict->surface_index, 
-            text, len, 
-            surface_matches, 
-            max_results < 256 ? max_results : 256
-        );
+    // Process character by character for unknown words
+    size_t pos = 0;
+    while (pos < len && total_results < max_results) {
+        // Get character length
+        unsigned char c = (unsigned char)str[pos];
+        int char_len = 1;
+        if (c >= 0x80) {
+            if ((c & 0xE0) == 0xC0) char_len = 2;
+            else if ((c & 0xF0) == 0xE0) char_len = 3;
+            else if ((c & 0xF8) == 0xF0) char_len = 4;
+        }
         
-        for (int i = 0; i < count && total_results < max_results; i++) {
-            // For each surface match, add all token variations
-            for (uint32_t j = 0; j < surface_matches[i].count && total_results < max_results; j++) {
-                uint32_t token_idx = surface_matches[i].indices[j];
-                results[total_results].token = mecab_dict_get_token(dict, token_idx, false);
-                results[total_results].length = surface_matches[i].length;
-                results[total_results].is_unk = false;
-                total_results++;
-            }
-            
-            // Free allocated surface string
-            free((char*)surface_matches[i].surface);
-        }
-    } else {
-        // Fall back to Darts if surface index not available
-        if (dict->sys_darts) {
-            DartsResult darts_results[256];
-            int count = darts_common_prefix_search(dict->sys_darts, text, len, 
-                                                   darts_results, 256);
-            
-            for (int i = 0; i < count && total_results < max_results; i++) {
-                results[total_results].token = mecab_dict_get_token(dict, darts_results[i].value, false);
-                results[total_results].length = darts_results[i].length;
-                results[total_results].is_unk = false;
-                total_results++;
-            }
-        }
-    }
-    
-    // If no matches found, try unknown word dictionary
-    if (total_results == 0 && dict->unk_darts) {
-        // Get character type for unknown word processing
+        // Decode UTF-8 to codepoint
         uint32_t codepoint = 0;
-        // TODO: Proper UTF-8 decoding
+        if (char_len == 1) {
+            codepoint = c;
+        } else if (char_len == 2) {
+            codepoint = ((c & 0x1F) << 6) | (str[pos+1] & 0x3F);
+        } else if (char_len == 3) {
+            codepoint = ((c & 0x0F) << 12) | ((str[pos+1] & 0x3F) << 6) | (str[pos+2] & 0x3F);
+        } else if (char_len == 4) {
+            codepoint = ((c & 0x07) << 18) | ((str[pos+1] & 0x3F) << 12) | 
+                        ((str[pos+2] & 0x3F) << 6) | (str[pos+3] & 0x3F);
+        }
+        
+        // Get character category
         uint32_t char_category = mecab_dict_get_char_category(dict, codepoint);
         
         // Search unknown word templates for this character type
@@ -598,4 +431,33 @@ int mecab_dict_common_prefix_search(const MecabFullDictionary* dict,
     }
     
     return total_results;
+}
+
+// Get unknown word tokens for a character type
+int mecab_dict_get_unknown_tokens(const MecabFullDictionary* dict, uint32_t char_type,
+                                  DictMatch* matches, int max_matches) {
+    if (!dict || !dict->unk_tokens || !matches || max_matches <= 0) {
+        return 0;
+    }
+    
+    int count = 0;
+    
+    // Search for matching unknown tokens by character type
+    for (uint32_t i = 0; i < dict->unk_header.lexsize && count < max_matches; i++) {
+        const Token* token = &dict->unk_tokens[i];
+        
+        // TODO: Implement proper character type matching
+        // For now, return first few tokens that seem reasonable
+        const char* feature = mecab_dict_get_feature(dict, token);
+        if (feature && (strstr(feature, "名詞") || strstr(feature, "動詞"))) {
+            matches[count].token = token;
+            matches[count].length = 0;  // Unknown length
+            matches[count].is_unk = true;
+            count++;
+            
+            if (count >= 3) break;  // Limit to 3 candidates
+        }
+    }
+    
+    return count;
 }

@@ -245,9 +245,20 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
     for (size_t pos = 0; pos < text_len; ) {
         int char_len = utf8_char_len((unsigned char)text[pos]);
         
-        // Get character type
+        // Decode UTF-8 to codepoint
         uint32_t codepoint = 0;
-        // TODO: Properly decode UTF-8 to codepoint
+        if (char_len == 1) {
+            codepoint = (unsigned char)text[pos];
+        } else if (char_len == 2) {
+            codepoint = ((text[pos] & 0x1F) << 6) | (text[pos+1] & 0x3F);
+        } else if (char_len == 3) {
+            codepoint = ((text[pos] & 0x0F) << 12) | ((text[pos+1] & 0x3F) << 6) | (text[pos+2] & 0x3F);
+        } else if (char_len == 4) {
+            codepoint = ((text[pos] & 0x07) << 18) | ((text[pos+1] & 0x3F) << 12) | 
+                        ((text[pos+2] & 0x3F) << 6) | (text[pos+3] & 0x3F);
+        }
+        
+        // Get character type
         uint32_t char_type = mecab_dict_get_char_category(mecab->dict, codepoint);
         
         // Common prefix search in dictionary
@@ -284,6 +295,35 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
         
         // If no matches found, create unknown word node
         if (match_count == 0) {
+            // Get unknown word tokens for this character type
+            DictMatch unk_matches[16];
+            int unk_count = mecab_dict_get_unknown_tokens(mecab->dict, char_type, unk_matches, 16);
+            
+            if (unk_count > 0) {
+                // Add unknown word nodes from dictionary
+                for (int i = 0; i < unk_count && i < 3; i++) {
+                    MecabFullNode* unk_node = get_node(mecab);
+                    if (unk_node) {
+                        unk_node->surface = text + pos;
+                        unk_node->length = char_len;
+                        unk_node->is_unk = true;
+                        unk_node->char_type = char_type;
+                        unk_node->lcAttr = unk_matches[i].token->lcAttr;
+                        unk_node->rcAttr = unk_matches[i].token->rcAttr;
+                        unk_node->posid = unk_matches[i].token->posid;
+                        unk_node->cost = unk_matches[i].token->wcost;
+                        
+                        // Parse feature string
+                        const char* feature = mecab_dict_get_feature(mecab->dict, unk_matches[i].token);
+                        if (feature) {
+                            parse_feature_internal(&unk_node->feature, feature);
+                        }
+                        
+                        add_node_to_lattice(mecab, unk_node, pos, pos + char_len);
+                    }
+                }
+            } else {
+                // Fallback: create default unknown word node
                 MecabFullNode* unk_node = get_node(mecab);
                 if (unk_node) {
                     unk_node->surface = text + pos;
@@ -292,14 +332,14 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
                     unk_node->char_type = char_type;
                     unk_node->cost = 10000;  // Unknown word penalty
                     
-                    // Set unknown word features
-                    // TODO: Use proper unknown word processing
+                    // Set default unknown word features
                     strncpy(unk_node->feature.pos, "名詞", sizeof(unk_node->feature.pos) - 1);
                     strncpy(unk_node->feature.pos_detail1, "一般", sizeof(unk_node->feature.pos_detail1) - 1);
                     
                     add_node_to_lattice(mecab, unk_node, pos, pos + char_len);
                 }
             }
+        }
         
         pos += char_len;
     }

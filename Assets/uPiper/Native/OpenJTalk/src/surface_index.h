@@ -49,6 +49,12 @@ int surface_index_common_prefix_search(const SurfaceIndex* index,
                                        const char* text, size_t len,
                                        SurfaceMatch* results, int max_results);
 
+// Extract surface form from feature string
+bool extract_surface_from_feature(const char* feature, char* surface, size_t surface_size);
+
+// Free surface index
+void surface_index_free(SurfaceIndex* index);
+
 #ifdef __cplusplus
 }
 #endif
