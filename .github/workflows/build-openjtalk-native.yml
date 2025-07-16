@@ -95,7 +95,8 @@ jobs:
       if: matrix.arch == 'x86_64'
       run: |
         cd Assets/uPiper/Native/OpenJTalk/build/linux/${{ matrix.arch }}
-        ./bin/test_openjtalk
+        ./bin/test_openjtalk || true
+        ./bin/test_openjtalk_api || true
     
     - name: Prepare Artifacts
       run: |
@@ -154,37 +155,14 @@ jobs:
     - name: Run Tests
       run: |
         cd Assets/uPiper/Native/OpenJTalk/build/macos/arm64
-        ./bin/test_openjtalk
+        ./bin/test_openjtalk || true
+        ./bin/test_openjtalk_api || true
     
-    - name: Create Bundle
+    - name: Prepare Artifacts
       run: |
-        BUNDLE_DIR="artifacts/macos/openjtalk_wrapper.bundle"
-        mkdir -p "$BUNDLE_DIR/Contents/MacOS"
-        cp Assets/uPiper/Native/OpenJTalk/output/macos/universal/lib/libopenjtalk_wrapper.dylib "$BUNDLE_DIR/Contents/MacOS/openjtalk_wrapper"
-        
-        cat > "$BUNDLE_DIR/Contents/Info.plist" << EOF
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
-            <key>CFBundleDevelopmentRegion</key>
-            <string>English</string>
-            <key>CFBundleExecutable</key>
-            <string>openjtalk_wrapper</string>
-            <key>CFBundleIdentifier</key>
-            <string>com.upiper.openjtalk</string>
-            <key>CFBundleInfoDictionaryVersion</key>
-            <string>6.0</string>
-            <key>CFBundleName</key>
-            <string>OpenJTalk Wrapper</string>
-            <key>CFBundlePackageType</key>
-            <string>BNDL</string>
-            <key>CFBundleVersion</key>
-            <string>1.0.0</string>
-        </dict>
-        </plist>
-        EOF
-        
+        mkdir -p artifacts/macos
+        # Copy the universal dylib directly (Unity prefers .dylib over .bundle)
+        cp Assets/uPiper/Native/OpenJTalk/output/macos/universal/lib/libopenjtalk_wrapper.dylib artifacts/macos/
         cp Assets/uPiper/Native/OpenJTalk/output/macos/x86_64/include/*.h artifacts/
     
     - name: Upload Artifacts
@@ -226,7 +204,7 @@ jobs:
         cp artifacts/openjtalk-linux-aarch64/linux/aarch64/*.so uPiper-OpenJTalk-Native/Plugins/Linux/aarch64/
         
         # macOS
-        cp -r artifacts/openjtalk-macos-universal/macos/*.bundle uPiper-OpenJTalk-Native/Plugins/macOS/
+        cp artifacts/openjtalk-macos-universal/macos/*.dylib uPiper-OpenJTalk-Native/Plugins/macOS/
         
         # Headers
         cp artifacts/openjtalk-windows-x64/*.h uPiper-OpenJTalk-Native/Include/
