@@ -31,46 +31,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup MSVC
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: ${{ matrix.arch }}
-    
-    - name: Install CMake
-      uses: lukka/get-cmake@latest
-    
-    - name: Configure CMake
+    - name: Build Native Library
       shell: cmd
       run: |
         cd Assets\uPiper\Native\OpenJTalk
-        if not exist build\windows\${{ matrix.arch }} mkdir build\windows\${{ matrix.arch }}
-        cd build\windows\${{ matrix.arch }}
-        cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release ..\..\..\..
-    
-    - name: Build
-      shell: cmd
-      run: |
-        cd Assets\uPiper\Native\OpenJTalk\build\windows\${{ matrix.arch }}
-        nmake
-    
-    - name: Install
-      shell: cmd
-      run: |
-        cd Assets\uPiper\Native\OpenJTalk\build\windows\${{ matrix.arch }}
-        nmake install
-    
-    - name: Run Tests
-      shell: cmd
-      run: |
-        cd Assets\uPiper\Native\OpenJTalk\build\windows\${{ matrix.arch }}
-        bin\test_openjtalk.exe
+        build.bat Release ${{ matrix.arch }}
     
     - name: Prepare Artifacts
       shell: bash
       run: |
         mkdir -p artifacts/windows/${{ matrix.arch }}
-        cp Assets/uPiper/Native/OpenJTalk/build/windows/${{ matrix.arch }}/bin/*.dll artifacts/windows/${{ matrix.arch }}/ || true
-        cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/ || true
+        cp Assets/uPiper/Plugins/Windows/${{ matrix.arch }}/*.dll artifacts/windows/${{ matrix.arch }}/ || true
+        cp Assets/uPiper/Native/OpenJTalk/output/windows/${{ matrix.arch }}/include/*.h artifacts/ || true
     
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
