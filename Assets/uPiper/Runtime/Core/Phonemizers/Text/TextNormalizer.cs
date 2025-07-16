@@ -98,7 +98,10 @@ namespace uPiper.Core.Phonemizers.Text
             text = MultipleSpacesRegex.Replace(text, " ");
 
             // Trim
-            return text.Trim();
+            text = text.Trim();
+            
+            // Convert to lowercase for all languages (common normalization)
+            return text.ToLowerInvariant();
         }
 
         /// <summary>
@@ -143,8 +146,7 @@ namespace uPiper.Core.Phonemizers.Text
         /// </summary>
         private string NormalizeEnglish(string text)
         {
-            // Convert to lowercase for consistency
-            text = text.ToLowerInvariant();
+            // Text is already lowercase from common normalization
 
             // Expand common contractions
             text = text.Replace("can't", "can not");
@@ -224,8 +226,8 @@ namespace uPiper.Core.Phonemizers.Text
         /// </summary>
         private bool NeedsEnglishNormalization(string text)
         {
-            // Check for contractions or uppercase letters
-            return text.Contains("'") || text != text.ToLowerInvariant();
+            // Check for contractions
+            return text.Contains("'");
         }
     }
 }
