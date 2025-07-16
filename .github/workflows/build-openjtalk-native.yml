@@ -193,49 +193,10 @@ jobs:
         name: openjtalk-macos-universal
         path: artifacts/
 
-  build-webgl:
-    name: Build WebGL (Emscripten)
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Emscripten
-      uses: mymindstorm/setup-emsdk@v14
-      with:
-        version: 3.1.50
-    
-    - name: Configure CMake
-      run: |
-        cd Assets/uPiper/Native/OpenJTalk
-        mkdir -p build/webgl
-        cd build/webgl
-        emcmake cmake -DCMAKE_BUILD_TYPE=Release \
-                      -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/Assets/uPiper/Native/OpenJTalk/output/webgl \
-                      -DBUILD_TESTS=OFF \
-                      ../..
-    
-    - name: Build
-      run: |
-        cd Assets/uPiper/Native/OpenJTalk/build/webgl
-        emmake make -j$(nproc)
-    
-    - name: Prepare Artifacts
-      run: |
-        mkdir -p artifacts/webgl
-        cp Assets/uPiper/Native/OpenJTalk/build/webgl/*.js artifacts/webgl/ || true
-        cp Assets/uPiper/Native/OpenJTalk/build/webgl/*.wasm artifacts/webgl/ || true
-        cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/
-    
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: openjtalk-webgl
-        path: artifacts/
 
   create-release:
     name: Create Release Package
-    needs: [build-windows, build-linux, build-macos, build-webgl]
+    needs: [build-windows, build-linux, build-macos]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
     
@@ -254,7 +215,6 @@ jobs:
         mkdir -p uPiper-OpenJTalk-Native/Plugins/Linux/x86_64
         mkdir -p uPiper-OpenJTalk-Native/Plugins/Linux/aarch64
         mkdir -p uPiper-OpenJTalk-Native/Plugins/macOS
-        mkdir -p uPiper-OpenJTalk-Native/Plugins/WebGL
         mkdir -p uPiper-OpenJTalk-Native/Include
         
         # Windows
@@ -267,9 +227,6 @@ jobs:
         
         # macOS
         cp -r artifacts/openjtalk-macos-universal/macos/*.bundle uPiper-OpenJTalk-Native/Plugins/macOS/
-        
-        # WebGL
-        cp artifacts/openjtalk-webgl/webgl/* uPiper-OpenJTalk-Native/Plugins/WebGL/ || true
         
         # Headers
         cp artifacts/openjtalk-windows-x64/*.h uPiper-OpenJTalk-Native/Include/
@@ -284,7 +241,6 @@ jobs:
         - Windows (x86, x64)
         - Linux (x86_64, aarch64)
         - macOS (Universal Binary: x86_64 + arm64)
-        - WebGL (Experimental)
         
         ## Installation
         1. Copy the contents of the Plugins folder to your Unity project's Assets/Plugins folder

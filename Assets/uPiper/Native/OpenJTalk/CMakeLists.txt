@@ -6,11 +6,7 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Platform detection
-if(EMSCRIPTEN)
-    set(PLATFORM_NAME "webgl")
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-    add_definitions(-DOPENJTALK_EXPORTS)
-elseif(WIN32)
+if(WIN32)
     set(PLATFORM_NAME "windows")
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-DOPENJTALK_EXPORTS)
@@ -53,19 +49,7 @@ include_directories(
 add_library(openjtalk_wrapper SHARED ${SOURCES})
 
 # Platform-specific settings
-if(EMSCRIPTEN)
-    set_target_properties(openjtalk_wrapper PROPERTIES
-        PREFIX ""
-        OUTPUT_NAME "openjtalk_wrapper"
-        SUFFIX ".js"
-    )
-    
-    # Emscripten specific flags
-    set_target_properties(openjtalk_wrapper PROPERTIES
-        COMPILE_FLAGS "-s SIDE_MODULE=1"
-        LINK_FLAGS "-s SIDE_MODULE=1 -s EXPORTED_FUNCTIONS='[\"_openjtalk_create\",\"_openjtalk_destroy\",\"_openjtalk_phonemize\",\"_openjtalk_free_result\",\"_openjtalk_get_version\",\"_openjtalk_get_last_error\",\"_openjtalk_get_error_string\"]' -s EXPORTED_RUNTIME_METHODS='[\"ccall\",\"cwrap\"]'"
-    )
-elseif(WIN32)
+if(WIN32)
     set_target_properties(openjtalk_wrapper PROPERTIES
         PREFIX ""
         OUTPUT_NAME "openjtalk_wrapper"
