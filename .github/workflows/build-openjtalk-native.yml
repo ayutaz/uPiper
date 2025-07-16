@@ -38,31 +38,36 @@ jobs:
       uses: lukka/get-cmake@latest
     
     - name: Configure CMake
+      shell: bash
       run: |
         cd Assets/uPiper/Native/OpenJTalk
         mkdir -p build/windows/${{ matrix.arch }}
         cd build/windows/${{ matrix.arch }}
-        cmake -G "Visual Studio 17 2022" -A ${{ matrix.cmake_arch }} `
-              -DCMAKE_BUILD_TYPE=Release `
-              -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/Assets/uPiper/Native/OpenJTalk/output/windows/${{ matrix.arch }}" `
+        cmake -G "Visual Studio 17 2022" -A ${{ matrix.cmake_arch }} \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/Assets/uPiper/Native/OpenJTalk/output/windows/${{ matrix.arch }}" \
               ../../..
     
     - name: Build
+      shell: bash
       run: |
         cd Assets/uPiper/Native/OpenJTalk/build/windows/${{ matrix.arch }}
         cmake --build . --config Release
     
     - name: Install
+      shell: bash
       run: |
         cd Assets/uPiper/Native/OpenJTalk/build/windows/${{ matrix.arch }}
         cmake --install . --config Release
     
     - name: Run Tests
+      shell: bash
       run: |
         cd Assets/uPiper/Native/OpenJTalk/build/windows/${{ matrix.arch }}
         ./Release/test_openjtalk.exe
     
     - name: Prepare Artifacts
+      shell: bash
       run: |
         mkdir -p artifacts/windows/${{ matrix.arch }}
         cp Assets/uPiper/Native/OpenJTalk/output/windows/${{ matrix.arch }}/bin/*.dll artifacts/windows/${{ matrix.arch }}/
