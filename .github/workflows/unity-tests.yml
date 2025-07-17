@@ -195,6 +195,7 @@ jobs:
     # テスト結果のデバッグ情報
     - name: Debug Test Results
       if: always() && matrix.os != 'macos-latest'
+      shell: bash
       run: |
         echo "=== Test Results Directory Contents ==="
         find test-results -type f -name "*.xml" | head -20
@@ -212,6 +213,7 @@ jobs:
     # テスト結果のサマリーを作成
     - name: Create Test Summary
       if: always() && matrix.os != 'macos-latest'
+      shell: bash
       run: |
         echo "## Unity Test Results Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -271,7 +273,7 @@ jobs:
     
     # XMLパース用ツールをインストール
     - name: Install XML tools
-      if: always() && matrix.os != 'macos-latest'
+      if: always() && matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
         sudo apt-get install -y libxml2-utils bc
@@ -279,6 +281,7 @@ jobs:
     # コードカバレッジチェック
     - name: Check Code Coverage
       if: always() && matrix.os != 'macos-latest'
+      shell: bash
       run: |
         # カバレッジサマリーファイルを探す
         echo "=== Looking for coverage files ==="
