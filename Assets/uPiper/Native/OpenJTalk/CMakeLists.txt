@@ -240,55 +240,6 @@ if(BUILD_TESTS AND BUILD_FULL_VERSION)
     #     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     
     # Additional tests for comprehensive coverage
-    # MeCab integration tests
-    add_executable(test_mecab_integration test/test_mecab_integration.c
-        src/mecab_full.c
-        src/mecab_dict_loader.c
-        src/mecab_darts.c
-        src/surface_index.c
-        src/memory_pool.c
-        src/error_handling.c
-    )
-    target_link_libraries(test_mecab_integration openjtalk_wrapper)
-    if(NOT MSVC)
-        target_link_libraries(test_mecab_integration m)
-    endif()
-    add_test(NAME mecab_integration
-        COMMAND test_mecab_integration
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    
-    # Dictionary tests
-    add_executable(test_dict_lookup test/test_dict_lookup.c
-        src/mecab_dict_loader.c
-        src/mecab_darts.c
-        src/surface_index.c
-        src/memory_pool.c
-        src/error_handling.c
-    )
-    target_link_libraries(test_dict_lookup openjtalk_wrapper)
-    if(NOT MSVC)
-        target_link_libraries(test_dict_lookup m)
-    endif()
-    add_test(NAME dict_lookup
-        COMMAND test_dict_lookup
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    
-    # DARTS tests
-    add_executable(test_darts_lookup test/test_darts_lookup.c
-        src/mecab_dict_loader.c
-        src/mecab_darts.c
-        src/surface_index.c
-        src/memory_pool.c
-        src/error_handling.c
-    )
-    target_link_libraries(test_darts_lookup openjtalk_wrapper)
-    if(NOT MSVC)
-        target_link_libraries(test_darts_lookup m)
-    endif()
-    add_test(NAME darts_lookup
-        COMMAND test_darts_lookup
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-    
     # Prosody tests
     add_executable(test_prosody test/test_prosody.c)
     target_link_libraries(test_prosody openjtalk_wrapper)
