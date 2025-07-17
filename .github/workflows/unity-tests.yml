@@ -95,6 +95,21 @@ jobs:
         # Verify the library was copied
         echo "=== Verifying library placement ==="
         ls -la ../../Plugins/${{ matrix.lib_path }}/ || dir ..\..\Plugins\${{ matrix.lib_path }}\
+        
+        # For Ubuntu Docker environment, also copy to standard library paths
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          echo "=== Setting up for Docker environment ==="
+          # Create symbolic link in standard paths that Docker Unity might check
+          sudo mkdir -p /usr/local/lib
+          sudo cp build/lib/libopenjtalk_wrapper.so /usr/local/lib/
+          sudo ldconfig || true
+          
+          # Also copy to the project root for Docker volume mapping
+          cp build/lib/libopenjtalk_wrapper.so ${{ github.workspace }}/
+          
+          # Set environment variable for library path
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        fi
       shell: bash
         
     - name: Cache Library
@@ -136,6 +151,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         PROJECT_PATH: .
+        LD_LIBRARY_PATH: ${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:${{ env.LD_LIBRARY_PATH }}
       with:
         unityVersion: 6000.0.35f1
         testMode: all
@@ -144,6 +160,8 @@ jobs:
         checkName: Unity Test Results - ${{ matrix.platform }}
         coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.*,-uPiper.Tests.*'
         customParameters: '-enableCodeCoverage'
+        dockerCpuLimit: 4
+        dockerMemoryLimit: 8192
         
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
