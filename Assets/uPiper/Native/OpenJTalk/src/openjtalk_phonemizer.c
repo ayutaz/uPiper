@@ -2,6 +2,7 @@
 #include "phoneme_mapping.h"
 #include "kanji_mapping.h"
 #include "mecab_light.h"
+#include "mecab_full.h"
 #include "memory_pool.h"
 #include <stdlib.h>
 #include <string.h>
@@ -9,13 +10,15 @@
 #include <ctype.h>
 
 struct OpenJTalkPhonemizer {
-    MecabLight* mecab;
+    MecabLight* mecab_light;
+    MecabFull* mecab_full;
     MemoryPool* memory_pool;
     char error_message[256];
     
     // Options
     bool use_accent;
     bool use_duration;
+    bool use_full_dict;  // Use full dictionary if available
 };
 
 // UTF-8 handling
@@ -151,8 +154,12 @@ OpenJTalkPhonemizer* openjtalk_phonemizer_create(void) {
 void openjtalk_phonemizer_destroy(OpenJTalkPhonemizer* phonemizer) {
     if (!phonemizer) return;
     
-    if (phonemizer->mecab) {
-        mecab_light_destroy(phonemizer->mecab);
+    if (phonemizer->mecab_light) {
+        mecab_light_destroy(phonemizer->mecab_light);
+    }
+    
+    if (phonemizer->mecab_full) {
+        mecab_full_destroy(phonemizer->mecab_full);
     }
     
     if (phonemizer->memory_pool) {
@@ -168,14 +175,32 @@ bool openjtalk_phonemizer_initialize(OpenJTalkPhonemizer* phonemizer, const char
         return false;
     }
     
-    // Create lightweight Mecab instance
-    phonemizer->mecab = mecab_light_create(dic_path);
-    if (!phonemizer->mecab) {
+    // Check if dictionary path exists and contains full dictionary
+    if (dic_path) {
+        char sys_dic_path[1024];
+        snprintf(sys_dic_path, sizeof(sys_dic_path), "%s/sys.dic", dic_path);
+        
+        FILE* fp = fopen(sys_dic_path, "rb");
+        if (fp) {
+            fclose(fp);
+            // Full dictionary exists, use MecabFull
+            phonemizer->mecab_full = mecab_full_create(dic_path);
+            if (phonemizer->mecab_full) {
+                phonemizer->use_full_dict = true;
+                return true;
+            }
+        }
+    }
+    
+    // Fall back to lightweight Mecab
+    phonemizer->mecab_light = mecab_light_create(dic_path);
+    if (!phonemizer->mecab_light) {
         snprintf(phonemizer->error_message, sizeof(phonemizer->error_message),
                  "Failed to create Mecab instance");
         return false;
     }
     
+    phonemizer->use_full_dict = false;
     return true;
 }
 
@@ -190,7 +215,7 @@ int openjtalk_phonemizer_phonemize(OpenJTalkPhonemizer* phonemizer,
     
     if (getenv("DEBUG_MECAB")) {
         printf("\n=== Phonemize: '%s' ===\n", text);
-        printf("Mecab available: %s\n", phonemizer->mecab ? "YES" : "NO");
+        printf("Using full dict: %s\n", phonemizer->use_full_dict ? "YES" : "NO");
     }
     
     // Reset memory pool
@@ -212,14 +237,77 @@ int openjtalk_phonemizer_phonemize(OpenJTalkPhonemizer* phonemizer,
     }
     
     // Use Mecab for morphological analysis if available
-    if (phonemizer->mecab) {
+    if (phonemizer->use_full_dict && phonemizer->mecab_full) {
         if (getenv("DEBUG_MECAB")) {
-            printf("Using Mecab to parse: '%s'\n", normalized);
+            printf("Using MecabFull to parse: '%s'\n", normalized);
         }
-        MecabNode* nodes = mecab_light_parse(phonemizer->mecab, normalized);
+        MecabFullNode* nodes = mecab_full_parse(phonemizer->mecab_full, normalized);
         if (nodes) {
             if (getenv("DEBUG_MECAB")) {
-                printf("Mecab parse successful\n");
+                printf("MecabFull parse successful\n");
+            }
+            MecabFullNode* current = nodes;
+            
+            while (current && phoneme_count < max_phonemes - 1) {
+                // Get reading from Mecab
+                const char* reading = current->feature.reading;
+                if (reading[0] == '\0' || strcmp(reading, "*") == 0) {
+                    reading = current->surface;  // Fallback to surface
+                }
+                
+                // Convert reading to phonemes
+                size_t reading_pos = 0;
+                size_t reading_len = strlen(reading);
+                
+                while (reading_pos < reading_len && phoneme_count < max_phonemes - 1) {
+                    char current_char[5] = {0};
+                    int char_len;
+                    utf8_get_char(&reading[reading_pos], current_char, &char_len);
+                    
+                    // Convert character to phonemes
+                    char phoneme_str[64];
+                    mora_to_phonemes(current_char, phoneme_str, sizeof(phoneme_str));
+                    
+                    if (strlen(phoneme_str) > 0) {
+                        PhonemeInfo temp_phonemes[10];
+                        int temp_count = parse_phoneme_string(phoneme_str, temp_phonemes, 10);
+                        
+                        for (int j = 0; j < temp_count && phoneme_count < max_phonemes - 1; j++) {
+                            phonemes[phoneme_count++] = temp_phonemes[j];
+                        }
+                    }
+                    
+                    reading_pos += char_len;
+                }
+                
+                // Add pause between words if needed
+                if (current->next && phoneme_count < max_phonemes - 1) {
+                    // Check if we need a pause
+                    if (strcmp(current->feature.pos, "記号") == 0) {
+                        phonemes[phoneme_count].id = PHONEME_PAU;
+                        phonemes[phoneme_count].accent_type = 0;
+                        phonemes[phoneme_count].mora_position = phoneme_count;
+                        phonemes[phoneme_count].duration = 0.2f;
+                        phoneme_count++;
+                    }
+                }
+                
+                current = current->next;
+            }
+            
+            mecab_full_free_nodes(phonemizer->mecab_full, nodes);
+        } else {
+            // Fallback to simple conversion if Mecab fails
+            goto simple_conversion;
+        }
+    } else if (phonemizer->mecab_light) {
+        if (getenv("DEBUG_MECAB")) {
+            printf("Using MecabLight to parse: '%s'\n", normalized);
+        }
+        MecabNode* nodes = mecab_light_parse(phonemizer->mecab_light, normalized);
+        if (nodes) {
+            if (getenv("DEBUG_MECAB")) {
+                printf("MecabLight parse successful\n");
             }
             MecabNode* current = nodes;
             
@@ -270,7 +358,7 @@ int openjtalk_phonemizer_phonemize(OpenJTalkPhonemizer* phonemizer,
                 current = current->next;
             }
             
-            mecab_light_free_nodes(phonemizer->mecab, nodes);
+            mecab_light_free_nodes(phonemizer->mecab_light, nodes);
         } else {
             // Fallback to simple conversion if Mecab fails
             goto simple_conversion;

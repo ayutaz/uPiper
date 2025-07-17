@@ -23,12 +23,15 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# Source files for light implementation
+# Source files
 set(SOURCES
     src/openjtalk_wrapper_light.c
     src/openjtalk_phonemizer.c
     src/mecab_light.c
     src/mecab_light_impl.c
+    src/mecab_dict_loader.c
+    src/mecab_darts.c
+    src/mecab_full.c
     src/memory_pool.c
     src/error_handling.c
 )
@@ -42,6 +45,9 @@ set(HEADERS
     src/mecab_light.h
     src/mecab_light_impl.h
     src/mecab_dict_minimal.h
+    src/mecab_dict_loader.h
+    src/mecab_darts.h
+    src/mecab_full.h
     src/memory_pool.h
     src/error_handling.h
 )
