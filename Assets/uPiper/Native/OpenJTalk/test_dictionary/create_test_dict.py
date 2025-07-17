@@ -9,8 +9,7 @@ import os
 def create_test_dictionary():
     """Create minimal dictionary files for testing."""
     
-    # Create directory if it doesn't exist
-    os.makedirs("test_dictionary", exist_ok=True)
+    # We're already in the test_dictionary directory, no need to create it
     
     # Minimal dictionary entries for testing
     test_words = [
