@@ -95,8 +95,12 @@ jobs:
       if: matrix.arch == 'x86_64'
       run: |
         cd Assets/uPiper/Native/OpenJTalk/build/linux/${{ matrix.arch }}
+        # Run all tests using CTest
+        ctest --output-on-failure || true
+        # Also run individual tests for debugging
         ./bin/test_openjtalk || true
         ./bin/test_openjtalk_api || true
+        ./bin/test_new_features || true
     
     - name: Prepare Artifacts
       run: |
@@ -155,8 +159,12 @@ jobs:
     - name: Run Tests
       run: |
         cd Assets/uPiper/Native/OpenJTalk/build/macos/arm64
+        # Run all tests using CTest
+        ctest --output-on-failure || true
+        # Also run individual tests for debugging
         ./bin/test_openjtalk || true
         ./bin/test_openjtalk_api || true
+        ./bin/test_new_features || true
     
     - name: Prepare Artifacts
       run: |

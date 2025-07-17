@@ -164,4 +164,35 @@ if(BUILD_TESTS)
         add_executable(test_phonemize_full test/test_phonemize_full.c src/openjtalk_phonemizer.c)
         target_link_libraries(test_phonemize_full openjtalk_wrapper)
     endif()
+    
+    # Build new features test
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test_new_features.c)
+        add_executable(test_new_features test/test_new_features.c)
+        target_link_libraries(test_new_features openjtalk_wrapper)
+    endif()
+    
+    # Enable CTest
+    enable_testing()
+    add_test(NAME openjtalk_basic COMMAND test_openjtalk)
+    add_test(NAME openjtalk_api COMMAND test_openjtalk_api)
+    if(TARGET test_phonemize_full)
+        add_test(NAME phonemize_full COMMAND test_phonemize_full)
+    endif()
+    if(TARGET test_new_features)
+        add_test(NAME new_features COMMAND test_new_features)
+    endif()
+endif()
+
+# Additional tests for core components
+if(BUILD_TESTS AND BUILD_FULL_VERSION)
+    # Test for char.bin loading
+    add_executable(test_char_bin test/test_char_bin.c 
+        src/mecab_dict_loader.c
+        src/mecab_darts.c
+        src/surface_index.c
+        src/memory_pool.c
+        src/error_handling.c
+    )
+    target_link_libraries(test_char_bin openjtalk_wrapper m)
+    add_test(NAME test_char_bin COMMAND test_char_bin)
 endif()

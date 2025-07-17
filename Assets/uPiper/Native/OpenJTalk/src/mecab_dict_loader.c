@@ -178,6 +178,73 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     
     fclose(matrix_file);
     
+    // Load char.bin for character categories
+    snprintf(path_buffer, sizeof(path_buffer), "%s/char.bin", dict_path);
+    FILE* char_file = fopen(path_buffer, "rb");
+    if (!char_file) {
+        fprintf(stderr, "Warning: Failed to open char.bin: %s\n", path_buffer);
+        // Continue without char.bin - will use default categories
+    } else {
+        // Read category count
+        uint32_t category_count;
+        if (fread(&category_count, sizeof(uint32_t), 1, char_file) != 1) {
+            fprintf(stderr, "Failed to read char.bin header\n");
+            fclose(char_file);
+        } else {
+            dict->char_def_count = category_count;
+            
+            // Skip category names (we don't need them for now)
+            fseek(char_file, category_count * 32, SEEK_CUR);
+            
+            // Allocate character property array (65536 entries for BMP)
+            dict->char_property = (uint8_t*)calloc(65536, sizeof(uint8_t));
+            if (dict->char_property) {
+                // Read character properties
+                // Note: char.bin contains 65535 entries (0-65534), not 65536
+                uint32_t* char_info = (uint32_t*)malloc(65536 * sizeof(uint32_t));
+                if (!char_info) {
+                    fprintf(stderr, "Failed to allocate memory for char info\n");
+                    free(dict->char_property);
+                    dict->char_property = NULL;
+                } else {
+                    size_t items_read = fread(char_info, sizeof(uint32_t), 65535, char_file);
+                    if (items_read == 65535) {
+                        // Extract default_type from each CharInfo
+                        // CharInfo format: type(18) | default_type(8) | length(4) | group(1) | invoke(1)
+                        // The lower 8 bits contain category as bit flags (1 << category_id)
+                        for (int i = 0; i < 65535; i++) {
+                            uint32_t flags = char_info[i] & 0xFF;
+                            // Convert bit flag to category index
+                            uint8_t category = 0;
+                            if (flags) {
+                                // Find which bit is set
+                                for (int bit = 0; bit < 8; bit++) {
+                                    if (flags & (1 << bit)) {
+                                        category = bit;
+                                        break;
+                                    }
+                                }
+                            }
+                            dict->char_property[i] = category;
+                        }
+                        // Set default for the last entry (U+FFFF)
+                        dict->char_property[65535] = 0;
+                        
+                        if (getenv("DEBUG_CHAR_BIN")) {
+                            printf("Loaded character categories from char.bin (%zu entries)\n", items_read);
+                        }
+                    } else {
+                        fprintf(stderr, "Failed to read character properties from char.bin (read %zu items, expected 65535)\n", items_read);
+                        free(dict->char_property);
+                        dict->char_property = NULL;
+                    }
+                    free(char_info);
+                }
+            }
+            fclose(char_file);
+        }
+    }
+    
     // Build surface form index instead of using Darts
     if (getenv("DEBUG_SURFACE_INDEX")) {
         printf("Building surface form index...\n");
@@ -359,27 +426,33 @@ int mecab_dict_common_prefix_search(const MecabFullDictionary* dict,
 // Get character category
 uint32_t mecab_dict_get_char_category(const MecabFullDictionary* dict, 
                                       uint32_t codepoint) {
-    if (!dict || !dict->char_def) return 0;
+    if (!dict) return 0;
     
-    // Binary search in character map
-    // TODO: Implement binary search for efficiency
-    size_t left = 0;
-    size_t right = dict->char_map_count;
-    
-    while (left < right) {
-        size_t mid = (left + right) / 2;
-        if (dict->char_map[mid].code < codepoint) {
-            left = mid + 1;
-        } else if (dict->char_map[mid].code > codepoint) {
-            right = mid;
-        } else {
-            return dict->char_map[mid].category;
-        }
+    // If char_property is loaded, use it for BMP characters
+    if (dict->char_property && codepoint < 65536) {
+        return dict->char_property[codepoint];
     }
     
-    // Not found, return default category
-    // TODO: Implement proper default category from char.bin
-    return 0;
+    // For characters outside BMP or if char.bin not loaded,
+    // use simple heuristics
+    if (codepoint >= 0x3040 && codepoint <= 0x309F) {
+        return 6;  // HIRAGANA
+    } else if (codepoint >= 0x30A0 && codepoint <= 0x30FF) {
+        return 7;  // KATAKANA
+    } else if ((codepoint >= 0x4E00 && codepoint <= 0x9FFF) ||
+               (codepoint >= 0x3400 && codepoint <= 0x4DBF)) {
+        return 2;  // KANJI
+    } else if ((codepoint >= 0x41 && codepoint <= 0x5A) ||
+               (codepoint >= 0x61 && codepoint <= 0x7A)) {
+        return 5;  // ALPHA
+    } else if (codepoint >= 0x30 && codepoint <= 0x39) {
+        return 4;  // NUMERIC
+    } else if (codepoint == 0x20 || codepoint == 0x09 || 
+               codepoint == 0x0A || codepoint == 0x0D) {
+        return 1;  // SPACE
+    } else {
+        return 0;  // DEFAULT
+    }
 }
 
 // Unknown word processing
