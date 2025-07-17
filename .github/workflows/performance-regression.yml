@@ -34,9 +34,17 @@ jobs:
         # Run benchmark multiple times for stability
         cd build
         echo "=== Running Performance Tests ===" > performance_report.txt
+        
+        # Determine benchmark path based on platform
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          BENCHMARK_PATH="./bin/Release/benchmark_openjtalk.exe"
+        else
+          BENCHMARK_PATH="./bin/benchmark_openjtalk"
+        fi
+        
         for i in {1..5}; do
           echo "Run $i:" >> performance_report.txt
-          ./bin/benchmark_openjtalk ../test_dictionary >> performance_report.txt 2>&1
+          $BENCHMARK_PATH ../test_dictionary >> performance_report.txt 2>&1
           echo "" >> performance_report.txt
         done
       shell: bash
