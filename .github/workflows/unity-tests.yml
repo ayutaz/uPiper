@@ -111,19 +111,20 @@ jobs:
         echo "Current directory: $(pwd)"
         echo "GitHub Workspace: ${{ github.workspace }}"
         echo "Directory contents:"
-        ls -la
+        ls || dir
         echo ""
         echo "Assets directory:"
-        ls -la Assets/ || echo "Assets directory not found"
+        if [ -d "Assets" ]; then ls Assets/ || dir Assets\; else echo "Assets directory not found"; fi
         echo ""
         echo "ProjectSettings directory:"
-        ls -la ProjectSettings/ || echo "ProjectSettings directory not found"
+        if [ -d "ProjectSettings" ]; then ls ProjectSettings/ || dir ProjectSettings\; else echo "ProjectSettings directory not found"; fi
         echo ""
         echo "Test assemblies:"
-        find Assets -name "*.asmdef" | grep -i test || echo "No test assemblies found"
+        find Assets -name "*.asmdef" 2>/dev/null | grep -i test || echo "No test assemblies found"
         echo ""
         echo "Test scripts:"
-        find Assets -name "*Test*.cs" | head -10 || echo "No test scripts found"
+        find Assets -name "*Test*.cs" 2>/dev/null | head -10 || echo "No test scripts found"
+      shell: bash
         
     # Unity 6対応 - game-ci/unity-test-runnerを使用
     - name: Run Unity Tests
