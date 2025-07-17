@@ -40,24 +40,20 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
         return NULL;
     }
     
-    // Get file size
-    fseek(sys_file, 0, SEEK_END);
-    size_t file_size = ftell(sys_file);
-    fseek(sys_file, 0, SEEK_SET);
+    // Close the file as we'll use platform_mmap
+    fclose(sys_file);
     
-    // Memory map the file
-    int fd = fileno(sys_file);
-    void* mapped = mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
-    if (mapped == MAP_FAILED) {
-        fprintf(stderr, "Failed to mmap sys.dic\n");
-        fclose(sys_file);
+    // Memory map the file using platform-specific function
+    size_t file_size;
+    void* mapped = platform_mmap(path_buffer, &file_size);
+    if (!mapped) {
+        LOG_ERROR("Failed to mmap sys.dic\n");
         free(dict);
         return NULL;
     }
     
     dict->sys_data = mapped;
     dict->sys_size = file_size;
-    fclose(sys_file);
     
     // Set up pointers
     const uint8_t* data = (const uint8_t*)dict->sys_data;
@@ -139,8 +135,8 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     FILE* matrix_file = fopen(path_buffer, "rb");
     if (!matrix_file) {
         fprintf(stderr, "Failed to open matrix.bin: %s\n", path_buffer);
-        munmap(dict->sys_data, dict->sys_size);
-        munmap(dict->unk_data, dict->unk_size);
+        platform_munmap((void*)dict->sys_data, dict->sys_size);
+        platform_munmap((void*)dict->unk_data, dict->unk_size);
         free(dict);
         return NULL;
     }
@@ -151,8 +147,8 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
         fread(&rsize, sizeof(uint16_t), 1, matrix_file) != 1) {
         fprintf(stderr, "Failed to read matrix header\n");
         fclose(matrix_file);
-        munmap(dict->sys_data, dict->sys_size);
-        munmap(dict->unk_data, dict->unk_size);
+        platform_munmap((void*)dict->sys_data, dict->sys_size);
+        platform_munmap((void*)dict->unk_data, dict->unk_size);
         free(dict);
         return NULL;
     }
@@ -167,8 +163,8 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
         fprintf(stderr, "Failed to read matrix data\n");
         fclose(matrix_file);
         free(dict->matrix_data);
-        munmap(dict->sys_data, dict->sys_size);
-        munmap(dict->unk_data, dict->unk_size);
+        platform_munmap((void*)dict->sys_data, dict->sys_size);
+        platform_munmap((void*)dict->unk_data, dict->unk_size);
         free(dict);
         return NULL;
     }
@@ -302,10 +298,10 @@ void mecab_dict_free_full(MecabFullDictionary* dict) {
     if (!dict) return;
     
     if (dict->sys_data) {
-        munmap((void*)dict->sys_data, dict->sys_size);
+        platform_munmap((void*)dict->sys_data, dict->sys_size);
     }
     if (dict->unk_data) {
-        munmap((void*)dict->unk_data, dict->unk_size);
+        platform_munmap((void*)dict->unk_data, dict->unk_size);
     }
     
     free(dict->matrix_data);
