@@ -7,14 +7,6 @@
 #ifdef _WIN32
     #include <windows.h>
     
-    // Windows memory mapping
-    typedef struct {
-        HANDLE file_handle;
-        HANDLE map_handle;
-        void* view;
-        size_t size;
-    } PlatformMmap;
-    
     static inline void* platform_mmap(const char* filename, size_t* out_size) {
         HANDLE file = CreateFileA(filename, GENERIC_READ, FILE_SHARE_READ, 
                                  NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -42,22 +34,19 @@
             return NULL;
         }
         
-        // Store handles for cleanup
-        PlatformMmap* mmap_info = (PlatformMmap*)malloc(sizeof(PlatformMmap));
-        mmap_info->file_handle = file;
-        mmap_info->map_handle = mapping;
-        mmap_info->view = view;
-        mmap_info->size = (size_t)file_size.QuadPart;
+        // Close handles - Windows keeps them valid as long as mapping exists
+        CloseHandle(mapping);
+        CloseHandle(file);
         
-        *out_size = mmap_info->size;
+        *out_size = (size_t)file_size.QuadPart;
         return view;
     }
     
     static inline void platform_munmap(void* addr, size_t size) {
-        // On Windows, we need to find the associated handles
-        // In a real implementation, we'd maintain a mapping
-        UnmapViewOfFile(addr);
-        // Note: Handles cleanup would be needed in production code
+        (void)size; // Unused parameter
+        if (addr) {
+            UnmapViewOfFile(addr);
+        }
     }
     
 #else

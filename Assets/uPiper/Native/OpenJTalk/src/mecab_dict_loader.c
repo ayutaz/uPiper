@@ -2,13 +2,10 @@
 #include "mecab_darts.h"
 #include "surface_index.h"
 #include "debug_log.h"
+#include "platform_compat.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 // Load dictionary
 MecabFullDictionary* mecab_dict_load(const char* dict_path) {
@@ -109,20 +106,19 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     size_t unk_file_size = ftell(unk_file);
     fseek(unk_file, 0, SEEK_SET);
     
-    // Memory map unk file
-    int unk_fd = fileno(unk_file);
-    void* unk_mapped = mmap(NULL, unk_file_size, PROT_READ, MAP_PRIVATE, unk_fd, 0);
-    if (unk_mapped == MAP_FAILED) {
-        fprintf(stderr, "Failed to mmap unk.dic\n");
-        fclose(unk_file);
-        munmap(dict->sys_data, dict->sys_size);
+    // Close file and memory map unk.dic
+    fclose(unk_file);
+    snprintf(path_buffer, sizeof(path_buffer), "%s/unk.dic", dict_path);
+    void* unk_mapped = platform_mmap(path_buffer, &unk_file_size);
+    if (unk_mapped == NULL) {
+        LOG_ERROR("Failed to memory map unk.dic: %s\n", path_buffer);
+        platform_munmap((void*)dict->sys_data, dict->sys_size);
         free(dict);
         return NULL;
     }
     
     dict->unk_data = unk_mapped;
     dict->unk_size = unk_file_size;
-    fclose(unk_file);
     
     // Set up unk pointers
     const uint8_t* unk_data = (const uint8_t*)dict->unk_data;
