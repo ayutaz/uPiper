@@ -2,7 +2,7 @@ name: Native OpenJTalk Tests
 
 on:
   push:
-    branches: [ main, develop, feature/* ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
