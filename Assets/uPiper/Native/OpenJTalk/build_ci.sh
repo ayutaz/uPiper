@@ -43,7 +43,11 @@ cmake --build . --config Release
 # Create test dictionary if it doesn't exist
 if [ ! -f "../test_dictionary/sys.dic" ]; then
     echo "=== Creating test dictionary ==="
-    cd ../test_dictionary
+    cd ..
+    if [ ! -d "test_dictionary" ]; then
+        mkdir -p test_dictionary
+    fi
+    cd test_dictionary
     python3 create_test_dict.py || {
         echo "Failed to create test dictionary"
         exit 1
