@@ -261,6 +261,7 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
     bos->lcAttr = 0;
     bos->rcAttr = 0;
     bos->cost = 0;
+    // Add using the standard function which sets begin_pos and end_pos
     add_node_to_lattice(mecab, bos, 0, 0);
     
     // Build lattice for each position
@@ -416,7 +417,7 @@ static MecabFullNode* viterbi(MecabFull* mecab) {
         }
         
         while (node) {
-            if (pos == 0) {
+            if (pos == 0 && node->length == 0) {
                 // BOS node
                 node->cost = 0;
                 node->prev = NULL;
@@ -428,8 +429,19 @@ static MecabFullNode* viterbi(MecabFull* mecab) {
                 // Check all nodes ending at current position
                 MecabFullNode* prev = mecab->lattice->end_node_list[node->begin_pos];
                 
+                if (getenv("DEBUG_MECAB") && pos <= 1) {
+                    printf("    Looking for prev nodes ending at %d for node '%.*s'\n", 
+                           node->begin_pos, node->length, node->surface);
+                    MecabFullNode* p = prev;
+                    while (p) {
+                        printf("      prev candidate: '%.*s' end_pos=%d\n", 
+                               p->length, p->surface, p->end_pos);
+                        p = p->enext;
+                    }
+                }
+                
                 while (prev) {
-                    if (prev->end_pos == node->begin_pos) {
+                    if (prev->end_pos == node->begin_pos && prev != node) {
                         // Calculate cost
                         int cost = prev->cost + node->cost;
                         
@@ -449,8 +461,23 @@ static MecabFullNode* viterbi(MecabFull* mecab) {
                 node->cost = best_cost;
                 node->prev = best_prev;
                 
-                if (getenv("DEBUG_MECAB") && node->length == 0) {
-                    printf("  EOS node: cost=%d, prev=%p\n", node->cost, (void*)node->prev);
+                // Sanity check: prevent self-reference
+                if (node->prev == node) {
+                    if (getenv("DEBUG_MECAB")) {
+                        printf("  ERROR: Node self-reference detected! Setting prev to NULL\n");
+                    }
+                    node->prev = NULL;
+                }
+                
+                if (getenv("DEBUG_MECAB")) {
+                    if (node->length == 0 && pos > 0) {  // EOS node
+                        printf("  EOS node: cost=%d, prev=%p, best_prev=%p\n", 
+                               node->cost, (void*)node->prev, (void*)best_prev);
+                    }
+                    if (best_prev == NULL && pos > 0) {
+                        printf("  WARNING: No prev node found for '%.*s' at pos %zu\n",
+                               node->length, node->surface, pos);
+                    }
                 }
             }
             
@@ -465,7 +492,7 @@ static MecabFullNode* viterbi(MecabFull* mecab) {
         MecabFullNode* n = eos;
         int count = 0;
         while (n) {
-            printf("  Node %d: length=%zu, cost=%d\n", count++, n->length, n->cost);
+            printf("  Node %d: length=%d, cost=%d, prev=%p\n", count++, n->length, n->cost, (void*)n->prev);
             n = n->next;
         }
     }
@@ -484,6 +511,15 @@ static MecabFullNode* viterbi(MecabFull* mecab) {
     if (!eos->prev) {
         if (getenv("DEBUG_MECAB")) {
             printf("ERROR: EOS node has no previous node\n");
+            // Dump end_node_list at EOS position
+            printf("  Nodes ending at position %zu:\n", len);
+            MecabFullNode* end_node = mecab->lattice->end_node_list[len];
+            while (end_node) {
+                printf("    - '%.*s' (begin=%d, end=%d)\n", 
+                       end_node->length, end_node->surface, 
+                       end_node->begin_pos, end_node->end_pos);
+                end_node = end_node->enext;
+            }
         }
         return NULL;
     }
@@ -492,10 +528,46 @@ static MecabFullNode* viterbi(MecabFull* mecab) {
     MecabFullNode* path[1000];
     int path_len = 0;
     
+    if (getenv("DEBUG_MECAB")) {
+        printf("Building path from EOS\n");
+        printf("  EOS->prev = %p\n", (void*)eos->prev);
+    }
+    
     MecabFullNode* current = eos->prev;
-    while (current && current->length > 0) {
-        path[path_len++] = current;
+    int iterations = 0;
+    while (current) {
+        if (getenv("DEBUG_MECAB")) {
+            printf("  Iteration %d: '%.*s' (length=%d, prev=%p)\n", iterations, 
+                   current->length, current->surface, current->length, (void*)current->prev);
+        }
+        
+        // Skip BOS node in the result path
+        if (current->length > 0) {
+            path[path_len++] = current;
+        }
+        
+        // Check for circular reference or too many iterations
+        iterations++;
+        if (iterations > 1000) {
+            if (getenv("DEBUG_MECAB")) {
+                printf("ERROR: Too many iterations (%d), possible circular reference\n", iterations);
+            }
+            break;
+        }
+        
+        // Safety check for path length
+        if (path_len >= 1000) {
+            if (getenv("DEBUG_MECAB")) {
+                printf("ERROR: Path too long, breaking\n");
+            }
+            break;
+        }
+        
         current = current->prev;
+    }
+    
+    if (getenv("DEBUG_MECAB")) {
+        printf("  Total path length: %d\n", path_len);
     }
     
     // Reverse path and link nodes
@@ -513,6 +585,15 @@ static MecabFullNode* viterbi(MecabFull* mecab) {
             result = node;
         }
         tail = node;
+    }
+    
+    if (getenv("DEBUG_MECAB")) {
+        if (result) {
+            printf("  Result path created, first node: '%.*s'\n", 
+                   result->length, result->surface);
+        } else {
+            printf("  Result path is NULL\n");
+        }
     }
     
     return result;

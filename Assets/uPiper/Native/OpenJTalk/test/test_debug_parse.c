@@ -8,6 +8,7 @@ int main(int argc, char* argv[]) {
     
     printf("Testing MeCab parse for: \"%s\"\n", text);
     printf("Dictionary: %s\n\n", dict_path);
+    fflush(stdout);
     
     // Create MeCab instance
     MecabFull* mecab = mecab_full_create(dict_path);
