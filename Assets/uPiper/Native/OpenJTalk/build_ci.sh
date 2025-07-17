@@ -65,7 +65,12 @@ fi
 
 # Run benchmark
 echo "=== Running performance benchmark ==="
-if ./bin/benchmark_openjtalk ../test_dictionary > benchmark_output.txt 2>&1; then
+BENCHMARK_PATH="./bin/benchmark_openjtalk"
+if [ "$PLATFORM" == "windows" ]; then
+    BENCHMARK_PATH="./bin/Release/benchmark_openjtalk.exe"
+fi
+
+if $BENCHMARK_PATH ../test_dictionary > benchmark_output.txt 2>&1; then
     echo "Benchmark completed successfully"
     cat benchmark_output.txt
     # Extract key metrics for CI
