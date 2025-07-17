@@ -25,6 +25,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Build options
 option(BUILD_FULL_VERSION "Build full version with dictionary support" ON)
+option(ENABLE_DEBUG_LOG "Enable debug logging" OFF)
 
 # Source files
 if(BUILD_FULL_VERSION)
@@ -128,11 +129,17 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     else()
         target_compile_options(openjtalk_wrapper PRIVATE -Wall -Wextra -g -O0)
     endif()
+    target_compile_definitions(openjtalk_wrapper PRIVATE LOG_LEVEL=4)  # Debug level
 else()
     if(MSVC)
         target_compile_options(openjtalk_wrapper PRIVATE /W3 /O2)
     else()
         target_compile_options(openjtalk_wrapper PRIVATE -Wall -O3)
+    endif()
+    if(ENABLE_DEBUG_LOG)
+        target_compile_definitions(openjtalk_wrapper PRIVATE LOG_LEVEL=3)  # Info level
+    else()
+        target_compile_definitions(openjtalk_wrapper PRIVATE LOG_LEVEL=1)  # Error only
     endif()
 endif()
 
@@ -165,6 +172,10 @@ if(BUILD_TESTS)
         add_executable(test_new_features test/test_new_features.c)
         target_link_libraries(test_new_features openjtalk_wrapper)
     endif()
+    
+    # Build benchmark test
+    add_executable(benchmark_openjtalk test/benchmark_openjtalk.c)
+    target_link_libraries(benchmark_openjtalk openjtalk_wrapper)
     
     # Enable CTest
     enable_testing()

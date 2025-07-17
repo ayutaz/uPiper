@@ -41,16 +41,23 @@ echo "=== Building ==="
 cmake --build . --config Release
 
 # Create test dictionary if it doesn't exist
-if [ ! -d "../test_dictionary/sys.dic" ]; then
+if [ ! -f "../test_dictionary/sys.dic" ]; then
     echo "=== Creating test dictionary ==="
     cd ../test_dictionary
-    python3 create_test_dict.py
+    python3 create_test_dict.py || {
+        echo "Failed to create test dictionary"
+        exit 1
+    }
     cd ../build
 fi
 
 # Run tests
 echo "=== Running tests ==="
 ctest --output-on-failure
+
+# Run benchmark
+echo "=== Running performance benchmark ==="
+./bin/benchmark_openjtalk ../test_dictionary || echo "Benchmark failed (non-critical)"
 
 # Create output directory structure
 OUTPUT_DIR="../output/$PLATFORM"

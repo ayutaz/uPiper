@@ -1,6 +1,7 @@
 #include "mecab_dict_loader.h"
 #include "mecab_darts.h"
 #include "surface_index.h"
+#include "debug_log.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,14 +21,14 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     snprintf(path_buffer, sizeof(path_buffer), "%s/sys.dic", dict_path);
     FILE* sys_file = fopen(path_buffer, "rb");
     if (!sys_file) {
-        fprintf(stderr, "Failed to open sys.dic: %s\n", path_buffer);
+        LOG_ERROR("Failed to open sys.dic: %s\n", path_buffer);
         free(dict);
         return NULL;
     }
     
     // Read header
     if (fread(&dict->sys_header, sizeof(DictionaryHeader), 1, sys_file) != 1) {
-        fprintf(stderr, "Failed to read sys.dic header\n");
+        LOG_ERROR("Failed to read sys.dic header\n");
         fclose(sys_file);
         free(dict);
         return NULL;
@@ -35,7 +36,7 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     
     // Validate magic number
     if (dict->sys_header.magic != MAGIC_ID) {
-        fprintf(stderr, "Invalid magic number in sys.dic: 0x%X (expected 0x%X)\n", 
+        LOG_ERROR("Invalid magic number in sys.dic: 0x%X (expected 0x%X)\n", 
                 dict->sys_header.magic, MAGIC_ID);
         fclose(sys_file);
         free(dict);
