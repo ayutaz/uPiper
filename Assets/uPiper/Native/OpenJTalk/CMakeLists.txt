@@ -201,4 +201,12 @@ if(BUILD_TESTS AND BUILD_FULL_VERSION)
     )
     target_link_libraries(test_char_bin openjtalk_wrapper m)
     add_test(NAME test_char_bin COMMAND test_char_bin)
+    
+    # Test for memory pool
+    add_executable(test_memory_pool test/test_memory_pool.c
+        src/memory_pool.c
+        src/error_handling.c
+    )
+    target_link_libraries(test_memory_pool m)
+    add_test(NAME test_memory_pool COMMAND test_memory_pool)
 endif()
