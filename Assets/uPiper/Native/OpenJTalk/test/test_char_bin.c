@@ -51,7 +51,11 @@ int main() {
     printf("=== Testing char.bin loading ===\n\n");
     
     // Set debug environment variable
+#ifdef _WIN32
+    _putenv_s("DEBUG_CHAR_BIN", "1");
+#else
     setenv("DEBUG_CHAR_BIN", "1", 1);
+#endif
     
     // Load dictionary
     const char* dict_path = "../test_dictionary";
