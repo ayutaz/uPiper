@@ -34,8 +34,6 @@ if(BUILD_FULL_VERSION)
         src/phoneme_converter.c
         src/accent_estimator.c
         src/phoneme_timing.c
-        src/mecab_light.c
-        src/mecab_light_impl.c
         src/mecab_dict_loader.c
         src/mecab_darts.c
         src/mecab_full.c
@@ -61,9 +59,6 @@ set(HEADERS
     src/phoneme_converter.h
     src/phoneme_mapping.h
     src/kanji_mapping.h
-    src/mecab_light.h
-    src/mecab_light_impl.h
-    src/mecab_dict_minimal.h
     src/mecab_dict_loader.h
     src/mecab_darts.h
     src/mecab_full.h

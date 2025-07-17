@@ -519,20 +519,85 @@ int mecab_dict_get_unknown_tokens(const MecabFullDictionary* dict, uint32_t char
     
     int count = 0;
     
+    // Character type names for searching
+    const char* char_type_names[] = {
+        "DEFAULT",    // 0
+        "SPACE",      // 1
+        "KANJI",      // 2
+        "SYMBOL",     // 3
+        "NUMERIC",    // 4
+        "ALPHA",      // 5
+        "HIRAGANA",   // 6
+        "KATAKANA",   // 7
+        "KANJINUMERIC", // 8
+        "GREEK",      // 9
+        "CYRILLIC"    // 10
+    };
+    
+    const char* type_name = NULL;
+    if (char_type < sizeof(char_type_names) / sizeof(char_type_names[0])) {
+        type_name = char_type_names[char_type];
+    }
+    
     // Search for matching unknown tokens by character type
     for (uint32_t i = 0; i < dict->unk_header.lexsize && count < max_matches; i++) {
         const Token* token = &dict->unk_tokens[i];
-        
-        // TODO: Implement proper character type matching
-        // For now, return first few tokens that seem reasonable
         const char* feature = mecab_dict_get_feature(dict, token);
-        if (feature && (strstr(feature, "名詞") || strstr(feature, "動詞"))) {
+        
+        if (!feature) continue;
+        
+        // Check if feature contains the character type name
+        bool matches_type = false;
+        if (type_name && strstr(feature, type_name)) {
+            matches_type = true;
+        } else {
+            // Additional matching rules based on character type
+            switch (char_type) {
+                case 2:  // KANJI
+                    if (strstr(feature, "名詞") && strstr(feature, "一般")) {
+                        matches_type = true;
+                    }
+                    break;
+                case 3:  // SYMBOL
+                    if (strstr(feature, "記号")) {
+                        matches_type = true;
+                    }
+                    break;
+                case 4:  // NUMERIC
+                    if (strstr(feature, "名詞") && strstr(feature, "数")) {
+                        matches_type = true;
+                    }
+                    break;
+                case 5:  // ALPHA
+                    if (strstr(feature, "名詞") && strstr(feature, "固有名詞")) {
+                        matches_type = true;
+                    }
+                    break;
+                case 6:  // HIRAGANA
+                case 7:  // KATAKANA
+                    if (strstr(feature, "名詞") || strstr(feature, "動詞") || 
+                        strstr(feature, "形容詞")) {
+                        matches_type = true;
+                    }
+                    break;
+                default:
+                    // For other types, accept general nouns
+                    if (strstr(feature, "名詞")) {
+                        matches_type = true;
+                    }
+                    break;
+            }
+        }
+        
+        if (matches_type) {
             matches[count].token = token;
             matches[count].length = 0;  // Unknown length
             matches[count].is_unk = true;
             count++;
             
-            if (count >= 3) break;  // Limit to 3 candidates
+            // Limit results based on character type
+            int limit = (char_type == 2 || char_type == 6 || char_type == 7) ? 5 : 3;
+            if (count >= limit) break;
         }
     }
     
