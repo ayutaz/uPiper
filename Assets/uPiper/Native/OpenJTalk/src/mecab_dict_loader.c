@@ -74,7 +74,7 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     FILE* unk_file = fopen(path_buffer, "rb");
     if (!unk_file) {
         fprintf(stderr, "Failed to open unk.dic: %s\n", path_buffer);
-        munmap(dict->sys_data, dict->sys_size);
+        platform_munmap((void*)dict->sys_data, dict->sys_size);
         free(dict);
         return NULL;
     }
@@ -83,7 +83,7 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     if (fread(&dict->unk_header, sizeof(DictionaryHeader), 1, unk_file) != 1) {
         fprintf(stderr, "Failed to read unk.dic header\n");
         fclose(unk_file);
-        munmap(dict->sys_data, dict->sys_size);
+        platform_munmap((void*)dict->sys_data, dict->sys_size);
         free(dict);
         return NULL;
     }
@@ -92,7 +92,7 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     if (dict->unk_header.magic != UNK_MAGIC_ID && dict->unk_header.magic != MAGIC_ID) {
         fprintf(stderr, "Invalid magic number in unk.dic: 0x%X\n", dict->unk_header.magic);
         fclose(unk_file);
-        munmap(dict->sys_data, dict->sys_size);
+        platform_munmap((void*)dict->sys_data, dict->sys_size);
         free(dict);
         return NULL;
     }
