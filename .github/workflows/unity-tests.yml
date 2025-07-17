@@ -8,8 +8,27 @@ on:
 
 jobs:
   test:
-    name: Unity Test Runner
-    runs-on: ubuntu-latest
+    name: Unity Test Runner - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            platform: Linux
+            lib_ext: so
+            lib_prefix: lib
+            lib_path: Linux/x86_64
+          - os: windows-latest
+            platform: Windows
+            lib_ext: dll
+            lib_prefix: ""
+            lib_path: Windows/x86_64
+          - os: macos-latest
+            platform: macOS
+            lib_ext: dylib
+            lib_prefix: lib
+            lib_path: macOS
     permissions:
       contents: read
       checks: write
@@ -19,6 +38,64 @@ jobs:
     - uses: actions/checkout@v4
       with:
         lfs: true
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install CMake
+      uses: lukka/get-cmake@latest
+        
+    - name: Build OpenJTalk Native Library
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        
+        # Make build script executable on Unix-like systems
+        if [[ "${{ matrix.os }}" != "windows-latest" ]]; then
+          chmod +x build_ci.sh
+        fi
+        
+        # Run appropriate build script
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          # Windows build
+          mkdir build
+          cd build
+          cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DBUILD_FULL_VERSION=ON ..
+          cmake --build . --config Release
+          cd ..
+          
+          # Create test dictionary
+          if [ ! -f "test_dictionary/sys.dic" ]; then
+            mkdir -p test_dictionary
+            cd test_dictionary
+            python create_test_dict.py
+            cd ..
+          fi
+        else
+          # Linux/macOS build
+          ./build_ci.sh
+        fi
+        
+        # Create Plugins directory structure
+        mkdir -p ../../Plugins/${{ matrix.lib_path }}
+        
+        # Copy the built library to Unity Plugins directory
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          cp build/bin/Release/openjtalk_wrapper.dll ../../Plugins/${{ matrix.lib_path }}/ || cp build/bin/openjtalk_wrapper.dll ../../Plugins/${{ matrix.lib_path }}/
+        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          # Check if library already exists (from repository)
+          if [ ! -f "../../Plugins/${{ matrix.lib_path }}/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }}" ]; then
+            cp build/lib/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }} ../../Plugins/${{ matrix.lib_path }}/
+          fi
+        else
+          cp build/lib/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }} ../../Plugins/${{ matrix.lib_path }}/
+        fi
+        
+        # Verify the library was copied
+        echo "=== Verifying library placement ==="
+        ls -la ../../Plugins/${{ matrix.lib_path }}/ || dir ..\..\Plugins\${{ matrix.lib_path }}\
+      shell: bash
         
     - name: Cache Library
       uses: actions/cache@v4
@@ -51,6 +128,8 @@ jobs:
     # Unity 6対応 - game-ci/unity-test-runnerを使用
     - name: Run Unity Tests
       uses: game-ci/unity-test-runner@v4
+      # Skip Unity Docker on Windows/macOS for now, use standalone tests instead
+      if: matrix.os == 'ubuntu-latest'
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -61,16 +140,16 @@ jobs:
         testMode: all
         artifactsPath: test-results
         githubToken: ${{ github.token }}
-        checkName: Unity Test Results
+        checkName: Unity Test Results - ${{ matrix.platform }}
         coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.*,-uPiper.Tests.*'
         customParameters: '-enableCodeCoverage'
         
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
       uses: actions/upload-artifact@v4
-      if: always()
+      if: always() && matrix.os == 'ubuntu-latest'
       with:
-        name: Test Results - Unity
+        name: Test Results - Unity - ${{ matrix.platform }}
         path: |
           test-results/**/*.xml
           test-results/**/*.html
@@ -80,7 +159,7 @@ jobs:
         
     # テスト結果のデバッグ情報
     - name: Debug Test Results
-      if: always()
+      if: always() && matrix.os == 'ubuntu-latest'
       run: |
         echo "=== Test Results Directory Contents ==="
         find test-results -type f -name "*.xml" | head -20
@@ -97,7 +176,7 @@ jobs:
     
     # テスト結果のサマリーを作成
     - name: Create Test Summary
-      if: always()
+      if: always() && matrix.os == 'ubuntu-latest'
       run: |
         echo "## Unity Test Results Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -147,9 +226,9 @@ jobs:
     # カバレッジレポートをアップロード
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
-      if: always()
+      if: always() && matrix.os == 'ubuntu-latest'
       with:
-        name: Coverage Report
+        name: Coverage Report - ${{ matrix.platform }}
         path: |
           CodeCoverage/**
           test-results/**/CodeCoverage/**
@@ -157,14 +236,14 @@ jobs:
     
     # XMLパース用ツールをインストール
     - name: Install XML tools
-      if: always()
+      if: always() && matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
         sudo apt-get install -y libxml2-utils bc
         
     # コードカバレッジチェック
     - name: Check Code Coverage
-      if: always()
+      if: always() && matrix.os == 'ubuntu-latest'
       run: |
         # カバレッジサマリーファイルを探す
         echo "=== Looking for coverage files ==="
@@ -251,7 +330,7 @@ jobs:
     # Codecovにカバレッジをアップロード
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
-      if: always()
+      if: always() && matrix.os == 'ubuntu-latest'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         directory: ./
