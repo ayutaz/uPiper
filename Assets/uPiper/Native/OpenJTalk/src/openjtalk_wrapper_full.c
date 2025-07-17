@@ -70,8 +70,14 @@ void* openjtalk_create(const char* dict_path) {
         return NULL;
     }
     
-    // Use dictionary path or default
-    const char* dict_dir = dict_path ? dict_path : "dictionary";
+    // Dictionary path is required
+    if (!dict_path) {
+        handle->last_error = OPENJTALK_ERROR_INVALID_INPUT;
+        free(handle);
+        return NULL;
+    }
+    
+    const char* dict_dir = dict_path;
     
     // Create MeCab instance
     handle->mecab = mecab_full_create(dict_dir);
@@ -144,64 +150,9 @@ PhonemeResult* openjtalk_phonemize(void* handle, const char* text) {
     OpenJTalkHandle* h = (OpenJTalkHandle*)handle;
     h->last_error = OPENJTALK_SUCCESS;
     
-    if (!text) {
+    if (!text || strlen(text) == 0) {
         h->last_error = OPENJTALK_ERROR_INVALID_INPUT;
         return NULL;
-    }
-    
-    // Handle empty string - return just silence markers
-    if (strlen(text) == 0) {
-        // Free previous sequence
-        if (h->last_sequence) {
-            phoneme_sequence_destroy(h->last_sequence);
-            h->last_sequence = NULL;
-        }
-        
-        // Create a simple sequence with just pauses
-        h->last_sequence = phoneme_sequence_create(16);
-        if (!h->last_sequence) {
-            h->last_error = OPENJTALK_ERROR_MEMORY_ALLOCATION;
-            return NULL;
-        }
-        
-        // Add initial and final pause
-        phoneme_sequence_add(h->last_sequence, "pau", 100, 0, 0);
-        phoneme_sequence_add(h->last_sequence, "pau", 100, 0, 0);
-        
-        // Ensure buffer is large enough
-        if (2 > h->buffer_size) {
-            h->buffer_size = 16;
-            int* new_id_buffer = (int*)realloc(h->phoneme_id_buffer, 
-                                               h->buffer_size * sizeof(int));
-            if (!new_id_buffer) {
-                h->last_error = OPENJTALK_ERROR_MEMORY_ALLOCATION;
-                return NULL;
-            }
-            h->phoneme_id_buffer = new_id_buffer;
-            
-            float* new_duration_buffer = (float*)realloc(h->duration_buffer,
-                                                         h->buffer_size * sizeof(float));
-            if (!new_duration_buffer) {
-                h->last_error = OPENJTALK_ERROR_MEMORY_ALLOCATION;
-                return NULL;
-            }
-            h->duration_buffer = new_duration_buffer;
-        }
-        
-        // Fill result
-        memset(&h->last_result, 0, sizeof(PhonemeResult));
-        h->last_result.phonemes = "pau pau";
-        h->last_result.phoneme_count = 2;
-        h->last_result.phoneme_ids = h->phoneme_id_buffer;
-        h->last_result.durations = h->duration_buffer;
-        h->last_result.total_duration = 0.2f;
-        
-        h->phoneme_id_buffer[0] = PHONEME_PAU;
-        h->phoneme_id_buffer[1] = PHONEME_PAU;
-        h->duration_buffer[0] = 0.1f;
-        h->duration_buffer[1] = 0.1f;
-        
-        return &h->last_result;
     }
     
     // Parse text with MeCab
@@ -315,16 +266,7 @@ const char* openjtalk_get_error_string(int error_code) {
 
 // Set options
 int openjtalk_set_option(void* handle, const char* key, const char* value) {
-    if (!handle) {
-        fprintf(stderr, "openjtalk_set_option: handle is NULL\n");
-        return OPENJTALK_ERROR_INVALID_INPUT;
-    }
-    if (!key) {
-        fprintf(stderr, "openjtalk_set_option: key is NULL\n");
-        return OPENJTALK_ERROR_INVALID_INPUT;
-    }
-    if (!value) {
-        fprintf(stderr, "openjtalk_set_option: value is NULL\n");
+    if (!handle || !key || !value) {
         return OPENJTALK_ERROR_INVALID_INPUT;
     }
     

@@ -186,15 +186,25 @@ if(BUILD_TESTS)
     
     # Enable CTest
     enable_testing()
-    add_test(NAME openjtalk_basic COMMAND test_openjtalk)
-    add_test(NAME openjtalk_api COMMAND test_openjtalk_api)
+    add_test(NAME openjtalk_basic 
+        COMMAND test_openjtalk
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME openjtalk_api 
+        COMMAND test_openjtalk_api
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     if(TARGET test_phonemize_full)
-        add_test(NAME phonemize_full COMMAND test_phonemize_full)
+        add_test(NAME phonemize_full 
+            COMMAND test_phonemize_full
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     endif()
     if(TARGET test_new_features)
-        add_test(NAME new_features COMMAND test_new_features)
+        add_test(NAME new_features 
+            COMMAND test_new_features
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     endif()
-    add_test(NAME platform_compat COMMAND test_platform)
+    add_test(NAME platform_compat 
+        COMMAND test_platform
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 # Additional tests for core components
@@ -211,7 +221,9 @@ if(BUILD_TESTS AND BUILD_FULL_VERSION)
     if(NOT MSVC)
         target_link_libraries(test_char_bin m)
     endif()
-    add_test(NAME test_char_bin COMMAND test_char_bin)
+    add_test(NAME test_char_bin 
+        COMMAND test_char_bin
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     
     # Test for memory pool
     add_executable(test_memory_pool test/test_memory_pool.c
@@ -222,5 +234,7 @@ if(BUILD_TESTS AND BUILD_FULL_VERSION)
     if(NOT MSVC)
         target_link_libraries(test_memory_pool m)
     endif()
-    add_test(NAME test_memory_pool COMMAND test_memory_pool)
+    add_test(NAME test_memory_pool 
+        COMMAND test_memory_pool
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
