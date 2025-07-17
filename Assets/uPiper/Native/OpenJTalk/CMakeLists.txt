@@ -177,6 +177,10 @@ if(BUILD_TESTS)
     add_executable(benchmark_openjtalk test/benchmark_openjtalk.c)
     target_link_libraries(benchmark_openjtalk openjtalk_wrapper)
     
+    # Build platform test
+    add_executable(test_platform test/test_platform.c)
+    target_link_libraries(test_platform openjtalk_wrapper)
+    
     # Enable CTest
     enable_testing()
     add_test(NAME openjtalk_basic COMMAND test_openjtalk)
@@ -187,6 +191,7 @@ if(BUILD_TESTS)
     if(TARGET test_new_features)
         add_test(NAME new_features COMMAND test_new_features)
     endif()
+    add_test(NAME platform_compat COMMAND test_platform)
 endif()
 
 # Additional tests for core components

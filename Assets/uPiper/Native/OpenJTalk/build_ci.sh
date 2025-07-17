@@ -57,7 +57,16 @@ ctest --output-on-failure
 
 # Run benchmark
 echo "=== Running performance benchmark ==="
-./bin/benchmark_openjtalk ../test_dictionary || echo "Benchmark failed (non-critical)"
+if ./bin/benchmark_openjtalk ../test_dictionary > benchmark_output.txt 2>&1; then
+    echo "Benchmark completed successfully"
+    cat benchmark_output.txt
+    # Extract key metrics for CI
+    grep -E "(Average processing time|All sentences)" benchmark_output.txt > bin/benchmark_results.txt || true
+else
+    echo "Benchmark failed"
+    cat benchmark_output.txt || true
+    exit 1
+fi
 
 # Create output directory structure
 OUTPUT_DIR="../output/$PLATFORM"

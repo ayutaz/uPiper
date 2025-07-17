@@ -34,6 +34,31 @@ jobs:
         ./build_ci.sh
       shell: bash
       
+    - name: Verify Platform Compatibility
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk/build
+        echo "=== Platform: ${{ matrix.os }} ==="
+        
+        # Check library exists
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          ls -la bin/*.dll || ls -la bin/Release/*.dll
+          file bin/*.dll || file bin/Release/*.dll || true
+        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          ls -la lib/*.dylib
+          file lib/*.dylib
+          otool -L lib/*.dylib || true
+        else
+          ls -la lib/*.so
+          file lib/*.so
+          ldd lib/*.so || true
+        fi
+        
+        # Run specific platform tests
+        echo "=== Running platform-specific validation ==="
+        ./bin/test_openjtalk ../test_dictionary || true
+        ./bin/benchmark_openjtalk ../test_dictionary || true
+      shell: bash
+      
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v4
       if: always()
@@ -50,4 +75,18 @@ jobs:
         name: test-results-native-${{ matrix.os }}
         path: |
           Assets/uPiper/Native/OpenJTalk/build/Testing/**/*.xml
+          Assets/uPiper/Native/OpenJTalk/build/bin/benchmark_results.txt
         retention-days: 7
+        
+    - name: Performance Report
+      if: always()
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk/build
+        echo "## Performance Report - ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -f bin/benchmark_results.txt ]; then
+          cat bin/benchmark_results.txt >> $GITHUB_STEP_SUMMARY
+        else
+          echo "No benchmark results found" >> $GITHUB_STEP_SUMMARY
+        fi
+      shell: bash
