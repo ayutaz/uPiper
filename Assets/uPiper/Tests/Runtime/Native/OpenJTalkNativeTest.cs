@@ -10,12 +10,6 @@ namespace uPiper.Tests.Runtime.Native
     /// </summary>
     public class OpenJTalkNativeTest
     {
-        // Initialize test configuration
-        static OpenJTalkNativeTest()
-        {
-            // This will trigger the static constructor of OpenJTalkNativeTestConfig
-            var dummy = typeof(OpenJTalkNativeTestConfig).Name;
-        }
         // P/Invoke declarations matching openjtalk_wrapper.h
         [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr openjtalk_create(string dict_path);
