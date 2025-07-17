@@ -163,7 +163,7 @@ if(BUILD_TESTS)
     
     # Build full phonemization test
     if(BUILD_FULL_VERSION)
-        add_executable(test_phonemize_full test/test_phonemize_full.c src/openjtalk_phonemizer.c)
+        add_executable(test_phonemize_full test/test_phonemize_full.c)
         target_link_libraries(test_phonemize_full openjtalk_wrapper)
     endif()
     
