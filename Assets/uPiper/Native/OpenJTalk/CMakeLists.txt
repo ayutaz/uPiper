@@ -77,6 +77,9 @@ include_directories(
 # Create shared library
 add_library(openjtalk_wrapper SHARED ${SOURCES})
 
+# Define exports for Windows DLL
+target_compile_definitions(openjtalk_wrapper PRIVATE OPENJTALK_EXPORTS)
+
 # Platform-specific settings
 if(WIN32)
     set_target_properties(openjtalk_wrapper PROPERTIES

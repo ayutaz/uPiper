@@ -4,6 +4,17 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// Export/Import macros for Windows DLL
+#ifdef _WIN32
+    #ifdef OPENJTALK_EXPORTS
+        #define OPENJTALK_API __declspec(dllexport)
+    #else
+        #define OPENJTALK_API __declspec(dllimport)
+    #endif
+#else
+    #define OPENJTALK_API
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -76,33 +87,33 @@ typedef struct {
 typedef struct OpenJTalkPhonemizer OpenJTalkPhonemizer;
 
 // Create/destroy phonemizer
-OpenJTalkPhonemizer* openjtalk_phonemizer_create(void);
-void openjtalk_phonemizer_destroy(OpenJTalkPhonemizer* phonemizer);
+OPENJTALK_API OpenJTalkPhonemizer* openjtalk_phonemizer_create(void);
+OPENJTALK_API void openjtalk_phonemizer_destroy(OpenJTalkPhonemizer* phonemizer);
 
 // Initialize with dictionary
-bool openjtalk_phonemizer_initialize(OpenJTalkPhonemizer* phonemizer, 
+OPENJTALK_API bool openjtalk_phonemizer_initialize(OpenJTalkPhonemizer* phonemizer, 
                                      const char* dic_path);
 
 // Main phonemization function
-int openjtalk_phonemizer_phonemize(OpenJTalkPhonemizer* phonemizer,
+OPENJTALK_API int openjtalk_phonemizer_phonemize(OpenJTalkPhonemizer* phonemizer,
                                     const char* text,
                                     PhonemeInfo* phonemes,
                                     int max_phonemes);
 
 // Simple ID-only version (pyopenjtalk compatible)
-int openjtalk_phonemizer_get_ids(OpenJTalkPhonemizer* phonemizer,
+OPENJTALK_API int openjtalk_phonemizer_get_ids(OpenJTalkPhonemizer* phonemizer,
                                   const char* text,
                                   int* phoneme_ids,
                                   int max_phonemes);
 
 // Get phoneme string representation
-const char* openjtalk_phonemizer_get_phoneme_string(PhonemeID id);
+OPENJTALK_API const char* openjtalk_phonemizer_get_phoneme_string(PhonemeID id);
 
 // Error handling
-const char* openjtalk_phonemizer_get_error(OpenJTalkPhonemizer* phonemizer);
+OPENJTALK_API const char* openjtalk_phonemizer_get_error(OpenJTalkPhonemizer* phonemizer);
 
 // Utility functions
-bool openjtalk_phonemizer_set_option(OpenJTalkPhonemizer* phonemizer,
+OPENJTALK_API bool openjtalk_phonemizer_set_option(OpenJTalkPhonemizer* phonemizer,
                                       const char* key,
                                       const char* value);
 
