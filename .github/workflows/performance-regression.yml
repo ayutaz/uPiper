@@ -54,10 +54,12 @@ jobs:
           failed=0
           
           for time in $avg_times; do
-            # Use awk instead of bc for better cross-platform compatibility
-            # Exit status 0 means time > 10 (regression)
-            if awk "BEGIN {if ($time > 10) exit 0; else exit 1}"; then
-              echo "❌ Performance regression detected: ${time}ms > 10ms"
+            # Extract integer part for simple comparison
+            time_int=$(echo "$time" | cut -d. -f1)
+            
+            # If integer part is 10 or greater, it's a regression
+            if [ "$time_int" -ge 10 ]; then
+              echo "❌ Performance regression detected: ${time}ms >= 10ms"
               failed=1
             else
               echo "✅ Performance OK: ${time}ms < 10ms"
