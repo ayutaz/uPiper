@@ -11,31 +11,31 @@ namespace uPiper.Tests.Runtime.Native
     public class OpenJTalkNativeTest
     {
         // P/Invoke declarations matching openjtalk_wrapper.h
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr openjtalk_create(string dict_path);
         
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl)]
         private static extern void openjtalk_destroy(IntPtr handle);
         
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_get_version();
         
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr openjtalk_phonemize(IntPtr handle, string text);
         
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl)]
         private static extern void openjtalk_free_result(IntPtr result);
         
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl)]
         private static extern int openjtalk_get_last_error(IntPtr handle);
         
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_get_error_string(int error_code);
         
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern int openjtalk_set_option(IntPtr handle, string key, string value);
         
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr openjtalk_get_option(IntPtr handle, string key);
         
         // PhonemeResult structure
@@ -43,13 +43,10 @@ namespace uPiper.Tests.Runtime.Native
         private struct PhonemeResult
         {
             public IntPtr phonemes;      // char*
-            public int phoneme_count;
             public IntPtr phoneme_ids;   // int*
+            public int phoneme_count;
             public IntPtr durations;     // float*
             public float total_duration;
-            public int word_count;
-            public IntPtr word_boundaries; // int*
-            public IntPtr accent_info;   // AccentInfo*
         }
         
         private IntPtr handle = IntPtr.Zero;

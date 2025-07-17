@@ -149,6 +149,61 @@ PhonemeResult* openjtalk_phonemize(void* handle, const char* text) {
         return NULL;
     }
     
+    // Handle empty string - return just silence markers
+    if (strlen(text) == 0) {
+        // Free previous sequence
+        if (h->last_sequence) {
+            phoneme_sequence_destroy(h->last_sequence);
+            h->last_sequence = NULL;
+        }
+        
+        // Create a simple sequence with just pauses
+        h->last_sequence = phoneme_sequence_create(16);
+        if (!h->last_sequence) {
+            h->last_error = OPENJTALK_ERROR_MEMORY_ALLOCATION;
+            return NULL;
+        }
+        
+        // Add initial and final pause
+        phoneme_sequence_add(h->last_sequence, "pau", 100, 0, 0);
+        phoneme_sequence_add(h->last_sequence, "pau", 100, 0, 0);
+        
+        // Ensure buffer is large enough
+        if (2 > h->buffer_size) {
+            h->buffer_size = 16;
+            int* new_id_buffer = (int*)realloc(h->phoneme_id_buffer, 
+                                               h->buffer_size * sizeof(int));
+            if (!new_id_buffer) {
+                h->last_error = OPENJTALK_ERROR_MEMORY_ALLOCATION;
+                return NULL;
+            }
+            h->phoneme_id_buffer = new_id_buffer;
+            
+            float* new_duration_buffer = (float*)realloc(h->duration_buffer,
+                                                         h->buffer_size * sizeof(float));
+            if (!new_duration_buffer) {
+                h->last_error = OPENJTALK_ERROR_MEMORY_ALLOCATION;
+                return NULL;
+            }
+            h->duration_buffer = new_duration_buffer;
+        }
+        
+        // Fill result
+        memset(&h->last_result, 0, sizeof(PhonemeResult));
+        h->last_result.phonemes = "pau pau";
+        h->last_result.phoneme_count = 2;
+        h->last_result.phoneme_ids = h->phoneme_id_buffer;
+        h->last_result.durations = h->duration_buffer;
+        h->last_result.total_duration = 0.2f;
+        
+        h->phoneme_id_buffer[0] = PHONEME_PAU;
+        h->phoneme_id_buffer[1] = PHONEME_PAU;
+        h->duration_buffer[0] = 0.1f;
+        h->duration_buffer[1] = 0.1f;
+        
+        return &h->last_result;
+    }
+    
     // Parse text with MeCab
     MecabFullNode* nodes = mecab_full_parse(h->mecab, text);
     if (!nodes) {
@@ -260,7 +315,16 @@ const char* openjtalk_get_error_string(int error_code) {
 
 // Set options
 int openjtalk_set_option(void* handle, const char* key, const char* value) {
-    if (!handle || !key || !value) {
+    if (!handle) {
+        fprintf(stderr, "openjtalk_set_option: handle is NULL\n");
+        return OPENJTALK_ERROR_INVALID_INPUT;
+    }
+    if (!key) {
+        fprintf(stderr, "openjtalk_set_option: key is NULL\n");
+        return OPENJTALK_ERROR_INVALID_INPUT;
+    }
+    if (!value) {
+        fprintf(stderr, "openjtalk_set_option: value is NULL\n");
         return OPENJTALK_ERROR_INVALID_INPUT;
     }
     
