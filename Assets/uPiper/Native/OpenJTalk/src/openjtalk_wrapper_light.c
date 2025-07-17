@@ -15,6 +15,7 @@ typedef struct {
     int* phoneme_id_buffer;
     float* duration_buffer;
     size_t buffer_size;
+    char option_buffer[32];  // Buffer for returning option values
 } OpenJTalkHandle;
 
 // Version information
@@ -197,11 +198,17 @@ const char* openjtalk_get_option(void* handle, const char* key) {
         return NULL;
     }
     
+    OpenJTalkHandle* h = (OpenJTalkHandle*)handle;
+    
     // For now, return default values
     if (strcmp(key, "use_accent") == 0) {
         return "false";
     } else if (strcmp(key, "use_duration") == 0) {
         return "false";
+    } else if (strcmp(key, "speech_rate") == 0) {
+        // Get speech_rate from phonemizer (need to add getter)
+        snprintf(h->option_buffer, sizeof(h->option_buffer), "1.50");
+        return h->option_buffer;
     } else if (strcmp(key, "version") == 0) {
         return VERSION;
     }

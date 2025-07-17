@@ -16,6 +16,7 @@ struct OpenJTalkPhonemizer {
     // Options
     bool use_accent;
     bool use_duration;
+    float speech_rate;
 };
 
 // UTF-8 handling
@@ -143,6 +144,7 @@ OpenJTalkPhonemizer* openjtalk_phonemizer_create(void) {
     
     phonemizer->use_accent = false;  // Simplified version
     phonemizer->use_duration = false;
+    phonemizer->speech_rate = 1.0f;
     
     return phonemizer;
 }
@@ -428,6 +430,15 @@ bool openjtalk_phonemizer_set_option(OpenJTalkPhonemizer* phonemizer,
     } else if (strcmp(key, "use_duration") == 0) {
         phonemizer->use_duration = (strcmp(value, "true") == 0);
         return true;
+    } else if (strcmp(key, "speech_rate") == 0) {
+        float rate = atof(value);
+        if (rate >= 0.5f && rate <= 2.0f) {
+            phonemizer->speech_rate = rate;
+            return true;
+        }
+        snprintf(phonemizer->error_message, sizeof(phonemizer->error_message),
+                 "Invalid speech_rate value: %s (must be between 0.5 and 2.0)", value);
+        return false;
     }
     
     snprintf(phonemizer->error_message, sizeof(phonemizer->error_message),

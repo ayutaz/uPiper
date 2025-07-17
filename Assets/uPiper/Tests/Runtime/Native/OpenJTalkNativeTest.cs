@@ -59,12 +59,14 @@ namespace uPiper.Tests.Runtime.Native
         {
             // Try to find test dictionary
             string dictPath = GetTestDictionaryPath();
+            Debug.Log($"Test dictionary path: {dictPath}");
             if (!System.IO.Directory.Exists(dictPath))
             {
                 Assert.Ignore("Test dictionary not found. Run create_test_dict.py first.");
             }
             
             handle = openjtalk_create(dictPath);
+            Debug.Log($"OpenJTalk handle created: {handle}");
             if (handle == IntPtr.Zero)
             {
                 Assert.Fail("Failed to create OpenJTalk instance");
@@ -133,8 +135,12 @@ namespace uPiper.Tests.Runtime.Native
         [Test]
         public void TestOptions()
         {
+            // Debug: Check handle validity
+            Assert.AreNotEqual(IntPtr.Zero, handle, "Handle should not be null");
+            
             // Test setting option
             int result = openjtalk_set_option(handle, "speech_rate", "1.5");
+            Debug.Log($"openjtalk_set_option result: {result}, handle: {handle}");
             Assert.AreEqual(0, result); // OPENJTALK_SUCCESS
             
             // Test getting option
