@@ -1,3 +1,8 @@
+# Build directories
+build/
+build-*/
+output/
+
 # Test executables (but not test source files)
 test_dict_*
 test_darts_*
