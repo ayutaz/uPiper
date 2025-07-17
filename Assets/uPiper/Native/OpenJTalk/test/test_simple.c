@@ -6,11 +6,17 @@
 int main() {
     printf("=== Simple OpenJTalk Test ===\n");
     
-    // Initialize
-    void* handle = openjtalk_create(NULL);
+    // Initialize with test dictionary
+    void* handle = openjtalk_create("test_dictionary");
     if (!handle) {
-        printf("Failed to initialize\n");
-        return 1;
+        printf("Failed to initialize with test_dictionary\n");
+        // Try without dictionary
+        handle = openjtalk_create(NULL);
+        if (!handle) {
+            printf("Failed to initialize without dictionary\n");
+            return 1;
+        }
+        printf("Initialized without dictionary (light mode)\n");
     }
     
     // Test cases
