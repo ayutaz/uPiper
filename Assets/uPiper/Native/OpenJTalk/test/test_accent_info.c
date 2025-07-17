@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../src/mecab_full.h"
+#include <string.h>
+#include "../include/openjtalk_wrapper.h"
 
 int main(int argc, char* argv[]) {
     printf("Accent Information Test\n");
@@ -8,10 +9,10 @@ int main(int argc, char* argv[]) {
     const char* dict_path = argc > 1 ? argv[1] : "test_dictionary";
     printf("Dictionary path: %s\n", dict_path);
     
-    // Create MeCab instance
-    MecabFull* mecab = mecab_full_create(dict_path);
-    if (!mecab) {
-        fprintf(stderr, "Failed to create MeCab instance\n");
+    // Create OpenJTalk instance
+    void* handle = openjtalk_create(dict_path);
+    if (!handle) {
+        fprintf(stderr, "Failed to create OpenJTalk instance\n");
         return 1;
     }
     
@@ -28,36 +29,37 @@ int main(int argc, char* argv[]) {
     for (int i = 0; test_words[i] != NULL; i++) {
         printf("\n=== Testing: %s ===\n", test_words[i]);
         
-        MecabFullNode* nodes = mecab_full_parse(mecab, test_words[i]);
-        if (nodes) {
-            MecabFullNode* node = nodes;
-            while (node) {
-                printf("Surface: %.*s\n", (int)node->length, node->surface);
-                printf("  POS: %s\n", node->feature.pos);
-                printf("  Reading: %s\n", node->feature.reading);
-                printf("  Pronunciation: %s\n", node->feature.pronunciation);
+        PhonemeResult* result = openjtalk_phonemize(handle, test_words[i]);
+        if (result) {
+            printf("Phonemes: %s\n", result->phonemes);
+            printf("Phoneme count: %d\n", result->phoneme_count);
+            printf("Total duration: %.3f seconds\n", result->total_duration);
+            
+            // Show individual phoneme details
+            if (result->durations) {
+                printf("Phoneme durations:\n");
+                // Create a copy to avoid modifying the original
+                char phonemes_copy[1024];
+                strncpy(phonemes_copy, result->phonemes, sizeof(phonemes_copy) - 1);
+                phonemes_copy[sizeof(phonemes_copy) - 1] = '\0';
                 
-                // Show all feature fields
-                printf("  Full feature: %s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-                       node->feature.pos,
-                       node->feature.pos_detail1,
-                       node->feature.pos_detail2,
-                       node->feature.pos_detail3,
-                       node->feature.cform,
-                       node->feature.ctype,
-                       node->feature.base,
-                       node->feature.reading,
-                       node->feature.pronunciation);
-                
-                node = node->next;
+                int j = 0;
+                char* phoneme = strtok(phonemes_copy, " ");
+                while (phoneme && j < result->phoneme_count) {
+                    printf("  %s: %.3fs\n", phoneme, result->durations[j]);
+                    phoneme = strtok(NULL, " ");
+                    j++;
+                }
             }
             
-            mecab_full_free_nodes(mecab, nodes);
+            openjtalk_free_result(result);
+        } else {
+            printf("Failed to phonemize: %s\n", test_words[i]);
         }
     }
     
     // Clean up
-    mecab_full_destroy(mecab);
+    openjtalk_destroy(handle);
     
     return 0;
 }
