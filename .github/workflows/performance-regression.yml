@@ -54,7 +54,8 @@ jobs:
           failed=0
           
           for time in $avg_times; do
-            if (( $(echo "$time > 10" | bc -l) )); then
+            # Use awk instead of bc for better cross-platform compatibility
+            if awk "BEGIN {exit !($time > 10)}"; then
               echo "❌ Performance regression detected: ${time}ms > 10ms"
               failed=1
             fi
