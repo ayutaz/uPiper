@@ -5,7 +5,7 @@
 int main(int argc, char* argv[]) {
     printf("Accent Information Test\n");
     
-    const char* dict_path = argc > 1 ? argv[1] : "dictionary";
+    const char* dict_path = argc > 1 ? argv[1] : "../test_dictionary";
     printf("Dictionary path: %s\n", dict_path);
     
     // Create MeCab instance

@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     printf("OpenJTalk Full Phonemization Test\n");
     printf("Version: %s\n", openjtalk_get_version());
     
-    const char* dict_path = argc > 1 ? argv[1] : "dictionary";
+    const char* dict_path = argc > 1 ? argv[1] : "../test_dictionary";
     printf("Dictionary path: %s\n", dict_path);
     
     // Create OpenJTalk instance

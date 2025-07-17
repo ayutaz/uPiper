@@ -1,0 +1,53 @@
+name: Native OpenJTalk Tests
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Native Tests - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install CMake
+      uses: lukka/get-cmake@latest
+      
+    - name: Build and Test OpenJTalk Native
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        chmod +x build_ci.sh
+        ./build_ci.sh
+      shell: bash
+      
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: native-openjtalk-${{ matrix.os }}
+        path: |
+          Assets/uPiper/Native/OpenJTalk/output/**
+        retention-days: 7
+        
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-native-${{ matrix.os }}
+        path: |
+          Assets/uPiper/Native/OpenJTalk/build/Testing/**/*.xml
+        retention-days: 7

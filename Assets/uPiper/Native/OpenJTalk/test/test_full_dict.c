@@ -118,7 +118,7 @@ void test_openjtalk_wrapper(const char* dict_path) {
 }
 
 int main(int argc, char* argv[]) {
-    const char* dict_path = argc > 1 ? argv[1] : "dictionary";
+    const char* dict_path = argc > 1 ? argv[1] : "../test_dictionary";
     
     printf("=== Full Dictionary Test Suite ===\n");
     printf("Using dictionary path: %s\n", dict_path);
