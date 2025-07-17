@@ -160,7 +160,8 @@ jobs:
     # Unity 6対応 - game-ci/unity-test-runnerを使用
     - name: Run Unity Tests
       uses: game-ci/unity-test-runner@v4
-      # Run on all platforms
+      # Skip on macOS as Docker is not supported
+      if: matrix.os != 'macos-latest'
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -181,7 +182,7 @@ jobs:
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
       uses: actions/upload-artifact@v4
-      if: always() && matrix.os == 'ubuntu-latest'
+      if: always() && matrix.os != 'macos-latest'
       with:
         name: Test Results - Unity - ${{ matrix.platform }}
         path: |
@@ -193,7 +194,7 @@ jobs:
         
     # テスト結果のデバッグ情報
     - name: Debug Test Results
-      if: always() && matrix.os == 'ubuntu-latest'
+      if: always() && matrix.os != 'macos-latest'
       run: |
         echo "=== Test Results Directory Contents ==="
         find test-results -type f -name "*.xml" | head -20
@@ -210,7 +211,7 @@ jobs:
     
     # テスト結果のサマリーを作成
     - name: Create Test Summary
-      if: always() && matrix.os == 'ubuntu-latest'
+      if: always() && matrix.os != 'macos-latest'
       run: |
         echo "## Unity Test Results Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -260,7 +261,7 @@ jobs:
     # カバレッジレポートをアップロード
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
-      if: always() && matrix.os == 'ubuntu-latest'
+      if: always() && matrix.os != 'macos-latest'
       with:
         name: Coverage Report - ${{ matrix.platform }}
         path: |
@@ -270,14 +271,14 @@ jobs:
     
     # XMLパース用ツールをインストール
     - name: Install XML tools
-      if: always() && matrix.os == 'ubuntu-latest'
+      if: always() && matrix.os != 'macos-latest'
       run: |
         sudo apt-get update
         sudo apt-get install -y libxml2-utils bc
         
     # コードカバレッジチェック
     - name: Check Code Coverage
-      if: always() && matrix.os == 'ubuntu-latest'
+      if: always() && matrix.os != 'macos-latest'
       run: |
         # カバレッジサマリーファイルを探す
         echo "=== Looking for coverage files ==="
@@ -364,7 +365,7 @@ jobs:
     # Codecovにカバレッジをアップロード
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
-      if: always() && matrix.os == 'ubuntu-latest'
+      if: always() && matrix.os != 'macos-latest'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         directory: ./
@@ -373,6 +374,71 @@ jobs:
         name: uPiper
         fail_ci_if_error: false
         verbose: true
+
+  # macOS専用のテスト（Dockerがサポートされていないため）
+  macos-unity-test:
+    name: Unity Test Runner - macOS (Native)
+    runs-on: macos-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install CMake
+      run: brew install cmake
+        
+    - name: Build OpenJTalk Native Library
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        chmod +x build_ci.sh
+        ./build_ci.sh
+        
+        # Verify the library exists in Plugins
+        echo "=== Checking for existing library ==="
+        ls -la ../../Plugins/macOS/ || echo "macOS plugin directory not found"
+        
+        # Only copy if not already present
+        if [ ! -f "../../Plugins/macOS/libopenjtalk_wrapper.dylib" ]; then
+          mkdir -p ../../Plugins/macOS
+          cp build/lib/libopenjtalk_wrapper.dylib ../../Plugins/macOS/
+        fi
+        
+        # Verify installation
+        echo "=== Library verification ==="
+        ls -la ../../Plugins/macOS/
+        
+    - name: Run Native OpenJTalk Tests
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk/build
+        # Run all native tests
+        ctest --output-on-failure -V
+        
+    - name: Create Test Summary
+      if: always()
+      run: |
+        echo "## macOS Native Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Native OpenJTalk tests completed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Check if library is properly built
+        if [ -f "Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" ]; then
+          echo "✅ OpenJTalk library built successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- Location: Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" >> $GITHUB_STEP_SUMMARY
+          echo "- Architecture: $(lipo -info Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib 2>&1)" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ OpenJTalk library not found" >> $GITHUB_STEP_SUMMARY
+        fi
 
   # Ubuntu専用のテスト（Docker環境外で実行）
   ubuntu-test:
