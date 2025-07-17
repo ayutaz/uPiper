@@ -47,7 +47,7 @@ void print_result(int passed) {
 int test_basic_phonemization() {
     print_test_header("Basic Phonemization Tests");
     
-    void* phonemizer = openjtalk_create("../test_dictionary");
+    void* phonemizer = openjtalk_create("test_dictionary");
     if (!phonemizer) {
         printf("Failed to create phonemizer\n");
         return 0;
@@ -105,7 +105,7 @@ int test_error_handling() {
     total++;
     
     // Test 2: NULL text
-    void* phonemizer = openjtalk_create("../test_dictionary");
+    void* phonemizer = openjtalk_create("test_dictionary");
     printf("Test 2: NULL text... ");
     result = openjtalk_phonemize(phonemizer, NULL);
     if (result == NULL && openjtalk_get_last_error(phonemizer) == OPENJTALK_ERROR_INVALID_INPUT) {
@@ -137,7 +137,7 @@ int test_error_handling() {
 int test_options() {
     print_test_header("Options Tests");
     
-    void* phonemizer = openjtalk_create("../test_dictionary");
+    void* phonemizer = openjtalk_create("test_dictionary");
     if (!phonemizer) {
         printf("Failed to create phonemizer\n");
         return 0;
@@ -173,7 +173,7 @@ int test_options() {
 int test_memory_stress() {
     print_test_header("Memory Stress Test");
     
-    void* phonemizer = openjtalk_create("../test_dictionary");
+    void* phonemizer = openjtalk_create("test_dictionary");
     if (!phonemizer) {
         printf("Failed to create phonemizer\n");
         return 0;
@@ -211,7 +211,7 @@ int test_memory_stress() {
 int test_phoneme_details() {
     print_test_header("Phoneme Details Test");
     
-    void* phonemizer = openjtalk_create("../test_dictionary");
+    void* phonemizer = openjtalk_create("test_dictionary");
     if (!phonemizer) {
         printf("Failed to create phonemizer\n");
         return 0;

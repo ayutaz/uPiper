@@ -57,7 +57,11 @@ fi
 
 # Run tests
 echo "=== Running tests ==="
-ctest --output-on-failure
+if [ "$PLATFORM" == "windows" ]; then
+    ctest -C Release --output-on-failure
+else
+    ctest --output-on-failure
+fi
 
 # Run benchmark
 echo "=== Running performance benchmark ==="

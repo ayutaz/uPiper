@@ -3,7 +3,7 @@
 #include "../src/mecab_full.h"
 
 int main(int argc, char* argv[]) {
-    const char* dict_path = argc > 1 ? argv[1] : "../test_dictionary";
+    const char* dict_path = argc > 1 ? argv[1] : "test_dictionary";
     const char* text = argc > 2 ? argv[2] : "今日";
     
     printf("Viterbi test\n");

@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     printf("OpenJTalk Prosody Test\n");
     printf("Version: %s\n", openjtalk_get_version());
     
-    const char* dict_path = argc > 1 ? argv[1] : "../test_dictionary";
+    const char* dict_path = argc > 1 ? argv[1] : "test_dictionary";
     
     // Create OpenJTalk instance
     void* openjtalk = openjtalk_create(dict_path);

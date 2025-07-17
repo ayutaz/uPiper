@@ -35,8 +35,8 @@ void test_file_paths() {
     
     // Test different path formats
     const char* test_paths[] = {
-        "../test_dictionary",
-        "../test_dictionary/",
+        "test_dictionary",
+        "test_dictionary/",
 #ifdef _WIN32
         "..\\test_dictionary",
         "..\\test_dictionary\\",
@@ -59,7 +59,7 @@ void test_file_paths() {
 void test_unicode_handling() {
     printf("\n=== Testing Unicode handling ===\n");
     
-    void* handle = openjtalk_create("../test_dictionary");
+    void* handle = openjtalk_create("test_dictionary");
     if (!handle) {
         printf("✗ Failed to create handle\n");
         exit(1);
@@ -95,7 +95,7 @@ void test_memory_mapping() {
     
     // Create and destroy multiple times to test mmap/munmap
     for (int i = 0; i < 5; i++) {
-        void* handle = openjtalk_create("../test_dictionary");
+        void* handle = openjtalk_create("test_dictionary");
         if (handle) {
             printf("  ✓ Iteration %d: Created\n", i + 1);
             
@@ -119,7 +119,7 @@ void test_thread_safety() {
     // Note: Full thread safety test would require pthread/Windows threads
     // This just tests that the API can handle rapid sequential calls
     
-    void* handle = openjtalk_create("../test_dictionary");
+    void* handle = openjtalk_create("test_dictionary");
     if (!handle) {
         printf("✗ Failed to create handle\n");
         exit(1);

@@ -149,7 +149,7 @@ void print_results(BenchmarkResult* results, int count) {
 }
 
 int main(int argc, char* argv[]) {
-    const char* dict_path = argc > 1 ? argv[1] : "../test_dictionary";
+    const char* dict_path = argc > 1 ? argv[1] : "test_dictionary";
     
     setlocale(LC_ALL, "");
     

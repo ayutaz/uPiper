@@ -6,7 +6,7 @@
 int main(int argc, char* argv[]) {
     printf("MeCab Full Simple Test\n");
     
-    const char* dict_path = argc > 1 ? argv[1] : "../test_dictionary";
+    const char* dict_path = argc > 1 ? argv[1] : "test_dictionary";
     printf("Dictionary path: %s\n", dict_path);
     
     // Create MeCab instance

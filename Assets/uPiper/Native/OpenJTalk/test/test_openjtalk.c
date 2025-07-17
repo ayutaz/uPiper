@@ -43,7 +43,7 @@ void test_init_cleanup() {
     TEST_ASSERT(handle1 == NULL, "Creating with NULL dictionary path returns NULL");
     
     // Test with valid dictionary path
-    void* handle2 = openjtalk_create("../test_dictionary");
+    void* handle2 = openjtalk_create("test_dictionary");
     TEST_ASSERT(handle2 != NULL, "Creating with valid path returns handle");
     
     if (handle2) {
@@ -82,7 +82,7 @@ void test_error_handling() {
 void test_phonemization() {
     TEST_START("Phonemization");
     
-    void* handle = openjtalk_create("../test_dictionary");
+    void* handle = openjtalk_create("test_dictionary");
     TEST_ASSERT(handle != NULL, "Create handle for phonemization");
     
     if (!handle) return;
@@ -140,7 +140,7 @@ void test_phonemization() {
 void test_options() {
     TEST_START("Options");
     
-    void* handle = openjtalk_create("../test_dictionary");
+    void* handle = openjtalk_create("test_dictionary");
     TEST_ASSERT(handle != NULL, "Create handle for options test");
     
     if (!handle) return;
@@ -167,7 +167,7 @@ void test_options() {
 void test_memory_management() {
     TEST_START("Memory Management");
     
-    void* handle = openjtalk_create("../test_dictionary");
+    void* handle = openjtalk_create("test_dictionary");
     TEST_ASSERT(handle != NULL, "Create handle for memory test");
     
     if (!handle) return;

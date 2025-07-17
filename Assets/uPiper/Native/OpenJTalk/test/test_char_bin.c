@@ -58,7 +58,7 @@ int main() {
 #endif
     
     // Load dictionary
-    const char* dict_path = "../test_dictionary";
+    const char* dict_path = "test_dictionary";
     MecabFullDictionary* dict = mecab_dict_load(dict_path);
     
     if (!dict) {
