@@ -3,10 +3,39 @@
 #include <string.h>
 #include <stdio.h>
 
+// Common noun accent patterns
+typedef struct {
+    const char* reading_pattern;  // Katakana pattern
+    int mora_count;              // Number of moras (-1 for any)
+    int accent_position;         // Accent position (0 for flat)
+} AccentPattern;
+
+// Known accent patterns for common words
+static const AccentPattern common_patterns[] = {
+    // Common 2-mora nouns with accent on first mora
+    {"ハシ", 2, 1},      // 箸 (chopsticks)
+    {"アメ", 2, 1},      // 雨 (rain)
+    {"カゼ", 2, 1},      // 風 (wind)
+    {"ヤマ", 2, 2},      // 山 (mountain)
+    {"カワ", 2, 2},      // 川 (river)
+    
+    // Common 3-mora patterns
+    {"サクラ", 3, 0},    // 桜 (cherry blossom) - flat
+    {"ココロ", 3, 3},    // 心 (heart)
+    {"ミドリ", 3, 3},    // 緑 (green)
+    {"アタマ", 3, 3},    // 頭 (head)
+    
+    // Common 4-mora patterns
+    {"ガッコウ", 4, 0},  // 学校 (school) - flat
+    {"センセイ", 4, 3},  // 先生 (teacher)
+    {"トモダチ", 4, 0},  // 友達 (friend) - flat
+    
+    {NULL, 0, 0}
+};
+
 struct AccentEstimator {
-    // Simple rule-based estimator for now
-    // Could be extended with dictionary or ML model
-    int dummy;  // Placeholder
+    // Rule-based estimator with pattern matching
+    int pattern_count;  // Number of patterns loaded
 };
 
 // Create estimator
@@ -76,6 +105,25 @@ int accent_estimator_count_moras(const char* reading) {
     return mora_count;
 }
 
+// Check if reading matches known pattern
+static int check_accent_pattern(const char* reading, int mora_count) {
+    for (int i = 0; common_patterns[i].reading_pattern != NULL; i++) {
+        const AccentPattern* pattern = &common_patterns[i];
+        
+        // Check mora count if specified
+        if (pattern->mora_count != -1 && pattern->mora_count != mora_count) {
+            continue;
+        }
+        
+        // Check reading pattern
+        if (strcmp(reading, pattern->reading_pattern) == 0) {
+            return pattern->accent_position;
+        }
+    }
+    
+    return -1;  // No pattern found
+}
+
 // Simple rule-based accent estimation
 AccentInfo accent_estimator_estimate(AccentEstimator* estimator,
                                      const char* surface,
@@ -96,6 +144,22 @@ AccentInfo accent_estimator_estimate(AccentEstimator* estimator,
         info.is_particle = true;
         info.accent_position = 0;  // Particles are usually unaccented
         info.type = ACCENT_TYPE_FLAT;
+        return info;
+    }
+    
+    // Check known patterns first
+    int pattern_accent = check_accent_pattern(reading, info.mora_count);
+    if (pattern_accent >= 0) {
+        info.accent_position = pattern_accent;
+        if (pattern_accent == 0) {
+            info.type = ACCENT_TYPE_FLAT;
+        } else if (pattern_accent == 1) {
+            info.type = ACCENT_TYPE_HEAD_HIGH;
+        } else if (pattern_accent == info.mora_count) {
+            info.type = ACCENT_TYPE_TAIL_HIGH;
+        } else {
+            info.type = ACCENT_TYPE_MIDDLE;
+        }
         return info;
     }
     

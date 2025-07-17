@@ -111,6 +111,41 @@ static void lattice_clear(Lattice* lattice) {
     lattice->length = 0;
 }
 
+// Resize lattice
+static bool lattice_resize(Lattice* lattice, size_t new_capacity) {
+    if (!lattice || new_capacity <= lattice->capacity) return true;
+    
+    // Allocate new arrays
+    MecabFullNode** new_begin_list = (MecabFullNode**)calloc(new_capacity, sizeof(MecabFullNode*));
+    MecabFullNode** new_end_list = (MecabFullNode**)calloc(new_capacity, sizeof(MecabFullNode*));
+    
+    if (!new_begin_list || !new_end_list) {
+        free(new_begin_list);
+        free(new_end_list);
+        return false;
+    }
+    
+    // Copy existing data
+    if (lattice->begin_node_list) {
+        memcpy(new_begin_list, lattice->begin_node_list, 
+               lattice->capacity * sizeof(MecabFullNode*));
+        free(lattice->begin_node_list);
+    }
+    
+    if (lattice->end_node_list) {
+        memcpy(new_end_list, lattice->end_node_list, 
+               lattice->capacity * sizeof(MecabFullNode*));
+        free(lattice->end_node_list);
+    }
+    
+    // Update lattice
+    lattice->begin_node_list = new_begin_list;
+    lattice->end_node_list = new_end_list;
+    lattice->capacity = new_capacity;
+    
+    return true;
+}
+
 // Create MecabFull instance
 MecabFull* mecab_full_create(const char* dict_path) {
     MecabFull* mecab = (MecabFull*)calloc(1, sizeof(MecabFull));
@@ -247,8 +282,16 @@ static bool build_lattice(MecabFull* mecab, const char* text) {
     
     if (char_count >= mecab->lattice->capacity) {
         // Resize lattice
-        // TODO: Implement lattice resizing
-        return false;
+        size_t new_capacity = mecab->lattice->capacity;
+        while (new_capacity <= char_count) {
+            new_capacity *= 2;
+        }
+        
+        if (!lattice_resize(mecab->lattice, new_capacity)) {
+            snprintf(mecab->error_message, sizeof(mecab->error_message),
+                     "Failed to resize lattice to %zu", new_capacity);
+            return false;
+        }
     }
     
     mecab->lattice->length = char_count;

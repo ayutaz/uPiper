@@ -19,6 +19,11 @@ typedef struct {
     float* duration_buffer;
     size_t buffer_size;
     PhonemeSequence* last_sequence;
+    
+    // Options
+    bool use_accent;
+    bool use_duration;
+    float speech_rate;    // 1.0 = normal speed
 } OpenJTalkHandle;
 
 // Phoneme ID mapping
@@ -96,6 +101,11 @@ void* openjtalk_create(const char* dict_path) {
         openjtalk_destroy(handle);
         return NULL;
     }
+    
+    // Initialize options
+    handle->use_accent = true;
+    handle->use_duration = true;
+    handle->speech_rate = 1.0f;
     
     handle->last_error = OPENJTALK_SUCCESS;
     return handle;
@@ -185,7 +195,16 @@ PhonemeResult* openjtalk_phonemize(void* handle, const char* text) {
     for (uint32_t i = 0; i < h->last_sequence->count; i++) {
         Phoneme* p = &h->last_sequence->phonemes[i];
         h->phoneme_id_buffer[i] = get_phoneme_id(p->phoneme);
-        h->duration_buffer[i] = p->duration_ms / 1000.0f;  // Convert to seconds
+        
+        // Apply duration settings
+        if (h->use_duration) {
+            // Apply speech rate to duration
+            h->duration_buffer[i] = (p->duration_ms / 1000.0f) / h->speech_rate;
+        } else {
+            // Fixed duration when duration estimation is disabled
+            h->duration_buffer[i] = 0.1f / h->speech_rate;
+        }
+        
         total_duration += h->duration_buffer[i];
     }
     
@@ -247,15 +266,25 @@ int openjtalk_set_option(void* handle, const char* key, const char* value) {
     
     OpenJTalkHandle* h = (OpenJTalkHandle*)handle;
     
-    // TODO: Implement option setting
+    // Implement option setting
     if (strcmp(key, "use_accent") == 0) {
         // Enable/disable accent processing
+        h->use_accent = (strcmp(value, "true") == 0 || strcmp(value, "1") == 0);
         h->last_error = OPENJTALK_SUCCESS;
         return OPENJTALK_SUCCESS;
     } else if (strcmp(key, "use_duration") == 0) {
         // Enable/disable duration estimation
+        h->use_duration = (strcmp(value, "true") == 0 || strcmp(value, "1") == 0);
         h->last_error = OPENJTALK_SUCCESS;
         return OPENJTALK_SUCCESS;
+    } else if (strcmp(key, "speech_rate") == 0) {
+        // Set speech rate (0.5 - 2.0)
+        float rate = atof(value);
+        if (rate >= 0.5f && rate <= 2.0f) {
+            h->speech_rate = rate;
+            h->last_error = OPENJTALK_SUCCESS;
+            return OPENJTALK_SUCCESS;
+        }
     }
     
     h->last_error = OPENJTALK_ERROR_INVALID_INPUT;
@@ -271,9 +300,13 @@ const char* openjtalk_get_option(void* handle, const char* key) {
     OpenJTalkHandle* h = (OpenJTalkHandle*)handle;
     
     if (strcmp(key, "use_accent") == 0) {
-        return "true";
+        return h->use_accent ? "true" : "false";
     } else if (strcmp(key, "use_duration") == 0) {
-        return "true";
+        return h->use_duration ? "true" : "false";
+    } else if (strcmp(key, "speech_rate") == 0) {
+        static char rate_str[32];
+        snprintf(rate_str, sizeof(rate_str), "%.2f", h->speech_rate);
+        return rate_str;
     } else if (strcmp(key, "version") == 0) {
         return VERSION;
     } else if (strcmp(key, "dictionary_size") == 0) {
