@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Unity.InferenceEngine;
 using uPiper.Core.Logging;
 
 namespace uPiper.Core
@@ -39,6 +40,12 @@ namespace uPiper.Core
         /// </summary>
         [Tooltip("Path to the model configuration JSON")]
         public string ConfigPath;
+        
+        /// <summary>
+        /// Unity ModelAsset reference (alternative to ModelPath)
+        /// </summary>
+        [Tooltip("Unity ModelAsset reference for Sentis")]
+        public ModelAsset ModelAsset;
 
         /// <summary>
         /// Sample rate of the model

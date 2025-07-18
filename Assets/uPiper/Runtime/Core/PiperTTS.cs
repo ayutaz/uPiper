@@ -14,6 +14,42 @@ using uPiper.Core.AudioGeneration;
 namespace uPiper.Core
 {
     /// <summary>
+    /// Cached audio data structure
+    /// </summary>
+    internal class CachedAudioData
+    {
+        public float[] Samples { get; set; }
+        public int Frequency { get; set; }
+        public int Channels { get; set; }
+        public string Name { get; set; }
+        public DateTime CachedAt { get; set; }
+        public long SizeInBytes { get; set; }
+        
+        public AudioClip ToAudioClip()
+        {
+            var audioClip = AudioClip.Create(Name, Samples.Length, Channels, Frequency, false);
+            audioClip.SetData(Samples, 0);
+            return audioClip;
+        }
+        
+        public static CachedAudioData FromAudioClip(AudioClip clip)
+        {
+            var samples = new float[clip.samples * clip.channels];
+            clip.GetData(samples, 0);
+            
+            return new CachedAudioData
+            {
+                Samples = samples,
+                Frequency = clip.frequency,
+                Channels = clip.channels,
+                Name = clip.name,
+                CachedAt = DateTime.UtcNow,
+                SizeInBytes = samples.Length * sizeof(float)
+            };
+        }
+    }
+    
+    /// <summary>
     /// Main implementation of the Piper TTS interface
     /// </summary>
     public class PiperTTS : IPiperTTS
@@ -40,7 +76,7 @@ namespace uPiper.Core
         private readonly Queue<Worker> _workerPool;
         
         // Cache system
-        private readonly Dictionary<string, byte[]> _phonemeCache;
+        private readonly Dictionary<string, CachedAudioData> _audioCache;
         private long _currentCacheSize;
         private long _cacheHitCount;
         private long _cacheMissCount;
@@ -51,6 +87,7 @@ namespace uPiper.Core
         
         // Audio Generator
         private ISentisAudioGenerator _audioGenerator;
+        private Dictionary<string, ISentisAudioGenerator> _voiceGenerators;
 
         #endregion
 
@@ -232,7 +269,7 @@ namespace uPiper.Core
             _loadedModels = new Dictionary<string, Model>();
             _workers = new Dictionary<string, Worker>();
             _workerPool = new Queue<Worker>();
-            _phonemeCache = new Dictionary<string, byte[]>();
+            _audioCache = new Dictionary<string, CachedAudioData>();
             _currentCacheSize = 0;
             _cacheHitCount = 0;
             _cacheMissCount = 0;
@@ -333,8 +370,67 @@ namespace uPiper.Core
             {
                 PiperLogger.LogInfo("Loading voice: {0}", voice.VoiceId);
                 
-                // TODO: Implement actual voice loading logic
-                await Task.Delay(50, cancellationToken); // Simulate loading
+                // Validate model source
+                bool hasModelPath = !string.IsNullOrEmpty(voice.ModelPath);
+                bool hasModelAsset = voice.ModelAsset != null;
+                
+                if (!hasModelPath && !hasModelAsset)
+                {
+                    throw new InvalidOperationException("Voice must have either ModelPath or ModelAsset specified");
+                }
+                
+                if (hasModelPath && !File.Exists(voice.ModelPath))
+                {
+                    throw new FileNotFoundException($"Voice model file not found: {voice.ModelPath}");
+                }
+                
+                // Load voice-specific model if provided
+                if ((hasModelPath || hasModelAsset) && _audioGenerator != null)
+                {
+                    PiperLogger.LogInfo("Loading voice model: {0}", voice.ModelPath ?? "ModelAsset");
+                    
+                    // Create a new audio generator for this voice
+                    var voiceGenerator = new SentisAudioGenerator();
+                    
+                    // Initialize with ModelAsset or file path
+                    if (hasModelAsset)
+                    {
+                        // Load from ModelAsset
+                        var modelLoader = new ModelLoader();
+                        modelLoader.LoadModel(voice.ModelAsset);
+                        // TODO: Initialize SentisAudioGenerator with pre-loaded model
+                        await voiceGenerator.InitializeAsync(voice.ModelPath ?? "dummy", cancellationToken);
+                    }
+                    else
+                    {
+                        // Load from file path
+                        await voiceGenerator.InitializeAsync(voice.ModelPath, cancellationToken);
+                    }
+                    
+                    // Store the voice-specific generator
+                    lock (_lockObject)
+                    {
+                        if (_voiceGenerators == null)
+                            _voiceGenerators = new Dictionary<string, ISentisAudioGenerator>();
+                        
+                        // Dispose old generator if exists
+                        if (_voiceGenerators.TryGetValue(voice.VoiceId, out var oldGenerator))
+                        {
+                            oldGenerator?.Dispose();
+                        }
+                        
+                        _voiceGenerators[voice.VoiceId] = voiceGenerator;
+                    }
+                }
+                
+                // Apply voice-specific settings
+                if (voice.SpeechRate.HasValue || voice.PitchScale.HasValue || voice.VolumeScale.HasValue)
+                {
+                    PiperLogger.LogInfo("Applying voice settings: Rate={0}, Pitch={1}, Volume={2}",
+                        voice.SpeechRate ?? 1.0f,
+                        voice.PitchScale ?? 1.0f,
+                        voice.VolumeScale ?? 1.0f);
+                }
                 
                 lock (_lockObject)
                 {
@@ -452,14 +548,14 @@ namespace uPiper.Core
                     var cacheKey = GenerateCacheKey(text, _currentVoiceId);
                     lock (_lockObject)
                     {
-                        if (_phonemeCache.ContainsKey(cacheKey))
+                        if (_audioCache.TryGetValue(cacheKey, out var cachedData))
                         {
                             _cacheHitCount++;
                             PiperLogger.LogInfo("Cache hit for text");
                             _onProcessingProgress?.Invoke(1.0f);
                             
-                            // TODO: Convert cached data to AudioClip
-                            return CreateDummyAudioClip(text);
+                            // Convert cached data to AudioClip
+                            return cachedData.ToAudioClip();
                         }
                         else
                         {
@@ -494,12 +590,23 @@ namespace uPiper.Core
                 
                 // Generate audio using Sentis
                 AudioClip audioClip;
-                if (_audioGenerator != null && phonemeResult != null)
+                // Select appropriate audio generator
+                ISentisAudioGenerator generator = null;
+                if (_voiceGenerators != null && !string.IsNullOrEmpty(_currentVoiceId))
+                {
+                    lock (_lockObject)
+                    {
+                        _voiceGenerators.TryGetValue(_currentVoiceId, out generator);
+                    }
+                }
+                generator = generator ?? _audioGenerator;
+                
+                if (generator != null && phonemeResult != null)
                 {
                     try
                     {
-                        audioClip = await _audioGenerator.GenerateAudioAsync(phonemeResult, cancellationToken: cancellationToken);
-                        PiperLogger.LogInfo("Audio generated using Sentis");
+                        audioClip = await generator.GenerateAudioAsync(phonemeResult, cancellationToken: cancellationToken);
+                        PiperLogger.LogInfo("Audio generated using Sentis with voice: {0}", _currentVoiceId ?? "default");
                     }
                     catch (Exception ex)
                     {
@@ -517,10 +624,26 @@ namespace uPiper.Core
                 _onProcessingProgress?.Invoke(0.8f);
                 
                 // Cache the result if enabled
-                if (_config.EnablePhonemeCache && phonemeResult != null)
+                if (_config.EnablePhonemeCache && audioClip != null)
                 {
                     var cacheKey = GenerateCacheKey(text, _currentVoiceId);
-                    // TODO: Cache the phoneme result or audio data
+                    var cachedData = CachedAudioData.FromAudioClip(audioClip);
+                    
+                    lock (_lockObject)
+                    {
+                        // Check cache size limit
+                        var maxCacheSizeBytes = _config.MaxCacheSizeMB * 1024L * 1024L;
+                        if (_currentCacheSize + cachedData.SizeInBytes > maxCacheSizeBytes)
+                        {
+                            // Evict oldest entries until we have space
+                            EvictOldestCacheEntries(cachedData.SizeInBytes);
+                        }
+                        
+                        _audioCache[cacheKey] = cachedData;
+                        _currentCacheSize += cachedData.SizeInBytes;
+                        PiperLogger.LogDebug("Cached audio data: {0} bytes, total cache: {1:F2}MB", 
+                            cachedData.SizeInBytes, _currentCacheSize / (1024.0 * 1024.0));
+                    }
                 }
                 
                 _onProcessingProgress?.Invoke(1.0f);
@@ -905,7 +1028,7 @@ namespace uPiper.Core
             {
                 var stats = new CacheStatistics
                 {
-                    EntryCount = _phonemeCache.Count,
+                    EntryCount = _audioCache.Count,
                     TotalSizeBytes = _currentCacheSize,
                     HitCount = _cacheHitCount,
                     MissCount = _cacheMissCount,
@@ -926,7 +1049,7 @@ namespace uPiper.Core
             lock (_lockObject)
             {
                 var previousSize = _currentCacheSize;
-                _phonemeCache.Clear();
+                _audioCache.Clear();
                 _currentCacheSize = 0;
                 
                 if (previousSize > 0)
@@ -993,7 +1116,7 @@ namespace uPiper.Core
                     _voices.Clear();
                     
                     // Clear cache
-                    _phonemeCache.Clear();
+                    _audioCache.Clear();
                     _currentCacheSize = 0;
                     _cacheHitCount = 0;
                     _cacheMissCount = 0;
@@ -1006,6 +1129,16 @@ namespace uPiper.Core
                     // Dispose audio generator
                     _audioGenerator?.Dispose();
                     _audioGenerator = null;
+                    
+                    // Dispose voice-specific generators
+                    if (_voiceGenerators != null)
+                    {
+                        foreach (var generator in _voiceGenerators.Values)
+                        {
+                            generator?.Dispose();
+                        }
+                        _voiceGenerators.Clear();
+                    }
                     
                     _isInitialized = false;
                     _isDisposed = true;
@@ -1269,6 +1402,33 @@ namespace uPiper.Core
             // Simple hash-based cache key
             var combined = $"{text}|{voiceId}";
             return combined.GetHashCode().ToString();
+        }
+        
+        /// <summary>
+        /// Evict oldest cache entries to make room for new data
+        /// </summary>
+        private void EvictOldestCacheEntries(long requiredBytes)
+        {
+            var maxCacheSizeBytes = _config.MaxCacheSizeMB * 1024L * 1024L;
+            var targetSize = maxCacheSizeBytes - requiredBytes;
+            
+            // Sort by cached time (oldest first)
+            var sortedEntries = _audioCache
+                .OrderBy(kvp => kvp.Value.CachedAt)
+                .ToList();
+            
+            foreach (var entry in sortedEntries)
+            {
+                if (_currentCacheSize <= targetSize)
+                    break;
+                
+                _audioCache.Remove(entry.Key);
+                _currentCacheSize -= entry.Value.SizeInBytes;
+                _cacheEvictionCount++;
+                
+                PiperLogger.LogDebug("Evicted cache entry: {0}, freed {1} bytes", 
+                    entry.Key, entry.Value.SizeInBytes);
+            }
         }
         
         /// <summary>
