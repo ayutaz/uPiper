@@ -1,4 +1,5 @@
 #include "memory_pool.h"
+#include "debug_log.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -79,13 +80,29 @@ void* memory_pool_alloc(MemoryPool* pool, size_t size) {
             new_block_size = size * 2; // Ensure block is large enough
         }
         
-        MemoryBlock* new_block = (MemoryBlock*)malloc(sizeof(MemoryBlock) + new_block_size);
+        // Try to allocate with fallback sizes
+        MemoryBlock* new_block = NULL;
+        size_t sizes[] = {new_block_size, new_block_size/2, new_block_size/4, size + sizeof(MemoryBlock)};
+        size_t actual_size = 0;
+        
+        for (int i = 0; i < 4; i++) {
+            if (sizes[i] >= size) {
+                new_block = (MemoryBlock*)malloc(sizeof(MemoryBlock) + sizes[i]);
+                if (new_block) {
+                    actual_size = sizes[i];
+                    LOG_DEBUG("Allocated memory block of size %zu (requested %zu)", actual_size, new_block_size);
+                    break;
+                }
+            }
+        }
+        
         if (!new_block) {
+            LOG_ERROR("Failed to allocate memory block after fallback attempts");
             return NULL;
         }
         
         new_block->next = NULL;
-        new_block->size = new_block_size;
+        new_block->size = actual_size;
         new_block->used = 0;
         
         // Add to list

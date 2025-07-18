@@ -2,6 +2,8 @@
 #include "mecab_full.h"
 #include "phoneme_converter.h"
 #include "openjtalk_phonemizer.h"  // For PhonemeID
+#include "utf8_utils.h"
+#include "debug_log.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -155,6 +157,14 @@ PhonemeResult* openjtalk_phonemize(void* handle, const char* text) {
         return NULL;
     }
     
+    // Validate UTF-8
+    size_t text_len = strlen(text);
+    if (!utf8_validate(text, text_len)) {
+        h->last_error = OPENJTALK_ERROR_INVALID_UTF8;
+        LOG_ERROR("Invalid UTF-8 sequence in input text");
+        return NULL;
+    }
+    
     // Parse text with MeCab
     MecabFullNode* nodes = mecab_full_parse(h->mecab, text);
     if (!nodes) {
@@ -259,6 +269,14 @@ const char* openjtalk_get_error_string(int error_code) {
             return "Initialization failed";
         case OPENJTALK_ERROR_PHONEMIZATION_FAILED:
             return "Phonemization failed";
+        case OPENJTALK_ERROR_PROCESSING:
+            return "Processing error";
+        case OPENJTALK_ERROR_INVALID_OPTION:
+            return "Invalid option";
+        case OPENJTALK_ERROR_INVALID_DICTIONARY:
+            return "Invalid dictionary";
+        case OPENJTALK_ERROR_INVALID_UTF8:
+            return "Invalid UTF-8 sequence";
         default:
             return "Unknown error";
     }

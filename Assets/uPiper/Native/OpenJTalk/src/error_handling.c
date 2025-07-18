@@ -10,7 +10,11 @@ static const char* error_strings[] = {
     "Memory allocation failed",
     "Dictionary not found",
     "Initialization failed",
-    "Phonemization failed"
+    "Phonemization failed",
+    "Processing error",
+    "Invalid option",
+    "Invalid dictionary format",
+    "Invalid UTF-8 sequence"
 };
 
 // Set last error
@@ -38,6 +42,14 @@ const char* get_error_string(int error_code) {
             return error_strings[5];
         case OPENJTALK_ERROR_PHONEMIZATION_FAILED:
             return error_strings[6];
+        case OPENJTALK_ERROR_PROCESSING:
+            return error_strings[7];
+        case OPENJTALK_ERROR_INVALID_OPTION:
+            return error_strings[8];
+        case OPENJTALK_ERROR_INVALID_DICTIONARY:
+            return error_strings[9];
+        case OPENJTALK_ERROR_INVALID_UTF8:
+            return error_strings[10];
         default:
             return "Unknown error";
     }

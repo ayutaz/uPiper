@@ -6,6 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+
+// Dictionary error logging macro
+#define LOG_DICT_ERROR(fmt, ...) \
+    LOG_ERROR("Dictionary Error at %s:%d - " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
 
 // Load dictionary
 MecabFullDictionary* mecab_dict_load(const char* dict_path) {
@@ -18,7 +23,8 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     snprintf(path_buffer, sizeof(path_buffer), "%s/sys.dic", dict_path);
     FILE* sys_file = fopen(path_buffer, "rb");
     if (!sys_file) {
-        LOG_ERROR("Failed to open sys.dic: %s\n", path_buffer);
+        LOG_DICT_ERROR("Failed to open sys.dic: %s (errno=%d: %s)", 
+                       path_buffer, errno, strerror(errno));
         free(dict);
         return NULL;
     }
@@ -33,8 +39,27 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     
     // Validate magic number
     if (dict->sys_header.magic != MAGIC_ID) {
-        LOG_ERROR("Invalid magic number in sys.dic: 0x%X (expected 0x%X)\n", 
-                dict->sys_header.magic, MAGIC_ID);
+        LOG_DICT_ERROR("Invalid magic number in sys.dic: 0x%X (expected 0x%X)", 
+                       dict->sys_header.magic, MAGIC_ID);
+        fclose(sys_file);
+        free(dict);
+        return NULL;
+    }
+    
+    // Validate version
+    if (dict->sys_header.version != 1) {
+        LOG_DICT_ERROR("Unsupported dictionary version: %d (expected 1)", 
+                       dict->sys_header.version);
+        fclose(sys_file);
+        free(dict);
+        return NULL;
+    }
+    
+    // Validate charset
+    if (strcmp(dict->sys_header.charset, "UTF-8") != 0 && 
+        strcmp(dict->sys_header.charset, "utf-8") != 0) {
+        LOG_DICT_ERROR("Unsupported charset: %s (expected UTF-8)", 
+                       dict->sys_header.charset);
         fclose(sys_file);
         free(dict);
         return NULL;
@@ -90,7 +115,8 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     
     // Validate unk magic number
     if (dict->unk_header.magic != UNK_MAGIC_ID && dict->unk_header.magic != MAGIC_ID) {
-        fprintf(stderr, "Invalid magic number in unk.dic: 0x%X\n", dict->unk_header.magic);
+        LOG_DICT_ERROR("Invalid magic number in unk.dic: 0x%X (expected 0x%X or 0x%X)", 
+                       dict->unk_header.magic, UNK_MAGIC_ID, MAGIC_ID);
         fclose(unk_file);
         platform_munmap((void*)dict->sys_data, dict->sys_size);
         free(dict);

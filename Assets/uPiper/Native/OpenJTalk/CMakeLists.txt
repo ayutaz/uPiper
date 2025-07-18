@@ -260,4 +260,11 @@ if(BUILD_TESTS AND BUILD_FULL_VERSION)
     add_test(NAME simple_phonemize
         COMMAND test_simple
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    
+    # Error handling test
+    add_executable(test_error_handling test/test_error_handling.c)
+    target_link_libraries(test_error_handling openjtalk_wrapper)
+    add_test(NAME error_handling
+        COMMAND test_error_handling
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()

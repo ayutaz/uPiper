@@ -3,6 +3,9 @@
 #include "kanji_mapping.h"
 #include "mecab_full.h"
 #include "memory_pool.h"
+#include "utf8_utils.h"
+#include "debug_log.h"
+#include "../include/openjtalk_wrapper.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -12,6 +15,7 @@ struct OpenJTalkPhonemizer {
     MecabFull* mecab_full;
     MemoryPool* memory_pool;
     char error_message[256];
+    int last_error;
     
     // Options
     bool use_accent;
@@ -19,15 +23,14 @@ struct OpenJTalkPhonemizer {
     float speech_rate;
 };
 
-// UTF-8 handling
-static int utf8_char_len(unsigned char c) {
-    if (c < 0x80) return 1;
-    if ((c & 0xE0) == 0xC0) return 2;
-    if ((c & 0xF0) == 0xE0) return 3;
-    if ((c & 0xF8) == 0xF0) return 4;
-    return 1;
+// Set last error
+static void set_last_error(OpenJTalkPhonemizer* phonemizer, int error_code) {
+    if (phonemizer) {
+        phonemizer->last_error = error_code;
+    }
 }
 
+// UTF-8 handling
 static bool utf8_get_char(const char* str, char* out, int* bytes_read) {
     int len = utf8_char_len((unsigned char)str[0]);
     memcpy(out, str, len);
@@ -193,6 +196,14 @@ int openjtalk_phonemizer_phonemize(OpenJTalkPhonemizer* phonemizer,
                                     PhonemeInfo* phonemes,
                                     int max_phonemes) {
     if (!phonemizer || !text || !phonemes || max_phonemes <= 0) {
+        return -1;
+    }
+    
+    // Validate UTF-8
+    size_t text_len = strlen(text);
+    if (!utf8_validate(text, text_len)) {
+        set_last_error(phonemizer, OPENJTALK_ERROR_INVALID_UTF8);
+        LOG_ERROR("Invalid UTF-8 sequence in input text");
         return -1;
     }
     
