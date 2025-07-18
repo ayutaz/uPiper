@@ -10,6 +10,10 @@ namespace uPiper.Tests.Runtime.Platform
     /// </summary>
     public class NativeLibraryLoaderTests
     {
+        // Expected error message pattern for better maintainability
+        private const string NonExistentLibraryName = "nonexistent_library_12345";
+        private const string ExpectedErrorLogPattern = @"\[uPiper\] Failed to load native library 'nonexistent_library_12345': .+";
+
         [TearDown]
         public void TearDown()
         {
@@ -39,11 +43,11 @@ namespace uPiper.Tests.Runtime.Platform
                 Assert.Ignore("Platform does not support native plugins");
             }
 
-            // Expect error log - use regex to match the actual error message
-            LogAssert.Expect(UnityEngine.LogType.Error, new System.Text.RegularExpressions.Regex(@"\[uPiper\] Failed to load native library 'nonexistent_library_12345': .+"));
+            // Expect error log using the constant pattern
+            LogAssert.Expect(UnityEngine.LogType.Error, new System.Text.RegularExpressions.Regex(ExpectedErrorLogPattern));
             
             Assert.Throws<DllNotFoundException>(() => 
-                NativeLibraryLoader.LoadLibrary("nonexistent_library_12345"));
+                NativeLibraryLoader.LoadLibrary(NonExistentLibraryName));
         }
 
         [Test]

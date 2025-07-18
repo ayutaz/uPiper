@@ -194,11 +194,11 @@ namespace uPiper.Core.Platform
         /// </summary>
         public static void LogPlatformInfo()
         {
-            UnityEngine.Debug.Log($"[PlatformHelper] Platform: {Platform}");
-            UnityEngine.Debug.Log($"[PlatformHelper] Architecture: {GetArchitecture()}");
-            UnityEngine.Debug.Log($"[PlatformHelper] Native Library Extension: {NativeLibraryExtension}");
-            UnityEngine.Debug.Log($"[PlatformHelper] Native Library Directory: {GetNativeLibraryDirectory()}");
-            UnityEngine.Debug.Log($"[PlatformHelper] Supports Native Plugins: {SupportsNativePlugins}");
+            Debug.Log($"[PlatformHelper] Platform: {Platform}");
+            Debug.Log($"[PlatformHelper] Architecture: {GetArchitecture()}");
+            Debug.Log($"[PlatformHelper] Native Library Extension: {NativeLibraryExtension}");
+            Debug.Log($"[PlatformHelper] Native Library Directory: {GetNativeLibraryDirectory()}");
+            Debug.Log($"[PlatformHelper] Supports Native Plugins: {SupportsNativePlugins}");
         }
     }
 }

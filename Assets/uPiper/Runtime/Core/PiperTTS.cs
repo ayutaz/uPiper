@@ -396,7 +396,7 @@ namespace uPiper.Core
                     if (hasModelAsset)
                     {
                         // Load from ModelAsset
-                        var modelLoader = new uPiper.Core.AudioGeneration.ModelLoader();
+                        var modelLoader = new ModelLoader();
                         modelLoader.LoadModel(voice.ModelAsset);
                         // TODO: Initialize SentisAudioGenerator with pre-loaded model
                         await voiceGenerator.InitializeAsync(voice.ModelPath ?? "dummy", cancellationToken);

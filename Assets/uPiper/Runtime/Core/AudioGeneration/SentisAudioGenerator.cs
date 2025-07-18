@@ -345,6 +345,14 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
+        /// Helper method to create a tensor with specified shape and data
+        /// </summary>
+        private Tensor<T> CreateTensor<T>(TensorShape shape, T[] data) where T : unmanaged
+        {
+            return new Tensor<T>(shape, data);
+        }
+
+        /// <summary>
         /// Prepare input tensors for the model
         /// </summary>
         private Dictionary<string, Tensor> PrepareInputTensors(int[] phonemeIds, int speakerId)
@@ -376,7 +384,7 @@ namespace uPiper.Core.AudioGeneration
 
             // Create phoneme ID tensor
             // Shape: [1, sequence_length] for batch size 1
-            var phonemeTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
+            var phonemeTensor = CreateTensor(new TensorShape(1, phonemeIds.Length), phonemeIds);
             tensors[inputName] = phonemeTensor;
 
             // Check if model expects input_lengths
@@ -391,7 +399,7 @@ namespace uPiper.Core.AudioGeneration
             }
             if (lengthInputName != null)
             {
-                var lengthTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
+                var lengthTensor = CreateTensor(new TensorShape(1), new[] { phonemeIds.Length });
                 tensors[lengthInputName] = lengthTensor;
             }
 
@@ -409,7 +417,7 @@ namespace uPiper.Core.AudioGeneration
             {
                 // Default scales: noise_scale=0.667, length_scale=1.0, noise_w=0.8
                 var scales = new float[] { 0.667f, 1.0f, 0.8f };
-                var scalesTensor = new Tensor<float>(new TensorShape(1, 3), scales);
+                var scalesTensor = CreateTensor(new TensorShape(1, 3), scales);
                 tensors[scalesInputName] = scalesTensor;
             }
 
@@ -425,7 +433,7 @@ namespace uPiper.Core.AudioGeneration
             }
             if (speakerInputName != null)
             {
-                var speakerTensor = new Tensor<int>(new TensorShape(1), new[] { speakerId });
+                var speakerTensor = CreateTensor(new TensorShape(1), new[] { speakerId });
                 tensors[speakerInputName] = speakerTensor;
             }
 
