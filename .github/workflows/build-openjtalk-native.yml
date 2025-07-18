@@ -49,7 +49,7 @@ jobs:
         mkdir build
         cd build
         echo Running CMake configuration...
-        cmake .. -G "Visual Studio 16 2019" -A ${{ matrix.cmake_arch }}
+        cmake .. -A ${{ matrix.cmake_arch }}
         if %errorlevel% neq 0 exit /b %errorlevel%
         echo Building project...
         cmake --build . --config Release --parallel
