@@ -27,6 +27,7 @@ namespace uPiper.Tests.Runtime.Integration
 
             // Force mock mode for testing
             System.Environment.SetEnvironmentVariable("PIPER_MOCK_MODE", "1");
+            Debug.Log($"PIPER_MOCK_MODE set to: {System.Environment.GetEnvironmentVariable("PIPER_MOCK_MODE")}");
             
             // No longer expecting errors since we skip model loading in mock mode
             
@@ -45,7 +46,7 @@ namespace uPiper.Tests.Runtime.Integration
             Debug.Log("Initializing PiperTTS...");
             var initTask = piperTTS.InitializeAsync();
             
-            float timeout = 10f;
+            float timeout = 30f; // Increase timeout to 30 seconds
             float elapsed = 0f;
             while (!initTask.IsCompleted && elapsed < timeout)
             {

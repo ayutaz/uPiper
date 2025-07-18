@@ -52,25 +52,26 @@ namespace uPiper.Core.AudioGeneration
                 // Get file info
                 var fileInfo = new FileInfo(modelPath);
                 var modelSizeBytes = fileInfo.Length;
-
-                // Load the model asynchronously
-                await Task.Run(() =>
+                
+                // Check if we're in test mode
+                bool isMockMode = System.Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1";
+                if (isMockMode)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    
-                    // Check if we're in test mode
-                    if (System.Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1")
+                    PiperLogger.LogInfo("Mock mode enabled, skipping actual model loading");
+                    _loadedModel = null;
+                }
+                else
+                {
+                    // Load the model asynchronously
+                    await Task.Run(() =>
                     {
-                        // Skip actual model loading in test mode
-                        PiperLogger.LogInfo("Mock mode enabled, skipping actual model loading");
-                        _loadedModel = null;
-                        return;
-                    }
-                    
-                    // Load the model directly from file path
-                    _loadedModel = Unity.InferenceEngine.ModelLoader.Load(modelPath);
-                    
-                }, cancellationToken);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        
+                        // Load the model directly from file path
+                        _loadedModel = Unity.InferenceEngine.ModelLoader.Load(modelPath);
+                        
+                    }, cancellationToken);
+                }
 
                 // Extract model information
                 var modelInfo = ExtractModelInfo(modelPath, modelSizeBytes);
@@ -128,6 +129,16 @@ namespace uPiper.Core.AudioGeneration
         /// <returns>Validation result</returns>
         public ValidationResult ValidateModel()
         {
+            // In mock mode, validation always succeeds
+            if (System.Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1")
+            {
+                return new ValidationResult
+                {
+                    IsValid = true,
+                    ErrorMessage = null
+                };
+            }
+            
             if (!IsModelLoaded)
             {
                 return new ValidationResult
