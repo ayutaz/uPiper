@@ -11,10 +11,10 @@ namespace uPiper.Core.Phonemizers.Text
     public class TextNormalizer : ITextNormalizer
     {
         // Regex patterns for normalization
-        private static readonly Regex MultipleSpacesRegex = new Regex(@"\s{2,}", RegexOptions.Compiled);
-        private static readonly Regex LineBreaksRegex = new Regex(@"[\r\n]+", RegexOptions.Compiled);
-        private static readonly Regex ControlCharsRegex = new Regex(@"[\x00-\x1F\x7F]", RegexOptions.Compiled);
-        
+        private static readonly Regex multipleSpacesRegex = new Regex(@"\s{2,}", RegexOptions.Compiled);
+        private static readonly Regex lineBreaksRegex = new Regex(@"[\r\n]+", RegexOptions.Compiled);
+        private static readonly Regex controlCharsRegex = new Regex(@"[\x00-\x1F\x7F]", RegexOptions.Compiled);
+
         /// <summary>
         /// Normalizes text for phonemization.
         /// </summary>
@@ -67,9 +67,9 @@ namespace uPiper.Core.Phonemizers.Text
             }
 
             // Check for common normalization needs
-            if (MultipleSpacesRegex.IsMatch(text) || 
-                LineBreaksRegex.IsMatch(text) || 
-                ControlCharsRegex.IsMatch(text))
+            if (multipleSpacesRegex.IsMatch(text) ||
+                lineBreaksRegex.IsMatch(text) ||
+                controlCharsRegex.IsMatch(text))
             {
                 return true;
             }
@@ -89,13 +89,13 @@ namespace uPiper.Core.Phonemizers.Text
         private string NormalizeCommon(string text)
         {
             // Remove control characters
-            text = ControlCharsRegex.Replace(text, " ");
+            text = controlCharsRegex.Replace(text, " ");
 
             // Normalize line breaks to spaces
-            text = LineBreaksRegex.Replace(text, " ");
+            text = lineBreaksRegex.Replace(text, " ");
 
             // Normalize multiple spaces to single space
-            text = MultipleSpacesRegex.Replace(text, " ");
+            text = multipleSpacesRegex.Replace(text, " ");
 
             // Trim
             return text.Trim();
@@ -145,7 +145,7 @@ namespace uPiper.Core.Phonemizers.Text
         {
             // Convert to lowercase for contraction expansion
             var lowerText = text.ToLowerInvariant();
-            
+
             // Expand common contractions
             lowerText = lowerText.Replace("can't", "can not");
             lowerText = lowerText.Replace("won't", "will not");
@@ -169,7 +169,7 @@ namespace uPiper.Core.Phonemizers.Text
         {
             // Convert traditional to simplified (basic conversion)
             // In a real implementation, this would use a proper conversion library
-            
+
             // For now, just handle full-width to half-width conversion
             var sb = new StringBuilder(text.Length);
 
@@ -208,8 +208,8 @@ namespace uPiper.Core.Phonemizers.Text
             foreach (char c in text)
             {
                 // Check for full-width characters
-                if ((c >= '０' && c <= '９') || 
-                    (c >= 'Ａ' && c <= 'Ｚ') || 
+                if ((c >= '０' && c <= '９') ||
+                    (c >= 'Ａ' && c <= 'Ｚ') ||
                     (c >= 'ａ' && c <= 'ｚ') ||
                     c == '　')
                 {

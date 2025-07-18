@@ -58,7 +58,7 @@ namespace uPiper.Core.Phonemizers
             _textNormalizer = textNormalizer ?? new TextNormalizer();
             _cacheStats = new CacheStatistics { MaxSizeBytes = (cacheSize ?? DefaultCacheSize) * 1024 }; // Estimate
             _languageInfos = new Dictionary<string, LanguageInfo>();
-            
+
             InitializeLanguages();
             PiperLogger.LogInfo($"{Name} phonemizer initialized (version {Version})");
         }
@@ -102,7 +102,7 @@ namespace uPiper.Core.Phonemizers
             {
                 _cacheStats.RecordHit();
                 PiperLogger.LogDebug($"Phonemizer cache hit for: \"{text.Substring(0, Math.Min(20, text.Length))}...\"");
-                
+
                 var result = cachedResult.Clone();
                 result.OriginalText = text; // Preserve original text
                 result.FromCache = true;
@@ -117,7 +117,7 @@ namespace uPiper.Core.Phonemizers
                 // Perform actual phonemization
                 cancellationToken.ThrowIfCancellationRequested();
                 var phonemeResult = await PhonemizeInternalAsync(normalizedText, language, cancellationToken);
-                
+
                 phonemeResult.OriginalText = text;
                 phonemeResult.Language = language;
                 phonemeResult.ProcessingTime = sw.Elapsed;

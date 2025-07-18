@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.InferenceEngine;
-using UnityEngine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Unity.InferenceEngine;
+using UnityEngine;
 
 namespace uPiper.Runtime
 {
@@ -15,27 +15,27 @@ namespace uPiper.Runtime
     public class PiperTTSPrototype : MonoBehaviour
     {
         [Header("Model Settings")]
-        [SerializeField] private string modelName = "ja_JP-test-medium";
-        [SerializeField] private BackendType backendType = BackendType.GPUCompute;
-        
+        [SerializeField] private string _modelName = "ja_JP-test-medium";
+        [SerializeField] private BackendType _backendType = BackendType.GPUCompute;
+
         [Header("Audio Settings")]
-        [SerializeField] private AudioSource audioSource;
-        [SerializeField] private int sampleRate = 22050;
-        
+        [SerializeField] private AudioSource _audioSource;
+        [SerializeField] private int _sampleRate = 22050;
+
         [Header("Test Settings")]
-        [SerializeField] private bool autoPlayOnStart = true;
-        [SerializeField] private string testText = "こんにちは";
-        
+        [SerializeField] private bool _autoPlayOnStart = true;
+        [SerializeField] private string _testText = "こんにちは";
+
         [Header("Status")]
-        [SerializeField] private string status = "Not initialized";
-        
-        private Model model;
-        private Worker worker;
-        private Dictionary<string, int> phonemeIdMap = new Dictionary<string, int>();
-        
+        [SerializeField] private string _status = "Not initialized";
+
+        private Model _model;
+        private Worker _worker;
+        private Dictionary<string, int> _phonemeIdMap = new Dictionary<string, int>();
+
         // 日本語の音素マッピング（簡易版）
         // 実際にはOpenJTalkなどの音素化エンジンが必要
-        private readonly Dictionary<string, string[]> HIRAGANA_TO_PHONEMES = new Dictionary<string, string[]>
+        private readonly Dictionary<string, string[]> _hiraganaToPhonemes = new Dictionary<string, string[]>
         {
             { "こ", new[] { "k", "o" } },
             { "ん", new[] { "N" } },
@@ -47,26 +47,26 @@ namespace uPiper.Runtime
             { "し", new[] { "s", "i" } }
         };
 
-        void Start()
+        private void Start()
         {
-            if (audioSource == null)
+            if (_audioSource == null)
             {
-                audioSource = GetComponent<AudioSource>();
-                if (audioSource == null)
+                _audioSource = GetComponent<AudioSource>();
+                if (_audioSource == null)
                 {
-                    audioSource = gameObject.AddComponent<AudioSource>();
+                    _audioSource = gameObject.AddComponent<AudioSource>();
                 }
             }
-            
+
             LoadModel();
-            
-            if (autoPlayOnStart && model != null)
+
+            if (_autoPlayOnStart && _model != null)
             {
-                GenerateAndPlayTTS(testText);
+                GenerateAndPlayTTS(_testText);
             }
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
             CleanupResources();
         }
@@ -75,66 +75,66 @@ namespace uPiper.Runtime
         {
             try
             {
-                status = "Loading model...";
-                Debug.Log($"Loading Piper TTS model: {modelName}");
-                
+                _status = "Loading model...";
+                Debug.Log($"Loading Piper TTS model: {_modelName}");
+
                 // モデル設定を読み込む
                 // Resources.Load では拡張子を含めない
-                var configAsset = Resources.Load<TextAsset>($"{modelName}.onnx");
+                var configAsset = Resources.Load<TextAsset>($"{_modelName}.onnx");
                 if (configAsset != null)
                 {
                     Debug.Log($"Config JSON loaded, length: {configAsset.text.Length}");
                     var configJson = JObject.Parse(configAsset.text);
                     LoadPhonemeMapFromJson(configJson);
-                    
+
                     // サンプルレートを取得
                     if (configJson["audio"]?["sample_rate"] != null)
                     {
-                        sampleRate = configJson["audio"]["sample_rate"].Value<int>();
-                        Debug.Log($"Loaded config: sample rate: {sampleRate}");
+                        _sampleRate = configJson["audio"]["sample_rate"].Value<int>();
+                        Debug.Log($"Loaded config: sample rate: {_sampleRate}");
                     }
                 }
                 else
                 {
-                    Debug.LogError($"Config file not found: {modelName}.onnx in Resources");
+                    Debug.LogError($"Config file not found: {_modelName}.onnx in Resources");
                 }
-                
+
                 // ONNXモデルを読み込む
-                var modelAsset = Resources.Load<ModelAsset>(modelName);
+                var modelAsset = Resources.Load<ModelAsset>(_modelName);
                 if (modelAsset != null)
                 {
-                    model = ModelLoader.Load(modelAsset);
-                    worker = new Worker(model, backendType);
-                    
-                    status = "Model loaded successfully";
-                    Debug.Log($"Model loaded: inputs={model.inputs.Count}, outputs={model.outputs.Count}");
-                    
+                    _model = ModelLoader.Load(modelAsset);
+                    _worker = new Worker(_model, _backendType);
+
+                    _status = "Model loaded successfully";
+                    Debug.Log($"Model loaded: inputs={_model.inputs.Count}, outputs={_model.outputs.Count}");
+
                     // モデルの入出力情報をログ
-                    foreach (var input in model.inputs)
+                    foreach (var input in _model.inputs)
                     {
                         Debug.Log($"Input: {input.name}, shape: {string.Join("x", input.shape)}");
                     }
-                    foreach (var output in model.outputs)
+                    foreach (var output in _model.outputs)
                     {
                         Debug.Log($"Output: {output.name}");
                     }
                 }
                 else
                 {
-                    throw new Exception($"Model asset '{modelName}' not found in Resources");
+                    throw new Exception($"Model asset '{_modelName}' not found in Resources");
                 }
             }
             catch (Exception e)
             {
-                status = $"Error loading model: {e.Message}";
+                _status = $"Error loading model: {e.Message}";
                 Debug.LogError($"Failed to load model: {e}");
             }
         }
 
         private void LoadPhonemeMapFromJson(JObject configJson)
         {
-            phonemeIdMap.Clear();
-            
+            _phonemeIdMap.Clear();
+
             // phoneme_id_map をパース
             var phonemeIdMapJson = configJson["phoneme_id_map"] as JObject;
             if (phonemeIdMapJson != null)
@@ -146,70 +146,70 @@ namespace uPiper.Runtime
                     if (idArray != null && idArray.Count > 0)
                     {
                         int id = idArray[0].Value<int>();
-                        phonemeIdMap[phoneme] = id;
+                        _phonemeIdMap[phoneme] = id;
                     }
                 }
-                
-                Debug.Log($"Loaded phoneme map with {phonemeIdMap.Count} entries from JSON");
+
+                Debug.Log($"Loaded phoneme map with {_phonemeIdMap.Count} entries from JSON");
             }
             else
             {
                 // フォールバック: ハードコード版
                 Debug.LogWarning("Failed to parse phoneme_id_map from JSON. Using fallback values.");
-                phonemeIdMap["_"] = 0;  // pad
-                phonemeIdMap["^"] = 1;  // bos
-                phonemeIdMap["$"] = 2;  // eos
-                phonemeIdMap["k"] = 25;
-                phonemeIdMap["o"] = 11;
-                phonemeIdMap["n"] = 50;
-                phonemeIdMap["N"] = 22;
-                phonemeIdMap["i"] = 8;
-                phonemeIdMap["t"] = 31;
-                phonemeIdMap["h"] = 47;
-                phonemeIdMap["a"] = 7;
-                phonemeIdMap["w"] = 56;
-                phonemeIdMap["s"] = 41;
+                _phonemeIdMap["_"] = 0;  // pad
+                _phonemeIdMap["^"] = 1;  // bos
+                _phonemeIdMap["$"] = 2;  // eos
+                _phonemeIdMap["k"] = 25;
+                _phonemeIdMap["o"] = 11;
+                _phonemeIdMap["n"] = 50;
+                _phonemeIdMap["N"] = 22;
+                _phonemeIdMap["i"] = 8;
+                _phonemeIdMap["t"] = 31;
+                _phonemeIdMap["h"] = 47;
+                _phonemeIdMap["a"] = 7;
+                _phonemeIdMap["w"] = 56;
+                _phonemeIdMap["s"] = 41;
             }
         }
 
         [ContextMenu("Generate TTS")]
         public void GenerateTestTTS()
         {
-            GenerateAndPlayTTS(testText);
+            GenerateAndPlayTTS(_testText);
         }
 
         public void GenerateAndPlayTTS(string text)
         {
-            if (model == null || worker == null)
+            if (_model == null || _worker == null)
             {
                 Debug.LogError("Model not loaded");
                 return;
             }
-            
+
             try
             {
-                status = $"Generating TTS for: {text}";
+                _status = $"Generating TTS for: {text}";
                 Debug.Log($"=== Piper TTS Generation ===");
                 Debug.Log($"Text: {text}");
-                
+
                 // Step 1: テキストを音素IDに変換
                 int[] phonemeIds = TextToPhonemeIds(text);
                 Debug.Log($"Phoneme IDs: [{string.Join(", ", phonemeIds)}]");
-                
+
                 // Step 2: 音素IDから音声を生成（デモ用の簡易実装）
                 // 実際のPiper TTSではONNXモデルで推論を行う
                 float[] waveform = GenerateWaveformFromPhonemes(phonemeIds);
-                
+
                 // Step 3: AudioClipを作成して再生
                 AudioClip clip = CreateAudioClip(waveform);
                 PlayAudioClip(clip);
-                
-                status = "Playing...";
+
+                _status = "Playing...";
                 Debug.Log("=== TTS Generation Complete ===");
             }
             catch (Exception e)
             {
-                status = $"Error: {e.Message}";
+                _status = $"Error: {e.Message}";
                 Debug.LogError($"TTS generation failed: {e}");
             }
         }
@@ -217,39 +217,39 @@ namespace uPiper.Runtime
         private int[] TextToPhonemeIds(string text)
         {
             var phonemeIds = new List<int>();
-            
+
             // phonemeIdMapが空の場合は警告
-            if (phonemeIdMap.Count == 0)
+            if (_phonemeIdMap.Count == 0)
             {
                 Debug.LogWarning("Phoneme ID map is empty. Using default values.");
                 // デフォルト値を返す
                 return new int[] { 1, 25, 11, 50, 8, 31, 8, 47, 7, 2 }; // "こんにちは"の仮の音素ID
             }
-            
+
             // BOS (beginning of sentence)
-            if (phonemeIdMap.TryGetValue("^", out int bosId))
+            if (_phonemeIdMap.TryGetValue("^", out int bosId))
                 phonemeIds.Add(bosId);
-            
+
             // テキストを音素に変換（簡易実装）
             foreach (char c in text)
             {
                 string charStr = c.ToString();
-                if (HIRAGANA_TO_PHONEMES.TryGetValue(charStr, out string[] phonemes))
+                if (_hiraganaToPhonemes.TryGetValue(charStr, out string[] phonemes))
                 {
                     foreach (string phoneme in phonemes)
                     {
-                        if (phonemeIdMap.TryGetValue(phoneme, out int id))
+                        if (_phonemeIdMap.TryGetValue(phoneme, out int id))
                         {
                             phonemeIds.Add(id);
                         }
                     }
                 }
             }
-            
+
             // EOS (end of sentence)
-            if (phonemeIdMap.TryGetValue("$", out int eosId))
+            if (_phonemeIdMap.TryGetValue("$", out int eosId))
                 phonemeIds.Add(eosId);
-            
+
             return phonemeIds.ToArray();
         }
 
@@ -257,25 +257,25 @@ namespace uPiper.Runtime
         {
             // デモ用の簡易波形生成
             // 実際にはONNXモデルで推論を行う
-            int samplesPerPhoneme = sampleRate / 10; // 0.1秒/音素
+            int samplesPerPhoneme = _sampleRate / 10; // 0.1秒/音素
             float[] waveform = new float[phonemeIds.Length * samplesPerPhoneme];
-            
+
             for (int i = 0; i < phonemeIds.Length; i++)
             {
                 int phonemeId = phonemeIds[i];
                 float frequency = 220f * (1f + phonemeId / 50f); // 音素IDに基づく周波数
-                
+
                 for (int j = 0; j < samplesPerPhoneme; j++)
                 {
                     int sampleIndex = i * samplesPerPhoneme + j;
-                    float t = sampleIndex / (float)sampleRate;
-                    
+                    float t = sampleIndex / (float)_sampleRate;
+
                     // エンベロープ付きサイン波
                     float envelope = 1f - (j / (float)samplesPerPhoneme);
                     waveform[sampleIndex] = Mathf.Sin(2f * Mathf.PI * frequency * t) * envelope * 0.3f;
                 }
             }
-            
+
             return waveform;
         }
 
@@ -285,58 +285,58 @@ namespace uPiper.Runtime
                 "PiperTTS_Output",
                 waveform.Length,
                 1,
-                sampleRate,
+                _sampleRate,
                 false
             );
-            
+
             clip.SetData(waveform, 0);
             return clip;
         }
 
         private void PlayAudioClip(AudioClip clip)
         {
-            audioSource.clip = clip;
-            audioSource.Play();
-            
+            _audioSource.clip = clip;
+            _audioSource.Play();
+
             StartCoroutine(WaitForAudioEnd(clip.length));
         }
 
         private System.Collections.IEnumerator WaitForAudioEnd(float duration)
         {
             yield return new WaitForSeconds(duration);
-            status = "Ready";
+            _status = "Ready";
         }
 
         private void CleanupResources()
         {
-            worker?.Dispose();
-            worker = null;
-            model = null;
+            _worker?.Dispose();
+            _worker = null;
+            _model = null;
         }
 
-        void OnGUI()
+        private void OnGUI()
         {
             GUILayout.BeginArea(new Rect(10, 10, 400, 200));
             GUILayout.Label("Piper TTS Prototype", GUI.skin.box);
             GUILayout.Space(10);
-            
-            GUILayout.Label($"Status: {status}");
-            GUILayout.Label($"Model: {modelName}");
-            GUILayout.Label($"Backend: {backendType}");
-            GUILayout.Label($"Sample Rate: {sampleRate}Hz");
-            
+
+            GUILayout.Label($"Status: {_status}");
+            GUILayout.Label($"Model: {_modelName}");
+            GUILayout.Label($"Backend: {_backendType}");
+            GUILayout.Label($"Sample Rate: {_sampleRate}Hz");
+
             GUILayout.Space(10);
-            
+
             GUILayout.BeginHorizontal();
             GUILayout.Label("Text:", GUILayout.Width(50));
-            testText = GUILayout.TextField(testText, GUILayout.Width(200));
+            _testText = GUILayout.TextField(_testText, GUILayout.Width(200));
             GUILayout.EndHorizontal();
-            
+
             if (GUILayout.Button("Generate TTS"))
             {
-                GenerateAndPlayTTS(testText);
+                GenerateAndPlayTTS(_testText);
             }
-            
+
             GUILayout.EndArea();
         }
     }

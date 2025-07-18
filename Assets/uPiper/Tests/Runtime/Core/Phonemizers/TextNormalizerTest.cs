@@ -27,7 +27,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "Hello    world    test";
             var expected = "hello world test";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "en"));
         }
 
@@ -36,7 +36,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "Hello\nworld\r\ntest";
             var expected = "hello world test";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "en"));
         }
 
@@ -45,7 +45,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "Hello\x00world\x1Ftest";
             var expected = "hello world test";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "en"));
         }
 
@@ -54,7 +54,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "  Hello world  ";
             var expected = "hello world";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "en"));
         }
 
@@ -67,7 +67,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "０１２３４５６７８９";
             var expected = "0123456789";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "ja"));
         }
 
@@ -76,7 +76,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ";
             var expected = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "ja"));
         }
 
@@ -85,7 +85,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ";
             var expected = "abcdefghijklmnopqrstuvwxyz";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "ja"));
         }
 
@@ -94,7 +94,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "こんにちは　世界";
             var expected = "こんにちは 世界";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "ja"));
         }
 
@@ -103,7 +103,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "今日は２０２４年１月１５日です。";
             var expected = "今日は2024年1月15日です。";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "ja"));
         }
 
@@ -112,7 +112,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "ひらがな カタカナ 漢字";
             var expected = "ひらがな カタカナ 漢字";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "ja"));
         }
 
@@ -125,7 +125,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "HELLO WORLD";
             var expected = "hello world";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "en"));
         }
 
@@ -145,7 +145,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "John's book";
             var expected = "john is book";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "en"));
         }
 
@@ -154,7 +154,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "I can't believe it's John's birthday!";
             var expected = "i can not believe it is john is birthday!";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "en"));
         }
 
@@ -177,7 +177,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "你好，世界！今天天气怎么样？";
             var expected = "你好,世界!今天天气怎么样?";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "zh"));
         }
 
@@ -246,7 +246,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var input = "Hello    world\ntest";
             var expected = "hello world test";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "unknown"));
             Assert.AreEqual(expected, _normalizer.Normalize(input, null));
         }
@@ -257,7 +257,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Korean normalization is basic in current implementation
             var input = "안녕하세요    세계";
             var expected = "안녕하세요 세계";
-            
+
             Assert.AreEqual(expected, _normalizer.Normalize(input, "ko"));
         }
 

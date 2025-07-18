@@ -22,25 +22,25 @@ namespace uPiper.Core
             ErrorCode = PiperErrorCode.Unknown;
         }
 
-        public PiperException(string message, Exception innerException) 
+        public PiperException(string message, Exception innerException)
             : base(message, innerException)
         {
             ErrorCode = PiperErrorCode.Unknown;
         }
 
-        public PiperException(PiperErrorCode errorCode, string message) 
+        public PiperException(PiperErrorCode errorCode, string message)
             : base(message)
         {
             ErrorCode = errorCode;
         }
 
-        public PiperException(PiperErrorCode errorCode, string message, Exception innerException) 
+        public PiperException(PiperErrorCode errorCode, string message, Exception innerException)
             : base(message, innerException)
         {
             ErrorCode = errorCode;
         }
 
-        public PiperException(PiperErrorCode errorCode, string message, string context) 
+        public PiperException(PiperErrorCode errorCode, string message, string context)
             : base(message)
         {
             ErrorCode = errorCode;
@@ -53,10 +53,10 @@ namespace uPiper.Core
     /// </summary>
     public class PiperInitializationException : PiperException
     {
-        public PiperInitializationException(string message) 
+        public PiperInitializationException(string message)
             : base(PiperErrorCode.InitializationFailed, message) { }
 
-        public PiperInitializationException(string message, Exception innerException) 
+        public PiperInitializationException(string message, Exception innerException)
             : base(PiperErrorCode.InitializationFailed, message, innerException) { }
     }
 
@@ -67,13 +67,13 @@ namespace uPiper.Core
     {
         public string ModelPath { get; }
 
-        public PiperModelLoadException(string modelPath, string message) 
+        public PiperModelLoadException(string modelPath, string message)
             : base(PiperErrorCode.ModelLoadFailed, message)
         {
             ModelPath = modelPath;
         }
 
-        public PiperModelLoadException(string modelPath, string message, Exception innerException) 
+        public PiperModelLoadException(string modelPath, string message, Exception innerException)
             : base(PiperErrorCode.ModelLoadFailed, message, innerException)
         {
             ModelPath = modelPath;
@@ -85,10 +85,10 @@ namespace uPiper.Core
     /// </summary>
     public class PiperInferenceException : PiperException
     {
-        public PiperInferenceException(string message) 
+        public PiperInferenceException(string message)
             : base(PiperErrorCode.InferenceFailed, message) { }
 
-        public PiperInferenceException(string message, Exception innerException) 
+        public PiperInferenceException(string message, Exception innerException)
             : base(PiperErrorCode.InferenceFailed, message, innerException) { }
     }
 
@@ -100,14 +100,14 @@ namespace uPiper.Core
         public string InputText { get; }
         public string Language { get; }
 
-        public PiperPhonemizationException(string inputText, string language, string message) 
+        public PiperPhonemizationException(string inputText, string language, string message)
             : base(PiperErrorCode.PhonemizationFailed, message)
         {
             InputText = inputText;
             Language = language;
         }
 
-        public PiperPhonemizationException(string inputText, string language, string message, Exception innerException) 
+        public PiperPhonemizationException(string inputText, string language, string message, Exception innerException)
             : base(PiperErrorCode.PhonemizationFailed, message, innerException)
         {
             InputText = inputText;
@@ -120,10 +120,10 @@ namespace uPiper.Core
     /// </summary>
     public class PiperConfigurationException : PiperException
     {
-        public PiperConfigurationException(string message) 
+        public PiperConfigurationException(string message)
             : base(PiperErrorCode.ConfigurationError, message) { }
 
-        public PiperConfigurationException(string message, Exception innerException) 
+        public PiperConfigurationException(string message, Exception innerException)
             : base(PiperErrorCode.ConfigurationError, message, innerException) { }
     }
 
@@ -134,7 +134,7 @@ namespace uPiper.Core
     {
         public string Platform { get; }
 
-        public PiperPlatformNotSupportedException(string platform) 
+        public PiperPlatformNotSupportedException(string platform)
             : base(PiperErrorCode.PlatformNotSupported, $"Platform '{platform}' is not supported")
         {
             Platform = platform;
@@ -148,7 +148,7 @@ namespace uPiper.Core
     {
         public int TimeoutMs { get; }
 
-        public PiperTimeoutException(int timeoutMs, string operation) 
+        public PiperTimeoutException(int timeoutMs, string operation)
             : base(PiperErrorCode.Timeout, $"Operation '{operation}' timed out after {timeoutMs}ms")
         {
             TimeoutMs = timeoutMs;

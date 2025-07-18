@@ -14,7 +14,7 @@ namespace uPiper.Tests.Runtime.Core
                 "path/to/ja_JP-test-medium.onnx",
                 "path/to/ja_JP-test-medium.json"
             );
-            
+
             // Assert
             Assert.AreEqual("ja_JP-test-medium", config.VoiceId);
             Assert.AreEqual("ja", config.Language);
@@ -22,7 +22,7 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual("path/to/ja_JP-test-medium.onnx", config.ModelPath);
             Assert.AreEqual("path/to/ja_JP-test-medium.json", config.ConfigPath);
         }
-        
+
         [Test]
         public void FromModelPath_HandlesEnglishModel()
         {
@@ -31,13 +31,13 @@ namespace uPiper.Tests.Runtime.Core
                 "models/en_US-amy-high.onnx",
                 "models/en_US-amy-high.json"
             );
-            
+
             // Assert
             Assert.AreEqual("en_US-amy-high", config.VoiceId);
             Assert.AreEqual("en", config.Language);
             Assert.AreEqual("en US amy high", config.DisplayName);
         }
-        
+
         [Test]
         public void Validate_ReturnsTrueForValidConfig()
         {
@@ -48,11 +48,11 @@ namespace uPiper.Tests.Runtime.Core
                 ModelPath = "/path/to/model.onnx",
                 Language = "ja"
             };
-            
+
             // Act & Assert
             Assert.IsTrue(config.Validate());
         }
-        
+
         [Test]
         public void Validate_ReturnsFalseForMissingVoiceId()
         {
@@ -62,12 +62,12 @@ namespace uPiper.Tests.Runtime.Core
                 ModelPath = "/path/to/model.onnx",
                 Language = "ja"
             };
-            
+
             // Act & Assert
             LogAssert.Expect(UnityEngine.LogType.Error, "[uPiper] Voice ID is required");
             Assert.IsFalse(config.Validate());
         }
-        
+
         [Test]
         public void Validate_ReturnsFalseForMissingModelPath()
         {
@@ -77,12 +77,12 @@ namespace uPiper.Tests.Runtime.Core
                 VoiceId = "test-voice",
                 Language = "ja"
             };
-            
+
             // Act & Assert
             LogAssert.Expect(UnityEngine.LogType.Error, "[uPiper] Model path is required");
             Assert.IsFalse(config.Validate());
         }
-        
+
         [Test]
         public void Validate_ReturnsFalseForMissingLanguage()
         {
@@ -92,12 +92,12 @@ namespace uPiper.Tests.Runtime.Core
                 VoiceId = "test-voice",
                 ModelPath = "/path/to/model.onnx"
             };
-            
+
             // Act & Assert
             LogAssert.Expect(UnityEngine.LogType.Error, "[uPiper] Language is required");
             Assert.IsFalse(config.Validate());
         }
-        
+
         [Test]
         public void ToString_ReturnsFormattedString()
         {
@@ -107,20 +107,20 @@ namespace uPiper.Tests.Runtime.Core
                 DisplayName = "Test Voice",
                 Language = "ja"
             };
-            
+
             // Act
             var result = config.ToString();
-            
+
             // Assert
             Assert.AreEqual("Test Voice (ja)", result);
         }
-        
+
         [Test]
         public void DefaultValues_AreCorrect()
         {
             // Arrange & Act
             var config = new PiperVoiceConfig();
-            
+
             // Assert
             Assert.AreEqual(22050, config.SampleRate);
             Assert.AreEqual(VoiceGender.Neutral, config.Gender);
@@ -129,7 +129,7 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual(ModelQuality.Medium, config.Quality);
             Assert.IsTrue(config.SupportsStreaming);
         }
-        
+
         [Test]
         public void VoiceGender_EnumValues()
         {
@@ -138,7 +138,7 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual(1, (int)VoiceGender.Male);
             Assert.AreEqual(2, (int)VoiceGender.Female);
         }
-        
+
         [Test]
         public void VoiceAge_EnumValues()
         {
@@ -148,7 +148,7 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual(2, (int)VoiceAge.Adult);
             Assert.AreEqual(3, (int)VoiceAge.Senior);
         }
-        
+
         [Test]
         public void ModelQuality_EnumValues()
         {
@@ -158,7 +158,7 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual(2, (int)ModelQuality.High);
             Assert.AreEqual(3, (int)ModelQuality.Ultra);
         }
-        
+
         [Test]
         public void SpeakingStyle_EnumValues()
         {
@@ -172,7 +172,7 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual(6, (int)SpeakingStyle.Disgusted);
             Assert.AreEqual(7, (int)SpeakingStyle.Neutral);
         }
-        
+
         [Test]
         public void FromModelPath_HandlesSimpleFileName()
         {
@@ -181,7 +181,7 @@ namespace uPiper.Tests.Runtime.Core
                 "model.onnx",
                 "model.json"
             );
-            
+
             // Assert
             Assert.AreEqual("model", config.VoiceId);
             Assert.AreEqual("model", config.DisplayName);

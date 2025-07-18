@@ -42,7 +42,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             _cache.Add("key1", "value1");
             Assert.AreEqual(1, _cache.Count);
-            
+
             _cache.Add("key2", "value2");
             Assert.AreEqual(2, _cache.Count);
         }
@@ -52,7 +52,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             _cache.Add("key1", "value1");
             _cache.Add("key1", "updated");
-            
+
             Assert.IsTrue(_cache.TryGet("key1", out var value));
             Assert.AreEqual("updated", value);
             Assert.AreEqual(1, _cache.Count);
@@ -68,7 +68,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void TryGet_ExistingItem_ReturnsTrue()
         {
             _cache.Add("key1", "value1");
-            
+
             Assert.IsTrue(_cache.TryGet("key1", out var value));
             Assert.AreEqual("value1", value);
         }
@@ -94,14 +94,14 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             _cache.Add("key1", "value1");
             _cache.Add("key2", "value2");
             _cache.Add("key3", "value3");
-            
+
             // Access key1 and key2 to make them more recently used
             _cache.TryGet("key1", out _);
             _cache.TryGet("key2", out _);
-            
+
             // Add new item, should evict key3
             _cache.Add("key4", "value4");
-            
+
             Assert.AreEqual(3, _cache.Count);
             Assert.IsFalse(_cache.TryGet("key3", out _));
             Assert.IsTrue(_cache.TryGet("key1", out _));
@@ -113,7 +113,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Remove_ExistingItem_ReturnsTrue()
         {
             _cache.Add("key1", "value1");
-            
+
             Assert.IsTrue(_cache.Remove("key1"));
             Assert.AreEqual(0, _cache.Count);
             Assert.IsFalse(_cache.TryGet("key1", out _));
@@ -137,9 +137,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             _cache.Add("key1", "value1");
             _cache.Add("key2", "value2");
             _cache.Add("key3", "value3");
-            
+
             _cache.Clear();
-            
+
             Assert.AreEqual(0, _cache.Count);
             Assert.IsFalse(_cache.TryGet("key1", out _));
             Assert.IsFalse(_cache.TryGet("key2", out _));
@@ -170,9 +170,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             _cache.Add("key1", "value1");
             _cache.Add("key2", "value2");
-            
+
             var stats = _cache.GetStatistics();
-            
+
             Assert.AreEqual(2, stats["Count"]);
             Assert.AreEqual(3, stats["Capacity"]);
             Assert.AreEqual(2.0 / 3.0, stats["FillRate"]);
@@ -183,7 +183,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var tasks = new List<Task>();
             var itemCount = 100;
-            
+
             // Multiple threads adding items
             for (int i = 0; i < 10; i++)
             {
@@ -196,7 +196,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                     }
                 }));
             }
-            
+
             // Multiple threads reading items
             for (int i = 0; i < 5; i++)
             {
@@ -208,9 +208,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                     }
                 }));
             }
-            
+
             Task.WaitAll(tasks.ToArray());
-            
+
             // Cache should still be in valid state
             Assert.LessOrEqual(_cache.Count, _cache.Capacity);
         }
@@ -220,7 +220,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var cache = new LRUCache<string, string>(10);
             cache.Add("key", "value");
-            
+
             cache.Dispose();
             Assert.DoesNotThrow(() => cache.Dispose());
         }
@@ -229,7 +229,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void NullValues_AreAllowed()
         {
             _cache.Add("key1", null);
-            
+
             Assert.IsTrue(_cache.TryGet("key1", out var value));
             Assert.IsNull(value);
         }
@@ -241,13 +241,13 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             _cache.Add("key1", "value1");
             _cache.Add("key2", "value2");
             _cache.Add("key3", "value3");
-            
+
             // Update key1 to make it most recent
             _cache.Add("key1", "updated");
-            
+
             // Add new item, should evict key2 (key3 was accessed more recently than key2)
             _cache.Add("key4", "value4");
-            
+
             Assert.IsTrue(_cache.TryGet("key1", out _));
             Assert.IsFalse(_cache.TryGet("key2", out _));
             Assert.IsTrue(_cache.TryGet("key3", out _));

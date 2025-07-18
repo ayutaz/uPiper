@@ -18,40 +18,40 @@ namespace uPiper.Core.Platform
         /// <summary>
         /// Checks if running on Windows.
         /// </summary>
-        public static bool IsWindows => 
-            Platform == RuntimePlatform.WindowsPlayer || 
+        public static bool IsWindows =>
+            Platform == RuntimePlatform.WindowsPlayer ||
             Platform == RuntimePlatform.WindowsEditor;
 
         /// <summary>
         /// Checks if running on macOS.
         /// </summary>
-        public static bool IsMacOS => 
-            Platform == RuntimePlatform.OSXPlayer || 
+        public static bool IsMacOS =>
+            Platform == RuntimePlatform.OSXPlayer ||
             Platform == RuntimePlatform.OSXEditor;
 
         /// <summary>
         /// Checks if running on Linux.
         /// </summary>
-        public static bool IsLinux => 
-            Platform == RuntimePlatform.LinuxPlayer || 
+        public static bool IsLinux =>
+            Platform == RuntimePlatform.LinuxPlayer ||
             Platform == RuntimePlatform.LinuxEditor;
 
         /// <summary>
         /// Checks if running on Android.
         /// </summary>
-        public static bool IsAndroid => 
+        public static bool IsAndroid =>
             Platform == RuntimePlatform.Android;
 
         /// <summary>
         /// Checks if running on iOS.
         /// </summary>
-        public static bool IsIOS => 
+        public static bool IsIOS =>
             Platform == RuntimePlatform.IPhonePlayer;
 
         /// <summary>
         /// Checks if running on WebGL.
         /// </summary>
-        public static bool IsWebGL => 
+        public static bool IsWebGL =>
             Platform == RuntimePlatform.WebGLPlayer;
 
         /// <summary>
@@ -160,8 +160,8 @@ namespace uPiper.Core.Platform
         /// <summary>
         /// Checks if the platform supports native plugins.
         /// </summary>
-        public static bool SupportsNativePlugins => 
-            !IsWebGL && 
+        public static bool SupportsNativePlugins =>
+            !IsWebGL &&
             (IsWindows || IsMacOS || IsLinux || IsAndroid || IsIOS);
 
         /// <summary>

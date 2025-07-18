@@ -14,16 +14,16 @@ namespace uPiper.Editor
     {
         [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_get_version();
-        
+
         [MenuItem("uPiper/Debug/Check OpenJTalk Library")]
         public static void CheckLibrary()
         {
             Debug.Log("=== OpenJTalk Library Check ===");
-            
+
             // Check library files
             string pluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins", "macOS");
             Debug.Log($"Plugins path: {pluginsPath}");
-            
+
             if (Directory.Exists(pluginsPath))
             {
                 string[] files = Directory.GetFiles(pluginsPath, "*.dylib");
@@ -39,7 +39,7 @@ namespace uPiper.Editor
             {
                 Debug.LogError("Plugins/macOS directory not found!");
             }
-            
+
             // Try to load library
             Debug.Log("\nAttempting to call native function...");
             try
@@ -72,7 +72,7 @@ namespace uPiper.Editor
             {
                 Debug.LogError($"Unexpected error: {ex.GetType().Name}: {ex.Message}");
             }
-            
+
             // Check dictionary
             Debug.Log("\n=== Dictionary Check ===");
             string dictPath = Path.Combine(Application.dataPath, "uPiper", "Native", "OpenJTalk", "test_dictionary");
