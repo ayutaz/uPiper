@@ -341,7 +341,9 @@ namespace uPiper.Core.Phonemizers.Implementations
                 var phonemeString = Marshal.PtrToStringAnsi(nativeResult.phonemes);
                 if (!string.IsNullOrEmpty(phonemeString))
                 {
-                    var phonemeList = phonemeString.Split(' ');
+                    var phonemeList = phonemeString.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    var unknownPhonemes = new HashSet<string>();
+                    
                     for (int i = 0; i < Math.Min(phonemeList.Length, nativeResult.phoneme_count); i++)
                     {
                         phonemes[i] = phonemeList[i];
@@ -355,8 +357,15 @@ namespace uPiper.Core.Phonemizers.Implementations
                         {
                             // Default to unknown phoneme ID
                             phonemeIds[i] = 0;
-                            Debug.LogWarning($"[OpenJTalkPhonemizer] Unknown phoneme: {phonemes[i]}");
+                            unknownPhonemes.Add(phonemes[i]);
                         }
+                    }
+                    
+                    // Log unknown phonemes once per conversion
+                    if (unknownPhonemes.Count > 0)
+                    {
+                        Debug.LogWarning($"[OpenJTalkPhonemizer] Unknown phonemes: {string.Join(", ", unknownPhonemes)}");
+                    }
                     }
                 }
             }
@@ -412,9 +421,8 @@ namespace uPiper.Core.Phonemizers.Implementations
                 if (Directory.Exists(path))
                 {
                     // Verify it contains required files
-                    string[] requiredFiles = { "sys.dic", "unk.dic", "char.bin", "matrix.bin" };
                     bool allFilesExist = true;
-                    foreach (var file in requiredFiles)
+                    foreach (var file in OpenJTalkConstants.RequiredDictionaryFiles)
                     {
                         if (!File.Exists(Path.Combine(path, file)))
                         {
@@ -495,6 +503,14 @@ namespace uPiper.Core.Phonemizers.Implementations
                 #endif
                 
                 // First check if we're in a test environment
+                // Check environment variable first for explicit test mode
+                if (Environment.GetEnvironmentVariable("UPIPER_TEST_MODE") == "true" ||
+                    Environment.GetEnvironmentVariable("IS_TEST_ENVIRONMENT") == "true")
+                {
+                    return false;
+                }
+                
+                // Fallback to Unity application state check
                 if (Application.isEditor && !Application.isPlaying)
                 {
                     // In test runner, always use mock mode to avoid crashes

@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEngine;
+using uPiper.Core.Phonemizers;
 
 namespace uPiper.Editor
 {
@@ -78,8 +79,7 @@ namespace uPiper.Editor
             if (Directory.Exists(dictPath))
             {
                 Debug.Log($"Test dictionary found at: {dictPath}");
-                string[] requiredFiles = { "sys.dic", "unk.dic", "char.bin", "matrix.bin" };
-                foreach (string file in requiredFiles)
+                foreach (string file in OpenJTalkConstants.RequiredDictionaryFiles)
                 {
                     string filePath = Path.Combine(dictPath, file);
                     if (File.Exists(filePath))

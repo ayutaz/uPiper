@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using NUnit.Framework;
 using UnityEngine;
+using uPiper.Core.Phonemizers;
 
 namespace uPiper.Tests.Runtime.Native
 {
@@ -85,8 +86,7 @@ namespace uPiper.Tests.Runtime.Native
                 }
                 
                 // Verify dictionary files exist
-                string[] requiredFiles = { "sys.dic", "unk.dic", "char.bin", "matrix.bin" };
-                foreach (string file in requiredFiles)
+                foreach (string file in OpenJTalkConstants.RequiredDictionaryFiles)
                 {
                     string filePath = System.IO.Path.Combine(dictPath, file);
                     if (!System.IO.File.Exists(filePath))
