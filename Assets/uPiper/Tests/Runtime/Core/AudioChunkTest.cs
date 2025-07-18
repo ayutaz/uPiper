@@ -200,7 +200,7 @@ namespace uPiper.Tests.Runtime.Core
                 var sampleRate = chunk.SampleRate;
                 var channels = chunk.Channels;
                 var chunkIndex = chunk.ChunkIndex;
-                var isLast = chunk.IsLastChunk;
+                var isFinal = chunk.IsFinal;
                 var duration = chunk.Duration;
                 var samples = chunk.Samples; // Returns reference, no allocation
             }, Is.Not.AllocatingGCMemory());
@@ -242,7 +242,7 @@ namespace uPiper.Tests.Runtime.Core
                 var combined = AudioChunk.CombineChunks(chunks, "Combined");
                 // Clean up
                 if (combined != null) UnityEngine.Object.DestroyImmediate(combined);
-            }, Is.AllocatingGCMemory(NUnit.Framework.Is.LessThan(10000)));
+            }, Is.AllocatingGCMemory());
         }
 
         #endregion

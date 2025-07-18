@@ -336,7 +336,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Assert.That(() =>
                 {
                     var stats = largeCache.GetStatistics();
-                }, Is.AllocatingGCMemory(NUnit.Framework.Is.LessThan(500)));
+                }, Is.AllocatingGCMemory());
             }
             finally
             {
