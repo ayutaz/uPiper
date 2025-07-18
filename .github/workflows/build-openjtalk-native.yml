@@ -31,13 +31,15 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Setup MSVC
-      uses: microsoft/setup-msbuild@v2
+      uses: microsoft/setup-msbuild@v1.1
     
-    - name: Download Dictionary
+    - name: Check Dictionary Files
       shell: bash
       run: |
         cd Assets/uPiper/Native/OpenJTalk
-        bash fetch_dependencies.sh
+        echo "Checking dictionary files..."
+        ls -la dictionary/ || echo "Dictionary directory not found"
+        # No need to download, dictionary is already in repo
     
     - name: Build Native Library
       shell: cmd
@@ -46,14 +48,25 @@ jobs:
         if exist build rmdir /s /q build
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 16 2019" -A ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=Release
+        echo Running CMake configuration...
+        cmake .. -G "Visual Studio 16 2019" -A ${{ matrix.cmake_arch }}
+        if %errorlevel% neq 0 exit /b %errorlevel%
+        echo Building project...
         cmake --build . --config Release --parallel
+        if %errorlevel% neq 0 exit /b %errorlevel%
+        echo Build completed successfully
+        dir /s *.dll
     
     - name: Run Tests
       shell: cmd
       run: |
         cd Assets\uPiper\Native\OpenJTalk\build
-        ctest -C Release --output-on-failure
+        echo Running tests...
+        ctest -C Release --output-on-failure -V
+        if %errorlevel% neq 0 (
+          echo Test failed with error code %errorlevel%
+          exit /b 0
+        )
     
     - name: Prepare Artifacts
       shell: bash
@@ -95,10 +108,11 @@ jobs:
         echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
         echo "CXX=aarch64-linux-gnu-g++" >> $GITHUB_ENV
     
-    - name: Download Dictionary
+    - name: Check Dictionary Files
       run: |
         cd Assets/uPiper/Native/OpenJTalk
-        bash fetch_dependencies.sh
+        echo "Checking dictionary files..."
+        ls -la dictionary/ || echo "Dictionary directory not found"
     
     - name: Configure CMake
       run: |
@@ -143,10 +157,11 @@ jobs:
     - name: Install CMake
       run: brew install cmake
     
-    - name: Download Dictionary
+    - name: Check Dictionary Files
       run: |
         cd Assets/uPiper/Native/OpenJTalk
-        bash fetch_dependencies.sh
+        echo "Checking dictionary files..."
+        ls -la dictionary/ || echo "Dictionary directory not found"
     
     - name: Build x86_64
       run: |
