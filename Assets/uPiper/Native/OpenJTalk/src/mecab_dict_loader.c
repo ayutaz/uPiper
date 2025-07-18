@@ -46,9 +46,9 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
         return NULL;
     }
     
-    // Validate version
-    if (dict->sys_header.version != 1) {
-        LOG_DICT_ERROR("Unsupported dictionary version: %d (expected 1)", 
+    // Validate version - OpenJTalk dictionaries use version 102
+    if (dict->sys_header.version != 102) {
+        LOG_DICT_ERROR("Unsupported dictionary version: %d (expected 102)", 
                        dict->sys_header.version);
         fclose(sys_file);
         free(dict);
