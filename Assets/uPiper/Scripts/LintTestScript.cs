@@ -3,6 +3,10 @@ using UnityEngine;
 
 namespace uPiper.Scripts
 {
+    // このファイルはlintテスト用のため、意図的に警告を含んでいます
+    #pragma warning disable CS0219 // Variable is assigned but never used
+    #pragma warning disable CS0414 // Field is assigned but never used
+    
     public class LintTestScript : MonoBehaviour
     {
         // フィールドのテスト
@@ -63,4 +67,7 @@ namespace uPiper.Scripts
             string anotherLocal = "test";
         }
     }
+    
+    #pragma warning restore CS0219 // Variable is assigned but never used
+    #pragma warning restore CS0414 // Field is assigned but never used
 }
