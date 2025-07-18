@@ -689,19 +689,19 @@ namespace uPiper.Core
                 var startTime = DateTime.UtcNow;
                 var timeout = _config.TimeoutMs > 0 ? TimeSpan.FromMilliseconds(_config.TimeoutMs) : TimeSpan.FromMinutes(5);
                 
-                // Use Task.Wait with timeout instead of polling loop
-                // This works better in Unity's threading model
-                if (!task.Wait(timeout))
+                // For Windows compatibility, use GetAwaiter().GetResult() with manual timeout check
+                // Task.Wait can cause deadlocks in Unity on Windows
+                var cts = new System.Threading.CancellationTokenSource(timeout);
+                try
+                {
+                    // Run the task with cancellation support
+                    var resultTask = Task.Run(async () => await task, cts.Token);
+                    return resultTask.GetAwaiter().GetResult();
+                }
+                catch (OperationCanceledException)
                 {
                     throw new TimeoutException($"Audio generation timed out after {timeout.TotalMilliseconds}ms");
                 }
-                
-                if (task.IsFaulted)
-                {
-                    throw task.Exception.GetBaseException();
-                }
-                
-                return task.Result;
             }
             catch (AggregateException ae)
             {

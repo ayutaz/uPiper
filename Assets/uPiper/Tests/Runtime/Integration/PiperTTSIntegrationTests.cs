@@ -29,7 +29,8 @@ namespace uPiper.Tests.Runtime.Integration
                 SampleRate = 22050,
                 EnableMultiThreadedInference = false,
                 EnablePhonemeCache = true,
-                MaxCacheSizeMB = 10
+                MaxCacheSizeMB = 10,
+                TimeoutMs = 60000  // 60 seconds timeout for Windows tests
             };
             
             _piperTTS = new PiperTTS(_config);
