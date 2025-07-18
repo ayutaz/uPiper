@@ -12,11 +12,11 @@ namespace uPiper.Scripts
         // ✅ OK: _で始まっている
         private IntPtr _openjtalkHandle = IntPtr.Zero;
 
-        // ❌ 警告: private staticフィールドはs_で始まるべき
-        private static int s_instanceCount2 = 0;
+        // ❌ 警告: private staticフィールドは適切な命名でない
+        private static int InstanceCount2 = 0;
 
-        // ✅ OK: s_で始まっている
-        private static int s_instanceCount = 0;
+        // ✅ OK: camelCase
+        private static int instanceCount = 0;
 
         // ✅ OK: publicフィールドはPascalCase
         public string PublicField = "test";

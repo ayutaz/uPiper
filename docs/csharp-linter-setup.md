@@ -5,7 +5,7 @@
 > **重要**: 以下のルール違反はエラーとして扱われ、CIが失敗します：
 > - アクセシビリティ修飾子の欠如（private, public等の明示が必要）
 > - privateフィールドの命名規則違反（`_`プレフィックスが必要）
-> - private staticフィールドの命名規則違反（`s_`プレフィックスが必要）
+> - private staticフィールドの命名規則違反（camelCaseで命名）
 
 このドキュメントでは、uPiperプロジェクトに導入したC#の静的解析ツール（linter）の設定について説明します。
 
@@ -31,7 +31,7 @@
 ### C#固有の設定
 - 命名規則（フィールド、プロパティ、メソッドなど）
   - privateフィールド: `_camelCase`（例: `_openjtalkHandle`）
-  - private staticフィールド: `s_camelCase`（例: `s_instanceCount`）
+  - private staticフィールド: `camelCase`（例: `instanceCount`）
   - publicフィールド: `PascalCase`
   - const: `PascalCase`
 - アクセシビリティ修飾子の強制（private, public, protected等を明示）

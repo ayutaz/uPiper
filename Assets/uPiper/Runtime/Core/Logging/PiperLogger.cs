@@ -21,19 +21,19 @@ namespace uPiper.Core.Logging
             Error = 3
         }
 
-        private static LogLevel s_minimumLevel = LogLevel.Info;
+        private static LogLevel minimumLevel = LogLevel.Info;
 
         /// <summary>
         /// Get current minimum log level
         /// </summary>
-        public static LogLevel MinimumLevel => s_minimumLevel;
+        public static LogLevel MinimumLevel => minimumLevel;
 
         /// <summary>
         /// Set minimum log level
         /// </summary>
         public static void SetMinimumLevel(LogLevel level)
         {
-            s_minimumLevel = level;
+            minimumLevel = level;
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace uPiper.Core.Logging
         [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
         public static void LogDebug(string message, params object[] args)
         {
-            if (s_minimumLevel <= LogLevel.Debug)
+            if (minimumLevel <= LogLevel.Debug)
             {
                 if (message == null) message = string.Empty;
                 string formattedMessage = args != null && args.Length > 0 ? string.Format(message, args) : message;
@@ -55,7 +55,7 @@ namespace uPiper.Core.Logging
         /// </summary>
         public static void LogInfo(string message, params object[] args)
         {
-            if (s_minimumLevel <= LogLevel.Info)
+            if (minimumLevel <= LogLevel.Info)
             {
                 if (message == null) message = string.Empty;
                 string formattedMessage = args != null && args.Length > 0 ? string.Format(message, args) : message;
@@ -68,7 +68,7 @@ namespace uPiper.Core.Logging
         /// </summary>
         public static void LogWarning(string message, params object[] args)
         {
-            if (s_minimumLevel <= LogLevel.Warning)
+            if (minimumLevel <= LogLevel.Warning)
             {
                 if (message == null) message = string.Empty;
                 string formattedMessage = args != null && args.Length > 0 ? string.Format(message, args) : message;
@@ -81,7 +81,7 @@ namespace uPiper.Core.Logging
         /// </summary>
         public static void LogError(string message, params object[] args)
         {
-            if (s_minimumLevel <= LogLevel.Error)
+            if (minimumLevel <= LogLevel.Error)
             {
                 if (message == null) message = string.Empty;
                 string formattedMessage = args != null && args.Length > 0 ? string.Format(message, args) : message;
@@ -95,9 +95,9 @@ namespace uPiper.Core.Logging
         public static void Initialize()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            s_minimumLevel = LogLevel.Debug;
+            minimumLevel = LogLevel.Debug;
 #else
-            s_minimumLevel = LogLevel.Info;
+            minimumLevel = LogLevel.Info;
 #endif
         }
     }

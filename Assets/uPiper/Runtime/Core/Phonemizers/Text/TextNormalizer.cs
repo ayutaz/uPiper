@@ -11,9 +11,9 @@ namespace uPiper.Core.Phonemizers.Text
     public class TextNormalizer : ITextNormalizer
     {
         // Regex patterns for normalization
-        private static readonly Regex s_multipleSpacesRegex = new Regex(@"\s{2,}", RegexOptions.Compiled);
-        private static readonly Regex s_lineBreaksRegex = new Regex(@"[\r\n]+", RegexOptions.Compiled);
-        private static readonly Regex s_controlCharsRegex = new Regex(@"[\x00-\x1F\x7F]", RegexOptions.Compiled);
+        private static readonly Regex multipleSpacesRegex = new Regex(@"\s{2,}", RegexOptions.Compiled);
+        private static readonly Regex lineBreaksRegex = new Regex(@"[\r\n]+", RegexOptions.Compiled);
+        private static readonly Regex controlCharsRegex = new Regex(@"[\x00-\x1F\x7F]", RegexOptions.Compiled);
 
         /// <summary>
         /// Normalizes text for phonemization.
@@ -67,9 +67,9 @@ namespace uPiper.Core.Phonemizers.Text
             }
 
             // Check for common normalization needs
-            if (s_multipleSpacesRegex.IsMatch(text) ||
-                s_lineBreaksRegex.IsMatch(text) ||
-                s_controlCharsRegex.IsMatch(text))
+            if (multipleSpacesRegex.IsMatch(text) ||
+                lineBreaksRegex.IsMatch(text) ||
+                controlCharsRegex.IsMatch(text))
             {
                 return true;
             }
@@ -89,13 +89,13 @@ namespace uPiper.Core.Phonemizers.Text
         private string NormalizeCommon(string text)
         {
             // Remove control characters
-            text = s_controlCharsRegex.Replace(text, " ");
+            text = controlCharsRegex.Replace(text, " ");
 
             // Normalize line breaks to spaces
-            text = s_lineBreaksRegex.Replace(text, " ");
+            text = lineBreaksRegex.Replace(text, " ");
 
             // Normalize multiple spaces to single space
-            text = s_multipleSpacesRegex.Replace(text, " ");
+            text = multipleSpacesRegex.Replace(text, " ");
 
             // Trim
             return text.Trim();

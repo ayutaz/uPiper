@@ -25,16 +25,16 @@ namespace uPiper.Core.Phonemizers.Implementations
     {
         #region Mock Mode Support
 
-        private static bool s_mockMode = false;
-        private static bool s_forceUseMock = false;
+        private static bool mockMode = false;
+        private static bool forceUseMock = false;
 
         /// <summary>
         /// Enable mock mode for testing without native library
         /// </summary>
         public static bool MockMode
         {
-            get => s_mockMode || s_forceUseMock;
-            set => s_forceUseMock = value;
+            get => mockMode || forceUseMock;
+            set => forceUseMock = value;
         }
 
         #endregion
@@ -99,7 +99,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         private readonly string _dictionaryPath;
 
         // Phoneme mapping from OpenJTalk to Piper format
-        private static readonly Dictionary<string, int> s_phonemeToId = new Dictionary<string, int>
+        private static readonly Dictionary<string, int> phonemeToId = new Dictionary<string, int>
         {
             // Japanese phonemes (example mapping - needs to be completed based on actual Piper model)
             {"pau", 0}, {"sil", 0}, // Silence
@@ -139,13 +139,13 @@ namespace uPiper.Core.Phonemizers.Implementations
             // Allow explicit control over mock mode
             if (forceMockMode)
             {
-                s_mockMode = true;
+                mockMode = true;
                 Debug.Log("[OpenJTalkPhonemizer] Mock mode forced.");
             }
             else if (IsInTestRunner() && !IsNativeTestContext())
             {
                 // Auto-enable mock mode in test runner, except for native tests
-                s_mockMode = true;
+                mockMode = true;
                 Debug.Log("[OpenJTalkPhonemizer] Test runner detected. Using mock mode.");
             }
 
@@ -172,7 +172,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 // Check if we should use mock mode
                 if (MockMode || !IsNativeLibraryAvailable())
                 {
-                    s_mockMode = true;
+                    mockMode = true;
                     _handle = new IntPtr(1); // Fake handle for mock mode
                     Debug.Log("[OpenJTalkPhonemizer] Running in mock mode (native library not available)");
                     return;
@@ -198,14 +198,14 @@ namespace uPiper.Core.Phonemizers.Implementations
                     Debug.Log($"[OpenJTalkPhonemizer] Initialized with version: {Version}");
 #else
                     // P/Invoke is disabled, use mock mode
-                    s_mockMode = true;
+                    mockMode = true;
                     _handle = new IntPtr(1); // Fake handle for mock mode
                     Debug.LogWarning($"[OpenJTalkPhonemizer] P/Invoke disabled. Running in mock mode.");
 #endif
                 }
                 catch (Exception ex)
                 {
-                    s_mockMode = true;
+                    mockMode = true;
                     _handle = new IntPtr(1); // Fake handle for mock mode
                     Debug.LogWarning($"[OpenJTalkPhonemizer] Failed to initialize: {ex.Message}. Running in mock mode.");
                 }
@@ -349,7 +349,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                         phonemes[i] = phonemeList[i];
 
                         // Map phoneme to ID
-                        if (s_phonemeToId.TryGetValue(phonemes[i], out var id))
+                        if (phonemeToId.TryGetValue(phonemes[i], out var id))
                         {
                             phonemeIds[i] = id;
                         }
