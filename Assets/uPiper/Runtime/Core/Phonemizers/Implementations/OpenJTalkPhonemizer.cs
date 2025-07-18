@@ -503,7 +503,8 @@ namespace uPiper.Core.Phonemizers.Implementations
                 
                 // First check if we're in a test environment
                 // Check environment variable first for explicit test mode
-                if (Environment.GetEnvironmentVariable("UPIPER_TEST_MODE") == "true" ||
+                if (Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1" ||
+                    Environment.GetEnvironmentVariable("UPIPER_TEST_MODE") == "true" ||
                     Environment.GetEnvironmentVariable("IS_TEST_ENVIRONMENT") == "true")
                 {
                     return false;

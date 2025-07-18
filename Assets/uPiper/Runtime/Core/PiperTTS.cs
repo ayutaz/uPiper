@@ -1077,8 +1077,10 @@ namespace uPiper.Core
                     _config.DefaultLanguage == "japanese")
                 {
                     #if !UNITY_WEBGL
-                    _phonemizer = new OpenJTalkPhonemizer();
-                    PiperLogger.LogInfo("Initialized OpenJTalkPhonemizer for Japanese");
+                    // Check if we should force mock mode (e.g., in tests)
+                    bool forceMockMode = Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1";
+                    _phonemizer = new OpenJTalkPhonemizer(forceMockMode: forceMockMode);
+                    PiperLogger.LogInfo("Initialized OpenJTalkPhonemizer for Japanese (MockMode={0})", forceMockMode);
                     #else
                     PiperLogger.LogWarning("OpenJTalkPhonemizer is not supported on WebGL platform");
                     _phonemizer = new MockPhonemizer(); // Fallback to mock

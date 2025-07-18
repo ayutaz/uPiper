@@ -20,6 +20,9 @@ namespace uPiper.Tests.Runtime.Integration
         [SetUp]
         public void SetUp()
         {
+            // Force mock mode for testing to avoid native library issues
+            System.Environment.SetEnvironmentVariable("PIPER_MOCK_MODE", "1");
+            
             _config = new PiperConfig
             {
                 DefaultLanguage = "ja",

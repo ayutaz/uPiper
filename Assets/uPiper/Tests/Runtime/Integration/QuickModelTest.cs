@@ -25,6 +25,9 @@ namespace uPiper.Tests.Runtime.Integration
 
             Debug.Log($"Found model at: {modelPath}");
 
+            // Force mock mode for testing
+            System.Environment.SetEnvironmentVariable("PIPER_MOCK_MODE", "1");
+            
             // Create TTS
             var config = new PiperConfig
             {
