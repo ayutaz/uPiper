@@ -607,8 +607,7 @@ namespace uPiper.Core
                 if (generator != null && phonemeResult != null && phonemeResult.PhonemeIds != null)
                 {
                     // Generate audio using the voice-specific generator
-                    var audioData = await generator.GenerateAudioAsync(phonemeResult.PhonemeIds, 0, cancellationToken);
-                    audioClip = audioData.ToAudioClip();
+                    audioClip = await generator.GenerateAudioAsync(phonemeResult.PhonemeIds, 0, cancellationToken);
                 }
                 else
                 {

@@ -64,7 +64,7 @@ namespace uPiper.Tests.Runtime.Integration
                 DefaultLanguage = "ja",
                 SampleRate = 22050,
                 EnablePhonemeCache = true,
-                TimeoutMs = 60000  // 60 seconds timeout for Windows
+                TimeoutMs = 5000  // 5 seconds timeout
             };
             
             _piperTTS = new PiperTTS(config);
@@ -97,7 +97,7 @@ namespace uPiper.Tests.Runtime.Integration
             var generateTask = _piperTTS.GenerateAudioAsync(text);
             
             // Wait with timeout
-            float timeout = 60f;  // Increase timeout to 60 seconds for Windows
+            float timeout = 5f;  // 5 seconds timeout
             float elapsed = 0f;
             while (!generateTask.IsCompleted && elapsed < timeout)
             {
@@ -133,7 +133,7 @@ namespace uPiper.Tests.Runtime.Integration
                 DefaultLanguage = "en",
                 SampleRate = 16000, // This model uses 16kHz
                 EnablePhonemeCache = true,
-                TimeoutMs = 60000  // 60 seconds timeout for Windows
+                TimeoutMs = 5000  // 5 seconds timeout
             };
             
             _piperTTS = new PiperTTS(config);
@@ -166,7 +166,7 @@ namespace uPiper.Tests.Runtime.Integration
             var generateTask = _piperTTS.GenerateAudioAsync(text);
             
             // Wait with timeout
-            float timeout = 60f;  // Increase timeout to 60 seconds for Windows
+            float timeout = 5f;  // 5 seconds timeout
             float elapsed = 0f;
             while (!generateTask.IsCompleted && elapsed < timeout)
             {
@@ -227,7 +227,7 @@ namespace uPiper.Tests.Runtime.Integration
                 DefaultLanguage = "ja",
                 SampleRate = 22050,
                 EnablePhonemeCache = false, // Disable cache for accurate timing
-                TimeoutMs = 60000  // 60 seconds timeout for Windows
+                TimeoutMs = 5000  // 5 seconds timeout
             };
             
             _piperTTS = new PiperTTS(config);
@@ -297,7 +297,7 @@ namespace uPiper.Tests.Runtime.Integration
                 DefaultLanguage = "ja",
                 SampleRate = 22050,
                 EnablePhonemeCache = true,
-                TimeoutMs = 60000  // 60 seconds timeout for Windows
+                TimeoutMs = 5000  // 5 seconds timeout
             };
             
             _piperTTS = new PiperTTS(config);
