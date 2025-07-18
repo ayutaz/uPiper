@@ -42,26 +42,31 @@ namespace uPiper.Core.AudioGeneration
             if (string.IsNullOrEmpty(modelPath))
                 throw new ArgumentNullException(nameof(modelPath));
 
-            if (!File.Exists(modelPath))
+            // Check if we're in test mode
+            bool isMockMode = System.Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1";
+            
+            if (!isMockMode && !File.Exists(modelPath))
                 throw new FileNotFoundException($"Model file not found: {modelPath}");
 
             try
             {
                 PiperLogger.LogInfo("Loading ONNX model from: {0}", modelPath);
 
-                // Get file info
-                var fileInfo = new FileInfo(modelPath);
-                var modelSizeBytes = fileInfo.Length;
+                long modelSizeBytes = 0;
                 
-                // Check if we're in test mode
-                bool isMockMode = System.Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1";
                 if (isMockMode)
                 {
                     PiperLogger.LogInfo("Mock mode enabled, skipping actual model loading");
                     _loadedModel = null;
+                    // Use dummy size for mock mode
+                    modelSizeBytes = 1024 * 1024; // 1MB dummy size
                 }
                 else
                 {
+                    // Get file info
+                    var fileInfo = new FileInfo(modelPath);
+                    modelSizeBytes = fileInfo.Length;
+                    
                     // Load the model asynchronously
                     await Task.Run(() =>
                     {
@@ -270,25 +275,31 @@ namespace uPiper.Core.AudioGeneration
                 Backend = BackendType.GPUCompute // Default backend
             };
 
-            // Try to load config from JSON file
-            var jsonPath = modelPath + ".json";
-            if (File.Exists(jsonPath))
+            // Check if we're in mock mode
+            bool isMockMode = System.Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1";
+            
+            // Try to load config from JSON file (skip in mock mode)
+            if (!isMockMode)
             {
-                try
+                var jsonPath = modelPath + ".json";
+                if (File.Exists(jsonPath))
                 {
-                    var jsonContent = File.ReadAllText(jsonPath);
-                    var config = JsonUtility.FromJson<PiperModelConfig>(jsonContent);
-                    
-                    if (config != null && config.audio != null)
+                    try
                     {
-                        info.SampleRate = config.audio.sample_rate;
+                        var jsonContent = File.ReadAllText(jsonPath);
+                        var config = JsonUtility.FromJson<PiperModelConfig>(jsonContent);
+                        
+                        if (config != null && config.audio != null)
+                        {
+                            info.SampleRate = config.audio.sample_rate;
+                        }
+                        
+                        PiperLogger.LogInfo("Loaded model config from {0}", jsonPath);
                     }
-                    
-                    PiperLogger.LogInfo("Loaded model config from {0}", jsonPath);
-                }
-                catch (Exception ex)
-                {
-                    PiperLogger.LogWarning("Failed to load model config: {0}", ex.Message);
+                    catch (Exception ex)
+                    {
+                        PiperLogger.LogWarning("Failed to load model config: {0}", ex.Message);
+                    }
                 }
             }
 
