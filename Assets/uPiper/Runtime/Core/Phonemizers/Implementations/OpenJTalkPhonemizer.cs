@@ -25,7 +25,7 @@ namespace uPiper.Core.Phonemizers.Implementations
     {
         #region Mock Mode Support
 
-        private static bool s_mockMode = false;
+        private static bool ss_mockMode = false;
         private static bool s_forceUseMock = false;
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         /// </summary>
         public static bool MockMode
         {
-            get => s_mockMode || s_forceUseMock;
+            get => ss_mockMode || s_forceUseMock;
             set => s_forceUseMock = value;
         }
 
@@ -139,13 +139,13 @@ namespace uPiper.Core.Phonemizers.Implementations
             // Allow explicit control over mock mode
             if (forceMockMode)
             {
-                _mockMode = true;
+                s_mockMode = true;
                 Debug.Log("[OpenJTalkPhonemizer] Mock mode forced.");
             }
             else if (IsInTestRunner() && !IsNativeTestContext())
             {
                 // Auto-enable mock mode in test runner, except for native tests
-                _mockMode = true;
+                s_mockMode = true;
                 Debug.Log("[OpenJTalkPhonemizer] Test runner detected. Using mock mode.");
             }
 
@@ -172,7 +172,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 // Check if we should use mock mode
                 if (MockMode || !IsNativeLibraryAvailable())
                 {
-                    _mockMode = true;
+                    s_mockMode = true;
                     _handle = new IntPtr(1); // Fake handle for mock mode
                     Debug.Log("[OpenJTalkPhonemizer] Running in mock mode (native library not available)");
                     return;
@@ -198,14 +198,14 @@ namespace uPiper.Core.Phonemizers.Implementations
                     Debug.Log($"[OpenJTalkPhonemizer] Initialized with version: {Version}");
 #else
                     // P/Invoke is disabled, use mock mode
-                    _mockMode = true;
+                    s_mockMode = true;
                     _handle = new IntPtr(1); // Fake handle for mock mode
                     Debug.LogWarning($"[OpenJTalkPhonemizer] P/Invoke disabled. Running in mock mode.");
 #endif
                 }
                 catch (Exception ex)
                 {
-                    _mockMode = true;
+                    s_mockMode = true;
                     _handle = new IntPtr(1); // Fake handle for mock mode
                     Debug.LogWarning($"[OpenJTalkPhonemizer] Failed to initialize: {ex.Message}. Running in mock mode.");
                 }
