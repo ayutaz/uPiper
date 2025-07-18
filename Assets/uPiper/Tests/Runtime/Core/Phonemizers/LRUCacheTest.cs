@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using UnityEngine.TestTools;
+using UnityEngine.TestTools.Constraints;
 using uPiper.Core.Phonemizers.Cache;
+using Is = UnityEngine.TestTools.Constraints.Is;
 
 namespace uPiper.Tests.Runtime.Core.Phonemizers
 {
@@ -253,5 +256,94 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsTrue(_cache.TryGet("key3", out _));
             Assert.IsTrue(_cache.TryGet("key4", out _));
         }
+
+        #region GC Allocation Tests
+
+        [Test]
+        [Category("GCAllocation")]
+        public void TryGet_NoGCAllocation()
+        {
+            var largeCache = new LRUCache<string, string>(1000);
+            
+            // Prepare cache with data
+            for (int i = 0; i < 500; i++)
+            {
+                largeCache.Add($"key{i}", $"value{i}");
+            }
+
+            try
+            {
+                // Test that TryGet doesn't allocate memory
+                Assert.That(() =>
+                {
+                    for (int i = 0; i < 100; i++)
+                    {
+                        largeCache.TryGet($"key{i}", out _);
+                    }
+                }, Is.Not.AllocatingGCMemory());
+            }
+            finally
+            {
+                largeCache.Dispose();
+            }
+        }
+
+        [Test]
+        [Category("GCAllocation")]
+        public void ContainsKey_NoGCAllocation()
+        {
+            var largeCache = new LRUCache<string, string>(1000);
+            
+            // Prepare cache with data
+            for (int i = 0; i < 500; i++)
+            {
+                largeCache.Add($"key{i}", $"value{i}");
+            }
+
+            try
+            {
+                // Test that ContainsKey doesn't allocate memory
+                Assert.That(() =>
+                {
+                    for (int i = 0; i < 100; i++)
+                    {
+                        var exists = largeCache.ContainsKey($"key{i}");
+                    }
+                }, Is.Not.AllocatingGCMemory());
+            }
+            finally
+            {
+                largeCache.Dispose();
+            }
+        }
+
+        [Test]
+        [Category("GCAllocation")]
+        public void GetStatistics_MinimalGCAllocation()
+        {
+            var largeCache = new LRUCache<string, string>(1000);
+            
+            // Prepare cache with data
+            for (int i = 0; i < 500; i++)
+            {
+                largeCache.Add($"key{i}", $"value{i}");
+            }
+
+            try
+            {
+                // GetStatistics creates a new Dictionary, so we expect some allocation
+                // but it should be minimal (just the dictionary and its entries)
+                Assert.That(() =>
+                {
+                    var stats = largeCache.GetStatistics();
+                }, Is.AllocatingGCMemory(NUnit.Framework.Is.LessThan(500)));
+            }
+            finally
+            {
+                largeCache.Dispose();
+            }
+        }
+
+        #endregion
     }
 }

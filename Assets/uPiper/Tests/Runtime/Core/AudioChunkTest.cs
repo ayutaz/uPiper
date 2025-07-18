@@ -1,7 +1,10 @@
 using System;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
+using UnityEngine.TestTools.Constraints;
 using uPiper.Core;
+using Is = UnityEngine.TestTools.Constraints.Is;
 
 namespace uPiper.Tests.Runtime.Core
 {
@@ -181,5 +184,67 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual(2, clip.channels);
             Assert.AreEqual(22050, clip.samples); // 44100 total samples / 2 channels
         }
+
+        #region GC Allocation Tests
+
+        [Test]
+        [Category("GCAllocation")]
+        public void AudioChunk_Properties_NoGCAllocation()
+        {
+            // Arrange
+            var chunk = new AudioChunk(new float[1000], 22050, 1, 0, false);
+
+            // Test that accessing properties doesn't allocate memory
+            Assert.That(() =>
+            {
+                var sampleRate = chunk.SampleRate;
+                var channels = chunk.Channels;
+                var chunkIndex = chunk.ChunkIndex;
+                var isLast = chunk.IsLastChunk;
+                var duration = chunk.Duration;
+                var samples = chunk.Samples; // Returns reference, no allocation
+            }, Is.Not.AllocatingGCMemory());
+        }
+
+        [Test]
+        [Category("GCAllocation")]
+        public void AudioChunk_Duration_NoGCAllocation()
+        {
+            // Arrange
+            var chunk = new AudioChunk(new float[22050], 22050, 1, 0, false);
+
+            // Test that calculating duration doesn't allocate memory
+            Assert.That(() =>
+            {
+                for (int i = 0; i < 100; i++)
+                {
+                    var duration = chunk.Duration;
+                }
+            }, Is.Not.AllocatingGCMemory());
+        }
+
+        [Test]
+        [Category("GCAllocation")]
+        public void CombineChunks_MinimalGCAllocation()
+        {
+            // Arrange
+            var chunks = new[]
+            {
+                new AudioChunk(new float[100], 22050, 1, 0, false),
+                new AudioChunk(new float[100], 22050, 1, 1, false),
+                new AudioChunk(new float[100], 22050, 1, 2, true)
+            };
+
+            // CombineChunks creates a new AudioClip, which allocates memory
+            // We test that the allocation is minimal and proportional to the data size
+            Assert.That(() =>
+            {
+                var combined = AudioChunk.CombineChunks(chunks, "Combined");
+                // Clean up
+                if (combined != null) UnityEngine.Object.DestroyImmediate(combined);
+            }, Is.AllocatingGCMemory(NUnit.Framework.Is.LessThan(10000)));
+        }
+
+        #endregion
     }
 }
