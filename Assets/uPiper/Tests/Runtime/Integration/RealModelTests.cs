@@ -21,6 +21,10 @@ namespace uPiper.Tests.Runtime.Integration
         [SetUp]
         public void SetUp()
         {
+            // Clean up any existing instances before each test
+            _piperTTS?.Dispose();
+            _piperTTS = null;
+            
             _modelsPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "Models");
             
             if (!Directory.Exists(_modelsPath))
@@ -51,6 +55,9 @@ namespace uPiper.Tests.Runtime.Integration
         [Category("RequiresModel")]
         public IEnumerator TestJapaneseModel_GeneratesAudio()
         {
+            // Wait a frame to ensure cleanup from previous tests
+            yield return null;
+            
             var modelPath = Path.Combine(_modelsPath, "ja_JP-test-medium.onnx");
             
             if (!File.Exists(modelPath))
@@ -120,6 +127,9 @@ namespace uPiper.Tests.Runtime.Integration
         [Category("RequiresModel")]
         public IEnumerator TestEnglishModel_GeneratesAudio()
         {
+            // Wait a frame to ensure cleanup from previous tests
+            yield return null;
+            
             var modelPath = Path.Combine(_modelsPath, "test_voice.onnx");
             
             if (!File.Exists(modelPath))
