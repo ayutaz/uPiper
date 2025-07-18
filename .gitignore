@@ -148,6 +148,16 @@ sysinfo.txt
 *.apk
 *.aab
 *.unitypackage
+
+# Mono crash reports
+mono_crash*.json
+
+# Test artifacts
+test_coverage_report.md
+test-results.zip
+test-results/
+coverage/
+TestResults/
 *.app
 
 # Crashlytics generated file
@@ -177,3 +187,32 @@ build/
 # Backup files
 *.bak
 *.bak.meta
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor temporary files
+*~
+*.swp
+*.swo
+*.orig
+
+# Debug symbols
+*.dSYM/
+*.dSYM.meta
+
+# Test executables (without extension)
+Assets/uPiper/Native/OpenJTalk/test/test_*
+!Assets/uPiper/Native/OpenJTalk/test/test_*.c
+!Assets/uPiper/Native/OpenJTalk/test/test_*.sh
+!Assets/uPiper/Native/OpenJTalk/test/test_*.meta
+Assets/uPiper/Native/OpenJTalk/test_*
+!Assets/uPiper/Native/OpenJTalk/test_*.c
+!Assets/uPiper/Native/OpenJTalk/test_*.meta
+
+# Test results that were being tracked
+editmode-results.xml
+playmode-results.xml
+test-artifacts/
