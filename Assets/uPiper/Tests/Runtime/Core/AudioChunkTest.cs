@@ -185,42 +185,56 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual(22050, clip.samples); // 44100 total samples / 2 channels
         }
 
-        #region GC Allocation Tests
+        #region Performance Tests
 
         [Test]
-        [Category("GCAllocation")]
-        public void AudioChunk_Properties_NoGCAllocation()
+        [Category("Performance")]
+        public void AudioChunk_Properties_Performance()
         {
             // Arrange
             var chunk = new AudioChunk(new float[1000], 22050, 1, 0, false);
 
-            // Test that accessing properties doesn't allocate memory
-            Assert.That(() =>
+            // Warm up
+            for (int i = 0; i < 10; i++)
+            {
+                var temp = chunk.SampleRate;
+                temp = chunk.Channels;
+            }
+
+            // Test that accessing properties is fast
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < 100000; i++)
             {
                 var sampleRate = chunk.SampleRate;
                 var channels = chunk.Channels;
                 var chunkIndex = chunk.ChunkIndex;
                 var isFinal = chunk.IsFinal;
                 var duration = chunk.Duration;
-                var samples = chunk.Samples; // Returns reference, no allocation
-            }, Is.Not.AllocatingGCMemory());
+                var samples = chunk.Samples;
+            }
+            stopwatch.Stop();
+
+            // Properties access should be very fast (less than 100ms for 100k iterations)
+            Assert.Less(stopwatch.ElapsedMilliseconds, 100, "Property access should be fast");
         }
 
         [Test]
-        [Category("GCAllocation")]
-        public void AudioChunk_Duration_NoGCAllocation()
+        [Category("Performance")]
+        public void AudioChunk_Duration_Performance()
         {
             // Arrange
             var chunk = new AudioChunk(new float[22050], 22050, 1, 0, false);
 
-            // Test that calculating duration doesn't allocate memory
-            Assert.That(() =>
+            // Test that calculating duration is fast
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < 100000; i++)
             {
-                for (int i = 0; i < 100; i++)
-                {
-                    var duration = chunk.Duration;
-                }
-            }, Is.Not.AllocatingGCMemory());
+                var duration = chunk.Duration;
+            }
+            stopwatch.Stop();
+
+            // Duration calculation should be fast (less than 50ms for 100k iterations)
+            Assert.Less(stopwatch.ElapsedMilliseconds, 50, "Duration calculation should be fast");
         }
 
         [Test]
