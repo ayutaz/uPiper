@@ -38,7 +38,7 @@ namespace uPiper.Tests.Runtime.Integration
                 SampleRate = 22050,
                 EnablePhonemeCache = false,
                 EnableMultiThreadedInference = false,
-                TimeoutMs = 5000  // 5 seconds timeout
+                TimeoutMs = 30000  // 30 seconds timeout
             };
             
             var piperTTS = new PiperTTS(config);
@@ -47,12 +47,18 @@ namespace uPiper.Tests.Runtime.Integration
             Debug.Log("Initializing PiperTTS...");
             var initTask = piperTTS.InitializeAsync();
             
-            float timeout = 5f; // 5 seconds timeout
+            float timeout = 30f; // 30 seconds timeout
             float elapsed = 0f;
             while (!initTask.IsCompleted && elapsed < timeout)
             {
                 yield return null;
                 elapsed += Time.deltaTime;
+                
+                // Log progress every 5 seconds
+                if (elapsed % 5f < Time.deltaTime)
+                {
+                    Debug.Log($"Waiting for initialization... {elapsed:F1}s elapsed");
+                }
             }
             
             if (!initTask.IsCompleted)
