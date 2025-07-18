@@ -12,6 +12,8 @@ on:
 env:
   # Skip format check for now - will be enabled after fixing existing code format
   SKIP_FORMAT_CHECK: true
+  # Check only new test file
+  CHECK_ONLY_TEST: true
 
 jobs:
   check-format:
@@ -32,6 +34,13 @@ jobs:
 
     - name: Check format
       run: |
+        if [ "$CHECK_ONLY_TEST" = "true" ]; then
+          echo "🔍 Checking format and code style for test file"
+          # Check both whitespace and style for the test file
+          dotnet format whitespace Assets/uPiper/Scripts/LintTestScript.cs --verify-no-changes --verbosity diagnostic || true
+          dotnet format style Assets/uPiper/Scripts/LintTestScript.cs --verify-no-changes --verbosity diagnostic
+          exit 0
+        fi
         if [ "$SKIP_FORMAT_CHECK" = "true" ]; then
           echo "⚠️ Format check is currently disabled"
           echo "This is temporary while we fix formatting in existing code"

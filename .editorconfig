@@ -166,6 +166,9 @@ dotnet_diagnostic.RS2008.severity = none
 
 # CSharp code style settings:
 [*.cs]
+# Require accessibility modifiers
+dotnet_style_require_accessibility_modifiers = always:warning
+
 # Newline settings
 csharp_new_line_before_open_brace = all
 csharp_new_line_before_else = true
@@ -466,6 +469,8 @@ dotnet_diagnostic.UNT0031.severity = warning
 dotnet_diagnostic.UNT0032.severity = warning
 
 # Additional analyzers
+# Add accessibility modifiers
+dotnet_diagnostic.IDE0040.severity = warning
 # Remove unnecessary cast
 dotnet_diagnostic.IDE0004.severity = warning
 # Remove unnecessary import
