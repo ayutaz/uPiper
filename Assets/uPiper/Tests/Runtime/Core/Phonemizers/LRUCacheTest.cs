@@ -265,10 +265,15 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var largeCache = new LRUCache<string, string>(1000);
             
-            // Prepare cache with data
+            // Prepare cache with data and pre-create test keys
+            var testKeys = new string[100];
             for (int i = 0; i < 500; i++)
             {
                 largeCache.Add($"key{i}", $"value{i}");
+                if (i < 100)
+                {
+                    testKeys[i] = $"key{i}";
+                }
             }
 
             try
@@ -278,7 +283,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 {
                     for (int i = 0; i < 100; i++)
                     {
-                        largeCache.TryGet($"key{i}", out _);
+                        largeCache.TryGet(testKeys[i], out _);
                     }
                 }, Is.Not.AllocatingGCMemory());
             }
@@ -294,10 +299,15 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var largeCache = new LRUCache<string, string>(1000);
             
-            // Prepare cache with data
+            // Prepare cache with data and pre-create test keys
+            var testKeys = new string[100];
             for (int i = 0; i < 500; i++)
             {
                 largeCache.Add($"key{i}", $"value{i}");
+                if (i < 100)
+                {
+                    testKeys[i] = $"key{i}";
+                }
             }
 
             try
@@ -307,7 +317,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 {
                     for (int i = 0; i < 100; i++)
                     {
-                        var exists = largeCache.ContainsKey($"key{i}");
+                        var exists = largeCache.ContainsKey(testKeys[i]);
                     }
                 }, Is.Not.AllocatingGCMemory());
             }

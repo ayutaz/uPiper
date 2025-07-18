@@ -18,10 +18,15 @@ namespace uPiper.Tests.Runtime.Performance
         {
             var cache = new LRUCache<string, string>(100);
             
-            // Prepare cache with data
+            // Prepare cache with data and pre-create test keys
+            var testKeys = new string[10];
             for (int i = 0; i < 50; i++)
             {
                 cache.Add($"key{i}", $"value{i}");
+                if (i < 10)
+                {
+                    testKeys[i] = $"key{i}";
+                }
             }
 
             // Test that TryGet doesn't allocate memory
@@ -29,7 +34,7 @@ namespace uPiper.Tests.Runtime.Performance
             {
                 for (int i = 0; i < 10; i++)
                 {
-                    cache.TryGet($"key{i}", out _);
+                    cache.TryGet(testKeys[i], out _);
                 }
             }, Is.Not.AllocatingGCMemory());
         }
@@ -39,10 +44,15 @@ namespace uPiper.Tests.Runtime.Performance
         {
             var cache = new LRUCache<string, string>(100);
             
-            // Prepare cache with data
+            // Prepare cache with data and pre-create test keys
+            var testKeys = new string[10];
             for (int i = 0; i < 50; i++)
             {
                 cache.Add($"key{i}", $"value{i}");
+                if (i < 10)
+                {
+                    testKeys[i] = $"key{i}";
+                }
             }
 
             // Test that ContainsKey doesn't allocate memory
@@ -50,7 +60,7 @@ namespace uPiper.Tests.Runtime.Performance
             {
                 for (int i = 0; i < 10; i++)
                 {
-                    var exists = cache.ContainsKey($"key{i}");
+                    var exists = cache.ContainsKey(testKeys[i]);
                 }
             }, Is.Not.AllocatingGCMemory());
         }
