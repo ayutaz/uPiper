@@ -1,3 +1,12 @@
+/**
+ * @file openjtalk_wrapper.h
+ * @brief OpenJTalk Wrapper - Japanese text-to-phoneme conversion library
+ * @version 2.0.0
+ * 
+ * This library provides a C API for converting Japanese text to phonemes
+ * using the OpenJTalk engine with MeCab morphological analysis.
+ */
+
 #ifndef OPENJTALK_WRAPPER_H
 #define OPENJTALK_WRAPPER_H
 
@@ -18,35 +27,60 @@ extern "C" {
     #define OPENJTALK_API
 #endif
 
-// Error codes
+/**
+ * @brief Error codes returned by OpenJTalk functions
+ */
 typedef enum {
-    OPENJTALK_SUCCESS = 0,
-    OPENJTALK_ERROR_INVALID_HANDLE = -1,
-    OPENJTALK_ERROR_INVALID_INPUT = -2,
-    OPENJTALK_ERROR_MEMORY_ALLOCATION = -3,
-    OPENJTALK_ERROR_DICTIONARY_NOT_FOUND = -4,
-    OPENJTALK_ERROR_INITIALIZATION_FAILED = -5,
-    OPENJTALK_ERROR_PHONEMIZATION_FAILED = -6,
-    OPENJTALK_ERROR_PROCESSING = -7,
-    OPENJTALK_ERROR_INVALID_OPTION = -8,
-    OPENJTALK_ERROR_INVALID_DICTIONARY = -9,
-    OPENJTALK_ERROR_INVALID_UTF8 = -10
+    OPENJTALK_SUCCESS = 0,                    /**< Operation completed successfully */
+    OPENJTALK_ERROR_INVALID_HANDLE = -1,      /**< Invalid handle passed to function */
+    OPENJTALK_ERROR_INVALID_INPUT = -2,       /**< Invalid input text or parameters */
+    OPENJTALK_ERROR_MEMORY_ALLOCATION = -3,   /**< Memory allocation failed */
+    OPENJTALK_ERROR_DICTIONARY_NOT_FOUND = -4,/**< Dictionary file not found */
+    OPENJTALK_ERROR_INITIALIZATION_FAILED = -5,/**< Failed to initialize OpenJTalk */
+    OPENJTALK_ERROR_PHONEMIZATION_FAILED = -6,/**< Failed to convert text to phonemes */
+    OPENJTALK_ERROR_PROCESSING = -7,          /**< Processing error occurred */
+    OPENJTALK_ERROR_INVALID_OPTION = -8,      /**< Invalid option key or value */
+    OPENJTALK_ERROR_INVALID_DICTIONARY = -9,  /**< Dictionary file is corrupted or invalid */
+    OPENJTALK_ERROR_INVALID_UTF8 = -10        /**< Input text contains invalid UTF-8 sequences */
 } OpenJTalkError;
 
-// Phoneme result structure
+/**
+ * @brief Result structure for phoneme conversion
+ * 
+ * Contains the phoneme sequence and timing information
+ * generated from Japanese text.
+ */
 typedef struct {
-    char* phonemes;          // Space-separated phoneme string
-    int* phoneme_ids;        // Array of phoneme IDs
-    int phoneme_count;       // Number of phonemes
-    float* durations;        // Duration of each phoneme in seconds
-    float total_duration;    // Total duration in seconds
+    char* phonemes;          /**< Space-separated phoneme string (e.g., "k o N n i ch i w a") */
+    int* phoneme_ids;        /**< Array of phoneme IDs corresponding to each phoneme */
+    int phoneme_count;       /**< Number of phonemes in the result */
+    float* durations;        /**< Duration of each phoneme in seconds */
+    float total_duration;    /**< Total duration of all phonemes in seconds */
 } PhonemeResult;
 
-// Version information
+/**
+ * @brief Get the version string of the OpenJTalk wrapper
+ * @return Version string (e.g., "2.0.0-full")
+ */
 OPENJTALK_API const char* openjtalk_get_version(void);
 
-// Initialization and cleanup
+/**
+ * @brief Create a new OpenJTalk instance
+ * @param dict_path Path to the dictionary directory (can be NULL for default)
+ * @return Handle to the OpenJTalk instance, or NULL on failure
+ * 
+ * @note The dictionary directory should contain:
+ * - sys.dic: System dictionary
+ * - matrix.bin: Connection cost matrix
+ * - char.bin: Character definitions
+ * - unk.dic: Unknown word dictionary
+ */
 OPENJTALK_API void* openjtalk_create(const char* dict_path);
+
+/**
+ * @brief Destroy an OpenJTalk instance and free resources
+ * @param handle Handle returned by openjtalk_create()
+ */
 OPENJTALK_API void openjtalk_destroy(void* handle);
 
 // Phonemization

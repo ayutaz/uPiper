@@ -30,18 +30,33 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Setup MSVC
+      uses: microsoft/setup-msbuild@v2
+      
     - name: Build Native Library
       shell: cmd
       run: |
         cd Assets\uPiper\Native\OpenJTalk
-        build.bat Release ${{ matrix.arch }}
+        if exist build rmdir /s /q build
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 17 2022" -A ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --config Release --parallel
+    
+    - name: Run Tests
+      shell: cmd
+      run: |
+        cd Assets\uPiper\Native\OpenJTalk\build
+        ctest -C Release --output-on-failure
     
     - name: Prepare Artifacts
       shell: bash
       run: |
         mkdir -p artifacts/windows/${{ matrix.arch }}
-        cp Assets/uPiper/Plugins/Windows/${{ matrix.arch }}/*.dll artifacts/windows/${{ matrix.arch }}/ || true
-        cp Assets/uPiper/Native/OpenJTalk/output/windows/${{ matrix.arch }}/include/*.h artifacts/ || true
+        # Copy DLL from build output
+        cp Assets/uPiper/Native/OpenJTalk/build/bin/Release/*.dll artifacts/windows/${{ matrix.arch }}/ || true
+        # Copy header files
+        cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/ || true
     
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
@@ -71,41 +86,37 @@ jobs:
         echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
         echo "CXX=aarch64-linux-gnu-g++" >> $GITHUB_ENV
     
+    - name: Download Dictionary
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        bash fetch_dependencies.sh
+    
     - name: Configure CMake
       run: |
         cd Assets/uPiper/Native/OpenJTalk
-        mkdir -p build/linux/${{ matrix.arch }}
-        cd build/linux/${{ matrix.arch }}
-        cmake -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/Assets/uPiper/Native/OpenJTalk/output/linux/${{ matrix.arch }} \
-              ../../..
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release ..
     
     - name: Build
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build/linux/${{ matrix.arch }}
+        cd Assets/uPiper/Native/OpenJTalk/build
         make -j$(nproc)
-    
-    - name: Install
-      run: |
-        cd Assets/uPiper/Native/OpenJTalk/build/linux/${{ matrix.arch }}
-        make install
     
     - name: Run Tests (x86_64 only)
       if: matrix.arch == 'x86_64'
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build/linux/${{ matrix.arch }}
+        cd Assets/uPiper/Native/OpenJTalk/build
         # Run all tests using CTest
-        ctest --output-on-failure || true
-        # Also run individual tests for debugging
-        ./bin/test_openjtalk || true
-        ./bin/test_openjtalk_api || true
-        ./bin/test_new_features || true
+        ctest --output-on-failure
     
     - name: Prepare Artifacts
       run: |
         mkdir -p artifacts/linux/${{ matrix.arch }}
-        cp Assets/uPiper/Native/OpenJTalk/output/linux/${{ matrix.arch }}/lib/*.so artifacts/linux/${{ matrix.arch }}/
-        cp Assets/uPiper/Native/OpenJTalk/output/linux/${{ matrix.arch }}/include/*.h artifacts/
+        # Copy shared library from build output
+        cp Assets/uPiper/Native/OpenJTalk/build/lib/*.so artifacts/linux/${{ matrix.arch }}/ || true
+        # Copy header files
+        cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/ || true
     
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
@@ -123,54 +134,50 @@ jobs:
     - name: Install CMake
       run: brew install cmake
     
+    - name: Download Dictionary
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        bash fetch_dependencies.sh
+    
     - name: Build x86_64
       run: |
         cd Assets/uPiper/Native/OpenJTalk
-        mkdir -p build/macos/x86_64
-        cd build/macos/x86_64
+        mkdir -p build_x86_64
+        cd build_x86_64
         cmake -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_OSX_ARCHITECTURES=x86_64 \
-              -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/Assets/uPiper/Native/OpenJTalk/output/macos/x86_64 \
-              ../../..
+              -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
         make -j$(sysctl -n hw.ncpu)
-        make install
     
     - name: Build arm64
       run: |
         cd Assets/uPiper/Native/OpenJTalk
-        mkdir -p build/macos/arm64
-        cd build/macos/arm64
+        mkdir -p build_arm64
+        cd build_arm64
         cmake -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_OSX_ARCHITECTURES=arm64 \
-              -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/Assets/uPiper/Native/OpenJTalk/output/macos/arm64 \
-              ../../..
+              -DCMAKE_OSX_ARCHITECTURES=arm64 ..
         make -j$(sysctl -n hw.ncpu)
-        make install
     
     - name: Create Universal Binary
       run: |
-        mkdir -p Assets/uPiper/Native/OpenJTalk/output/macos/universal/lib
+        mkdir -p Assets/uPiper/Native/OpenJTalk/universal
         lipo -create \
-          Assets/uPiper/Native/OpenJTalk/output/macos/x86_64/lib/libopenjtalk_wrapper.dylib \
-          Assets/uPiper/Native/OpenJTalk/output/macos/arm64/lib/libopenjtalk_wrapper.dylib \
-          -output Assets/uPiper/Native/OpenJTalk/output/macos/universal/lib/libopenjtalk_wrapper.dylib
+          Assets/uPiper/Native/OpenJTalk/build_x86_64/lib/libopenjtalk_wrapper.dylib \
+          Assets/uPiper/Native/OpenJTalk/build_arm64/lib/libopenjtalk_wrapper.dylib \
+          -output Assets/uPiper/Native/OpenJTalk/universal/libopenjtalk_wrapper.dylib
     
     - name: Run Tests
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build/macos/arm64
+        cd Assets/uPiper/Native/OpenJTalk/build_arm64
         # Run all tests using CTest
-        ctest --output-on-failure || true
-        # Also run individual tests for debugging
-        ./bin/test_openjtalk || true
-        ./bin/test_openjtalk_api || true
-        ./bin/test_new_features || true
+        ctest --output-on-failure
     
     - name: Prepare Artifacts
       run: |
         mkdir -p artifacts/macos
-        # Copy the universal dylib directly (Unity prefers .dylib over .bundle)
-        cp Assets/uPiper/Native/OpenJTalk/output/macos/universal/lib/libopenjtalk_wrapper.dylib artifacts/macos/
-        cp Assets/uPiper/Native/OpenJTalk/output/macos/x86_64/include/*.h artifacts/
+        # Copy the universal dylib
+        cp Assets/uPiper/Native/OpenJTalk/universal/libopenjtalk_wrapper.dylib artifacts/macos/
+        # Copy header files
+        cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/ || true
     
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4

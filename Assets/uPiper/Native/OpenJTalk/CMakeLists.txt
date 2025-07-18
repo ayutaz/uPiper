@@ -24,34 +24,22 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Build options
-option(BUILD_FULL_VERSION "Build full version with dictionary support" ON)
 option(ENABLE_DEBUG_LOG "Enable debug logging" OFF)
 
-# Source files
-if(BUILD_FULL_VERSION)
-    set(SOURCES
-        src/openjtalk_wrapper_full.c
-        src/openjtalk_phonemizer.c
-        src/phoneme_converter.c
-        src/accent_estimator.c
-        src/phoneme_timing.c
-        src/mecab_dict_loader.c
-        src/mecab_darts.c
-        src/mecab_full.c
-        src/surface_index.c
-        src/memory_pool.c
-        src/error_handling.c
-    )
-else()
-    set(SOURCES
-        src/openjtalk_wrapper_light.c
-        src/openjtalk_phonemizer.c
-        src/mecab_light.c
-        src/mecab_light_impl.c
-        src/memory_pool.c
-        src/error_handling.c
-    )
-endif()
+# Source files (Full version only)
+set(SOURCES
+    src/openjtalk_wrapper_full.c
+    src/openjtalk_phonemizer.c
+    src/phoneme_converter.c
+    src/accent_estimator.c
+    src/phoneme_timing.c
+    src/mecab_dict_loader.c
+    src/mecab_darts.c
+    src/mecab_full.c
+    src/surface_index.c
+    src/memory_pool.c
+    src/error_handling.c
+)
 
 # Header files
 set(HEADERS
@@ -147,7 +135,7 @@ else()
 endif()
 
 # Print build configuration
-message(STATUS "Building OpenJTalk Wrapper (Light Implementation)")
+message(STATUS "Building OpenJTalk Wrapper (Full Version)")
 message(STATUS "  Platform: ${PLATFORM_NAME}")
 message(STATUS "  Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  Install prefix: ${CMAKE_INSTALL_PREFIX}")
@@ -165,10 +153,8 @@ if(BUILD_TESTS)
     endif()
     
     # Build full phonemization test
-    if(BUILD_FULL_VERSION)
-        add_executable(test_phonemize_full test/test_phonemize_full.c)
-        target_link_libraries(test_phonemize_full openjtalk_wrapper)
-    endif()
+    add_executable(test_phonemize_full test/test_phonemize_full.c)
+    target_link_libraries(test_phonemize_full openjtalk_wrapper)
     
     # Build new features test
     if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/test/test_new_features.c)
@@ -208,7 +194,7 @@ if(BUILD_TESTS)
 endif()
 
 # Additional tests for core components
-if(BUILD_TESTS AND BUILD_FULL_VERSION)
+if(BUILD_TESTS)
     # Test for char.bin loading
     add_executable(test_char_bin test/test_char_bin.c 
         src/mecab_dict_loader.c

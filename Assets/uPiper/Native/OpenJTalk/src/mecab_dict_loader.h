@@ -60,7 +60,7 @@ typedef struct {
 } Matrix;
 
 // Forward declaration
-typedef struct Darts Darts;
+struct Darts;
 
 // Character map structure
 typedef struct {
@@ -91,8 +91,8 @@ typedef struct MecabFullDictionary {
     size_t feature_size;      // Feature string pool size
     
     // Double Array Trie for fast lookup
-    Darts* sys_darts;         // System dictionary Darts
-    Darts* unk_darts;         // Unknown word dictionary Darts
+    struct Darts* sys_darts;  // System dictionary Darts
+    struct Darts* unk_darts;  // Unknown word dictionary Darts
     
     // Character definition
     CharDef* char_def;

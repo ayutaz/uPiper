@@ -20,7 +20,7 @@ bool phonemizer_init(OpenJTalkPhonemizer* phonemizer, const char* dict_path);
 void phonemizer_cleanup(OpenJTalkPhonemizer* phonemizer);
 PhonemeResult* phonemizer_process(OpenJTalkPhonemizer* phonemizer, const char* text);
 
-// Phoneme mapping (stub implementation)
+// Phoneme mapping structure
 typedef struct {
     const char* grapheme;
     const char* phoneme;

@@ -238,7 +238,6 @@ static inline const char* find_kanji_reading(const char* kanji) {
 static inline bool is_kanji_char(const char* str) {
     unsigned char c1 = (unsigned char)str[0];
     unsigned char c2 = (unsigned char)str[1];
-    unsigned char c3 = (unsigned char)str[2];
     
     // Basic CJK Unified Ideographs range (U+4E00 to U+9FFF)
     // UTF-8: E4 B8 80 to E9 BF BF
