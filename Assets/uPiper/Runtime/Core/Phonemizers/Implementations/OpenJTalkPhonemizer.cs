@@ -25,7 +25,7 @@ namespace uPiper.Core.Phonemizers.Implementations
     {
         #region Mock Mode Support
 
-        private static bool ss_mockMode = false;
+        private static bool s_mockMode = false;
         private static bool s_forceUseMock = false;
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         /// </summary>
         public static bool MockMode
         {
-            get => ss_mockMode || s_forceUseMock;
+            get => s_mockMode || s_forceUseMock;
             set => s_forceUseMock = value;
         }
 
