@@ -1,5 +1,5 @@
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 using uPiper.Core;
 
 namespace uPiper.Editor
@@ -15,10 +15,10 @@ namespace uPiper.Editor
             config.DefaultLanguage = "ja";
             config.MaxCacheSizeMB = 200;
             config.SampleRate = 22050;
-            
+
             // 検証
             config.Validate();
-            
+
             Debug.Log("[uPiper] PiperConfig created:");
             Debug.Log($"  Debug Logging: {config.EnableDebugLogging}");
             Debug.Log($"  Default Language: {config.DefaultLanguage}");
@@ -27,7 +27,7 @@ namespace uPiper.Editor
             Debug.Log($"  Worker Threads: {config.WorkerThreads}");
             Debug.Log($"  Backend: {config.Backend}");
         }
-        
+
         [MenuItem("uPiper/Test/Create Voice Configuration")]
         public static void CreateTestVoiceConfiguration()
         {
@@ -36,7 +36,7 @@ namespace uPiper.Editor
                 "path/to/ja_JP-test-medium.onnx",
                 "path/to/ja_JP-test-medium.json"
             );
-            
+
             Debug.Log("[uPiper] PiperVoiceConfig created:");
             Debug.Log($"  Voice ID: {voiceConfig.VoiceId}");
             Debug.Log($"  Display Name: {voiceConfig.DisplayName}");
@@ -46,12 +46,12 @@ namespace uPiper.Editor
             Debug.Log($"  Sample Rate: {voiceConfig.SampleRate}");
             Debug.Log($"  Gender: {voiceConfig.Gender}");
             Debug.Log($"  Quality: {voiceConfig.Quality}");
-            
+
             // 検証
             bool isValid = voiceConfig.Validate();
             Debug.Log($"  Is Valid: {isValid}");
         }
-        
+
         [MenuItem("uPiper/Test/Create Audio Chunk")]
         public static void CreateTestAudioChunk()
         {
@@ -60,14 +60,14 @@ namespace uPiper.Editor
             float duration = 0.5f;
             int samples = Mathf.RoundToInt(sampleRate * duration);
             float[] audioData = new float[samples];
-            
+
             // サイン波を生成
             float frequency = 440f; // A4
             for (int i = 0; i < samples; i++)
             {
                 audioData[i] = Mathf.Sin(2f * Mathf.PI * frequency * i / sampleRate) * 0.5f;
             }
-            
+
             // AudioChunkを作成
             var chunk = new AudioChunk(
                 audioData,
@@ -78,7 +78,7 @@ namespace uPiper.Editor
                 "テスト音声",
                 0f
             );
-            
+
             Debug.Log("[uPiper] AudioChunk created:");
             Debug.Log($"  Sample Rate: {chunk.SampleRate} Hz");
             Debug.Log($"  Channels: {chunk.Channels}");
@@ -86,13 +86,13 @@ namespace uPiper.Editor
             Debug.Log($"  Chunk Index: {chunk.ChunkIndex}");
             Debug.Log($"  Is Final: {chunk.IsFinal}");
             Debug.Log($"  Text Segment: {chunk.TextSegment}");
-            
+
             // AudioClipに変換
             var audioClip = chunk.ToAudioClip("TestChunk");
             Debug.Log($"  AudioClip Name: {audioClip.name}");
             Debug.Log($"  AudioClip Length: {audioClip.length:F3} seconds");
         }
-        
+
         [MenuItem("uPiper/Test/Test Cache Statistics")]
         public static void TestCacheStatistics()
         {
@@ -106,24 +106,24 @@ namespace uPiper.Editor
                 MissCount = 150,
                 EvictionCount = 25
             };
-            
+
             Debug.Log("[uPiper] CacheStatistics test:");
             stats.LogStatistics();
-            
+
             // ヒットを記録
             stats.RecordHit();
             stats.RecordHit();
             stats.RecordMiss();
-            
+
             Debug.Log($"\n[uPiper] After recording 2 hits and 1 miss:");
             Debug.Log(stats.ToString());
         }
-        
+
         [MenuItem("uPiper/Test/Test Exception Hierarchy")]
         public static void TestExceptionHierarchy()
         {
             Debug.Log("[uPiper] Testing exception hierarchy:");
-            
+
             // 各種例外を作成してテスト
             var exceptions = new PiperException[]
             {
@@ -135,7 +135,7 @@ namespace uPiper.Editor
                 new PiperPlatformNotSupportedException("WebGL"),
                 new PiperTimeoutException(30000, "Model loading")
             };
-            
+
             foreach (var ex in exceptions)
             {
                 Debug.Log($"  {ex.GetType().Name}: {ex.Message} (Code: {ex.ErrorCode})");

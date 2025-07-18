@@ -1,5 +1,7 @@
 #if !UNITY_WEBGL
 using System;
+using System.Collections;
+using System.IO;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
@@ -7,8 +9,6 @@ using UnityEngine.TestTools;
 using uPiper.Core;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Implementations;
-using System.Collections;
-using System.IO;
 
 namespace uPiper.Tests.Runtime.Core.Phonemizers
 {
@@ -102,13 +102,13 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Phonemize_SimpleHiragana_ReturnsPhonemes()
         {
             var result = _phonemizer.Phonemize("こんにちは");
-            
+
             Assert.NotNull(result);
             Assert.Greater(result.Phonemes?.Length ?? 0, 0);
             Assert.NotNull(result.Phonemes);
             Assert.NotNull(result.PhonemeIds);
             Assert.AreEqual(result.Phonemes.Length, result.PhonemeIds.Length);
-            
+
             // Log the result for inspection
             Debug.Log($"Phonemes for 'こんにちは': {string.Join(" ", result.Phonemes)}");
         }
@@ -117,11 +117,11 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Phonemize_SimpleKatakana_ReturnsPhonemes()
         {
             var result = _phonemizer.Phonemize("コンピューター");
-            
+
             Assert.NotNull(result);
             Assert.Greater(result.Phonemes?.Length ?? 0, 0);
             Assert.NotNull(result.Phonemes);
-            
+
             Debug.Log($"Phonemes for 'コンピューター': {string.Join(" ", result.Phonemes)}");
         }
 
@@ -129,11 +129,11 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Phonemize_MixedText_ReturnsPhonemes()
         {
             var result = _phonemizer.Phonemize("私はAIです");
-            
+
             Assert.NotNull(result);
             Assert.Greater(result.Phonemes?.Length ?? 0, 0);
             Assert.NotNull(result.Phonemes);
-            
+
             Debug.Log($"Phonemes for '私はAIです': {string.Join(" ", result.Phonemes)}");
         }
 
@@ -141,10 +141,10 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Phonemize_WithNumbers_ReturnsPhonemes()
         {
             var result = _phonemizer.Phonemize("今日は2024年です");
-            
+
             Assert.NotNull(result);
             Assert.Greater(result.Phonemes?.Length ?? 0, 0);
-            
+
             Debug.Log($"Phonemes for '今日は2024年です': {string.Join(" ", result.Phonemes)}");
         }
 
@@ -157,13 +157,13 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var task = _phonemizer.PhonemizeAsync("おはよう");
             yield return new WaitUntil(() => task.IsCompleted);
-            
+
             Assert.IsTrue(task.IsCompletedSuccessfully);
             var result = task.Result;
-            
+
             Assert.NotNull(result);
             Assert.Greater(result.Phonemes?.Length ?? 0, 0);
-            
+
             Debug.Log($"Async phonemes for 'おはよう': {string.Join(" ", result.Phonemes)}");
         }
 
@@ -175,20 +175,20 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Phonemize_SameText_UsesCachedResult()
         {
             const string text = "テスト";
-            
+
             // First call
             var result1 = _phonemizer.Phonemize(text);
-            
+
             // Second call (should be cached)
             var result2 = _phonemizer.Phonemize(text);
-            
+
             Assert.NotNull(result1);
             Assert.NotNull(result2);
-            
+
             // Results should be equal
             Assert.AreEqual(result1.Phonemes?.Length ?? 0, result2.Phonemes?.Length ?? 0);
             CollectionAssert.AreEqual(result1.Phonemes, result2.Phonemes);
-            
+
             // Cache hit should be reflected in FromCache property
             Assert.IsTrue(result2.FromCache);
         }
@@ -197,16 +197,16 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void ClearCache_RemovesCachedResults()
         {
             const string text = "キャッシュテスト";
-            
+
             // Phonemize to cache
             var result1 = _phonemizer.Phonemize(text);
-            
+
             // Clear cache
             _phonemizer.ClearCache();
-            
+
             // Phonemize again
             var result2 = _phonemizer.Phonemize(text);
-            
+
             // Check that cache was cleared - result2 should not be from cache
             Assert.IsFalse(result2.FromCache);
         }
@@ -220,7 +220,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             // Create a very long text
             var longText = new string('あ', 10000);
-            
+
             try
             {
                 var result = _phonemizer.Phonemize(longText);
@@ -240,7 +240,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             // Text with potentially problematic characters
             var problematicText = "テスト\0\n\r\t";
-            
+
             try
             {
                 var result = _phonemizer.Phonemize(problematicText);
@@ -260,7 +260,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Dispose_MultipleCalls_DoesNotThrow()
         {
             var phonemizer = new OpenJTalkPhonemizer();
-            
+
             Assert.DoesNotThrow(() =>
             {
                 phonemizer.Dispose();
@@ -275,11 +275,11 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var phonemizer = new OpenJTalkPhonemizer();
             phonemizer.Dispose();
-            
+
             // Ensure the object is disposed before testing
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
-            
+
             Assert.Throws<ObjectDisposedException>(() =>
             {
                 phonemizer.Phonemize("テスト");

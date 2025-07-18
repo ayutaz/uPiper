@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Diagnostics;
+using UnityEngine;
 
 namespace uPiper.Core.Logging
 {
@@ -9,7 +9,7 @@ namespace uPiper.Core.Logging
     public static class PiperLogger
     {
         private const string LOG_PREFIX = "[uPiper]";
-        
+
         /// <summary>
         /// Log level enumeration
         /// </summary>
@@ -20,14 +20,14 @@ namespace uPiper.Core.Logging
             Warning = 2,
             Error = 3
         }
-        
+
         private static LogLevel minimumLevel = LogLevel.Info;
-        
+
         /// <summary>
         /// Get current minimum log level
         /// </summary>
         public static LogLevel MinimumLevel => minimumLevel;
-        
+
         /// <summary>
         /// Set minimum log level
         /// </summary>
@@ -35,7 +35,7 @@ namespace uPiper.Core.Logging
         {
             minimumLevel = level;
         }
-        
+
         /// <summary>
         /// Log debug message
         /// </summary>
@@ -49,7 +49,7 @@ namespace uPiper.Core.Logging
                 UnityEngine.Debug.Log($"{LOG_PREFIX} {formattedMessage}");
             }
         }
-        
+
         /// <summary>
         /// Log info message
         /// </summary>
@@ -62,7 +62,7 @@ namespace uPiper.Core.Logging
                 UnityEngine.Debug.Log($"{LOG_PREFIX} {formattedMessage}");
             }
         }
-        
+
         /// <summary>
         /// Log warning message
         /// </summary>
@@ -75,7 +75,7 @@ namespace uPiper.Core.Logging
                 UnityEngine.Debug.LogWarning($"{LOG_PREFIX} {formattedMessage}");
             }
         }
-        
+
         /// <summary>
         /// Log error message
         /// </summary>
@@ -88,17 +88,17 @@ namespace uPiper.Core.Logging
                 UnityEngine.Debug.LogError($"{LOG_PREFIX} {formattedMessage}");
             }
         }
-        
+
         /// <summary>
         /// Initialize logger (for compatibility)
         /// </summary>
         public static void Initialize()
         {
-            #if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             minimumLevel = LogLevel.Debug;
-            #else
+#else
             minimumLevel = LogLevel.Info;
-            #endif
+#endif
         }
     }
 }

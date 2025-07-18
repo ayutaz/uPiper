@@ -43,7 +43,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void PhonemizeAsync_DefaultMockData_Japanese()
         {
             var result = _phonemizer.Phonemize("こんにちは", "ja");
-            
+
             Assert.AreEqual("こんにちは", result.OriginalText);
             Assert.AreEqual("ja", result.Language);
             CollectionAssert.AreEqual(
@@ -60,7 +60,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void PhonemizeAsync_DefaultMockData_English()
         {
             var result = _phonemizer.Phonemize("hello world", "en");
-            
+
             Assert.AreEqual("hello world", result.OriginalText);
             Assert.AreEqual("en", result.Language);
             CollectionAssert.AreEqual(
@@ -73,7 +73,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Phonemize_SyncMethod_Works()
         {
             var result = _phonemizer.Phonemize("test", "en");
-            
+
             Assert.AreEqual("test", result.OriginalText);
             Assert.IsNotNull(result.Phonemes);
             Assert.Greater(result.Phonemes.Length, 0);
@@ -83,7 +83,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void PhonemizeAsync_EmptyString_ReturnsEmptyResult()
         {
             var result = _phonemizer.Phonemize("", "en");
-            
+
             Assert.AreEqual("", result.OriginalText);
             Assert.AreEqual(0, result.Phonemes.Length);
             Assert.AreEqual(0, result.PhonemeIds.Length);
@@ -93,7 +93,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void PhonemizeAsync_GeneratedPhonemes()
         {
             var result = _phonemizer.Phonemize("abc", "en");
-            
+
             Assert.AreEqual("abc", result.OriginalText);
             Assert.AreEqual(3, result.Phonemes.Length);
             Assert.AreEqual(3, result.PhonemeIds.Length);
@@ -112,11 +112,11 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Durations = new[] { 0.5f, 0.5f },
                 Pitches = new[] { 1.5f, 1.5f }
             };
-            
+
             _phonemizer.SetMockResult("test input", customResult);
-            
+
             var result = _phonemizer.Phonemize("test input", "en");
-            
+
             CollectionAssert.AreEqual(customResult.Phonemes, result.Phonemes);
             CollectionAssert.AreEqual(customResult.PhonemeIds, result.PhonemeIds);
         }
@@ -126,10 +126,10 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var exception = new InvalidOperationException("Test error");
             _phonemizer.SimulateError("error text", exception);
-            
+
             // Temporarily ignore error logs from background thread
             LogAssert.ignoreFailingMessages = true;
-            
+
             try
             {
                 // Unity Test Framework doesn't support Assert.ThrowsAsync properly
@@ -149,19 +149,19 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void CallTracking_RecordsCallsCorrectly()
         {
             _phonemizer.ResetCallTracking();
-            
+
             Assert.AreEqual(0, _phonemizer.CallCount);
             Assert.IsNull(_phonemizer.LastProcessedText);
             Assert.IsNull(_phonemizer.LastProcessedLanguage);
-            
+
             _phonemizer.Phonemize("test text", "ja");
-            
+
             Assert.AreEqual(1, _phonemizer.CallCount);
             Assert.AreEqual("test text", _phonemizer.LastProcessedText);
             Assert.AreEqual("ja", _phonemizer.LastProcessedLanguage);
-            
+
             _phonemizer.Phonemize("another text", "en");
-            
+
             Assert.AreEqual(2, _phonemizer.CallCount);
             Assert.AreEqual("another text", _phonemizer.LastProcessedText);
             Assert.AreEqual("en", _phonemizer.LastProcessedLanguage);
@@ -172,14 +172,14 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             // Use very short delay to avoid freezing
             var shortDelayPhonemizer = new MockPhonemizer(TimeSpan.FromMilliseconds(1));
-            
+
             var sw = System.Diagnostics.Stopwatch.StartNew();
             await shortDelayPhonemizer.PhonemizeAsync("test", "en");
             sw.Stop();
-            
+
             // Should take at least the simulated delay
             Assert.GreaterOrEqual(sw.ElapsedMilliseconds, 0);
-            
+
             shortDelayPhonemizer.Dispose();
         }
 
@@ -189,13 +189,13 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             var customResult = new PhonemeResult { Phonemes = new[] { "custom" } };
             _phonemizer.SetMockResult("test", customResult);
             _phonemizer.SimulateError("error", new Exception());
-            
+
             _phonemizer.ClearMockData();
-            
+
             // Should use generated phonemes, not custom result
             var result = _phonemizer.Phonemize("test", "en");
             Assert.AreNotEqual("custom", result.Phonemes[0]);
-            
+
             // Should not throw error
             Assert.DoesNotThrow(() => _phonemizer.Phonemize("error", "en"));
         }
@@ -223,13 +223,13 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsTrue(jaInfo.SupportsAccent);
             Assert.AreEqual("Japanese", jaInfo.PhonemeSetType);
             CollectionAssert.AreEqual(new[] { "test-ja-1", "test-ja-2" }, jaInfo.AvailableVoices);
-            
+
             var enInfo = _phonemizer.GetLanguageInfo("en");
             Assert.IsNotNull(enInfo);
             Assert.AreEqual("en", enInfo.Code);
             Assert.IsFalse(enInfo.RequiresPreprocessing);
             Assert.IsFalse(enInfo.SupportsAccent);
-            
+
             var unknownInfo = _phonemizer.GetLanguageInfo("unknown");
             Assert.IsNull(unknownInfo);
         }
@@ -239,12 +239,12 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             var texts = new[] { "hello", "world", "test" };
             var results = texts.Select(t => _phonemizer.Phonemize(t, "en")).ToArray();
-            
+
             Assert.AreEqual(3, results.Length);
             Assert.AreEqual("hello", results[0].OriginalText);
             Assert.AreEqual("world", results[1].OriginalText);
             Assert.AreEqual("test", results[2].OriginalText);
-            
+
             foreach (var result in results)
             {
                 Assert.IsNotNull(result.Phonemes);
@@ -256,17 +256,17 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Caching_SecondCallReturnsFromCache()
         {
             _phonemizer.ResetCallTracking();
-            
+
             // First call - not from cache
             var result1 = _phonemizer.Phonemize("test text", "en");
             Assert.IsFalse(result1.FromCache);
             Assert.AreEqual(1, _phonemizer.CallCount);
-            
+
             // Second call - should be from cache
             var result2 = _phonemizer.Phonemize("test text", "en");
             Assert.IsTrue(result2.FromCache);
             Assert.AreEqual(1, _phonemizer.CallCount); // Call count shouldn't increase
-            
+
             // Results should be equivalent
             CollectionAssert.AreEqual(result1.Phonemes, result2.Phonemes);
         }
@@ -277,7 +277,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             using (var cts = new CancellationTokenSource())
             {
                 cts.Cancel();
-                
+
                 // Phonemize doesn't take CancellationToken, so we can't test cancellation directly
                 // This is a limitation of the synchronous API
                 Assert.Pass("Cancellation test skipped for synchronous API");

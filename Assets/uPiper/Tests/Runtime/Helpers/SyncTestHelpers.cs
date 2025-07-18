@@ -22,7 +22,7 @@ namespace uPiper.Tests.Runtime.Helpers
                 {
                     throw new TimeoutException($"Task did not complete within {timeoutMs}ms");
                 }
-                
+
                 if (task.IsFaulted)
                 {
                     throw task.Exception.GetBaseException();
@@ -33,7 +33,7 @@ namespace uPiper.Tests.Runtime.Helpers
                 throw ae.GetBaseException();
             }
         }
-        
+
         /// <summary>
         /// Run an async task that returns a value synchronously
         /// </summary>
@@ -46,12 +46,12 @@ namespace uPiper.Tests.Runtime.Helpers
                 {
                     throw new TimeoutException($"Task did not complete within {timeoutMs}ms");
                 }
-                
+
                 if (task.IsFaulted)
                 {
                     throw task.Exception.GetBaseException();
                 }
-                
+
                 return task.Result;
             }
             catch (AggregateException ae)
@@ -59,11 +59,11 @@ namespace uPiper.Tests.Runtime.Helpers
                 throw ae.GetBaseException();
             }
         }
-        
+
         /// <summary>
         /// Run an async task and expect it to throw an exception
         /// </summary>
-        public static void RunSyncExpectException<TException>(Func<Task> asyncFunc, int timeoutMs = 5000) 
+        public static void RunSyncExpectException<TException>(Func<Task> asyncFunc, int timeoutMs = 5000)
             where TException : Exception
         {
             try

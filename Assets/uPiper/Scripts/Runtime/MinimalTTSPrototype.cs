@@ -12,20 +12,20 @@ namespace uPiper.Runtime
     public class MinimalTTSPrototype : MonoBehaviour
     {
         [Header("TTS Settings")]
-        [SerializeField] private AudioSource audioSource;
-        [SerializeField] private bool autoPlayOnStart = true;
-        
+        [SerializeField] private AudioSource _audioSource;
+        [SerializeField] private bool _autoPlayOnStart = true;
+
         [Header("Wave Generation Settings")]
-        [SerializeField] private int sampleRate = 22050;
-        [SerializeField] private float frequency = 440f; // A4音
-        [SerializeField] private float duration = 2f;
-        
+        [SerializeField] private int _sampleRate = 22050;
+        [SerializeField] private float _frequency = 440f; // A4音
+        [SerializeField] private float _duration = 2f;
+
         [Header("Status")]
-        [SerializeField] private string status = "Not initialized";
-        
+        [SerializeField] private string _status = "Not initialized";
+
         // 固定音素ID配列（「こんにちは」を想定した仮の値）
         // 実際のPiper TTSでは、これらのIDは音素化エンジンから生成される
-        private readonly int[] FIXED_PHONEME_IDS = { 
+        private readonly int[] _fixedPhonemeIds = {
             23, 45, 67, 12, 89, 34, 56, 78, 90, 11, // "こ"
             33, 55, 77, 99, 22, 44, 66, 88, 10, 32, // "ん"
             54, 76, 98, 21, 43, 65, 87, 9,  31, 53, // "に"
@@ -33,18 +33,18 @@ namespace uPiper.Runtime
             96, 19, 41, 63, 85, 7,  29, 51, 73, 95  // "は"
         };
 
-        void Start()
+        private void Start()
         {
-            if (audioSource == null)
+            if (_audioSource == null)
             {
-                audioSource = GetComponent<AudioSource>();
-                if (audioSource == null)
+                _audioSource = GetComponent<AudioSource>();
+                if (_audioSource == null)
                 {
-                    audioSource = gameObject.AddComponent<AudioSource>();
+                    _audioSource = gameObject.AddComponent<AudioSource>();
                 }
             }
-            
-            if (autoPlayOnStart)
+
+            if (_autoPlayOnStart)
             {
                 GenerateAndPlayDummyTTS();
             }
@@ -55,28 +55,28 @@ namespace uPiper.Runtime
         {
             try
             {
-                status = "Generating audio...";
+                _status = "Generating audio...";
                 Debug.Log("=== Minimal TTS Prototype ===");
-                Debug.Log($"Fixed phoneme IDs count: {FIXED_PHONEME_IDS.Length}");
-                Debug.Log($"Phoneme IDs: [{string.Join(", ", FIXED_PHONEME_IDS.Take(10))}...]");
-                
+                Debug.Log($"Fixed phoneme IDs count: {_fixedPhonemeIds.Length}");
+                Debug.Log($"Phoneme IDs: [{string.Join(", ", _fixedPhonemeIds.Take(10))}...]");
+
                 // Step 1: 音素IDからダミー音声波形を生成
                 float[] waveform = GenerateDummyWaveform();
                 Debug.Log($"Generated waveform samples: {waveform.Length}");
-                
+
                 // Step 2: AudioClipを作成
                 AudioClip audioClip = CreateAudioClip(waveform);
                 Debug.Log($"Created AudioClip: {audioClip.name}, {audioClip.frequency}Hz, {audioClip.length}s");
-                
+
                 // Step 3: 再生
                 PlayAudioClip(audioClip);
-                
-                status = "Playing audio...";
+
+                _status = "Playing audio...";
                 Debug.Log("=== TTS Prototype Success ===");
             }
             catch (Exception e)
             {
-                status = $"Error: {e.Message}";
+                _status = $"Error: {e.Message}";
                 Debug.LogError($"TTS Prototype failed: {e}");
             }
         }
@@ -87,31 +87,31 @@ namespace uPiper.Runtime
         /// </summary>
         private float[] GenerateDummyWaveform()
         {
-            int totalSamples = Mathf.RoundToInt(sampleRate * duration);
+            int totalSamples = Mathf.RoundToInt(_sampleRate * _duration);
             float[] waveform = new float[totalSamples];
-            
+
             // 音素IDを基に周波数を変調（簡単なデモ用）
-            float baseFrequency = frequency;
+            float baseFrequency = _frequency;
             int phonemeIndex = 0;
-            float samplesPerPhoneme = totalSamples / (float)FIXED_PHONEME_IDS.Length;
-            
+            float samplesPerPhoneme = totalSamples / (float)_fixedPhonemeIds.Length;
+
             for (int i = 0; i < totalSamples; i++)
             {
                 // 現在の音素インデックスを計算
                 phonemeIndex = Mathf.Min(
-                    Mathf.FloorToInt(i / samplesPerPhoneme), 
-                    FIXED_PHONEME_IDS.Length - 1
+                    Mathf.FloorToInt(i / samplesPerPhoneme),
+                    _fixedPhonemeIds.Length - 1
                 );
-                
+
                 // 音素IDに基づいて周波数を調整
-                float phonemeFrequency = baseFrequency * (1f + FIXED_PHONEME_IDS[phonemeIndex] / 100f);
-                
+                float phonemeFrequency = baseFrequency * (1f + _fixedPhonemeIds[phonemeIndex] / 100f);
+
                 // サイン波を生成（エンベロープ付き）
-                float t = i / (float)sampleRate;
-                float envelope = CalculateEnvelope(i, totalSamples, phonemeIndex, FIXED_PHONEME_IDS.Length);
+                float t = i / (float)_sampleRate;
+                float envelope = CalculateEnvelope(i, totalSamples, phonemeIndex, _fixedPhonemeIds.Length);
                 waveform[i] = Mathf.Sin(2f * Mathf.PI * phonemeFrequency * t) * envelope * 0.5f;
             }
-            
+
             return waveform;
         }
 
@@ -122,11 +122,11 @@ namespace uPiper.Runtime
         {
             float samplesPerPhoneme = totalSamples / (float)totalPhonemes;
             float phonemeProgress = (sampleIndex % samplesPerPhoneme) / samplesPerPhoneme;
-            
+
             // 各音素の開始と終了でフェードイン/アウト
             float attackTime = 0.1f;
             float releaseTime = 0.1f;
-            
+
             if (phonemeProgress < attackTime)
             {
                 return phonemeProgress / attackTime;
@@ -150,10 +150,10 @@ namespace uPiper.Runtime
                 "MinimalTTS_Output",
                 waveform.Length,
                 1, // モノラル
-                sampleRate,
+                _sampleRate,
                 false
             );
-            
+
             clip.SetData(waveform, 0);
             return clip;
         }
@@ -163,9 +163,9 @@ namespace uPiper.Runtime
         /// </summary>
         private void PlayAudioClip(AudioClip clip)
         {
-            audioSource.clip = clip;
-            audioSource.Play();
-            
+            _audioSource.clip = clip;
+            _audioSource.Play();
+
             // 再生終了時のコールバック
             StartCoroutine(WaitForAudioEnd(clip.length));
         }
@@ -173,29 +173,29 @@ namespace uPiper.Runtime
         private System.Collections.IEnumerator WaitForAudioEnd(float duration)
         {
             yield return new WaitForSeconds(duration);
-            status = "Playback completed";
+            _status = "Playback completed";
             Debug.Log("Audio playback completed");
         }
 
-        void OnGUI()
+        private void OnGUI()
         {
             // 簡単なGUIで状態表示
             GUILayout.BeginArea(new Rect(10, 10, 300, 150));
             GUILayout.Label("Minimal TTS Prototype", GUI.skin.box);
             GUILayout.Space(10);
-            
-            GUILayout.Label($"Status: {status}");
-            GUILayout.Label($"Sample Rate: {sampleRate}Hz");
-            GUILayout.Label($"Duration: {duration}s");
-            GUILayout.Label($"Phoneme IDs: {FIXED_PHONEME_IDS.Length}");
-            
+
+            GUILayout.Label($"Status: {_status}");
+            GUILayout.Label($"Sample Rate: {_sampleRate}Hz");
+            GUILayout.Label($"Duration: {_duration}s");
+            GUILayout.Label($"Phoneme IDs: {_fixedPhonemeIds.Length}");
+
             GUILayout.Space(10);
-            
+
             if (GUILayout.Button("Generate and Play"))
             {
                 GenerateAndPlayDummyTTS();
             }
-            
+
             GUILayout.EndArea();
         }
     }

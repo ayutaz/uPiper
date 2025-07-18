@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEngine;
 using Unity.InferenceEngine;
+using UnityEngine;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Implementations;
@@ -24,26 +24,26 @@ namespace uPiper.Core
         private bool _isInitialized;
         private bool _isDisposed;
         private readonly object _lockObject = new object();
-        
+
         // Event backing fields
         private event Action<bool> _onInitialized;
         private event Action<PiperVoiceConfig> _onVoiceLoaded;
         private event Action<PiperException> _onError;
         private event Action<float> _onProcessingProgress;
-        
+
         // Inference Engine related
         private BackendType _inferenceBackend;
         private readonly Dictionary<string, Model> _loadedModels;
         private readonly Dictionary<string, Worker> _workers;
         private readonly Queue<Worker> _workerPool;
-        
+
         // Cache system
         private readonly Dictionary<string, byte[]> _phonemeCache;
         private long _currentCacheSize;
         private long _cacheHitCount;
         private long _cacheMissCount;
         private long _cacheEvictionCount;
-        
+
         // Phonemizer
         private IPhonemizer _phonemizer;
 
@@ -54,17 +54,17 @@ namespace uPiper.Core
         /// <summary>
         /// Current voice ID
         /// </summary>
-        public string CurrentVoiceId 
-        { 
-            get 
-            { 
+        public string CurrentVoiceId
+        {
+            get
+            {
                 lock (_lockObject)
                 {
                     return _currentVoiceId;
                 }
             }
         }
-        
+
         /// <summary>
         /// Currently loaded voice configuration
         /// </summary>
@@ -76,7 +76,7 @@ namespace uPiper.Core
                 {
                     if (string.IsNullOrEmpty(_currentVoiceId) || !_voices.ContainsKey(_currentVoiceId))
                         return null;
-                    
+
                     return _voices[_currentVoiceId];
                 }
             }
@@ -85,10 +85,10 @@ namespace uPiper.Core
         /// <summary>
         /// Available voice IDs
         /// </summary>
-        public IReadOnlyCollection<string> AvailableVoices 
-        { 
-            get 
-            { 
+        public IReadOnlyCollection<string> AvailableVoices
+        {
+            get
+            {
                 lock (_lockObject)
                 {
                     return new List<string>(_voices.Keys);
@@ -99,10 +99,10 @@ namespace uPiper.Core
         /// <summary>
         /// Whether the TTS engine is initialized
         /// </summary>
-        public bool IsInitialized 
-        { 
-            get 
-            { 
+        public bool IsInitialized
+        {
+            get
+            {
                 lock (_lockObject)
                 {
                     return _isInitialized;
@@ -129,22 +129,22 @@ namespace uPiper.Core
         /// </summary>
         public event Action<bool> OnInitialized
         {
-            add 
-            { 
+            add
+            {
                 lock (_lockObject)
                 {
                     _onInitialized += value;
                 }
             }
-            remove 
-            { 
+            remove
+            {
                 lock (_lockObject)
                 {
                     _onInitialized -= value;
                 }
             }
         }
-        
+
         /// <summary>
         /// Event fired when voice is loaded
         /// </summary>
@@ -171,15 +171,15 @@ namespace uPiper.Core
         /// </summary>
         public event Action<PiperException> OnError
         {
-            add 
-            { 
+            add
+            {
                 lock (_lockObject)
                 {
                     _onError += value;
                 }
             }
-            remove 
-            { 
+            remove
+            {
                 lock (_lockObject)
                 {
                     _onError -= value;
@@ -192,15 +192,15 @@ namespace uPiper.Core
         /// </summary>
         public event Action<float> OnProcessingProgress
         {
-            add 
-            { 
+            add
+            {
                 lock (_lockObject)
                 {
                     _onProcessingProgress += value;
                 }
             }
-            remove 
-            { 
+            remove
+            {
                 lock (_lockObject)
                 {
                     _onProcessingProgress -= value;
@@ -222,7 +222,7 @@ namespace uPiper.Core
             _voices = new Dictionary<string, PiperVoiceConfig>();
             _isInitialized = false;
             _isDisposed = false;
-            
+
             // Initialize collections
             _loadedModels = new Dictionary<string, Model>();
             _workers = new Dictionary<string, Worker>();
@@ -232,11 +232,11 @@ namespace uPiper.Core
             _cacheHitCount = 0;
             _cacheMissCount = 0;
             _cacheEvictionCount = 0;
-            
+
             // Validate configuration on construction
             _config.Validate();
-            
-            PiperLogger.LogInfo("PiperTTS instance created with config: SampleRate={0}Hz, Language={1}", 
+
+            PiperLogger.LogInfo("PiperTTS instance created with config: SampleRate={0}Hz, Language={1}",
                 _config.SampleRate, _config.DefaultLanguage);
         }
 
@@ -250,7 +250,7 @@ namespace uPiper.Core
         public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            
+
             if (_isInitialized)
             {
                 PiperLogger.LogWarning("PiperTTS is already initialized");
@@ -260,33 +260,33 @@ namespace uPiper.Core
             try
             {
                 PiperLogger.LogInfo("Starting PiperTTS initialization...");
-                
+
                 // Validate runtime environment first (must be on main thread)
                 ValidateRuntimeEnvironment();
-                
+
                 // Initialize Inference Engine backend
                 await InitializeInferenceEngineAsync(cancellationToken);
-                
+
                 // Initialize worker thread pool if multi-threaded inference is enabled
                 if (_config.EnableMultiThreadedInference && _config.WorkerThreads > 1)
                 {
                     await InitializeWorkerPoolAsync(cancellationToken);
                 }
-                
+
                 // Initialize cache system if enabled
                 if (_config.EnablePhonemeCache)
                 {
                     InitializeCacheSystem();
                 }
-                
+
                 // Initialize phonemizer based on language
                 await InitializePhonemizerAsync(cancellationToken);
-                
+
                 lock (_lockObject)
                 {
                     _isInitialized = true;
                 }
-                
+
                 PiperLogger.LogInfo("PiperTTS initialized successfully");
                 _onInitialized?.Invoke(true);
             }
@@ -315,19 +315,19 @@ namespace uPiper.Core
         {
             ThrowIfDisposed();
             ThrowIfNotInitialized();
-            
+
             if (voice == null)
                 throw new ArgumentNullException(nameof(voice));
-            
+
             voice.Validate();
-            
+
             try
             {
                 PiperLogger.LogInfo("Loading voice: {0}", voice.VoiceId);
-                
+
                 // TODO: Implement actual voice loading logic
                 await Task.Delay(50, cancellationToken); // Simulate loading
-                
+
                 lock (_lockObject)
                 {
                     _voices[voice.VoiceId] = voice;
@@ -336,7 +336,7 @@ namespace uPiper.Core
                         _currentVoiceId = voice.VoiceId;
                     }
                 }
-                
+
                 PiperLogger.LogInfo("Voice loaded successfully: {0}", voice.VoiceId);
                 _onVoiceLoaded?.Invoke(voice);
             }
@@ -360,17 +360,17 @@ namespace uPiper.Core
         {
             ThrowIfDisposed();
             ThrowIfNotInitialized();
-            
+
             if (string.IsNullOrWhiteSpace(voiceId))
                 throw new ArgumentNullException(nameof(voiceId));
-            
+
             lock (_lockObject)
             {
                 if (!_voices.ContainsKey(voiceId))
                 {
                     throw new PiperException($"Voice not found: {voiceId}");
                 }
-                
+
                 _currentVoiceId = voiceId;
                 PiperLogger.LogInfo("Current voice set to: {0}", voiceId);
             }
@@ -382,28 +382,28 @@ namespace uPiper.Core
         public PiperVoiceConfig GetVoiceConfig(string voiceId)
         {
             ThrowIfDisposed();
-            
+
             if (string.IsNullOrWhiteSpace(voiceId))
                 throw new ArgumentNullException(nameof(voiceId));
-            
+
             lock (_lockObject)
             {
                 if (_voices.TryGetValue(voiceId, out var config))
                 {
                     return config;
                 }
-                
+
                 throw new PiperException($"Voice not found: {voiceId}");
             }
         }
-        
+
         /// <summary>
         /// Get available voices
         /// </summary>
         public IReadOnlyList<PiperVoiceConfig> GetAvailableVoices()
         {
             ThrowIfDisposed();
-            
+
             lock (_lockObject)
             {
                 return new List<PiperVoiceConfig>(_voices.Values);
@@ -421,23 +421,23 @@ namespace uPiper.Core
         {
             ThrowIfDisposed();
             ThrowIfNotInitialized();
-            
+
             if (string.IsNullOrWhiteSpace(text))
                 throw new ArgumentNullException(nameof(text));
-            
+
             if (string.IsNullOrEmpty(_currentVoiceId))
                 throw new InvalidOperationException("No voice selected. Load a voice first.");
-            
+
             try
             {
                 IsProcessing = true;
-                PiperLogger.LogInfo("Generating audio for text: \"{0}\" (length: {1})", 
-                    text.Length > 50 ? text.Substring(0, 50) + "..." : text, 
+                PiperLogger.LogInfo("Generating audio for text: \"{0}\" (length: {1})",
+                    text.Length > 50 ? text.Substring(0, 50) + "..." : text,
                     text.Length);
-                
+
                 // Report initial progress
                 _onProcessingProgress?.Invoke(0.1f);
-                
+
                 // Check cache first if enabled
                 if (_config.EnablePhonemeCache)
                 {
@@ -449,7 +449,7 @@ namespace uPiper.Core
                             _cacheHitCount++;
                             PiperLogger.LogInfo("Cache hit for text");
                             _onProcessingProgress?.Invoke(1.0f);
-                            
+
                             // TODO: Convert cached data to AudioClip
                             return CreateDummyAudioClip(text);
                         }
@@ -459,18 +459,18 @@ namespace uPiper.Core
                         }
                     }
                 }
-                
+
                 _onProcessingProgress?.Invoke(0.3f);
-                
+
                 // Perform phonemization
                 PiperLogger.LogInfo("Phonemizing text...");
                 PhonemeResult phonemeResult = null;
-                
+
                 if (_phonemizer != null)
                 {
                     phonemeResult = await _phonemizer.PhonemizeAsync(text);
                     PiperLogger.LogInfo("Phonemization completed: {0} phonemes", phonemeResult.Phonemes?.Length ?? 0);
-                    
+
                     // Log phonemes for debugging
                     if (phonemeResult.Phonemes != null && phonemeResult.Phonemes.Length > 0)
                     {
@@ -481,27 +481,27 @@ namespace uPiper.Core
                 {
                     PiperLogger.LogWarning("No phonemizer available, using dummy phonemes");
                 }
-                
+
                 _onProcessingProgress?.Invoke(0.5f);
-                
+
                 // TODO: Implement actual synthesis using ONNX model
                 // For now, create a dummy audio clip
                 await Task.Delay(100, cancellationToken); // Simulate synthesis
-                
+
                 _onProcessingProgress?.Invoke(0.8f);
-                
+
                 var audioClip = CreateDummyAudioClip(text);
-                
+
                 // Cache the result if enabled
                 if (_config.EnablePhonemeCache && phonemeResult != null)
                 {
                     var cacheKey = GenerateCacheKey(text, _currentVoiceId);
                     // TODO: Cache the phoneme result or audio data
                 }
-                
+
                 _onProcessingProgress?.Invoke(1.0f);
                 PiperLogger.LogInfo("Audio generation completed");
-                
+
                 return audioClip;
             }
             catch (OperationCanceledException)
@@ -528,26 +528,26 @@ namespace uPiper.Core
         {
             ThrowIfDisposed();
             ThrowIfNotInitialized();
-            
+
             if (string.IsNullOrWhiteSpace(text))
                 throw new ArgumentNullException(nameof(text));
-            
+
             if (string.IsNullOrEmpty(_currentVoiceId))
                 throw new InvalidOperationException("No voice selected. Load a voice first.");
-            
+
             try
             {
                 IsProcessing = true;
                 PiperLogger.LogInfo("Generating audio synchronously for text length: {0}", text.Length);
-                
+
                 // For synchronous version, we'll use the async method internally
                 // In a real implementation, this would use native synchronous methods
                 var task = GenerateAudioAsync(text);
-                
+
                 // Use a simple polling loop to wait for completion
                 var startTime = DateTime.UtcNow;
                 var timeout = _config.TimeoutMs > 0 ? TimeSpan.FromMilliseconds(_config.TimeoutMs) : TimeSpan.FromMinutes(5);
-                
+
                 while (!task.IsCompleted)
                 {
                     if (DateTime.UtcNow - startTime > timeout)
@@ -556,12 +556,12 @@ namespace uPiper.Core
                     }
                     System.Threading.Thread.Yield();
                 }
-                
+
                 if (task.IsFaulted)
                 {
                     throw task.Exception.GetBaseException();
                 }
-                
+
                 return task.Result;
             }
             catch (AggregateException ae)
@@ -570,7 +570,7 @@ namespace uPiper.Core
                 var innerEx = ae.InnerException;
                 if (innerEx is PiperException)
                     throw innerEx;
-                
+
                 var piperEx = new PiperException("Failed to generate audio", innerEx);
                 _onError?.Invoke(piperEx);
                 throw piperEx;
@@ -585,43 +585,43 @@ namespace uPiper.Core
         /// Stream audio generation
         /// </summary>
         public async IAsyncEnumerable<AudioChunk> StreamAudioAsync(
-            string text, 
+            string text,
             [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             ThrowIfNotInitialized();
-            
+
             if (string.IsNullOrWhiteSpace(text))
                 throw new ArgumentNullException(nameof(text));
-            
+
             if (string.IsNullOrEmpty(_currentVoiceId))
                 throw new InvalidOperationException("No voice selected. Load a voice first.");
-            
+
             PiperLogger.LogInfo("Starting audio streaming for text length: {0}", text.Length);
-            
+
             try
             {
                 IsProcessing = true;
-                
+
                 // Split text into chunks for streaming
                 var sentences = SplitIntoSentences(text);
                 var totalSentences = sentences.Count;
                 var processedSentences = 0;
-                
+
                 foreach (var sentence in sentences)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    
+
                     // Simulate processing delay
                     await Task.Delay(100, cancellationToken);
-                    
+
                     // Create a dummy audio chunk
                     var audioData = new float[_config.SampleRate / 10]; // 0.1 second of audio
                     for (int i = 0; i < audioData.Length; i++)
                     {
                         audioData[i] = 0f; // Silence for now
                     }
-                    
+
                     var chunk = new AudioChunk(
                         samples: audioData,
                         sampleRate: _config.SampleRate,
@@ -631,13 +631,13 @@ namespace uPiper.Core
                         textSegment: sentence,
                         startTime: processedSentences * 0.1f
                     );
-                    
+
                     processedSentences++;
                     _onProcessingProgress?.Invoke((float)processedSentences / totalSentences);
-                    
+
                     yield return chunk;
                 }
-                
+
                 PiperLogger.LogInfo("Audio streaming completed");
             }
             finally
@@ -653,16 +653,16 @@ namespace uPiper.Core
         {
             ThrowIfDisposed();
             ThrowIfNotInitialized();
-            
+
             if (string.IsNullOrWhiteSpace(text))
                 throw new ArgumentNullException(nameof(text));
-            
+
             if (voiceConfig == null)
                 throw new ArgumentNullException(nameof(voiceConfig));
-            
+
             // Temporarily switch voice
             var previousVoiceId = _currentVoiceId;
-            
+
             try
             {
                 // Load voice if not already loaded
@@ -674,10 +674,10 @@ namespace uPiper.Core
                         var loadTask = LoadVoiceAsync(voiceConfig);
                         loadTask.Wait();
                     }
-                    
+
                     _currentVoiceId = voiceConfig.VoiceId;
                 }
-                
+
                 // Generate audio with the specified voice
                 return GenerateAudio(text);
             }
@@ -690,7 +690,7 @@ namespace uPiper.Core
                 }
             }
         }
-        
+
         /// <summary>
         /// Generate audio from text with specific voice configuration (asynchronous)
         /// </summary>
@@ -698,16 +698,16 @@ namespace uPiper.Core
         {
             ThrowIfDisposed();
             ThrowIfNotInitialized();
-            
+
             if (string.IsNullOrWhiteSpace(text))
                 throw new ArgumentNullException(nameof(text));
-            
+
             if (voiceConfig == null)
                 throw new ArgumentNullException(nameof(voiceConfig));
-            
+
             // Temporarily switch voice
             var previousVoiceId = _currentVoiceId;
-            
+
             try
             {
                 // Load voice if not already loaded
@@ -716,17 +716,17 @@ namespace uPiper.Core
                 {
                     needsLoad = !_voices.ContainsKey(voiceConfig.VoiceId);
                 }
-                
+
                 if (needsLoad)
                 {
                     await LoadVoiceAsync(voiceConfig, cancellationToken);
                 }
-                
+
                 lock (_lockObject)
                 {
                     _currentVoiceId = voiceConfig.VoiceId;
                 }
-                
+
                 // Generate audio with the specified voice
                 return await GenerateAudioAsync(text, cancellationToken);
             }
@@ -739,27 +739,27 @@ namespace uPiper.Core
                 }
             }
         }
-        
+
         /// <summary>
         /// Stream audio generation with specific voice configuration
         /// </summary>
         public async IAsyncEnumerable<AudioChunk> StreamAudioAsync(
-            string text, 
+            string text,
             PiperVoiceConfig voiceConfig,
             [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             ThrowIfNotInitialized();
-            
+
             if (string.IsNullOrWhiteSpace(text))
                 throw new ArgumentNullException(nameof(text));
-            
+
             if (voiceConfig == null)
                 throw new ArgumentNullException(nameof(voiceConfig));
-            
+
             // Temporarily switch voice
             var previousVoiceId = _currentVoiceId;
-            
+
             try
             {
                 // Load voice if not already loaded
@@ -768,17 +768,17 @@ namespace uPiper.Core
                 {
                     needsLoad = !_voices.ContainsKey(voiceConfig.VoiceId);
                 }
-                
+
                 if (needsLoad)
                 {
                     await LoadVoiceAsync(voiceConfig, cancellationToken);
                 }
-                
+
                 lock (_lockObject)
                 {
                     _currentVoiceId = voiceConfig.VoiceId;
                 }
-                
+
                 // Stream audio with the specified voice
                 await foreach (var chunk in StreamAudioAsync(text, cancellationToken))
                 {
@@ -794,7 +794,7 @@ namespace uPiper.Core
                 }
             }
         }
-        
+
         /// <summary>
         /// Preload resources for a text
         /// </summary>
@@ -802,21 +802,21 @@ namespace uPiper.Core
         {
             ThrowIfDisposed();
             ThrowIfNotInitialized();
-            
+
             if (string.IsNullOrWhiteSpace(text))
                 throw new ArgumentNullException(nameof(text));
-            
+
             if (string.IsNullOrEmpty(_currentVoiceId))
                 throw new InvalidOperationException("No voice selected. Load a voice first.");
-            
+
             if (!_config.EnablePhonemeCache)
             {
                 PiperLogger.LogWarning("Phoneme cache is disabled. PreloadTextAsync has no effect.");
                 return;
             }
-            
+
             var cacheKey = GenerateCacheKey(text, _currentVoiceId);
-            
+
             lock (_lockObject)
             {
                 if (_phonemeCache.ContainsKey(cacheKey))
@@ -825,24 +825,24 @@ namespace uPiper.Core
                     return;
                 }
             }
-            
+
             try
             {
                 PiperLogger.LogInfo("Preloading text for caching (length: {0})", text.Length);
-                
+
                 // TODO: Implement actual phonemization
                 // For now, just simulate with delay
                 await Task.Delay(50, cancellationToken);
-                
+
                 // Create dummy phoneme data
                 var dummyData = new byte[text.Length * 2]; // Rough estimate
-                
+
                 lock (_lockObject)
                 {
                     // Check cache size limit
                     var dataSize = dummyData.Length;
                     var maxCacheBytes = _config.MaxCacheSizeMB * 1024 * 1024;
-                    
+
                     // Evict old entries if needed
                     while (_currentCacheSize + dataSize > maxCacheBytes && _phonemeCache.Count > 0)
                     {
@@ -854,12 +854,12 @@ namespace uPiper.Core
                         _cacheEvictionCount++;
                         PiperLogger.LogInfo("Evicted cache entry to make room");
                     }
-                    
+
                     // Add to cache
                     _phonemeCache[cacheKey] = dummyData;
                     _currentCacheSize += dataSize;
-                    
-                    PiperLogger.LogInfo("Text preloaded and cached (cache size: {0:F2}MB)", 
+
+                    PiperLogger.LogInfo("Text preloaded and cached (cache size: {0:F2}MB)",
                         _currentCacheSize / (1024.0 * 1024.0));
                 }
             }
@@ -876,7 +876,7 @@ namespace uPiper.Core
         public CacheStatistics GetCacheStatistics()
         {
             ThrowIfDisposed();
-            
+
             lock (_lockObject)
             {
                 var stats = new CacheStatistics
@@ -898,16 +898,16 @@ namespace uPiper.Core
         public void ClearCache()
         {
             ThrowIfDisposed();
-            
+
             lock (_lockObject)
             {
                 var previousSize = _currentCacheSize;
                 _phonemeCache.Clear();
                 _currentCacheSize = 0;
-                
+
                 if (previousSize > 0)
                 {
-                    PiperLogger.LogInfo("Cache cleared ({0:F2}MB freed)", 
+                    PiperLogger.LogInfo("Cache cleared ({0:F2}MB freed)",
                         previousSize / (1024.0 * 1024.0));
                 }
                 else
@@ -937,7 +937,7 @@ namespace uPiper.Core
         {
             if (_isDisposed)
                 return;
-            
+
             if (disposing)
             {
                 lock (_lockObject)
@@ -948,41 +948,41 @@ namespace uPiper.Core
                         worker?.Dispose();
                     }
                     _workers.Clear();
-                    
+
                     // Dispose worker pool
                     while (_workerPool.Count > 0)
                     {
                         var worker = _workerPool.Dequeue();
                         worker?.Dispose();
                     }
-                    
+
                     // Clear models (Model doesn't have Dispose method)
                     _loadedModels.Clear();
-                    
+
                     // Clear event handlers
                     _onInitialized = null;
                     _onVoiceLoaded = null;
                     _onError = null;
                     _onProcessingProgress = null;
-                    
+
                     // Clear voices
                     _voices.Clear();
-                    
+
                     // Clear cache
                     _phonemeCache.Clear();
                     _currentCacheSize = 0;
                     _cacheHitCount = 0;
                     _cacheMissCount = 0;
                     _cacheEvictionCount = 0;
-                    
+
                     // Dispose phonemizer
                     _phonemizer?.Dispose();
                     _phonemizer = null;
-                    
+
                     _isInitialized = false;
                     _isDisposed = true;
                 }
-                
+
                 PiperLogger.LogInfo("PiperTTS disposed");
             }
         }
@@ -1008,14 +1008,14 @@ namespace uPiper.Core
             if (!_isInitialized)
                 throw new InvalidOperationException("PiperTTS is not initialized. Call InitializeAsync first.");
         }
-        
+
         /// <summary>
         /// Initialize the Inference Engine backend
         /// </summary>
         private async Task InitializeInferenceEngineAsync(CancellationToken cancellationToken)
         {
             PiperLogger.LogInfo("Initializing Inference Engine backend...");
-            
+
             // Map PiperConfig backend to Unity Inference Engine backend
             _inferenceBackend = _config.Backend switch
             {
@@ -1025,36 +1025,36 @@ namespace uPiper.Core
                 InferenceBackend.Auto => BackendType.CPU, // Default to CPU for now
                 _ => BackendType.CPU
             };
-            
+
             // For now, just log the selected backend
             // TODO: Add backend validation when Worker API is available
-            
+
             PiperLogger.LogInfo("Inference Engine initialized with backend: {0}", _inferenceBackend);
-            
+
             // Small delay to simulate async operation
             await Task.Yield();
         }
-        
+
         /// <summary>
         /// Initialize the phonemizer based on language
         /// </summary>
         private async Task InitializePhonemizerAsync(CancellationToken cancellationToken)
         {
             PiperLogger.LogInfo("Initializing phonemizer for language: {0}", _config.DefaultLanguage);
-            
+
             try
             {
                 // For Japanese, use OpenJTalkPhonemizer
-                if (_config.DefaultLanguage == "ja" || _config.DefaultLanguage == "jp" || 
+                if (_config.DefaultLanguage == "ja" || _config.DefaultLanguage == "jp" ||
                     _config.DefaultLanguage == "japanese")
                 {
-                    #if !UNITY_WEBGL
+#if !UNITY_WEBGL
                     _phonemizer = new OpenJTalkPhonemizer();
                     PiperLogger.LogInfo("Initialized OpenJTalkPhonemizer for Japanese");
-                    #else
+#else
                     PiperLogger.LogWarning("OpenJTalkPhonemizer is not supported on WebGL platform");
                     _phonemizer = new MockPhonemizer(); // Fallback to mock
-                    #endif
+#endif
                 }
                 else
                 {
@@ -1063,7 +1063,7 @@ namespace uPiper.Core
                     _phonemizer = new MockPhonemizer();
                     PiperLogger.LogInfo("Initialized MockPhonemizer for language: {0}", _config.DefaultLanguage);
                 }
-                
+
                 // Small delay to simulate async operation
                 await Task.Yield();
             }
@@ -1073,44 +1073,44 @@ namespace uPiper.Core
                 throw new PiperInitializationException("Failed to initialize phonemizer", ex);
             }
         }
-        
+
         /// <summary>
         /// Initialize worker thread pool
         /// </summary>
         private async Task InitializeWorkerPoolAsync(CancellationToken cancellationToken)
         {
             PiperLogger.LogInfo("Initializing worker pool with {0} threads", _config.WorkerThreads);
-            
+
             // Worker pool initialization will be implemented when we have actual models
             // For now, just log the intention
-            
+
             PiperLogger.LogInfo("Worker pool initialization completed");
-            
+
             // Small delay to simulate async operation
             await Task.Yield();
         }
-        
+
         /// <summary>
         /// Validate runtime environment
         /// </summary>
         private void ValidateRuntimeEnvironment()
         {
             PiperLogger.LogInfo("Validating runtime environment...");
-            
+
             // Check Unity version
             var unityVersion = Application.unityVersion;
             PiperLogger.LogInfo("Unity version: {0}", unityVersion);
-            
+
             // Check platform
             var platform = Application.platform;
             PiperLogger.LogInfo("Platform: {0}", platform);
-            
+
             // Check if running in editor
             if (Application.isEditor)
             {
                 PiperLogger.LogInfo("Running in Unity Editor");
             }
-            
+
             // Check system info (skip in test environment to avoid main thread issues)
             try
             {
@@ -1124,24 +1124,24 @@ namespace uPiper.Core
                 PiperLogger.LogWarning("Could not retrieve system info: {0}", ex.Message);
             }
         }
-        
+
         /// <summary>
         /// Initialize cache system
         /// </summary>
         private void InitializeCacheSystem()
         {
             PiperLogger.LogInfo("Initializing cache system with max size: {0}MB", _config.MaxCacheSizeMB);
-            
+
             // Clear any existing cache
             _phonemeCache.Clear();
             _currentCacheSize = 0;
             _cacheHitCount = 0;
             _cacheMissCount = 0;
             _cacheEvictionCount = 0;
-            
+
             PiperLogger.LogInfo("Cache system initialized");
         }
-        
+
         /// <summary>
         /// Generate cache key for text and voice combination
         /// </summary>
@@ -1151,7 +1151,7 @@ namespace uPiper.Core
             var combined = $"{text}|{voiceId}";
             return combined.GetHashCode().ToString();
         }
-        
+
         /// <summary>
         /// Create a dummy audio clip for testing
         /// </summary>
@@ -1160,7 +1160,7 @@ namespace uPiper.Core
             // Calculate duration based on text length (rough estimate)
             var estimatedDuration = Mathf.Max(1f, text.Length * 0.06f); // ~60ms per character
             var sampleCount = (int)(estimatedDuration * _config.SampleRate);
-            
+
             // Create silent audio clip for now
             var audioClip = AudioClip.Create(
                 "TTS_Output",
@@ -1169,29 +1169,29 @@ namespace uPiper.Core
                 _config.SampleRate,
                 false
             );
-            
+
             // Fill with silence
             var data = new float[sampleCount];
             audioClip.SetData(data, 0);
-            
+
             return audioClip;
         }
-        
+
         /// <summary>
         /// Split text into sentences for streaming
         /// </summary>
         private List<string> SplitIntoSentences(string text)
         {
             var sentences = new List<string>();
-            
+
             // Simple sentence splitting (can be improved with proper NLP)
             var sentenceEnders = new[] { '.', '!', '?', '。', '！', '？' };
             var currentSentence = new System.Text.StringBuilder();
-            
+
             foreach (char c in text)
             {
                 currentSentence.Append(c);
-                
+
                 if (sentenceEnders.Contains(c))
                 {
                     var trimmed = currentSentence.ToString().Trim();
@@ -1202,20 +1202,20 @@ namespace uPiper.Core
                     currentSentence.Clear();
                 }
             }
-            
+
             // Add any remaining text
             var remaining = currentSentence.ToString().Trim();
             if (!string.IsNullOrEmpty(remaining))
             {
                 sentences.Add(remaining);
             }
-            
+
             // If no sentences found, return the whole text
             if (sentences.Count == 0 && !string.IsNullOrWhiteSpace(text))
             {
                 sentences.Add(text);
             }
-            
+
             return sentences;
         }
 

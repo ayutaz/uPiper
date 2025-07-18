@@ -10,7 +10,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Constructor_InitializesWithEmptyArrays()
         {
             var result = new PhonemeResult();
-            
+
             Assert.IsNotNull(result.Phonemes);
             Assert.IsNotNull(result.PhonemeIds);
             Assert.IsNotNull(result.Durations);
@@ -36,7 +36,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 FromCache = true,
                 Metadata = "test metadata"
             };
-            
+
             Assert.AreEqual("test text", result.OriginalText);
             CollectionAssert.AreEqual(new[] { "t", "e", "s", "t" }, result.Phonemes);
             CollectionAssert.AreEqual(new[] { 1, 2, 3, 4 }, result.PhonemeIds);
@@ -63,9 +63,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 FromCache = true,
                 Metadata = "metadata"
             };
-            
+
             var clone = original.Clone();
-            
+
             // Check values are copied
             Assert.AreEqual(original.OriginalText, clone.OriginalText);
             CollectionAssert.AreEqual(original.Phonemes, clone.Phonemes);
@@ -76,17 +76,17 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.AreEqual(original.ProcessingTime, clone.ProcessingTime);
             Assert.AreEqual(original.FromCache, clone.FromCache);
             Assert.AreEqual(original.Metadata, clone.Metadata);
-            
+
             // Check arrays are different instances (deep copy)
             Assert.AreNotSame(original.Phonemes, clone.Phonemes);
             Assert.AreNotSame(original.PhonemeIds, clone.PhonemeIds);
             Assert.AreNotSame(original.Durations, clone.Durations);
             Assert.AreNotSame(original.Pitches, clone.Pitches);
-            
+
             // Modify original arrays to ensure they're independent
             original.Phonemes[0] = "z";
             original.PhonemeIds[0] = 99;
-            
+
             Assert.AreEqual("z", original.Phonemes[0]);
             Assert.AreEqual("a", clone.Phonemes[0]);
             Assert.AreEqual(99, original.PhonemeIds[0]);
@@ -104,9 +104,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Durations = null,
                 Pitches = null
             };
-            
+
             var clone = original.Clone();
-            
+
             Assert.AreEqual("test", clone.OriginalText);
             Assert.IsNull(clone.Phonemes);
             Assert.IsNull(clone.PhonemeIds);
@@ -125,11 +125,11 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 ProcessingTime = TimeSpan.FromMilliseconds(50.5),
                 FromCache = false
             };
-            
+
             var str = result.ToString();
             // Use regex to handle floating point formatting differences
             StringAssert.IsMatch(@"PhonemeResult: ""test"" -> \[t e s t\] \(en, 5\d\.\dms\)", str);
-            
+
             result.FromCache = true;
             str = result.ToString();
             StringAssert.IsMatch(@"PhonemeResult: ""test"" -> \[t e s t\] \(en, 5\d\.\dms, cached\)", str);
@@ -145,7 +145,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Language = "en",
                 ProcessingTime = TimeSpan.FromMilliseconds(10)
             };
-            
+
             var str = result.ToString();
             Assert.AreEqual("PhonemeResult: \"test\" -> [null] (en, 10.0ms)", str);
         }
@@ -160,7 +160,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Language = "en",
                 ProcessingTime = TimeSpan.FromMilliseconds(10)
             };
-            
+
             var str = result.ToString();
             Assert.AreEqual("PhonemeResult: \"test\" -> [] (en, 10.0ms)", str);
         }
