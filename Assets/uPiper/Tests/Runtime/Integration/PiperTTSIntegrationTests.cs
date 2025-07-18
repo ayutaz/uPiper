@@ -133,36 +133,23 @@ namespace uPiper.Tests.Runtime.Integration
                 Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
             }
 
-            // Generate audio synchronously
+            // Generate audio synchronously on main thread
+            // In mock mode, this should return a valid AudioClip
             AudioClip audioClip = null;
             Exception error = null;
             
-            var thread = new System.Threading.Thread(() =>
+            try
             {
-                try
-                {
-                    audioClip = _piperTTS.GenerateAudio("テスト");
-                }
-                catch (System.Exception ex)
-                {
-                    error = ex;
-                }
-            });
-            
-            thread.Start();
-            
-            // Wait for thread to complete (max 5 seconds)
-            float timeout = 5f;
-            float elapsed = 0f;
-            while (thread.IsAlive && elapsed < timeout)
+                audioClip = _piperTTS.GenerateAudio("テスト");
+            }
+            catch (System.Exception ex)
             {
-                yield return null;
-                elapsed += Time.deltaTime;
+                error = ex;
             }
             
             Assert.IsNull(error, $"Error generating audio: {error?.Message}");
-            Assert.IsNotNull(audioClip);
-            Assert.Greater(audioClip.length, 0);
+            Assert.IsNotNull(audioClip, "Audio clip should not be null in mock mode");
+            Assert.Greater(audioClip.length, 0, "Audio clip should have non-zero length");
         }
 
         [UnityTest]
