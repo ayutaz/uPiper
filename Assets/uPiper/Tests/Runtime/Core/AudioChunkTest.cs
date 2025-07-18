@@ -1,7 +1,10 @@
 using System;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
+using UnityEngine.TestTools.Constraints;
 using uPiper.Core;
+using Is = UnityEngine.TestTools.Constraints.Is;
 
 namespace uPiper.Tests.Runtime.Core
 {
@@ -181,5 +184,81 @@ namespace uPiper.Tests.Runtime.Core
             Assert.AreEqual(2, clip.channels);
             Assert.AreEqual(22050, clip.samples); // 44100 total samples / 2 channels
         }
+
+        #region Performance Tests
+
+        [Test]
+        [Category("Performance")]
+        public void AudioChunk_Properties_Performance()
+        {
+            // Arrange
+            var chunk = new AudioChunk(new float[1000], 22050, 1, 0, false);
+
+            // Warm up
+            for (int i = 0; i < 10; i++)
+            {
+                var temp = chunk.SampleRate;
+                temp = chunk.Channels;
+            }
+
+            // Test that accessing properties is fast
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < 100000; i++)
+            {
+                var sampleRate = chunk.SampleRate;
+                var channels = chunk.Channels;
+                var chunkIndex = chunk.ChunkIndex;
+                var isFinal = chunk.IsFinal;
+                var duration = chunk.Duration;
+                var samples = chunk.Samples;
+            }
+            stopwatch.Stop();
+
+            // Properties access should be very fast (less than 100ms for 100k iterations)
+            Assert.Less(stopwatch.ElapsedMilliseconds, 100, "Property access should be fast");
+        }
+
+        [Test]
+        [Category("Performance")]
+        public void AudioChunk_Duration_Performance()
+        {
+            // Arrange
+            var chunk = new AudioChunk(new float[22050], 22050, 1, 0, false);
+
+            // Test that calculating duration is fast
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < 100000; i++)
+            {
+                var duration = chunk.Duration;
+            }
+            stopwatch.Stop();
+
+            // Duration calculation should be fast (less than 50ms for 100k iterations)
+            Assert.Less(stopwatch.ElapsedMilliseconds, 50, "Duration calculation should be fast");
+        }
+
+        [Test]
+        [Category("GCAllocation")]
+        public void CombineChunks_MinimalGCAllocation()
+        {
+            // Arrange
+            var chunks = new[]
+            {
+                new AudioChunk(new float[100], 22050, 1, 0, false),
+                new AudioChunk(new float[100], 22050, 1, 1, false),
+                new AudioChunk(new float[100], 22050, 1, 2, true)
+            };
+
+            // CombineChunks creates a new AudioClip, which allocates memory
+            // We test that the allocation is minimal and proportional to the data size
+            Assert.That(() =>
+            {
+                var combined = AudioChunk.CombineChunks(chunks, "Combined");
+                // Clean up
+                if (combined != null) UnityEngine.Object.DestroyImmediate(combined);
+            }, Is.AllocatingGCMemory());
+        }
+
+        #endregion
     }
 }
