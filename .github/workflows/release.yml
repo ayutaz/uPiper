@@ -1,0 +1,197 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_version: ${{ steps.get_version.outputs.version }}
+      
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Get version from tag
+      id: get_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        
+    - name: Generate Release Notes
+      id: release_notes
+      run: |
+        # Get the previous tag
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        if [ -z "$PREVIOUS_TAG" ]; then
+          echo "No previous tag found, using initial commit"
+          PREVIOUS_REF=$(git rev-list --max-parents=0 HEAD)
+        else
+          PREVIOUS_REF=$PREVIOUS_TAG
+        fi
+        
+        # Generate changelog
+        {
+          echo "## 🎉 uPiper ${{ steps.get_version.outputs.version }}"
+          echo ""
+          echo "### 📋 変更履歴"
+          echo ""
+          
+          # Group commits by type
+          echo "#### ✨ 新機能"
+          git log --pretty=format:"- %s" $PREVIOUS_REF..HEAD --grep="^feat:" | sed 's/^feat: //'
+          echo ""
+          
+          echo "#### 🐛 バグ修正"
+          git log --pretty=format:"- %s" $PREVIOUS_REF..HEAD --grep="^fix:" | sed 's/^fix: //'
+          echo ""
+          
+          echo "#### 📚 ドキュメント"
+          git log --pretty=format:"- %s" $PREVIOUS_REF..HEAD --grep="^docs:" | sed 's/^docs: //'
+          echo ""
+          
+          echo "#### 🔧 その他の変更"
+          git log --pretty=format:"- %s" $PREVIOUS_REF..HEAD --grep="^chore:\|^refactor:\|^test:" | sed 's/^[a-z]*: //'
+          echo ""
+          
+          echo "### 📦 Unity Package"
+          echo ""
+          echo "Unity Package Managerから以下のGit URLでインストールできます："
+          echo "\`\`\`"
+          echo "https://github.com/ayutaz/uPiper.git?path=/Assets/uPiper#v${{ steps.get_version.outputs.version }}"
+          echo "\`\`\`"
+          echo ""
+          echo "または、下記のリリースアセットから\`uPiper-${{ steps.get_version.outputs.version }}.unitypackage\`をダウンロードしてください。"
+          echo ""
+          echo "### 🔧 動作環境"
+          echo "- Unity 6000.0.35f1以上"
+          echo "- Unity.InferenceEngine 2.2.1"
+          echo ""
+          echo "### 🙏 謝辞"
+          echo "- [piper-plus](https://github.com/ayutaz/piper-plus)"
+          echo "- [Piper TTS](https://github.com/rhasspy/piper)"
+          echo "- [OpenJTalk](http://open-jtalk.sourceforge.net/)"
+        } > release_notes.md
+        
+        # Save to output
+        echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+        cat release_notes.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: uPiper ${{ steps.get_version.outputs.version }}
+        body: ${{ steps.release_notes.outputs.release_notes }}
+        draft: false
+        prerelease: ${{ contains(steps.get_version.outputs.version, 'preview') || contains(steps.get_version.outputs.version, 'beta') || contains(steps.get_version.outputs.version, 'alpha') }}
+        
+  build-unity-package:
+    needs: create-release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Update package.json version
+      run: |
+        VERSION=${{ needs.create-release.outputs.release_version }}
+        cd Assets/uPiper
+        # Update version in package.json
+        sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" package.json
+        
+    - name: Create Unity Package
+      run: |
+        # Create package structure
+        mkdir -p uPiper-${{ needs.create-release.outputs.release_version }}
+        
+        # Copy package contents
+        cp -r Assets/uPiper/* uPiper-${{ needs.create-release.outputs.release_version }}/
+        
+        # Create .unitypackage using tar (Unity package format)
+        # Note: Real Unity package creation would require Unity Editor
+        # This creates a simple archive that can be extracted to Assets folder
+        tar -czf uPiper-${{ needs.create-release.outputs.release_version }}.unitypackage uPiper-${{ needs.create-release.outputs.release_version }}
+        
+    - name: Upload Unity Package
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./uPiper-${{ needs.create-release.outputs.release_version }}.unitypackage
+        asset_name: uPiper-${{ needs.create-release.outputs.release_version }}.unitypackage
+        asset_content_type: application/octet-stream
+        
+  build-package-tarball:
+    needs: create-release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Update package.json version
+      run: |
+        VERSION=${{ needs.create-release.outputs.release_version }}
+        cd Assets/uPiper
+        sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" package.json
+        
+    - name: Create Package Tarball
+      run: |
+        cd Assets
+        tar -czf ../com.yousan.upiper-${{ needs.create-release.outputs.release_version }}.tgz uPiper
+        
+    - name: Upload Package Tarball
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./com.yousan.upiper-${{ needs.create-release.outputs.release_version }}.tgz
+        asset_name: com.yousan.upiper-${{ needs.create-release.outputs.release_version }}.tgz
+        asset_content_type: application/gzip
+        
+  update-package-json:
+    needs: [create-release, build-unity-package, build-package-tarball]
+    runs-on: ubuntu-latest
+    if: success()
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Update package.json version
+      run: |
+        VERSION=${{ needs.create-release.outputs.release_version }}
+        cd Assets/uPiper
+        sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" package.json
+        
+    - name: Commit version update
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add Assets/uPiper/package.json
+        git diff --staged --quiet || git commit -m "chore: update package version to ${{ needs.create-release.outputs.release_version }} [skip ci]"
+        
+    - name: Push changes
+      run: |
+        git push origin HEAD:main
