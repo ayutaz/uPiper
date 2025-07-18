@@ -173,7 +173,7 @@ jobs:
         coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.*,-uPiper.Tests.*'
         customParameters: '-enableCodeCoverage'
         dockerCpuLimit: 4
-        dockerMemoryLimit: 8192
+        dockerMemoryLimit: 8192m
     
     # Check test execution output
     - name: Check Unity Test Runner Output
