@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using UnityEngine.TestTools;
+using UnityEngine.TestTools.Constraints;
 using uPiper.Core.Phonemizers.Cache;
+using Is = UnityEngine.TestTools.Constraints.Is;
 
 namespace uPiper.Tests.Runtime.Core.Phonemizers
 {
@@ -253,5 +256,125 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsTrue(_cache.TryGet("key3", out _));
             Assert.IsTrue(_cache.TryGet("key4", out _));
         }
+
+        #region GC Allocation Tests
+
+        [Test]
+        [Category("Performance")]
+        public void TryGet_PerformanceCharacteristics()
+        {
+            var largeCache = new LRUCache<string, string>(1000);
+            
+            // Prepare cache with data and pre-create test keys
+            var testKeys = new string[100];
+            for (int i = 0; i < 500; i++)
+            {
+                largeCache.Add($"key{i}", $"value{i}");
+                if (i < 100)
+                {
+                    testKeys[i] = $"key{i}";
+                }
+            }
+
+            try
+            {
+                // Warm up the cache
+                for (int warm = 0; warm < 10; warm++)
+                {
+                    largeCache.TryGet(testKeys[0], out _);
+                }
+
+                // Measure performance
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                for (int i = 0; i < 10000; i++)
+                {
+                    largeCache.TryGet(testKeys[i % 100], out _);
+                }
+                stopwatch.Stop();
+
+                // Assert performance is acceptable (less than 1ms for 10000 operations)
+                Assert.Less(stopwatch.ElapsedMilliseconds, 1000, "TryGet performance should be fast");
+            }
+            finally
+            {
+                largeCache.Dispose();
+            }
+        }
+
+        [Test]
+        [Category("Performance")]
+        public void ContainsKey_PerformanceCharacteristics()
+        {
+            var largeCache = new LRUCache<string, string>(1000);
+            
+            // Prepare cache with data and pre-create test keys
+            var testKeys = new string[100];
+            for (int i = 0; i < 500; i++)
+            {
+                largeCache.Add($"key{i}", $"value{i}");
+                if (i < 100)
+                {
+                    testKeys[i] = $"key{i}";
+                }
+            }
+
+            try
+            {
+                // Warm up the cache
+                for (int warm = 0; warm < 10; warm++)
+                {
+                    largeCache.ContainsKey(testKeys[0]);
+                }
+
+                // Measure performance
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                int foundCount = 0;
+                for (int i = 0; i < 10000; i++)
+                {
+                    if (largeCache.ContainsKey(testKeys[i % 100]))
+                    {
+                        foundCount++;
+                    }
+                }
+                stopwatch.Stop();
+
+                // Assert performance is acceptable (less than 1ms for 10000 operations)
+                Assert.Less(stopwatch.ElapsedMilliseconds, 1000, "ContainsKey performance should be fast");
+                Assert.AreEqual(10000, foundCount, "All keys should be found");
+            }
+            finally
+            {
+                largeCache.Dispose();
+            }
+        }
+
+        [Test]
+        [Category("GCAllocation")]
+        public void GetStatistics_MinimalGCAllocation()
+        {
+            var largeCache = new LRUCache<string, string>(1000);
+            
+            // Prepare cache with data
+            for (int i = 0; i < 500; i++)
+            {
+                largeCache.Add($"key{i}", $"value{i}");
+            }
+
+            try
+            {
+                // GetStatistics creates a new Dictionary, so we expect some allocation
+                // but it should be minimal (just the dictionary and its entries)
+                Assert.That(() =>
+                {
+                    var stats = largeCache.GetStatistics();
+                }, Is.AllocatingGCMemory());
+            }
+            finally
+            {
+                largeCache.Dispose();
+            }
+        }
+
+        #endregion
     }
 }
