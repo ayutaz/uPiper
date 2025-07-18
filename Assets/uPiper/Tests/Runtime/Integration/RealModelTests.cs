@@ -322,19 +322,19 @@ namespace uPiper.Tests.Runtime.Integration
             if (System.Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1")
             {
                 // Just verify cache functionality works
-                var text = "キャッシュのテストです";
+                var mockText = "キャッシュのテストです";
                 
                 // First run
-                var task1 = _piperTTS.GenerateAudioAsync(text);
-                yield return new WaitUntil(() => task1.IsCompleted);
+                var mockTask1 = _piperTTS.GenerateAudioAsync(mockText);
+                yield return new WaitUntil(() => mockTask1.IsCompleted);
                 
                 // Second run
-                var task2 = _piperTTS.GenerateAudioAsync(text);
-                yield return new WaitUntil(() => task2.IsCompleted);
+                var mockTask2 = _piperTTS.GenerateAudioAsync(mockText);
+                yield return new WaitUntil(() => mockTask2.IsCompleted);
                 
                 // Check cache hit
-                var stats = _piperTTS.GetCacheStatistics();
-                Assert.Greater(stats.HitCount, 0, "Cache should have hits");
+                var mockStats = _piperTTS.GetCacheStatistics();
+                Assert.Greater(mockStats.HitCount, 0, "Cache should have hits");
                 
                 Assert.Pass("Cache functionality verified in mock mode");
                 yield break;
