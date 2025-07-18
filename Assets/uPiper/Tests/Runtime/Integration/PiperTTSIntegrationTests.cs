@@ -57,9 +57,10 @@ namespace uPiper.Tests.Runtime.Integration
             
             yield return new WaitUntil(() => initTask.IsCompleted || initCompleted);
             
-            Assert.IsFalse(initTask.IsFaulted);
-            Assert.IsTrue(_piperTTS.IsInitialized);
-            Assert.IsTrue(initSuccess);
+            Assert.IsFalse(initTask.IsFaulted, $"Initialization failed: {initTask.Exception?.GetBaseException()?.Message}");
+            Assert.IsTrue(initTask.IsCompletedSuccessfully, "Init task should complete successfully");
+            Assert.IsTrue(_piperTTS.IsInitialized, "PiperTTS should be initialized");
+            Assert.IsTrue(initSuccess, "OnInitialized callback should report success");
         }
 
         [UnityTest]
@@ -72,6 +73,22 @@ namespace uPiper.Tests.Runtime.Integration
             if (initTask.IsFaulted)
             {
                 Assert.Fail($"Initialization failed: {initTask.Exception?.GetBaseException().Message}");
+            }
+            
+            // Load a voice
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-ja",
+                Language = "ja",
+                ModelPath = System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Models", "ja_JP-test-medium.onnx")
+            };
+            
+            var loadVoiceTask = _piperTTS.LoadVoiceAsync(voice);
+            yield return new WaitUntil(() => loadVoiceTask.IsCompleted);
+            
+            if (loadVoiceTask.IsFaulted)
+            {
+                Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
             }
 
             // Generate audio
@@ -98,6 +115,22 @@ namespace uPiper.Tests.Runtime.Integration
             if (initTask.IsFaulted)
             {
                 Assert.Fail($"Initialization failed: {initTask.Exception?.GetBaseException().Message}");
+            }
+            
+            // Load a voice
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-ja",
+                Language = "ja",
+                ModelPath = System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Models", "ja_JP-test-medium.onnx")
+            };
+            
+            var loadVoiceTask = _piperTTS.LoadVoiceAsync(voice);
+            yield return new WaitUntil(() => loadVoiceTask.IsCompleted);
+            
+            if (loadVoiceTask.IsFaulted)
+            {
+                Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
             }
 
             // Generate audio synchronously
@@ -143,6 +176,22 @@ namespace uPiper.Tests.Runtime.Integration
             {
                 Assert.Fail($"Initialization failed: {initTask.Exception?.GetBaseException().Message}");
             }
+            
+            // Load a voice
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-ja",
+                Language = "ja",
+                ModelPath = System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Models", "ja_JP-test-medium.onnx")
+            };
+            
+            var loadVoiceTask = _piperTTS.LoadVoiceAsync(voice);
+            yield return new WaitUntil(() => loadVoiceTask.IsCompleted);
+            
+            if (loadVoiceTask.IsFaulted)
+            {
+                Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
+            }
 
             // Stream audio
             var text = "これはストリーミングテストです";
@@ -174,6 +223,27 @@ namespace uPiper.Tests.Runtime.Integration
             // Initialize first
             var initTask = _piperTTS.InitializeAsync();
             yield return new WaitUntil(() => initTask.IsCompleted);
+            
+            if (initTask.IsFaulted)
+            {
+                Assert.Fail($"Initialization failed: {initTask.Exception?.GetBaseException().Message}");
+            }
+            
+            // Load a voice
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-ja",
+                Language = "ja",
+                ModelPath = System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Models", "ja_JP-test-medium.onnx")
+            };
+            
+            var loadVoiceTask = _piperTTS.LoadVoiceAsync(voice);
+            yield return new WaitUntil(() => loadVoiceTask.IsCompleted);
+            
+            if (loadVoiceTask.IsFaulted)
+            {
+                Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
+            }
             
             var text = "キャッシュテスト";
             
@@ -207,6 +277,27 @@ namespace uPiper.Tests.Runtime.Integration
             var initTask = _piperTTS.InitializeAsync();
             yield return new WaitUntil(() => initTask.IsCompleted);
             
+            if (initTask.IsFaulted)
+            {
+                Assert.Fail($"Initialization failed: {initTask.Exception?.GetBaseException().Message}");
+            }
+            
+            // Load a voice
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-ja",
+                Language = "ja",
+                ModelPath = System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Models", "ja_JP-test-medium.onnx")
+            };
+            
+            var loadVoiceTask = _piperTTS.LoadVoiceAsync(voice);
+            yield return new WaitUntil(() => loadVoiceTask.IsCompleted);
+            
+            if (loadVoiceTask.IsFaulted)
+            {
+                Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
+            }
+            
             // Try with null text
             var task = _piperTTS.GenerateAudioAsync(null);
             yield return new WaitUntil(() => task.IsCompleted);
@@ -221,6 +312,27 @@ namespace uPiper.Tests.Runtime.Integration
             // Initialize first
             var initTask = _piperTTS.InitializeAsync();
             yield return new WaitUntil(() => initTask.IsCompleted);
+            
+            if (initTask.IsFaulted)
+            {
+                Assert.Fail($"Initialization failed: {initTask.Exception?.GetBaseException().Message}");
+            }
+            
+            // Load a voice
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-ja",
+                Language = "ja",
+                ModelPath = System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Models", "ja_JP-test-medium.onnx")
+            };
+            
+            var loadVoiceTask = _piperTTS.LoadVoiceAsync(voice);
+            yield return new WaitUntil(() => loadVoiceTask.IsCompleted);
+            
+            if (loadVoiceTask.IsFaulted)
+            {
+                Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
+            }
             
             float lastProgress = 0;
             int progressUpdateCount = 0;
@@ -245,6 +357,27 @@ namespace uPiper.Tests.Runtime.Integration
             // Initialize first
             var initTask = _piperTTS.InitializeAsync();
             yield return new WaitUntil(() => initTask.IsCompleted);
+            
+            if (initTask.IsFaulted)
+            {
+                Assert.Fail($"Initialization failed: {initTask.Exception?.GetBaseException().Message}");
+            }
+            
+            // Load a voice
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-ja",
+                Language = "ja",
+                ModelPath = System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Models", "ja_JP-test-medium.onnx")
+            };
+            
+            var loadVoiceTask = _piperTTS.LoadVoiceAsync(voice);
+            yield return new WaitUntil(() => loadVoiceTask.IsCompleted);
+            
+            if (loadVoiceTask.IsFaulted)
+            {
+                Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
+            }
             
             // Test with Japanese
             var taskJa = _piperTTS.GenerateAudioAsync("日本語のテスト");

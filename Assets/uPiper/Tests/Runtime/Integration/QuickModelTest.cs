@@ -51,13 +51,51 @@ namespace uPiper.Tests.Runtime.Integration
                 elapsed += Time.deltaTime;
             }
             
+            if (!initTask.IsCompleted)
+            {
+                Assert.Fail($"Initialization timed out after {timeout} seconds");
+            }
+            
             if (initTask.IsFaulted)
             {
                 Debug.LogError($"Initialization failed: {initTask.Exception?.GetBaseException()}");
                 Assert.Fail($"Init failed: {initTask.Exception?.GetBaseException().Message}");
             }
             
+            // Wait for the task to fully complete
+            yield return new WaitUntil(() => initTask.IsCompleted && !initTask.IsFaulted && !initTask.IsCanceled);
+            
             Debug.Log("PiperTTS initialized successfully");
+            
+            // Check if PiperTTS is actually initialized
+            Assert.IsTrue(piperTTS.IsInitialized, "PiperTTS should be initialized after InitializeAsync completes");
+            Debug.Log($"IsInitialized: {piperTTS.IsInitialized}");
+            
+            // Load a voice
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-ja",
+                Language = "ja",
+                ModelPath = modelPath
+            };
+            
+            Debug.Log("Loading voice...");
+            var loadVoiceTask = piperTTS.LoadVoiceAsync(voice);
+            
+            elapsed = 0f;
+            while (!loadVoiceTask.IsCompleted && elapsed < timeout)
+            {
+                yield return null;
+                elapsed += Time.deltaTime;
+            }
+            
+            if (loadVoiceTask.IsFaulted)
+            {
+                Debug.LogError($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException()}");
+                Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
+            }
+            
+            Debug.Log("Voice loaded successfully");
             
             // Test phonemization first
             Debug.Log("Testing phonemization...");
@@ -77,6 +115,7 @@ namespace uPiper.Tests.Runtime.Integration
             
             if (generateTask.IsFaulted)
             {
+                // Log the full exception for debugging
                 Debug.LogError($"Generation failed: {generateTask.Exception?.GetBaseException()}");
                 Assert.Fail($"Generation failed: {generateTask.Exception?.GetBaseException().Message}");
             }
