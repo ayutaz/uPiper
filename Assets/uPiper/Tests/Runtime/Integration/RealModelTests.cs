@@ -35,6 +35,18 @@ namespace uPiper.Tests.Runtime.Integration
             _piperTTS?.Dispose();
         }
 
+        private string GetModelPath()
+        {
+            // Default to Japanese model for tests
+            var modelPath = Path.Combine(_modelsPath, "ja_JP-test-medium.onnx");
+            if (!File.Exists(modelPath))
+            {
+                // Fallback to English model
+                modelPath = Path.Combine(_modelsPath, "test_voice.onnx");
+            }
+            return modelPath;
+        }
+
         [UnityTest]
         [Category("RequiresModel")]
         public IEnumerator TestJapaneseModel_GeneratesAudio()
@@ -62,6 +74,22 @@ namespace uPiper.Tests.Runtime.Integration
             
             Assert.IsFalse(initTask.IsFaulted, $"Init failed: {initTask.Exception?.GetBaseException().Message}");
             Assert.IsTrue(_piperTTS.IsInitialized);
+            
+            // Load a voice
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-ja",
+                Language = "ja",
+                ModelPath = modelPath
+            };
+
+            var loadVoiceTask = _piperTTS.LoadVoiceAsync(voice);
+            yield return new WaitUntil(() => loadVoiceTask.IsCompleted);
+
+            if (loadVoiceTask.IsFaulted)
+            {
+                Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
+            }
             
             // Generate audio
             var text = "こんにちは、これは日本語のテストです。";
@@ -114,6 +142,22 @@ namespace uPiper.Tests.Runtime.Integration
             
             Assert.IsFalse(initTask.IsFaulted, $"Init failed: {initTask.Exception?.GetBaseException().Message}");
             Assert.IsTrue(_piperTTS.IsInitialized);
+            
+            // Load a voice
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-en",
+                Language = "en",
+                ModelPath = modelPath
+            };
+
+            var loadVoiceTask = _piperTTS.LoadVoiceAsync(voice);
+            yield return new WaitUntil(() => loadVoiceTask.IsCompleted);
+
+            if (loadVoiceTask.IsFaulted)
+            {
+                Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
+            }
             
             // Generate audio
             var text = "Hello, this is a test of the English voice model.";
@@ -189,6 +233,25 @@ namespace uPiper.Tests.Runtime.Integration
             var initTask = _piperTTS.InitializeAsync();
             yield return new WaitUntil(() => initTask.IsCompleted);
             
+            Assert.IsFalse(initTask.IsFaulted, $"Init failed: {initTask.Exception?.GetBaseException().Message}");
+            Assert.IsTrue(_piperTTS.IsInitialized);
+            
+            // Load a voice
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-ja",
+                Language = "ja",
+                ModelPath = modelPath
+            };
+
+            var loadVoiceTask = _piperTTS.LoadVoiceAsync(voice);
+            yield return new WaitUntil(() => loadVoiceTask.IsCompleted);
+
+            if (loadVoiceTask.IsFaulted)
+            {
+                Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
+            }
+            
             // Warmup
             var warmupTask = _piperTTS.GenerateAudioAsync("テスト");
             yield return new WaitUntil(() => warmupTask.IsCompleted);
@@ -238,6 +301,44 @@ namespace uPiper.Tests.Runtime.Integration
             // Initialize
             var initTask = _piperTTS.InitializeAsync();
             yield return new WaitUntil(() => initTask.IsCompleted);
+            
+            // Load a voice
+            var voice = new PiperVoiceConfig
+            {
+                VoiceId = "test-ja",
+                Language = "ja",
+                ModelPath = GetModelPath()
+            };
+            
+            var loadVoiceTask = _piperTTS.LoadVoiceAsync(voice);
+            yield return new WaitUntil(() => loadVoiceTask.IsCompleted);
+            
+            if (loadVoiceTask.IsFaulted)
+            {
+                Assert.Fail($"Voice loading failed: {loadVoiceTask.Exception?.GetBaseException().Message}");
+            }
+            
+            // Skip performance test in mock mode since timing is not meaningful
+            if (System.Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1")
+            {
+                // Just verify cache functionality works
+                var text = "キャッシュのテストです";
+                
+                // First run
+                var task1 = _piperTTS.GenerateAudioAsync(text);
+                yield return new WaitUntil(() => task1.IsCompleted);
+                
+                // Second run
+                var task2 = _piperTTS.GenerateAudioAsync(text);
+                yield return new WaitUntil(() => task2.IsCompleted);
+                
+                // Check cache hit
+                var stats = _piperTTS.GetCacheStatistics();
+                Assert.Greater(stats.HitCount, 0, "Cache should have hits");
+                
+                Assert.Pass("Cache functionality verified in mock mode");
+                yield break;
+            }
             
             var text = "キャッシュのテストです";
             
