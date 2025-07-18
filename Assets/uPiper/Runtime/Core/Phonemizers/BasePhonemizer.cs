@@ -68,6 +68,9 @@ namespace uPiper.Core.Phonemizers
         /// </summary>
         public virtual async Task<PhonemeResult> PhonemizeAsync(string text, string language = "ja", CancellationToken cancellationToken = default)
         {
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
+                
             if (string.IsNullOrEmpty(text))
             {
                 return new PhonemeResult
