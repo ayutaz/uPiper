@@ -37,7 +37,7 @@ namespace uPiper.Editor
         
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("PiperTTS Demo - Phase 1.2 Test", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("PiperTTS Demo - Phase 1.8 Test (with OpenJTalk)", EditorStyles.boldLabel);
             EditorGUILayout.Space();
             
             // Initialization section
@@ -153,6 +153,7 @@ namespace uPiper.Editor
                 config.EnableDebugLogging = true;
                 config.EnablePhonemeCache = true;
                 config.MaxCacheSizeMB = 50;
+                config.DefaultLanguage = "ja"; // Set Japanese as default for OpenJTalk
                 
                 _piperTTS = new PiperTTS(config);
                 

@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Unity.InferenceEngine;
 using uPiper.Core.Logging;
+using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Core
 {
@@ -41,6 +43,9 @@ namespace uPiper.Core
         private long _cacheHitCount;
         private long _cacheMissCount;
         private long _cacheEvictionCount;
+        
+        // Phonemizer
+        private IPhonemizer _phonemizer;
 
         #endregion
 
@@ -274,6 +279,9 @@ namespace uPiper.Core
                     InitializeCacheSystem();
                 }
                 
+                // Initialize phonemizer based on language
+                await InitializePhonemizerAsync(cancellationToken);
+                
                 lock (_lockObject)
                 {
                     _isInitialized = true;
@@ -454,13 +462,42 @@ namespace uPiper.Core
                 
                 _onProcessingProgress?.Invoke(0.3f);
                 
-                // TODO: Implement actual phonemization and synthesis
+                // Perform phonemization
+                PiperLogger.LogInfo("Phonemizing text...");
+                PhonemeResult phonemeResult = null;
+                
+                if (_phonemizer != null)
+                {
+                    phonemeResult = await _phonemizer.PhonemizeAsync(text);
+                    PiperLogger.LogInfo("Phonemization completed: {0} phonemes", phonemeResult.Phonemes?.Length ?? 0);
+                    
+                    // Log phonemes for debugging
+                    if (phonemeResult.Phonemes != null && phonemeResult.Phonemes.Length > 0)
+                    {
+                        PiperLogger.LogDebug("Phonemes: {0}", string.Join(" ", phonemeResult.Phonemes));
+                    }
+                }
+                else
+                {
+                    PiperLogger.LogWarning("No phonemizer available, using dummy phonemes");
+                }
+                
+                _onProcessingProgress?.Invoke(0.5f);
+                
+                // TODO: Implement actual synthesis using ONNX model
                 // For now, create a dummy audio clip
-                await Task.Delay(200, cancellationToken); // Simulate processing
+                await Task.Delay(100, cancellationToken); // Simulate synthesis
                 
                 _onProcessingProgress?.Invoke(0.8f);
                 
                 var audioClip = CreateDummyAudioClip(text);
+                
+                // Cache the result if enabled
+                if (_config.EnablePhonemeCache && phonemeResult != null)
+                {
+                    var cacheKey = GenerateCacheKey(text, _currentVoiceId);
+                    // TODO: Cache the phoneme result or audio data
+                }
                 
                 _onProcessingProgress?.Invoke(1.0f);
                 PiperLogger.LogInfo("Audio generation completed");
@@ -938,6 +975,10 @@ namespace uPiper.Core
                     _cacheMissCount = 0;
                     _cacheEvictionCount = 0;
                     
+                    // Dispose phonemizer
+                    _phonemizer?.Dispose();
+                    _phonemizer = null;
+                    
                     _isInitialized = false;
                     _isDisposed = true;
                 }
@@ -992,6 +1033,45 @@ namespace uPiper.Core
             
             // Small delay to simulate async operation
             await Task.Yield();
+        }
+        
+        /// <summary>
+        /// Initialize the phonemizer based on language
+        /// </summary>
+        private async Task InitializePhonemizerAsync(CancellationToken cancellationToken)
+        {
+            PiperLogger.LogInfo("Initializing phonemizer for language: {0}", _config.DefaultLanguage);
+            
+            try
+            {
+                // For Japanese, use OpenJTalkPhonemizer
+                if (_config.DefaultLanguage == "ja" || _config.DefaultLanguage == "jp" || 
+                    _config.DefaultLanguage == "japanese")
+                {
+                    #if !UNITY_WEBGL
+                    _phonemizer = new OpenJTalkPhonemizer();
+                    PiperLogger.LogInfo("Initialized OpenJTalkPhonemizer for Japanese");
+                    #else
+                    PiperLogger.LogWarning("OpenJTalkPhonemizer is not supported on WebGL platform");
+                    _phonemizer = new MockPhonemizer(); // Fallback to mock
+                    #endif
+                }
+                else
+                {
+                    // For other languages, use mock phonemizer for now
+                    // TODO: Implement espeak-ng phonemizer for other languages
+                    _phonemizer = new MockPhonemizer();
+                    PiperLogger.LogInfo("Initialized MockPhonemizer for language: {0}", _config.DefaultLanguage);
+                }
+                
+                // Small delay to simulate async operation
+                await Task.Yield();
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogError("Failed to initialize phonemizer: {0}", ex.Message);
+                throw new PiperInitializationException("Failed to initialize phonemizer", ex);
+            }
         }
         
         /// <summary>
