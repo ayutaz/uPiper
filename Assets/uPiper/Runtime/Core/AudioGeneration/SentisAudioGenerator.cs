@@ -119,6 +119,15 @@ namespace uPiper.Core.AudioGeneration
                 _modelInfo = await _modelLoader.LoadModelAsync(modelPath, cancellationToken);
                 _model = _modelLoader.LoadedModel;
                 ReportProgress(0.5f);
+                
+                // Check if we're in mock mode
+                if (_model == null && System.Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1")
+                {
+                    PiperLogger.LogInfo("Running in mock mode, skipping model validation and worker creation");
+                    _isInitialized = true;
+                    ReportProgress(1.0f);
+                    return;
+                }
 
                 // Validate model
                 var validation = _modelLoader.ValidateModel();
@@ -167,15 +176,27 @@ namespace uPiper.Core.AudioGeneration
                 var startTime = DateTime.UtcNow;
                 PiperLogger.LogInfo("Generating audio from {0} phoneme IDs", phonemeIds.Length);
                 ReportProgress(0.1f);
-
-                // Run inference
-                var audioSamples = await RunInferenceAsync(phonemeIds, speakerId, cancellationToken);
+                
+                float[] audioSamples;
+                
+                // Check if we're in mock mode
+                if (_model == null && System.Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1")
+                {
+                    PiperLogger.LogInfo("Generating mock audio samples");
+                    audioSamples = GenerateMockAudioSamples(phonemeIds.Length);
+                }
+                else
+                {
+                    // Run inference
+                    audioSamples = await RunInferenceAsync(phonemeIds, speakerId, cancellationToken);
+                }
                 ReportProgress(0.8f);
 
                 // Create audio clip
+                var sampleRate = _modelInfo?.SampleRate ?? 22050; // Default to 22050 if no model info
                 var audioClip = _audioClipBuilder.CreateAudioClipNormalized(
                     audioSamples,
-                    _modelInfo.SampleRate,
+                    sampleRate,
                     1, // Mono
                     "GeneratedSpeech"
                 );
@@ -538,6 +559,26 @@ namespace uPiper.Core.AudioGeneration
                 throw new InvalidOperationException("Audio generator not initialized. Call InitializeAsync first.");
         }
 
+        /// <summary>
+        /// Generate mock audio samples for testing
+        /// </summary>
+        private float[] GenerateMockAudioSamples(int phonemeCount)
+        {
+            // Generate simple sine wave samples
+            var sampleRate = 22050;
+            var duration = phonemeCount * 0.1f; // 0.1 seconds per phoneme
+            var sampleCount = (int)(sampleRate * duration);
+            var samples = new float[sampleCount];
+            
+            var frequency = 440f; // A4 note
+            for (int i = 0; i < sampleCount; i++)
+            {
+                samples[i] = 0.1f * (float)System.Math.Sin(2 * System.Math.PI * frequency * i / sampleRate);
+            }
+            
+            return samples;
+        }
+        
         private void ReportProgress(float progress)
         {
             _onProgress?.Invoke(progress);

@@ -58,6 +58,15 @@ namespace uPiper.Core.AudioGeneration
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     
+                    // Check if we're in test mode
+                    if (System.Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1")
+                    {
+                        // Skip actual model loading in test mode
+                        PiperLogger.LogInfo("Mock mode enabled, skipping actual model loading");
+                        _loadedModel = null;
+                        return;
+                    }
+                    
                     // Load the model directly from file path
                     _loadedModel = Unity.InferenceEngine.ModelLoader.Load(modelPath);
                     

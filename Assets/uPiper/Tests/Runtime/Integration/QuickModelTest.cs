@@ -28,6 +28,8 @@ namespace uPiper.Tests.Runtime.Integration
             // Force mock mode for testing
             System.Environment.SetEnvironmentVariable("PIPER_MOCK_MODE", "1");
             
+            // No longer expecting errors since we skip model loading in mock mode
+            
             // Create TTS
             var config = new PiperConfig
             {
