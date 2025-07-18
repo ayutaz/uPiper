@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using UnityEngine;
-
+using Unity.InferenceEngine;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
 
@@ -21,8 +21,8 @@ namespace uPiper.Core.AudioGeneration
         private readonly ModelLoader _modelLoader;
         private readonly IPhonemeEncoder _phonemeEncoder;
         private readonly IAudioClipBuilder _audioClipBuilder;
-        private IWorker _worker;
-        private Unity.InferenceEngine.Model _model;
+        private Worker _worker;
+        private Model _model;
         private ModelInfo _modelInfo;
         private bool _isInitialized;
         private bool _disposed;
@@ -296,9 +296,14 @@ namespace uPiper.Core.AudioGeneration
                         PiperLogger.LogDebug("Running inference with {0} phoneme IDs", phonemeIds.Length);
                         
                         // Execute the model
-                        _worker.Execute(inputTensors);
+                        foreach (var kvp in inputTensors)
+                        {
+                            _worker.SetInput(kvp.Key, kvp.Value);
+                        }
+                        _worker.Schedule();
 
                         // Get output tensor
+                        _worker.FlushSchedule();
                         var outputTensor = _worker.PeekOutput();
                         
                         // Convert tensor to float array
@@ -330,7 +335,7 @@ namespace uPiper.Core.AudioGeneration
             PiperLogger.LogDebug("Model has {0} inputs", _model.inputs.Count);
             foreach (var input in _model.inputs)
             {
-                PiperLogger.LogDebug("Input: {0}, shape: {1}", input.name, string.Join("x", input.shape.ToArray()));
+                PiperLogger.LogDebug("Input: {0}, shape: {1}", input.name, input.shape.ToString());
             }
 
             // Piper models typically have these inputs:
@@ -339,38 +344,69 @@ namespace uPiper.Core.AudioGeneration
             // - "scales": inference scales [batch, 3] for noise_scale, length_scale, noise_w
 
             // Find the main input name
-            var inputName = _model.inputs.FirstOrDefault(i => 
-                i.name.Contains("input") || i.name == "x")?.name ?? "input";
+            Model.Input mainInput = null;
+            foreach (var input in _model.inputs)
+            {
+                if (input.name.Contains("input") || input.name == "x")
+                {
+                    mainInput = input;
+                    break;
+                }
+            }
+            var inputName = mainInput != null ? mainInput.name : "input";
 
             // Create phoneme ID tensor
             // Shape: [1, sequence_length] for batch size 1
-            var phonemeTensor = new TensorInt(new Unity.InferenceEngine.TensorShape(1, phonemeIds.Length), phonemeIds);
+            var phonemeTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
             tensors[inputName] = phonemeTensor;
 
             // Check if model expects input_lengths
-            var lengthInput = _model.inputs.FirstOrDefault(i => i.name.Contains("length"));
+            Model.Input lengthInput = null;
+            foreach (var input in _model.inputs)
+            {
+                if (input.name.Contains("length"))
+                {
+                    lengthInput = input;
+                    break;
+                }
+            }
             if (lengthInput != null)
             {
-                var lengthTensor = new TensorInt(new Unity.InferenceEngine.TensorShape(1), new[] { phonemeIds.Length });
+                var lengthTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
                 tensors[lengthInput.name] = lengthTensor;
             }
 
             // Check if model expects scales
-            var scalesInput = _model.inputs.FirstOrDefault(i => i.name.Contains("scales"));
+            Model.Input scalesInput = null;
+            foreach (var input in _model.inputs)
+            {
+                if (input.name.Contains("scales"))
+                {
+                    scalesInput = input;
+                    break;
+                }
+            }
             if (scalesInput != null)
             {
                 // Default scales: noise_scale=0.667, length_scale=1.0, noise_w=0.8
                 var scales = new float[] { 0.667f, 1.0f, 0.8f };
-                var scalesTensor = new TensorFloat(new Unity.InferenceEngine.TensorShape(1, 3), scales);
+                var scalesTensor = new Tensor<float>(new TensorShape(1, 3), scales);
                 tensors[scalesInput.name] = scalesTensor;
             }
 
             // Add speaker ID if multi-speaker model
-            var speakerInput = _model.inputs.FirstOrDefault(i => 
-                i.name.Contains("speaker") || i.name.Contains("sid"));
+            Model.Input speakerInput = null;
+            foreach (var input in _model.inputs)
+            {
+                if (input.name.Contains("speaker") || input.name.Contains("sid"))
+                {
+                    speakerInput = input;
+                    break;
+                }
+            }
             if (speakerInput != null)
             {
-                var speakerTensor = new TensorInt(new Unity.InferenceEngine.TensorShape(1), new[] { speakerId });
+                var speakerTensor = new Tensor<int>(new TensorShape(1), new[] { speakerId });
                 tensors[speakerInput.name] = speakerTensor;
             }
 
@@ -387,10 +423,10 @@ namespace uPiper.Core.AudioGeneration
 
             // Get tensor shape
             var shape = outputTensor.shape;
-            PiperLogger.LogDebug("Output tensor shape: {0}", string.Join("x", shape.ToArray()));
+            PiperLogger.LogDebug("Output tensor shape: {0}", shape.ToString());
 
-            // Download tensor data as TensorFloat
-            var floatTensor = outputTensor as TensorFloat;
+            // Download tensor data as Tensor<float>
+            var floatTensor = outputTensor as Tensor<float>;
             if (floatTensor == null)
             {
                 throw new PiperException("Output tensor is not a float tensor");
@@ -420,12 +456,12 @@ namespace uPiper.Core.AudioGeneration
             }
 
             // Create worker with specified backend
-            var backend = _modelInfo?.Backend ?? Unity.InferenceEngine.BackendType.GPUCompute;
+            var backend = _modelInfo?.Backend ?? BackendType.GPUCompute;
             
             try
             {
-                _worker = WorkerFactory.CreateWorker(backend, _model);
-                PiperLogger.LogInfo("Created Sentis worker with backend: {0}", backend);
+                _worker = new Worker(_model, backend);
+                PiperLogger.LogInfo("Created worker with backend: {0}", backend);
             }
             catch (Exception ex)
             {
@@ -433,9 +469,9 @@ namespace uPiper.Core.AudioGeneration
                     backend, ex.Message);
                     
                 // Fallback to CPU if GPU fails
-                _worker = WorkerFactory.CreateWorker(Unity.InferenceEngine.BackendType.CPU, _model);
+                _worker = new Worker(_model, BackendType.CPU);
                 if (_modelInfo != null)
-                    _modelInfo.Backend = Unity.InferenceEngine.BackendType.CPU;
+                    _modelInfo.Backend = BackendType.CPU;
             }
         }
 

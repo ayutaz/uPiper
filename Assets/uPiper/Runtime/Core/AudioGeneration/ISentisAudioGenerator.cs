@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using Unity.InferenceEngine;
 
 
 
@@ -127,7 +128,7 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// Backend type being used
         /// </summary>
-        public Unity.InferenceEngine.BackendType Backend { get; set; }
+        public BackendType Backend { get; set; }
     }
 
     /// <summary>

@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using UnityEngine;
-
+using Unity.InferenceEngine;
 using uPiper.Core.Logging;
 
 namespace uPiper.Core.AudioGeneration
@@ -14,14 +14,14 @@ namespace uPiper.Core.AudioGeneration
     /// </summary>
     public class ModelLoader : IDisposable
     {
-        private Unity.InferenceEngine.Model _loadedModel;
-        private Unity.InferenceEngine.ModelAsset _modelAsset;
+        private Model _loadedModel;
+        private ModelAsset _modelAsset;
         private bool _disposed;
 
         /// <summary>
         /// Currently loaded model
         /// </summary>
-        public Unity.InferenceEngine.Model LoadedModel => _loadedModel;
+        public Model LoadedModel => _loadedModel;
 
         /// <summary>
         /// Whether a model is loaded
@@ -62,9 +62,11 @@ namespace uPiper.Core.AudioGeneration
                     var modelBytes = File.ReadAllBytes(modelPath);
                     
                     // Create model from ONNX bytes
-                    _modelAsset = ScriptableObject.CreateInstance<Unity.InferenceEngine.ModelAsset>();
-                    // In Unity Sentis, load the model directly from bytes
-                    _loadedModel = ModelLoader.Load(modelBytes, Path.GetFileNameWithoutExtension(modelPath));
+                    _modelAsset = ScriptableObject.CreateInstance<ModelAsset>();
+                    _modelAsset.modelAssetData = new ModelAssetData { value = modelBytes };
+                    
+                    // Import the model
+                    _loadedModel = Unity.InferenceEngine.ModelLoader.Load(_modelAsset);
                     
                 }, cancellationToken);
 
@@ -91,7 +93,7 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         /// <param name="modelAsset">Unity Sentis ModelAsset</param>
         /// <returns>Model information</returns>
-        public ModelInfo LoadModel(Unity.InferenceEngine.ModelAsset modelAsset)
+        public ModelInfo LoadModel(ModelAsset modelAsset)
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(ModelLoader));
@@ -104,7 +106,7 @@ namespace uPiper.Core.AudioGeneration
                 PiperLogger.LogInfo("Loading model from ModelAsset");
                 
                 _modelAsset = modelAsset;
-                _loadedModel = ModelLoader.Load(modelAsset);
+                _loadedModel = Unity.InferenceEngine.ModelLoader.Load(modelAsset);
                 
                 var modelInfo = ExtractModelInfo(modelAsset.name, 0);
                 
@@ -252,7 +254,7 @@ namespace uPiper.Core.AudioGeneration
                 SampleRate = 22050, // Default sample rate (will be overridden by model metadata)
                 SpeakerCount = 1, // Default to single speaker
                 MaxSequenceLength = 1024, // Default max sequence
-                Backend = Unity.InferenceEngine.BackendType.GPUCompute // Default backend
+                Backend = BackendType.GPUCompute // Default backend
             };
 
             // Try to load config from JSON file

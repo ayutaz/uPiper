@@ -96,4 +96,4 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         public float SilenceThreshold { get; set; } = 0.01f;
     }
-}
+}// Force recompilation 2025年 7月18日 金曜日 16時16分09秒 JST

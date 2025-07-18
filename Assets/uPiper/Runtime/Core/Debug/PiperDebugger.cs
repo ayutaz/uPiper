@@ -67,14 +67,13 @@ namespace uPiper.Core.Debug
         {
             InitializeStyles();
             
-            // Try to find PiperTTS instance
-            _piperTTS = FindObjectOfType<PiperTTS>();
-            
+            // PiperTTS is not a MonoBehaviour, it needs to be created or assigned
             if (_piperTTS == null)
             {
-                // If not found as component, create one
+                // Create a default instance for debugging
                 var config = new PiperConfig();
                 _piperTTS = new PiperTTS(config);
+                Debug.Log("[PiperDebugger] Created new PiperTTS instance for debugging");
             }
             
             // Subscribe to PiperTTS events
