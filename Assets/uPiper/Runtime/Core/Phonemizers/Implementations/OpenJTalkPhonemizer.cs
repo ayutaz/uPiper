@@ -341,8 +341,8 @@ namespace uPiper.Core.Phonemizers.Implementations
                 var phonemeString = Marshal.PtrToStringAnsi(nativeResult.phonemes);
                 if (!string.IsNullOrEmpty(phonemeString))
                 {
-                    var phonemeList = phonemeString.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    var unknownPhonemes = new HashSet<string>();
+                    var phonemeList = phonemeString.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    var unknownPhonemes = new System.Collections.Generic.HashSet<string>();
                     
                     for (int i = 0; i < Math.Min(phonemeList.Length, nativeResult.phoneme_count); i++)
                     {
@@ -365,7 +365,6 @@ namespace uPiper.Core.Phonemizers.Implementations
                     if (unknownPhonemes.Count > 0)
                     {
                         Debug.LogWarning($"[OpenJTalkPhonemizer] Unknown phonemes: {string.Join(", ", unknownPhonemes)}");
-                    }
                     }
                 }
             }
