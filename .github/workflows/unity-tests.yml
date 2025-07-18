@@ -168,6 +168,7 @@ jobs:
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         PROJECT_PATH: .
         LD_LIBRARY_PATH: ${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:${{ env.LD_LIBRARY_PATH }}
+        PIPER_MOCK_MODE: "1"
       with:
         unityVersion: 6000.0.35f1
         testMode: all
@@ -178,6 +179,21 @@ jobs:
         customParameters: '-enableCodeCoverage'
         dockerCpuLimit: 4
         dockerMemoryLimit: 8192
+    
+    # Check test execution output
+    - name: Check Unity Test Runner Output
+      if: always() && matrix.os != 'macos-latest'
+      shell: bash
+      run: |
+        echo "=== Checking for test output ==="
+        echo "Current directory:"
+        pwd
+        echo ""
+        echo "Directory contents:"
+        ls -la
+        echo ""
+        echo "Searching for test results:"
+        find . -name "*.xml" -type f | grep -i test | head -20 || echo "No test XML files found"
         
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
@@ -198,7 +214,17 @@ jobs:
       shell: bash
       run: |
         echo "=== Test Results Directory Contents ==="
-        find test-results -type f -name "*.xml" | head -20
+        find test-results -type f -name "*.xml" 2>/dev/null | head -20 || echo "test-results directory not found"
+        
+        # Check if test-results exists
+        if [ ! -d "test-results" ]; then
+          echo "test-results directory does not exist"
+          echo "Checking current directory structure:"
+          ls -la
+          echo ""
+          echo "Checking for any XML files:"
+          find . -name "*.xml" -type f | head -20
+        fi
         
         echo ""
         echo "=== XML File Contents Sample ==="
@@ -220,9 +246,13 @@ jobs:
         
         # テスト結果ファイルを検索
         echo "### Test Result Files" >> $GITHUB_STEP_SUMMARY
-        find test-results -type f -name "*.xml" | while read file; do
-          echo "- $file" >> $GITHUB_STEP_SUMMARY
-        done
+        if [ -d "test-results" ]; then
+          find test-results -type f -name "*.xml" | while read file; do
+            echo "- $file" >> $GITHUB_STEP_SUMMARY
+          done
+        else
+          echo "test-results directory not found" >> $GITHUB_STEP_SUMMARY
+        fi
         echo "" >> $GITHUB_STEP_SUMMARY
         
         # XMLファイルから結果を抽出
