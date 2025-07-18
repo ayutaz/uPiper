@@ -48,7 +48,7 @@ indent_size = 2
 # Shell script files
 [*.sh]
 end_of_line = lf
-[*.{cmd, bat}]
+[*.{cmd,bat}]
 end_of_line = crlf
 
 # Dotnet code style settings:
@@ -525,8 +525,6 @@ dotnet_diagnostic.IDE0064.severity = warning
 dotnet_diagnostic.IDE0065.severity = warning
 # Use switch expression
 dotnet_diagnostic.IDE0066.severity = suggestion
-# Avoid unused value assignments
-dotnet_diagnostic.IDE0059.severity = suggestion
 # Remove unnecessary suppression
 dotnet_diagnostic.IDE0079.severity = warning
 # Remove unnecessary suppression operator
