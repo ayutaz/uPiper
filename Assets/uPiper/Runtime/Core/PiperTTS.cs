@@ -380,6 +380,9 @@ namespace uPiper.Core
                 }
                 
                 // Check if voice is already loaded
+                bool needsInitialization = false;
+                ISentisAudioGenerator voiceGenerator = null;
+                
                 lock (_lockObject)
                 {
                     if (_voices.ContainsKey(voice.VoiceId))
@@ -399,35 +402,43 @@ namespace uPiper.Core
                     // Add voice configuration
                     _voices[voice.VoiceId] = voice;
                     
-                    // Load model if needed
+                    // Check if we need to load the model
                     if (!_voiceGenerators.ContainsKey(voice.VoiceId))
                     {
-                        PiperLogger.LogInfo("Loading voice model: {0}", voice.ModelPath ?? "ModelAsset");
-                        
-                        // Create a new audio generator for this voice
-                        var voiceGenerator = new SentisAudioGenerator();
-                        
-                        // Initialize with ModelAsset or file path
-                        if (hasModelAsset)
-                        {
-                            // Load from ModelAsset
-                            var modelLoader = new AudioGeneration.ModelLoader();
-                            modelLoader.LoadModel(voice.ModelAsset);
-                            // TODO: Initialize SentisAudioGenerator with pre-loaded model
-                            await voiceGenerator.InitializeAsync(voice.ModelPath ?? "dummy", cancellationToken);
-                        }
-                        else
-                        {
-                            // Load from file path
-                            await voiceGenerator.InitializeAsync(voice.ModelPath, cancellationToken);
-                        }
-                        
-                        _voiceGenerators[voice.VoiceId] = voiceGenerator;
+                        needsInitialization = true;
+                        voiceGenerator = new SentisAudioGenerator();
+                    }
+                }
+                
+                // Initialize outside of lock
+                if (needsInitialization && voiceGenerator != null)
+                {
+                    PiperLogger.LogInfo("Loading voice model: {0}", voice.ModelPath ?? "ModelAsset");
+                    
+                    // Initialize with ModelAsset or file path
+                    if (hasModelAsset)
+                    {
+                        // Load from ModelAsset
+                        var modelLoader = new AudioGeneration.ModelLoader();
+                        modelLoader.LoadModel(voice.ModelAsset);
+                        // TODO: Initialize SentisAudioGenerator with pre-loaded model
+                        await voiceGenerator.InitializeAsync(voice.ModelPath ?? "dummy", cancellationToken);
+                    }
+                    else
+                    {
+                        // Load from file path
+                        await voiceGenerator.InitializeAsync(voice.ModelPath, cancellationToken);
                     }
                     
-                    if (_currentVoiceId == null)
+                    // Store the initialized generator
+                    lock (_lockObject)
                     {
-                        _currentVoiceId = voice.VoiceId;
+                        _voiceGenerators[voice.VoiceId] = voiceGenerator;
+                        
+                        if (_currentVoiceId == null)
+                        {
+                            _currentVoiceId = voice.VoiceId;
+                        }
                     }
                 }
                 
@@ -593,10 +604,10 @@ namespace uPiper.Core
                     }
                 }
                 
-                if (generator != null && phonemeResult != null && phonemeResult.Phonemes != null)
+                if (generator != null && phonemeResult != null && phonemeResult.PhonemeIds != null)
                 {
                     // Generate audio using the voice-specific generator
-                    var audioData = await generator.GenerateAudioAsync(phonemeResult.Phonemes, cancellationToken);
+                    var audioData = await generator.GenerateAudioAsync(phonemeResult.PhonemeIds, 0, cancellationToken);
                     audioClip = audioData.ToAudioClip();
                 }
                 else
@@ -1311,7 +1322,7 @@ namespace uPiper.Core
             PiperLogger.LogInfo("Initializing cache system with max size: {0}MB", _config.MaxCacheSizeMB);
 
             // Clear any existing cache
-            _phonemeCache.Clear();
+            _audioCache.Clear();
             _currentCacheSize = 0;
             _cacheHitCount = 0;
             _cacheMissCount = 0;

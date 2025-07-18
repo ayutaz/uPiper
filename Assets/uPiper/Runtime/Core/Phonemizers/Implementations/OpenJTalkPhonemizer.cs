@@ -140,13 +140,13 @@ namespace uPiper.Core.Phonemizers.Implementations
             if (forceMockMode)
             {
                 mockMode = true;
-                Debug.Log("[OpenJTalkPhonemizer] Mock mode forced.");
+                UnityEngine.Debug.Log("[OpenJTalkPhonemizer] Mock mode forced.");
             }
             else if (IsInTestRunner() && !IsNativeTestContext())
             {
                 // Auto-enable mock mode in test runner, except for native tests
                 mockMode = true;
-                Debug.Log("[OpenJTalkPhonemizer] Test runner detected. Using mock mode.");
+                UnityEngine.Debug.Log("[OpenJTalkPhonemizer] Test runner detected. Using mock mode.");
             }
 
             _dictionaryPath = dictionaryPath ?? GetDefaultDictionaryPath();
@@ -174,7 +174,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 {
                     mockMode = true;
                     _handle = new IntPtr(1); // Fake handle for mock mode
-                    Debug.Log("[OpenJTalkPhonemizer] Running in mock mode (native library not available)");
+                    UnityEngine.Debug.Log("[OpenJTalkPhonemizer] Running in mock mode (native library not available)");
                     return;
                 }
 
@@ -195,19 +195,19 @@ namespace uPiper.Core.Phonemizers.Implementations
                     }
 
                     // Log version info
-                    Debug.Log($"[OpenJTalkPhonemizer] Initialized with version: {Version}");
+                    UnityEngine.Debug.Log($"[OpenJTalkPhonemizer] Initialized with version: {Version}");
 #else
                     // P/Invoke is disabled, use mock mode
                     mockMode = true;
                     _handle = new IntPtr(1); // Fake handle for mock mode
-                    Debug.LogWarning($"[OpenJTalkPhonemizer] P/Invoke disabled. Running in mock mode.");
+                    UnityEngine.Debug.LogWarning($"[OpenJTalkPhonemizer] P/Invoke disabled. Running in mock mode.");
 #endif
                 }
                 catch (Exception ex)
                 {
                     mockMode = true;
                     _handle = new IntPtr(1); // Fake handle for mock mode
-                    Debug.LogWarning($"[OpenJTalkPhonemizer] Failed to initialize: {ex.Message}. Running in mock mode.");
+                    UnityEngine.Debug.LogWarning($"[OpenJTalkPhonemizer] Failed to initialize: {ex.Message}. Running in mock mode.");
                 }
             }
         }
@@ -364,7 +364,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     // Log unknown phonemes once per conversion
                     if (unknownPhonemes.Count > 0)
                     {
-                        Debug.LogWarning($"[OpenJTalkPhonemizer] Unknown phonemes: {string.Join(", ", unknownPhonemes)}");
+                        UnityEngine.Debug.LogWarning($"[OpenJTalkPhonemizer] Unknown phonemes: {string.Join(", ", unknownPhonemes)}");
                     }
                 }
             }
@@ -432,17 +432,17 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                     if (allFilesExist)
                     {
-                        Debug.Log($"[OpenJTalkPhonemizer] Found complete dictionary at: {path}");
+                        UnityEngine.Debug.Log($"[OpenJTalkPhonemizer] Found complete dictionary at: {path}");
                         return path;
                     }
                     else
                     {
-                        Debug.LogWarning($"[OpenJTalkPhonemizer] Dictionary at {path} is incomplete");
+                        UnityEngine.Debug.LogWarning($"[OpenJTalkPhonemizer] Dictionary at {path} is incomplete");
                     }
                 }
             }
 
-            Debug.LogWarning($"[OpenJTalkPhonemizer] Dictionary not found in any of the expected locations");
+            UnityEngine.Debug.LogWarning($"[OpenJTalkPhonemizer] Dictionary not found in any of the expected locations");
             // Return first path as default (will fail later if not found)
             return possiblePaths[0];
         }
@@ -635,7 +635,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                         }
                         catch (Exception ex)
                         {
-                            Debug.LogError($"[OpenJTalkPhonemizer] Error during disposal: {ex.Message}");
+                            UnityEngine.Debug.LogError($"[OpenJTalkPhonemizer] Error during disposal: {ex.Message}");
                         }
                         finally
                         {
