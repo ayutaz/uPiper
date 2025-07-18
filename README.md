@@ -16,7 +16,7 @@
 
 ## Requirements
 * Unity 6000.0.35f1
-* Unity AI Interface (Inference Engine) 2.2.x
+* [Inference Engine](https://docs.unity3d.com/Packages/com.unity.ai.inference@2.2/manual/index.html) 2.2.1
 
 ## ビルド
 
