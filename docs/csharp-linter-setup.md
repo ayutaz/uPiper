@@ -25,6 +25,11 @@
 
 ### C#固有の設定
 - 命名規則（フィールド、プロパティ、メソッドなど）
+  - privateフィールド: `_camelCase`（例: `_openjtalkHandle`）
+  - private staticフィールド: `s_camelCase`（例: `s_instanceCount`）
+  - publicフィールド: `PascalCase`
+  - const: `PascalCase`
+- アクセシビリティ修飾子の強制（private, public, protected等を明示）
 - コードスタイル（varの使用、式形式のメンバーなど）
 - フォーマット（改行、インデント、スペースなど）
 
