@@ -53,14 +53,14 @@ namespace uPiper.Core.Phonemizers.Implementations
         /// </summary>
         /// <param name="simulatedDelay">Optional delay to simulate processing time.</param>
         /// <param name="cacheSize">Size of the LRU cache.</param>
-        public MockPhonemizer(TimeSpan? simulatedDelay = null, int? cacheSize = null) 
+        public MockPhonemizer(TimeSpan? simulatedDelay = null, int? cacheSize = null)
             : base(cacheSize)
         {
             _simulatedDelay = simulatedDelay ?? TimeSpan.FromMilliseconds(10);
             _mockResults = new Dictionary<string, PhonemeResult>();
             _mockErrors = new Dictionary<string, Exception>();
             _random = new Random();
-            
+
             SetupDefaultMockData();
         }
 
@@ -73,7 +73,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         {
             if (text == null) throw new ArgumentNullException(nameof(text));
             if (result == null) throw new ArgumentNullException(nameof(result));
-            
+
             _mockResults[text] = result;
             PiperLogger.LogDebug($"Mock result set for: \"{text}\"");
         }
@@ -87,7 +87,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         {
             if (text == null) throw new ArgumentNullException(nameof(text));
             if (exception == null) throw new ArgumentNullException(nameof(exception));
-            
+
             _mockErrors[text] = exception;
             PiperLogger.LogDebug($"Mock error set for: \"{text}\"");
         }

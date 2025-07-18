@@ -1,35 +1,35 @@
+using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections;
 using uPiper.Core.Logging;
-using TMPro;
 
 namespace uPiper.Samples.WebGLDemo
 {
     public class WebGLDemoUI : MonoBehaviour
     {
         [Header("UI Elements")]
-        [SerializeField] private TMP_InputField textInput;
-        [SerializeField] private Button generateButton;
-        [SerializeField] private TextMeshProUGUI statusText;
-        [SerializeField] private Slider progressSlider;
-        [SerializeField] private AudioSource audioSource;
+        [SerializeField] private TMP_InputField _textInput;
+        [SerializeField] private Button _generateButton;
+        [SerializeField] private TextMeshProUGUI _statusText;
+        [SerializeField] private Slider _progressSlider;
+        [SerializeField] private AudioSource _audioSource;
 
         [Header("Demo Settings")]
-        [SerializeField] private string defaultText = "こんにちは、uPiper WebGLデモへようこそ！";
+        [SerializeField] private string _defaultText = "こんにちは、uPiper WebGLデモへようこそ！";
 
         private void Start()
         {
             // デフォルトテキストを設定
-            if (textInput != null)
+            if (_textInput != null)
             {
-                textInput.text = defaultText;
+                _textInput.text = _defaultText;
             }
 
             // ボタンイベントを設定
-            if (generateButton != null)
+            if (_generateButton != null)
             {
-                generateButton.onClick.AddListener(OnGenerateButtonClick);
+                _generateButton.onClick.AddListener(OnGenerateButtonClick);
             }
 
             // 初期状態を設定
@@ -39,7 +39,7 @@ namespace uPiper.Samples.WebGLDemo
 
         private void OnGenerateButtonClick()
         {
-            if (string.IsNullOrEmpty(textInput.text))
+            if (string.IsNullOrEmpty(_textInput.text))
             {
                 UpdateStatus("テキストを入力してください");
                 return;
@@ -51,7 +51,7 @@ namespace uPiper.Samples.WebGLDemo
         private IEnumerator GenerateAudioDemo()
         {
             // UIを無効化
-            generateButton.interactable = false;
+            _generateButton.interactable = false;
             UpdateStatus("音声生成中...");
             SetProgress(0.3f);
 
@@ -64,16 +64,16 @@ namespace uPiper.Samples.WebGLDemo
 
             // 完了
             UpdateStatus("音声生成完了！");
-            
+
             // デモ用のビープ音を再生（実際のTTSが実装されるまで）
-            if (audioSource != null)
+            if (_audioSource != null)
             {
-                audioSource.pitch = 1.0f + Random.Range(-0.1f, 0.1f);
-                audioSource.PlayOneShot(CreateBeepSound());
+                _audioSource.pitch = 1.0f + Random.Range(-0.1f, 0.1f);
+                _audioSource.PlayOneShot(CreateBeepSound());
             }
 
             // UIを再有効化
-            generateButton.interactable = true;
+            _generateButton.interactable = true;
             yield return new WaitForSeconds(2.0f);
             UpdateStatus("準備完了");
             SetProgress(0);
@@ -81,19 +81,19 @@ namespace uPiper.Samples.WebGLDemo
 
         private void UpdateStatus(string message)
         {
-            if (statusText != null)
+            if (_statusText != null)
             {
-                statusText.text = $"状態: {message}";
+                _statusText.text = $"状態: {message}";
             }
-            
+
             PiperLogger.LogInfo($"WebGLDemo - {message}");
         }
 
         private void SetProgress(float value)
         {
-            if (progressSlider != null)
+            if (_progressSlider != null)
             {
-                progressSlider.value = value;
+                _progressSlider.value = value;
             }
         }
 
@@ -104,22 +104,22 @@ namespace uPiper.Samples.WebGLDemo
             float frequency = 440.0f;
             float duration = 0.3f;
             int sampleCount = (int)(sampleRate * duration);
-            
+
             AudioClip clip = AudioClip.Create("Beep", sampleCount, 1, sampleRate, false);
             float[] data = new float[sampleCount];
-            
+
             for (int i = 0; i < sampleCount; i++)
             {
                 float t = (float)i / sampleRate;
                 data[i] = Mathf.Sin(2 * Mathf.PI * frequency * t) * 0.5f;
-                
+
                 // フェードイン/アウト
                 float fade = 1.0f;
                 if (t < 0.05f) fade = t / 0.05f;
                 else if (t > duration - 0.05f) fade = (duration - t) / 0.05f;
                 data[i] *= fade;
             }
-            
+
             clip.SetData(data, 0);
             return clip;
         }

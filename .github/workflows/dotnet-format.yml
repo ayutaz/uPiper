@@ -1,0 +1,72 @@
+name: .NET Format Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '.editorconfig'
+      - '.github/workflows/dotnet-format.yml'
+
+env:
+  # Skip format check for now - will be enabled after fixing existing code format
+  SKIP_FORMAT_CHECK: true
+  # Check only new test file
+  CHECK_ONLY_TEST: true
+
+jobs:
+  check-format:
+    runs-on: ubuntu-latest
+    name: Check C# Format
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 6.0.x  # Unity 6 uses .NET Standard 2.1 which is supported by .NET 6
+
+    - name: Check format
+      run: |
+        if [ "$CHECK_ONLY_TEST" = "true" ]; then
+          echo "🔍 Checking format and code style for test file"
+          echo "This will fail CI if any lint rules are violated"
+          
+          # Create a temporary solution file for the test
+          echo "Creating temporary solution for lint check..."
+          cat > TestLint.csproj << 'EOF'
+        <Project Sdk="Microsoft.NET.Sdk">
+          <PropertyGroup>
+            <TargetFramework>netstandard2.1</TargetFramework>
+            <LangVersion>9.0</LangVersion>
+            <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+            <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+            <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+          </PropertyGroup>
+          <ItemGroup>
+            <Compile Include="Assets/uPiper/Scripts/LintTestScript.cs" />
+          </ItemGroup>
+        </Project>
+        EOF
+          
+          # Run format checks - these will fail if there are violations
+          echo "Running whitespace check..."
+          dotnet format whitespace TestLint.csproj --verify-no-changes --verbosity diagnostic
+          
+          echo "Running style check..."
+          dotnet format style TestLint.csproj --verify-no-changes --verbosity diagnostic
+          
+          # Exit with success only if both checks pass
+          exit 0
+        fi
+        if [ "$SKIP_FORMAT_CHECK" = "true" ]; then
+          echo "⚠️ Format check is currently disabled"
+          echo "This is temporary while we fix formatting in existing code"
+          echo "New code should still follow the .editorconfig rules"
+          exit 0
+        fi
+        # Use dotnet format with folder option (doesn't require project file)
+        dotnet format whitespace . --folder --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes --verbosity diagnostic

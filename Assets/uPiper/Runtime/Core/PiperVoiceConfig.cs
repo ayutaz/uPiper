@@ -50,7 +50,7 @@ namespace uPiper.Core
         /// Voice characteristics
         /// </summary>
         [Header("Voice Characteristics")]
-        
+
         /// <summary>
         /// Gender of the voice
         /// </summary>
@@ -79,7 +79,7 @@ namespace uPiper.Core
         /// Additional metadata
         /// </summary>
         [Header("Metadata")]
-        
+
         /// <summary>
         /// Model version
         /// </summary>
@@ -112,7 +112,7 @@ namespace uPiper.Core
             // Extract voice ID from filename
             var fileName = System.IO.Path.GetFileNameWithoutExtension(modelPath);
             config.VoiceId = fileName;
-            
+
             // Parse language from filename (e.g., "ja_JP-test-medium" -> "ja")
             if (fileName.Contains("_") || fileName.Contains("-"))
             {

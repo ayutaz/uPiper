@@ -10,7 +10,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Constructor_InitializesWithEmptyVoices()
         {
             var info = new LanguageInfo();
-            
+
             Assert.IsNotNull(info.AvailableVoices);
             Assert.AreEqual(0, info.AvailableVoices.Length);
             Assert.AreEqual(TextDirection.LeftToRight, info.Direction);
@@ -31,7 +31,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 SupportsAccent = true,
                 Direction = TextDirection.LeftToRight
             };
-            
+
             Assert.AreEqual("ja", info.Code);
             Assert.AreEqual("Japanese", info.Name);
             Assert.AreEqual("日本語", info.NativeName);
@@ -47,7 +47,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void Create_StaticMethod_CreatesInstanceCorrectly()
         {
             var info = LanguageInfo.Create("en", "English", "English");
-            
+
             Assert.AreEqual("en", info.Code);
             Assert.AreEqual("English", info.Name);
             Assert.AreEqual("English", info.NativeName);
@@ -67,7 +67,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Name = "Japanese",
                 NativeName = "日本語"
             };
-            
+
             Assert.AreEqual("Japanese (ja) - 日本語", info.ToString());
         }
 
@@ -80,7 +80,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Name = null,
                 NativeName = null
             };
-            
+
             // Should not throw
             var str = info.ToString();
             Assert.IsNotNull(str);
@@ -104,7 +104,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Direction = TextDirection.RightToLeft,
                 RequiresPreprocessing = true
             };
-            
+
             Assert.AreEqual(TextDirection.RightToLeft, info.Direction);
             Assert.IsTrue(info.RequiresPreprocessing);
         }
@@ -118,7 +118,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 AvailableVoices = new[] { "en-US-1", "en-US-2", "en-GB-1" },
                 DefaultVoice = "en-US-1"
             };
-            
+
             Assert.AreEqual(3, info.AvailableVoices.Length);
             Assert.Contains("en-US-1", info.AvailableVoices);
             Assert.AreEqual("en-US-1", info.DefaultVoice);
@@ -132,13 +132,13 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Code = "ja",
                 PhonemeSetType = "Japanese-Kana"
             };
-            
+
             var enInfo = new LanguageInfo
             {
                 Code = "en",
                 PhonemeSetType = "IPA-English"
             };
-            
+
             Assert.AreEqual("Japanese-Kana", jaInfo.PhonemeSetType);
             Assert.AreEqual("IPA-English", enInfo.PhonemeSetType);
         }
@@ -147,7 +147,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void DefaultValues_AreCorrect()
         {
             var info = new LanguageInfo();
-            
+
             Assert.IsNull(info.Code);
             Assert.IsNull(info.Name);
             Assert.IsNull(info.NativeName);

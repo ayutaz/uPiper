@@ -141,7 +141,7 @@ namespace uPiper.Core.Phonemizers.Cache
                         var lru = _lruList.Last;
                         _lruList.RemoveLast();
                         _cacheMap.Remove(lru.Value.Key);
-                        
+
                         PiperLogger.LogDebug($"LRU Cache evicted item with key: {lru.Value.Key}");
                     }
                 }
