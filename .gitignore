@@ -158,6 +158,9 @@ test-results.zip
 test-results/
 coverage/
 TestResults/
+
+# Unity link.xml (code stripping configuration)
+link.xml
 *.app
 
 # Crashlytics generated file
@@ -198,6 +201,8 @@ Desktop.ini
 *.swp
 *.swo
 *.orig
+*.backup
+*.bak
 
 # Debug symbols
 *.dSYM/
