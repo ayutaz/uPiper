@@ -352,12 +352,20 @@ namespace uPiper.Core.AudioGeneration
             return new Tensor<T>(shape, data);
         }
 
+        // Reusable dictionary for input tensors to avoid allocations
+        private readonly Dictionary<string, Tensor> _inputTensors = new Dictionary<string, Tensor>();
+
         /// <summary>
         /// Prepare input tensors for the model
         /// </summary>
         private Dictionary<string, Tensor> PrepareInputTensors(int[] phonemeIds, int speakerId)
         {
-            var tensors = new Dictionary<string, Tensor>();
+            // Clear and reuse the dictionary
+            foreach (var tensor in _inputTensors.Values)
+            {
+                tensor?.Dispose();
+            }
+            _inputTensors.Clear();
 
             // Log model inputs for debugging
             PiperLogger.LogDebug("Model has {0} inputs", _model.inputs.Count);
@@ -385,7 +393,7 @@ namespace uPiper.Core.AudioGeneration
             // Create phoneme ID tensor
             // Shape: [1, sequence_length] for batch size 1
             var phonemeTensor = CreateTensor(new TensorShape(1, phonemeIds.Length), phonemeIds);
-            tensors[inputName] = phonemeTensor;
+            _inputTensors[inputName] = phonemeTensor;
 
             // Check if model expects input_lengths
             string lengthInputName = null;
@@ -400,7 +408,7 @@ namespace uPiper.Core.AudioGeneration
             if (lengthInputName != null)
             {
                 var lengthTensor = CreateTensor(new TensorShape(1), new[] { phonemeIds.Length });
-                tensors[lengthInputName] = lengthTensor;
+                _inputTensors[lengthInputName] = lengthTensor;
             }
 
             // Check if model expects scales
@@ -418,7 +426,7 @@ namespace uPiper.Core.AudioGeneration
                 // Default scales: noise_scale=0.667, length_scale=1.0, noise_w=0.8
                 var scales = new float[] { 0.667f, 1.0f, 0.8f };
                 var scalesTensor = CreateTensor(new TensorShape(1, 3), scales);
-                tensors[scalesInputName] = scalesTensor;
+                _inputTensors[scalesInputName] = scalesTensor;
             }
 
             // Add speaker ID if multi-speaker model
@@ -434,10 +442,10 @@ namespace uPiper.Core.AudioGeneration
             if (speakerInputName != null)
             {
                 var speakerTensor = CreateTensor(new TensorShape(1), new[] { speakerId });
-                tensors[speakerInputName] = speakerTensor;
+                _inputTensors[speakerInputName] = speakerTensor;
             }
 
-            return tensors;
+            return _inputTensors;
         }
 
         /// <summary>

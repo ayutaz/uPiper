@@ -133,7 +133,8 @@ namespace uPiper.Core
             {
                 lock (_lockObject)
                 {
-                    return new List<string>(_voices.Keys);
+                    // Return the keys directly to avoid allocation
+                    return _voices.Keys;
                 }
             }
         }
@@ -401,6 +402,7 @@ namespace uPiper.Core
                     
                     // Add voice configuration
                     _voices[voice.VoiceId] = voice;
+                    _voicesListDirty = true;
                     
                     // Check if we need to load the model
                     if (!_voiceGenerators.ContainsKey(voice.VoiceId))
@@ -505,6 +507,10 @@ namespace uPiper.Core
             }
         }
 
+        // Cache for available voices list to avoid allocations
+        private List<PiperVoiceConfig> _cachedAvailableVoices;
+        private bool _voicesListDirty = true;
+
         /// <summary>
         /// Get available voices
         /// </summary>
@@ -514,7 +520,12 @@ namespace uPiper.Core
 
             lock (_lockObject)
             {
-                return new List<PiperVoiceConfig>(_voices.Values);
+                if (_voicesListDirty || _cachedAvailableVoices == null)
+                {
+                    _cachedAvailableVoices = new List<PiperVoiceConfig>(_voices.Values);
+                    _voicesListDirty = false;
+                }
+                return _cachedAvailableVoices;
             }
         }
 
@@ -1395,15 +1406,26 @@ namespace uPiper.Core
             PiperLogger.LogInfo("Cache system initialized");
         }
 
+        // Reusable StringBuilder for cache key generation
+        private readonly System.Text.StringBuilder _cacheKeyBuilder = new System.Text.StringBuilder(256);
+
         /// <summary>
         /// Generate cache key for text and voice combination
         /// </summary>
         private string GenerateCacheKey(string text, string voiceId)
         {
-            // Simple hash-based cache key
-            var combined = $"{text}|{voiceId}";
-            return combined.GetHashCode().ToString();
+            lock (_cacheKeyBuilder)
+            {
+                _cacheKeyBuilder.Clear();
+                _cacheKeyBuilder.Append(text);
+                _cacheKeyBuilder.Append('|');
+                _cacheKeyBuilder.Append(voiceId);
+                return _cacheKeyBuilder.ToString().GetHashCode().ToString();
+            }
         }
+
+        // Reusable list for cache eviction
+        private readonly List<KeyValuePair<string, CachedAudioData>> _evictionList = new List<KeyValuePair<string, CachedAudioData>>(100);
 
         /// <summary>
         /// Evict oldest cache entries to make room for new data
@@ -1413,10 +1435,17 @@ namespace uPiper.Core
             var maxCacheSizeBytes = _config.MaxCacheSizeMB * 1024L * 1024L;
             var targetSize = maxCacheSizeBytes - requiredBytes;
             
-            // Sort entries by cached time (oldest first)
-            var sortedEntries = _audioCache.OrderBy(kvp => kvp.Value.CachedAt).ToList();
+            // Copy entries to list for sorting (avoids LINQ allocation)
+            _evictionList.Clear();
+            foreach (var kvp in _audioCache)
+            {
+                _evictionList.Add(kvp);
+            }
             
-            foreach (var entry in sortedEntries)
+            // Sort by cached time (oldest first)
+            _evictionList.Sort((a, b) => a.Value.CachedAt.CompareTo(b.Value.CachedAt));
+            
+            foreach (var entry in _evictionList)
             {
                 if (_currentCacheSize <= targetSize)
                     break;
@@ -1428,6 +1457,8 @@ namespace uPiper.Core
                 PiperLogger.LogDebug("Evicted cache entry: {0} ({1} bytes)", 
                     entry.Key, entry.Value.SizeInBytes);
             }
+            
+            _evictionList.Clear();
         }
 
         /// <summary>

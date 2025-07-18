@@ -112,4 +112,80 @@ namespace uPiper.Tests.Runtime.Performance
                 $"Concurrent access performance: {stopwatch.ElapsedMilliseconds}ms for 100k operations across 4 threads");
         }
     }
+
+    [TestFixture]
+    public class PiperTTSAllocationTests
+    {
+        private Core.PiperTTS _piperTTS;
+        private Core.PiperConfig _config;
+
+        [SetUp]
+        public void SetUp()
+        {
+            // Force mock mode for testing
+            System.Environment.SetEnvironmentVariable("PIPER_MOCK_MODE", "1");
+            
+            _config = new Core.PiperConfig
+            {
+                DefaultLanguage = "ja",
+                SampleRate = 22050,
+                EnablePhonemeCache = true,
+                MaxCacheSizeMB = 10
+            };
+            
+            _piperTTS = new Core.PiperTTS(_config);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            _piperTTS?.Dispose();
+        }
+
+        [Test]
+        public void AvailableVoices_NoAllocation()
+        {
+            // First access to warm up
+            var voices = _piperTTS.AvailableVoices;
+            
+            // Subsequent accesses should not allocate
+            Assert.That(() =>
+            {
+                var v = _piperTTS.AvailableVoices;
+            }, Is.Not.AllocatingGCMemory());
+        }
+
+        [Test]
+        public void GenerateCacheKey_Performance()
+        {
+            // This is a private method, so we test indirectly through caching
+            // Initialize first
+            var initTask = _piperTTS.InitializeAsync();
+            initTask.Wait();
+            
+            // Load a voice
+            var voice = new Core.PiperVoiceConfig
+            {
+                VoiceId = "test-ja",
+                Language = "ja",
+                ModelPath = "dummy.onnx"
+            };
+            var loadTask = _piperTTS.LoadVoiceAsync(voice);
+            loadTask.Wait();
+            
+            // Generate audio to populate cache
+            var text = "テスト";
+            var generateTask = _piperTTS.GenerateAudioAsync(text);
+            generateTask.Wait();
+            
+            // Second generation should hit cache with minimal allocation
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            generateTask = _piperTTS.GenerateAudioAsync(text);
+            generateTask.Wait();
+            stopwatch.Stop();
+            
+            Assert.Less(stopwatch.ElapsedMilliseconds, 10, 
+                $"Cache hit should be fast: {stopwatch.ElapsedMilliseconds}ms");
+        }
+    }
 }
