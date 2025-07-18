@@ -1,5 +1,6 @@
 using System;
 using NUnit.Framework;
+using UnityEngine.TestTools;
 using uPiper.Core.Platform;
 
 namespace uPiper.Tests.Runtime.Platform
@@ -38,6 +39,9 @@ namespace uPiper.Tests.Runtime.Platform
                 Assert.Ignore("Platform does not support native plugins");
             }
 
+            // Expect error log - use regex to match the actual error message
+            LogAssert.Expect(UnityEngine.LogType.Error, new System.Text.RegularExpressions.Regex(@"\[uPiper\] Failed to load native library 'nonexistent_library_12345': .+"));
+            
             Assert.Throws<DllNotFoundException>(() => 
                 NativeLibraryLoader.LoadLibrary("nonexistent_library_12345"));
         }
@@ -64,6 +68,9 @@ namespace uPiper.Tests.Runtime.Platform
         [Test]
         public void UnloadAll_DoesNotThrow()
         {
+            // Expect info log message when unloading
+            LogAssert.Expect(UnityEngine.LogType.Log, "[uPiper] Unloaded all native libraries");
+            
             Assert.DoesNotThrow(() => NativeLibraryLoader.UnloadAll());
         }
 
@@ -100,6 +107,9 @@ namespace uPiper.Tests.Runtime.Platform
             // This might fail in some Unity environments due to sandboxing
             try
             {
+                // Expect success log when library loads
+                LogAssert.Expect(UnityEngine.LogType.Log, new System.Text.RegularExpressions.Regex($@"\[uPiper\] Successfully loaded native library: {libraryName}"));
+                
                 var handle = NativeLibraryLoader.LoadLibrary(libraryName);
                 Assert.AreNotEqual(IntPtr.Zero, handle);
                 Assert.IsTrue(NativeLibraryLoader.IsLibraryLoaded(libraryName));
