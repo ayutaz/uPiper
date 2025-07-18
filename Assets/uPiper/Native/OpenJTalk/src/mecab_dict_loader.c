@@ -29,13 +29,28 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
         return NULL;
     }
     
-    // Read header
-    if (fread(&dict->sys_header, sizeof(DictionaryHeader), 1, sys_file) != 1) {
+    // Read header - manually to avoid structure packing issues
+    uint8_t header_buf[72];  // Expected size: 40 bytes for fields + 32 for charset
+    if (fread(header_buf, 1, 72, sys_file) != 72) {
         LOG_ERROR("Failed to read sys.dic header\n");
         fclose(sys_file);
         free(dict);
         return NULL;
     }
+    
+    // Extract fields manually (little-endian)
+    dict->sys_header.magic = *(uint32_t*)(header_buf + 0);
+    dict->sys_header.version = *(uint32_t*)(header_buf + 4);
+    dict->sys_header.type = *(uint32_t*)(header_buf + 8);
+    dict->sys_header.lexsize = *(uint32_t*)(header_buf + 12);
+    dict->sys_header.lsize = *(uint32_t*)(header_buf + 16);
+    dict->sys_header.rsize = *(uint32_t*)(header_buf + 20);
+    dict->sys_header.dsize = *(uint32_t*)(header_buf + 24);
+    dict->sys_header.tsize = *(uint32_t*)(header_buf + 28);
+    dict->sys_header.fsize = *(uint32_t*)(header_buf + 32);
+    dict->sys_header.reserved = *(uint32_t*)(header_buf + 36);
+    memcpy(dict->sys_header.charset, header_buf + 40, 32);
+    
     
     // Validate magic number
     if (dict->sys_header.magic != MAGIC_ID) {
@@ -46,9 +61,9 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
         return NULL;
     }
     
-    // Validate version - OpenJTalk dictionaries use version 102
-    if (dict->sys_header.version != 102) {
-        LOG_DICT_ERROR("Unsupported dictionary version: %d (expected 102)", 
+    // Validate version - OpenJTalk dictionaries use version 102, test dict uses version 1
+    if (dict->sys_header.version != 102 && dict->sys_header.version != 1) {
+        LOG_DICT_ERROR("Unsupported dictionary version: %d (expected 102 or 1)", 
                        dict->sys_header.version);
         fclose(sys_file);
         free(dict);
@@ -82,7 +97,7 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     
     // Set up pointers
     const uint8_t* data = (const uint8_t*)dict->sys_data;
-    size_t offset = sizeof(DictionaryHeader);
+    size_t offset = 72;  // Use fixed size we read, not sizeof(DictionaryHeader)
     
     // Skip Darts data
     offset += dict->sys_header.dsize;
@@ -104,14 +119,28 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
         return NULL;
     }
     
-    // Read unk header
-    if (fread(&dict->unk_header, sizeof(DictionaryHeader), 1, unk_file) != 1) {
+    // Read unk header - manually to avoid structure packing issues
+    uint8_t unk_header_buf[72];
+    if (fread(unk_header_buf, 1, 72, unk_file) != 72) {
         fprintf(stderr, "Failed to read unk.dic header\n");
         fclose(unk_file);
         platform_munmap((void*)dict->sys_data, dict->sys_size);
         free(dict);
         return NULL;
     }
+    
+    // Extract unk header fields manually
+    dict->unk_header.magic = *(uint32_t*)(unk_header_buf + 0);
+    dict->unk_header.version = *(uint32_t*)(unk_header_buf + 4);
+    dict->unk_header.type = *(uint32_t*)(unk_header_buf + 8);
+    dict->unk_header.lexsize = *(uint32_t*)(unk_header_buf + 12);
+    dict->unk_header.lsize = *(uint32_t*)(unk_header_buf + 16);
+    dict->unk_header.rsize = *(uint32_t*)(unk_header_buf + 20);
+    dict->unk_header.dsize = *(uint32_t*)(unk_header_buf + 24);
+    dict->unk_header.tsize = *(uint32_t*)(unk_header_buf + 28);
+    dict->unk_header.fsize = *(uint32_t*)(unk_header_buf + 32);
+    dict->unk_header.reserved = *(uint32_t*)(unk_header_buf + 36);
+    memcpy(dict->unk_header.charset, unk_header_buf + 40, 32);
     
     // Validate unk magic number
     if (dict->unk_header.magic != UNK_MAGIC_ID && dict->unk_header.magic != MAGIC_ID) {
@@ -144,7 +173,7 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     
     // Set up unk pointers
     const uint8_t* unk_data = (const uint8_t*)dict->unk_data;
-    size_t unk_offset = sizeof(DictionaryHeader);
+    size_t unk_offset = 72;  // Use fixed size we read, not sizeof(DictionaryHeader)
     
     // Skip unk Darts data
     unk_offset += dict->unk_header.dsize;
@@ -297,7 +326,7 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     }
     
     // Also load unk Darts for unknown word processing
-    dict->unk_darts = darts_load((const uint8_t*)dict->unk_data + sizeof(DictionaryHeader),
+    dict->unk_darts = darts_load((const uint8_t*)dict->unk_data + 72,
                                  dict->unk_header.dsize);
     
     return dict;

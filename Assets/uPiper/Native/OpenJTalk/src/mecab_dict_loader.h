@@ -14,7 +14,15 @@ extern "C" {
 #endif
 
 // MeCab dictionary format structures (pyopenjtalk format)
-typedef struct {
+// Use compiler-specific packing
+#ifdef _MSC_VER
+#pragma pack(push, 1)
+#endif
+typedef struct
+#ifdef __GNUC__
+__attribute__((packed))
+#endif
+{
     uint32_t magic;        // Magic number for validation
     uint32_t version;      // Dictionary version
     uint32_t type;         // Dictionary type (0: system, 1: user, 2: unknown)
@@ -27,9 +35,19 @@ typedef struct {
     uint32_t reserved;     // Reserved for future use
     char charset[32];      // Character set encoding
 } DictionaryHeader;
+#ifdef _MSC_VER
+#pragma pack(pop)
+#endif
 
 // Token structure in dictionary (16 bytes in pyopenjtalk format)
-typedef struct {
+#ifdef _MSC_VER
+#pragma pack(push, 1)
+#endif
+typedef struct
+#ifdef __GNUC__
+__attribute__((packed))
+#endif
+{
     uint16_t lcAttr;       // Left context attribute
     uint16_t rcAttr;       // Right context attribute
     uint16_t posid;        // Part-of-speech ID
@@ -37,6 +55,9 @@ typedef struct {
     uint32_t feature;      // Feature string offset
     uint32_t compound;     // Compound word info
 } Token;
+#ifdef _MSC_VER
+#pragma pack(pop)
+#endif
 
 // Dictionary rewrite rule
 typedef struct {
