@@ -161,6 +161,7 @@ TestResults/
 
 # Unity link.xml (code stripping configuration)
 link.xml
+link.xml.meta
 *.app
 
 # Crashlytics generated file
