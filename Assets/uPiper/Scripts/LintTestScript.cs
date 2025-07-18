@@ -1,5 +1,5 @@
-using UnityEngine;
 using System;
+using UnityEngine;
 
 namespace uPiper.Scripts
 {
@@ -7,13 +7,13 @@ namespace uPiper.Scripts
     {
         // フィールドのテスト
         // ❌ 警告: privateフィールドは_で始まるべき
-        private IntPtr openjtalkHandle = IntPtr.Zero;
+        private IntPtr _openjtalkHandle2 = IntPtr.Zero;
 
         // ✅ OK: _で始まっている
         private IntPtr _openjtalkHandle = IntPtr.Zero;
 
         // ❌ 警告: private staticフィールドはs_で始まるべき
-        private static int instanceCount = 0;
+        private static int s_instanceCount2 = 0;
 
         // ✅ OK: s_で始まっている
         private static int s_instanceCount = 0;
