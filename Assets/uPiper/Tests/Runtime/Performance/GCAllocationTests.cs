@@ -116,8 +116,8 @@ namespace uPiper.Tests.Runtime.Performance
     [TestFixture]
     public class PiperTTSAllocationTests
     {
-        private Core.PiperTTS _piperTTS;
-        private Core.PiperConfig _config;
+        private uPiper.Core.PiperTTS _piperTTS;
+        private uPiper.Core.PiperConfig _config;
 
         [SetUp]
         public void SetUp()
@@ -125,7 +125,7 @@ namespace uPiper.Tests.Runtime.Performance
             // Force mock mode for testing
             System.Environment.SetEnvironmentVariable("PIPER_MOCK_MODE", "1");
             
-            _config = new Core.PiperConfig
+            _config = new uPiper.Core.PiperConfig
             {
                 DefaultLanguage = "ja",
                 SampleRate = 22050,
@@ -133,7 +133,7 @@ namespace uPiper.Tests.Runtime.Performance
                 MaxCacheSizeMB = 10
             };
             
-            _piperTTS = new Core.PiperTTS(_config);
+            _piperTTS = new uPiper.Core.PiperTTS(_config);
         }
 
         [TearDown]
@@ -164,7 +164,7 @@ namespace uPiper.Tests.Runtime.Performance
             initTask.Wait();
             
             // Load a voice
-            var voice = new Core.PiperVoiceConfig
+            var voice = new uPiper.Core.PiperVoiceConfig
             {
                 VoiceId = "test-ja",
                 Language = "ja",
