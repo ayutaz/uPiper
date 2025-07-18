@@ -303,7 +303,6 @@ namespace uPiper.Core.AudioGeneration
                         _worker.Schedule();
 
                         // Get output tensor
-                        _worker.FlushSchedule();
                         var outputTensor = _worker.PeekOutput();
                         
                         // Convert tensor to float array
@@ -344,16 +343,15 @@ namespace uPiper.Core.AudioGeneration
             // - "scales": inference scales [batch, 3] for noise_scale, length_scale, noise_w
 
             // Find the main input name
-            Model.Input mainInput = null;
+            string inputName = "input";
             foreach (var input in _model.inputs)
             {
                 if (input.name.Contains("input") || input.name == "x")
                 {
-                    mainInput = input;
+                    inputName = input.name;
                     break;
                 }
             }
-            var inputName = mainInput != null ? mainInput.name : "input";
 
             // Create phoneme ID tensor
             // Shape: [1, sequence_length] for batch size 1
@@ -361,53 +359,53 @@ namespace uPiper.Core.AudioGeneration
             tensors[inputName] = phonemeTensor;
 
             // Check if model expects input_lengths
-            Model.Input lengthInput = null;
+            string lengthInputName = null;
             foreach (var input in _model.inputs)
             {
                 if (input.name.Contains("length"))
                 {
-                    lengthInput = input;
+                    lengthInputName = input.name;
                     break;
                 }
             }
-            if (lengthInput != null)
+            if (lengthInputName != null)
             {
                 var lengthTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
-                tensors[lengthInput.name] = lengthTensor;
+                tensors[lengthInputName] = lengthTensor;
             }
 
             // Check if model expects scales
-            Model.Input scalesInput = null;
+            string scalesInputName = null;
             foreach (var input in _model.inputs)
             {
                 if (input.name.Contains("scales"))
                 {
-                    scalesInput = input;
+                    scalesInputName = input.name;
                     break;
                 }
             }
-            if (scalesInput != null)
+            if (scalesInputName != null)
             {
                 // Default scales: noise_scale=0.667, length_scale=1.0, noise_w=0.8
                 var scales = new float[] { 0.667f, 1.0f, 0.8f };
                 var scalesTensor = new Tensor<float>(new TensorShape(1, 3), scales);
-                tensors[scalesInput.name] = scalesTensor;
+                tensors[scalesInputName] = scalesTensor;
             }
 
             // Add speaker ID if multi-speaker model
-            Model.Input speakerInput = null;
+            string speakerInputName = null;
             foreach (var input in _model.inputs)
             {
                 if (input.name.Contains("speaker") || input.name.Contains("sid"))
                 {
-                    speakerInput = input;
+                    speakerInputName = input.name;
                     break;
                 }
             }
-            if (speakerInput != null)
+            if (speakerInputName != null)
             {
                 var speakerTensor = new Tensor<int>(new TensorShape(1), new[] { speakerId });
-                tensors[speakerInput.name] = speakerTensor;
+                tensors[speakerInputName] = speakerTensor;
             }
 
             return tensors;
@@ -437,10 +435,10 @@ namespace uPiper.Core.AudioGeneration
             var samples = new float[sampleCount];
 
             // Download tensor data to CPU
-            floatTensor.CompleteOperationsAndDownload();
+            var downloadedSamples = floatTensor.DownloadToArray();
             
             // Copy samples from tensor
-            floatTensor.ToReadOnlyArray().CopyTo(samples, 0);
+            downloadedSamples.CopyTo(samples, 0);
             return samples;
         }
 

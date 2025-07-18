@@ -73,7 +73,7 @@ namespace uPiper.Core.Debug
                 // Create a default instance for debugging
                 var config = new PiperConfig();
                 _piperTTS = new PiperTTS(config);
-                Debug.Log("[PiperDebugger] Created new PiperTTS instance for debugging");
+                UnityEngine.Debug.Log("[PiperDebugger] Created new PiperTTS instance for debugging");
             }
             
             // Subscribe to PiperTTS events

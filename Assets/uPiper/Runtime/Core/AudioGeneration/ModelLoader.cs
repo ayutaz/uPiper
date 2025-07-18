@@ -58,15 +58,8 @@ namespace uPiper.Core.AudioGeneration
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     
-                    // Load ONNX file as bytes
-                    var modelBytes = File.ReadAllBytes(modelPath);
-                    
-                    // Create model from ONNX bytes
-                    _modelAsset = ScriptableObject.CreateInstance<ModelAsset>();
-                    _modelAsset.modelAssetData = new ModelAssetData { value = modelBytes };
-                    
-                    // Import the model
-                    _loadedModel = Unity.InferenceEngine.ModelLoader.Load(_modelAsset);
+                    // Load the model directly from file path
+                    _loadedModel = Unity.InferenceEngine.ModelLoader.Load(modelPath);
                     
                 }, cancellationToken);
 
@@ -160,7 +153,7 @@ namespace uPiper.Core.AudioGeneration
                 {
                     PiperLogger.LogDebug("Model input: {0}, shape: {1}", 
                         input.name, 
-                        string.Join("x", input.shape.ToArray()));
+                        input.shape.ToString());
                 }
 
                 // Validate output shapes
@@ -202,7 +195,7 @@ namespace uPiper.Core.AudioGeneration
             {
                 var input = _loadedModel.inputs[i];
                 metadata[$"Input{i}_Name"] = input.name;
-                metadata[$"Input{i}_Shape"] = string.Join("x", input.shape.ToArray());
+                metadata[$"Input{i}_Shape"] = input.shape.ToString();
             }
 
             // Add output info
