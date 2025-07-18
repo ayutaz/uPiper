@@ -8,6 +8,7 @@ using Unity.InferenceEngine;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Implementations;
+using uPiper.Core.AudioGeneration;
 
 namespace uPiper.Core
 {
@@ -46,6 +47,9 @@ namespace uPiper.Core
         
         // Phonemizer
         private IPhonemizer _phonemizer;
+        
+        // Audio Generator
+        private ISentisAudioGenerator _audioGenerator;
 
         #endregion
 
@@ -282,6 +286,9 @@ namespace uPiper.Core
                 // Initialize phonemizer based on language
                 await InitializePhonemizerAsync(cancellationToken);
                 
+                // Initialize audio generator
+                await InitializeAudioGeneratorAsync(cancellationToken);
+                
                 lock (_lockObject)
                 {
                     _isInitialized = true;
@@ -484,13 +491,29 @@ namespace uPiper.Core
                 
                 _onProcessingProgress?.Invoke(0.5f);
                 
-                // TODO: Implement actual synthesis using ONNX model
-                // For now, create a dummy audio clip
-                await Task.Delay(100, cancellationToken); // Simulate synthesis
+                // Generate audio using Sentis
+                AudioClip audioClip;
+                if (_audioGenerator != null && phonemeResult != null)
+                {
+                    try
+                    {
+                        audioClip = await _audioGenerator.GenerateAudioAsync(phonemeResult, cancellationToken: cancellationToken);
+                        PiperLogger.LogInfo("Audio generated using Sentis");
+                    }
+                    catch (Exception ex)
+                    {
+                        PiperLogger.LogWarning("Sentis audio generation failed, using fallback: {0}", ex.Message);
+                        audioClip = CreateDummyAudioClip(text);
+                    }
+                }
+                else
+                {
+                    // Fallback to dummy audio
+                    await Task.Delay(100, cancellationToken); // Simulate synthesis
+                    audioClip = CreateDummyAudioClip(text);
+                }
                 
                 _onProcessingProgress?.Invoke(0.8f);
-                
-                var audioClip = CreateDummyAudioClip(text);
                 
                 // Cache the result if enabled
                 if (_config.EnablePhonemeCache && phonemeResult != null)
@@ -979,6 +1002,10 @@ namespace uPiper.Core
                     _phonemizer?.Dispose();
                     _phonemizer = null;
                     
+                    // Dispose audio generator
+                    _audioGenerator?.Dispose();
+                    _audioGenerator = null;
+                    
                     _isInitialized = false;
                     _isDisposed = true;
                 }
@@ -1072,6 +1099,95 @@ namespace uPiper.Core
                 PiperLogger.LogError("Failed to initialize phonemizer: {0}", ex.Message);
                 throw new PiperInitializationException("Failed to initialize phonemizer", ex);
             }
+        }
+        
+        /// <summary>
+        /// Initialize the audio generator
+        /// </summary>
+        private async Task InitializeAudioGeneratorAsync(CancellationToken cancellationToken)
+        {
+            PiperLogger.LogInfo("Initializing audio generator");
+            
+            try
+            {
+                _audioGenerator = new SentisAudioGenerator();
+                
+                // Look for ONNX model in various locations
+                string modelPath = FindOnnxModel();
+                
+                if (!string.IsNullOrEmpty(modelPath))
+                {
+                    await _audioGenerator.InitializeAsync(modelPath, cancellationToken);
+                    PiperLogger.LogInfo("Initialized SentisAudioGenerator with model: {0}", modelPath);
+                }
+                else
+                {
+                    PiperLogger.LogWarning("No ONNX model found. Audio generation will use fallback");
+                    _audioGenerator = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogError("Failed to initialize audio generator: {0}", ex.Message);
+                _audioGenerator = null;
+                // Don't throw - we can still use fallback audio generation
+            }
+        }
+        
+        /// <summary>
+        /// Find ONNX model file
+        /// </summary>
+        private string FindOnnxModel()
+        {
+            var searchPaths = new[]
+            {
+                Path.Combine(Application.streamingAssetsPath, "uPiper", "Models"),
+                Path.Combine(Application.streamingAssetsPath, "Models"),
+                Path.Combine(Application.dataPath, "uPiper", "Models"),
+                Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "Models"),
+            };
+            
+            // Prioritize models based on language
+            string preferredModelName = null;
+            if (_config.DefaultLanguage == "ja" || _config.DefaultLanguage == "jp" || 
+                _config.DefaultLanguage == "japanese")
+            {
+                preferredModelName = "ja_JP";
+            }
+            else if (_config.DefaultLanguage == "en" || _config.DefaultLanguage == "english")
+            {
+                preferredModelName = "en_US";
+            }
+            
+            foreach (var searchPath in searchPaths)
+            {
+                if (Directory.Exists(searchPath))
+                {
+                    var onnxFiles = Directory.GetFiles(searchPath, "*.onnx", SearchOption.AllDirectories);
+                    
+                    // First, try to find preferred language model
+                    if (!string.IsNullOrEmpty(preferredModelName))
+                    {
+                        var preferredModel = onnxFiles.FirstOrDefault(f => 
+                            Path.GetFileName(f).Contains(preferredModelName));
+                        if (!string.IsNullOrEmpty(preferredModel))
+                        {
+                            PiperLogger.LogInfo("Found preferred ONNX model: {0}", preferredModel);
+                            return preferredModel;
+                        }
+                    }
+                    
+                    // Otherwise, return first available model
+                    if (onnxFiles.Length > 0)
+                    {
+                        PiperLogger.LogInfo("Found ONNX model: {0}", onnxFiles[0]);
+                        return onnxFiles[0];
+                    }
+                }
+            }
+            
+            PiperLogger.LogWarning("No ONNX models found in search paths");
+            return null;
         }
         
         /// <summary>
