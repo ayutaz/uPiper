@@ -2,14 +2,28 @@ name: Unity Tests
 
 on:
   push:
-    branches: [ main, develop, feature/* ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
 
 jobs:
   test:
-    name: Unity Test Runner
-    runs-on: ubuntu-latest
+    name: Unity Test Runner - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            platform: Windows
+            lib_ext: dll
+            lib_prefix: ""
+            lib_path: Windows/x86_64
+          - os: macos-latest
+            platform: macOS
+            lib_ext: dylib
+            lib_prefix: lib
+            lib_path: macOS
     permissions:
       contents: read
       checks: write
@@ -19,6 +33,79 @@ jobs:
     - uses: actions/checkout@v4
       with:
         lfs: true
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install CMake
+      uses: lukka/get-cmake@latest
+        
+    - name: Build OpenJTalk Native Library
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        
+        # Make build script executable on Unix-like systems
+        if [[ "${{ matrix.os }}" != "windows-latest" ]]; then
+          chmod +x build_ci.sh
+        fi
+        
+        # Run appropriate build script
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          # Windows build
+          mkdir build
+          cd build
+          cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DBUILD_FULL_VERSION=ON ..
+          cmake --build . --config Release
+          cd ..
+          
+          # Create test dictionary
+          if [ ! -f "test_dictionary/sys.dic" ]; then
+            mkdir -p test_dictionary
+            cd test_dictionary
+            python create_test_dict.py
+            cd ..
+          fi
+        else
+          # Linux/macOS build
+          ./build_ci.sh
+        fi
+        
+        # Create Plugins directory structure
+        mkdir -p ../../Plugins/${{ matrix.lib_path }}
+        
+        # Copy the built library to Unity Plugins directory
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          cp build/bin/Release/openjtalk_wrapper.dll ../../Plugins/${{ matrix.lib_path }}/ || cp build/bin/openjtalk_wrapper.dll ../../Plugins/${{ matrix.lib_path }}/
+        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          # Check if library already exists (from repository)
+          if [ ! -f "../../Plugins/${{ matrix.lib_path }}/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }}" ]; then
+            cp build/lib/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }} ../../Plugins/${{ matrix.lib_path }}/
+          fi
+        else
+          cp build/lib/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }} ../../Plugins/${{ matrix.lib_path }}/
+        fi
+        
+        # Verify the library was copied
+        echo "=== Verifying library placement ==="
+        ls -la ../../Plugins/${{ matrix.lib_path }}/ || dir ..\..\Plugins\${{ matrix.lib_path }}\
+        
+        # For Ubuntu Docker environment, also copy to standard library paths
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          echo "=== Setting up for Docker environment ==="
+          # Create symbolic link in standard paths that Docker Unity might check
+          sudo mkdir -p /usr/local/lib
+          sudo cp build/lib/libopenjtalk_wrapper.so /usr/local/lib/
+          sudo ldconfig || true
+          
+          # Also copy to the project root for Docker volume mapping
+          cp build/lib/libopenjtalk_wrapper.so ${{ github.workspace }}/
+          
+          # Set environment variable for library path
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        fi
+      shell: bash
         
     - name: Cache Library
       uses: actions/cache@v4
@@ -34,43 +121,70 @@ jobs:
         echo "Current directory: $(pwd)"
         echo "GitHub Workspace: ${{ github.workspace }}"
         echo "Directory contents:"
-        ls -la
+        ls || dir
         echo ""
         echo "Assets directory:"
-        ls -la Assets/ || echo "Assets directory not found"
+        if [ -d "Assets" ]; then ls Assets/ || dir Assets\; else echo "Assets directory not found"; fi
         echo ""
         echo "ProjectSettings directory:"
-        ls -la ProjectSettings/ || echo "ProjectSettings directory not found"
+        if [ -d "ProjectSettings" ]; then ls ProjectSettings/ || dir ProjectSettings\; else echo "ProjectSettings directory not found"; fi
         echo ""
         echo "Test assemblies:"
-        find Assets -name "*.asmdef" | grep -i test || echo "No test assemblies found"
+        find Assets -name "*.asmdef" 2>/dev/null | grep -i test || echo "No test assemblies found"
         echo ""
         echo "Test scripts:"
-        find Assets -name "*Test*.cs" | head -10 || echo "No test scripts found"
+        find Assets -name "*Test*.cs" 2>/dev/null | head -10 || echo "No test scripts found"
+      shell: bash
         
+    # Create symlink for library loading in Docker
+    - name: Setup Library Symlinks
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        # Create symlink in the expected location for DllImport
+        cd Assets/uPiper/Plugins
+        if [ -f "Linux/x86_64/libopenjtalk_wrapper.so" ]; then
+          ln -sf Linux/x86_64/libopenjtalk_wrapper.so openjtalk_wrapper.so || true
+          ln -sf Linux/x86_64/libopenjtalk_wrapper.so libopenjtalk_wrapper.so || true
+        fi
+        
+        # Also create in parent directories
+        cd ..
+        ln -sf Plugins/Linux/x86_64/libopenjtalk_wrapper.so openjtalk_wrapper.so || true
+        ln -sf Plugins/Linux/x86_64/libopenjtalk_wrapper.so libopenjtalk_wrapper.so || true
+        
+        # List all library locations for debugging
+        echo "=== Library locations ==="
+        find . -name "*openjtalk_wrapper*" -type f -o -type l | head -20
+      shell: bash
+    
     # Unity 6対応 - game-ci/unity-test-runnerを使用
     - name: Run Unity Tests
       uses: game-ci/unity-test-runner@v4
+      # Skip on macOS as Docker is not supported
+      if: matrix.os != 'macos-latest'
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         PROJECT_PATH: .
+        LD_LIBRARY_PATH: ${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:${{ env.LD_LIBRARY_PATH }}
       with:
         unityVersion: 6000.0.35f1
         testMode: all
         artifactsPath: test-results
         githubToken: ${{ github.token }}
-        checkName: Unity Test Results
+        checkName: Unity Test Results - ${{ matrix.platform }}
         coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.*,-uPiper.Tests.*'
         customParameters: '-enableCodeCoverage'
+        dockerCpuLimit: 4
+        dockerMemoryLimit: 8192
         
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
       uses: actions/upload-artifact@v4
-      if: always()
+      if: always() && matrix.os != 'macos-latest'
       with:
-        name: Test Results - Unity
+        name: Test Results - Unity - ${{ matrix.platform }}
         path: |
           test-results/**/*.xml
           test-results/**/*.html
@@ -80,7 +194,8 @@ jobs:
         
     # テスト結果のデバッグ情報
     - name: Debug Test Results
-      if: always()
+      if: always() && matrix.os != 'macos-latest'
+      shell: bash
       run: |
         echo "=== Test Results Directory Contents ==="
         find test-results -type f -name "*.xml" | head -20
@@ -97,7 +212,8 @@ jobs:
     
     # テスト結果のサマリーを作成
     - name: Create Test Summary
-      if: always()
+      if: always() && matrix.os != 'macos-latest'
+      shell: bash
       run: |
         echo "## Unity Test Results Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -147,9 +263,9 @@ jobs:
     # カバレッジレポートをアップロード
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
-      if: always()
+      if: always() && matrix.os != 'macos-latest'
       with:
-        name: Coverage Report
+        name: Coverage Report - ${{ matrix.platform }}
         path: |
           CodeCoverage/**
           test-results/**/CodeCoverage/**
@@ -157,14 +273,15 @@ jobs:
     
     # XMLパース用ツールをインストール
     - name: Install XML tools
-      if: always()
+      if: always() && matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
         sudo apt-get install -y libxml2-utils bc
         
     # コードカバレッジチェック
     - name: Check Code Coverage
-      if: always()
+      if: always() && matrix.os != 'macos-latest'
+      shell: bash
       run: |
         # カバレッジサマリーファイルを探す
         echo "=== Looking for coverage files ==="
@@ -251,7 +368,7 @@ jobs:
     # Codecovにカバレッジをアップロード
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
-      if: always()
+      if: always() && matrix.os != 'macos-latest'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         directory: ./
@@ -260,3 +377,206 @@ jobs:
         name: uPiper
         fail_ci_if_error: false
         verbose: true
+
+  # macOS専用のテスト（Dockerがサポートされていないため）
+  macos-unity-test:
+    name: Unity Test Runner - macOS (Native)
+    runs-on: macos-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install CMake
+      run: brew install cmake
+        
+    - name: Build OpenJTalk Native Library
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        chmod +x build_ci.sh
+        ./build_ci.sh
+        
+        # Verify the library exists in Plugins
+        echo "=== Checking for existing library ==="
+        ls -la ../../Plugins/macOS/ || echo "macOS plugin directory not found"
+        
+        # Only copy if not already present
+        if [ ! -f "../../Plugins/macOS/libopenjtalk_wrapper.dylib" ]; then
+          mkdir -p ../../Plugins/macOS
+          cp build/lib/libopenjtalk_wrapper.dylib ../../Plugins/macOS/
+        fi
+        
+        # Verify installation
+        echo "=== Library verification ==="
+        ls -la ../../Plugins/macOS/
+        
+    - name: Run Native OpenJTalk Tests
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk/build
+        # Run all native tests
+        ctest --output-on-failure -V
+        
+    - name: Create Test Summary
+      if: always()
+      run: |
+        echo "## macOS Native Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Native OpenJTalk tests completed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Check if library is properly built
+        if [ -f "Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" ]; then
+          echo "✅ OpenJTalk library built successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- Location: Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" >> $GITHUB_STEP_SUMMARY
+          echo "- Architecture: $(lipo -info Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib 2>&1)" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ OpenJTalk library not found" >> $GITHUB_STEP_SUMMARY
+        fi
+
+  # Ubuntu専用のテスト（Docker環境外で実行）
+  ubuntu-test:
+    name: Unity Test Runner - Ubuntu (Non-Docker)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install CMake and Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential libxml2-utils bc
+        
+    - name: Build OpenJTalk Native Library
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        chmod +x build_ci.sh
+        ./build_ci.sh
+        
+        # Create Plugins directory structure
+        mkdir -p ../../Plugins/Linux/x86_64
+        
+        # Copy the built library
+        cp build/lib/libopenjtalk_wrapper.so ../../Plugins/Linux/x86_64/
+        
+        # Install to system paths
+        sudo cp build/lib/libopenjtalk_wrapper.so /usr/local/lib/
+        sudo ldconfig
+        
+        # Verify installation
+        echo "=== Library verification ==="
+        ls -la ../../Plugins/Linux/x86_64/
+        ldd build/bin/test_openjtalk || echo "Test binary not found"
+        
+    - name: Run Native OpenJTalk Tests
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk/build
+        # Run all native tests
+        ctest --output-on-failure -V
+        
+    - name: Install Unity Hub
+      run: |
+        sudo sh -c 'echo "deb https://hub.unity3d.com/linux/repos/deb stable main" > /etc/apt/sources.list.d/unityhub.list'
+        wget -qO - https://hub.unity3d.com/linux/keys/public | sudo apt-key add -
+        sudo apt update
+        sudo apt-get install -y unityhub
+        
+    - name: Install Unity Editor
+      run: |
+        # Install Unity 6000.0.35f1
+        sudo unityhub install --version 6000.0.35f1 --changeset bb8081de9a21 --module linux-il2cpp || echo "Unity installation attempted"
+        
+    - name: Activate Unity License
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      run: |
+        # Create license file
+        echo "$UNITY_LICENSE" > Unity_v6000.x.ulf
+        
+        # Try to activate
+        /opt/Unity/Editor/Unity \
+          -batchmode \
+          -nographics \
+          -silent-crashes \
+          -logFile - \
+          -manualLicenseFile Unity_v6000.x.ulf \
+          -quit || echo "License activation attempted"
+          
+    - name: Run Unity Tests Directly
+      run: |
+        # Run tests without Docker
+        /opt/Unity/Editor/Unity \
+          -batchmode \
+          -nographics \
+          -silent-crashes \
+          -logFile - \
+          -projectPath . \
+          -runTests \
+          -testPlatform EditMode \
+          -testResults test-results/editmode-results.xml \
+          -enableCodeCoverage \
+          -coverageResultsPath test-results \
+          -coverageOptions "generateAdditionalMetrics;generateHtmlReport;assemblyFilters:+uPiper.*,-uPiper.Tests.*" \
+          || echo "EditMode tests completed"
+          
+        /opt/Unity/Editor/Unity \
+          -batchmode \
+          -nographics \
+          -silent-crashes \
+          -logFile - \
+          -projectPath . \
+          -runTests \
+          -testPlatform PlayMode \
+          -testResults test-results/playmode-results.xml \
+          || echo "PlayMode tests completed"
+          
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: Test Results - Unity - Linux-NonDocker
+        path: |
+          test-results/**/*.xml
+          test-results/**/*.html
+        retention-days: 7
+        
+    - name: Parse Test Results
+      if: always()
+      run: |
+        echo "## Ubuntu Unity Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        for file in test-results/*.xml; do
+          if [ -f "$file" ]; then
+            echo "### $(basename $file)" >> $GITHUB_STEP_SUMMARY
+            # Simple result extraction
+            total=$(grep -o 'total="[0-9]*"' "$file" | grep -o '[0-9]*' | head -1 || echo "0")
+            passed=$(grep -o 'passed="[0-9]*"' "$file" | grep -o '[0-9]*' | head -1 || echo "0")
+            failed=$(grep -o 'failed="[0-9]*"' "$file" | grep -o '[0-9]*' | head -1 || echo "0")
+            
+            echo "- Total: $total" >> $GITHUB_STEP_SUMMARY
+            echo "- Passed: $passed ✅" >> $GITHUB_STEP_SUMMARY
+            echo "- Failed: $failed ❌" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+        done

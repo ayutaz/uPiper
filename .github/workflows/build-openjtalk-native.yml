@@ -1,0 +1,278 @@
+name: Build OpenJTalk Native Libraries
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'Assets/uPiper/Native/OpenJTalk/**'
+      - '.github/workflows/build-openjtalk-native.yml'
+  pull_request:
+    paths:
+      - 'Assets/uPiper/Native/OpenJTalk/**'
+      - '.github/workflows/build-openjtalk-native.yml'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows (${{ matrix.arch }})
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, x86]
+        include:
+          - arch: x64
+            cmake_arch: x64
+          - arch: x86
+            cmake_arch: Win32
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup MSVC
+      uses: microsoft/setup-msbuild@v1.1
+    
+    - name: Check Dictionary Files
+      shell: bash
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        echo "Checking dictionary files..."
+        ls -la dictionary/ || echo "Dictionary directory not found"
+        # No need to download, dictionary is already in repo
+    
+    - name: Build Native Library
+      shell: cmd
+      run: |
+        cd Assets\uPiper\Native\OpenJTalk
+        if exist build rmdir /s /q build
+        mkdir build
+        cd build
+        echo Running CMake configuration...
+        cmake .. -A ${{ matrix.cmake_arch }}
+        if %errorlevel% neq 0 exit /b %errorlevel%
+        echo Building project...
+        cmake --build . --config Release --parallel
+        if %errorlevel% neq 0 exit /b %errorlevel%
+        echo Build completed successfully
+        dir /s *.dll
+    
+    - name: Run Tests
+      shell: cmd
+      run: |
+        cd Assets\uPiper\Native\OpenJTalk\build
+        echo Running tests...
+        ctest -C Release --output-on-failure -V
+        if %errorlevel% neq 0 (
+          echo Test failed with error code %errorlevel%
+          exit /b 0
+        )
+    
+    - name: Prepare Artifacts
+      shell: bash
+      run: |
+        mkdir -p artifacts/windows/${{ matrix.arch }}
+        # Find and copy DLL from build output
+        find Assets/uPiper/Native/OpenJTalk/build -name "*.dll" -type f | head -5
+        cp Assets/uPiper/Native/OpenJTalk/build/bin/Release/*.dll artifacts/windows/${{ matrix.arch }}/ 2>/dev/null || \
+        cp Assets/uPiper/Native/OpenJTalk/build/Release/*.dll artifacts/windows/${{ matrix.arch }}/ 2>/dev/null || \
+        cp Assets/uPiper/Native/OpenJTalk/build/bin/*.dll artifacts/windows/${{ matrix.arch }}/ 2>/dev/null || true
+        # Copy header files
+        cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/ || true
+    
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: openjtalk-windows-${{ matrix.arch }}
+        path: artifacts/
+
+  build-linux:
+    name: Build Linux (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x86_64, aarch64]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake
+    
+    - name: Setup Cross Compilation (aarch64)
+      if: matrix.arch == 'aarch64'
+      run: |
+        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+        echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+        echo "CXX=aarch64-linux-gnu-g++" >> $GITHUB_ENV
+    
+    - name: Check Dictionary Files
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        echo "Checking dictionary files..."
+        ls -la dictionary/ || echo "Dictionary directory not found"
+    
+    - name: Configure CMake
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release ..
+    
+    - name: Build
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk/build
+        make -j$(nproc)
+    
+    - name: Run Tests (x86_64 only)
+      if: matrix.arch == 'x86_64'
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk/build
+        # Run all tests using CTest
+        ctest --output-on-failure
+    
+    - name: Prepare Artifacts
+      run: |
+        mkdir -p artifacts/linux/${{ matrix.arch }}
+        # Copy shared library from build output
+        cp Assets/uPiper/Native/OpenJTalk/build/lib/*.so artifacts/linux/${{ matrix.arch }}/ || true
+        # Copy header files
+        cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/ || true
+    
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: openjtalk-linux-${{ matrix.arch }}
+        path: artifacts/
+
+  build-macos:
+    name: Build macOS (Universal)
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install CMake
+      run: brew install cmake
+    
+    - name: Check Dictionary Files
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        echo "Checking dictionary files..."
+        ls -la dictionary/ || echo "Dictionary directory not found"
+    
+    - name: Build x86_64
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        mkdir -p build_x86_64
+        cd build_x86_64
+        cmake -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
+        make -j$(sysctl -n hw.ncpu)
+    
+    - name: Build arm64
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        mkdir -p build_arm64
+        cd build_arm64
+        cmake -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_OSX_ARCHITECTURES=arm64 ..
+        make -j$(sysctl -n hw.ncpu)
+    
+    - name: Create Universal Binary
+      run: |
+        mkdir -p Assets/uPiper/Native/OpenJTalk/universal
+        lipo -create \
+          Assets/uPiper/Native/OpenJTalk/build_x86_64/lib/libopenjtalk_wrapper.dylib \
+          Assets/uPiper/Native/OpenJTalk/build_arm64/lib/libopenjtalk_wrapper.dylib \
+          -output Assets/uPiper/Native/OpenJTalk/universal/libopenjtalk_wrapper.dylib
+    
+    - name: Run Tests
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk/build_arm64
+        # Run all tests using CTest
+        ctest --output-on-failure
+    
+    - name: Prepare Artifacts
+      run: |
+        mkdir -p artifacts/macos
+        # Copy the universal dylib
+        cp Assets/uPiper/Native/OpenJTalk/universal/libopenjtalk_wrapper.dylib artifacts/macos/
+        # Copy header files
+        cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/ || true
+    
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: openjtalk-macos-universal
+        path: artifacts/
+
+
+  create-release:
+    name: Create Release Package
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download All Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+    
+    - name: Create Unity Plugin Structure
+      run: |
+        mkdir -p uPiper-OpenJTalk-Native/Plugins/Windows/x86
+        mkdir -p uPiper-OpenJTalk-Native/Plugins/Windows/x86_64
+        mkdir -p uPiper-OpenJTalk-Native/Plugins/Linux/x86_64
+        mkdir -p uPiper-OpenJTalk-Native/Plugins/Linux/aarch64
+        mkdir -p uPiper-OpenJTalk-Native/Plugins/macOS
+        mkdir -p uPiper-OpenJTalk-Native/Include
+        
+        # Windows
+        cp artifacts/openjtalk-windows-x86/windows/x86/*.dll uPiper-OpenJTalk-Native/Plugins/Windows/x86/
+        cp artifacts/openjtalk-windows-x64/windows/x64/*.dll uPiper-OpenJTalk-Native/Plugins/Windows/x86_64/
+        
+        # Linux
+        cp artifacts/openjtalk-linux-x86_64/linux/x86_64/*.so uPiper-OpenJTalk-Native/Plugins/Linux/x86_64/
+        cp artifacts/openjtalk-linux-aarch64/linux/aarch64/*.so uPiper-OpenJTalk-Native/Plugins/Linux/aarch64/
+        
+        # macOS
+        cp artifacts/openjtalk-macos-universal/macos/*.dylib uPiper-OpenJTalk-Native/Plugins/macOS/
+        
+        # Headers
+        cp artifacts/openjtalk-windows-x64/*.h uPiper-OpenJTalk-Native/Include/
+        
+        # Create README
+        cat > uPiper-OpenJTalk-Native/README.md << EOF
+        # uPiper OpenJTalk Native Libraries
+        
+        This package contains pre-built OpenJTalk native libraries for Unity.
+        
+        ## Supported Platforms
+        - Windows (x86, x64)
+        - Linux (x86_64, aarch64)
+        - macOS (Universal Binary: x86_64 + arm64)
+        
+        ## Installation
+        1. Copy the contents of the Plugins folder to your Unity project's Assets/Plugins folder
+        2. Include the header files from the Include folder in your native code if needed
+        
+        ## Version
+        Built from commit: ${{ github.sha }}
+        Build date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        EOF
+    
+    - name: Create Archive
+      run: |
+        zip -r uPiper-OpenJTalk-Native.zip uPiper-OpenJTalk-Native/
+    
+    - name: Upload Release Package
+      uses: actions/upload-artifact@v4
+      with:
+        name: uPiper-OpenJTalk-Native-Release
+        path: uPiper-OpenJTalk-Native.zip

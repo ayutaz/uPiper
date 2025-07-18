@@ -6,6 +6,14 @@
 
 [piper-plus]()のUnityプラグイン
 
+## 機能
+
+- 🎤 高品質な音声合成（Piper TTSベース）
+- 🌍 多言語対応（日本語、英語、中国語、韓国語など）
+- 🚀 Unity AI Inference Engineによる高速推論
+- 📱 マルチプラットフォーム対応
+- 🔧 OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux）
+
 ## Requirements
 * Unity 6000.0.35f1
 * Unity AI Interface (Inference Engine) 2.2.x
@@ -25,4 +33,5 @@
 - Windows (x64)
 - macOS
 - Linux (x64)
-- WebGL
+
+※ WebGLサポートについては[Issue #17](https://github.com/ayutaz/uPiper/issues/17)を参照してください

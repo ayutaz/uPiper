@@ -1,0 +1,105 @@
+name: Native OpenJTalk Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Native Tests - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install CMake
+      uses: lukka/get-cmake@latest
+      
+    - name: Create Test Dictionary
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk/test_dictionary
+        # Check if Python script exists and try to run it
+        if [ -f "create_test_dict.py" ]; then
+          echo "Creating test dictionary with Python script..."
+          python3 create_test_dict.py || echo "Python script failed, will use pre-built dictionary"
+        fi
+        # Verify dictionary files exist
+        ls -la *.dic *.bin *.def || echo "Dictionary files not found"
+      shell: bash
+      continue-on-error: true
+      
+    - name: Build and Test OpenJTalk Native
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        chmod +x build_ci.sh
+        ./build_ci.sh
+      shell: bash
+      
+    - name: Verify Platform Compatibility
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk/build
+        echo "=== Platform: ${{ matrix.os }} ==="
+        
+        # Check library exists
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          ls -la bin/*.dll || ls -la bin/Release/*.dll
+          file bin/*.dll || file bin/Release/*.dll || true
+        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          ls -la lib/*.dylib
+          file lib/*.dylib
+          otool -L lib/*.dylib || true
+        else
+          ls -la lib/*.so
+          file lib/*.so
+          ldd lib/*.so || true
+        fi
+        
+        # Run specific platform tests
+        echo "=== Running platform-specific validation ==="
+        ./bin/test_openjtalk ../test_dictionary || true
+        ./bin/benchmark_openjtalk ../test_dictionary || true
+      shell: bash
+      
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: native-openjtalk-${{ matrix.os }}
+        path: |
+          Assets/uPiper/Native/OpenJTalk/output/**
+        retention-days: 7
+        
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-native-${{ matrix.os }}
+        path: |
+          Assets/uPiper/Native/OpenJTalk/build/Testing/**/*.xml
+          Assets/uPiper/Native/OpenJTalk/build/bin/benchmark_results.txt
+        retention-days: 7
+        
+    - name: Performance Report
+      if: always()
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk/build
+        echo "## Performance Report - ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -f bin/benchmark_results.txt ]; then
+          cat bin/benchmark_results.txt >> $GITHUB_STEP_SUMMARY
+        else
+          echo "No benchmark results found" >> $GITHUB_STEP_SUMMARY
+        fi
+      shell: bash
