@@ -16,13 +16,13 @@ namespace uPiper.Tests.Editor
             var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(
                 typeof(Unity.InferenceEngine.Model).Assembly
             );
-            
+
             if (packageInfo != null)
             {
                 Debug.Log($"Inference Engine package: {packageInfo.name}");
                 Debug.Log($"Version: {packageInfo.version}");
                 Debug.Log($"Display Name: {packageInfo.displayName}");
-                
+
                 Assert.IsNotNull(packageInfo.version, "Package version should be available");
                 Assert.AreEqual("com.unity.ai.inference", packageInfo.name, "Package name should be com.unity.ai.inference");
             }
@@ -31,14 +31,14 @@ namespace uPiper.Tests.Editor
                 Debug.LogWarning("Package info not found - package might be embedded or built-in");
             }
         }
-        
+
         [Test]
         public void CheckBurstPackageVersion()
         {
             // Burst パッケージの確認
             var burstAssembly = System.AppDomain.CurrentDomain.GetAssemblies()
                 .FirstOrDefault(a => a.GetName().Name.Contains("Unity.Burst"));
-            
+
             if (burstAssembly != null)
             {
                 var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForAssembly(burstAssembly);

@@ -2,7 +2,7 @@
 
 // Define a constant to control P/Invoke usage
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_EDITOR_LINUX || UNITY_STANDALONE_LINUX
-    #define ENABLE_PINVOKE
+#define ENABLE_PINVOKE
 #endif
 
 using System;
@@ -24,21 +24,21 @@ namespace uPiper.Core.Phonemizers.Implementations
     public class OpenJTalkPhonemizer : BasePhonemizer
     {
         #region Mock Mode Support
-        
-        private static bool _mockMode = false;
-        private static bool _forceUseMock = false;
-        
+
+        private static bool s_mockMode = false;
+        private static bool s_forceUseMock = false;
+
         /// <summary>
         /// Enable mock mode for testing without native library
         /// </summary>
-        public static bool MockMode 
-        { 
-            get => _mockMode || _forceUseMock;
-            set => _forceUseMock = value;
+        public static bool MockMode
+        {
+            get => s_mockMode || s_forceUseMock;
+            set => s_forceUseMock = value;
         }
-        
+
         #endregion
-        
+
         #region Native Structures
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
@@ -57,7 +57,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         private const string LIBRARY_NAME = "openjtalk_wrapper";
 
-        #if ENABLE_PINVOKE
+#if ENABLE_PINVOKE
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_create(string dict_path);
 
@@ -78,7 +78,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_get_error_string(int error_code);
-        #else
+#else
         // Stub implementations for when P/Invoke is disabled
         private static IntPtr openjtalk_create(string dict_path) => IntPtr.Zero;
         private static void openjtalk_destroy(IntPtr handle) { }
@@ -87,7 +87,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         private static IntPtr openjtalk_get_version() => IntPtr.Zero;
         private static int openjtalk_get_last_error(IntPtr handle) => -1;
         private static IntPtr openjtalk_get_error_string(int error_code) => IntPtr.Zero;
-        #endif
+#endif
 
         #endregion
 
@@ -97,9 +97,9 @@ namespace uPiper.Core.Phonemizers.Implementations
         private readonly object _handleLock = new object();
         private bool _disposed;
         private readonly string _dictionaryPath;
-        
+
         // Phoneme mapping from OpenJTalk to Piper format
-        private static readonly Dictionary<string, int> PhonemeToId = new Dictionary<string, int>
+        private static readonly Dictionary<string, int> s_phonemeToId = new Dictionary<string, int>
         {
             // Japanese phonemes (example mapping - needs to be completed based on actual Piper model)
             {"pau", 0}, {"sil", 0}, // Silence
@@ -133,7 +133,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region Constructor and Destructor
 
-        public OpenJTalkPhonemizer(int cacheCapacity = 1000, string dictionaryPath = null, bool forceMockMode = false) 
+        public OpenJTalkPhonemizer(int cacheCapacity = 1000, string dictionaryPath = null, bool forceMockMode = false)
             : base(cacheCapacity)
         {
             // Allow explicit control over mock mode
@@ -148,7 +148,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 _mockMode = true;
                 Debug.Log("[OpenJTalkPhonemizer] Test runner detected. Using mock mode.");
             }
-            
+
             _dictionaryPath = dictionaryPath ?? GetDefaultDictionaryPath();
             Initialize();
         }
@@ -186,7 +186,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                 try
                 {
-                    #if ENABLE_PINVOKE
+#if ENABLE_PINVOKE
                     _handle = openjtalk_create(_dictionaryPath);
                     if (_handle == IntPtr.Zero)
                     {
@@ -196,12 +196,12 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                     // Log version info
                     Debug.Log($"[OpenJTalkPhonemizer] Initialized with version: {Version}");
-                    #else
+#else
                     // P/Invoke is disabled, use mock mode
                     _mockMode = true;
                     _handle = new IntPtr(1); // Fake handle for mock mode
                     Debug.LogWarning($"[OpenJTalkPhonemizer] P/Invoke disabled. Running in mock mode.");
-                    #endif
+#endif
                 }
                 catch (Exception ex)
                 {
@@ -218,8 +218,8 @@ namespace uPiper.Core.Phonemizers.Implementations
             {
                 return "1.0.0-mock";
             }
-            
-            #if ENABLE_PINVOKE
+
+#if ENABLE_PINVOKE
             try
             {
                 var versionPtr = openjtalk_get_version();
@@ -232,7 +232,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             {
                 // Ignore errors during version retrieval
             }
-            #endif
+#endif
             return "1.0.0";
         }
 
@@ -241,8 +241,8 @@ namespace uPiper.Core.Phonemizers.Implementations
         #region BasePhonemizer Implementation
 
         protected override async Task<PhonemeResult> PhonemizeInternalAsync(
-            string normalizedText, 
-            string language, 
+            string normalizedText,
+            string language,
             CancellationToken cancellationToken)
         {
             return await Task.Run(() => PhonemizeInternal(normalizedText), cancellationToken);
@@ -278,7 +278,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 IntPtr resultPtr = IntPtr.Zero;
                 try
                 {
-                    #if ENABLE_PINVOKE
+#if ENABLE_PINVOKE
                     // Call native phonemize function
                     resultPtr = openjtalk_phonemize(_handle, text);
                     if (resultPtr == IntPtr.Zero)
@@ -292,10 +292,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                         throw new PiperPhonemizationException(text, "ja",
                             $"OpenJTalk phonemization failed: {errorMsg}");
                     }
-                    #else
+#else
                     // P/Invoke disabled
                     throw new PiperInitializationException("P/Invoke is disabled");
-                    #endif
+#endif
 
                     // Marshal the result
                     var nativeResult = Marshal.PtrToStructure<NativePhonemeResult>(resultPtr);
@@ -305,10 +305,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                 }
                 finally
                 {
-                    #if ENABLE_PINVOKE
+#if ENABLE_PINVOKE
                     if (resultPtr != IntPtr.Zero)
                         openjtalk_free_result(resultPtr);
-                    #endif
+#endif
                 }
             }
         }
@@ -343,13 +343,13 @@ namespace uPiper.Core.Phonemizers.Implementations
                 {
                     var phonemeList = phonemeString.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                     var unknownPhonemes = new System.Collections.Generic.HashSet<string>();
-                    
+
                     for (int i = 0; i < Math.Min(phonemeList.Length, nativeResult.phoneme_count); i++)
                     {
                         phonemes[i] = phonemeList[i];
-                        
+
                         // Map phoneme to ID
-                        if (PhonemeToId.TryGetValue(phonemes[i], out var id))
+                        if (s_phonemeToId.TryGetValue(phonemes[i], out var id))
                         {
                             phonemeIds[i] = id;
                         }
@@ -360,7 +360,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                             unknownPhonemes.Add(phonemes[i]);
                         }
                     }
-                    
+
                     // Log unknown phonemes once per conversion
                     if (unknownPhonemes.Count > 0)
                     {
@@ -429,7 +429,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                             break;
                         }
                     }
-                    
+
                     if (allFilesExist)
                     {
                         Debug.Log($"[OpenJTalkPhonemizer] Found complete dictionary at: {path}");
@@ -450,7 +450,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         #endregion
 
         #region Mock Implementation
-        
+
         private PhonemeResult GenerateMockPhonemes(string text)
         {
             // Simple mock implementation for testing
@@ -458,19 +458,19 @@ namespace uPiper.Core.Phonemizers.Implementations
             var mockIds = new List<int>();
             var mockDurations = new List<float>();
             var mockPitches = new List<float>();
-            
+
             // Generate simple mock phonemes based on text length
             foreach (char c in text)
             {
                 if (char.IsWhiteSpace(c)) continue;
-                
+
                 // Add a mock phoneme
                 mockPhonemes.Add("mock_" + c);
                 mockIds.Add(mockPhonemes.Count);
                 mockDurations.Add(0.1f);
                 mockPitches.Add(1.0f);
             }
-            
+
             if (mockPhonemes.Count == 0)
             {
                 mockPhonemes.Add("sil");
@@ -478,7 +478,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 mockDurations.Add(0.1f);
                 mockPitches.Add(1.0f);
             }
-            
+
             return new PhonemeResult
             {
                 OriginalText = text,
@@ -491,16 +491,16 @@ namespace uPiper.Core.Phonemizers.Implementations
                 Metadata = "TotalDuration:" + (mockDurations.Count * 0.1f)
             };
         }
-        
+
         private bool IsNativeLibraryAvailable()
         {
             try
             {
                 // Always use mock mode in test runner or when P/Invoke is disabled
-                #if !ENABLE_PINVOKE
+#if !ENABLE_PINVOKE
                 return false;
-                #endif
-                
+#endif
+
                 // First check if we're in a test environment
                 // Check environment variable first for explicit test mode
                 if (Environment.GetEnvironmentVariable("UPIPER_TEST_MODE") == "true" ||
@@ -508,21 +508,21 @@ namespace uPiper.Core.Phonemizers.Implementations
                 {
                     return false;
                 }
-                
+
                 // Fallback to Unity application state check
                 if (Application.isEditor && !Application.isPlaying)
                 {
                     // In test runner, always use mock mode to avoid crashes
                     return false;
                 }
-                
+
                 // Check platform-specific library file existence
                 var libraryPath = GetExpectedLibraryPath();
                 if (!string.IsNullOrEmpty(libraryPath) && File.Exists(libraryPath))
                 {
                     return true;
                 }
-                
+
                 return false;
             }
             catch
@@ -530,11 +530,11 @@ namespace uPiper.Core.Phonemizers.Implementations
                 return false;
             }
         }
-        
+
         private string GetExpectedLibraryPath()
         {
             var pluginsPath = Path.Combine(Application.dataPath, "Plugins");
-            
+
             if (PlatformHelper.IsWindows)
             {
                 return Path.Combine(pluginsPath, "x86_64", "openjtalk_wrapper.dll");
@@ -547,10 +547,10 @@ namespace uPiper.Core.Phonemizers.Implementations
             {
                 return Path.Combine(pluginsPath, "x86_64", "libopenjtalk_wrapper.so");
             }
-            
+
             return null;
         }
-        
+
         private bool IsInTestRunner()
         {
             // Check if we're running in Unity Test Runner
@@ -559,14 +559,14 @@ namespace uPiper.Core.Phonemizers.Implementations
                 // Test runner has specific execution context
                 var stackTrace = new System.Diagnostics.StackTrace();
                 var frames = stackTrace.GetFrames();
-                
+
                 foreach (var frame in frames)
                 {
                     var method = frame.GetMethod();
                     if (method != null)
                     {
                         var typeName = method.DeclaringType?.FullName ?? "";
-                        if (typeName.Contains("NUnit") || 
+                        if (typeName.Contains("NUnit") ||
                             typeName.Contains("UnityEngine.TestRunner") ||
                             typeName.Contains("UnityEditor.TestRunner"))
                         {
@@ -579,10 +579,10 @@ namespace uPiper.Core.Phonemizers.Implementations
             {
                 // Ignore any errors in detection
             }
-            
+
             return false;
         }
-        
+
         private bool IsNativeTestContext()
         {
             // Check if we're being called from native tests
@@ -590,7 +590,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             {
                 var stackTrace = new System.Diagnostics.StackTrace();
                 var frames = stackTrace.GetFrames();
-                
+
                 foreach (var frame in frames)
                 {
                     var method = frame.GetMethod();
@@ -608,10 +608,10 @@ namespace uPiper.Core.Phonemizers.Implementations
             {
                 // Ignore any errors in detection
             }
-            
+
             return false;
         }
-        
+
         #endregion
 
         #region IDisposable Implementation
@@ -626,12 +626,12 @@ namespace uPiper.Core.Phonemizers.Implementations
                     {
                         try
                         {
-                            #if ENABLE_PINVOKE
+#if ENABLE_PINVOKE
                             if (!MockMode)
                             {
                                 openjtalk_destroy(_handle);
                             }
-                            #endif
+#endif
                         }
                         catch (Exception ex)
                         {

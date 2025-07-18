@@ -1,7 +1,7 @@
-using UnityEngine;
+using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using System.IO;
+using UnityEngine;
 
 namespace uPiper.Editor
 {
@@ -11,7 +11,7 @@ namespace uPiper.Editor
     public static class SampleSceneOpener
     {
         private const string WEBGL_DEMO_SCENE_PATH = "Assets/uPiper/Samples~/WebGLDemo/WebGLDemoScene.unity";
-        
+
         [MenuItem("uPiper/Open WebGL Demo Scene")]
         public static void OpenWebGLDemoScene()
         {
@@ -23,7 +23,7 @@ namespace uPiper.Editor
 
             // Tempディレクトリにコピーして開く（差分を避けるため）
             string tempPath = "Assets/Temp/WebGLDemoScene_Temp.unity";
-            
+
             if (File.Exists(WEBGL_DEMO_SCENE_PATH))
             {
                 // Tempディレクトリを作成
@@ -31,10 +31,10 @@ namespace uPiper.Editor
                 if (!Directory.Exists(tempDir))
                 {
                     Directory.CreateDirectory(tempDir);
-                    
+
                     // Temp.metaファイルを作成
                     string metaPath = tempDir + ".meta";
-                    File.WriteAllText(metaPath, 
+                    File.WriteAllText(metaPath,
                         "fileFormatVersion: 2\n" +
                         "guid: " + System.Guid.NewGuid().ToString("N") + "\n" +
                         "folderAsset: yes\n" +
@@ -44,23 +44,23 @@ namespace uPiper.Editor
                         "  assetBundleName: \n" +
                         "  assetBundleVariant: \n");
                 }
-                
+
                 // シーンをコピー
                 File.Copy(WEBGL_DEMO_SCENE_PATH, tempPath, true);
-                
+
                 // Tempフォルダを.gitignoreに追加されていることを確認
                 AddToGitIgnore("Assets/Temp/");
-                
+
                 // メタファイルをリフレッシュ
                 AssetDatabase.Refresh();
-                
+
                 // コピーしたシーンを開く
                 EditorSceneManager.OpenScene(tempPath);
                 Debug.Log($"[uPiper] Opened WebGL Demo Scene (temporary copy)");
-                
+
                 // シーンにセットアップコンポーネントを追加
                 SetupDemoScene();
-                
+
                 // Build Settingsへの追加は手動で行うように案内
                 if (!IsSceneInBuildSettings(WEBGL_DEMO_SCENE_PATH))
                 {
@@ -84,7 +84,7 @@ namespace uPiper.Editor
                 );
             }
         }
-        
+
         private static void AddToGitIgnore(string path)
         {
             string gitignorePath = ".gitignore";
@@ -98,11 +98,11 @@ namespace uPiper.Editor
                 }
             }
         }
-        
+
         private static void SetupDemoScene()
         {
             Debug.Log("[uPiper] Setting up WebGL demo scene UI...");
-            
+
             // Canvas を作成
             GameObject canvasObj = GameObject.Find("Canvas");
             if (canvasObj == null)
@@ -125,36 +125,36 @@ namespace uPiper.Editor
             // Demo Info Panel を作成
             GameObject infoPanel = new GameObject("DemoInfoPanel");
             infoPanel.transform.SetParent(canvasObj.transform, false);
-            
+
             var rectTransform = infoPanel.AddComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
             rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             rectTransform.sizeDelta = new Vector2(600, 400);
             rectTransform.anchoredPosition = Vector2.zero;
-            
+
             var image = infoPanel.AddComponent<UnityEngine.UI.Image>();
             image.color = new Color(0.2f, 0.2f, 0.2f, 0.9f);
-            
+
             // Info Text (TextMeshProを使用)
             GameObject textObj = new GameObject("InfoText");
             textObj.transform.SetParent(infoPanel.transform, false);
-            
+
             // TextMeshProUGUIを動的に作成
             var textType = System.Type.GetType("TMPro.TextMeshProUGUI, Unity.TextMeshPro");
             if (textType != null)
             {
                 var text = textObj.AddComponent(textType);
-                
+
                 // リフレクションでプロパティを設定
                 var textProp = textType.GetProperty("text");
                 textProp?.SetValue(text, "uPiper WebGL Demo\n\n" +
                            "このシーンはWebGLデモ用のシーンです。\n\n" +
                            "実際のTTS機能は Phase 1.2 で実装予定です。\n\n" +
                            "現在は UI レイアウトのプレビューのみ表示されています。");
-                
+
                 var fontSizeProp = textType.GetProperty("fontSize");
                 fontSizeProp?.SetValue(text, 24f);
-                
+
                 var alignmentProp = textType.GetProperty("alignment");
                 if (alignmentProp != null)
                 {
@@ -166,7 +166,7 @@ namespace uPiper.Editor
                         alignmentProp.SetValue(text, centerValue);
                     }
                 }
-                
+
                 var colorProp = textType.GetProperty("color");
                 colorProp?.SetValue(text, Color.white);
             }
@@ -181,32 +181,32 @@ namespace uPiper.Editor
                 text.fontSize = 24;
                 text.alignment = TextAnchor.MiddleCenter;
                 text.color = Color.white;
-                
+
                 Debug.LogWarning("[uPiper] TextMeshPro not found. Using legacy Text component.");
             }
-            
+
             var textRect = textObj.GetComponent<RectTransform>();
             textRect.anchorMin = Vector2.zero;
             textRect.anchorMax = Vector2.one;
             textRect.sizeDelta = new Vector2(-40, -40);
             textRect.anchoredPosition = Vector2.zero;
-            
+
             Debug.Log("[uPiper] Demo scene UI setup completed");
         }
-        
+
         private static bool IsSceneInBuildSettings(string scenePath)
         {
             var scenes = EditorBuildSettings.scenes;
             return System.Array.Exists(scenes, s => s.path == scenePath);
         }
-        
+
         private static void AddSceneToBuildSettings(string scenePath)
         {
             var scenes = new System.Collections.Generic.List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
-            
+
             // すでに追加されているかチェック
             bool alreadyAdded = scenes.Exists(s => s.path == scenePath);
-            
+
             if (!alreadyAdded)
             {
                 scenes.Add(new EditorBuildSettingsScene(scenePath, true));
@@ -214,13 +214,13 @@ namespace uPiper.Editor
                 Debug.Log($"[uPiper] Added {scenePath} to Build Settings");
             }
         }
-        
+
         [MenuItem("uPiper/Advanced/Copy All Samples to Assets")]
         public static void CopySamplesToAssets()
         {
             string sourcePath = "Assets/uPiper/Samples~";
             string targetPath = "Assets/Samples/uPiper";
-            
+
             if (!Directory.Exists(sourcePath))
             {
                 EditorUtility.DisplayDialog(
@@ -230,31 +230,31 @@ namespace uPiper.Editor
                 );
                 return;
             }
-            
+
             // ターゲットディレクトリを作成
             if (!Directory.Exists(targetPath))
             {
                 Directory.CreateDirectory(targetPath);
             }
-            
+
             // WebGLDemoをコピー
             string sourceDemo = Path.Combine(sourcePath, "WebGLDemo");
             string targetDemo = Path.Combine(targetPath, "WebGLDemo");
-            
+
             if (Directory.Exists(sourceDemo))
             {
                 CopyDirectory(sourceDemo, targetDemo);
-                
+
                 // メタファイルをリフレッシュ
                 AssetDatabase.Refresh();
-                
+
                 EditorUtility.DisplayDialog(
                     "Samples Copied",
                     $"Samples have been copied to:\n{targetPath}\n\n" +
                     "You can now access them from the Project window.",
                     "OK"
                 );
-                
+
                 // コピーしたシーンを開く
                 string copiedScenePath = Path.Combine(targetDemo, "WebGLDemoScene.unity");
                 if (File.Exists(copiedScenePath))
@@ -263,26 +263,26 @@ namespace uPiper.Editor
                 }
             }
         }
-        
+
         [MenuItem("uPiper/Advanced/Add All Scenes to Build Settings")]
         public static void AddWebGLDemoToBuildSettings()
         {
             var currentScenes = new System.Collections.Generic.List<EditorBuildSettingsScene>(
                 EditorBuildSettings.scenes
             );
-            
+
             // すでに追加されているかチェック
             bool alreadyAdded = false;
             foreach (var scene in currentScenes)
             {
-                if (scene.path == WEBGL_DEMO_SCENE_PATH || 
+                if (scene.path == WEBGL_DEMO_SCENE_PATH ||
                     scene.path.EndsWith("WebGLDemoScene.unity"))
                 {
                     alreadyAdded = true;
                     break;
                 }
             }
-            
+
             if (!alreadyAdded)
             {
                 // Samples~内のシーンを追加
@@ -290,16 +290,16 @@ namespace uPiper.Editor
                 {
                     currentScenes.Add(new EditorBuildSettingsScene(WEBGL_DEMO_SCENE_PATH, true));
                 }
-                
+
                 // コピーされたシーンも探す
                 string copiedPath = "Assets/Samples/uPiper/WebGLDemo/WebGLDemoScene.unity";
                 if (File.Exists(copiedPath))
                 {
                     currentScenes.Add(new EditorBuildSettingsScene(copiedPath, true));
                 }
-                
+
                 EditorBuildSettings.scenes = currentScenes.ToArray();
-                
+
                 EditorUtility.DisplayDialog(
                     "Build Settings Updated",
                     "WebGL Demo Scene has been added to Build Settings.",
@@ -315,12 +315,12 @@ namespace uPiper.Editor
                 );
             }
         }
-        
+
         private static void CopyDirectory(string sourceDir, string targetDir)
         {
             // ディレクトリを作成
             Directory.CreateDirectory(targetDir);
-            
+
             // ファイルをコピー
             foreach (string file in Directory.GetFiles(sourceDir))
             {
@@ -332,7 +332,7 @@ namespace uPiper.Editor
                     File.Copy(file, destFile, true);
                 }
             }
-            
+
             // サブディレクトリを再帰的にコピー
             foreach (string subDir in Directory.GetDirectories(sourceDir))
             {

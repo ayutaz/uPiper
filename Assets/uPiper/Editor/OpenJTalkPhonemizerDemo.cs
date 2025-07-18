@@ -39,10 +39,10 @@ namespace uPiper.Editor
             EditorGUILayout.Space();
 
             // Platform check
-            #if UNITY_WEBGL
+#if UNITY_WEBGL
             EditorGUILayout.HelpBox("OpenJTalk is not supported on WebGL platform.", MessageType.Warning);
             return;
-            #endif
+#endif
 
             // Initialization section
             EditorGUILayout.LabelField("1. Initialization", EditorStyles.boldLabel);
@@ -204,13 +204,13 @@ namespace uPiper.Editor
             {
                 _statusMessage = "Initializing...";
 
-                #if !UNITY_WEBGL
+#if !UNITY_WEBGL
                 _phonemizer = new OpenJTalkPhonemizer();
                 _statusMessage = OpenJTalkPhonemizer.MockMode ? "OpenJTalkPhonemizer initialized (mock mode - native library not found)" : "OpenJTalkPhonemizer initialized successfully";
-                #else
+#else
                 _phonemizer = new MockPhonemizer();
                 _statusMessage = "MockPhonemizer initialized (WebGL fallback)";
-                #endif
+#endif
 
                 Repaint();
             }

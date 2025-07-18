@@ -1,6 +1,6 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using uPiper.Core.Logging;
 
 namespace uPiper.Samples.WebGLDemo
@@ -14,12 +14,12 @@ namespace uPiper.Samples.WebGLDemo
         private void Awake()
         {
             // エディタでの実行時のみセットアップ
-            #if UNITY_EDITOR
+#if UNITY_EDITOR
             if (!Application.isPlaying)
             {
                 SetupScene();
             }
-            #endif
+#endif
         }
 
         [ContextMenu("Setup WebGL Demo Scene")]
@@ -52,13 +52,13 @@ namespace uPiper.Samples.WebGLDemo
             {
                 panelObj = new GameObject("DemoPanel");
                 panelObj.transform.SetParent(canvasObj.transform, false);
-                
+
                 RectTransform panelRect = panelObj.AddComponent<RectTransform>();
                 panelRect.anchorMin = Vector2.zero;
                 panelRect.anchorMax = Vector2.one;
                 panelRect.sizeDelta = Vector2.zero;
                 panelRect.anchoredPosition = Vector2.zero;
-                
+
                 Image panelImage = panelObj.AddComponent<Image>();
                 panelImage.color = new Color(0.2f, 0.2f, 0.2f, 0.9f);
             }
@@ -70,7 +70,7 @@ namespace uPiper.Samples.WebGLDemo
             titleText.text = "uPiper WebGL Demo";
             titleText.fontSize = 36;
             titleText.alignment = TextAlignmentOptions.Center;
-            
+
             RectTransform titleRect = titleObj.GetComponent<RectTransform>();
             titleRect.anchorMin = new Vector2(0.5f, 0.8f);
             titleRect.anchorMax = new Vector2(0.5f, 0.9f);
@@ -81,7 +81,7 @@ namespace uPiper.Samples.WebGLDemo
             GameObject inputObj = new GameObject("InputField");
             inputObj.transform.SetParent(panelObj.transform, false);
             TMP_InputField inputField = inputObj.AddComponent<TMP_InputField>();
-            
+
             RectTransform inputRect = inputObj.GetComponent<RectTransform>();
             inputRect.anchorMin = new Vector2(0.5f, 0.5f);
             inputRect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -114,7 +114,7 @@ namespace uPiper.Samples.WebGLDemo
             text.text = "こんにちは、uPiper WebGLデモへようこそ！";
             text.fontSize = 16;
             text.color = Color.black;
-            
+
             RectTransform textRect = textObj.GetComponent<RectTransform>();
             textRect.anchorMin = Vector2.zero;
             textRect.anchorMax = Vector2.one;
@@ -131,7 +131,7 @@ namespace uPiper.Samples.WebGLDemo
             Button button = buttonObj.AddComponent<Button>();
             Image buttonImage = buttonObj.AddComponent<Image>();
             buttonImage.color = new Color(0.3f, 0.6f, 0.9f);
-            
+
             RectTransform buttonRect = buttonObj.GetComponent<RectTransform>();
             buttonRect.anchorMin = new Vector2(0.5f, 0.5f);
             buttonRect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -146,7 +146,7 @@ namespace uPiper.Samples.WebGLDemo
             buttonText.fontSize = 20;
             buttonText.alignment = TextAlignmentOptions.Center;
             buttonText.color = Color.white;
-            
+
             RectTransform buttonTextRect = buttonTextObj.GetComponent<RectTransform>();
             buttonTextRect.anchorMin = Vector2.zero;
             buttonTextRect.anchorMax = Vector2.one;
@@ -159,7 +159,7 @@ namespace uPiper.Samples.WebGLDemo
             statusText.text = "状態: 準備完了";
             statusText.fontSize = 16;
             statusText.alignment = TextAlignmentOptions.Center;
-            
+
             RectTransform statusRect = statusObj.GetComponent<RectTransform>();
             statusRect.anchorMin = new Vector2(0.5f, 0.3f);
             statusRect.anchorMax = new Vector2(0.5f, 0.3f);
@@ -170,7 +170,7 @@ namespace uPiper.Samples.WebGLDemo
             GameObject sliderObj = new GameObject("ProgressSlider");
             sliderObj.transform.SetParent(panelObj.transform, false);
             Slider slider = sliderObj.AddComponent<Slider>();
-            
+
             RectTransform sliderRect = sliderObj.GetComponent<RectTransform>();
             sliderRect.anchorMin = new Vector2(0.5f, 0.2f);
             sliderRect.anchorMax = new Vector2(0.5f, 0.2f);
@@ -216,7 +216,7 @@ namespace uPiper.Samples.WebGLDemo
             {
                 demoUI = panelObj.AddComponent<WebGLDemoUI>();
             }
-            
+
             // AudioSource
             AudioSource audioSource = panelObj.GetComponent<AudioSource>();
             if (audioSource == null)
@@ -232,14 +232,14 @@ namespace uPiper.Samples.WebGLDemo
             demoUI.audioSource = audioSource;
 
             PiperLogger.LogInfo("[WebGLDemoSceneSetup] Demo scene setup completed!");
-            
+
             // エディタでの実行時はこのコンポーネントを削除
-            #if UNITY_EDITOR
+#if UNITY_EDITOR
             if (!Application.isPlaying)
             {
                 DestroyImmediate(this);
             }
-            #endif
+#endif
         }
     }
 }

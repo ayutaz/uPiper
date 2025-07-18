@@ -17,7 +17,7 @@ namespace uPiper.Tests.Runtime.Native
     [Category("RequiresNativeLibrary")]
     public class OpenJTalkNativeTest
     {
-        #if ENABLE_NATIVE_TESTS
+#if ENABLE_NATIVE_TESTS
         // P/Invoke declarations matching openjtalk_wrapper.h
         [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr openjtalk_create(string dict_path);
@@ -304,14 +304,14 @@ namespace uPiper.Tests.Runtime.Native
             }
         }
         
-        #else // !ENABLE_NATIVE_TESTS
-        
+#else // !ENABLE_NATIVE_TESTS
+
         [Test]
         public void NativeTestsDisabled()
         {
             Assert.Ignore("Native tests are disabled on this platform or configuration.");
         }
-        
-        #endif // ENABLE_NATIVE_TESTS
+
+#endif // ENABLE_NATIVE_TESTS
     }
 }

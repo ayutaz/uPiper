@@ -11,32 +11,32 @@ namespace uPiper.Core
     public class PiperConfig
     {
         #region Constants
-        
+
         // Cache size limits
         private const int MinCacheSizeMB = 10;
         private const int MaxCacheSizeMBThreshold = 500;
-        
+
         // Sample rate bounds
         private const int MinSampleRate = 8000;
         private const int MaxSampleRate = 48000;
-        
+
         // Worker thread limits
         private const int MaxWorkerThreads = 16;
-        
+
         // Timeout limits
         private const int MinRecommendedTimeoutMs = 1000;
-        
+
         // Batch size limits
         private const int MinBatchSize = 1;
         private const int MaxBatchSize = 32;
-        
+
         // RMS level limits
         private const float MaxRMSLevel = 0f;
         private const float MinRMSLevel = -40f;
-        
+
         #endregion
         [Header("General Settings")]
-        
+
         /// <summary>
         /// Enable debug logging
         /// </summary>
@@ -50,7 +50,7 @@ namespace uPiper.Core
         public string DefaultLanguage = "ja";
 
         [Header("Performance Settings")]
-        
+
         /// <summary>
         /// Maximum cache size in MB
         /// </summary>
@@ -78,7 +78,7 @@ namespace uPiper.Core
         public InferenceBackend Backend = InferenceBackend.Auto;
 
         [Header("Audio Settings")]
-        
+
         /// <summary>
         /// Output sample rate
         /// </summary>
@@ -99,7 +99,7 @@ namespace uPiper.Core
         public float TargetRMSLevel = -20f;
 
         [Header("Advanced Settings")]
-        
+
         /// <summary>
         /// Timeout for operations in milliseconds
         /// </summary>
@@ -149,7 +149,7 @@ namespace uPiper.Core
             {
                 throw new PiperException($"Invalid sample rate: {SampleRate}Hz. Must be between {MinSampleRate}-{MaxSampleRate}Hz");
             }
-            
+
             if (SampleRate != 16000 && SampleRate != 22050 && SampleRate != 44100 && SampleRate != 48000)
             {
                 PiperLogger.LogWarning("Non-standard sample rate {0}Hz. Recommended: 22050Hz or 16000Hz", SampleRate);
@@ -160,7 +160,7 @@ namespace uPiper.Core
             {
                 throw new PiperException($"Invalid WorkerThreads: {WorkerThreads}. Must be >= 0");
             }
-            
+
             if (WorkerThreads == 0)
             {
                 WorkerThreads = Mathf.Max(1, SystemInfo.processorCount - 1);
@@ -176,7 +176,7 @@ namespace uPiper.Core
             {
                 throw new PiperException("DefaultLanguage cannot be null or empty");
             }
-            
+
             DefaultLanguage = DefaultLanguage.ToLowerInvariant().Trim();
             if (DefaultLanguage.Length != 2 && DefaultLanguage.Length != 5) // e.g., "ja" or "ja-JP"
             {
@@ -188,7 +188,7 @@ namespace uPiper.Core
             {
                 throw new PiperException($"Invalid TimeoutMs: {TimeoutMs}. Must be >= 0");
             }
-            
+
             if (TimeoutMs > 0 && TimeoutMs < MinRecommendedTimeoutMs)
             {
                 PiperLogger.LogWarning("TimeoutMs ({0}ms) is very short. Recommended minimum: {1}ms", TimeoutMs, MinRecommendedTimeoutMs);
