@@ -205,9 +205,6 @@ namespace uPiper.Tests.Runtime.Integration
             yield return new WaitUntil(() => initTask.IsCompleted);
             
             // Try with null text
-            bool errorOccurred = false;
-            _piperTTS.OnError += ex => errorOccurred = true;
-            
             var task = _piperTTS.GenerateAudioAsync(null);
             yield return new WaitUntil(() => task.IsCompleted);
             
