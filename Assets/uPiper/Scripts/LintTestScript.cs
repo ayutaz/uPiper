@@ -26,7 +26,7 @@ namespace uPiper.Scripts
 
         // メソッドのテスト
         // ❌ 警告: アクセス修飾子がない
-        void Start()
+        private void Start()
         {
             Debug.Log("Start without access modifier");
         }
@@ -44,13 +44,13 @@ namespace uPiper.Scripts
         }
 
         // ❌ 警告: アクセス修飾子がない
-        void Awake()
+        private void Awake()
         {
             Debug.Log("Awake without access modifier");
         }
 
         // ❌ 警告: 通常のメソッドもアクセス修飾子が必要
-        void CustomMethod()
+        private void CustomMethod()
         {
             Debug.Log("Custom method without access modifier");
         }

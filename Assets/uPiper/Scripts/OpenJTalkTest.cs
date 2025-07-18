@@ -38,12 +38,12 @@ namespace uPiper.OpenJTalk
 
         private IntPtr _openjtalkHandle = IntPtr.Zero;
 
-        void Start()
+        private void Start()
         {
             TestOpenJTalk();
         }
 
-        void TestOpenJTalk()
+        private void TestOpenJTalk()
         {
             try
             {
@@ -80,7 +80,7 @@ namespace uPiper.OpenJTalk
             }
         }
 
-        void TestPhonemization(string text)
+        private void TestPhonemization(string text)
         {
             IntPtr resultPtr = openjtalk_phonemize(_openjtalkHandle, text);
             if (resultPtr == IntPtr.Zero)
@@ -110,7 +110,7 @@ namespace uPiper.OpenJTalk
             openjtalk_free_result(resultPtr);
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
             if (_openjtalkHandle != IntPtr.Zero)
             {
