@@ -1,0 +1,16 @@
+# Build directories
+*/build/
+*/Build/
+*/x64/
+*/x86/
+
+# Downloaded archives
+*.tar.gz
+*.zip
+
+# Temporary files
+*.tmp
+*.log
+
+# Keep the directory structure
+!.gitkeep
