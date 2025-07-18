@@ -114,7 +114,7 @@ dotnet_naming_symbols.constants.required_modifiers = const
 dotnet_naming_style.constant_style.capitalization = pascal_case
 
 # Static fields are camelCase and start with s_
-dotnet_naming_rule.static_fields_should_be_camel_case.severity = warning
+dotnet_naming_rule.static_fields_should_be_camel_case.severity = error
 dotnet_naming_rule.static_fields_should_be_camel_case.symbols = static_fields
 dotnet_naming_rule.static_fields_should_be_camel_case.style = static_field_style
 
@@ -126,7 +126,7 @@ dotnet_naming_style.static_field_style.capitalization = camel_case
 dotnet_naming_style.static_field_style.required_prefix = s_
 
 # Instance fields are camelCase and start with _
-dotnet_naming_rule.instance_fields_should_be_camel_case.severity = warning
+dotnet_naming_rule.instance_fields_should_be_camel_case.severity = error
 dotnet_naming_rule.instance_fields_should_be_camel_case.symbols = instance_fields
 dotnet_naming_rule.instance_fields_should_be_camel_case.style = instance_field_style
 
@@ -169,7 +169,7 @@ dotnet_diagnostic.RS2008.severity = none
 # CSharp code style settings:
 [*.cs]
 # Require accessibility modifiers
-dotnet_style_require_accessibility_modifiers = always:warning
+dotnet_style_require_accessibility_modifiers = always:error
 
 # Newline settings
 csharp_new_line_before_open_brace = all
@@ -472,7 +472,7 @@ dotnet_diagnostic.UNT0032.severity = warning
 
 # Additional analyzers
 # Add accessibility modifiers
-dotnet_diagnostic.IDE0040.severity = warning
+dotnet_diagnostic.IDE0040.severity = error
 # Remove unnecessary cast
 dotnet_diagnostic.IDE0004.severity = warning
 # Remove unnecessary import

@@ -27,18 +27,38 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: |
-          6.0.x
-          7.0.x
-          8.0.x
+        dotnet-version: 6.0.x  # Unity 6 uses .NET Standard 2.1 which is supported by .NET 6
 
     - name: Check format
       run: |
         if [ "$CHECK_ONLY_TEST" = "true" ]; then
           echo "🔍 Checking format and code style for test file"
-          # Check both whitespace and style for the test file
-          dotnet format whitespace Assets/uPiper/Scripts/LintTestScript.cs --verify-no-changes --verbosity diagnostic || true
-          dotnet format style Assets/uPiper/Scripts/LintTestScript.cs --verify-no-changes --verbosity diagnostic
+          echo "This will fail CI if any lint rules are violated"
+          
+          # Create a temporary solution file for the test
+          echo "Creating temporary solution for lint check..."
+          cat > TestLint.csproj << 'EOF'
+        <Project Sdk="Microsoft.NET.Sdk">
+          <PropertyGroup>
+            <TargetFramework>netstandard2.1</TargetFramework>
+            <LangVersion>9.0</LangVersion>
+            <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+            <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+          </PropertyGroup>
+          <ItemGroup>
+            <Compile Include="Assets/uPiper/Scripts/LintTestScript.cs" />
+          </ItemGroup>
+        </Project>
+        EOF
+          
+          # Run format checks - these will fail if there are violations
+          echo "Running whitespace check..."
+          dotnet format whitespace TestLint.csproj --verify-no-changes --verbosity diagnostic
+          
+          echo "Running style check..."
+          dotnet format style TestLint.csproj --verify-no-changes --verbosity diagnostic
+          
+          # Exit with success only if both checks pass
           exit 0
         fi
         if [ "$SKIP_FORMAT_CHECK" = "true" ]; then
