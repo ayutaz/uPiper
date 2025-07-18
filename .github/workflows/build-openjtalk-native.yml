@@ -32,7 +32,13 @@ jobs:
     
     - name: Setup MSVC
       uses: microsoft/setup-msbuild@v2
-      
+    
+    - name: Download Dictionary
+      shell: bash
+      run: |
+        cd Assets/uPiper/Native/OpenJTalk
+        bash fetch_dependencies.sh
+    
     - name: Build Native Library
       shell: cmd
       run: |
@@ -40,7 +46,7 @@ jobs:
         if exist build rmdir /s /q build
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 17 2022" -A ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=Release
+        cmake .. -G "Visual Studio 16 2019" -A ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=Release
         cmake --build . --config Release --parallel
     
     - name: Run Tests
@@ -53,8 +59,11 @@ jobs:
       shell: bash
       run: |
         mkdir -p artifacts/windows/${{ matrix.arch }}
-        # Copy DLL from build output
-        cp Assets/uPiper/Native/OpenJTalk/build/bin/Release/*.dll artifacts/windows/${{ matrix.arch }}/ || true
+        # Find and copy DLL from build output
+        find Assets/uPiper/Native/OpenJTalk/build -name "*.dll" -type f | head -5
+        cp Assets/uPiper/Native/OpenJTalk/build/bin/Release/*.dll artifacts/windows/${{ matrix.arch }}/ 2>/dev/null || \
+        cp Assets/uPiper/Native/OpenJTalk/build/Release/*.dll artifacts/windows/${{ matrix.arch }}/ 2>/dev/null || \
+        cp Assets/uPiper/Native/OpenJTalk/build/bin/*.dll artifacts/windows/${{ matrix.arch }}/ 2>/dev/null || true
         # Copy header files
         cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/ || true
     
