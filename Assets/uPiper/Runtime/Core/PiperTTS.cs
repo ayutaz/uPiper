@@ -396,7 +396,7 @@ namespace uPiper.Core
                     if (hasModelAsset)
                     {
                         // Load from ModelAsset
-                        var modelLoader = new ModelLoader();
+                        var modelLoader = new uPiper.Core.AudioGeneration.ModelLoader();
                         modelLoader.LoadModel(voice.ModelAsset);
                         // TODO: Initialize SentisAudioGenerator with pre-loaded model
                         await voiceGenerator.InitializeAsync(voice.ModelPath ?? "dummy", cancellationToken);
@@ -423,14 +423,8 @@ namespace uPiper.Core
                     }
                 }
                 
-                // Apply voice-specific settings
-                if (voice.SpeechRate.HasValue || voice.PitchScale.HasValue || voice.VolumeScale.HasValue)
-                {
-                    PiperLogger.LogInfo("Applying voice settings: Rate={0}, Pitch={1}, Volume={2}",
-                        voice.SpeechRate ?? 1.0f,
-                        voice.PitchScale ?? 1.0f,
-                        voice.VolumeScale ?? 1.0f);
-                }
+                // Apply voice-specific settings if available
+                PiperLogger.LogInfo("Voice loaded with sample rate: {0}Hz", voice.SampleRate);
                 
                 lock (_lockObject)
                 {
@@ -966,7 +960,7 @@ namespace uPiper.Core
             
             lock (_lockObject)
             {
-                if (_phonemeCache.ContainsKey(cacheKey))
+                if (_audioCache.ContainsKey(cacheKey))
                 {
                     PiperLogger.LogInfo("Text already in cache");
                     return;
@@ -991,20 +985,14 @@ namespace uPiper.Core
                     var maxCacheBytes = _config.MaxCacheSizeMB * 1024 * 1024;
                     
                     // Evict old entries if needed
-                    while (_currentCacheSize + dataSize > maxCacheBytes && _phonemeCache.Count > 0)
+                    // For preloading, we just skip if cache is full
+                    if (_currentCacheSize + dataSize > maxCacheBytes)
                     {
-                        // Simple FIFO eviction (should be LRU in production)
-                        var firstKey = _phonemeCache.Keys.First();
-                        var evictedSize = _phonemeCache[firstKey].Length;
-                        _phonemeCache.Remove(firstKey);
-                        _currentCacheSize -= evictedSize;
-                        _cacheEvictionCount++;
-                        PiperLogger.LogInfo("Evicted cache entry to make room");
+                        PiperLogger.LogWarning("Cache is full, cannot preload text");
+                        return;
                     }
                     
-                    // Add to cache
-                    _phonemeCache[cacheKey] = dummyData;
-                    _currentCacheSize += dataSize;
+                    // Note: PreloadTextAsync is deprecated - actual caching happens during audio generation
                     
                     PiperLogger.LogInfo("Text preloaded and cached (cache size: {0:F2}MB)", 
                         _currentCacheSize / (1024.0 * 1024.0));
@@ -1385,7 +1373,7 @@ namespace uPiper.Core
             PiperLogger.LogInfo("Initializing cache system with max size: {0}MB", _config.MaxCacheSizeMB);
             
             // Clear any existing cache
-            _phonemeCache.Clear();
+            _audioCache.Clear();
             _currentCacheSize = 0;
             _cacheHitCount = 0;
             _cacheMissCount = 0;

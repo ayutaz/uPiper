@@ -104,6 +104,32 @@ namespace uPiper.Core
         /// </summary>
         [Tooltip("Whether streaming is supported")]
         public bool SupportsStreaming = true;
+        
+        /// <summary>
+        /// Voice synthesis parameters
+        /// </summary>
+        [Header("Synthesis Parameters")]
+        
+        /// <summary>
+        /// Speech rate multiplier (0.5 = half speed, 2.0 = double speed)
+        /// </summary>
+        [Range(0.5f, 2.0f)]
+        [Tooltip("Speech rate multiplier")]
+        public float? SpeechRate;
+        
+        /// <summary>
+        /// Pitch scale multiplier (0.5 = lower pitch, 2.0 = higher pitch)
+        /// </summary>
+        [Range(0.5f, 2.0f)]
+        [Tooltip("Pitch scale multiplier")]
+        public float? PitchScale;
+        
+        /// <summary>
+        /// Volume scale multiplier (0.0 = silent, 1.0 = normal)
+        /// </summary>
+        [Range(0.0f, 2.0f)]
+        [Tooltip("Volume scale multiplier")]
+        public float? VolumeScale;
 
         /// <summary>
         /// Create a voice configuration from model paths
