@@ -26,13 +26,7 @@ jobs:
           7.0.x
           8.0.x
 
-    - name: Restore dependencies
-      run: dotnet restore
-
-    - name: Install dotnet format
-      run: dotnet tool install -g dotnet-format || true
-
     - name: Check format
       run: |
-        export PATH="$PATH:$HOME/.dotnet/tools"
-        dotnet format --verify-no-changes --verbosity diagnostic
+        # Use dotnet format with folder option (doesn't require project file)
+        dotnet format whitespace . --folder --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes --verbosity diagnostic
