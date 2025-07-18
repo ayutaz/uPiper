@@ -30,7 +30,7 @@ namespace uPiper.Tests.Runtime.Integration
                 EnableMultiThreadedInference = false,
                 EnablePhonemeCache = true,
                 MaxCacheSizeMB = 10,
-                TimeoutMs = 5000  // 5 seconds timeout for tests
+                TimeoutMs = 30000  // 30 seconds timeout for tests to avoid Unity Editor freezing
             };
             
             _piperTTS = new PiperTTS(_config);

@@ -7,9 +7,7 @@
         "uPiper.Runtime",
         "uPiper.Scripts.Runtime"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,

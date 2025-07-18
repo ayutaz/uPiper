@@ -689,18 +689,56 @@ namespace uPiper.Core
                 var startTime = DateTime.UtcNow;
                 var timeout = _config.TimeoutMs > 0 ? TimeSpan.FromMilliseconds(_config.TimeoutMs) : TimeSpan.FromMinutes(5);
                 
-                // For Windows compatibility, use GetAwaiter().GetResult() with manual timeout check
-                // Task.Wait can cause deadlocks in Unity on Windows
-                var cts = new System.Threading.CancellationTokenSource(timeout);
-                try
+                // Special handling for Unity Editor to avoid deadlocks
+#if UNITY_EDITOR
+                if (Application.isEditor)
                 {
-                    // Run the task with cancellation support
-                    var resultTask = Task.Run(async () => await task, cts.Token);
-                    return resultTask.GetAwaiter().GetResult();
+                    // In editor, use coroutine-friendly approach
+                    AudioClip result = null;
+                    System.Exception error = null;
+                    bool completed = false;
+                    
+                    task.ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                            error = t.Exception?.InnerException;
+                        else if (t.IsCompletedSuccessfully)
+                            result = t.Result;
+                        completed = true;
+                    }, TaskScheduler.Default);
+                    
+                    // Spin wait with yield to prevent editor freeze
+                    var endTime = DateTime.UtcNow + timeout;
+                    while (!completed && DateTime.UtcNow < endTime)
+                    {
+                        System.Threading.Thread.Sleep(10);
+                        // Allow Unity Editor to process events
+                        UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
+                    }
+                    
+                    if (!completed)
+                        throw new TimeoutException($"Audio generation timed out after {timeout.TotalMilliseconds}ms");
+                    
+                    if (error != null)
+                        throw error;
+                        
+                    return result;
                 }
-                catch (OperationCanceledException)
+                else
+#endif
                 {
-                    throw new TimeoutException($"Audio generation timed out after {timeout.TotalMilliseconds}ms");
+                    // For runtime/builds, use the safer approach
+                    var cts = new System.Threading.CancellationTokenSource(timeout);
+                    try
+                    {
+                        // Run the task with cancellation support
+                        var resultTask = Task.Run(async () => await task, cts.Token);
+                        return resultTask.GetAwaiter().GetResult();
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw new TimeoutException($"Audio generation timed out after {timeout.TotalMilliseconds}ms");
+                    }
                 }
             }
             catch (AggregateException ae)
@@ -811,7 +849,34 @@ namespace uPiper.Core
                     {
                         // Load synchronously (block on async)
                         var loadTask = LoadVoiceAsync(voiceConfig);
-                        loadTask.Wait();
+#if UNITY_EDITOR
+                        if (Application.isEditor)
+                        {
+                            // In Unity Editor, use safer waiting mechanism
+                            bool completed = false;
+                            System.Exception error = null;
+                            
+                            loadTask.ContinueWith(t =>
+                            {
+                                if (t.IsFaulted)
+                                    error = t.Exception?.InnerException;
+                                completed = true;
+                            }, TaskScheduler.Default);
+                            
+                            while (!completed)
+                            {
+                                System.Threading.Thread.Sleep(10);
+                                UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
+                            }
+                            
+                            if (error != null)
+                                throw error;
+                        }
+                        else
+#endif
+                        {
+                            loadTask.Wait();
+                        }
                     }
 
                     _currentVoiceId = voiceConfig.VoiceId;
