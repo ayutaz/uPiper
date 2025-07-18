@@ -328,14 +328,19 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
 
                 // Measure performance
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                int foundCount = 0;
                 for (int i = 0; i < 10000; i++)
                 {
-                    var exists = largeCache.ContainsKey(testKeys[i % 100]);
+                    if (largeCache.ContainsKey(testKeys[i % 100]))
+                    {
+                        foundCount++;
+                    }
                 }
                 stopwatch.Stop();
 
                 // Assert performance is acceptable (less than 1ms for 10000 operations)
                 Assert.Less(stopwatch.ElapsedMilliseconds, 1000, "ContainsKey performance should be fast");
+                Assert.AreEqual(10000, foundCount, "All keys should be found");
             }
             finally
             {
