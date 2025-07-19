@@ -10,11 +10,15 @@ using UnityEngine.UI;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
+using uPiper.Core.Phonemizers;
+#if !UNITY_WEBGL
+using uPiper.Core.Phonemizers.Implementations;
+#endif
 
 namespace uPiper.Demo
 {
     /// <summary>
-    /// Phase 1.9 - Unity.InferenceEngineを使用したPiper TTSデモ（シーン用）
+    /// Phase 1.10 - Unity.InferenceEngineを使用したPiper TTSデモ（OpenJTalk統合版）
     /// </summary>
     public class InferenceEngineDemo : MonoBehaviour
     {
@@ -24,6 +28,7 @@ namespace uPiper.Demo
         [SerializeField] private TextMeshProUGUI _statusText;
         [SerializeField] private AudioSource _audioSource;
         [SerializeField] private TMP_Dropdown _modelDropdown;
+        [SerializeField] private TextMeshProUGUI _phonemeDetailsText;
 
         [Header("Settings")]
         [SerializeField] private string _defaultJapaneseText = "こんにちは";
@@ -34,6 +39,9 @@ namespace uPiper.Demo
         private AudioClipBuilder _audioBuilder;
         private PiperVoiceConfig _currentConfig;
         private bool _isGenerating;
+#if !UNITY_WEBGL
+        private ITextPhonemizer _phonemizer;
+#endif
 
         private readonly Dictionary<string, string> _modelLanguages = new Dictionary<string, string>
         {
@@ -46,6 +54,21 @@ namespace uPiper.Demo
             _generator = new InferenceAudioGenerator();
             _audioBuilder = new AudioClipBuilder();
 
+#if !UNITY_WEBGL
+            // Initialize OpenJTalk phonemizer for Japanese
+            try
+            {
+                var openJTalk = new OpenJTalkPhonemizer();
+                _phonemizer = new TextPhonemizerAdapter(openJTalk);
+                PiperLogger.LogInfo("[InferenceEngineDemo] OpenJTalk phonemizer initialized");
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogWarning($"[InferenceEngineDemo] Failed to initialize OpenJTalk: {ex.Message}");
+                _phonemizer = null;
+            }
+#endif
+
             SetupUI();
             SetStatus("準備完了");
         }
@@ -53,6 +76,17 @@ namespace uPiper.Demo
         private void OnDestroy()
         {
             _generator?.Dispose();
+#if !UNITY_WEBGL
+            if (_phonemizer is TextPhonemizerAdapter adapter)
+            {
+                // Dispose the underlying OpenJTalkPhonemizer
+                var field = adapter.GetType().GetField("_phonemizer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (field?.GetValue(adapter) is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+#endif
         }
 
         private void SetupUI()
@@ -136,13 +170,17 @@ namespace uPiper.Demo
                 _encoder = new PhonemeEncoder(config);
                 PiperLogger.LogDebug($"PhonemeEncoder created with {config.PhonemeIdMap.Count} phonemes");
 
-                // デバッグ用：いくつかの音素マッピングを表示
-                int count = 0;
-                foreach (var kvp in config.PhonemeIdMap)
+                // デバッグ用：日本語音素に関連するマッピングを表示
+                string[] importantPhonemes = { "ch", "ts", "sh", "k", "o", "n", "i", "h", "a", "w", "N", "_", "^", "$" };
+                foreach (var phoneme in importantPhonemes)
                 {
-                    if (count++ < 10) // 最初の10個だけ表示
+                    if (config.PhonemeIdMap.TryGetValue(phoneme, out var id))
                     {
-                        PiperLogger.LogDebug($"  Phoneme '{kvp.Key}' -> ID {kvp.Value}");
+                        PiperLogger.LogDebug($"  Important phoneme '{phoneme}' -> ID {id}");
+                    }
+                    else
+                    {
+                        PiperLogger.LogDebug($"  Important phoneme '{phoneme}' -> NOT FOUND in model");
                     }
                 }
 
@@ -154,19 +192,102 @@ namespace uPiper.Demo
 
                 // 音素に変換
                 SetStatus("音素に変換中...");
-                var phonemes = ConvertToPhonemes(_inputField.text, _modelLanguages[modelName]);
+                string[] phonemes;
+                var language = _modelLanguages[modelName];
+                
+#if !UNITY_WEBGL
+                // Use OpenJTalk for Japanese if available
+                if (language == "ja" && _phonemizer != null)
+                {
+                    PiperLogger.LogDebug("[InferenceEngineDemo] Using OpenJTalk phonemizer for Japanese text");
+                    var phonemeResult = await _phonemizer.PhonemizeAsync(_inputField.text, language);
+                    var openJTalkPhonemes = phonemeResult.Phonemes;
+                    PiperLogger.LogInfo($"[OpenJTalk] Raw phonemes ({openJTalkPhonemes.Length}): {string.Join(" ", openJTalkPhonemes)}");
+                    
+                    // Convert OpenJTalk phonemes to Piper phonemes
+                    phonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(openJTalkPhonemes);
+                    PiperLogger.LogInfo($"[OpenJTalk] Converted to Piper phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+                    
+                    // Log detailed mapping for debugging
+                    for (int i = 0; i < Math.Min(openJTalkPhonemes.Length, phonemes.Length); i++)
+                    {
+                        PiperLogger.LogDebug($"  Phoneme mapping: '{openJTalkPhonemes[i]}' -> '{phonemes[i]}'");
+                    }
+                    
+                    // Show phoneme details in UI
+                    if (_phonemeDetailsText != null)
+                    {
+                        // Special handling for こんにちは to debug
+                        if (_inputField.text.Contains("こんにちは"))
+                        {
+                            _phonemeDetailsText.text = $"[DEBUG こんにちは]\nOpenJTalk: {string.Join(" ", openJTalkPhonemes)}\nPiper: {string.Join(" ", phonemes)}\n" +
+                                $"Expected: k o n n i ch i w a\nCheck if 'ch i' sounds like 'ch u'";
+                        }
+                        else
+                        {
+                            _phonemeDetailsText.text = $"OpenJTalk: {string.Join(" ", openJTalkPhonemes)}\nPiper: {string.Join(" ", phonemes)}";
+                        }
+                    }
+                    
+                    // Log detailed phoneme information
+                    if (phonemeResult.Durations != null && phonemeResult.Durations.Length > 0)
+                    {
+                        PiperLogger.LogDebug($"[OpenJTalk] Total duration: {phonemeResult.Durations.Sum():F3}s");
+                    }
+                }
+                else
+                {
+                    // Fallback to simple conversion
+                    PiperLogger.LogDebug($"[InferenceEngineDemo] Using simple phoneme conversion (OpenJTalk not available for {language})");
+                    phonemes = ConvertToPhonemes(_inputField.text, language);
+                    PiperLogger.LogInfo($"[Simple] Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+                    
+                    // Show phoneme details in UI
+                    if (_phonemeDetailsText != null)
+                    {
+                        _phonemeDetailsText.text = $"Simple: {string.Join(" ", phonemes)}";
+                    }
+                }
+#else
+                // WebGL always uses simple conversion
+                phonemes = ConvertToPhonemes(_inputField.text, language);
                 PiperLogger.LogInfo($"Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+                
+                // Show phoneme details in UI
+                if (_phonemeDetailsText != null)
+                {
+                    _phonemeDetailsText.text = $"Simple: {string.Join(" ", phonemes)}";
+                }
+#endif
 
                 // 音素変換の詳細をログ出力
                 PiperLogger.LogDebug($"Input text: '{_inputField.text}'");
-                for (int i = 0; i < phonemes.Length; i++)
+                
+                // 「こんにちは」の場合、特に詳しくログ
+                if (_inputField.text.Contains("こんにちは"))
                 {
-                    PiperLogger.LogDebug($"  Phoneme[{i}]: '{phonemes[i]}'");
+                    PiperLogger.LogInfo("=== Special debug for 'こんにちは' ===");
+                    for (int i = 0; i < phonemes.Length; i++)
+                    {
+                        PiperLogger.LogInfo($"  Phoneme[{i}]: '{phonemes[i]}' (length: {phonemes[i].Length})");
+                        if (phonemes[i] == "ch" || phonemes[i] == "t" || phonemes[i] == "ty" || phonemes[i] == "i")
+                        {
+                            PiperLogger.LogInfo($"    -> This is the 'chi' sound component");
+                        }
+                    }
                 }
 
                 // 音素をIDに変換
                 var phonemeIds = _encoder.Encode(phonemes);
                 PiperLogger.LogInfo($"Phoneme IDs ({phonemeIds.Length}): {string.Join(", ", phonemeIds)}");
+                
+                // Log phoneme to ID mapping for debugging
+                var phonemeIdPairs = new List<string>();
+                for (int i = 0; i < Math.Min(phonemes.Length, phonemeIds.Length); i++)
+                {
+                    phonemeIdPairs.Add($"'{phonemes[i]}'={phonemeIds[i]}");
+                }
+                PiperLogger.LogDebug($"Phoneme->ID mapping: {string.Join(", ", phonemeIdPairs)}");
 
                 // 音声生成
                 SetStatus("音声を生成中...");
@@ -282,8 +403,8 @@ namespace uPiper.Demo
 
         private string[] ConvertToPhonemes(string text, string language)
         {
-            // TODO: Replace with proper phonemizer integration (OpenJTalk for Japanese, espeak-ng for other languages)
-            // This is a simplified demo implementation for Phase 1.9
+            // Fallback implementation for when OpenJTalk is not available
+            // This is used for WebGL builds or when OpenJTalk initialization fails
             if (language == "ja")
             {
                 // Simplified Japanese phoneme mapping for demo purposes
@@ -334,6 +455,12 @@ namespace uPiper.Demo
             if (_generateButton != null)
             {
                 _generateButton.interactable = !_isGenerating;
+            }
+            
+            // Clear phoneme details when starting new generation
+            if (_isGenerating && _phonemeDetailsText != null)
+            {
+                _phonemeDetailsText.text = "";
             }
         }
     }

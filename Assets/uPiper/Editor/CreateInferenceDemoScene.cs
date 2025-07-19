@@ -369,10 +369,24 @@ namespace uPiper.Editor
             statusText.color = Color.yellow;
             statusText.alignment = TextAlignmentOptions.Center;
             var statusRect = statusGO.GetComponent<RectTransform>();
-            statusRect.anchorMin = new Vector2(0.1f, 0.05f);
+            statusRect.anchorMin = new Vector2(0.1f, 0.1f);
             statusRect.anchorMax = new Vector2(0.9f, 0.15f);
             statusRect.offsetMin = Vector2.zero;
             statusRect.offsetMax = Vector2.zero;
+            
+            // 音素詳細テキスト
+            var phonemeDetailsGO = new GameObject("PhonemeDetailsText");
+            phonemeDetailsGO.transform.SetParent(panelGO.transform, false);
+            var phonemeDetailsText = phonemeDetailsGO.AddComponent<TextMeshProUGUI>();
+            phonemeDetailsText.text = "";
+            phonemeDetailsText.fontSize = 12;
+            phonemeDetailsText.color = new Color(0.8f, 0.8f, 0.8f);
+            phonemeDetailsText.alignment = TextAlignmentOptions.MidlineLeft;
+            var phonemeDetailsRect = phonemeDetailsGO.GetComponent<RectTransform>();
+            phonemeDetailsRect.anchorMin = new Vector2(0.1f, 0.02f);
+            phonemeDetailsRect.anchorMax = new Vector2(0.9f, 0.08f);
+            phonemeDetailsRect.offsetMin = Vector2.zero;
+            phonemeDetailsRect.offsetMax = Vector2.zero;
 
             // デモコントローラーを作成
             var controllerGO = new GameObject("InferenceEngineDemo");
@@ -386,6 +400,7 @@ namespace uPiper.Editor
             serializedObject.FindProperty("_statusText").objectReferenceValue = statusText;
             serializedObject.FindProperty("_audioSource").objectReferenceValue = audioSource;
             serializedObject.FindProperty("_modelDropdown").objectReferenceValue = dropdown;
+            serializedObject.FindProperty("_phonemeDetailsText").objectReferenceValue = phonemeDetailsText;
             serializedObject.ApplyModifiedProperties();
 
             // シーンを保存
@@ -394,7 +409,7 @@ namespace uPiper.Editor
 
             Debug.Log($"デモシーンを作成しました: {ScenePath}");
             EditorUtility.DisplayDialog("完了",
-                $"デモシーンを作成しました。\n{ScenePath}\n\nPlayモードで実行してください。",
+                $"Phase 1.10 デモシーンを作成しました。\n{ScenePath}\n\nOpenJTalk統合による正確な日本語音素変換が利用できます。\nPlayモードで実行してください。",
                 "OK");
         }
     }
