@@ -11,11 +11,11 @@ namespace uPiper.Core.AudioGeneration
 {
     /// <summary>
     /// Unity.InferenceEngineを使用した音声生成の実装
-    /// NOTE: Worker.Execute() APIは実際のUnity.InferenceEngine APIに合わせて更新が必要
     /// </summary>
     public class InferenceAudioGenerator : IInferenceAudioGenerator
     {
         private Worker _worker;
+        private Model _model;
         private ModelAsset _modelAsset;
         private PiperVoiceConfig _config;
         private bool _isInitialized;
@@ -54,11 +54,24 @@ namespace uPiper.Core.AudioGeneration
                     try
                     {
                         // Unity.InferenceEngineワーカーを作成
-                        var model = ModelLoader.Load(_modelAsset);
-                        _worker = new Worker(model, BackendType.GPUCompute);
+                        _model = ModelLoader.Load(_modelAsset);
+                        _worker = new Worker(_model, BackendType.GPUCompute);
                         _isInitialized = true;
 
+                        // モデルの入力/出力情報をログ出力（デバッグ用）
                         PiperLogger.LogDebug($"InferenceAudioGenerator initialized with model: {_modelAsset.name}");
+                        PiperLogger.LogDebug($"Model inputs: {_model.inputs.Count}");
+                        for (int i = 0; i < _model.inputs.Count; i++)
+                        {
+                            var input = _model.inputs[i];
+                            PiperLogger.LogDebug($"  Input[{i}]: name='{input.name}', shape={string.Join("x", input.shape)}");
+                        }
+                        PiperLogger.LogDebug($"Model outputs: {_model.outputs.Count}");
+                        for (int i = 0; i < _model.outputs.Count; i++)
+                        {
+                            var output = _model.outputs[i];
+                            PiperLogger.LogDebug($"  Output[{i}]: name='{output.name}'");
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -96,18 +109,46 @@ namespace uPiper.Core.AudioGeneration
                         var inputTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
                         var scalesTensor = new Tensor<float>(new TensorShape(3), new[] { noiseScale, lengthScale, noiseW });
 
-                        // モデルに入力を設定して実行
-                        // Unity.InferenceEngineでは、Workerの実行方法が異なる可能性がある
-                        // TODO: 実際のAPIに合わせて修正が必要
-                        PiperLogger.LogWarning("Worker execution API needs to be updated for Unity.InferenceEngine");
+                        // モデルに入力を設定
+                        // Piper TTSモデルの入力名は様々なので、複数のパターンを試す
+                        try
+                        {
+                            // パターン1: "input" と "scales"
+                            _worker.SetInput("input", inputTensor);
+                            _worker.SetInput("scales", scalesTensor);
+                        }
+                        catch
+                        {
+                            try
+                            {
+                                // パターン2: "input_ids" と "scales"
+                                _worker.SetInput("input_ids", inputTensor);
+                                _worker.SetInput("scales", scalesTensor);
+                            }
+                            catch
+                            {
+                                // パターン3: インデックスで設定
+                                _worker.SetInput(0, inputTensor);
+                                if (_model.inputs.Count > 1)
+                                {
+                                    _worker.SetInput(1, scalesTensor);
+                                }
+                            }
+                        }
                         
-                        // 仮の出力データを返す（実際のモデル実行が実装されるまで）
-                        var outputTensor = new Tensor<float>(new TensorShape(1, SampleRate * 2), new float[SampleRate * 2]);
+                        // 推論を実行
+                        _worker.Schedule();
+                        
+                        // 出力を取得（Piper TTSモデルの出力は通常 "output" または最初の出力）
+                        var outputTensor = _worker.PeekOutput() as Tensor<float>;
                         if (outputTensor == null)
                         {
                             throw new InvalidOperationException("Failed to get output from model");
                         }
 
+                        // 推論完了を待つ
+                        _worker.FlushSchedule(true);
+                        
                         // 出力データをコピー
                         var audioLength = outputTensor.shape[0] * outputTensor.shape[1];
                         var audioData = new float[audioLength];
@@ -149,6 +190,7 @@ namespace uPiper.Core.AudioGeneration
                     lock (_lockObject)
                     {
                         DisposeWorker();
+                        _model = null;
                         _modelAsset = null;
                         _config = null;
                     }
