@@ -102,7 +102,7 @@ namespace uPiper.Core.AudioGeneration
                         PiperLogger.LogWarning("Worker execution API needs to be updated for Unity.InferenceEngine");
                         
                         // 仮の出力データを返す（実際のモデル実行が実装されるまで）
-                        var outputTensor = new Tensor<float>(new TensorShape(1, _sampleRate * 2), new float[_sampleRate * 2]);
+                        var outputTensor = new Tensor<float>(new TensorShape(1, SampleRate * 2), new float[SampleRate * 2]);
                         if (outputTensor == null)
                         {
                             throw new InvalidOperationException("Failed to get output from model");
