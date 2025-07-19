@@ -10,7 +10,6 @@ namespace uPiper.Core.AudioGeneration
     /// </summary>
     public class AudioClipBuilder
     {
-        private readonly int _defaultSampleRate = 22050;
 
         /// <summary>
         /// float配列からAudioClipを作成する

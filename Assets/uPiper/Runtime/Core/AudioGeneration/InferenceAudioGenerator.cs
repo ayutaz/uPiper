@@ -86,7 +86,7 @@ namespace uPiper.Core.AudioGeneration
             if (phonemeIds == null || phonemeIds.Length == 0)
                 throw new ArgumentException("Phoneme IDs cannot be null or empty.", nameof(phonemeIds));
 
-            return await Task.Run(async () =>
+            return await Task.Run(() =>
             {
                 lock (_lockObject)
                 {
