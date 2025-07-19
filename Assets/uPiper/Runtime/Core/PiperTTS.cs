@@ -14,7 +14,7 @@ namespace uPiper.Core
     /// <summary>
     /// Main implementation of the Piper TTS interface
     /// </summary>
-    public class PiperTTS : IPiperTTS
+    public partial class PiperTTS : IPiperTTS
     {
         #region Fields
 
@@ -408,6 +408,36 @@ namespace uPiper.Core
             {
                 return new List<PiperVoiceConfig>(_voices.Values);
             }
+        }
+
+        #endregion
+
+        #region Public Methods - Phonemization
+
+        /// <summary>
+        /// Convert text to phonemes
+        /// </summary>
+        public async Task<PhonemeResult> GetPhonemesAsync(string text, CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotInitialized();
+
+            if (string.IsNullOrWhiteSpace(text))
+                throw new ArgumentNullException(nameof(text));
+
+            if (_phonemizer == null)
+            {
+                PiperLogger.LogWarning("No phonemizer available, returning empty phoneme result");
+                return new PhonemeResult
+                {
+                    Text = text,
+                    Phonemes = Array.Empty<string>(),
+                    Language = CurrentVoice?.Language ?? "ja"
+                };
+            }
+
+            var language = CurrentVoice?.Language ?? "ja";
+            return await _phonemizer.PhonemizeAsync(text, language, cancellationToken);
         }
 
         #endregion
