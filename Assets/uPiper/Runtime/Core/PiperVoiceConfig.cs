@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using uPiper.Core.Logging;
 
@@ -97,6 +98,23 @@ namespace uPiper.Core
         /// </summary>
         [Tooltip("Whether streaming is supported")]
         public bool SupportsStreaming = true;
+
+        /// <summary>
+        /// Number of speakers in the model
+        /// </summary>
+        [Tooltip("Number of speakers supported by the model")]
+        public int NumSpeakers = 1;
+
+        /// <summary>
+        /// Phoneme to ID mapping dictionary
+        /// </summary>
+        [HideInInspector]
+        public Dictionary<string, int> PhonemeIdMap;
+
+        /// <summary>
+        /// Key for voice identification (alias for VoiceId)
+        /// </summary>
+        public string Key => VoiceId;
 
         /// <summary>
         /// Create a voice configuration from model paths
