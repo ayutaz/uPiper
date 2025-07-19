@@ -50,12 +50,10 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Assert
             Assert.IsNotNull(ids);
-            Assert.AreEqual(5, ids.Length); // BOS + 3 phonemes + EOS
-            Assert.AreEqual(1, ids[0]); // BOS
-            Assert.AreEqual(3, ids[1]); // a
-            Assert.AreEqual(4, ids[2]); // b
-            Assert.AreEqual(5, ids[3]); // c
-            Assert.AreEqual(2, ids[4]); // EOS
+            Assert.AreEqual(3, ids.Length); // 3 phonemes (no BOS/EOS)
+            Assert.AreEqual(3, ids[0]); // a
+            Assert.AreEqual(4, ids[1]); // b
+            Assert.AreEqual(5, ids[2]); // c
         }
 
         [Test]
@@ -69,13 +67,12 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Assert
             Assert.IsNotNull(ids);
-            Assert.AreEqual(2, ids.Length);
-            Assert.AreEqual(1, ids[0]); // BOS
-            Assert.AreEqual(2, ids[1]); // EOS
+            Assert.AreEqual(1, ids.Length); // Only PAD token
+            Assert.AreEqual(0, ids[0]); // PAD
         }
 
         [Test]
-        public void Encode_UnknownPhoneme_UsesPadToken()
+        public void Encode_UnknownPhoneme_SkipsUnknown()
         {
             // Arrange
             var phonemes = new[] { "a", "unknown", "b" };
@@ -85,19 +82,16 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Assert
             Assert.IsNotNull(ids);
-            Assert.AreEqual(5, ids.Length);
-            Assert.AreEqual(1, ids[0]); // BOS
-            Assert.AreEqual(3, ids[1]); // a
-            Assert.AreEqual(0, ids[2]); // PAD (unknown)
-            Assert.AreEqual(4, ids[3]); // b
-            Assert.AreEqual(2, ids[4]); // EOS
+            Assert.AreEqual(2, ids.Length); // Only known phonemes
+            Assert.AreEqual(3, ids[0]); // a
+            Assert.AreEqual(4, ids[1]); // b
         }
 
         [Test]
         public void Decode_ValidIds_ReturnsCorrectPhonemes()
         {
             // Arrange
-            var ids = new[] { 1, 3, 4, 5, 2 }; // BOS, a, b, c, EOS
+            var ids = new[] { 3, 4, 5 }; // a, b, c
 
             // Act
             var phonemes = _encoder.Decode(ids);
@@ -160,6 +154,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             var decodedPhonemes = _encoder.Decode(ids);
 
             // Assert
+            Assert.IsNotNull(decodedPhonemes);
             Assert.AreEqual(originalPhonemes.Length, decodedPhonemes.Length);
             for (int i = 0; i < originalPhonemes.Length; i++)
             {
