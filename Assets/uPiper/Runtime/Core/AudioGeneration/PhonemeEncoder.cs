@@ -57,7 +57,7 @@ namespace uPiper.Core.AudioGeneration
             // 各音素をIDに変換
             foreach (var phoneme in phonemes)
             {
-                if (string.IsNullOrWhiteSpace(phoneme))
+                if (string.IsNullOrEmpty(phoneme))
                     continue;
 
                 if (_phonemeToId.TryGetValue(phoneme, out var id))

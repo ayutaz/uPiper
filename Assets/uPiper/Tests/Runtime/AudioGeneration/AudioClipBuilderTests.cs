@@ -108,7 +108,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             
             // フェードアウトのチェック
             Assert.Less(faded[95], 1f);
-            Assert.AreEqual(0f, faded[99], 0.001f);
+            Assert.AreEqual(0.1f, faded[99], 0.001f);  // Last sample has factor = 1 - (9/10) = 0.1
         }
 
         [Test]
