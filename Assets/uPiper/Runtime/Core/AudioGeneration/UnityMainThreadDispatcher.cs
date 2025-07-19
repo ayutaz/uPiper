@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core.Logging;
 
 namespace uPiper.Core.AudioGeneration
 {
@@ -69,7 +70,10 @@ namespace uPiper.Core.AudioGeneration
         public static Task<T> RunOnMainThreadAsync<T>(Func<T> func, CancellationToken cancellationToken = default)
         {
             if (!_initialized)
+            {
+                PiperLogger.LogDebug("[UnityMainThreadDispatcher] Initializing...");
                 Initialize();
+            }
 
             var tcs = new TaskCompletionSource<T>();
 
@@ -83,11 +87,13 @@ namespace uPiper.Core.AudioGeneration
                         return;
                     }
 
+                    PiperLogger.LogDebug("[UnityMainThreadDispatcher] Executing function on main thread");
                     var result = func();
                     tcs.SetResult(result);
                 }
                 catch (Exception ex)
                 {
+                    PiperLogger.LogError($"[UnityMainThreadDispatcher] Error executing function: {ex.Message}");
                     tcs.SetException(ex);
                 }
             });

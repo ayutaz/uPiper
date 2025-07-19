@@ -128,7 +128,7 @@ namespace uPiper.Editor
                 }
 
                 // JSONコンフィグをロード
-                var jsonPath = $"Models/{_selectedModel}.onnx.json";
+                var jsonPath = $"Models/{_selectedModel}.onnx";
                 var jsonAsset = Resources.Load<TextAsset>(jsonPath);
                 if (jsonAsset == null)
                 {

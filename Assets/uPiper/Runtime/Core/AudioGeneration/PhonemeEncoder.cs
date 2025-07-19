@@ -36,6 +36,21 @@ namespace uPiper.Core.AudioGeneration
             InitializePhonemeMapping();
         }
 
+        // Multi-character phonemes to PUA mapping (must match openjtalk_phonemize.cpp)
+        private static readonly Dictionary<string, string> multiCharPhonemeMap = new Dictionary<string, string>
+        {
+            // Long vowels
+            ["a:"] = "\ue000", ["i:"] = "\ue001", ["u:"] = "\ue002", ["e:"] = "\ue003", ["o:"] = "\ue004",
+            // Special consonants
+            ["cl"] = "\ue005",
+            // Palatalized consonants
+            ["ky"] = "\ue006", ["kw"] = "\ue007", ["gy"] = "\ue008", ["gw"] = "\ue009",
+            ["ty"] = "\ue00a", ["dy"] = "\ue00b", ["py"] = "\ue00c", ["by"] = "\ue00d",
+            ["ch"] = "\ue00e", ["ts"] = "\ue00f", ["sh"] = "\ue010",
+            ["zy"] = "\ue011", ["hy"] = "\ue012", ["ny"] = "\ue013",
+            ["my"] = "\ue014", ["ry"] = "\ue015"
+        };
+
         /// <summary>
         /// 音素配列をID配列にエンコードする
         /// </summary>
@@ -45,14 +60,14 @@ namespace uPiper.Core.AudioGeneration
         {
             if (phonemes == null || phonemes.Length == 0)
             {
-                PiperLogger.LogWarning("Empty phoneme array provided, returning minimal sequence");
-                return new[] { GetBosId(), GetEosId() };
+                PiperLogger.LogWarning("Empty phoneme array provided, returning empty array");
+                return Array.Empty<int>();
             }
 
             var ids = new List<int>();
             
-            // BOS (Beginning of Sequence) トークンを追加
-            ids.Add(GetBosId());
+            // Piper TTSモデルはBOS/EOSトークンを使用しない場合が多いため、
+            // 音素のみをエンコードする
 
             // 各音素をIDに変換
             foreach (var phoneme in phonemes)
@@ -60,21 +75,34 @@ namespace uPiper.Core.AudioGeneration
                 if (string.IsNullOrEmpty(phoneme))
                     continue;
 
-                if (_phonemeToId.TryGetValue(phoneme, out var id))
+                var phonemeToLookup = phoneme;
+                
+                // Multi-character phonemes need to be mapped to PUA characters first
+                if (multiCharPhonemeMap.TryGetValue(phoneme, out var puaChar))
+                {
+                    phonemeToLookup = puaChar;
+                    var puaCode = ((int)puaChar[0]).ToString("X4");
+                    PiperLogger.LogInfo($"Mapped multi-char phoneme '{phoneme}' to PUA U+{puaCode}");
+                }
+
+                if (_phonemeToId.TryGetValue(phonemeToLookup, out var id))
                 {
                     ids.Add(id);
                 }
                 else
                 {
-                    PiperLogger.LogWarning($"Unknown phoneme: {phoneme}, using PAD token");
-                    ids.Add(GetPadId());
+                    // 未知の音素はスキップ（PADトークンも使用しない）
+                    PiperLogger.LogWarning($"Unknown phoneme: {phoneme} (mapped as: {phonemeToLookup}), skipping");
                 }
             }
 
-            // EOS (End of Sequence) トークンを追加
-            ids.Add(GetEosId());
+            // 空の結果になった場合は、無音を表すPADトークンを1つ追加
+            if (ids.Count == 0)
+            {
+                ids.Add(GetPadId());
+            }
 
-            PiperLogger.LogDebug($"Encoded {phonemes.Length} phonemes to {ids.Count} IDs");
+            PiperLogger.LogDebug($"Encoded {phonemes.Length} phonemes to {ids.Count} IDs (without BOS/EOS)");
             return ids.ToArray();
         }
 

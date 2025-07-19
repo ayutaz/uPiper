@@ -71,7 +71,7 @@ namespace uPiper.Editor
                     throw new Exception("モデルが見つかりません");
                 }
                 
-                var jsonAsset = Resources.Load<TextAsset>("Models/ja_JP-test-medium.onnx.json");
+                var jsonAsset = Resources.Load<TextAsset>("Models/ja_JP-test-medium.onnx");
                 var voiceConfig = ParseVoiceConfig(jsonAsset.text, "ja_JP-test-medium");
                 
                 // InferenceEngineで初期化
