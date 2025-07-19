@@ -138,6 +138,12 @@ namespace uPiper.Core.AudioGeneration
                         var inputTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
                         var inputLengthsTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
                         var scalesTensor = new Tensor<float>(new TensorShape(3), new[] { noiseScale, lengthScale, noiseW });
+                        
+                        // デバッグ: 入力データの詳細を表示
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Input tensor shape: {inputTensor.shape}");
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Input data: [{string.Join(", ", phonemeIds)}]");
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Input lengths tensor: {phonemeIds.Length}");
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Scales: noise={noiseScale}, length={lengthScale}, noise_w={noiseW}");
 
                         try
                         {
