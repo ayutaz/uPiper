@@ -66,7 +66,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         [Test]
         public void GenerateAudioAsync_NullPhonemeIds_ThrowsException()
         {
-            // Note: 実際のSentisモデルがないため、初期化後のテストはモックが必要
+            // Note: 実際のUnity.InferenceEngineモデルがないため、初期化後のテストはモックが必要
             // このテストは引数検証のみをテスト
             Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await _generator.GenerateAudioAsync(null));
