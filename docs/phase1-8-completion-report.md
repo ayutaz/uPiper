@@ -131,7 +131,7 @@ public class PiperTTS : IPiperTTS
 ## 次のステップ
 
 ### Phase 1.9: ONNX モデル統合
-- Sentisを使用したONNXモデルの読み込み
+- Unity.InferenceEngineを使用したONNXモデルの読み込み
 - 音素列から音声波形への変換
 - リアルタイム音声生成
 

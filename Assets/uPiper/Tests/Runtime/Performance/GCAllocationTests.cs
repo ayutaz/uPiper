@@ -17,7 +17,7 @@ namespace uPiper.Tests.Runtime.Performance
         public void LRUCache_Performance_Benchmark()
         {
             var cache = new LRUCache<string, string>(1000);
-            
+
             // Prepare test data
             var testKeys = new string[100];
             var testValues = new string[100];
@@ -42,8 +42,8 @@ namespace uPiper.Tests.Runtime.Performance
                 cache.TryGet(testKeys[i % 100], out _);
             }
             stopwatch.Stop();
-            
-            Assert.Less(stopwatch.ElapsedMilliseconds, 1000, 
+
+            Assert.Less(stopwatch.ElapsedMilliseconds, 1000,
                 $"TryGet performance: {stopwatch.ElapsedMilliseconds}ms for 100k operations");
 
             // Benchmark ContainsKey
@@ -53,8 +53,8 @@ namespace uPiper.Tests.Runtime.Performance
                 cache.ContainsKey(testKeys[i % 100]);
             }
             stopwatch.Stop();
-            
-            Assert.Less(stopwatch.ElapsedMilliseconds, 1000, 
+
+            Assert.Less(stopwatch.ElapsedMilliseconds, 1000,
                 $"ContainsKey performance: {stopwatch.ElapsedMilliseconds}ms for 100k operations");
         }
 
@@ -62,7 +62,7 @@ namespace uPiper.Tests.Runtime.Performance
         public void LRUCache_GetStatistics_Allocation()
         {
             var cache = new LRUCache<string, string>(100);
-            
+
             // Prepare cache with data
             for (int i = 0; i < 50; i++)
             {
@@ -81,7 +81,7 @@ namespace uPiper.Tests.Runtime.Performance
         {
             var cache = new LRUCache<string, string>(1000);
             var testKeys = new string[100];
-            
+
             // Prepare data
             for (int i = 0; i < 100; i++)
             {
@@ -92,7 +92,7 @@ namespace uPiper.Tests.Runtime.Performance
             // Test concurrent read performance
             var tasks = new System.Threading.Tasks.Task[4];
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            
+
             for (int t = 0; t < tasks.Length; t++)
             {
                 int threadId = t;
@@ -104,11 +104,11 @@ namespace uPiper.Tests.Runtime.Performance
                     }
                 });
             }
-            
+
             System.Threading.Tasks.Task.WaitAll(tasks);
             stopwatch.Stop();
-            
-            Assert.Less(stopwatch.ElapsedMilliseconds, 2000, 
+
+            Assert.Less(stopwatch.ElapsedMilliseconds, 2000,
                 $"Concurrent access performance: {stopwatch.ElapsedMilliseconds}ms for 100k operations across 4 threads");
         }
     }

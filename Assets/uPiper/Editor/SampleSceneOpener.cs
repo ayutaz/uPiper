@@ -149,7 +149,7 @@ namespace uPiper.Editor
                 var textProp = textType.GetProperty("text");
                 textProp?.SetValue(text, "uPiper WebGL Demo\n\n" +
                            "このシーンはWebGLデモ用のシーンです。\n\n" +
-                           "実際のTTS機能は Phase 1.2 で実装予定です。\n\n" +
+                           "WebGLはUnity.InferenceEngineがサポートしていないため、\n" +
                            "現在は UI レイアウトのプレビューのみ表示されています。");
 
                 var fontSizeProp = textType.GetProperty("fontSize");
@@ -176,7 +176,7 @@ namespace uPiper.Editor
                 var text = textObj.AddComponent<UnityEngine.UI.Text>();
                 text.text = "uPiper WebGL Demo\n\n" +
                            "このシーンはWebGLデモ用のシーンです。\n\n" +
-                           "実際のTTS機能は Phase 1.2 で実装予定です。\n\n" +
+                           "WebGLはUnity.InferenceEngineがサポートしていないため、\n" +
                            "現在は UI レイアウトのプレビューのみ表示されています。";
                 text.fontSize = 24;
                 text.alignment = TextAnchor.MiddleCenter;

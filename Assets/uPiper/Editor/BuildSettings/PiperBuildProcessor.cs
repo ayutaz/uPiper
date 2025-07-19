@@ -14,8 +14,6 @@ namespace uPiper.Editor.BuildSettings
     {
         public int callbackOrder => 0;
 
-        private static string memo = "PiperBuildProcessor";
-
         public void OnPreprocessBuild(BuildReport report)
         {
             PiperLogger.LogInfo($"[PiperBuildProcessor] Starting build for {report.summary.platform}");

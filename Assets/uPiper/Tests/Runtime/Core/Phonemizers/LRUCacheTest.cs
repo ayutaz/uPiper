@@ -264,7 +264,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void TryGet_PerformanceCharacteristics()
         {
             var largeCache = new LRUCache<string, string>(1000);
-            
+
             // Prepare cache with data and pre-create test keys
             var testKeys = new string[100];
             for (int i = 0; i < 500; i++)
@@ -306,7 +306,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void ContainsKey_PerformanceCharacteristics()
         {
             var largeCache = new LRUCache<string, string>(1000);
-            
+
             // Prepare cache with data and pre-create test keys
             var testKeys = new string[100];
             for (int i = 0; i < 500; i++)
@@ -353,7 +353,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         public void GetStatistics_MinimalGCAllocation()
         {
             var largeCache = new LRUCache<string, string>(1000);
-            
+
             // Prepare cache with data
             for (int i = 0; i < 500; i++)
             {
