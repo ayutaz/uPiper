@@ -124,6 +124,10 @@ namespace uPiper.Core
             }
         }
 
+        // Cached list for available voices to avoid allocations
+        private List<string> _cachedVoiceIds = new List<string>();
+        private bool _voiceIdsCacheDirty = true;
+        
         /// <summary>
         /// Available voice IDs
         /// </summary>
@@ -133,9 +137,14 @@ namespace uPiper.Core
             {
                 lock (_lockObject)
                 {
-                    // Create a new list to ensure thread safety
-                    // The allocation is minimal and necessary for safety
-                    return new List<string>(_voices.Keys);
+                    if (_voiceIdsCacheDirty)
+                    {
+                        _cachedVoiceIds.Clear();
+                        _cachedVoiceIds.AddRange(_voices.Keys);
+                        _voiceIdsCacheDirty = false;
+                    }
+                    // Return the cached list as read-only
+                    return _cachedVoiceIds.AsReadOnly();
                 }
             }
         }
@@ -404,6 +413,7 @@ namespace uPiper.Core
                     // Add voice configuration
                     _voices[voice.VoiceId] = voice;
                     _voicesListDirty = true;
+                    _voiceIdsCacheDirty = true;
                     
                     // Check if we need to load the model
                     if (!_voiceGenerators.ContainsKey(voice.VoiceId))
