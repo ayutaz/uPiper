@@ -740,26 +740,23 @@ namespace uPiper.Core
                 else
 #endif
                 {
-                    // For runtime/builds, use a more compatible approach for Docker environments
-                    var cts = new System.Threading.CancellationTokenSource(timeout);
+                    // For runtime/builds, use GetAwaiter().GetResult() which is safer
                     try
                     {
-                        // Use ConfigureAwait(false) to avoid capturing synchronization context
-                        task.ConfigureAwait(false);
+                        // Create a task that will complete with timeout
+                        var timeoutTask = Task.Delay(timeout);
+                        var completedTask = Task.WhenAny(task, timeoutTask).GetAwaiter().GetResult();
                         
-                        // Wait for the task with timeout
-                        if (task.Wait(timeout))
-                        {
-                            return task.Result;
-                        }
-                        else
+                        if (completedTask == timeoutTask)
                         {
                             throw new TimeoutException($"Audio generation timed out after {timeout.TotalMilliseconds}ms");
                         }
+                        
+                        return task.GetAwaiter().GetResult();
                     }
-                    finally
+                    catch (Exception ex) when (!(ex is TimeoutException))
                     {
-                        cts.Cancel();
+                        throw new PiperException("Failed to generate audio", ex);
                     }
                 }
             }
