@@ -133,8 +133,9 @@ namespace uPiper.Core
             {
                 lock (_lockObject)
                 {
-                    // Return the keys directly to avoid allocation
-                    return _voices.Keys;
+                    // Create a new list to ensure thread safety
+                    // The allocation is minimal and necessary for safety
+                    return new List<string>(_voices.Keys);
                 }
             }
         }
@@ -525,7 +526,8 @@ namespace uPiper.Core
                     _cachedAvailableVoices = new List<PiperVoiceConfig>(_voices.Values);
                     _voicesListDirty = false;
                 }
-                return _cachedAvailableVoices;
+                // Return a copy to ensure thread safety
+                return new List<PiperVoiceConfig>(_cachedAvailableVoices);
             }
         }
 
@@ -738,17 +740,26 @@ namespace uPiper.Core
                 else
 #endif
                 {
-                    // For runtime/builds, use the safer approach
+                    // For runtime/builds, use a more compatible approach for Docker environments
                     var cts = new System.Threading.CancellationTokenSource(timeout);
                     try
                     {
-                        // Run the task with cancellation support
-                        var resultTask = Task.Run(async () => await task, cts.Token);
-                        return resultTask.GetAwaiter().GetResult();
+                        // Use ConfigureAwait(false) to avoid capturing synchronization context
+                        task.ConfigureAwait(false);
+                        
+                        // Wait for the task with timeout
+                        if (task.Wait(timeout))
+                        {
+                            return task.Result;
+                        }
+                        else
+                        {
+                            throw new TimeoutException($"Audio generation timed out after {timeout.TotalMilliseconds}ms");
+                        }
                     }
-                    catch (OperationCanceledException)
+                    finally
                     {
-                        throw new TimeoutException($"Audio generation timed out after {timeout.TotalMilliseconds}ms");
+                        cts.Cancel();
                     }
                 }
             }

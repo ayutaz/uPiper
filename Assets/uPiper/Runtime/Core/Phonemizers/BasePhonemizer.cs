@@ -152,14 +152,15 @@ namespace uPiper.Core.Phonemizers
         {
             try
             {
-                // Run async method synchronously using a thread pool task
-                // This prevents deadlocks in Unity's synchronization context
-                return Task.Run(() => PhonemizeAsync(text, language)).Result;
+                // Use GetAwaiter().GetResult() for better error handling and to avoid deadlocks
+                // This is safer than Task.Run().Result in Unity environments
+                var task = PhonemizeAsync(text, language);
+                return task.GetAwaiter().GetResult();
             }
-            catch (AggregateException ex)
+            catch (Exception ex)
             {
-                // Unwrap the AggregateException to throw the actual inner exception
-                throw ex.InnerException ?? ex;
+                PiperLogger.LogError($"Phonemize sync failed: {ex.Message}");
+                throw;
             }
         }
 
