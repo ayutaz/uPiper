@@ -282,9 +282,12 @@ namespace uPiper.Demo
 
         private string[] ConvertToPhonemes(string text, string language)
         {
-            // 簡易的な音素変換（実際にはOpenJTalkを使用すべき）
+            // TODO: Replace with proper phonemizer integration (OpenJTalk for Japanese, espeak-ng for other languages)
+            // This is a simplified demo implementation for Phase 1.9
             if (language == "ja")
             {
+                // Simplified Japanese phoneme mapping for demo purposes
+                // Phase 1.10 will integrate OpenJTalkPhonemizer for accurate conversion
                 var phonemeMap = new Dictionary<string, string[]>
                 {
                     { "こ", new[] { "k", "o" } },

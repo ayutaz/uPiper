@@ -70,7 +70,8 @@ namespace uPiper.Core.AudioGeneration
                         }
 
                         PiperLogger.LogDebug("[InferenceAudioGenerator] Model loaded, creating worker...");
-                        // GPUComputeでMetalエラーが出ているため、CPUバックエンドを使用
+                        // TODO: Make backend configurable. Currently using CPU due to Metal shader compilation errors on GPU.
+                        // Error: "Compilation failure: program_source:2:10: fatal error: 'metal_stdlib' file not found"
                         _worker = new Worker(_model, BackendType.CPU);
                         _isInitialized = true;
 
@@ -231,10 +232,7 @@ namespace uPiper.Core.AudioGeneration
                         var audioData = new float[audioLength];
 
                         // テンソルデータをコピー
-                        for (int i = 0; i < audioLength; i++)
-                        {
-                            audioData[i] = readableTensor[i];
-                        }
+                        readableTensor.CopyTo(audioData);
 
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Copied {audioData.Length} samples");
 

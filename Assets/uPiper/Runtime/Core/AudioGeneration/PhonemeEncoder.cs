@@ -117,7 +117,7 @@ namespace uPiper.Core.AudioGeneration
                 ids.Add(GetPadId());
             }
 
-            PiperLogger.LogDebug($"Encoded {phonemes.Length} phonemes to {ids.Count} IDs (without BOS/EOS)");
+            PiperLogger.LogDebug($"Encoded {phonemes.Length} phonemes to {ids.Count} IDs (BOS/EOS tokens excluded during encoding)");
             return ids.ToArray();
         }
 
