@@ -4,7 +4,8 @@
     "references": [
         "Unity.InferenceEngine",
         "Unity.Burst",
-        "Newtonsoft.Json"
+        "Newtonsoft.Json",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

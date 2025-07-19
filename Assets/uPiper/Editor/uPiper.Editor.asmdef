@@ -3,7 +3,9 @@
     "rootNamespace": "uPiper.Editor",
     "references": [
         "uPiper.Runtime",
-        "Unity.InferenceEngine"
+        "Unity.InferenceEngine",
+        "Unity.TextMeshPro",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [
         "Editor"

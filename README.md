@@ -35,3 +35,11 @@
 - Linux (x64)
 
 ※ WebGLサポートについては[Issue #17](https://github.com/ayutaz/uPiper/issues/17)を参照してください
+
+## ライセンス
+
+### フォント
+- **Noto Sans Japanese**: SIL Open Font License, Version 1.1
+  - Copyright 2014-2021 Adobe (http://www.adobe.com/)
+  - TextMeshProでの日本語表示に使用
+  - 詳細は `Assets/Fonts/LICENSE.txt` を参照
