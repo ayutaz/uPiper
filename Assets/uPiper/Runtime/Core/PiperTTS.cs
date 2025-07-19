@@ -1277,7 +1277,7 @@ namespace uPiper.Core
             PiperLogger.LogInfo("Inference Engine initialized with backend: {0}", _inferenceBackend);
 
             // Small delay to simulate async operation
-            await Task.Yield();
+            await Task.Delay(1);
         }
 
         /// <summary>
@@ -1373,7 +1373,7 @@ namespace uPiper.Core
             PiperLogger.LogInfo("Worker pool initialization completed");
 
             // Small delay to simulate async operation
-            await Task.Yield();
+            await Task.Delay(1);
         }
 
         /// <summary>
