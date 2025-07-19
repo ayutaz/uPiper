@@ -141,7 +141,7 @@ namespace uPiper.Tests.Runtime.Integration
             var config = new PiperConfig
             {
                 DefaultLanguage = "en",
-                SampleRate = 16000, // This model uses 16kHz
+                SampleRate = 22050, // This model uses 22.05kHz
                 EnablePhonemeCache = true,
                 TimeoutMs = 30000  // 30 seconds timeout
             };
@@ -190,7 +190,7 @@ namespace uPiper.Tests.Runtime.Integration
             var audioClip = generateTask.Result;
             Assert.IsNotNull(audioClip);
             Assert.Greater(audioClip.length, 0);
-            Assert.AreEqual(16000, audioClip.frequency);
+            Assert.AreEqual(22050, audioClip.frequency);
             
             Debug.Log($"Generated audio: {audioClip.length} seconds, {audioClip.samples} samples");
         }
