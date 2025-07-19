@@ -196,8 +196,14 @@ namespace uPiper.Demo
                 var language = _modelLanguages[modelName];
                 
 #if !UNITY_WEBGL
-                // Use OpenJTalk for Japanese if available
-                if (language == "ja" && _phonemizer != null)
+                // Check if OpenJTalk is disabled via editor preference
+                bool openJTalkDisabled = false;
+#if UNITY_EDITOR
+                openJTalkDisabled = UnityEditor.EditorPrefs.GetBool("uPiper_DisableOpenJTalk", false);
+#endif
+                
+                // Use OpenJTalk for Japanese if available and not disabled
+                if (language == "ja" && _phonemizer != null && !openJTalkDisabled)
                 {
                     PiperLogger.LogDebug("[InferenceEngineDemo] Using OpenJTalk phonemizer for Japanese text");
                     var phonemeResult = await _phonemizer.PhonemizeAsync(_inputField.text, language);
@@ -238,7 +244,8 @@ namespace uPiper.Demo
                 else
                 {
                     // Fallback to simple conversion
-                    PiperLogger.LogDebug($"[InferenceEngineDemo] Using simple phoneme conversion (OpenJTalk not available for {language})");
+                    string reason = openJTalkDisabled ? "disabled by user" : $"not available for {language}";
+                    PiperLogger.LogDebug($"[InferenceEngineDemo] Using simple phoneme conversion (OpenJTalk {reason})");
                     phonemes = ConvertToPhonemes(_inputField.text, language);
                     PiperLogger.LogInfo($"[Simple] Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                     
