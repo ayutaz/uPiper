@@ -18,23 +18,26 @@
 * Unity 6000.0.35f1
 * Unity AI Interface (Inference Engine) 2.2.x
 
+## サポートプラットフォーム
+
+### 現在サポート中
+- ✅ Windows (x64)
+- ✅ macOS (Apple Silicon/Intel)
+- ✅ Linux (x64)
+
+### 未対応
+- ❌ WebGL - Unity.InferenceEngineがWebGLをサポートしていないため
+- ❌ iOS/Android - モバイル対応は今後検討予定
+
 ## ビルド
 
 ### 自動ビルド（GitHub Actions）
 - mainブランチへのプッシュ時に自動的に全プラットフォーム向けのビルドが実行されます
-- WebGLビルドはGitHub Pagesに自動デプロイされます
 - リリースタグ（v*）をプッシュすると、自動的にリリースが作成されます
 
 ### 手動ビルド
 1. Unity Editorで `uPiper/Build/Configure Build Settings` を実行
 2. `uPiper/Build/Build All Platforms` で全プラットフォームをビルド
-
-### サポートプラットフォーム
-- Windows (x64)
-- macOS
-- Linux (x64)
-
-※ WebGLサポートについては[Issue #17](https://github.com/ayutaz/uPiper/issues/17)を参照してください
 
 ## ライセンス
 

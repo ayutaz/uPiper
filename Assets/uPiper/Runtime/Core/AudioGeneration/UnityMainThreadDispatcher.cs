@@ -21,7 +21,13 @@ namespace uPiper.Core.AudioGeneration
 
             var gameObject = new GameObject("UnityMainThreadDispatcher");
             gameObject.AddComponent<UnityMainThreadDispatcherComponent>();
-            GameObject.DontDestroyOnLoad(gameObject);
+            
+            // DontDestroyOnLoadはPlayModeでのみ使用
+            if (Application.isPlaying)
+            {
+                GameObject.DontDestroyOnLoad(gameObject);
+            }
+            
             _initialized = true;
         }
 
@@ -47,6 +53,38 @@ namespace uPiper.Core.AudioGeneration
 
                     action();
                     tcs.SetResult(true);
+                }
+                catch (Exception ex)
+                {
+                    tcs.SetException(ex);
+                }
+            });
+
+            return tcs.Task;
+        }
+
+        /// <summary>
+        /// メインスレッドで関数を実行して結果を返す
+        /// </summary>
+        public static Task<T> RunOnMainThreadAsync<T>(Func<T> func, CancellationToken cancellationToken = default)
+        {
+            if (!_initialized)
+                Initialize();
+
+            var tcs = new TaskCompletionSource<T>();
+
+            _actions.Enqueue(() =>
+            {
+                try
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        tcs.SetCanceled();
+                        return;
+                    }
+
+                    var result = func();
+                    tcs.SetResult(result);
                 }
                 catch (Exception ex)
                 {

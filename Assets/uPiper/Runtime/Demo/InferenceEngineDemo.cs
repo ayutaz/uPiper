@@ -25,8 +25,8 @@ namespace uPiper.Demo
         [SerializeField] private TMP_Dropdown _modelDropdown;
         
         [Header("Settings")]
-        [SerializeField] private string _defaultJapaneseText = "こんにちは、世界！";
-        [SerializeField] private string _defaultEnglishText = "Hello, world!";
+        [SerializeField] private string _defaultJapaneseText = "こんにちは";
+        [SerializeField] private string _defaultEnglishText = "Hello world";
         
         private InferenceAudioGenerator _generator;
         private PhonemeEncoder _encoder;
@@ -209,10 +209,10 @@ namespace uPiper.Demo
                     { "に", new[] { "n", "i" } },
                     { "ち", new[] { "t", "i" } },
                     { "は", new[] { "h", "a" } },
-                    { "、", new[] { "?" } },
+                    { "、", new[] { "pau" } },  // pause
                     { "世", new[] { "s", "e" } },
                     { "界", new[] { "k", "a", "i" } },
-                    { "！", new[] { "!" } }
+                    { "！", new[] { "pau" } }  // pause instead of !
                 };
 
                 var phonemes = new List<string>();
@@ -230,9 +230,10 @@ namespace uPiper.Demo
             {
                 // 英語の簡易音素変換
                 return text.ToLower()
-                    .Replace(",", " ,")
-                    .Replace(".", " .")
-                    .Replace("!", " !")
+                    .Replace(",", " pau")
+                    .Replace(".", " pau")
+                    .Replace("!", " pau")
+                    .Replace("?", " pau")
                     .Split(' ', StringSplitOptions.RemoveEmptyEntries);
             }
         }

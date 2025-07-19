@@ -99,7 +99,8 @@ namespace uPiper.Core.AudioGeneration
             if (phonemeIds == null || phonemeIds.Length == 0)
                 throw new ArgumentException("Phoneme IDs cannot be null or empty.", nameof(phonemeIds));
 
-            return await Task.Run(() =>
+            // Unity.InferenceEngineの操作はメインスレッドで実行する必要がある
+            return await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
             {
                 lock (_lockObject)
                 {
@@ -169,7 +170,7 @@ namespace uPiper.Core.AudioGeneration
                         throw;
                     }
                 }
-            }, cancellationToken);
+            });
         }
 
         /// <inheritdoc/>
