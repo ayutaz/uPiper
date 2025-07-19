@@ -8,9 +8,7 @@ using UnityEngine;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
-#if UNITY_AI_INTERFACE_2_2_OR_NEWER
 using Unity.InferenceEngine;
-#endif
 
 namespace uPiper.Editor
 {
@@ -19,7 +17,6 @@ namespace uPiper.Editor
     /// </summary>
     public class InferenceEngineDemo : EditorWindow
     {
-#if UNITY_AI_INTERFACE_2_2_OR_NEWER
         private string _inputText = "こんにちは、世界！";
         private string _selectedModel = "ja_JP-test-medium";
         private AudioClip _generatedClip;
@@ -30,15 +27,12 @@ namespace uPiper.Editor
         private PhonemeEncoder _encoder;
         private AudioClipBuilder _audioBuilder;
         private PiperVoiceConfig _currentConfig;
-#endif
 
-        [MenuItem("Window/uPiper/Inference Engine Demo")]
+        [MenuItem("uPiper/Demo/Inference Engine Demo")]
         public static void ShowWindow()
         {
             GetWindow<InferenceEngineDemo>("Piper TTS Demo");
         }
-
-#if UNITY_AI_INTERFACE_2_2_OR_NEWER
 
         private void OnEnable()
         {
@@ -288,7 +282,7 @@ namespace uPiper.Editor
 
         private void StopAudioClip()
         {
-            var audioSources = FindObjectsOfType<AudioSource>();
+            var audioSources = FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
             foreach (var source in audioSources)
             {
                 if (source.clip == _generatedClip)
@@ -305,32 +299,5 @@ namespace uPiper.Editor
             go.hideFlags = HideFlags.HideAndDontSave;
             return go.AddComponent<AudioSource>();
         }
-#else // !UNITY_AI_INTERFACE_2_2_OR_NEWER
-        private void OnGUI()
-        {
-            EditorGUILayout.LabelField("Unity.InferenceEngine Not Available", EditorStyles.boldLabel);
-            EditorGUILayout.Space();
-            
-            EditorGUILayout.HelpBox(
-                "Unity.InferenceEngine package is not available in this Unity version.\n\n" +
-                "Please ensure you have:\n" +
-                "1. Unity 6000.0 or newer\n" +
-                "2. com.unity.ai.inference package installed (version 2.2.0 or newer)\n" +
-                "3. Project properly configured\n\n" +
-                "Current Unity version: " + Application.unityVersion,
-                MessageType.Warning
-            );
-            
-            EditorGUILayout.Space();
-            
-            if (GUILayout.Button("Open Package Manager"))
-            {
-                UnityEditor.PackageManager.UI.Window.Open("com.unity.ai.inference");
-            }
-            
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Phase 1.9 features require Unity.InferenceEngine for ONNX model support.");
-        }
-#endif // UNITY_AI_INTERFACE_2_2_OR_NEWER
     }
 }

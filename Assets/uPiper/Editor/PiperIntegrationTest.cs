@@ -8,9 +8,7 @@ using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers.Implementations;
-#if UNITY_AI_INTERFACE_2_2_OR_NEWER
 using Unity.InferenceEngine;
-#endif
 
 namespace uPiper.Editor
 {
@@ -19,21 +17,17 @@ namespace uPiper.Editor
     /// </summary>
     public class PiperIntegrationTest : EditorWindow
     {
-#if UNITY_AI_INTERFACE_2_2_OR_NEWER
         private PiperTTS _tts;
         private string _inputText = "こんにちは";
         private bool _isProcessing;
         private string _status = "準備完了";
         private AudioClip _lastGeneratedClip;
-#endif
 
-        [MenuItem("Window/uPiper/Integration Test")]
+        [MenuItem("uPiper/Demo/Phase 1.9 Integration Test")]
         public static void ShowWindow()
         {
             GetWindow<PiperIntegrationTest>("Piper Integration Test");
         }
-
-#if UNITY_AI_INTERFACE_2_2_OR_NEWER
 
         private async void OnEnable()
         {
@@ -57,21 +51,18 @@ namespace uPiper.Editor
             {
                 _status = "初期化中...";
                 
-                // PiperTTSを作成
-                _tts = new PiperTTS();
-                
                 // 基本設定で初期化
                 var config = new PiperConfig
                 {
-                    DefaultVoiceId = "ja_JP-test-medium",
+                    DefaultLanguage = "ja",
                     EnablePhonemeCache = true,
-                    TestMode = false
+                    EnableDebugLogging = true
                 };
                 
-                await _tts.InitializeAsync(config);
+                // PiperTTSを作成
+                _tts = new PiperTTS(config);
                 
-                // 日本語音素化システムを初期化
-                await _tts.InitializePhonemizerAsync("ja");
+                await _tts.InitializeAsync();
                 
                 // モデルとコンフィグをロード
                 var modelAsset = Resources.Load<ModelAsset>("Models/ja_JP-test-medium");
@@ -164,7 +155,7 @@ namespace uPiper.Editor
                     DestroyImmediate(_lastGeneratedClip);
                 }
                 
-                _lastGeneratedClip = await _tts.GenerateAudioWithInferenceAsync(_inputText);
+                _lastGeneratedClip = await _tts.GenerateAudioWithInferenceAsync(_inputText, System.Threading.CancellationToken.None);
                 
                 _status = $"生成完了！ ({_lastGeneratedClip.length:F2}秒)";
             }
@@ -235,7 +226,7 @@ namespace uPiper.Editor
 
         private void StopAllClips()
         {
-            var sources = FindObjectsOfType<AudioSource>();
+            var sources = FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
             foreach (var source in sources)
             {
                 if (source.gameObject.name == "TempAudioSource")
@@ -244,27 +235,5 @@ namespace uPiper.Editor
                 }
             }
         }
-#else // !UNITY_AI_INTERFACE_2_2_OR_NEWER
-        private void OnGUI()
-        {
-            EditorGUILayout.LabelField("Unity.InferenceEngine Not Available", EditorStyles.boldLabel);
-            EditorGUILayout.Space();
-            
-            EditorGUILayout.HelpBox(
-                "Unity.InferenceEngine package is not available in this Unity version.\n\n" +
-                "Phase 1.9 統合テストにはUnity.InferenceEngineが必要です。\n\n" +
-                "必要な要件:\n" +
-                "• Unity 6000.0以降\n" +
-                "• com.unity.ai.inferenceパッケージ (2.2.0以降)\n" +
-                "• 正しいプロジェクト設定",
-                MessageType.Warning
-            );
-            
-            if (GUILayout.Button("パッケージマネージャーを開く"))
-            {
-                UnityEditor.PackageManager.UI.Window.Open("com.unity.ai.inference");
-            }
-        }
-#endif // UNITY_AI_INTERFACE_2_2_OR_NEWER
     }
 }
