@@ -232,7 +232,10 @@ namespace uPiper.Core.AudioGeneration
                         var audioData = new float[audioLength];
 
                         // テンソルデータをコピー
-                        readableTensor.CopyTo(audioData);
+                        for (int i = 0; i < audioLength; i++)
+                        {
+                            audioData[i] = readableTensor[i];
+                        }
 
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Copied {audioData.Length} samples");
 
