@@ -589,7 +589,7 @@ namespace uPiper.Core
 
                 if (_phonemizer != null)
                 {
-                    phonemeResult = await _phonemizer.PhonemizeAsync(text);
+                    phonemeResult = await _phonemizer.PhonemizeAsync(text).ConfigureAwait(false);
                     PiperLogger.LogInfo("Phonemization completed: {0} phonemes", phonemeResult.Phonemes?.Length ?? 0);
 
                     // Log phonemes for debugging
@@ -620,12 +620,12 @@ namespace uPiper.Core
                 if (generator != null && phonemeResult != null && phonemeResult.PhonemeIds != null)
                 {
                     // Generate audio using the voice-specific generator
-                    audioClip = await generator.GenerateAudioAsync(phonemeResult.PhonemeIds, 0, cancellationToken);
+                    audioClip = await generator.GenerateAudioAsync(phonemeResult.PhonemeIds, 0, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
                     // Fallback to dummy audio
-                    await Task.Delay(100, cancellationToken); // Simulate synthesis
+                    await Task.Delay(100, cancellationToken).ConfigureAwait(false); // Simulate synthesis
                     audioClip = CreateDummyAudioClip(text);
                 }
                 
