@@ -126,6 +126,7 @@ namespace uPiper.Core
 
         // Cached list for available voices to avoid allocations
         private List<string> _cachedVoiceIds = new List<string>();
+        private System.Collections.ObjectModel.ReadOnlyCollection<string> _cachedReadOnlyVoiceIds;
         private bool _voiceIdsCacheDirty = true;
         
         /// <summary>
@@ -141,10 +142,11 @@ namespace uPiper.Core
                     {
                         _cachedVoiceIds.Clear();
                         _cachedVoiceIds.AddRange(_voices.Keys);
+                        _cachedReadOnlyVoiceIds = _cachedVoiceIds.AsReadOnly();
                         _voiceIdsCacheDirty = false;
                     }
-                    // Return the cached list as read-only
-                    return _cachedVoiceIds.AsReadOnly();
+                    // Return the cached read-only collection
+                    return _cachedReadOnlyVoiceIds;
                 }
             }
         }
@@ -285,6 +287,9 @@ namespace uPiper.Core
             _cacheHitCount = 0;
             _cacheMissCount = 0;
             _cacheEvictionCount = 0;
+            
+            // Initialize voice cache with empty read-only collection
+            _cachedReadOnlyVoiceIds = _cachedVoiceIds.AsReadOnly();
 
             // Validate configuration on construction
             _config.Validate();
@@ -896,10 +901,18 @@ namespace uPiper.Core
                                 completed = true;
                             }, TaskScheduler.Default);
                             
-                            while (!completed)
+                            var endTime = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+                            while (!completed && DateTime.UtcNow < endTime)
                             {
+                                // Small delay to prevent tight loop
                                 System.Threading.Thread.Sleep(10);
+                                // Allow Unity Editor to process events
                                 UnityEditor.EditorApplication.QueuePlayerLoopUpdate();
+                            }
+                            
+                            if (!completed)
+                            {
+                                throw new TimeoutException("Voice loading timed out");
                             }
                             
                             if (error != null)
@@ -1289,15 +1302,21 @@ namespace uPiper.Core
 
             try
             {
-                // For Japanese, use OpenJTalkPhonemizer
-                if (_config.DefaultLanguage == "ja" || _config.DefaultLanguage == "jp" ||
+                // Check if we should force mock mode (e.g., in tests)
+                bool forceMockMode = Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1";
+                
+                if (forceMockMode)
+                {
+                    // Always use MockPhonemizer in mock mode
+                    _phonemizer = new MockPhonemizer();
+                    PiperLogger.LogInfo("Initialized MockPhonemizer (Mock Mode forced) for language: {0}", _config.DefaultLanguage);
+                }
+                else if (_config.DefaultLanguage == "ja" || _config.DefaultLanguage == "jp" ||
                     _config.DefaultLanguage == "japanese")
                 {
 #if !UNITY_WEBGL
-                    // Check if we should force mock mode (e.g., in tests)
-                    bool forceMockMode = Environment.GetEnvironmentVariable("PIPER_MOCK_MODE") == "1";
-                    _phonemizer = new OpenJTalkPhonemizer(forceMockMode: forceMockMode);
-                    PiperLogger.LogInfo("Initialized OpenJTalkPhonemizer for Japanese (MockMode={0})", forceMockMode);
+                    _phonemizer = new OpenJTalkPhonemizer(forceMockMode: false);
+                    PiperLogger.LogInfo("Initialized OpenJTalkPhonemizer for Japanese");
 #else
                     PiperLogger.LogWarning("OpenJTalkPhonemizer is not supported on WebGL platform");
                     _phonemizer = new MockPhonemizer(); // Fallback to mock
@@ -1312,7 +1331,7 @@ namespace uPiper.Core
                 }
 
                 // Small delay to simulate async operation
-                await Task.Yield();
+                await Task.Delay(1);
             }
             catch (Exception ex)
             {
@@ -1351,7 +1370,7 @@ namespace uPiper.Core
                 _voiceGenerators = new Dictionary<string, ISentisAudioGenerator>();
                 
                 // Small delay to simulate async operation
-                await Task.Yield();
+                await Task.Delay(1);
             }
             catch (Exception ex)
             {

@@ -299,6 +299,10 @@ namespace uPiper.Core.AudioGeneration
             int speakerId,
             CancellationToken cancellationToken)
         {
+            // Check cancellation before starting
+            cancellationToken.ThrowIfCancellationRequested();
+            
+            // Run on thread pool to avoid blocking Unity main thread
             return await Task.Run(() =>
             {
                 lock (_lockObject)

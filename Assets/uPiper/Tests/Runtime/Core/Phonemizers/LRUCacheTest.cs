@@ -184,13 +184,6 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         [Test]
         public void ThreadSafety_ConcurrentOperations()
         {
-            // Skip this test in Unity Editor to avoid freezing
-            if (UnityEngine.Application.isEditor)
-            {
-                Assert.Ignore("Skipping concurrent test in Unity Editor to avoid freezing");
-                return;
-            }
-
             var tasks = new List<Task>();
             var itemCount = 100;
 
