@@ -563,7 +563,7 @@ namespace uPiper.Core
                 if (_config.EnablePhonemeCache)
                 {
                     var cacheKey = GenerateCacheKey(text, _currentVoiceId);
-                    PiperLogger.LogDebug($"Cache check - Key: {cacheKey}, VoiceId: {_currentVoiceId}");
+                    PiperLogger.LogInfo($"Cache check - Key: {cacheKey}, VoiceId: {_currentVoiceId}");
                     lock (_lockObject)
                     {
                         if (_audioCache.TryGetValue(cacheKey, out var cachedData))
@@ -578,7 +578,7 @@ namespace uPiper.Core
                         else
                         {
                             _cacheMissCount++;
-                            PiperLogger.LogDebug($"Cache miss - Cache size: {_audioCache.Count}");
+                            PiperLogger.LogInfo($"Cache miss - Cache size: {_audioCache.Count}");
                         }
                     }
                 }
@@ -591,7 +591,7 @@ namespace uPiper.Core
 
                 if (_phonemizer != null)
                 {
-                    phonemeResult = await _phonemizer.PhonemizeAsync(text).ConfigureAwait(false);
+                    phonemeResult = await _phonemizer.PhonemizeAsync(text);
                     PiperLogger.LogInfo("Phonemization completed: {0} phonemes", phonemeResult.Phonemes?.Length ?? 0);
 
                     // Log phonemes for debugging
@@ -622,12 +622,12 @@ namespace uPiper.Core
                 if (generator != null && phonemeResult != null && phonemeResult.PhonemeIds != null)
                 {
                     // Generate audio using the voice-specific generator
-                    audioClip = await generator.GenerateAudioAsync(phonemeResult.PhonemeIds, 0, cancellationToken).ConfigureAwait(false);
+                    audioClip = await generator.GenerateAudioAsync(phonemeResult.PhonemeIds, 0, cancellationToken);
                 }
                 else
                 {
                     // Fallback to dummy audio
-                    await Task.Delay(100, cancellationToken).ConfigureAwait(false); // Simulate synthesis
+                    await Task.Delay(100, cancellationToken); // Simulate synthesis
                     audioClip = CreateDummyAudioClip(text);
                 }
                 
@@ -639,7 +639,7 @@ namespace uPiper.Core
                     var cacheKey = GenerateCacheKey(text, _currentVoiceId);
                     var cachedData = CachedAudioData.FromAudioClip(audioClip);
                     
-                    PiperLogger.LogDebug($"Caching - Key: {cacheKey}, VoiceId: {_currentVoiceId}, Size: {cachedData.SizeInBytes} bytes");
+                    PiperLogger.LogInfo($"Caching - Key: {cacheKey}, VoiceId: {_currentVoiceId}, Size: {cachedData.SizeInBytes} bytes");
                     
                     lock (_lockObject)
                     {
@@ -652,7 +652,7 @@ namespace uPiper.Core
                         
                         _audioCache[cacheKey] = cachedData;
                         _currentCacheSize += cachedData.SizeInBytes;
-                        PiperLogger.LogDebug("Cached audio data: {0} bytes, total cache: {1:F2}MB, total entries: {2}", 
+                        PiperLogger.LogInfo("Cached audio data: {0} bytes, total cache: {1:F2}MB, total entries: {2}", 
                             cachedData.SizeInBytes, _currentCacheSize / (1024.0 * 1024.0), _audioCache.Count);
                     }
                 }

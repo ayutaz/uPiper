@@ -341,7 +341,7 @@ namespace uPiper.Core.AudioGeneration
                         }
                     }
                 }
-            }, cancellationToken).ConfigureAwait(false);
+            }, cancellationToken);
         }
 
         /// <summary>
