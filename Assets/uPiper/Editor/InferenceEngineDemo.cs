@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using Unity.InferenceEngine;
 using UnityEditor;
 using UnityEngine;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
-using Unity.InferenceEngine;
 
 namespace uPiper.Editor
 {
@@ -22,7 +22,7 @@ namespace uPiper.Editor
         private AudioClip _generatedClip;
         private bool _isGenerating;
         private string _status = "準備完了";
-        
+
         private InferenceAudioGenerator _generator;
         private PhonemeEncoder _encoder;
         private AudioClipBuilder _audioBuilder;
@@ -44,7 +44,7 @@ namespace uPiper.Editor
         {
             _generator?.Dispose();
             _generator = null;
-            
+
             if (_generatedClip != null)
             {
                 DestroyImmediate(_generatedClip);
@@ -90,7 +90,7 @@ namespace uPiper.Editor
             {
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("生成された音声:");
-                
+
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("再生"))
                 {
@@ -119,7 +119,7 @@ namespace uPiper.Editor
                 // モデルとコンフィグをロード
                 _status = "モデルをロード中...";
                 Repaint();
-                
+
                 var modelPath = $"Models/{_selectedModel}";
                 var modelAsset = Resources.Load<ModelAsset>(modelPath);
                 if (modelAsset == null)
@@ -136,20 +136,20 @@ namespace uPiper.Editor
                 }
 
                 var config = ParseConfig(jsonAsset.text);
-                
+
                 // エンコーダーを初期化
                 _encoder = new PhonemeEncoder(config);
 
                 // ジェネレーターを初期化
                 _status = "ジェネレーターを初期化中...";
                 Repaint();
-                
+
                 await _generator.InitializeAsync(modelAsset, config);
 
                 // 音素に変換（簡易実装）
                 _status = "音素に変換中...";
                 Repaint();
-                
+
                 var phonemes = ConvertToPhonemes(_inputText);
                 PiperLogger.LogDebug($"Phonemes: {string.Join(" ", phonemes)}");
 
@@ -160,21 +160,21 @@ namespace uPiper.Editor
                 // 音声生成
                 _status = "音声を生成中...";
                 Repaint();
-                
+
                 var audioData = await _generator.GenerateAudioAsync(phonemeIds);
-                
+
                 // AudioClipを作成
                 _status = "AudioClipを作成中...";
                 Repaint();
-                
+
                 if (_generatedClip != null)
                 {
                     DestroyImmediate(_generatedClip);
                 }
-                
+
                 _generatedClip = _audioBuilder.BuildAudioClip(
-                    audioData, 
-                    config.SampleRate, 
+                    audioData,
+                    config.SampleRate,
                     $"Generated_{DateTime.Now:HHmmss}"
                 );
 

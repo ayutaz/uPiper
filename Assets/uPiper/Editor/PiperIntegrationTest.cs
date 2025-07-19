@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using Unity.InferenceEngine;
 using UnityEditor;
 using UnityEngine;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers.Implementations;
-using Unity.InferenceEngine;
 
 namespace uPiper.Editor
 {
@@ -38,7 +38,7 @@ namespace uPiper.Editor
         {
             _tts?.Dispose();
             _tts = null;
-            
+
             if (_lastGeneratedClip != null)
             {
                 DestroyImmediate(_lastGeneratedClip);
@@ -50,7 +50,7 @@ namespace uPiper.Editor
             try
             {
                 _status = "初期化中...";
-                
+
                 // 基本設定で初期化
                 var config = new PiperConfig
                 {
@@ -58,25 +58,25 @@ namespace uPiper.Editor
                     EnablePhonemeCache = true,
                     EnableDebugLogging = true
                 };
-                
+
                 // PiperTTSを作成
                 _tts = new PiperTTS(config);
-                
+
                 await _tts.InitializeAsync();
-                
+
                 // モデルとコンフィグをロード
                 var modelAsset = Resources.Load<ModelAsset>("Models/ja_JP-test-medium");
                 if (modelAsset == null)
                 {
                     throw new Exception("モデルが見つかりません");
                 }
-                
+
                 var jsonAsset = Resources.Load<TextAsset>("Models/ja_JP-test-medium.onnx");
                 var voiceConfig = ParseVoiceConfig(jsonAsset.text, "ja_JP-test-medium");
-                
+
                 // InferenceEngineで初期化
                 await _tts.InitializeWithInferenceAsync(modelAsset, voiceConfig);
-                
+
                 _status = "初期化完了";
             }
             catch (Exception ex)
@@ -114,7 +114,7 @@ namespace uPiper.Editor
             {
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("生成された音声:");
-                
+
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("再生"))
                 {
@@ -125,7 +125,7 @@ namespace uPiper.Editor
                     StopAllClips();
                 }
                 GUILayout.EndHorizontal();
-                
+
                 EditorGUILayout.LabelField($"長さ: {_lastGeneratedClip.length:F2}秒");
                 EditorGUILayout.LabelField($"サンプルレート: {_lastGeneratedClip.frequency}Hz");
             }
@@ -142,21 +142,21 @@ namespace uPiper.Editor
                 // 音素化情報をログ
                 _status = "音素化中...";
                 Repaint();
-                
+
                 var phonemeResult = await _tts.GetPhonemesAsync(_inputText);
                 PiperLogger.LogInfo($"音素化結果: {string.Join(" ", phonemeResult.Phonemes)}");
 
                 // InferenceEngineを使った音声生成
                 _status = "音声生成中...";
                 Repaint();
-                
+
                 if (_lastGeneratedClip != null)
                 {
                     DestroyImmediate(_lastGeneratedClip);
                 }
-                
+
                 _lastGeneratedClip = await _tts.GenerateAudioWithInferenceAsync(_inputText, System.Threading.CancellationToken.None);
-                
+
                 _status = $"生成完了！ ({_lastGeneratedClip.length:F2}秒)";
             }
             catch (Exception ex)

@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using TMPro;
+using Unity.InferenceEngine;
 using UnityEngine;
 using UnityEngine.UI;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
-using Unity.InferenceEngine;
-using TMPro;
 
 namespace uPiper.Demo
 {
@@ -24,17 +24,17 @@ namespace uPiper.Demo
         [SerializeField] private TextMeshProUGUI _statusText;
         [SerializeField] private AudioSource _audioSource;
         [SerializeField] private TMP_Dropdown _modelDropdown;
-        
+
         [Header("Settings")]
         [SerializeField] private string _defaultJapaneseText = "こんにちは";
         [SerializeField] private string _defaultEnglishText = "Hello world";
-        
+
         private InferenceAudioGenerator _generator;
         private PhonemeEncoder _encoder;
         private AudioClipBuilder _audioBuilder;
         private PiperVoiceConfig _currentConfig;
         private bool _isGenerating;
-        
+
         private readonly Dictionary<string, string> _modelLanguages = new Dictionary<string, string>
         {
             { "ja_JP-test-medium", "ja" },
@@ -45,7 +45,7 @@ namespace uPiper.Demo
         {
             _generator = new InferenceAudioGenerator();
             _audioBuilder = new AudioClipBuilder();
-            
+
             SetupUI();
             SetStatus("準備完了");
         }
@@ -64,13 +64,13 @@ namespace uPiper.Demo
                 _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "test_voice" });
                 _modelDropdown.onValueChanged.AddListener(OnModelChanged);
             }
-            
+
             // 生成ボタンの設定
             if (_generateButton != null)
             {
                 _generateButton.onClick.AddListener(() => _ = GenerateAudioAsync());
             }
-            
+
             // 初期テキストの設定
             if (_inputField != null)
             {
@@ -82,7 +82,7 @@ namespace uPiper.Demo
         {
             var modelName = index == 0 ? "ja_JP-test-medium" : "test_voice";
             var isJapanese = _modelLanguages[modelName] == "ja";
-            
+
             if (_inputField != null)
             {
                 _inputField.text = isJapanese ? _defaultJapaneseText : _defaultEnglishText;
@@ -91,28 +91,28 @@ namespace uPiper.Demo
 
         private async Task GenerateAudioAsync()
         {
-            if (_isGenerating) 
+            if (_isGenerating)
             {
                 PiperLogger.LogDebug("Already generating, skipping request");
                 return;
             }
-            
-            if (string.IsNullOrWhiteSpace(_inputField?.text)) 
+
+            if (string.IsNullOrWhiteSpace(_inputField?.text))
             {
                 PiperLogger.LogWarning("Input text is empty");
                 return;
             }
-            
+
             _isGenerating = true;
             SetStatus("処理中...");
             PiperLogger.LogInfo($"Starting audio generation for text: {_inputField.text}");
-            
+
             try
             {
                 // モデル名を取得
                 var modelName = _modelDropdown?.value == 0 ? "ja_JP-test-medium" : "test_voice";
                 PiperLogger.LogDebug($"Selected model: {modelName}");
-                
+
                 // モデルをロード
                 SetStatus("モデルをロード中...");
                 PiperLogger.LogDebug($"Loading model asset: Models/{modelName}");
@@ -122,7 +122,7 @@ namespace uPiper.Demo
                     throw new Exception($"モデルが見つかりません: {modelName}");
                 }
                 PiperLogger.LogDebug($"Model asset loaded successfully");
-                
+
                 // JSONコンフィグをロード
                 PiperLogger.LogDebug($"Loading config: Models/{modelName}.onnx");
                 var jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx");
@@ -131,11 +131,11 @@ namespace uPiper.Demo
                     throw new Exception($"設定ファイルが見つかりません: {modelName}.onnx.json");
                 }
                 PiperLogger.LogDebug($"Config loaded, parsing JSON ({jsonAsset.text.Length} chars)");
-                
+
                 var config = ParseConfig(jsonAsset.text, modelName);
                 _encoder = new PhonemeEncoder(config);
                 PiperLogger.LogDebug($"PhonemeEncoder created with {config.PhonemeIdMap.Count} phonemes");
-                
+
                 // デバッグ用：いくつかの音素マッピングを表示
                 int count = 0;
                 foreach (var kvp in config.PhonemeIdMap)
@@ -145,39 +145,39 @@ namespace uPiper.Demo
                         PiperLogger.LogDebug($"  Phoneme '{kvp.Key}' -> ID {kvp.Value}");
                     }
                 }
-                
+
                 // ジェネレーターを初期化
                 SetStatus("ジェネレーターを初期化中...");
                 PiperLogger.LogDebug("Initializing InferenceAudioGenerator...");
                 await _generator.InitializeAsync(modelAsset, config);
                 PiperLogger.LogDebug("Generator initialized successfully");
-                
+
                 // 音素に変換
                 SetStatus("音素に変換中...");
                 var phonemes = ConvertToPhonemes(_inputField.text, _modelLanguages[modelName]);
                 PiperLogger.LogInfo($"Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
-                
+
                 // 音素変換の詳細をログ出力
                 PiperLogger.LogDebug($"Input text: '{_inputField.text}'");
                 for (int i = 0; i < phonemes.Length; i++)
                 {
                     PiperLogger.LogDebug($"  Phoneme[{i}]: '{phonemes[i]}'");
                 }
-                
+
                 // 音素をIDに変換
                 var phonemeIds = _encoder.Encode(phonemes);
                 PiperLogger.LogInfo($"Phoneme IDs ({phonemeIds.Length}): {string.Join(", ", phonemeIds)}");
-                
+
                 // 音声生成
                 SetStatus("音声を生成中...");
                 PiperLogger.LogDebug("Calling GenerateAudioAsync...");
                 var audioData = await _generator.GenerateAudioAsync(phonemeIds);
                 PiperLogger.LogInfo($"Audio generated: {audioData.Length} samples");
-                
+
                 // 音声データの最大値を確認
                 var maxVal = audioData.Max(x => Math.Abs(x));
                 PiperLogger.LogInfo($"Original audio max amplitude: {maxVal:F4}");
-                
+
                 // 音声データが既に小さい値の場合は増幅、大きい値の場合は正規化
                 float[] processedAudio;
                 if (maxVal < 0.1f)
@@ -202,17 +202,17 @@ namespace uPiper.Demo
                     processedAudio = audioData;
                     PiperLogger.LogDebug("Audio data is already in proper range");
                 }
-                
+
                 // AudioClipを作成
                 SetStatus("AudioClipを作成中...");
                 PiperLogger.LogDebug($"Building AudioClip (sample rate: {config.SampleRate})");
                 var audioClip = _audioBuilder.BuildAudioClip(
-                    processedAudio, 
-                    config.SampleRate, 
+                    processedAudio,
+                    config.SampleRate,
                     $"Generated_{DateTime.Now:HHmmss}"
                 );
                 PiperLogger.LogDebug($"AudioClip created: {audioClip.length:F2} seconds");
-                
+
                 // 再生
                 if (_audioSource != null && audioClip != null)
                 {
@@ -220,7 +220,7 @@ namespace uPiper.Demo
                     _audioSource.Play();
                     PiperLogger.LogInfo("Audio playback started");
                 }
-                
+
                 SetStatus($"生成完了！ ({audioClip.length:F2}秒)");
             }
             catch (Exception ex)
@@ -243,7 +243,7 @@ namespace uPiper.Demo
         {
             PiperLogger.LogDebug("[ParseConfig] Starting JSON parsing");
             var jsonObj = JObject.Parse(json);
-            
+
             var config = new PiperVoiceConfig
             {
                 VoiceId = modelName,
@@ -252,7 +252,7 @@ namespace uPiper.Demo
                 SampleRate = jsonObj["audio"]?["sample_rate"]?.ToObject<int>() ?? 22050,
                 PhonemeIdMap = new Dictionary<string, int>()
             };
-            
+
             PiperLogger.LogDebug($"[ParseConfig] Language: {config.Language}, SampleRate: {config.SampleRate}");
 
             // phoneme_id_mapをパース
@@ -260,7 +260,7 @@ namespace uPiper.Demo
             if (phonemeIdMap != null)
             {
                 PiperLogger.LogDebug($"[ParseConfig] Found phoneme_id_map with {phonemeIdMap.Count} entries");
-                
+
                 foreach (var kvp in phonemeIdMap)
                 {
                     var idArray = kvp.Value as JArray;
@@ -269,7 +269,7 @@ namespace uPiper.Demo
                         config.PhonemeIdMap[kvp.Key] = idArray[0].ToObject<int>();
                     }
                 }
-                
+
                 PiperLogger.LogDebug($"[ParseConfig] Parsed {config.PhonemeIdMap.Count} phoneme mappings");
             }
             else
@@ -327,7 +327,7 @@ namespace uPiper.Demo
             {
                 _statusText.text = status;
             }
-            
+
             if (_generateButton != null)
             {
                 _generateButton.interactable = !_isGenerating;

@@ -1,9 +1,9 @@
+using TMPro;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 using uPiper.Demo;
-using TMPro;
-using UnityEngine.InputSystem.UI;
 
 namespace uPiper.Editor
 {
@@ -13,7 +13,7 @@ namespace uPiper.Editor
     public static class CreateInferenceDemoScene
     {
         private const string ScenePath = "Assets/uPiper/Scenes/InferenceEngineDemo.unity";
-        
+
         [MenuItem("uPiper/Demo/Open Inference Demo Scene")]
         public static void OpenDemoScene()
         {
@@ -23,7 +23,7 @@ namespace uPiper.Editor
                 CreateDemoScene();
                 return;
             }
-            
+
             // シーンを開く
             if (UnityEditor.SceneManagement.EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
@@ -31,7 +31,7 @@ namespace uPiper.Editor
                 Debug.Log("Inference Demo シーンを開きました。Playモードで実行してください。");
             }
         }
-        
+
         [MenuItem("uPiper/Demo/Create Inference Demo Scene")]
         public static void CreateDemoScene()
         {
@@ -40,19 +40,19 @@ namespace uPiper.Editor
                 UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects,
                 UnityEditor.SceneManagement.NewSceneMode.Single
             );
-            
+
             // Canvas を作成
             var canvasGO = new GameObject("Canvas");
             var canvas = canvasGO.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvasGO.AddComponent<CanvasScaler>();
             canvasGO.AddComponent<GraphicRaycaster>();
-            
+
             // EventSystem を作成 (Input System対応)
             var eventSystemGO = new GameObject("EventSystem");
             eventSystemGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
             eventSystemGO.AddComponent<InputSystemUIInputModule>();
-            
+
             // UI パネルを作成
             var panelGO = new GameObject("Panel");
             panelGO.transform.SetParent(canvasGO.transform, false);
@@ -63,7 +63,7 @@ namespace uPiper.Editor
             panelRect.anchorMax = new Vector2(0.9f, 0.9f);
             panelRect.offsetMin = Vector2.zero;
             panelRect.offsetMax = Vector2.zero;
-            
+
             // タイトル
             var titleGO = new GameObject("Title");
             titleGO.transform.SetParent(panelGO.transform, false);
@@ -78,7 +78,7 @@ namespace uPiper.Editor
             titleRect.anchorMax = new Vector2(1, 1);
             titleRect.offsetMin = Vector2.zero;
             titleRect.offsetMax = Vector2.zero;
-            
+
             // モデル選択ドロップダウン
             var modelLabelGO = new GameObject("ModelLabel");
             modelLabelGO.transform.SetParent(panelGO.transform, false);
@@ -91,7 +91,7 @@ namespace uPiper.Editor
             modelLabelRect.anchorMax = new Vector2(0.3f, 0.8f);
             modelLabelRect.offsetMin = Vector2.zero;
             modelLabelRect.offsetMax = Vector2.zero;
-            
+
             var dropdownGO = new GameObject("ModelDropdown");
             dropdownGO.transform.SetParent(panelGO.transform, false);
             var dropdownImage = dropdownGO.AddComponent<Image>();
@@ -102,7 +102,7 @@ namespace uPiper.Editor
             dropdownRect.anchorMax = new Vector2(0.9f, 0.8f);
             dropdownRect.offsetMin = Vector2.zero;
             dropdownRect.offsetMax = Vector2.zero;
-            
+
             // Dropdown Template を作成
             var templateGO = new GameObject("Template", typeof(RectTransform));
             templateGO.transform.SetParent(dropdownGO.transform, false);
@@ -114,7 +114,7 @@ namespace uPiper.Editor
             templateRect.pivot = new Vector2(0.5f, 1);
             templateRect.anchoredPosition = new Vector2(0, 2);
             templateRect.sizeDelta = new Vector2(0, 150);
-            
+
             // Viewport
             var viewportGO = new GameObject("Viewport", typeof(RectTransform));
             viewportGO.transform.SetParent(templateGO.transform, false);
@@ -125,7 +125,7 @@ namespace uPiper.Editor
             viewportRect.anchorMax = Vector2.one;
             viewportRect.sizeDelta = new Vector2(-18, 0);
             viewportRect.pivot = new Vector2(0, 1);
-            
+
             // Content
             var contentGO = new GameObject("Content", typeof(RectTransform));
             contentGO.transform.SetParent(viewportGO.transform, false);
@@ -135,7 +135,7 @@ namespace uPiper.Editor
             contentRect.pivot = new Vector2(0.5f, 1);
             contentRect.anchoredPosition = Vector2.zero;
             contentRect.sizeDelta = new Vector2(0, 28);
-            
+
             // Item
             var itemGO = new GameObject("Item", typeof(RectTransform));
             itemGO.transform.SetParent(contentGO.transform, false);
@@ -144,7 +144,7 @@ namespace uPiper.Editor
             itemRect.anchorMin = new Vector2(0, 0.5f);
             itemRect.anchorMax = new Vector2(1, 0.5f);
             itemRect.sizeDelta = new Vector2(0, 20);
-            
+
             // Item Background
             var itemBgGO = new GameObject("Item Background", typeof(RectTransform));
             itemBgGO.transform.SetParent(itemGO.transform, false);
@@ -154,7 +154,7 @@ namespace uPiper.Editor
             itemBgRect.anchorMin = Vector2.zero;
             itemBgRect.anchorMax = Vector2.one;
             itemBgRect.sizeDelta = Vector2.zero;
-            
+
             // Item Checkmark
             var itemCheckGO = new GameObject("Item Checkmark", typeof(RectTransform));
             itemCheckGO.transform.SetParent(itemGO.transform, false);
@@ -165,7 +165,7 @@ namespace uPiper.Editor
             itemCheckRect.anchorMax = new Vector2(0, 0.5f);
             itemCheckRect.sizeDelta = new Vector2(20, 20);
             itemCheckRect.anchoredPosition = new Vector2(10, 0);
-            
+
             // Item Label
             var itemLabelGO = new GameObject("Item Label", typeof(RectTransform));
             itemLabelGO.transform.SetParent(itemGO.transform, false);
@@ -178,12 +178,12 @@ namespace uPiper.Editor
             itemLabelRect.anchorMax = Vector2.one;
             itemLabelRect.offsetMin = new Vector2(20, 1);
             itemLabelRect.offsetMax = new Vector2(-10, -2);
-            
+
             // Toggle の設定
             itemToggle.targetGraphic = itemBgImage;
             itemToggle.graphic = itemCheckImage;
             itemToggle.isOn = true;
-            
+
             // Scrollbar
             var scrollbarGO = new GameObject("Scrollbar", typeof(RectTransform));
             scrollbarGO.transform.SetParent(templateGO.transform, false);
@@ -197,7 +197,7 @@ namespace uPiper.Editor
             scrollbarRect.pivot = Vector2.one;
             scrollbarRect.sizeDelta = new Vector2(20, 0);
             scrollbarRect.anchoredPosition = new Vector2(0, 0);
-            
+
             // Scrollbar Handle
             var handleGO = new GameObject("Sliding Area", typeof(RectTransform));
             handleGO.transform.SetParent(scrollbarGO.transform, false);
@@ -205,7 +205,7 @@ namespace uPiper.Editor
             handleRect.anchorMin = new Vector2(0, 0);
             handleRect.anchorMax = new Vector2(1, 1);
             handleRect.sizeDelta = new Vector2(-20, -20);
-            
+
             var handleAreaGO = new GameObject("Handle", typeof(RectTransform));
             handleAreaGO.transform.SetParent(handleGO.transform, false);
             var handleImage = handleAreaGO.AddComponent<Image>();
@@ -214,10 +214,10 @@ namespace uPiper.Editor
             handleAreaRect.anchorMin = new Vector2(0, 0);
             handleAreaRect.anchorMax = new Vector2(1, 1);
             handleAreaRect.sizeDelta = new Vector2(20, 20);
-            
+
             scrollbar.handleRect = handleAreaRect;
             scrollbar.targetGraphic = handleImage;
-            
+
             // ScrollRect
             var scrollRect = templateGO.AddComponent<ScrollRect>();
             scrollRect.content = contentRect;
@@ -227,7 +227,7 @@ namespace uPiper.Editor
             scrollRect.verticalScrollbar = scrollbar;
             scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
             scrollRect.verticalScrollbarSpacing = -3;
-            
+
             // Dropdown Label
             var labelGO = new GameObject("Label", typeof(RectTransform));
             labelGO.transform.SetParent(dropdownGO.transform, false);
@@ -241,7 +241,7 @@ namespace uPiper.Editor
             labelRect.anchorMax = Vector2.one;
             labelRect.offsetMin = new Vector2(10, 2);
             labelRect.offsetMax = new Vector2(-25, -2);
-            
+
             // Arrow
             var arrowGO = new GameObject("Arrow", typeof(RectTransform));
             arrowGO.transform.SetParent(dropdownGO.transform, false);
@@ -255,20 +255,20 @@ namespace uPiper.Editor
             arrowRect.sizeDelta = new Vector2(20, 20);
             arrowRect.pivot = new Vector2(0.5f, 0.5f);
             arrowRect.anchoredPosition = new Vector2(-15, 0);
-            
+
             // Dropdown の設定
             dropdown.template = templateRect;
             dropdown.captionText = labelText;
             dropdown.itemText = itemLabel;
             dropdown.targetGraphic = dropdownImage;
-            
+
             // オプションを設定
             dropdown.ClearOptions();
             dropdown.AddOptions(new System.Collections.Generic.List<string> { "ja_JP-test-medium", "test_voice" });
-            
+
             // Template を非表示
             templateGO.SetActive(false);
-            
+
             // 入力フィールド
             var inputLabelGO = new GameObject("InputLabel");
             inputLabelGO.transform.SetParent(panelGO.transform, false);
@@ -281,7 +281,7 @@ namespace uPiper.Editor
             inputLabelRect.anchorMax = new Vector2(0.3f, 0.6f);
             inputLabelRect.offsetMin = Vector2.zero;
             inputLabelRect.offsetMax = Vector2.zero;
-            
+
             var inputGO = new GameObject("InputField", typeof(RectTransform));
             inputGO.transform.SetParent(panelGO.transform, false);
             var inputImage = inputGO.AddComponent<Image>();
@@ -292,7 +292,7 @@ namespace uPiper.Editor
             inputRect.anchorMax = new Vector2(0.9f, 0.6f);
             inputRect.offsetMin = Vector2.zero;
             inputRect.offsetMax = Vector2.zero;
-            
+
             // Text Area を作成
             var textAreaGO = new GameObject("Text Area", typeof(RectTransform));
             textAreaGO.transform.SetParent(inputGO.transform, false);
@@ -301,7 +301,7 @@ namespace uPiper.Editor
             textAreaRect.anchorMax = Vector2.one;
             textAreaRect.offsetMin = new Vector2(10, 5);
             textAreaRect.offsetMax = new Vector2(-10, -5);
-            
+
             // Placeholder
             var placeholderGO = new GameObject("Placeholder", typeof(RectTransform));
             placeholderGO.transform.SetParent(textAreaGO.transform, false);
@@ -314,7 +314,7 @@ namespace uPiper.Editor
             placeholderRect.anchorMax = Vector2.one;
             placeholderRect.offsetMin = Vector2.zero;
             placeholderRect.offsetMax = Vector2.zero;
-            
+
             // Text
             var inputTextGO = new GameObject("Text", typeof(RectTransform));
             inputTextGO.transform.SetParent(textAreaGO.transform, false);
@@ -327,13 +327,13 @@ namespace uPiper.Editor
             inputTextRect.anchorMax = Vector2.one;
             inputTextRect.offsetMin = Vector2.zero;
             inputTextRect.offsetMax = Vector2.zero;
-            
+
             // InputField の設定
             inputField.targetGraphic = inputImage;
             inputField.textViewport = textAreaRect;
             inputField.textComponent = inputText;
             inputField.placeholder = placeholderText;
-            
+
             // 生成ボタン
             var buttonGO = new GameObject("GenerateButton");
             buttonGO.transform.SetParent(panelGO.transform, false);
@@ -346,7 +346,7 @@ namespace uPiper.Editor
             buttonRect.anchorMax = new Vector2(0.7f, 0.3f);
             buttonRect.offsetMin = Vector2.zero;
             buttonRect.offsetMax = Vector2.zero;
-            
+
             var buttonTextGO = new GameObject("Text");
             buttonTextGO.transform.SetParent(buttonGO.transform, false);
             var buttonText = buttonTextGO.AddComponent<TextMeshProUGUI>();
@@ -359,7 +359,7 @@ namespace uPiper.Editor
             buttonTextRect.anchorMax = Vector2.one;
             buttonTextRect.offsetMin = Vector2.zero;
             buttonTextRect.offsetMax = Vector2.zero;
-            
+
             // ステータステキスト
             var statusGO = new GameObject("StatusText");
             statusGO.transform.SetParent(panelGO.transform, false);
@@ -373,12 +373,12 @@ namespace uPiper.Editor
             statusRect.anchorMax = new Vector2(0.9f, 0.15f);
             statusRect.offsetMin = Vector2.zero;
             statusRect.offsetMax = Vector2.zero;
-            
+
             // デモコントローラーを作成
             var controllerGO = new GameObject("InferenceEngineDemo");
             var audioSource = controllerGO.AddComponent<AudioSource>();
             var demo = controllerGO.AddComponent<uPiper.Demo.InferenceEngineDemo>();
-            
+
             // UI参照を設定
             var serializedObject = new SerializedObject(demo);
             serializedObject.FindProperty("_inputField").objectReferenceValue = inputField;
@@ -387,14 +387,14 @@ namespace uPiper.Editor
             serializedObject.FindProperty("_audioSource").objectReferenceValue = audioSource;
             serializedObject.FindProperty("_modelDropdown").objectReferenceValue = dropdown;
             serializedObject.ApplyModifiedProperties();
-            
+
             // シーンを保存
             System.IO.Directory.CreateDirectory("Assets/uPiper/Scenes");
             UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, ScenePath);
-            
+
             Debug.Log($"デモシーンを作成しました: {ScenePath}");
-            EditorUtility.DisplayDialog("完了", 
-                $"デモシーンを作成しました。\n{ScenePath}\n\nPlayモードで実行してください。", 
+            EditorUtility.DisplayDialog("完了",
+                $"デモシーンを作成しました。\n{ScenePath}\n\nPlayモードで実行してください。",
                 "OK");
         }
     }

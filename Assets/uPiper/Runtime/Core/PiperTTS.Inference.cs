@@ -25,7 +25,7 @@ namespace uPiper.Core
         /// <param name="voiceConfig">音声設定</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
         public async Task InitializeWithInferenceAsync(
-            ModelAsset modelAsset, 
+            ModelAsset modelAsset,
             PiperVoiceConfig voiceConfig,
             CancellationToken cancellationToken = default)
         {
@@ -86,10 +86,10 @@ namespace uPiper.Core
             CancellationToken cancellationToken = default)
         {
             return await GenerateAudioWithInferenceAsync(
-                text, 
-                lengthScale: 1.0f, 
-                noiseScale: 0.667f, 
-                noiseW: 0.8f, 
+                text,
+                lengthScale: 1.0f,
+                noiseScale: 0.667f,
+                noiseW: 0.8f,
                 cancellationToken);
         }
 
@@ -135,10 +135,10 @@ namespace uPiper.Core
                 // Unity.InferenceEngineで音声を生成
                 PiperLogger.LogDebug("Generating audio with Inference");
                 var audioData = await _inferenceGenerator.GenerateAudioAsync(
-                    phonemeIds, 
-                    lengthScale, 
-                    noiseScale, 
-                    noiseW, 
+                    phonemeIds,
+                    lengthScale,
+                    noiseScale,
+                    noiseW,
                     cancellationToken);
 
                 _onProcessingProgress?.Invoke(0.8f);
@@ -146,7 +146,7 @@ namespace uPiper.Core
                 // AudioClipを作成
                 var normalizedAudio = _audioClipBuilder.NormalizeAudio(audioData, 0.95f);
                 var audioClip = _audioClipBuilder.BuildAudioClip(
-                    normalizedAudio, 
+                    normalizedAudio,
                     _inferenceGenerator.SampleRate,
                     $"TTS_{DateTime.Now:yyyyMMddHHmmss}");
 

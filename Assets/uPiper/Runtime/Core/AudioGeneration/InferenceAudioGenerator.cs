@@ -32,7 +32,7 @@ namespace uPiper.Core.AudioGeneration
         public async Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config, CancellationToken cancellationToken = default)
         {
             PiperLogger.LogDebug("[InferenceAudioGenerator] InitializeAsync started");
-            
+
             if (_disposed)
                 throw new ObjectDisposedException(nameof(InferenceAudioGenerator));
 
@@ -43,12 +43,12 @@ namespace uPiper.Core.AudioGeneration
                 throw new ArgumentNullException(nameof(config));
 
             PiperLogger.LogDebug("[InferenceAudioGenerator] Dispatching to main thread...");
-            
+
             // Unity APIはメインスレッドからのみ呼び出し可能
             await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
             {
                 PiperLogger.LogDebug("[InferenceAudioGenerator] Now on main thread");
-                
+
                 lock (_lockObject)
                 {
                     // 既存のワーカーがあれば破棄
@@ -60,15 +60,15 @@ namespace uPiper.Core.AudioGeneration
                     try
                     {
                         PiperLogger.LogDebug($"[InferenceAudioGenerator] Loading model: {_modelAsset.name}");
-                        
+
                         // Unity.InferenceEngineワーカーを作成
                         _model = ModelLoader.Load(_modelAsset);
-                        
+
                         if (_model == null)
                         {
                             throw new InvalidOperationException("ModelLoader.Load returned null");
                         }
-                        
+
                         PiperLogger.LogDebug("[InferenceAudioGenerator] Model loaded, creating worker...");
                         // GPUComputeでMetalエラーが出ているため、CPUバックエンドを使用
                         _worker = new Worker(_model, BackendType.CPU);
@@ -96,7 +96,7 @@ namespace uPiper.Core.AudioGeneration
                     }
                 }
             }, cancellationToken);
-            
+
             PiperLogger.LogDebug("[InferenceAudioGenerator] InitializeAsync completed");
         }
 
@@ -128,16 +128,16 @@ namespace uPiper.Core.AudioGeneration
                         // 1. input: 音素ID (shape: [batch_size, sequence_length])
                         // 2. input_lengths: 入力の長さ (shape: [batch_size])
                         // 3. scales: ノイズとレングススケール (shape: [3])
-                        
+
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Preparing model inputs...");
                         PiperLogger.LogInfo($"  Phoneme IDs: {string.Join(", ", phonemeIds.Take(Math.Min(10, phonemeIds.Length)))}... (length: {phonemeIds.Length})");
                         PiperLogger.LogInfo($"  Length scale: {lengthScale}, Noise scale: {noiseScale}, Noise W: {noiseW}");
-                        
+
                         // 入力テンソルを作成
                         var inputTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
                         var inputLengthsTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
                         var scalesTensor = new Tensor<float>(new TensorShape(3), new[] { noiseScale, lengthScale, noiseW });
-                        
+
                         try
                         {
                             // モデルの入力名を確認
@@ -147,7 +147,7 @@ namespace uPiper.Core.AudioGeneration
                                 var modelInput = _model.inputs[i];
                                 PiperLogger.LogInfo($"  Input[{i}]: name='{modelInput.name}', shape=({string.Join(", ", modelInput.shape)}), dataType={modelInput.dataType}");
                             }
-                            
+
                             // 各入力を名前で設定
                             if (_model.inputs.Count >= 3)
                             {
@@ -155,12 +155,12 @@ namespace uPiper.Core.AudioGeneration
                                 var inputName = _model.inputs[0].name;
                                 _worker.SetInput(inputName, inputTensor);
                                 PiperLogger.LogInfo($"[InferenceAudioGenerator] Set '{inputName}' with phoneme IDs tensor");
-                                
+
                                 // input_lengths (入力長)
                                 var lengthsName = _model.inputs[1].name;
                                 _worker.SetInput(lengthsName, inputLengthsTensor);
                                 PiperLogger.LogInfo($"[InferenceAudioGenerator] Set '{lengthsName}' with length tensor");
-                                
+
                                 // scales (スケールパラメータ)
                                 var scalesName = _model.inputs[2].name;
                                 _worker.SetInput(scalesName, scalesTensor);
@@ -180,21 +180,21 @@ namespace uPiper.Core.AudioGeneration
                             scalesTensor?.Dispose();
                             throw;
                         }
-                        
+
                         // 推論を実行
                         PiperLogger.LogInfo("[InferenceAudioGenerator] Running inference...");
                         _worker.Schedule();
                         PiperLogger.LogInfo("[InferenceAudioGenerator] Inference completed");
-                        
+
                         // 出力を取得
                         Tensor<float> outputTensor = null;
-                        
+
                         // 出力名を確認
                         if (_model.outputs.Count > 0)
                         {
                             var outputName = _model.outputs[0].name;
                             PiperLogger.LogInfo($"[InferenceAudioGenerator] Getting output with name: '{outputName}'");
-                            
+
                             try
                             {
                                 outputTensor = _worker.PeekOutput(outputName) as Tensor<float>;
@@ -210,7 +210,7 @@ namespace uPiper.Core.AudioGeneration
                         {
                             outputTensor = _worker.PeekOutput() as Tensor<float>;
                         }
-                        
+
                         if (outputTensor == null)
                         {
                             throw new InvalidOperationException("Failed to get output from model");
@@ -219,36 +219,36 @@ namespace uPiper.Core.AudioGeneration
                         // GPUからCPUにデータを読み戻すためにReadbackAndClone()を使用
                         PiperLogger.LogInfo("[InferenceAudioGenerator] Reading back tensor data from GPU...");
                         var readableTensor = outputTensor.ReadbackAndClone();
-                        
+
                         // 出力データをコピー
                         var shape = readableTensor.shape;
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Output shape: {string.Join("x", shape.ToArray())}");
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Shape dimensions: {shape.rank}D, total elements: {shape.length}");
-                        
+
                         // Piperモデルの出力は通常1次元の音声データ
                         // ただし、バッチ次元などが含まれている場合があるため、フラット化する
                         var audioLength = shape.length;
                         var audioData = new float[audioLength];
-                        
+
                         // テンソルデータをコピー
                         for (int i = 0; i < audioLength; i++)
                         {
                             audioData[i] = readableTensor[i];
                         }
-                        
+
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Copied {audioData.Length} samples");
-                        
+
                         // デバッグ用：最初の10サンプルの値を表示
                         var sampleDebug = string.Join(", ", audioData.Take(10).Select(x => x.ToString("F4")));
                         PiperLogger.LogDebug($"[InferenceAudioGenerator] First 10 samples: {sampleDebug}");
-                        
+
                         // 音声データの統計情報を表示
                         var min = audioData.Min();
                         var max = audioData.Max();
                         var avg = audioData.Average();
                         var absAvg = audioData.Select(Math.Abs).Average();
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Audio stats - Min: {min:F4}, Max: {max:F4}, Avg: {avg:F4}, AbsAvg: {absAvg:F4}");
-                        
+
                         // 読み戻し用のテンソルを破棄
                         readableTensor.Dispose();
 

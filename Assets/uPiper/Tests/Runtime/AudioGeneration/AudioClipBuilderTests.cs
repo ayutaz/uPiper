@@ -70,7 +70,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // Assert
             Assert.IsNotNull(normalized);
             Assert.AreEqual(audioData.Length, normalized.Length);
-            
+
             // 最大値を確認
             float maxValue = 0f;
             foreach (var sample in normalized)
@@ -98,14 +98,14 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // Assert
             Assert.IsNotNull(faded);
             Assert.AreEqual(audioData.Length, faded.Length);
-            
+
             // フェードインのチェック
             Assert.AreEqual(0f, faded[0], 0.001f);
             Assert.Less(faded[5], 1f);
-            
+
             // 中間部分のチェック
             Assert.AreEqual(1f, faded[50], 0.001f);
-            
+
             // フェードアウトのチェック
             Assert.Less(faded[95], 1f);
             Assert.AreEqual(0.1f, faded[99], 0.001f);  // Last sample has factor = 1 - (9/10) = 0.1

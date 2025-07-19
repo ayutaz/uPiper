@@ -12,7 +12,7 @@ namespace uPiper.Core.Phonemizers.Implementations
     public class MockPhonemizer : IPhonemizer
     {
         private bool _isDisposed;
-        
+
         private readonly Dictionary<string, string[]> _mockJapanesePhonemes = new Dictionary<string, string[]>
         {
             { "こ", new[] { "k", "o" } },
@@ -48,7 +48,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             }
 
             var phonemes = new List<string>();
-            
+
             if (language == "ja" || language == null)
             {
                 // Simple Japanese mock phonemization

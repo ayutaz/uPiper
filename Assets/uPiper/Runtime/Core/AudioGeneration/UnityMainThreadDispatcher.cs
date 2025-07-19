@@ -22,13 +22,13 @@ namespace uPiper.Core.AudioGeneration
 
             var gameObject = new GameObject("UnityMainThreadDispatcher");
             gameObject.AddComponent<UnityMainThreadDispatcherComponent>();
-            
+
             // DontDestroyOnLoadはPlayModeでのみ使用
             if (Application.isPlaying)
             {
                 GameObject.DontDestroyOnLoad(gameObject);
             }
-            
+
             _initialized = true;
         }
 
@@ -103,7 +103,7 @@ namespace uPiper.Core.AudioGeneration
 
         private class UnityMainThreadDispatcherComponent : MonoBehaviour
         {
-            void Update()
+            private void Update()
             {
                 while (_actions.TryDequeue(out var action))
                 {

@@ -11,17 +11,17 @@ namespace uPiper.Editor
     {
         private const string ScenePath = "Assets/uPiper/Scenes/InferenceEngineDemo.unity";
         private const string CheckedKey = "uPiper_InferenceDemoScene_Checked";
-        
+
         static InitializeScenes()
         {
             // 一度チェック済みなら何もしない
             if (EditorPrefs.GetBool(CheckedKey, false))
                 return;
-                
+
             // 少し遅延してからチェック（エディタの初期化を待つ）
             EditorApplication.delayCall += CheckDemoScene;
         }
-        
+
         private static void CheckDemoScene()
         {
             if (!System.IO.File.Exists(ScenePath))
@@ -33,7 +33,7 @@ namespace uPiper.Editor
                     "後で",
                     "今後表示しない"
                 );
-                
+
                 switch (result)
                 {
                     case 0: // 作成する
@@ -54,7 +54,7 @@ namespace uPiper.Editor
                 EditorPrefs.SetBool(CheckedKey, true);
             }
         }
-        
+
         [MenuItem("uPiper/Demo/Reset Demo Scene Check")]
         public static void ResetCheck()
         {

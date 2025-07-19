@@ -14,7 +14,7 @@ namespace uPiper.Core.AudioGeneration
         private readonly Dictionary<string, int> _phonemeToId;
         private readonly Dictionary<int, string> _idToPhoneme;
         private readonly PiperVoiceConfig _config;
-        
+
         // 特殊トークン
         private const string PAD_TOKEN = "_";
         private const string BOS_TOKEN = "^";
@@ -40,15 +40,30 @@ namespace uPiper.Core.AudioGeneration
         private static readonly Dictionary<string, string> multiCharPhonemeMap = new Dictionary<string, string>
         {
             // Long vowels
-            ["a:"] = "\ue000", ["i:"] = "\ue001", ["u:"] = "\ue002", ["e:"] = "\ue003", ["o:"] = "\ue004",
+            ["a:"] = "\ue000",
+            ["i:"] = "\ue001",
+            ["u:"] = "\ue002",
+            ["e:"] = "\ue003",
+            ["o:"] = "\ue004",
             // Special consonants
             ["cl"] = "\ue005",
             // Palatalized consonants
-            ["ky"] = "\ue006", ["kw"] = "\ue007", ["gy"] = "\ue008", ["gw"] = "\ue009",
-            ["ty"] = "\ue00a", ["dy"] = "\ue00b", ["py"] = "\ue00c", ["by"] = "\ue00d",
-            ["ch"] = "\ue00e", ["ts"] = "\ue00f", ["sh"] = "\ue010",
-            ["zy"] = "\ue011", ["hy"] = "\ue012", ["ny"] = "\ue013",
-            ["my"] = "\ue014", ["ry"] = "\ue015"
+            ["ky"] = "\ue006",
+            ["kw"] = "\ue007",
+            ["gy"] = "\ue008",
+            ["gw"] = "\ue009",
+            ["ty"] = "\ue00a",
+            ["dy"] = "\ue00b",
+            ["py"] = "\ue00c",
+            ["by"] = "\ue00d",
+            ["ch"] = "\ue00e",
+            ["ts"] = "\ue00f",
+            ["sh"] = "\ue010",
+            ["zy"] = "\ue011",
+            ["hy"] = "\ue012",
+            ["ny"] = "\ue013",
+            ["my"] = "\ue014",
+            ["ry"] = "\ue015"
         };
 
         /// <summary>
@@ -65,7 +80,7 @@ namespace uPiper.Core.AudioGeneration
             }
 
             var ids = new List<int>();
-            
+
             // Piper TTSモデルはBOS/EOSトークンを使用しない場合が多いため、
             // 音素のみをエンコードする
 
@@ -76,7 +91,7 @@ namespace uPiper.Core.AudioGeneration
                     continue;
 
                 var phonemeToLookup = phoneme;
-                
+
                 // Multi-character phonemes need to be mapped to PUA characters first
                 if (multiCharPhonemeMap.TryGetValue(phoneme, out var puaChar))
                 {
@@ -158,7 +173,7 @@ namespace uPiper.Core.AudioGeneration
             _phonemeToId[PAD_TOKEN] = DEFAULT_PAD_ID;
             _phonemeToId[BOS_TOKEN] = DEFAULT_BOS_ID;
             _phonemeToId[EOS_TOKEN] = DEFAULT_EOS_ID;
-            
+
             _idToPhoneme[DEFAULT_PAD_ID] = PAD_TOKEN;
             _idToPhoneme[DEFAULT_BOS_ID] = BOS_TOKEN;
             _idToPhoneme[DEFAULT_EOS_ID] = EOS_TOKEN;
@@ -177,7 +192,7 @@ namespace uPiper.Core.AudioGeneration
                         _idToPhoneme[id] = phoneme;
                     }
                 }
-                
+
                 PiperLogger.LogDebug($"Loaded {_phonemeToId.Count} phoneme mappings from config");
             }
             else
@@ -195,7 +210,7 @@ namespace uPiper.Core.AudioGeneration
                 // 母音
                 "a", "e", "i", "o", "u",
                 // 子音
-                "b", "d", "f", "g", "h", "j", "k", "l", "m", "n", 
+                "b", "d", "f", "g", "h", "j", "k", "l", "m", "n",
                 "p", "r", "s", "t", "v", "w", "y", "z",
                 // その他の記号
                 " ", ".", ",", "?", "!", "'", "-"
