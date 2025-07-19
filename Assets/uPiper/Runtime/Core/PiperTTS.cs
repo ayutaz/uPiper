@@ -430,7 +430,7 @@ namespace uPiper.Core
                 PiperLogger.LogWarning("No phonemizer available, returning empty phoneme result");
                 return new PhonemeResult
                 {
-                    Text = text,
+                    OriginalText = text,
                     Phonemes = Array.Empty<string>(),
                     Language = CurrentVoice?.Language ?? "ja"
                 };
