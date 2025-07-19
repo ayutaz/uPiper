@@ -18,7 +18,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             _generator = new InferenceAudioGenerator();
             _config = new PiperVoiceConfig
             {
-                Key = "test_voice",
+                VoiceId = "test_voice",
                 SampleRate = 22050,
                 NumSpeakers = 1
             };

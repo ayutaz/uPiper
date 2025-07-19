@@ -16,7 +16,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         {
             _config = new PiperVoiceConfig
             {
-                Key = "test_voice",
+                VoiceId = "test_voice",
                 SampleRate = 22050,
                 PhonemeIdMap = new Dictionary<string, int>
                 {
