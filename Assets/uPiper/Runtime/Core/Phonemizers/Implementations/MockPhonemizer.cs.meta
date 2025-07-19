@@ -1,7 +1,7 @@
 fileFormatVersion: 2
-guid: 5b5801559e294e9fbe49473cb53bc34c
+guid: a1b2c3d4e5f6789012345678abcdef12
 MonoImporter:
-  externalObjects: Assets/uPiper/Runtime/Core/Phonemizers/Implementations/MockPhonemizer.cs
+  externalObjects: {}
   serializedVersion: 2
   defaultReferences: []
   executionOrder: 0
@@ -9,3 +9,4 @@ MonoImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
+EOF < /dev/null

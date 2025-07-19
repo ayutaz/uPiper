@@ -55,7 +55,7 @@ namespace uPiper.Core
                 await _inferenceGenerator.InitializeAsync(modelAsset, voiceConfig, cancellationToken);
 
                 // 音声設定を保存
-                _currentVoiceId = voiceConfig.Key;
+                _currentVoiceId = voiceConfig.VoiceId;
                 if (!_voices.ContainsKey(_currentVoiceId))
                 {
                     _voices[_currentVoiceId] = voiceConfig;

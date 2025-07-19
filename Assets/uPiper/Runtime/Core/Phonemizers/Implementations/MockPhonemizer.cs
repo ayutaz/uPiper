@@ -1,305 +1,138 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using uPiper.Core.Logging;
 
 namespace uPiper.Core.Phonemizers.Implementations
 {
     /// <summary>
-    /// Mock implementation of a phonemizer for testing purposes.
+    /// Mock phonemizer for testing when OpenJTalk is not available
     /// </summary>
-    public class MockPhonemizer : BasePhonemizer
+    public class MockPhonemizer : IPhonemizer
     {
-        private readonly Dictionary<string, PhonemeResult> _mockResults;
-        private readonly Dictionary<string, Exception> _mockErrors;
-        private readonly TimeSpan _simulatedDelay;
-        private readonly Random _random;
-
-        /// <summary>
-        /// Gets the name of the phonemizer.
-        /// </summary>
-        public override string Name => "Mock Phonemizer";
-
-        /// <summary>
-        /// Gets the version of the phonemizer.
-        /// </summary>
-        public override string Version => "1.0.0";
-
-        /// <summary>
-        /// Gets the list of supported language codes.
-        /// </summary>
-        public override string[] SupportedLanguages => new[] { "ja", "en", "zh", "ko", "de", "fr", "es" };
-
-        /// <summary>
-        /// Gets the number of times PhonemizeInternalAsync has been called.
-        /// </summary>
-        public int CallCount { get; private set; }
-
-        /// <summary>
-        /// Gets the last text that was phonemized.
-        /// </summary>
-        public string LastProcessedText { get; private set; }
-
-        /// <summary>
-        /// Gets the last language that was used.
-        /// </summary>
-        public string LastProcessedLanguage { get; private set; }
-
-        /// <summary>
-        /// Creates a new instance of MockPhonemizer.
-        /// </summary>
-        /// <param name="simulatedDelay">Optional delay to simulate processing time.</param>
-        /// <param name="cacheSize">Size of the LRU cache.</param>
-        public MockPhonemizer(TimeSpan? simulatedDelay = null, int? cacheSize = null)
-            : base(cacheSize)
+        private bool _isDisposed;
+        
+        private readonly Dictionary<string, string[]> _mockJapanesePhonemes = new Dictionary<string, string[]>
         {
-            _simulatedDelay = simulatedDelay ?? TimeSpan.FromMilliseconds(10);
-            _mockResults = new Dictionary<string, PhonemeResult>();
-            _mockErrors = new Dictionary<string, Exception>();
-            _random = new Random();
+            { "こ", new[] { "k", "o" } },
+            { "ん", new[] { "N" } },
+            { "に", new[] { "n", "i" } },
+            { "ち", new[] { "t", "i" } },
+            { "は", new[] { "h", "a" } },
+            { "、", new[] { "?" } },
+            { "世", new[] { "s", "e" } },
+            { "界", new[] { "k", "a", "i" } },
+            { "！", new[] { "!" } }
+        };
 
-            SetupDefaultMockData();
-        }
+        public string Name => "MockPhonemizer";
+        public string Version => "1.0.0";
+        public string[] SupportedLanguages => new[] { "ja", "en" };
+        public bool UseCache { get; set; } = false;
+        public string Language => "ja";
 
-        /// <summary>
-        /// Sets a mock result for specific text.
-        /// </summary>
-        /// <param name="text">The input text.</param>
-        /// <param name="result">The mock result to return.</param>
-        public void SetMockResult(string text, PhonemeResult result)
+        public Task<PhonemeResult> PhonemizeAsync(string text, string language = null, CancellationToken cancellationToken = default)
         {
-            if (text == null) throw new ArgumentNullException(nameof(text));
-            if (result == null) throw new ArgumentNullException(nameof(result));
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(MockPhonemizer));
 
-            _mockResults[text] = result;
-            PiperLogger.LogDebug($"Mock result set for: \"{text}\"");
-        }
-
-        /// <summary>
-        /// Sets up the phonemizer to throw an exception for specific text.
-        /// </summary>
-        /// <param name="text">The input text.</param>
-        /// <param name="exception">The exception to throw.</param>
-        public void SimulateError(string text, Exception exception)
-        {
-            if (text == null) throw new ArgumentNullException(nameof(text));
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
-
-            _mockErrors[text] = exception;
-            PiperLogger.LogDebug($"Mock error set for: \"{text}\"");
-        }
-
-        /// <summary>
-        /// Resets the call count and last processed values.
-        /// </summary>
-        public void ResetCallTracking()
-        {
-            CallCount = 0;
-            LastProcessedText = null;
-            LastProcessedLanguage = null;
-        }
-
-        /// <summary>
-        /// Clears all mock results and errors.
-        /// </summary>
-        public void ClearMockData()
-        {
-            _mockResults.Clear();
-            _mockErrors.Clear();
-            SetupDefaultMockData();
-        }
-
-        /// <summary>
-        /// Performs the mock phonemization.
-        /// </summary>
-        protected override async Task<PhonemeResult> PhonemizeInternalAsync(string normalizedText, string language, CancellationToken cancellationToken)
-        {
-            // Track the call
-            CallCount++;
-            LastProcessedText = normalizedText;
-            LastProcessedLanguage = language;
-
-            // Simulate processing delay
-            if (_simulatedDelay > TimeSpan.Zero)
-            {
-                await Task.Delay(_simulatedDelay, cancellationToken);
-            }
-
-            // Check for simulated errors
-            if (_mockErrors.TryGetValue(normalizedText, out var error))
-            {
-                throw error;
-            }
-
-            // Check for predefined results
-            if (_mockResults.TryGetValue(normalizedText, out var mockResult))
-            {
-                return mockResult.Clone();
-            }
-
-            // Generate default mock phonemes based on language
-            return GenerateMockPhonemes(normalizedText, language);
-        }
-
-        /// <summary>
-        /// Sets up default mock data for common test cases.
-        /// </summary>
-        private void SetupDefaultMockData()
-        {
-            // Japanese test data
-            _mockResults["こんにちは"] = new PhonemeResult
-            {
-                Phonemes = new[] { "k", "o", "N", "n", "i", "ch", "i", "w", "a" },
-                PhonemeIds = new[] { 23, 35, 42, 42, 21, 16, 21, 49, 6 },
-                Durations = new[] { 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f, 0.1f },
-                Pitches = new[] { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f }
-            };
-
-            // English test data
-            _mockResults["hello world"] = new PhonemeResult
-            {
-                Phonemes = new[] { "h", "ə", "l", "oʊ", " ", "w", "ɜr", "l", "d" },
-                PhonemeIds = new[] { 19, 28, 25, 34, 0, 49, 30, 25, 17 },
-                Durations = new[] { 0.08f, 0.06f, 0.08f, 0.12f, 0.05f, 0.08f, 0.10f, 0.08f, 0.10f },
-                Pitches = new[] { 1.0f, 1.0f, 1.0f, 1.2f, 1.0f, 1.0f, 0.9f, 1.0f, 0.8f }
-            };
-
-            // Empty text
-            _mockResults[""] = new PhonemeResult
-            {
-                Phonemes = Array.Empty<string>(),
-                PhonemeIds = Array.Empty<int>(),
-                Durations = Array.Empty<float>(),
-                Pitches = Array.Empty<float>()
-            };
-        }
-
-        /// <summary>
-        /// Generates mock phonemes for text that doesn't have predefined results.
-        /// </summary>
-        private PhonemeResult GenerateMockPhonemes(string text, string language)
-        {
             if (string.IsNullOrEmpty(text))
             {
-                return new PhonemeResult();
+                return Task.FromResult(new PhonemeResult
+                {
+                    OriginalText = text,
+                    Phonemes = Array.Empty<string>(),
+                    Language = language ?? Language
+                });
             }
 
             var phonemes = new List<string>();
-            var phonemeIds = new List<int>();
-            var durations = new List<float>();
-            var pitches = new List<float>();
-
-            // Simple mock phoneme generation based on characters
-            foreach (char c in text.ToLowerInvariant())
+            
+            if (language == "ja" || language == null)
             {
-                if (char.IsLetter(c))
+                // Simple Japanese mock phonemization
+                foreach (char c in text)
                 {
-                    // Generate mock phoneme based on character
-                    var phoneme = GetMockPhoneme(c, language);
-                    phonemes.Add(phoneme);
-                    phonemeIds.Add(_random.Next(1, 50));
-                    durations.Add(0.05f + (float)_random.NextDouble() * 0.1f);
-                    pitches.Add(0.8f + (float)_random.NextDouble() * 0.4f);
-                }
-                else if (char.IsWhiteSpace(c))
-                {
-                    phonemes.Add(" ");
-                    phonemeIds.Add(0);
-                    durations.Add(0.05f);
-                    pitches.Add(1.0f);
-                }
-                else if (char.IsPunctuation(c))
-                {
-                    // Add pause for punctuation
-                    phonemes.Add("_");
-                    phonemeIds.Add(0);
-                    durations.Add(0.1f);
-                    pitches.Add(1.0f);
+                    var key = c.ToString();
+                    if (_mockJapanesePhonemes.TryGetValue(key, out var ph))
+                    {
+                        phonemes.AddRange(ph);
+                    }
+                    else if (char.IsWhiteSpace(c))
+                    {
+                        phonemes.Add(" ");
+                    }
                 }
             }
-
-            return new PhonemeResult
+            else
             {
+                // For other languages, just split by spaces
+                phonemes.AddRange(text.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+            }
+
+            return Task.FromResult(new PhonemeResult
+            {
+                OriginalText = text,
                 Phonemes = phonemes.ToArray(),
-                PhonemeIds = phonemeIds.ToArray(),
-                Durations = durations.ToArray(),
-                Pitches = pitches.ToArray(),
-                Metadata = "Generated by MockPhonemizer"
+                Language = language ?? Language
+            });
+        }
+
+        public PhonemeResult Phonemize(string text, string language = "ja")
+        {
+            return PhonemizeAsync(text, language).GetAwaiter().GetResult();
+        }
+
+        public async Task<PhonemeResult[]> PhonemizeBatchAsync(string[] texts, string language = "ja", CancellationToken cancellationToken = default)
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(MockPhonemizer));
+
+            var tasks = texts.Select(text => PhonemizeAsync(text, language, cancellationToken)).ToArray();
+            return await Task.WhenAll(tasks);
+        }
+
+        public void ClearCache()
+        {
+            // Mock phonemizer doesn't use cache
+        }
+
+        public CacheStatistics GetCacheStatistics()
+        {
+            return new CacheStatistics
+            {
+                HitCount = 0,
+                MissCount = 0,
+                EvictionCount = 0,
+                EntryCount = 0,
+                TotalSizeBytes = 0,
+                MaxSizeBytes = 0
             };
         }
 
-        /// <summary>
-        /// Gets a mock phoneme for a character based on language.
-        /// </summary>
-        private string GetMockPhoneme(char c, string language)
+        public bool IsLanguageSupported(string language)
         {
-            // Simple mapping for demonstration
-            return language switch
+            return SupportedLanguages.Contains(language);
+        }
+
+        public LanguageInfo GetLanguageInfo(string language)
+        {
+            if (!IsLanguageSupported(language))
+                return null;
+
+            return new LanguageInfo
             {
-                "ja" => c switch
-                {
-                    'a' => "a",
-                    'i' => "i",
-                    'u' => "u",
-                    'e' => "e",
-                    'o' => "o",
-                    'k' => "k",
-                    'g' => "g",
-                    's' => "s",
-                    'z' => "z",
-                    't' => "t",
-                    'd' => "d",
-                    'n' => "n",
-                    'h' => "h",
-                    'b' => "b",
-                    'p' => "p",
-                    'm' => "m",
-                    'y' => "y",
-                    'r' => "r",
-                    'w' => "w",
-                    _ => c.ToString()
-                },
-                "en" => c switch
-                {
-                    'a' => "æ",
-                    'e' => "ɛ",
-                    'i' => "ɪ",
-                    'o' => "ɑ",
-                    'u' => "ʌ",
-                    _ => c.ToString()
-                },
-                _ => c.ToString()
+                Code = language,
+                Name = language == "ja" ? "Japanese" : "English",
+                NativeName = language == "ja" ? "日本語" : "English",
+                Direction = TextDirection.LeftToRight
             };
         }
 
-        /// <summary>
-        /// Initializes language information with test data.
-        /// </summary>
-        protected override void InitializeLanguages()
+        public void Dispose()
         {
-            base.InitializeLanguages();
-
-            // Add more detailed info for testing
-            if (_languageInfos.ContainsKey("ja"))
-            {
-                _languageInfos["ja"].RequiresPreprocessing = true;
-                _languageInfos["ja"].SupportsAccent = true;
-                _languageInfos["ja"].PhonemeSetType = "Japanese";
-                _languageInfos["ja"].AvailableVoices = new[] { "test-ja-1", "test-ja-2" };
-                _languageInfos["ja"].DefaultVoice = "test-ja-1";
-            }
-
-            if (_languageInfos.ContainsKey("en"))
-            {
-                _languageInfos["en"].RequiresPreprocessing = false;
-                _languageInfos["en"].SupportsAccent = false;
-                _languageInfos["en"].PhonemeSetType = "English-US";
-                _languageInfos["en"].AvailableVoices = new[] { "test-en-1", "test-en-2", "test-en-3" };
-                _languageInfos["en"].DefaultVoice = "test-en-1";
-            }
+            _isDisposed = true;
         }
     }
 }

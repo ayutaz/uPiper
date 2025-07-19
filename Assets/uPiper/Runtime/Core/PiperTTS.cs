@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Unity.InferenceEngine;
 using UnityEngine;
+using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Implementations;
@@ -1008,6 +1009,9 @@ namespace uPiper.Core
                     // Dispose phonemizer
                     _phonemizer?.Dispose();
                     _phonemizer = null;
+
+                    // Dispose partial class resources
+                    DisposePartialInference();
 
                     _isInitialized = false;
                     _isDisposed = true;
