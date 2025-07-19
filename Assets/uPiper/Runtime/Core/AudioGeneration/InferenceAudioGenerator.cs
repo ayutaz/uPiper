@@ -146,10 +146,8 @@ namespace uPiper.Core.AudioGeneration
                             throw new InvalidOperationException("Failed to get output from model");
                         }
 
-                        // 推論完了を待つ
-                        _worker.FlushSchedule(true);
-                        
                         // 出力データをコピー
+                        // Schedule()は同期的に実行されるため、追加の待機は不要
                         var audioLength = outputTensor.shape[0] * outputTensor.shape[1];
                         var audioData = new float[audioLength];
                         for (int i = 0; i < audioLength; i++)
