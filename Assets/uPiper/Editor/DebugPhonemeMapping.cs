@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers;
 
