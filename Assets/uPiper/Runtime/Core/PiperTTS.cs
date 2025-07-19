@@ -563,6 +563,7 @@ namespace uPiper.Core
                 if (_config.EnablePhonemeCache)
                 {
                     var cacheKey = GenerateCacheKey(text, _currentVoiceId);
+                    PiperLogger.LogDebug($"Cache check - Key: {cacheKey}, VoiceId: {_currentVoiceId}");
                     lock (_lockObject)
                     {
                         if (_audioCache.TryGetValue(cacheKey, out var cachedData))
@@ -577,6 +578,7 @@ namespace uPiper.Core
                         else
                         {
                             _cacheMissCount++;
+                            PiperLogger.LogDebug($"Cache miss - Cache size: {_audioCache.Count}");
                         }
                     }
                 }
@@ -637,6 +639,8 @@ namespace uPiper.Core
                     var cacheKey = GenerateCacheKey(text, _currentVoiceId);
                     var cachedData = CachedAudioData.FromAudioClip(audioClip);
                     
+                    PiperLogger.LogDebug($"Caching - Key: {cacheKey}, VoiceId: {_currentVoiceId}, Size: {cachedData.SizeInBytes} bytes");
+                    
                     lock (_lockObject)
                     {
                         // Check cache size and evict if needed
@@ -648,8 +652,8 @@ namespace uPiper.Core
                         
                         _audioCache[cacheKey] = cachedData;
                         _currentCacheSize += cachedData.SizeInBytes;
-                        PiperLogger.LogDebug("Cached audio data: {0} bytes, total cache: {1:F2}MB", 
-                            cachedData.SizeInBytes, _currentCacheSize / (1024.0 * 1024.0));
+                        PiperLogger.LogDebug("Cached audio data: {0} bytes, total cache: {1:F2}MB, total entries: {2}", 
+                            cachedData.SizeInBytes, _currentCacheSize / (1024.0 * 1024.0), _audioCache.Count);
                     }
                 }
 
