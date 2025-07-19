@@ -2,6 +2,7 @@ using System.Linq;
 using Unity.InferenceEngine;
 using UnityEditor;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace uPiper.Editor
 {
@@ -44,7 +45,9 @@ namespace uPiper.Editor
                 var input = model.inputs[i];
                 Debug.Log($"Input[{i}]:");
                 Debug.Log($"  Name: {input.name}");
-                Debug.Log($"  Shape: [{string.Join(", ", input.shape.Select(x => x.ToString()))}]");
+                // DynamicTensorShapeを文字列に変換
+                var shapeStr = input.shape.ToString();
+                Debug.Log($"  Shape: {shapeStr}");
                 Debug.Log($"  DataType: {input.dataType}");
             }
             
@@ -55,8 +58,7 @@ namespace uPiper.Editor
                 var output = model.outputs[i];
                 Debug.Log($"Output[{i}]:");
                 Debug.Log($"  Name: {output.name}");
-                Debug.Log($"  Shape: [{string.Join(", ", output.shape.Select(x => x.ToString()))}]");
-                Debug.Log($"  DataType: {output.dataType}");
+                // Model.Outputには shape プロパティがない可能性があるため、名前のみ表示
             }
             
             // レイヤー情報（最初の10個）
@@ -64,10 +66,10 @@ namespace uPiper.Editor
             for (int i = 0; i < Mathf.Min(10, model.layers.Count); i++)
             {
                 var layer = model.layers[i];
-                Debug.Log($"Layer[{i}]: {layer.name} (type: {layer.GetType().Name})");
+                Debug.Log($"Layer[{i}]: Type = {layer.GetType().Name}");
             }
             
-            model.Dispose();
+            // Modelは手動でDisposeする必要がない
             Debug.Log("\n=== Inspection Complete ===");
         }
         
@@ -142,7 +144,7 @@ namespace uPiper.Editor
                 lengthTensor.Dispose();
                 scalesTensor.Dispose();
                 worker.Dispose();
-                model.Dispose();
+                // Modelは手動でDisposeする必要がない
             }
             
             Debug.Log("=== Test Complete ===");
