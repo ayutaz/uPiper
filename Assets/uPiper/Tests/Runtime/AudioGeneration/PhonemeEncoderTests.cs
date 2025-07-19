@@ -57,7 +57,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         }
 
         [Test]
-        public void Encode_EmptyPhonemes_ReturnsMinimalSequence()
+        public void Encode_EmptyPhonemes_ReturnsEmptyArray()
         {
             // Arrange
             var phonemes = new string[0];
@@ -67,8 +67,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Assert
             Assert.IsNotNull(ids);
-            Assert.AreEqual(1, ids.Length); // Only PAD token
-            Assert.AreEqual(0, ids[0]); // PAD
+            Assert.AreEqual(0, ids.Length); // Empty array
         }
 
         [Test]
