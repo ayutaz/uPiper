@@ -25,6 +25,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Build options
 option(ENABLE_DEBUG_LOG "Enable debug logging" OFF)
+option(BUILD_TESTS "Build test executables" ON)
+option(BUILD_BENCHMARK "Build benchmark executable" ON)
 
 # Find OpenJTalk installation
 set(OPENJTALK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/install")
