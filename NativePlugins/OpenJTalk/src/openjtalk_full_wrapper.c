@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+
+#ifdef _WIN32
+#define strdup _strdup
+#endif
 #include <jpcommon.h>
 #include <mecab.h>
 #include <njd.h>
@@ -186,7 +190,7 @@ static PhonemeResult* labels_to_phonemes(OpenJTalkContext* ctx, JPCommon* jpcomm
         
         if (phoneme_start && phoneme_end && phoneme_start < phoneme_end) {
             phoneme_start++; // Skip the '-' character
-            int phoneme_len = phoneme_end - phoneme_start;
+            int phoneme_len = (int)(phoneme_end - phoneme_start);
             
             // Extract phoneme to a temp buffer for logging
             char phoneme_tmp[32] = {0};

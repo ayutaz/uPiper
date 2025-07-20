@@ -89,7 +89,7 @@ if(EXISTS "${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a")
     endif()
     
     # Link full OpenJTalk libraries
-    target_link_libraries(openjtalk_wrapper
+    set(OPENJTALK_LIBS
         ${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a
         ${OPENJTALK_SRC_DIR}/njd2jpcommon/libnjd2jpcommon.a
         ${OPENJTALK_SRC_DIR}/njd_set_unvoiced_vowel/libnjd_set_unvoiced_vowel.a
@@ -103,8 +103,13 @@ if(EXISTS "${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a")
         ${OPENJTALK_SRC_DIR}/text2mecab/libtext2mecab.a
         ${OPENJTALK_SRC_DIR}/mecab/src/libmecab.a
         ${HTSENGINE_LIB}
-        m
     )
+    
+    if(WIN32)
+        target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS})
+    else()
+        target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} m)
+    endif()
 else()
     message(FATAL_ERROR "OpenJTalk libraries not found. Please run fetch_dependencies.sh and build_dependencies.sh first.")
 endif()
