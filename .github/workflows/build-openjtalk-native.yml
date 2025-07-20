@@ -38,9 +38,16 @@ jobs:
       run: |
         cd NativePlugins/OpenJTalk
         echo "Fetching and building OpenJTalk dependencies..."
-        chmod +x fetch_dependencies.sh build_dependencies.sh
-        ./fetch_dependencies.sh
-        ./build_dependencies.sh
+        # Use CI-specific scripts for better reliability
+        if [ -f "fetch_dependencies_ci.sh" ]; then
+          chmod +x fetch_dependencies_ci.sh build_dependencies_ci.sh
+          ./fetch_dependencies_ci.sh
+          ./build_dependencies_ci.sh
+        else
+          chmod +x fetch_dependencies.sh build_dependencies.sh
+          ./fetch_dependencies.sh
+          ./build_dependencies.sh
+        fi
     
     - name: Check Dictionary Files
       shell: bash
@@ -114,9 +121,16 @@ jobs:
       run: |
         cd NativePlugins/OpenJTalk
         echo "Fetching and building OpenJTalk dependencies..."
-        chmod +x fetch_dependencies.sh build_dependencies.sh
-        ./fetch_dependencies.sh
-        ./build_dependencies.sh
+        # Use CI-specific scripts for better reliability
+        if [ -f "fetch_dependencies_ci.sh" ]; then
+          chmod +x fetch_dependencies_ci.sh build_dependencies_ci.sh
+          ./fetch_dependencies_ci.sh
+          ./build_dependencies_ci.sh
+        else
+          chmod +x fetch_dependencies.sh build_dependencies.sh
+          ./fetch_dependencies.sh
+          ./build_dependencies.sh
+        fi
     
     - name: Setup Cross Compilation (aarch64)
       if: matrix.arch == 'aarch64'
@@ -178,9 +192,16 @@ jobs:
       run: |
         cd NativePlugins/OpenJTalk
         echo "Fetching and building OpenJTalk dependencies..."
-        chmod +x fetch_dependencies.sh build_dependencies.sh
-        ./fetch_dependencies.sh
-        ./build_dependencies.sh
+        # Use CI-specific scripts for better reliability
+        if [ -f "fetch_dependencies_ci.sh" ]; then
+          chmod +x fetch_dependencies_ci.sh build_dependencies_ci.sh
+          ./fetch_dependencies_ci.sh
+          ./build_dependencies_ci.sh
+        else
+          chmod +x fetch_dependencies.sh build_dependencies.sh
+          ./fetch_dependencies.sh
+          ./build_dependencies.sh
+        fi
     
     - name: Check Dictionary Files
       run: |
