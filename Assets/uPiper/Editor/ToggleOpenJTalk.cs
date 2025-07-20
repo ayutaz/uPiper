@@ -65,7 +65,7 @@ namespace uPiper.Editor
             }
             
             // Trigger scene creation
-            CreateInferenceDemoScene.CreateSceneIfNeeded();
+            CreateInferenceDemoScene.CreateDemoScene();
             Debug.Log("InferenceEngineDemo scene regenerated");
         }
     }
