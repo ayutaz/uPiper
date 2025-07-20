@@ -88,16 +88,25 @@ cd build
 
 # Configure CMake
 echo "Configuring CMake..."
-cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_BENCHMARK=OFF .. || {
-    echo "ERROR: CMake configuration failed"
-    echo "CMake version: $(cmake --version | head -1)"
-    exit 1
-}
+if [ "$RUNNER_OS" = "Windows" ] || [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "win32" ]; then
+    # Use MinGW on Windows to avoid MSVC issues
+    cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_BENCHMARK=OFF .. || {
+        echo "ERROR: CMake configuration failed"
+        echo "CMake version: $(cmake --version | head -1)"
+        exit 1
+    }
+else
+    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_BENCHMARK=OFF .. || {
+        echo "ERROR: CMake configuration failed"
+        echo "CMake version: $(cmake --version | head -1)"
+        exit 1
+    }
+fi
 
 # Build
 echo "Building library..."
 if [ "$RUNNER_OS" = "Windows" ] || [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "win32" ]; then
-    cmake --build . --config Release --parallel || {
+    mingw32-make -j$(nproc 2>/dev/null || echo 2) || {
         echo "ERROR: Build failed"
         exit 1
     }
