@@ -178,6 +178,11 @@ namespace uPiper.Tests.Runtime.Native
             {
                 int error = openjtalk_get_last_error(handle);
                 Assert.AreNotEqual(0, error); // Should have an error
+                
+                IntPtr errorStrPtr = openjtalk_get_error_string(error);
+                string errorStr = Marshal.PtrToStringAnsi(errorStrPtr);
+                Assert.IsNotEmpty(errorStr);
+                Debug.Log($"Error string: {errorStr}");
             }
             else
             {
@@ -186,11 +191,6 @@ namespace uPiper.Tests.Runtime.Native
                 Assert.AreEqual(0, result.phoneme_count, "Empty text should produce no phonemes");
                 openjtalk_free_result(resultPtr);
             }
-            
-                IntPtr errorStrPtr = openjtalk_get_error_string(error);
-                string errorStr = Marshal.PtrToStringAnsi(errorStrPtr);
-                Assert.IsNotEmpty(errorStr);
-                Debug.Log($"Error string: {errorStr}");
         }
         
         [Test]
