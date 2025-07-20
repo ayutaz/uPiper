@@ -103,7 +103,7 @@ jobs:
           cp build/lib/libopenjtalk_wrapper.so ${{ github.workspace }}/
           
           # Set environment variable for library path
-          echo "LD_LIBRARY_PATH=${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
         fi
       shell: bash
         
@@ -141,7 +141,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         # Create symlink in the expected location for DllImport
-        cd Assets/uPiper/Plugins
+        cd Plugins
         if [ -f "Linux/x86_64/libopenjtalk_wrapper.so" ]; then
           ln -sf Linux/x86_64/libopenjtalk_wrapper.so openjtalk_wrapper.so || true
           ln -sf Linux/x86_64/libopenjtalk_wrapper.so libopenjtalk_wrapper.so || true
@@ -167,7 +167,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         PROJECT_PATH: .
-        LD_LIBRARY_PATH: ${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:${{ env.LD_LIBRARY_PATH }}
+        LD_LIBRARY_PATH: ${{ github.workspace }}/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:${{ env.LD_LIBRARY_PATH }}
       with:
         unityVersion: 6000.0.35f1
         testMode: all
@@ -422,7 +422,7 @@ jobs:
         
     - name: Run Native OpenJTalk Tests
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build
+        cd NativePlugins/OpenJTalk/build
         # Run all native tests
         ctest --output-on-failure -V
         
@@ -435,10 +435,10 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         
         # Check if library is properly built
-        if [ -f "Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" ]; then
+        if [ -f "Plugins/macOS/libopenjtalk_wrapper.dylib" ]; then
           echo "✅ OpenJTalk library built successfully" >> $GITHUB_STEP_SUMMARY
-          echo "- Location: Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" >> $GITHUB_STEP_SUMMARY
-          echo "- Architecture: $(lipo -info Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib 2>&1)" >> $GITHUB_STEP_SUMMARY
+          echo "- Location: Plugins/macOS/libopenjtalk_wrapper.dylib" >> $GITHUB_STEP_SUMMARY
+          echo "- Architecture: $(lipo -info Plugins/macOS/libopenjtalk_wrapper.dylib 2>&1)" >> $GITHUB_STEP_SUMMARY
         else
           echo "❌ OpenJTalk library not found" >> $GITHUB_STEP_SUMMARY
         fi
@@ -490,7 +490,7 @@ jobs:
         
     - name: Run Native OpenJTalk Tests
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build
+        cd NativePlugins/OpenJTalk/build
         # Run all native tests
         ctest --output-on-failure -V
         

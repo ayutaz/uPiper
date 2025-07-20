@@ -92,8 +92,8 @@ jobs:
       with:
         name: performance-${{ matrix.os }}
         path: |
-          Assets/uPiper/Native/OpenJTalk/build/performance_report.txt
-          Assets/uPiper/Native/OpenJTalk/build/timing_data.txt
+          NativePlugins/OpenJTalk/build/performance_report.txt
+          NativePlugins/OpenJTalk/build/timing_data.txt
         retention-days: 30
 
   performance-summary:
