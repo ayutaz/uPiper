@@ -6,6 +6,12 @@ echo "=== Building OpenJTalk wrapper for CI ==="
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Debug: Test CI environment
+if [ -f "$SCRIPT_DIR/test_ci_env.sh" ]; then
+    chmod +x "$SCRIPT_DIR/test_ci_env.sh"
+    "$SCRIPT_DIR/test_ci_env.sh" || true
+fi
+
 # Check if we're in CI environment
 if [ -n "$CI" ]; then
     echo "Running in CI environment"

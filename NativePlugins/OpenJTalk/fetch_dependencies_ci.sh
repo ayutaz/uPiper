@@ -4,6 +4,8 @@
 set -e
 
 echo "=== Fetching OpenJTalk Dependencies for CI ==="
+echo "Current directory: $(pwd)"
+echo "Script directory: $(dirname "${BASH_SOURCE[0]}")"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXTERNAL_DIR="$SCRIPT_DIR/external"
