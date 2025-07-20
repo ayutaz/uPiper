@@ -170,11 +170,27 @@ namespace uPiper.Core.Phonemizers.Implementations
                     return;
 
                 // Check if we should use mock mode
-                if (MockMode || !IsNativeLibraryAvailable())
+                if (MockMode)
                 {
                     mockMode = true;
                     _handle = new IntPtr(1); // Fake handle for mock mode
-                    Debug.Log("[OpenJTalkPhonemizer] Running in mock mode (native library not available)");
+                    Debug.Log("[OpenJTalkPhonemizer] Running in mock mode (explicitly requested)");
+                    return;
+                }
+                
+                if (!IsNativeLibraryAvailable())
+                {
+                    var expectedPath = GetExpectedLibraryPath();
+                    Debug.LogError($"[OpenJTalkPhonemizer] Native library not found at: {expectedPath}");
+                    Debug.LogError("[OpenJTalkPhonemizer] Please ensure the OpenJTalk native library is properly installed.");
+                    Debug.LogError("[OpenJTalkPhonemizer] Expected locations:");
+                    Debug.LogError($"  - macOS: {Path.Combine(Application.dataPath, "uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib")}");
+                    Debug.LogError($"  - Windows: {Path.Combine(Application.dataPath, "uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll")}");
+                    Debug.LogError($"  - Linux: {Path.Combine(Application.dataPath, "uPiper/Plugins/Linux/x86_64/libopenjtalk_wrapper.so")}");
+                    
+                    mockMode = true;
+                    _handle = new IntPtr(1); // Fake handle for mock mode
+                    Debug.LogWarning("[OpenJTalkPhonemizer] Falling back to mock mode. Text-to-phoneme conversion will be simulated.");
                     return;
                 }
 
@@ -498,6 +514,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             {
                 // Always use mock mode in test runner or when P/Invoke is disabled
 #if !ENABLE_PINVOKE
+                Debug.LogWarning("[OpenJTalkPhonemizer] P/Invoke is disabled for this platform");
                 return false;
 #endif
 
@@ -506,6 +523,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 if (Environment.GetEnvironmentVariable("UPIPER_TEST_MODE") == "true" ||
                     Environment.GetEnvironmentVariable("IS_TEST_ENVIRONMENT") == "true")
                 {
+                    Debug.Log("[OpenJTalkPhonemizer] Test environment detected via environment variable");
                     return false;
                 }
 
@@ -513,20 +531,32 @@ namespace uPiper.Core.Phonemizers.Implementations
                 if (Application.isEditor && !Application.isPlaying)
                 {
                     // In test runner, always use mock mode to avoid crashes
+                    Debug.Log("[OpenJTalkPhonemizer] Unity Test Runner detected");
                     return false;
                 }
 
                 // Check platform-specific library file existence
                 var libraryPath = GetExpectedLibraryPath();
-                if (!string.IsNullOrEmpty(libraryPath) && File.Exists(libraryPath))
+                if (string.IsNullOrEmpty(libraryPath))
                 {
-                    return true;
+                    Debug.LogError("[OpenJTalkPhonemizer] No library path defined for current platform");
+                    return false;
                 }
-
-                return false;
+                
+                if (!File.Exists(libraryPath))
+                {
+                    Debug.LogError($"[OpenJTalkPhonemizer] Library file not found: {libraryPath}");
+                    Debug.LogError($"[OpenJTalkPhonemizer] Current working directory: {Directory.GetCurrentDirectory()}");
+                    Debug.LogError($"[OpenJTalkPhonemizer] Application.dataPath: {Application.dataPath}");
+                    return false;
+                }
+                
+                Debug.Log($"[OpenJTalkPhonemizer] Native library found at: {libraryPath}");
+                return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.LogError($"[OpenJTalkPhonemizer] Error checking library availability: {ex.Message}");
                 return false;
             }
         }
