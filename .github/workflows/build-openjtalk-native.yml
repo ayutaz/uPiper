@@ -59,31 +59,28 @@ jobs:
         # No need to download, dictionary is already in repo
     
     - name: Build Native Library
-      shell: cmd
+      shell: bash
       run: |
-        cd NativePlugins\OpenJTalk
-        if exist build rmdir /s /q build
+        cd NativePlugins/OpenJTalk
+        rm -rf build
         mkdir build
         cd build
-        echo Running CMake configuration...
-        cmake .. -A ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=Release
-        if %errorlevel% neq 0 exit /b %errorlevel%
-        echo Building project...
-        cmake --build . --config Release --parallel
-        if %errorlevel% neq 0 exit /b %errorlevel%
-        echo Build completed successfully
-        dir /s *.dll
+        echo "Running CMake configuration with MinGW..."
+        cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+        echo "Building project..."
+        mingw32-make -j$(nproc)
+        echo "Build completed successfully"
+        find . -name "*.dll" -type f
     
     - name: Run Tests
-      shell: cmd
+      shell: bash
       run: |
-        cd NativePlugins\OpenJTalk\build
-        echo Running tests...
-        ctest -C Release --output-on-failure -V
-        if %errorlevel% neq 0 (
-          echo Test failed with error code %errorlevel%
-          exit /b 0
-        )
+        cd NativePlugins/OpenJTalk/build
+        echo "Running tests..."
+        ctest -C Release --output-on-failure -V || {
+          echo "Test failed with error code $?"
+          exit 0
+        }
     
     - name: Prepare Artifacts
       shell: bash
