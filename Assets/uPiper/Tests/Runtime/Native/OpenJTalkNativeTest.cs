@@ -250,33 +250,33 @@ namespace uPiper.Tests.Runtime.Native
         
         private string GetTestDictionaryPath()
         {
-            // First try the main dictionary (which we know works)
-            string mainDictPath = System.IO.Path.Combine(
-                Application.dataPath, "uPiper", "Native", "OpenJTalk", "dictionary"
+            // First try the NAIST dictionary in StreamingAssets
+            string naistDictPath = System.IO.Path.Combine(
+                Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11"
             );
-            if (System.IO.Directory.Exists(mainDictPath))
+            if (System.IO.Directory.Exists(naistDictPath))
             {
-                Debug.Log($"Using main dictionary at: {mainDictPath}");
-                return mainDictPath;
+                Debug.Log($"Using NAIST dictionary at: {naistDictPath}");
+                return naistDictPath;
             }
             
             // Try different possible locations for the test dictionary
             string[] possiblePaths = {
-                "Assets/uPiper/Native/OpenJTalk/dictionary",
-                "Assets/uPiper/Native/OpenJTalk/test_dictionary",
-                "Packages/com.upiper.native/OpenJTalk/dictionary"
+                System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "dictionary"),
+                System.IO.Path.Combine(Application.dataPath, "..", "NativePlugins", "OpenJTalk", "test_dictionary"),
+                System.IO.Path.Combine(Application.dataPath, "..", "NativePlugins", "OpenJTalk", "dictionary")
             };
             
             foreach (string path in possiblePaths)
             {
-                string fullPath = System.IO.Path.GetFullPath(path);
-                if (System.IO.Directory.Exists(fullPath))
+                if (System.IO.Directory.Exists(path))
                 {
-                    Debug.Log($"Found dictionary at: {fullPath}");
-                    return fullPath;
+                    Debug.Log($"Found dictionary at: {path}");
+                    return path;
                 }
             }
             
+            Debug.LogError($"Dictionary not found. Tried: {naistDictPath} and {string.Join(", ", possiblePaths)}");
             return "dictionary"; // Fallback
         }
         
