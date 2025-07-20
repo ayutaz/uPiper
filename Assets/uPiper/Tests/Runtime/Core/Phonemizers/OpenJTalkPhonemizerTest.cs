@@ -23,9 +23,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            // Always enable mock mode for tests to prevent crashes
-            Debug.Log("[OpenJTalkPhonemizerTest] Enabling mock mode for tests.");
-            OpenJTalkPhonemizer.MockMode = true;
+            Debug.Log("[OpenJTalkPhonemizerTest] Checking if native library is available for tests.");
         }
 
         [SetUp]
@@ -33,14 +31,12 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             try
             {
-                // Ensure mock mode is enabled for tests
-                OpenJTalkPhonemizer.MockMode = true;
                 _phonemizer = new OpenJTalkPhonemizer();
             }
             catch (Exception ex)
             {
                 Debug.LogWarning($"Failed to create OpenJTalkPhonemizer: {ex.Message}");
-                Assert.Ignore("Could not initialize OpenJTalkPhonemizer. Skipping test.");
+                Assert.Ignore("OpenJTalk native library not available. Skipping test.");
             }
         }
 

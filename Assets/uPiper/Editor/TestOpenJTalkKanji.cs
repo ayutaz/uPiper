@@ -29,10 +29,20 @@ namespace uPiper.Editor
             };
             
             // Create phonemizer
-            var phonemizer = new OpenJTalkPhonemizer();
-            
-            Debug.Log($"[TestOpenJTalkKanji] OpenJTalk version: {phonemizer.Version}");
-            Debug.Log($"[TestOpenJTalkKanji] Mock mode: {OpenJTalkPhonemizer.MockMode}");
+            OpenJTalkPhonemizer phonemizer = null;
+            try
+            {
+                phonemizer = new OpenJTalkPhonemizer();
+                Debug.Log($"[TestOpenJTalkKanji] OpenJTalk version: {phonemizer.Version}");
+                Debug.Log($"[TestOpenJTalkKanji] Mode: Native Mode");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[TestOpenJTalkKanji] Failed to initialize OpenJTalk: {ex.Message}");
+                Debug.LogError("[TestOpenJTalkKanji] Native library is required for this test.");
+                Debug.LogError("[TestOpenJTalkKanji] Please install the OpenJTalk native library and restart Unity.");
+                return;
+            }
             
             foreach (var (text, description) in testTexts)
             {
@@ -92,14 +102,11 @@ namespace uPiper.Editor
                 }
             }
             
-            // Test raw native call if not in mock mode
-            if (!OpenJTalkPhonemizer.MockMode)
-            {
-                Debug.Log("\n[TestOpenJTalkKanji] Testing native library directly...");
-                TestNativeLibraryDirectly();
-            }
+            // Test native library
+            Debug.Log("\n[TestOpenJTalkKanji] Testing native library directly...");
+            TestNativeLibraryDirectly();
             
-            phonemizer.Dispose();
+            phonemizer?.Dispose();
             Debug.Log("\n[TestOpenJTalkKanji] Test completed.");
         }
         

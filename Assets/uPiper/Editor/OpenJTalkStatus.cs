@@ -14,12 +14,27 @@ namespace uPiper.Editor
         {
             Debug.Log("=== OpenJTalk Status Report ===");
             
-            // Create phonemizer to check status
-            var phonemizer = new OpenJTalkPhonemizer();
+            // Try to create phonemizer to check status
+            OpenJTalkPhonemizer phonemizer = null;
             
-            Debug.Log($"Version: {phonemizer.Version}");
-            Debug.Log($"Mock Mode: {OpenJTalkPhonemizer.MockMode}");
-            Debug.Log($"Supported Languages: {string.Join(", ", phonemizer.SupportedLanguages)}");
+            try
+            {
+                phonemizer = new OpenJTalkPhonemizer();
+                Debug.Log($"Version: {phonemizer.Version}");
+                Debug.Log($"Mode: Native Mode");
+                Debug.Log($"Supported Languages: {string.Join(", ", phonemizer.SupportedLanguages)}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Failed to initialize OpenJTalk: {ex.Message}");
+                Debug.LogError("\nTo install OpenJTalk native library:");
+                Debug.LogError("1. Navigate to: " + System.IO.Path.Combine(Application.dataPath, "../NativePlugins/OpenJTalk/"));
+                Debug.LogError("2. Run build script:");
+                Debug.LogError("   - macOS/Linux: ./build.sh");
+                Debug.LogError("   - Windows: build.bat");
+                Debug.LogError("3. Restart Unity Editor");
+                return;
+            }
             
             // Test various Japanese texts
             var testCases = new Dictionary<string, string>
@@ -92,7 +107,7 @@ namespace uPiper.Editor
                 Debug.LogError("This is a known issue in the current OpenJTalk wrapper implementation.");
             }
             
-            phonemizer.Dispose();
+            phonemizer?.Dispose();
             Debug.Log("\n=== End of Status Report ===");
         }
     }

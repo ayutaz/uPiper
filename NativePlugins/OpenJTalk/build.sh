@@ -75,6 +75,7 @@ echo ""
 echo "Configuring with CMake..."
 cmake -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
       -DCMAKE_INSTALL_PREFIX="../../../../output/$PLATFORM_NAME/$ARCH" \
+      -DENABLE_DEBUG_LOG=ON \
       ../../../..
 
 if [ $? -ne 0 ]; then

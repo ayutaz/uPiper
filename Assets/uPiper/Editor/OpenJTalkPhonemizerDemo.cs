@@ -206,7 +206,7 @@ namespace uPiper.Editor
 
 #if !UNITY_WEBGL
                 _phonemizer = new OpenJTalkPhonemizer();
-                _statusMessage = OpenJTalkPhonemizer.MockMode ? "OpenJTalkPhonemizer initialized (mock mode - native library not found)" : "OpenJTalkPhonemizer initialized successfully";
+                _statusMessage = "OpenJTalkPhonemizer initialized successfully (Native Mode)";
 #else
                 _phonemizer = new MockPhonemizer();
                 _statusMessage = "MockPhonemizer initialized (WebGL fallback)";
@@ -218,6 +218,14 @@ namespace uPiper.Editor
             {
                 _statusMessage = $"Initialization failed: {ex.Message}";
                 Debug.LogError($"Failed to initialize phonemizer: {ex}");
+                Debug.LogError("\n=== OpenJTalk Installation Guide ===");
+                Debug.LogError("To install OpenJTalk native library:");
+                Debug.LogError($"1. Navigate to: {System.IO.Path.Combine(Application.dataPath, "../NativePlugins/OpenJTalk/")}");
+                Debug.LogError("2. Run build script:");
+                Debug.LogError("   - macOS/Linux: ./build.sh");
+                Debug.LogError("   - Windows: build.bat");
+                Debug.LogError("3. Restart Unity Editor");
+                Debug.LogError("====================================");
             }
         }
 

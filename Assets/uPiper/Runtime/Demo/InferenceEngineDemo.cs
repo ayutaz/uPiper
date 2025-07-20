@@ -29,6 +29,7 @@ namespace uPiper.Demo
         [SerializeField] private TextMeshProUGUI _statusText;
         [SerializeField] private AudioSource _audioSource;
         [SerializeField] private TMP_Dropdown _modelDropdown;
+        [SerializeField] private TMP_Dropdown _phraseDropdown;
         [SerializeField] private TextMeshProUGUI _phonemeDetailsText;
 
         [Header("Settings")]
@@ -50,6 +51,35 @@ namespace uPiper.Demo
             { "test_voice", "en" }
         };
 
+        // テスト用の定型文
+        private readonly List<string> _japaneseTestPhrases = new List<string>
+        {
+            "自由入力",  // Custom input option
+            "こんにちは",
+            "こんにちは、世界！",
+            "ありがとうございます",
+            "日本の日本橋の上で箸を使ってご飯を食べる",
+            "私は東京に住んでいます",
+            "今日はいい天気ですね",
+            "音声合成のテストです",
+            "ユニティで日本語音声合成ができました",
+            "おはようございます、今日も一日頑張りましょう",
+            "すみません、ちょっとお聞きしたいことがあります"
+        };
+
+        private readonly List<string> _englishTestPhrases = new List<string>
+        {
+            "Custom Input",  // Custom input option
+            "Hello world",
+            "Welcome to Unity",
+            "This is a test of the text to speech system",
+            "The quick brown fox jumps over the lazy dog",
+            "How are you doing today?",
+            "Unity Inference Engine is amazing",
+            "Can you hear me clearly?",
+            "Let's test the voice synthesis"
+        };
+
         private void Start()
         {
             _generator = new InferenceAudioGenerator();
@@ -59,18 +89,17 @@ namespace uPiper.Demo
             // Initialize OpenJTalk phonemizer for Japanese
             try
             {
-                // Force mock mode for debugging if needed
-                bool forceMockMode = false;
-#if UNITY_EDITOR
-                forceMockMode = UnityEditor.EditorPrefs.GetBool("uPiper_ForceOpenJTalkMockMode", false);
-#endif
-                var openJTalk = new OpenJTalkPhonemizer(forceMockMode: forceMockMode);
+                var openJTalk = new OpenJTalkPhonemizer();
                 _phonemizer = new TextPhonemizerAdapter(openJTalk);
-                PiperLogger.LogInfo($"[InferenceEngineDemo] OpenJTalk phonemizer initialized (mock mode: {forceMockMode || OpenJTalkPhonemizer.MockMode})");
+                PiperLogger.LogInfo("[InferenceEngineDemo] OpenJTalk phonemizer initialized successfully");
             }
             catch (Exception ex)
             {
-                PiperLogger.LogWarning($"[InferenceEngineDemo] Failed to initialize OpenJTalk: {ex.Message}");
+                PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize OpenJTalk: {ex.Message}");
+                PiperLogger.LogError("[InferenceEngineDemo] Japanese text-to-speech will not be available.");
+                PiperLogger.LogError("[InferenceEngineDemo] To enable Japanese TTS, please build the OpenJTalk native library:");
+                PiperLogger.LogError("[InferenceEngineDemo]   1. Navigate to NativePlugins/OpenJTalk/");
+                PiperLogger.LogError("[InferenceEngineDemo]   2. Run ./build.sh (macOS/Linux) or build.bat (Windows)");
                 _phonemizer = null;
             }
 #endif
@@ -105,6 +134,14 @@ namespace uPiper.Demo
                 _modelDropdown.onValueChanged.AddListener(OnModelChanged);
             }
 
+            // フレーズ選択ドロップダウンの設定
+            if (_phraseDropdown != null)
+            {
+                _phraseDropdown.ClearOptions();
+                _phraseDropdown.AddOptions(_japaneseTestPhrases);
+                _phraseDropdown.onValueChanged.AddListener(OnPhraseChanged);
+            }
+
             // 生成ボタンの設定
             if (_generateButton != null)
             {
@@ -123,9 +160,44 @@ namespace uPiper.Demo
             var modelName = index == 0 ? "ja_JP-test-medium" : "test_voice";
             var isJapanese = _modelLanguages[modelName] == "ja";
 
+            // フレーズドロップダウンを更新
+            if (_phraseDropdown != null)
+            {
+                _phraseDropdown.ClearOptions();
+                _phraseDropdown.AddOptions(isJapanese ? _japaneseTestPhrases : _englishTestPhrases);
+                _phraseDropdown.value = 1; // デフォルトフレーズを選択
+            }
+
             if (_inputField != null)
             {
                 _inputField.text = isJapanese ? _defaultJapaneseText : _defaultEnglishText;
+            }
+        }
+
+        private void OnPhraseChanged(int index)
+        {
+            if (_phraseDropdown == null || _inputField == null)
+                return;
+
+            var isJapanese = _modelDropdown?.value == 0;
+            var phrases = isJapanese ? _japaneseTestPhrases : _englishTestPhrases;
+
+            if (index > 0 && index < phrases.Count)
+            {
+                // 定型文を選択
+                _inputField.text = phrases[index];
+                _inputField.interactable = false; // 定型文選択時は編集不可
+            }
+            else
+            {
+                // 自由入力を選択
+                _inputField.interactable = true; // 編集可能にする
+                if (string.IsNullOrEmpty(_inputField.text) || phrases.Contains(_inputField.text))
+                {
+                    // 空または定型文の場合はデフォルトテキストを設定
+                    _inputField.text = isJapanese ? _defaultJapaneseText : _defaultEnglishText;
+                }
+                _inputField.Select(); // フォーカスを設定
             }
         }
 
@@ -209,14 +281,8 @@ namespace uPiper.Demo
                 var language = _modelLanguages[modelName];
                 
 #if !UNITY_WEBGL
-                // Check if OpenJTalk is disabled via editor preference
-                bool openJTalkDisabled = false;
-#if UNITY_EDITOR
-                openJTalkDisabled = UnityEditor.EditorPrefs.GetBool("uPiper_DisableOpenJTalk", false);
-#endif
-                
-                // Use OpenJTalk for Japanese if available and not disabled
-                if (language == "ja" && _phonemizer != null && !openJTalkDisabled)
+                // Use OpenJTalk for Japanese if available
+                if (language == "ja" && _phonemizer != null)
                 {
                     PiperLogger.LogDebug("[InferenceEngineDemo] Using OpenJTalk phonemizer for Japanese text");
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
@@ -290,29 +356,43 @@ namespace uPiper.Demo
                         PiperLogger.LogDebug($"[OpenJTalk] Total duration: {phonemeResult.Durations.Sum():F3}s");
                     }
                 }
+                else if (language == "ja")
+                {
+                    // OpenJTalk is required for Japanese
+                    var errorMsg = "OpenJTalk is required for Japanese text but is not available.\n" +
+                                  "To enable Japanese TTS:\n" +
+                                  "1. Navigate to NativePlugins/OpenJTalk/\n" +
+                                  "2. Run ./build.sh (macOS/Linux) or build.bat (Windows)\n" +
+                                  "3. Restart Unity Editor";
+                    throw new Exception(errorMsg);
+                }
                 else
                 {
-                    // Fallback to simple conversion
-                    string reason = openJTalkDisabled ? "disabled by user" : $"not available for {language}";
-                    PiperLogger.LogDebug($"[InferenceEngineDemo] Using simple phoneme conversion (OpenJTalk {reason})");
-                    phonemes = ConvertToPhonemes(_inputField.text, language);
-                    PiperLogger.LogInfo($"[Simple] Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
-                    
-                    // Show phoneme details in UI
-                    if (_phonemeDetailsText != null)
-                    {
-                        _phonemeDetailsText.text = $"Simple: {string.Join(" ", phonemes)}";
-                    }
+                    // For non-Japanese languages when phonemizer is not available
+                    phonemes = _inputField.text.ToLower()
+                        .Replace(",", " _")
+                        .Replace(".", " _")
+                        .Replace("!", " _")
+                        .Replace("?", " _")
+                        .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    PiperLogger.LogInfo($"Basic English phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                 }
 #else
-                // WebGL always uses simple conversion
-                phonemes = ConvertToPhonemes(_inputField.text, language);
-                PiperLogger.LogInfo($"Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
-                
-                // Show phoneme details in UI
-                if (_phonemeDetailsText != null)
+                // WebGL is not supported for Japanese
+                if (language == "ja")
                 {
-                    _phonemeDetailsText.text = $"Simple: {string.Join(" ", phonemes)}";
+                    throw new Exception("Japanese text-to-speech is not supported on WebGL platform. OpenJTalk native library is required.");
+                }
+                else
+                {
+                    // For non-Japanese languages, use basic phoneme splitting
+                    phonemes = _inputField.text.ToLower()
+                        .Replace(",", " _")
+                        .Replace(".", " _")
+                        .Replace("!", " _")
+                        .Replace("?", " _")
+                        .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    PiperLogger.LogInfo($"English phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                 }
 #endif
 
@@ -494,49 +574,6 @@ namespace uPiper.Demo
             return config;
         }
 
-        private string[] ConvertToPhonemes(string text, string language)
-        {
-            // Fallback implementation for when OpenJTalk is not available
-            // This is used for WebGL builds or when OpenJTalk initialization fails
-            if (language == "ja")
-            {
-                // Simplified Japanese phoneme mapping for demo purposes
-                // Phase 1.10 will integrate OpenJTalkPhonemizer for accurate conversion
-                var phonemeMap = new Dictionary<string, string[]>
-                {
-                    { "こ", new[] { "k", "o" } },
-                    { "ん", new[] { "N" } },
-                    { "に", new[] { "n", "i" } },
-                    { "ち", new[] { "ch", "i" } },  // "ち" is "chi" - ch will be mapped to PUA
-                    { "は", new[] { "w", "a" } },    // "は" as particle is pronounced "wa"
-                    { "、", new[] { "_" } },  // pause (using pad token)
-                    { "世", new[] { "s", "e" } },
-                    { "界", new[] { "k", "a", "i" } },
-                    { "！", new[] { "_" } }  // pause (using pad token)
-                };
-
-                var phonemes = new List<string>();
-                foreach (char c in text)
-                {
-                    var key = c.ToString();
-                    if (phonemeMap.TryGetValue(key, out var ph))
-                    {
-                        phonemes.AddRange(ph);
-                    }
-                }
-                return phonemes.ToArray();
-            }
-            else
-            {
-                // 英語の簡易音素変換
-                return text.ToLower()
-                    .Replace(",", " _")
-                    .Replace(".", " _")
-                    .Replace("!", " _")
-                    .Replace("?", " _")
-                    .Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            }
-        }
 
         private void SetStatus(string status)
         {

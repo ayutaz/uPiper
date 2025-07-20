@@ -159,82 +159,108 @@ static PhonemeResult* labels_to_phonemes(OpenJTalkContext* ctx, JPCommon* jpcomm
         return NULL;
     }
     
-    // Count phonemes
-    int phoneme_count = 0;
+    // Get label data from JPCommon
     int label_size = JPCommon_get_label_size(jpcommon);
+    char** label_feature = JPCommon_get_label_feature(jpcommon);
     
-    // Pre-count to allocate arrays
-    char** labels = JPCommon_get_label_feature(jpcommon);
+    if (label_size <= 0 || !label_feature) {
+        free(result);
+        return NULL;
+    }
+    
+    // First pass: count phonemes and build phoneme string
+    char phoneme_buffer[8192] = {0};
+    char* buf_ptr = phoneme_buffer;
+    int phoneme_count = 0;
+    
     for (int i = 0; i < label_size; i++) {
-        if (labels && labels[i] && strstr(labels[i], "-") && strstr(labels[i], "+")) {
-            phoneme_count++;
+        if (!label_feature[i]) continue;
+        
+        DEBUG_LOG("Label[%d]: %s", i, label_feature[i]);
+        
+        // Extract phoneme from full-context label
+        // Full-context label format: xx^xx-phoneme+xx=xx/A:...
+        // We need to extract the phoneme between '-' and '+'
+        char* phoneme_start = strchr(label_feature[i], '-');
+        char* phoneme_end = strchr(label_feature[i], '+');
+        
+        if (phoneme_start && phoneme_end && phoneme_start < phoneme_end) {
+            phoneme_start++; // Skip the '-' character
+            int phoneme_len = phoneme_end - phoneme_start;
+            
+            // Extract phoneme to a temp buffer for logging
+            char phoneme_tmp[32] = {0};
+            strncpy(phoneme_tmp, phoneme_start, (phoneme_len < 31) ? phoneme_len : 31);
+            DEBUG_LOG("  Extracted phoneme: '%s' (len=%d)", phoneme_tmp, phoneme_len);
+            
+            // Handle silence phonemes
+            if (strncmp(phoneme_start, "sil", phoneme_len) == 0) {
+                // Only add pau at the beginning and end
+                if (i == 0 || i == label_size - 1) {
+                    if (buf_ptr != phoneme_buffer) {
+                        *buf_ptr++ = ' ';
+                    }
+                    strcpy(buf_ptr, "pau");
+                    buf_ptr += 3;
+                    phoneme_count++;
+                    DEBUG_LOG("  Added 'pau' for silence");
+                }
+            } else {
+                // Add the phoneme
+                if (buf_ptr != phoneme_buffer) {
+                    *buf_ptr++ = ' ';
+                }
+                strncpy(buf_ptr, phoneme_start, phoneme_len);
+                buf_ptr += phoneme_len;
+                phoneme_count++;
+            }
+        } else {
+            DEBUG_LOG("  WARNING: Could not extract phoneme from label");
         }
     }
     
-    // Allocate arrays
+    // Null-terminate the phoneme string
+    *buf_ptr = '\0';
+    
+    DEBUG_LOG("Extracted phonemes: %s (count: %d)", phoneme_buffer, phoneme_count);
+    
+    // Log first 10 phonemes individually for debugging
+    char* debug_ptr = phoneme_buffer;
+    for (int i = 0; i < 10 && i < phoneme_count; i++) {
+        char phoneme[32] = {0};
+        sscanf(debug_ptr, "%s", phoneme);
+        DEBUG_LOG("  Phoneme[%d]: '%s'", i, phoneme);
+        debug_ptr = strchr(debug_ptr, ' ');
+        if (debug_ptr) debug_ptr++;
+        else break;
+    }
+    
+    // Allocate result arrays
     result->phoneme_count = phoneme_count;
-    result->phonemes = (char*)calloc(phoneme_count * 8 + 1, sizeof(char)); // Max phoneme length
+    result->phonemes = strdup(phoneme_buffer);
     result->phoneme_ids = (int*)calloc(phoneme_count, sizeof(int));
     result->durations = (float*)calloc(phoneme_count, sizeof(float));
+    
+    // Add a simple checksum for debugging
+    unsigned int checksum = 0;
+    for (char* p = phoneme_buffer; *p; p++) {
+        checksum = checksum * 31 + (unsigned char)*p;
+    }
+    DEBUG_LOG("Phoneme buffer checksum: %u", checksum);
     
     if (!result->phonemes || !result->phoneme_ids || !result->durations) {
         openjtalk_free_result(result);
         return NULL;
     }
     
-    // Extract phonemes from labels
-    char* phoneme_ptr = result->phonemes;
-    int phoneme_idx = 0;
-    
-    for (int i = 0; i < label_size && phoneme_idx < phoneme_count; i++) {
-        if (!labels || !labels[i]) continue;
-        char* label = labels[i];
-        
-        // Parse phoneme from label (format: xx^xx-phoneme+xx=xx/...)
-        char* p_start = strchr(label, '-');
-        char* p_end = strchr(label, '+');
-        
-        if (p_start && p_end && p_start < p_end) {
-            p_start++; // Skip '-'
-            size_t len = p_end - p_start;
-            
-            // Handle special phonemes
-            if (strncmp(p_start, "sil", len) == 0) {
-                strcpy(phoneme_ptr, "pau");
-                result->phoneme_ids[phoneme_idx] = 0; // Silence ID
-                phoneme_ptr += 3;
-                *phoneme_ptr++ = ' ';
-            } else if (strncmp(p_start, "pau", len) == 0) {
-                strcpy(phoneme_ptr, "pau");
-                result->phoneme_ids[phoneme_idx] = 0; // Pause ID
-                phoneme_ptr += 3;
-                *phoneme_ptr++ = ' ';
-            } else {
-                // Copy phoneme
-                strncpy(phoneme_ptr, p_start, len);
-                phoneme_ptr += len;
-                *phoneme_ptr++ = ' ';
-                
-                // Map to ID (simplified mapping)
-                result->phoneme_ids[phoneme_idx] = 1; // Default non-silence ID
-            }
-            
-            // Set default duration
-            result->durations[phoneme_idx] = 0.05f;
-            phoneme_idx++;
-        }
-    }
-    
-    // Remove trailing space
-    if (phoneme_ptr > result->phonemes) {
-        *(phoneme_ptr - 1) = '\0';
+    // Set default values for phoneme IDs and durations
+    for (int i = 0; i < phoneme_count; i++) {
+        result->phoneme_ids[i] = 1; // Default non-silence ID
+        result->durations[i] = 0.05f; // Default 50ms duration
     }
     
     // Calculate total duration
-    result->total_duration = 0.0f;
-    for (int i = 0; i < result->phoneme_count; i++) {
-        result->total_duration += result->durations[i];
-    }
+    result->total_duration = phoneme_count * 0.05f;
     
     return result;
 }
