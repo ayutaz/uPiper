@@ -92,13 +92,8 @@ if [ -d "open_jtalk-1.11" ]; then
         }
     fi
     
-    # Don't run make install, just copy the libraries
-    echo "=== Copying static libraries ==="
-    find . -name "*.a" -type f | while read -r lib; do
-        dir=$(dirname "$lib")
-        mkdir -p "$BUILD_DIR/open_jtalk-1.11/$dir"
-        cp "$lib" "$BUILD_DIR/open_jtalk-1.11/$dir/"
-    done
+    # Libraries are already in the correct location after build
+    echo "=== Static libraries built successfully ==="
     
     cd ..
 else
