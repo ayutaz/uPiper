@@ -37,7 +37,10 @@ jobs:
       shell: bash
       run: |
         cd NativePlugins/OpenJTalk
-        echo "Using mock implementation for CI build"
+        echo "Fetching and building OpenJTalk dependencies..."
+        chmod +x fetch_dependencies.sh build_dependencies.sh
+        ./fetch_dependencies.sh
+        ./build_dependencies.sh
     
     - name: Check Dictionary Files
       shell: bash
@@ -51,12 +54,10 @@ jobs:
       shell: cmd
       run: |
         cd NativePlugins\OpenJTalk
-        echo Copying CI CMakeLists...
-        copy CMakeLists_ci.txt CMakeLists.txt
         if exist build rmdir /s /q build
         mkdir build
         cd build
-        echo Running CMake configuration with CI mock...
+        echo Running CMake configuration...
         cmake .. -A ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=Release
         if %errorlevel% neq 0 exit /b %errorlevel%
         echo Building project...
@@ -112,8 +113,10 @@ jobs:
     - name: Setup Dependencies
       run: |
         cd NativePlugins/OpenJTalk
-        echo "Using mock implementation for CI build"
-        cp CMakeLists_ci.txt CMakeLists.txt
+        echo "Fetching and building OpenJTalk dependencies..."
+        chmod +x fetch_dependencies.sh build_dependencies.sh
+        ./fetch_dependencies.sh
+        ./build_dependencies.sh
     
     - name: Setup Cross Compilation (aarch64)
       if: matrix.arch == 'aarch64'
@@ -174,8 +177,10 @@ jobs:
     - name: Setup Dependencies
       run: |
         cd NativePlugins/OpenJTalk
-        echo "Using mock implementation for CI build"
-        cp CMakeLists_ci.txt CMakeLists.txt
+        echo "Fetching and building OpenJTalk dependencies..."
+        chmod +x fetch_dependencies.sh build_dependencies.sh
+        ./fetch_dependencies.sh
+        ./build_dependencies.sh
     
     - name: Check Dictionary Files
       run: |
