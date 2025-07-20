@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
@@ -146,6 +147,10 @@ namespace uPiper.Demo
             SetStatus("処理中...");
             PiperLogger.LogInfo($"Starting audio generation for text: {_inputField.text}");
 
+            // Start overall timing
+            var totalStopwatch = Stopwatch.StartNew();
+            var timings = new Dictionary<string, long>();
+
             try
             {
                 // モデル名を取得
@@ -154,6 +159,7 @@ namespace uPiper.Demo
 
                 // モデルをロード
                 SetStatus("モデルをロード中...");
+                var loadStopwatch = Stopwatch.StartNew();
                 PiperLogger.LogDebug($"Loading model asset: Models/{modelName}");
                 var modelAsset = Resources.Load<ModelAsset>($"Models/{modelName}");
                 if (modelAsset == null)
@@ -161,6 +167,7 @@ namespace uPiper.Demo
                     throw new Exception($"モデルが見つかりません: {modelName}");
                 }
                 PiperLogger.LogDebug($"Model asset loaded successfully");
+                timings["ModelLoad"] = loadStopwatch.ElapsedMilliseconds;
 
                 // JSONコンフィグをロード
                 PiperLogger.LogDebug($"Loading config: Models/{modelName}.onnx");
@@ -197,6 +204,7 @@ namespace uPiper.Demo
 
                 // 音素に変換
                 SetStatus("音素に変換中...");
+                var phonemeStopwatch = Stopwatch.StartNew();
                 string[] phonemes;
                 var language = _modelLanguages[modelName];
                 
@@ -213,7 +221,9 @@ namespace uPiper.Demo
                     PiperLogger.LogDebug("[InferenceEngineDemo] Using OpenJTalk phonemizer for Japanese text");
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
                     
+                    var openJTalkStopwatch = Stopwatch.StartNew();
                     var phonemeResult = await _phonemizer.PhonemizeAsync(_inputField.text, language);
+                    timings["OpenJTalk"] = openJTalkStopwatch.ElapsedMilliseconds;
                     var openJTalkPhonemes = phonemeResult.Phonemes;
                     
                     PiperLogger.LogInfo($"[OpenJTalk] Raw phonemes ({openJTalkPhonemes.Length}): {string.Join(" ", openJTalkPhonemes)}");
@@ -323,9 +333,13 @@ namespace uPiper.Demo
                     }
                 }
 
+                timings["Phonemization"] = phonemeStopwatch.ElapsedMilliseconds;
+
                 // 音素をIDに変換
+                var encodeStopwatch = Stopwatch.StartNew();
                 var phonemeIds = _encoder.Encode(phonemes);
                 PiperLogger.LogInfo($"Phoneme IDs ({phonemeIds.Length}): {string.Join(", ", phonemeIds)}");
+                timings["Encoding"] = encodeStopwatch.ElapsedMilliseconds;
                 
                 // Log phoneme to ID mapping for debugging
                 var phonemeIdPairs = new List<string>();
@@ -338,7 +352,9 @@ namespace uPiper.Demo
                 // 音声生成
                 SetStatus("音声を生成中...");
                 PiperLogger.LogDebug("Calling GenerateAudioAsync...");
+                var synthesisStopwatch = Stopwatch.StartNew();
                 var audioData = await _generator.GenerateAudioAsync(phonemeIds);
+                timings["Synthesis"] = synthesisStopwatch.ElapsedMilliseconds;
                 PiperLogger.LogInfo($"Audio generated: {audioData.Length} samples");
 
                 // 音声データの最大値を確認
@@ -388,7 +404,38 @@ namespace uPiper.Demo
                     PiperLogger.LogInfo("Audio playback started");
                 }
 
-                SetStatus($"生成完了！ ({audioClip.length:F2}秒)");
+                // Calculate total time
+                totalStopwatch.Stop();
+                timings["Total"] = totalStopwatch.ElapsedMilliseconds;
+
+                // Log performance metrics
+                PiperLogger.LogInfo("=== Performance Metrics ===");
+                PiperLogger.LogInfo($"Text length: {_inputField.text.Length} characters");
+                foreach (var timing in timings)
+                {
+                    PiperLogger.LogInfo($"{timing.Key}: {timing.Value}ms");
+                }
+                
+                // Check if we meet the <100ms requirement
+                var processingTime = timings["Total"];
+                var meetsRequirement = processingTime < 100;
+                PiperLogger.LogInfo($"Performance requirement (<100ms): {(meetsRequirement ? "PASSED" : "FAILED")} ({processingTime}ms)");
+
+                // Update status with timing info
+                SetStatus($"生成完了！ ({audioClip.length:F2}秒) - 処理時間: {processingTime}ms");
+                
+                // Show timing details in phoneme details text
+                if (_phonemeDetailsText != null)
+                {
+                    var existingText = _phonemeDetailsText.text;
+                    _phonemeDetailsText.text = $"{existingText}\n\n[Performance]\nTotal: {processingTime}ms";
+                    if (timings.ContainsKey("OpenJTalk"))
+                    {
+                        _phonemeDetailsText.text += $"\nOpenJTalk: {timings["OpenJTalk"]}ms";
+                    }
+                    _phonemeDetailsText.text += $"\nSynthesis: {timings["Synthesis"]}ms";
+                    _phonemeDetailsText.text += $"\nRequirement: {(meetsRequirement ? "✓ PASSED" : "✗ FAILED")}";
+                }
             }
             catch (Exception ex)
             {
