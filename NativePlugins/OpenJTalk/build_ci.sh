@@ -75,15 +75,21 @@ if [ "$PLATFORM" == "windows" ]; then
     BENCHMARK_PATH="./bin/Release/benchmark_openjtalk.exe"
 fi
 
-if $BENCHMARK_PATH ../test_dictionary > benchmark_output.txt 2>&1; then
-    echo "Benchmark completed successfully"
-    cat benchmark_output.txt
-    # Extract key metrics for CI
-    grep -E "(Average processing time|All sentences)" benchmark_output.txt > bin/benchmark_results.txt || true
+# Check if benchmark exists (not built in simplified CI build)
+if [ -f "$BENCHMARK_PATH" ]; then
+    if $BENCHMARK_PATH ../test_dictionary > benchmark_output.txt 2>&1; then
+        echo "Benchmark completed successfully"
+        cat benchmark_output.txt
+        # Extract key metrics for CI
+        grep -E "(Average processing time|All sentences)" benchmark_output.txt > bin/benchmark_results.txt || true
+    else
+        echo "Benchmark failed"
+        cat benchmark_output.txt || true
+        exit 1
+    fi
 else
-    echo "Benchmark failed"
-    cat benchmark_output.txt || true
-    exit 1
+    echo "Benchmark tool not built (using simplified CI build)"
+    echo "Skipping performance benchmark"
 fi
 
 # Create output directory structure
