@@ -455,12 +455,11 @@ namespace uPiper.Core.Phonemizers.Implementations
             // Look for dictionary in various locations
             var possiblePaths = new[]
             {
-                // NAIST dictionary path (priority)
-                Path.Combine(Application.dataPath, "uPiper", "Native", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11"),
+                // NAIST dictionary path in StreamingAssets (priority)
+                Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11"),
                 // Legacy dictionary paths
-                Path.Combine(Application.dataPath, "uPiper", "Native", "OpenJTalk", "dictionary"),
-                Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "dictionary"),
                 Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "dictionary"),
+                Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "dictionary"),
                 Path.Combine(PlatformHelper.GetNativeLibraryDirectory(), "OpenJTalk", "dictionary"),
             };
 

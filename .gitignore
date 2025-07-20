@@ -178,15 +178,12 @@ link.xml.meta
 # Temporary demo scenes
 Assets/Temp/
 
-# Native Build Outputs
-Assets/uPiper/Native/OpenJTalk/build/
-Assets/uPiper/Native/OpenJTalk/output/
+# CMake build outputs
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
 install_manifest.txt
 Makefile
-build/
 
 # Backup files
 *.bak
@@ -226,3 +223,24 @@ TestOpenJTalkKanji.cs.meta
 TestTextEncoding.cs.meta
 OpenJTalkStatus.cs.meta
 TestMeCabOutput.cs.meta
+
+# NativePlugins - source code for native libraries
+/NativePlugins/OpenJTalk/build/
+/NativePlugins/OpenJTalk/external/
+/NativePlugins/OpenJTalk/test/test_phonemizer
+/NativePlugins/OpenJTalk/test/test_mecab
+/NativePlugins/OpenJTalk/test/test_mecab_dict
+/NativePlugins/OpenJTalk/test/test_kanji_issue
+/NativePlugins/OpenJTalk/test/test_naist_dict
+/NativePlugins/OpenJTalk/test/test_openjtalk_full
+/NativePlugins/OpenJTalk/test_kanji
+/NativePlugins/OpenJTalk/src/mecab_full_dict_builder
+/NativePlugins/OpenJTalk/build-simple/
+/NativePlugins/OpenJTalk/build-openjtalk-full/
+# Don't ignore the source files themselves
+!/NativePlugins/OpenJTalk/src/
+!/NativePlugins/OpenJTalk/include/
+!/NativePlugins/OpenJTalk/scripts/
+!/NativePlugins/OpenJTalk/test/*.c
+!/NativePlugins/OpenJTalk/CMakeLists.txt
+!/NativePlugins/OpenJTalk/README.md
