@@ -52,17 +52,30 @@ else
             echo "Using CI-specific build scripts..."
             chmod +x "$SCRIPT_DIR/fetch_dependencies_ci.sh" "$SCRIPT_DIR/build_dependencies_ci.sh"
             
-            # Set timeout for dependency fetching (5 minutes)
-            timeout 300 "$SCRIPT_DIR/fetch_dependencies_ci.sh" || {
-                echo "ERROR: Dependency fetch timed out or failed"
-                exit 1
-            }
-            
-            # Set timeout for building (10 minutes)
-            timeout 600 "$SCRIPT_DIR/build_dependencies_ci.sh" || {
-                echo "ERROR: Dependency build timed out or failed"
-                exit 1
-            }
+            # Run dependency fetching (Windows doesn't have timeout command)
+            if [[ "$RUNNER_OS" == "Windows" ]] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+                echo "Running on Windows - no timeout command available"
+                "$SCRIPT_DIR/fetch_dependencies_ci.sh" || {
+                    echo "ERROR: Dependency fetch failed"
+                    exit 1
+                }
+                "$SCRIPT_DIR/build_dependencies_ci.sh" || {
+                    echo "ERROR: Dependency build failed"
+                    exit 1
+                }
+            else
+                # Set timeout for dependency fetching (5 minutes)
+                timeout 300 "$SCRIPT_DIR/fetch_dependencies_ci.sh" || {
+                    echo "ERROR: Dependency fetch timed out or failed"
+                    exit 1
+                }
+                
+                # Set timeout for building (10 minutes)
+                timeout 600 "$SCRIPT_DIR/build_dependencies_ci.sh" || {
+                    echo "ERROR: Dependency build timed out or failed"
+                    exit 1
+                }
+            fi
         else
             echo "ERROR: CI build scripts not found"
             exit 1

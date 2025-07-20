@@ -15,9 +15,18 @@ cd "$BUILD_DIR"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     JOBS=$(sysctl -n hw.ncpu)
 elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
-    JOBS=4
+    # Windows CIは遅いので並列度を下げる
+    JOBS=2
 else
     JOBS=$(nproc)
+fi
+
+# GitHub Actions環境では並列度を制限
+if [ -n "$GITHUB_ACTIONS" ]; then
+    echo "Running in GitHub Actions - limiting parallel jobs"
+    if [ $JOBS -gt 2 ]; then
+        JOBS=2
+    fi
 fi
 
 echo "Platform: $OSTYPE"
@@ -33,6 +42,7 @@ if [ -d "hts_engine_API-1.10" ]; then
             exit 1
         }
     fi
+    echo "Starting make (this may take a few minutes)..."
     make -j$JOBS || {
         echo "ERROR: hts_engine build failed"
         exit 1
@@ -68,10 +78,19 @@ if [ -d "open_jtalk-1.11" ]; then
             exit 1
         }
     fi
-    make -j$JOBS || {
-        echo "ERROR: OpenJTalk build failed"
-        exit 1
-    }
+    echo "Starting OpenJTalk build (this may take 5-10 minutes on Windows)..."
+    # Windowsでは進捗を表示
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+        make -j$JOBS VERBOSE=1 || {
+            echo "ERROR: OpenJTalk build failed"
+            exit 1
+        }
+    else
+        make -j$JOBS || {
+            echo "ERROR: OpenJTalk build failed"
+            exit 1
+        }
+    fi
     
     # Don't run make install, just copy the libraries
     echo "=== Copying static libraries ==="
