@@ -58,9 +58,14 @@ namespace uPiper.Demo
             // Initialize OpenJTalk phonemizer for Japanese
             try
             {
-                var openJTalk = new OpenJTalkPhonemizer();
+                // Force mock mode for debugging if needed
+                bool forceMockMode = false;
+#if UNITY_EDITOR
+                forceMockMode = UnityEditor.EditorPrefs.GetBool("uPiper_ForceOpenJTalkMockMode", false);
+#endif
+                var openJTalk = new OpenJTalkPhonemizer(forceMockMode: forceMockMode);
                 _phonemizer = new TextPhonemizerAdapter(openJTalk);
-                PiperLogger.LogInfo("[InferenceEngineDemo] OpenJTalk phonemizer initialized");
+                PiperLogger.LogInfo($"[InferenceEngineDemo] OpenJTalk phonemizer initialized (mock mode: {forceMockMode || OpenJTalkPhonemizer.MockMode})");
             }
             catch (Exception ex)
             {
@@ -206,9 +211,26 @@ namespace uPiper.Demo
                 if (language == "ja" && _phonemizer != null && !openJTalkDisabled)
                 {
                     PiperLogger.LogDebug("[InferenceEngineDemo] Using OpenJTalk phonemizer for Japanese text");
+                    PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
+                    
                     var phonemeResult = await _phonemizer.PhonemizeAsync(_inputField.text, language);
                     var openJTalkPhonemes = phonemeResult.Phonemes;
+                    
                     PiperLogger.LogInfo($"[OpenJTalk] Raw phonemes ({openJTalkPhonemes.Length}): {string.Join(" ", openJTalkPhonemes)}");
+                    
+                    // 詳細なデバッグ情報
+                    if (openJTalkPhonemes.Length == 0)
+                    {
+                        PiperLogger.LogError("[OpenJTalk] No phonemes returned!");
+                    }
+                    else if (openJTalkPhonemes.Length < 5)
+                    {
+                        PiperLogger.LogWarning($"[OpenJTalk] Suspiciously few phonemes returned: {openJTalkPhonemes.Length}");
+                        for (int i = 0; i < openJTalkPhonemes.Length; i++)
+                        {
+                            PiperLogger.LogWarning($"  Phoneme[{i}]: '{openJTalkPhonemes[i]}' (length: {openJTalkPhonemes[i].Length})");
+                        }
+                    }
                     
                     // Convert OpenJTalk phonemes to Piper phonemes
                     phonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(openJTalkPhonemes);
