@@ -500,7 +500,9 @@ namespace uPiper.Core
                             _onProcessingProgress?.Invoke(1.0f);
 
                             // Return cached audio clip
+#pragma warning disable CS0618 // Type or member is obsolete
                             return CreateDummyAudioClip(text);
+#pragma warning restore CS0618 // Type or member is obsolete
                         }
                         else
                         {
@@ -567,13 +569,17 @@ namespace uPiper.Core
                     {
                         PiperLogger.LogError($"Failed to generate audio with InferenceAudioGenerator: {ex.Message}");
                         // Fall back to dummy audio
+#pragma warning disable CS0618 // Type or member is obsolete
                         audioClip = CreateDummyAudioClip(text);
+#pragma warning restore CS0618 // Type or member is obsolete
                     }
                 }
                 else
                 {
                     PiperLogger.LogWarning("InferenceAudioGenerator not available, using dummy audio");
+#pragma warning disable CS0618 // Type or member is obsolete
                     audioClip = CreateDummyAudioClip(text);
+#pragma warning restore CS0618 // Type or member is obsolete
                 }
 
                 _onProcessingProgress?.Invoke(0.8f);
@@ -1141,15 +1147,15 @@ namespace uPiper.Core
                     PiperLogger.LogInfo("Initialized OpenJTalkPhonemizer for Japanese");
 #else
                     PiperLogger.LogWarning("OpenJTalkPhonemizer is not supported on WebGL platform");
-                    _phonemizer = new MockPhonemizer(); // Fallback to mock
+                    _phonemizer = null; // No phonemizer available on WebGL
 #endif
                 }
                 else
                 {
-                    // For other languages, use mock phonemizer
+                    // For other languages, phonemizer is not available yet
                     // espeak-ng phonemizer will be implemented in a future phase
-                    _phonemizer = new MockPhonemizer();
-                    PiperLogger.LogInfo("Initialized MockPhonemizer for language: {0}", _config.DefaultLanguage);
+                    _phonemizer = null;
+                    PiperLogger.LogWarning("No phonemizer available for language: {0}. Text-to-speech will use fallback mode.", _config.DefaultLanguage);
                 }
 
                 // Small delay to simulate async operation
