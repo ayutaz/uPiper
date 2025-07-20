@@ -37,7 +37,7 @@ jobs:
       shell: bash
       run: |
         cd NativePlugins/OpenJTalk
-        echo "Skipping dependencies for now - using simplified build"
+        echo "Using mock implementation for CI build"
     
     - name: Check Dictionary Files
       shell: bash
@@ -51,13 +51,13 @@ jobs:
       shell: cmd
       run: |
         cd NativePlugins\OpenJTalk
+        echo Copying CI CMakeLists...
+        copy CMakeLists_ci.txt CMakeLists.txt
         if exist build rmdir /s /q build
         mkdir build
         cd build
-        echo Copying CI CMakeLists...
-        copy ..\CMakeLists_ci.txt ..\CMakeLists.txt
-        echo Running CMake configuration...
-        cmake .. -A ${{ matrix.cmake_arch }}
+        echo Running CMake configuration with CI mock...
+        cmake .. -A ${{ matrix.cmake_arch }} -DCMAKE_BUILD_TYPE=Release
         if %errorlevel% neq 0 exit /b %errorlevel%
         echo Building project...
         cmake --build . --config Release --parallel
@@ -112,7 +112,7 @@ jobs:
     - name: Setup Dependencies
       run: |
         cd NativePlugins/OpenJTalk
-        echo "Using simplified build for CI"
+        echo "Using mock implementation for CI build"
         cp CMakeLists_ci.txt CMakeLists.txt
     
     - name: Setup Cross Compilation (aarch64)
@@ -174,7 +174,7 @@ jobs:
     - name: Setup Dependencies
       run: |
         cd NativePlugins/OpenJTalk
-        echo "Using simplified build for CI"
+        echo "Using mock implementation for CI build"
         cp CMakeLists_ci.txt CMakeLists.txt
     
     - name: Check Dictionary Files

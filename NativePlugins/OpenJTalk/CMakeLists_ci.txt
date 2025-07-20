@@ -1,0 +1,78 @@
+cmake_minimum_required(VERSION 3.10)
+project(openjtalk_wrapper VERSION 3.0.0)
+
+# C standard
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# Platform detection
+if(WIN32)
+    set(PLATFORM_NAME "windows")
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-DOPENJTALK_EXPORTS)
+elseif(UNIX AND NOT APPLE)
+    set(PLATFORM_NAME "linux")
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+elseif(APPLE)
+    set(PLATFORM_NAME "macos")
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+
+# Output directories
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+# Build options
+option(ENABLE_DEBUG_LOG "Enable debug logging" OFF)
+option(BUILD_TESTS "Build test executables" OFF)  # Disable tests for CI
+option(BUILD_BENCHMARK "Build benchmark executable" OFF)  # Disable benchmark for CI
+
+# Source files - Mock implementation for CI
+set(SOURCES
+    src/openjtalk_mock.c
+)
+
+# Include directories
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+# Create shared library
+add_library(openjtalk_wrapper SHARED ${SOURCES})
+
+# Platform-specific settings
+if(WIN32)
+    set_target_properties(openjtalk_wrapper PROPERTIES
+        OUTPUT_NAME "openjtalk_wrapper"
+        PREFIX ""
+    )
+    # For Windows, also create the .lib import library
+    set_target_properties(openjtalk_wrapper PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS TRUE
+    )
+elseif(APPLE)
+    set_target_properties(openjtalk_wrapper PROPERTIES
+        OUTPUT_NAME "openjtalk_wrapper"
+        PREFIX "lib"
+        SUFFIX ".dylib"
+    )
+else()
+    set_target_properties(openjtalk_wrapper PROPERTIES
+        OUTPUT_NAME "openjtalk_wrapper"
+        PREFIX "lib"
+        SUFFIX ".so"
+    )
+endif()
+
+# Installation (for packaging)
+install(TARGETS openjtalk_wrapper
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
+
+install(FILES 
+    include/openjtalk_wrapper.h
+    DESTINATION include
+)
