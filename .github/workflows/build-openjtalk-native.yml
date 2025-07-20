@@ -6,11 +6,11 @@ on:
       - main
       - develop
     paths:
-      - 'Assets/uPiper/Native/OpenJTalk/**'
+      - 'NativePlugins/OpenJTalk/**'
       - '.github/workflows/build-openjtalk-native.yml'
   pull_request:
     paths:
-      - 'Assets/uPiper/Native/OpenJTalk/**'
+      - 'NativePlugins/OpenJTalk/**'
       - '.github/workflows/build-openjtalk-native.yml'
   workflow_dispatch:
 
@@ -36,7 +36,7 @@ jobs:
     - name: Check Dictionary Files
       shell: bash
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         echo "Checking dictionary files..."
         ls -la dictionary/ || echo "Dictionary directory not found"
         # No need to download, dictionary is already in repo
@@ -73,12 +73,12 @@ jobs:
       run: |
         mkdir -p artifacts/windows/${{ matrix.arch }}
         # Find and copy DLL from build output
-        find Assets/uPiper/Native/OpenJTalk/build -name "*.dll" -type f | head -5
-        cp Assets/uPiper/Native/OpenJTalk/build/bin/Release/*.dll artifacts/windows/${{ matrix.arch }}/ 2>/dev/null || \
-        cp Assets/uPiper/Native/OpenJTalk/build/Release/*.dll artifacts/windows/${{ matrix.arch }}/ 2>/dev/null || \
-        cp Assets/uPiper/Native/OpenJTalk/build/bin/*.dll artifacts/windows/${{ matrix.arch }}/ 2>/dev/null || true
+        find NativePlugins/OpenJTalk/build -name "*.dll" -type f | head -5
+        cp NativePlugins/OpenJTalk/build/bin/Release/*.dll artifacts/windows/${{ matrix.arch }}/ 2>/dev/null || \
+        cp NativePlugins/OpenJTalk/build/Release/*.dll artifacts/windows/${{ matrix.arch }}/ 2>/dev/null || \
+        cp NativePlugins/OpenJTalk/build/bin/*.dll artifacts/windows/${{ matrix.arch }}/ 2>/dev/null || true
         # Copy header files
-        cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/ || true
+        cp NativePlugins/OpenJTalk/include/*.h artifacts/ || true
     
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
@@ -110,26 +110,26 @@ jobs:
     
     - name: Check Dictionary Files
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         echo "Checking dictionary files..."
         ls -la dictionary/ || echo "Dictionary directory not found"
     
     - name: Configure CMake
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         mkdir -p build
         cd build
         cmake -DCMAKE_BUILD_TYPE=Release ..
     
     - name: Build
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build
+        cd NativePlugins/OpenJTalk/build
         make -j$(nproc)
     
     - name: Run Tests (x86_64 only)
       if: matrix.arch == 'x86_64'
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build
+        cd NativePlugins/OpenJTalk/build
         # Run all tests using CTest
         ctest --output-on-failure
     
@@ -137,9 +137,9 @@ jobs:
       run: |
         mkdir -p artifacts/linux/${{ matrix.arch }}
         # Copy shared library from build output
-        cp Assets/uPiper/Native/OpenJTalk/build/lib/*.so artifacts/linux/${{ matrix.arch }}/ || true
+        cp NativePlugins/OpenJTalk/build/lib/*.so artifacts/linux/${{ matrix.arch }}/ || true
         # Copy header files
-        cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/ || true
+        cp NativePlugins/OpenJTalk/include/*.h artifacts/ || true
     
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
@@ -159,13 +159,13 @@ jobs:
     
     - name: Check Dictionary Files
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         echo "Checking dictionary files..."
         ls -la dictionary/ || echo "Dictionary directory not found"
     
     - name: Build x86_64
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         mkdir -p build_x86_64
         cd build_x86_64
         cmake -DCMAKE_BUILD_TYPE=Release \
@@ -174,7 +174,7 @@ jobs:
     
     - name: Build arm64
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         mkdir -p build_arm64
         cd build_arm64
         cmake -DCMAKE_BUILD_TYPE=Release \
@@ -183,15 +183,15 @@ jobs:
     
     - name: Create Universal Binary
       run: |
-        mkdir -p Assets/uPiper/Native/OpenJTalk/universal
+        mkdir -p NativePlugins/OpenJTalk/universal
         lipo -create \
-          Assets/uPiper/Native/OpenJTalk/build_x86_64/lib/libopenjtalk_wrapper.dylib \
-          Assets/uPiper/Native/OpenJTalk/build_arm64/lib/libopenjtalk_wrapper.dylib \
-          -output Assets/uPiper/Native/OpenJTalk/universal/libopenjtalk_wrapper.dylib
+          NativePlugins/OpenJTalk/build_x86_64/lib/libopenjtalk_wrapper.dylib \
+          NativePlugins/OpenJTalk/build_arm64/lib/libopenjtalk_wrapper.dylib \
+          -output NativePlugins/OpenJTalk/universal/libopenjtalk_wrapper.dylib
     
     - name: Run Tests
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build_arm64
+        cd NativePlugins/OpenJTalk/build_arm64
         # Run all tests using CTest
         ctest --output-on-failure
     
@@ -199,9 +199,9 @@ jobs:
       run: |
         mkdir -p artifacts/macos
         # Copy the universal dylib
-        cp Assets/uPiper/Native/OpenJTalk/universal/libopenjtalk_wrapper.dylib artifacts/macos/
+        cp NativePlugins/OpenJTalk/universal/libopenjtalk_wrapper.dylib artifacts/macos/
         # Copy header files
-        cp Assets/uPiper/Native/OpenJTalk/include/*.h artifacts/ || true
+        cp NativePlugins/OpenJTalk/include/*.h artifacts/ || true
     
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
