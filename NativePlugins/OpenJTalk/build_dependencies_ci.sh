@@ -101,12 +101,27 @@ if [ -d "open_jtalk-1.11" ]; then
         }
     fi
     echo "Starting OpenJTalk build (this may take 5-10 minutes on Windows)..."
-    # Windowsでは進捗を表示
+    # Windowsでは進捗を表示、またツールのビルドはスキップ
     if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
-        make -j$JOBS VERBOSE=1 || {
-            echo "ERROR: OpenJTalk build failed"
-            exit 1
-        }
+        # On Windows, build libraries only in mecab/src first
+        if [ -d "mecab/src" ]; then
+            echo "Building mecab library..."
+            (cd mecab/src && make libmecab.a -j$JOBS) || {
+                echo "ERROR: Failed to build mecab library"
+                exit 1
+            }
+        fi
+        
+        # Then build other components
+        for dir in text2mecab mecab2njd njd njd_set_pronunciation njd_set_digit njd_set_accent_phrase njd_set_accent_type njd_set_unvoiced_vowel njd_set_long_vowel njd2jpcommon jpcommon; do
+            if [ -d "$dir" ]; then
+                echo "Building $dir..."
+                (cd "$dir" && make -j$JOBS) || {
+                    echo "ERROR: Failed to build $dir"
+                    exit 1
+                }
+            fi
+        done
     else
         make -j$JOBS || {
             echo "ERROR: OpenJTalk build failed"
