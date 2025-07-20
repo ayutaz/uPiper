@@ -205,10 +205,12 @@ namespace uPiper.Tests.Runtime.Native
             Debug.Log($"openjtalk_set_option result: {result}, handle: {handle}");
             Assert.AreEqual(0, result); // 0 = OPENJTALK_SUCCESS
             
-            // Test getting option - Currently returns NULL (stub implementation)
+            // Test getting option
             IntPtr valuePtr = openjtalk_get_option(handle, "speech_rate");
-            // TODO: When option storage is implemented, this should return the set value
-            Assert.AreEqual(IntPtr.Zero, valuePtr, "Current stub implementation returns NULL");
+            Assert.AreNotEqual(IntPtr.Zero, valuePtr);
+            
+            string value = Marshal.PtrToStringAnsi(valuePtr);
+            Assert.AreEqual("1.50", value);
         }
         
         [Test]

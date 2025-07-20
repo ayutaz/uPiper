@@ -33,6 +33,10 @@ typedef struct {
     char* dict_path;
     int last_error;
     bool initialized;
+    // Options storage
+    double speech_rate;
+    double pitch;
+    double volume;
 } OpenJTalkContext;
 
 // Version information
@@ -50,6 +54,11 @@ void* openjtalk_create(const char* dict_path) {
     if (!ctx) {
         return NULL;
     }
+    
+    // Initialize default options
+    ctx->speech_rate = 1.0;
+    ctx->pitch = 0.0;
+    ctx->volume = 1.0;
     
     // Store dictionary path
     ctx->dict_path = strdup(dict_path);
@@ -341,21 +350,67 @@ const char* openjtalk_get_error_string(int error_code) {
     }
 }
 
-// Set option (stub for now)
+// Set option
 int openjtalk_set_option(void* handle, const char* key, const char* value) {
     if (!handle || !key || !value) {
         return OPENJTALK_ERROR_INVALID_INPUT;
     }
     
-    // Options can be implemented as needed
-    return OPENJTALK_SUCCESS;
+    OpenJTalkContext* ctx = (OpenJTalkContext*)handle;
+    
+    // Parse and set options
+    if (strcmp(key, "speech_rate") == 0) {
+        double rate = atof(value);
+        if (rate > 0.0 && rate <= 10.0) {
+            ctx->speech_rate = rate;
+            return OPENJTALK_SUCCESS;
+        }
+        return OPENJTALK_ERROR_INVALID_INPUT;
+    }
+    else if (strcmp(key, "pitch") == 0) {
+        double pitch = atof(value);
+        if (pitch >= -20.0 && pitch <= 20.0) {
+            ctx->pitch = pitch;
+            return OPENJTALK_SUCCESS;
+        }
+        return OPENJTALK_ERROR_INVALID_INPUT;
+    }
+    else if (strcmp(key, "volume") == 0) {
+        double volume = atof(value);
+        if (volume >= 0.0 && volume <= 2.0) {
+            ctx->volume = volume;
+            return OPENJTALK_SUCCESS;
+        }
+        return OPENJTALK_ERROR_INVALID_INPUT;
+    }
+    
+    // Unknown option
+    return OPENJTALK_ERROR_INVALID_INPUT;
 }
 
-// Get option (stub for now)
+// Get option
 const char* openjtalk_get_option(void* handle, const char* key) {
     if (!handle || !key) {
         return NULL;
     }
     
+    OpenJTalkContext* ctx = (OpenJTalkContext*)handle;
+    static char buffer[32];  // Static buffer for return value
+    
+    // Return formatted option values
+    if (strcmp(key, "speech_rate") == 0) {
+        snprintf(buffer, sizeof(buffer), "%.2f", ctx->speech_rate);
+        return buffer;
+    }
+    else if (strcmp(key, "pitch") == 0) {
+        snprintf(buffer, sizeof(buffer), "%.2f", ctx->pitch);
+        return buffer;
+    }
+    else if (strcmp(key, "volume") == 0) {
+        snprintf(buffer, sizeof(buffer), "%.2f", ctx->volume);
+        return buffer;
+    }
+    
+    // Unknown option
     return NULL;
 }
