@@ -5,9 +5,8 @@
 ## 特徴
 
 - 🎌 **日本語対応**: OpenJTalk による高精度な日本語音素化
-- 🌍 **多言語サポート**: 50+ 言語に対応予定（espeak-ng 統合）
 - 🚀 **高速処理**: Unity AI Interface による最適化された推論
-- 🎮 **マルチプラットフォーム**: Windows, Linux, macOS, Android, iOS, WebGL
+- 🎮 **マルチプラットフォーム**: Windows, Linux, macOS に対応
 - 🔧 **簡単な統合**: シンプルな API とエディタ拡張
 
 ## インストール
@@ -72,13 +71,12 @@ uPiper/
 
 ## 必要要件
 
-- Unity 2022.3 LTS 以降
-- Unity AI Interface (Inference Engine) 2.2.x
+- Unity 6000.0.35f1 以降
+- Unity AI Interface (Inference Engine) 2.2.1
 - 各プラットフォームの要件:
-  - Windows: Windows 10 以降（x64）
-  - Linux: Ubuntu 20.04 以降（x64）
-  - Android: API Level 24 以降
-  - iOS: iOS 12.0 以降
+  - Windows: Windows 10 以降（x86, x64）
+  - Linux: Ubuntu 20.04 以降（x86_64, aarch64）
+  - macOS: macOS 10.15 以降（Universal）
 
 ## ライセンス
 
