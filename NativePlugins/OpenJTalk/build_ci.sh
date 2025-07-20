@@ -31,14 +31,23 @@ cd "$BUILD_DIR"
 
 # Configure with CMake
 echo "=== Configuring with CMake ==="
-# Use simplified CMakeLists for CI
-if [ -f "../CMakeLists_ci.txt" ]; then
-    echo "Using CMakeLists_ci.txt for simplified build"
-    cp ../CMakeLists_ci.txt ../CMakeLists.txt
+# Always use full CMakeLists - build dependencies if needed
+if [ ! -f "../external/openjtalk_build/install/lib/libHTSEngine.a" ]; then
+    echo "OpenJTalk dependencies not found, building them first..."
+    cd ..
+    # Use CI-specific scripts for faster builds
+    if [ -f "./fetch_dependencies_ci.sh" ]; then
+        ./fetch_dependencies_ci.sh
+        ./build_dependencies_ci.sh
+    else
+        ./fetch_dependencies.sh
+        ./build_dependencies.sh
+    fi
+    cd build
 fi
 cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_TESTS=ON \
+    -DBUILD_TESTS=OFF \
     -DBUILD_FULL_VERSION=ON
 
 # Build

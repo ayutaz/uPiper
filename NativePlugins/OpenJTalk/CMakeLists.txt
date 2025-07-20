@@ -31,7 +31,7 @@ set(OPENJTALK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/install
 set(OPENJTALK_INCLUDE_DIR "${OPENJTALK_ROOT}/include")
 set(OPENJTALK_LIB_DIR "${OPENJTALK_ROOT}/lib")
 
-# Source files
+# Source files - Full OpenJTalk wrapper only
 set(SOURCES
     src/openjtalk_full_wrapper.c
 )
