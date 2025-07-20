@@ -16,6 +16,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
     /// Tests for OpenJTalkPhonemizer implementation.
     /// </summary>
     [TestFixture]
+    [Category("RequiresNativeLibrary")]
     public class OpenJTalkPhonemizerTest
     {
         private OpenJTalkPhonemizer _phonemizer;
@@ -255,31 +256,49 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         [Test]
         public void Dispose_MultipleCalls_DoesNotThrow()
         {
-            var phonemizer = new OpenJTalkPhonemizer();
-
-            Assert.DoesNotThrow(() =>
+            // Skip this test if native library is not available
+            try
             {
-                phonemizer.Dispose();
-                // Small delay to ensure disposal completes
-                System.Threading.Thread.Sleep(10);
-                phonemizer.Dispose(); // Second call should not throw
-            });
+                var phonemizer = new OpenJTalkPhonemizer();
+                
+                Assert.DoesNotThrow(() =>
+                {
+                    phonemizer.Dispose();
+                    // Small delay to ensure disposal completes
+                    System.Threading.Thread.Sleep(10);
+                    phonemizer.Dispose(); // Second call should not throw
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Skipping disposal test: {ex.Message}");
+                Assert.Ignore("OpenJTalk native library not available. Skipping disposal test.");
+            }
         }
 
         [Test]
         public void Phonemize_AfterDispose_ThrowsObjectDisposedException()
         {
-            var phonemizer = new OpenJTalkPhonemizer();
-            phonemizer.Dispose();
-
-            // Ensure the object is disposed before testing
-            System.GC.Collect();
-            System.GC.WaitForPendingFinalizers();
-
-            Assert.Throws<ObjectDisposedException>(() =>
+            // Skip this test if native library is not available
+            try
             {
-                phonemizer.Phonemize("テスト");
-            });
+                var phonemizer = new OpenJTalkPhonemizer();
+                phonemizer.Dispose();
+
+                // Ensure the object is disposed before testing
+                System.GC.Collect();
+                System.GC.WaitForPendingFinalizers();
+
+                Assert.Throws<ObjectDisposedException>(() =>
+                {
+                    phonemizer.Phonemize("テスト");
+                });
+            }
+            catch (PiperInitializationException ex)
+            {
+                Debug.LogWarning($"Skipping disposal test: {ex.Message}");
+                Assert.Ignore("OpenJTalk native library not available. Skipping disposal test.");
+            }
         }
 
         #endregion

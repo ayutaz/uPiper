@@ -294,46 +294,9 @@ namespace uPiper.Demo
                     
                     PiperLogger.LogInfo($"[OpenJTalk] Raw phonemes ({openJTalkPhonemes.Length}): {string.Join(" ", openJTalkPhonemes)}");
                     
-                    // 詳細なデバッグ情報
-                    if (openJTalkPhonemes.Length == 0)
-                    {
-                        PiperLogger.LogError("[OpenJTalk] ERROR: No phonemes returned!");
-                    }
-                    else
-                    {
-                        // Check for repeating patterns (indicates native library issue)
-                        var phonemeGroups = openJTalkPhonemes
-                            .GroupBy(p => p)
-                            .Where(g => g.Count() > 3)
-                            .ToList();
-                        
-                        if (phonemeGroups.Any())
-                        {
-                            PiperLogger.LogError("[OpenJTalk] ERROR: Repeating pattern detected - native library malfunction!");
-                            foreach (var group in phonemeGroups)
-                            {
-                                PiperLogger.LogError($"  - Phoneme '{group.Key}' repeats {group.Count()} times");
-                            }
-                            PiperLogger.LogError($"[OpenJTalk] Input text was: '{_inputField.text}'");
-                            PiperLogger.LogError("[OpenJTalk] This indicates the OpenJTalk native library is not processing Japanese text correctly.");
-                        }
-                        
-                        // Warn about short output
-                        if (openJTalkPhonemes.Length < 5 && _inputField.text.Length > 3)
-                        {
-                            PiperLogger.LogWarning($"[OpenJTalk] Suspiciously few phonemes ({openJTalkPhonemes.Length}) for text length {_inputField.text.Length}");
-                        }
-                    }
-                    
                     // Convert OpenJTalk phonemes to Piper phonemes
                     phonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(openJTalkPhonemes);
                     PiperLogger.LogInfo($"[OpenJTalk] Converted to Piper phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
-                    
-                    // Log detailed mapping for debugging
-                    for (int i = 0; i < Math.Min(openJTalkPhonemes.Length, phonemes.Length); i++)
-                    {
-                        PiperLogger.LogDebug($"  Phoneme mapping: '{openJTalkPhonemes[i]}' -> '{phonemes[i]}'");
-                    }
                     
                     // Show phoneme details in UI
                     if (_phonemeDetailsText != null)
