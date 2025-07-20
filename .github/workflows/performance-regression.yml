@@ -65,17 +65,17 @@ jobs:
             # Extract integer part for simple comparison
             time_int=$(echo "$time" | cut -d. -f1)
             
-            # If integer part is 10 or greater, it's a regression
-            if [ "$time_int" -ge 10 ]; then
-              echo "❌ Performance regression detected: ${time}ms >= 10ms"
+            # If integer part is 100 or greater, it's a regression (Phase 1.10 requirement: < 100ms)
+            if [ "$time_int" -ge 100 ]; then
+              echo "❌ Performance regression detected: ${time}ms >= 100ms"
               failed=1
             else
-              echo "✅ Performance OK: ${time}ms < 10ms"
+              echo "✅ Performance OK: ${time}ms < 100ms"
             fi
           done
           
           if [ $failed -eq 0 ]; then
-            echo "✅ All performance tests passed (< 10ms)"
+            echo "✅ All performance tests passed (< 100ms)"
           else
             exit 1
           fi

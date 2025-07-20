@@ -25,19 +25,19 @@ jobs:
         
         # Check job results
         if [[ "${{ needs.windows-test.result }}" == "success" ]]; then
-          echo "| Windows | ✅ | ✅ | < 10ms | .dll |" >> $GITHUB_STEP_SUMMARY
+          echo "| Windows | ✅ | ✅ | < 100ms | .dll |" >> $GITHUB_STEP_SUMMARY
         else
           echo "| Windows | ❌ | ❌ | - | - |" >> $GITHUB_STEP_SUMMARY
         fi
         
         if [[ "${{ needs.linux-test.result }}" == "success" ]]; then
-          echo "| Linux | ✅ | ✅ | < 10ms | .so |" >> $GITHUB_STEP_SUMMARY
+          echo "| Linux | ✅ | ✅ | < 100ms | .so |" >> $GITHUB_STEP_SUMMARY
         else
           echo "| Linux | ❌ | ❌ | - | - |" >> $GITHUB_STEP_SUMMARY
         fi
         
         if [[ "${{ needs.macos-test.result }}" == "success" ]]; then
-          echo "| macOS | ✅ | ✅ | < 10ms | .dylib |" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS | ✅ | ✅ | < 100ms | .dylib |" >> $GITHUB_STEP_SUMMARY
         else
           echo "| macOS | ❌ | ❌ | - | - |" >> $GITHUB_STEP_SUMMARY
         fi
