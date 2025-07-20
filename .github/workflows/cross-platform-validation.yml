@@ -5,7 +5,7 @@ on:
   pull_request:
     types: [opened, synchronize, ready_for_review]
     paths:
-      - 'Assets/uPiper/Native/OpenJTalk/**'
+      - 'NativePlugins/OpenJTalk/**'
       - '.github/workflows/**.yml'
 
 jobs:
@@ -30,7 +30,7 @@ jobs:
       
     - name: Build Native Library
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         chmod +x build_ci.sh
         ./build_ci.sh
       shell: bash
@@ -39,7 +39,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: lib-${{ matrix.os }}
-        path: Assets/uPiper/Native/OpenJTalk/output/**
+        path: NativePlugins/OpenJTalk/output/**
         retention-days: 7
 
   # Cross-platform testing - test libraries built on one platform on another

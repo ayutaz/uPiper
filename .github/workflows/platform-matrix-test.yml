@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'Assets/uPiper/Native/OpenJTalk/**'
+      - 'NativePlugins/OpenJTalk/**'
       - '.github/workflows/native-tests.yml'
       - '.github/workflows/platform-matrix-test.yml'
 
@@ -69,14 +69,14 @@ jobs:
     - name: Build and Test
       shell: bash
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         chmod +x build_ci.sh
         ./build_ci.sh
         
     - name: Windows Specific Validation
       shell: pwsh
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build
+        cd NativePlugins/OpenJTalk/build
         Write-Host "=== Windows DLL Validation ==="
         
         # Check DLL exists
@@ -105,13 +105,13 @@ jobs:
     
     - name: Build and Test
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         chmod +x build_ci.sh
         ./build_ci.sh
         
     - name: Linux Specific Validation
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build
+        cd NativePlugins/OpenJTalk/build
         echo "=== Linux SO Validation ==="
         
         # Check shared library
@@ -149,13 +149,13 @@ jobs:
     
     - name: Build and Test
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         chmod +x build_ci.sh
         ./build_ci.sh
         
     - name: macOS Specific Validation
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build
+        cd NativePlugins/OpenJTalk/build
         echo "=== macOS DYLIB Validation ==="
         
         # Check dynamic library

@@ -3,7 +3,7 @@ name: Performance Regression Test
 on:
   pull_request:
     paths:
-      - 'Assets/uPiper/Native/OpenJTalk/src/**'
+      - 'NativePlugins/OpenJTalk/src/**'
   workflow_dispatch:
 
 jobs:
@@ -27,7 +27,7 @@ jobs:
       
     - name: Build and Benchmark
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         chmod +x build_ci.sh
         ./build_ci.sh
         
@@ -51,7 +51,7 @@ jobs:
       
     - name: Analyze Performance
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build
+        cd NativePlugins/OpenJTalk/build
         
         # Extract timing data
         grep -E "Average processing time|per sentence" performance_report.txt > timing_data.txt

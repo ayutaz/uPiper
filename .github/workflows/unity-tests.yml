@@ -44,7 +44,7 @@ jobs:
         
     - name: Build OpenJTalk Native Library
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         
         # Make build script executable on Unix-like systems
         if [[ "${{ matrix.os }}" != "windows-latest" ]]; then
@@ -402,7 +402,7 @@ jobs:
         
     - name: Build OpenJTalk Native Library
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         chmod +x build_ci.sh
         ./build_ci.sh
         
@@ -469,7 +469,7 @@ jobs:
         
     - name: Build OpenJTalk Native Library
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         chmod +x build_ci.sh
         ./build_ci.sh
         
