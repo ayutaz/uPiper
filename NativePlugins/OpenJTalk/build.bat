@@ -116,7 +116,7 @@ cd ..\..\..\..
 :: Copy to Unity plugin directory
 echo.
 echo Copying to Unity plugin directory...
-set UNITY_PLUGIN_DIR=..\..\Plugins\Windows\%ARCH%
+set UNITY_PLUGIN_DIR=..\..\Assets\uPiper\Plugins\Windows\%ARCH%
 if not exist %UNITY_PLUGIN_DIR% mkdir %UNITY_PLUGIN_DIR%
 
 copy output\windows\%ARCH%\bin\openjtalk_wrapper.dll %UNITY_PLUGIN_DIR%\

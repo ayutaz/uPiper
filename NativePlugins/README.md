@@ -14,10 +14,9 @@ Japanese text-to-phoneme conversion library.
 
 ```bash
 cd OpenJTalk
-mkdir build
-cd build
-cmake ..
-make
+./build.sh     # macOS/Linux
+# or
+./build.bat    # Windows
 ```
 
 The built library should be copied to:

@@ -113,9 +113,9 @@ echo ""
 echo "Copying to Unity plugin directory..."
 
 if [ "$PLATFORM" = "Darwin" ]; then
-    UNITY_PLUGIN_DIR="../../Plugins/macOS"
+    UNITY_PLUGIN_DIR="../../Assets/uPiper/Plugins/macOS"
 else
-    UNITY_PLUGIN_DIR="../../Plugins/Linux/$ARCH"
+    UNITY_PLUGIN_DIR="../../Assets/uPiper/Plugins/Linux/$ARCH"
 fi
 
 mkdir -p "$UNITY_PLUGIN_DIR"
