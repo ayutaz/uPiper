@@ -1,5 +1,5 @@
 #!/bin/bash
-# CI用の依存関係ビルドスクリプト（最小限のビルド）
+# CI-specific dependency build script
 
 set -e
 
@@ -11,27 +11,82 @@ INSTALL_DIR="$BUILD_DIR/install"
 
 cd "$BUILD_DIR"
 
-# Build hts_engine
-echo "Building hts_engine..."
-cd hts_engine_API-1.10
-if [ ! -f "Makefile" ]; then
-    ./configure --prefix="$INSTALL_DIR" --enable-static --disable-shared
+# Platform detection
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    JOBS=$(sysctl -n hw.ncpu)
+elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+    JOBS=4
+else
+    JOBS=$(nproc)
 fi
-make -j$(nproc || echo 4)
-make install
-cd ..
+
+echo "Platform: $OSTYPE"
+echo "Using $JOBS parallel jobs"
+
+# Build hts_engine
+echo "=== Building hts_engine ==="
+if [ -d "hts_engine_API-1.10" ]; then
+    cd hts_engine_API-1.10
+    if [ ! -f "Makefile" ]; then
+        ./configure --prefix="$INSTALL_DIR" --enable-static --disable-shared || {
+            echo "ERROR: hts_engine configure failed"
+            exit 1
+        }
+    fi
+    make -j$JOBS || {
+        echo "ERROR: hts_engine build failed"
+        exit 1
+    }
+    make install || {
+        echo "ERROR: hts_engine install failed"
+        exit 1
+    }
+    cd ..
+else
+    echo "ERROR: hts_engine_API-1.10 directory not found!"
+    exit 1
+fi
 
 # Build OpenJTalk
-echo "Building OpenJTalk..."
-cd open_jtalk-1.11
-if [ ! -f "Makefile" ]; then
-    ./configure --prefix="$INSTALL_DIR" \
-        --with-hts-engine-header-path="$INSTALL_DIR/include" \
-        --with-hts-engine-library-path="$INSTALL_DIR/lib" \
-        --enable-static --disable-shared
+echo "=== Building OpenJTalk ==="
+if [ -d "open_jtalk-1.11" ]; then
+    cd open_jtalk-1.11
+    
+    # Copy dictionary files if they exist in the repo
+    if [ -d "$SCRIPT_DIR/dictionary" ]; then
+        echo "Using pre-built dictionary from repository"
+        mkdir -p mecab-naist-jdic
+        cp -r "$SCRIPT_DIR/dictionary"/* mecab-naist-jdic/ 2>/dev/null || true
+    fi
+    
+    if [ ! -f "Makefile" ]; then
+        ./configure --prefix="$INSTALL_DIR" \
+            --with-hts-engine-header-path="$INSTALL_DIR/include" \
+            --with-hts-engine-library-path="$INSTALL_DIR/lib" \
+            --enable-static --disable-shared || {
+            echo "ERROR: OpenJTalk configure failed"
+            exit 1
+        }
+    fi
+    make -j$JOBS || {
+        echo "ERROR: OpenJTalk build failed"
+        exit 1
+    }
+    
+    # Don't run make install, just copy the libraries
+    echo "=== Copying static libraries ==="
+    find . -name "*.a" -type f | while read -r lib; do
+        dir=$(dirname "$lib")
+        mkdir -p "$BUILD_DIR/open_jtalk-1.11/$dir"
+        cp "$lib" "$BUILD_DIR/open_jtalk-1.11/$dir/"
+    done
+    
+    cd ..
+else
+    echo "ERROR: open_jtalk-1.11 directory not found!"
+    exit 1
 fi
-make -j$(nproc || echo 4)
-make install
-cd ..
 
 echo "=== Dependencies built successfully ==="
+echo "Library structure:"
+find "$BUILD_DIR/open_jtalk-1.11" -name "*.a" -type f | head -20
