@@ -221,14 +221,31 @@ namespace uPiper.Demo
                     // 詳細なデバッグ情報
                     if (openJTalkPhonemes.Length == 0)
                     {
-                        PiperLogger.LogError("[OpenJTalk] No phonemes returned!");
+                        PiperLogger.LogError("[OpenJTalk] ERROR: No phonemes returned!");
                     }
-                    else if (openJTalkPhonemes.Length < 5)
+                    else
                     {
-                        PiperLogger.LogWarning($"[OpenJTalk] Suspiciously few phonemes returned: {openJTalkPhonemes.Length}");
-                        for (int i = 0; i < openJTalkPhonemes.Length; i++)
+                        // Check for repeating patterns (indicates native library issue)
+                        var phonemeGroups = openJTalkPhonemes
+                            .GroupBy(p => p)
+                            .Where(g => g.Count() > 3)
+                            .ToList();
+                        
+                        if (phonemeGroups.Any())
                         {
-                            PiperLogger.LogWarning($"  Phoneme[{i}]: '{openJTalkPhonemes[i]}' (length: {openJTalkPhonemes[i].Length})");
+                            PiperLogger.LogError("[OpenJTalk] ERROR: Repeating pattern detected - native library malfunction!");
+                            foreach (var group in phonemeGroups)
+                            {
+                                PiperLogger.LogError($"  - Phoneme '{group.Key}' repeats {group.Count()} times");
+                            }
+                            PiperLogger.LogError($"[OpenJTalk] Input text was: '{_inputField.text}'");
+                            PiperLogger.LogError("[OpenJTalk] This indicates the OpenJTalk native library is not processing Japanese text correctly.");
+                        }
+                        
+                        // Warn about short output
+                        if (openJTalkPhonemes.Length < 5 && _inputField.text.Length > 3)
+                        {
+                            PiperLogger.LogWarning($"[OpenJTalk] Suspiciously few phonemes ({openJTalkPhonemes.Length}) for text length {_inputField.text.Length}");
                         }
                     }
                     

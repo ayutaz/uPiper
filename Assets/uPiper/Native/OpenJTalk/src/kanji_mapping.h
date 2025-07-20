@@ -131,6 +131,20 @@ static const KanjiMapping kanji_table[] = {
     {"有難", "ありがと"},
     {"御座", "ござ"},
     
+    // Additional common words for better coverage
+    {"私", "わたし"},
+    {"彼", "かれ"},
+    {"彼女", "かのじょ"},
+    {"今日は", "きょうは"},
+    {"明日は", "あしたは"},
+    {"昨日は", "きのうは"},
+    {"天", "てん"},
+    {"気", "き"},
+    {"良い", "よい"},
+    {"いい", "いい"},  // Not kanji but for completeness
+    {"良", "よ"},
+    {"悪い", "わるい"},
+    
     // Adjectives
     {"大", "おお"},
     {"小", "ちい"},

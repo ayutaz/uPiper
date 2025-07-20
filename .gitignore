@@ -222,3 +222,7 @@ Assets/uPiper/Native/OpenJTalk/test_*
 editmode-results.xml
 playmode-results.xml
 test-artifacts/
+TestOpenJTalkKanji.cs.meta
+TestTextEncoding.cs.meta
+OpenJTalkStatus.cs.meta
+TestMeCabOutput.cs.meta

@@ -6,8 +6,9 @@
 #include <stddef.h>
 
 // Magic numbers for dictionary files
-#define MAGIC_ID 0xE954A1B6
-#define UNK_MAGIC_ID 0xEF71994D
+#define MAGIC_ID 0xE954A1B6         // Custom dictionary format
+#define MAGIC_ID_MECAB 0xE9554887    // Standard MeCab dictionary format (NAIST)
+#define UNK_MAGIC_ID 0xEF71994D      // Unknown words dictionary
 
 #ifdef __cplusplus
 extern "C" {

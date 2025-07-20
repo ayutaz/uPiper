@@ -242,10 +242,35 @@ int openjtalk_phonemizer_phonemize(OpenJTalkPhonemizer* phonemizer,
             MecabFullNode* current = nodes;
             
             while (current && phoneme_count < max_phonemes - 1) {
+                if (getenv("DEBUG_MECAB")) {
+                    printf("Node: surface='%s', pos='%s', reading='%s', pronunciation='%s'\n",
+                           current->surface, current->feature.pos, 
+                           current->feature.reading, current->feature.pronunciation);
+                }
+                
                 // Get reading from Mecab
                 const char* reading = current->feature.reading;
                 if (reading[0] == '\0' || strcmp(reading, "*") == 0) {
-                    reading = current->surface;  // Fallback to surface
+                    // Try kanji mapping first
+                    const char* kanji_reading = NULL;
+                    for (int i = 0; kanji_table[i].kanji != NULL; i++) {
+                        if (strcmp(current->surface, kanji_table[i].kanji) == 0) {
+                            kanji_reading = kanji_table[i].reading;
+                            break;
+                        }
+                    }
+                    
+                    if (kanji_reading) {
+                        reading = kanji_reading;
+                        if (getenv("DEBUG_MECAB")) {
+                            printf("  Found kanji mapping: %s -> %s\n", current->surface, reading);
+                        }
+                    } else {
+                        reading = current->surface;  // Fallback to surface
+                        if (getenv("DEBUG_MECAB")) {
+                            printf("  No kanji mapping for: %s\n", current->surface);
+                        }
+                    }
                 }
                 
                 // Convert reading to phonemes

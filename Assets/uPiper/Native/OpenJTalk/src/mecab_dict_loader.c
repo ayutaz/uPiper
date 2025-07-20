@@ -52,14 +52,17 @@ MecabFullDictionary* mecab_dict_load(const char* dict_path) {
     memcpy(dict->sys_header.charset, header_buf + 40, 32);
     
     
-    // Validate magic number
-    if (dict->sys_header.magic != MAGIC_ID) {
-        LOG_DICT_ERROR("Invalid magic number in sys.dic: 0x%X (expected 0x%X)", 
-                       dict->sys_header.magic, MAGIC_ID);
+    // Validate magic number - support both custom and standard MeCab formats
+    if (dict->sys_header.magic != MAGIC_ID && dict->sys_header.magic != MAGIC_ID_MECAB) {
+        LOG_DICT_ERROR("Invalid magic number in sys.dic: 0x%X (expected 0x%X or 0x%X)", 
+                       dict->sys_header.magic, MAGIC_ID, MAGIC_ID_MECAB);
         fclose(sys_file);
         free(dict);
         return NULL;
     }
+    
+    // Set dictionary format type based on magic number
+    bool is_standard_mecab = (dict->sys_header.magic == MAGIC_ID_MECAB);
     
     // Validate version - OpenJTalk dictionaries use version 102, test dict uses version 1
     if (dict->sys_header.version != 102 && dict->sys_header.version != 1) {

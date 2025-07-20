@@ -41,10 +41,10 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region Native Structures
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        [StructLayout(LayoutKind.Sequential)]
         private struct NativePhonemeResult
         {
-            public IntPtr phonemes;      // char* - space-separated phoneme string
+            public IntPtr phonemes;      // char* - space-separated phoneme string (UTF-8)
             public IntPtr phoneme_ids;   // int*
             public int phoneme_count;
             public IntPtr durations;     // float*
@@ -58,13 +58,13 @@ namespace uPiper.Core.Phonemizers.Implementations
         private const string LIBRARY_NAME = "openjtalk_wrapper";
 
 #if ENABLE_PINVOKE
-        [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr openjtalk_create(string dict_path);
+        [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        private static extern IntPtr openjtalk_create([MarshalAs(UnmanagedType.LPStr)] string dict_path);
 
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern void openjtalk_destroy(IntPtr handle);
 
-        [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr openjtalk_phonemize(IntPtr handle, string text);
 
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
@@ -203,6 +203,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 try
                 {
 #if ENABLE_PINVOKE
+                    Debug.Log($"[OpenJTalkPhonemizer] Attempting to create OpenJTalk instance with dictionary: {_dictionaryPath}");
                     _handle = openjtalk_create(_dictionaryPath);
                     if (_handle == IntPtr.Zero)
                     {
@@ -211,7 +212,11 @@ namespace uPiper.Core.Phonemizers.Implementations
                     }
 
                     // Log version info
-                    Debug.Log($"[OpenJTalkPhonemizer] Initialized with version: {Version}");
+                    var version = GetVersionString();
+                    Debug.Log($"[OpenJTalkPhonemizer] Successfully initialized OpenJTalk");
+                    Debug.Log($"[OpenJTalkPhonemizer] Version: {version}");
+                    Debug.Log($"[OpenJTalkPhonemizer] Dictionary path: {_dictionaryPath}");
+                    Debug.Log($"[OpenJTalkPhonemizer] Native handle: 0x{_handle.ToInt64():X}");
 #else
                     // P/Invoke is disabled, use mock mode
                     mockMode = true;
@@ -290,12 +295,15 @@ namespace uPiper.Core.Phonemizers.Implementations
                 {
                     return GenerateMockPhonemes(text);
                 }
+                
+                // Log input text
+                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Processing text: '{text}' (length: {text.Length})");
 
                 IntPtr resultPtr = IntPtr.Zero;
                 try
                 {
 #if ENABLE_PINVOKE
-                    // Call native phonemize function
+                    // Call native phonemize function (Unity marshals as UTF-8 by default)
                     resultPtr = openjtalk_phonemize(_handle, text);
                     if (resultPtr == IntPtr.Zero)
                     {
@@ -315,6 +323,9 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                     // Marshal the result
                     var nativeResult = Marshal.PtrToStructure<NativePhonemeResult>(resultPtr);
+                    
+                    // Log native result info
+                    PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Native result - phoneme_count: {nativeResult.phoneme_count}, total_duration: {nativeResult.total_duration:F3}");
 
                     // Convert to PhonemeResult
                     return ConvertToPhonemeResult(nativeResult);
@@ -355,10 +366,21 @@ namespace uPiper.Core.Phonemizers.Implementations
             if (nativeResult.phonemes != IntPtr.Zero)
             {
                 var phonemeString = Marshal.PtrToStringAnsi(nativeResult.phonemes);
+                
+                // Debug log the raw phoneme string from native library
+                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Native phoneme string: '{phonemeString}'");
+                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Native phoneme count: {nativeResult.phoneme_count}");
+                
                 if (!string.IsNullOrEmpty(phonemeString))
                 {
                     var phonemeList = phonemeString.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                     var unknownPhonemes = new System.Collections.Generic.HashSet<string>();
+                    
+                    // Log if phoneme count mismatch
+                    if (phonemeList.Length != nativeResult.phoneme_count)
+                    {
+                        PiperLogger.LogWarning($"[OpenJTalkPhonemizer] Phoneme count mismatch: expected {nativeResult.phoneme_count}, got {phonemeList.Length}");
+                    }
 
                     for (int i = 0; i < Math.Min(phonemeList.Length, nativeResult.phoneme_count); i++)
                     {
@@ -383,6 +405,14 @@ namespace uPiper.Core.Phonemizers.Implementations
                         Debug.LogWarning($"[OpenJTalkPhonemizer] Unknown phonemes: {string.Join(", ", unknownPhonemes)}");
                     }
                 }
+                else
+                {
+                    PiperLogger.LogError("[OpenJTalkPhonemizer] Phoneme string is empty!");
+                }
+            }
+            else
+            {
+                PiperLogger.LogError("[OpenJTalkPhonemizer] Native phonemes pointer is null!");
             }
 
             // Marshal phoneme IDs (if provided by native)
@@ -425,6 +455,9 @@ namespace uPiper.Core.Phonemizers.Implementations
             // Look for dictionary in various locations
             var possiblePaths = new[]
             {
+                // NAIST dictionary path (priority)
+                Path.Combine(Application.dataPath, "uPiper", "Native", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11"),
+                // Legacy dictionary paths
                 Path.Combine(Application.dataPath, "uPiper", "Native", "OpenJTalk", "dictionary"),
                 Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "dictionary"),
                 Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "dictionary"),
