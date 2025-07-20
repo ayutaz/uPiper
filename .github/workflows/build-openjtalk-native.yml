@@ -106,7 +106,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        arch: [x86_64, aarch64]
+        arch: [x86_64]
     
     steps:
     - uses: actions/checkout@v4
@@ -178,7 +178,7 @@ jobs:
         path: artifacts/
 
   build-macos:
-    name: Build macOS (Universal)
+    name: Build macOS
     runs-on: macos-latest
     timeout-minutes: 30
     
@@ -209,43 +209,25 @@ jobs:
         echo "Checking dictionary files..."
         ls -la dictionary/ || echo "Dictionary directory not found"
     
-    - name: Build x86_64
+    - name: Build Native Library
       run: |
         cd NativePlugins/OpenJTalk
-        mkdir -p build_x86_64
-        cd build_x86_64
-        cmake -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_OSX_ARCHITECTURES=x86_64 ..
+        mkdir -p build
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Release ..
         make -j$(sysctl -n hw.ncpu)
-    
-    - name: Build arm64
-      run: |
-        cd NativePlugins/OpenJTalk
-        mkdir -p build_arm64
-        cd build_arm64
-        cmake -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_OSX_ARCHITECTURES=arm64 ..
-        make -j$(sysctl -n hw.ncpu)
-    
-    - name: Create Universal Binary
-      run: |
-        mkdir -p NativePlugins/OpenJTalk/universal
-        lipo -create \
-          NativePlugins/OpenJTalk/build_x86_64/lib/libopenjtalk_wrapper.dylib \
-          NativePlugins/OpenJTalk/build_arm64/lib/libopenjtalk_wrapper.dylib \
-          -output NativePlugins/OpenJTalk/universal/libopenjtalk_wrapper.dylib
     
     - name: Run Tests
       run: |
-        cd NativePlugins/OpenJTalk/build_arm64
+        cd NativePlugins/OpenJTalk/build
         # Run all tests using CTest
         ctest --output-on-failure
     
     - name: Prepare Artifacts
       run: |
         mkdir -p artifacts/macos
-        # Copy the universal dylib
-        cp NativePlugins/OpenJTalk/universal/libopenjtalk_wrapper.dylib artifacts/macos/
+        # Copy the dylib
+        cp NativePlugins/OpenJTalk/build/lib/libopenjtalk_wrapper.dylib artifacts/macos/
         # Copy header files
         cp NativePlugins/OpenJTalk/include/*.h artifacts/ || true
     
