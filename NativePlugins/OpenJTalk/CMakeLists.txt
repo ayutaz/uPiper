@@ -106,7 +106,7 @@ if(EXISTS "${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a")
     )
     
     if(WIN32)
-        target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS})
+        target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} stdc++ winmm)
     else()
         target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} m)
     endif()
