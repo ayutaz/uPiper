@@ -121,15 +121,18 @@ fi
 echo "Build completed. Output files:"
 find . -type f \( -name "*.so" -o -name "*.dll" -o -name "*.dylib" \) -exec ls -la {} \;
 
-# Create output directory for Unity
+# Create output directory for Unity with expected structure
 cd "$SCRIPT_DIR"
 mkdir -p output
 if [ "$RUNNER_OS" = "Windows" ] || [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "win32" ]; then
-    cp build/bin/Release/*.dll output/ 2>/dev/null || cp build/bin/*.dll output/ 2>/dev/null || true
+    mkdir -p output/windows
+    cp build/bin/Release/*.dll output/windows/ 2>/dev/null || cp build/bin/*.dll output/windows/ 2>/dev/null || true
 elif [ "$RUNNER_OS" = "macOS" ] || [ "$OSTYPE" = "darwin"* ]; then
-    cp build/lib/*.dylib output/ 2>/dev/null || true
+    mkdir -p output/macos
+    cp build/lib/*.dylib output/macos/ 2>/dev/null || true
 else
-    cp build/lib/*.so output/ 2>/dev/null || true
+    mkdir -p output/linux
+    cp build/lib/*.so output/linux/ 2>/dev/null || true
 fi
 
 echo "=== Build completed successfully at $(date) ==="
