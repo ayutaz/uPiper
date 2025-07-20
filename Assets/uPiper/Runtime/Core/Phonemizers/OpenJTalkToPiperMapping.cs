@@ -124,10 +124,31 @@ namespace uPiper.Core.Phonemizers
         {
             var result = new List<string>();
             
-            foreach (var phoneme in openJTalkPhonemes)
+            for (int i = 0; i < openJTalkPhonemes.Length; i++)
             {
+                var phoneme = openJTalkPhonemes[i];
                 if (string.IsNullOrEmpty(phoneme))
                     continue;
+                
+                // Special handling for "t i" sequence -> "ch i" (for ち)
+                if (phoneme.ToLower() == "t" && i + 1 < openJTalkPhonemes.Length && openJTalkPhonemes[i + 1].ToLower() == "i")
+                {
+                    // Check if this is actually "ち" sound
+                    // Look at the previous phoneme to determine context
+                    bool isChiSound = true;
+                    
+                    // If preceded by "t" (like in "tti"), it's not "chi"
+                    if (i > 0 && openJTalkPhonemes[i - 1].ToLower() == "t")
+                    {
+                        isChiSound = false;
+                    }
+                    
+                    if (isChiSound)
+                    {
+                        result.Add("ch");
+                        continue;
+                    }
+                }
                 
                 // Try to map the phoneme
                 if (OpenJTalkToPiperPhoneme.TryGetValue(phoneme.ToLower(), out var piperPhoneme))
