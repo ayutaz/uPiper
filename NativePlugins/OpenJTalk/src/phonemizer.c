@@ -91,20 +91,20 @@ PhonemeResult* phonemizer_process(OpenJTalkPhonemizer* phonemizer, const char* t
     }
     
     // Parse text with MeCab
-    MecabResult* mecab_result = mecab_full_parse((MecabFull*)phonemizer->mecab, text);
-    if (!mecab_result || mecab_result->node_count == 0) {
+    MecabFullNode* mecab_nodes = mecab_full_parse((MecabFull*)phonemizer->mecab, text);
+    if (!mecab_nodes) {
         set_last_error(phonemizer, OPENJTALK_ERROR_INVALID_INPUT);
         return NULL;
     }
     
     // Convert to phonemes
-    PhonemeList* phoneme_list = phoneme_converter_convert(
+    PhonemeSequence* phoneme_seq = phoneme_converter_convert(
         (PhonemeConverter*)phonemizer->njd, 
-        mecab_result
+        mecab_nodes
     );
     
-    if (!phoneme_list) {
-        mecab_result_free(mecab_result);
+    if (!phoneme_seq) {
+        mecab_full_free_nodes((MecabFull*)phonemizer->mecab, mecab_nodes);
         set_last_error(phonemizer, OPENJTALK_ERROR_PROCESSING);
         return NULL;
     }
@@ -113,43 +113,42 @@ PhonemeResult* phonemizer_process(OpenJTalkPhonemizer* phonemizer, const char* t
     char phoneme_buffer[4096] = {0};
     int buffer_pos = 0;
     
-    result->phoneme_count = phoneme_list->count;
-    result->phoneme_ids = (int*)memory_pool_alloc(pool, sizeof(int) * phoneme_list->count);
-    result->durations = (float*)memory_pool_alloc(pool, sizeof(float) * phoneme_list->count);
+    result->phoneme_count = phoneme_seq->count;
+    result->phoneme_ids = (int*)memory_pool_alloc(pool, sizeof(int) * phoneme_seq->count);
+    result->durations = (float*)memory_pool_alloc(pool, sizeof(float) * phoneme_seq->count);
     
     if (!result->phoneme_ids || !result->durations) {
-        phoneme_list_free(phoneme_list);
-        mecab_result_free(mecab_result);
+        phoneme_sequence_destroy(phoneme_seq);
+        mecab_full_free_nodes((MecabFull*)phonemizer->mecab, mecab_nodes);
         set_last_error(phonemizer, OPENJTALK_ERROR_MEMORY_ALLOCATION);
         return NULL;
     }
     
     // Copy phoneme data
     result->total_duration = 0.0f;
-    for (int i = 0; i < phoneme_list->count; i++) {
-        PhonemeInfo* info = &phoneme_list->phonemes[i];
+    for (int i = 0; i < phoneme_seq->count; i++) {
+        Phoneme* phoneme = &phoneme_seq->phonemes[i];
         
         // Add phoneme name to string
         if (buffer_pos > 0) {
             phoneme_buffer[buffer_pos++] = ' ';
         }
-        const char* phoneme_name = phoneme_id_to_str(info->id);
-        int len = strlen(phoneme_name);
-        memcpy(phoneme_buffer + buffer_pos, phoneme_name, len);
+        int len = strlen(phoneme->phoneme);
+        memcpy(phoneme_buffer + buffer_pos, phoneme->phoneme, len);
         buffer_pos += len;
         
         // Copy ID and duration
-        result->phoneme_ids[i] = info->id;
-        result->durations[i] = info->duration;
-        result->total_duration += info->duration;
+        result->phoneme_ids[i] = i; // Use index as ID for now
+        result->durations[i] = phoneme->duration_ms / 1000.0f; // Convert ms to seconds
+        result->total_duration += result->durations[i];
     }
     
     // Copy phoneme string
     result->phonemes = memory_pool_strdup(pool, phoneme_buffer);
     
     // Cleanup
-    phoneme_list_free(phoneme_list);
-    mecab_result_free(mecab_result);
+    phoneme_sequence_destroy(phoneme_seq);
+    mecab_full_free_nodes((MecabFull*)phonemizer->mecab, mecab_nodes);
     
     set_last_error(phonemizer, OPENJTALK_SUCCESS);
     return result;
