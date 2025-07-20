@@ -533,19 +533,32 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         private string GetExpectedLibraryPath()
         {
-            var pluginsPath = Path.Combine(Application.dataPath, "Plugins");
-
+            // First try uPiper/Plugins path
+            var uPiperPluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins");
+            
             if (PlatformHelper.IsWindows)
             {
-                return Path.Combine(pluginsPath, "x86_64", "openjtalk_wrapper.dll");
+                var windowsPath = Path.Combine(uPiperPluginsPath, "Windows", "x86_64", "openjtalk_wrapper.dll");
+                if (File.Exists(windowsPath)) return windowsPath;
+                
+                // Fallback to old path
+                return Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll");
             }
             else if (PlatformHelper.IsMacOS)
             {
-                return Path.Combine(pluginsPath, "macOS", "libopenjtalk_wrapper.dylib");
+                var macPath = Path.Combine(uPiperPluginsPath, "macOS", "libopenjtalk_wrapper.dylib");
+                if (File.Exists(macPath)) return macPath;
+                
+                // Fallback to old path
+                return Path.Combine(Application.dataPath, "Plugins", "macOS", "libopenjtalk_wrapper.dylib");
             }
             else if (PlatformHelper.IsLinux)
             {
-                return Path.Combine(pluginsPath, "x86_64", "libopenjtalk_wrapper.so");
+                var linuxPath = Path.Combine(uPiperPluginsPath, "Linux", "x86_64", "libopenjtalk_wrapper.so");
+                if (File.Exists(linuxPath)) return linuxPath;
+                
+                // Fallback to old path
+                return Path.Combine(Application.dataPath, "Plugins", "x86_64", "libopenjtalk_wrapper.so");
             }
 
             return null;
