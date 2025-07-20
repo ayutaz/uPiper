@@ -40,11 +40,18 @@ if [ -d "hts_engine_API-1.10" ]; then
     if [ -f "Makefile" ]; then
         make clean || true
     fi
-    # Configure with -fPIC for shared library compatibility
-    CFLAGS="-fPIC" ./configure --prefix="$INSTALL_DIR" || {
-        echo "ERROR: hts_engine configure failed"
-        exit 1
-    }
+    # Configure with -fPIC for shared library compatibility (not needed on Windows)
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+        ./configure --prefix="$INSTALL_DIR" || {
+            echo "ERROR: hts_engine configure failed"
+            exit 1
+        }
+    else
+        CFLAGS="-fPIC" ./configure --prefix="$INSTALL_DIR" || {
+            echo "ERROR: hts_engine configure failed"
+            exit 1
+        }
+    fi
     echo "Starting make (this may take a few minutes)..."
     make -j$JOBS || {
         echo "ERROR: hts_engine build failed"
@@ -75,14 +82,24 @@ if [ -d "open_jtalk-1.11" ]; then
     if [ -f "Makefile" ]; then
         make clean || true
     fi
-    # Configure with -fPIC for shared library compatibility
-    CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix="$INSTALL_DIR" \
-        --with-hts-engine-header-path="$INSTALL_DIR/include" \
-        --with-hts-engine-library-path="$INSTALL_DIR/lib" \
-        --enable-static --disable-shared || {
-        echo "ERROR: OpenJTalk configure failed"
-        exit 1
-    }
+    # Configure with -fPIC for shared library compatibility (not needed on Windows)
+    if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
+        ./configure --prefix="$INSTALL_DIR" \
+            --with-hts-engine-header-path="$INSTALL_DIR/include" \
+            --with-hts-engine-library-path="$INSTALL_DIR/lib" \
+            --enable-static --disable-shared || {
+            echo "ERROR: OpenJTalk configure failed"
+            exit 1
+        }
+    else
+        CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix="$INSTALL_DIR" \
+            --with-hts-engine-header-path="$INSTALL_DIR/include" \
+            --with-hts-engine-library-path="$INSTALL_DIR/lib" \
+            --enable-static --disable-shared || {
+            echo "ERROR: OpenJTalk configure failed"
+            exit 1
+        }
+    fi
     echo "Starting OpenJTalk build (this may take 5-10 minutes on Windows)..."
     # Windowsでは進捗を表示
     if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
