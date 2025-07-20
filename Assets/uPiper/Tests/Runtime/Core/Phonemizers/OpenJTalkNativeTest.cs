@@ -15,7 +15,6 @@ namespace uPiper.Tests.Runtime.Native
     /// </summary>
     [Category("NativeTests")]
     [Category("RequiresNativeLibrary")]
-    [NonParallelizable] // Prevent parallel execution to avoid native library conflicts
     public class OpenJTalkNativeTest
     {
 #if ENABLE_NATIVE_TESTS

@@ -17,7 +17,6 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
     /// </summary>
     [TestFixture]
     [Category("RequiresNativeLibrary")]
-    [NonParallelizable] // Prevent parallel execution to avoid native library conflicts
     public class OpenJTalkPhonemizerTest
     {
         private OpenJTalkPhonemizer _phonemizer;
