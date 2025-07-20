@@ -33,6 +33,15 @@ jobs:
     - name: Setup MSVC
       uses: microsoft/setup-msbuild@v1.1
     
+    - name: Setup Dependencies
+      shell: cmd
+      run: |
+        cd NativePlugins\OpenJTalk
+        echo Fetching OpenJTalk dependencies...
+        fetch_dependencies.bat
+        echo Building OpenJTalk dependencies...
+        build_dependencies.bat
+    
     - name: Check Dictionary Files
       shell: bash
       run: |
@@ -44,7 +53,7 @@ jobs:
     - name: Build Native Library
       shell: cmd
       run: |
-        cd Assets\uPiper\Native\OpenJTalk
+        cd NativePlugins\OpenJTalk
         if exist build rmdir /s /q build
         mkdir build
         cd build
@@ -60,7 +69,7 @@ jobs:
     - name: Run Tests
       shell: cmd
       run: |
-        cd Assets\uPiper\Native\OpenJTalk\build
+        cd NativePlugins\OpenJTalk\build
         echo Running tests...
         ctest -C Release --output-on-failure -V
         if %errorlevel% neq 0 (
@@ -100,6 +109,14 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential cmake
+    
+    - name: Setup Dependencies
+      run: |
+        cd NativePlugins/OpenJTalk
+        echo "Fetching OpenJTalk dependencies..."
+        ./fetch_dependencies.sh
+        echo "Building OpenJTalk dependencies..."
+        ./build_dependencies.sh
     
     - name: Setup Cross Compilation (aarch64)
       if: matrix.arch == 'aarch64'
@@ -156,6 +173,14 @@ jobs:
     
     - name: Install CMake
       run: brew install cmake
+    
+    - name: Setup Dependencies
+      run: |
+        cd NativePlugins/OpenJTalk
+        echo "Fetching OpenJTalk dependencies..."
+        ./fetch_dependencies.sh
+        echo "Building OpenJTalk dependencies..."
+        ./build_dependencies.sh
     
     - name: Check Dictionary Files
       run: |

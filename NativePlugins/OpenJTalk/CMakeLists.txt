@@ -42,27 +42,40 @@ include_directories(
     ${OPENJTALK_INCLUDE_DIR}
 )
 
+# Add include directory for CI builds
+if(NOT EXISTS "${OPENJTALK_INCLUDE_DIR}/jpcommon.h")
+    message(STATUS "OpenJTalk headers not found in install dir, using local include")
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+endif()
+
 # Create shared library
 add_library(openjtalk_wrapper SHARED ${SOURCES})
 
 # Link libraries
 set(OPENJTALK_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11")
-target_link_libraries(openjtalk_wrapper
-    ${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a
-    ${OPENJTALK_SRC_DIR}/njd2jpcommon/libnjd2jpcommon.a
-    ${OPENJTALK_SRC_DIR}/njd_set_unvoiced_vowel/libnjd_set_unvoiced_vowel.a
-    ${OPENJTALK_SRC_DIR}/njd_set_pronunciation/libnjd_set_pronunciation.a
-    ${OPENJTALK_SRC_DIR}/njd_set_long_vowel/libnjd_set_long_vowel.a
-    ${OPENJTALK_SRC_DIR}/njd_set_digit/libnjd_set_digit.a
-    ${OPENJTALK_SRC_DIR}/njd_set_accent_type/libnjd_set_accent_type.a
-    ${OPENJTALK_SRC_DIR}/njd_set_accent_phrase/libnjd_set_accent_phrase.a
-    ${OPENJTALK_SRC_DIR}/njd/libnjd.a
-    ${OPENJTALK_SRC_DIR}/mecab2njd/libmecab2njd.a
-    ${OPENJTALK_SRC_DIR}/text2mecab/libtext2mecab.a
-    ${OPENJTALK_SRC_DIR}/mecab/src/libmecab.a
-    ${OPENJTALK_LIB_DIR}/libHTSEngine.a
-    m
-)
+
+# Check if OpenJTalk libraries exist
+if(EXISTS "${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a")
+    # Link full OpenJTalk libraries
+    target_link_libraries(openjtalk_wrapper
+        ${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a
+        ${OPENJTALK_SRC_DIR}/njd2jpcommon/libnjd2jpcommon.a
+        ${OPENJTALK_SRC_DIR}/njd_set_unvoiced_vowel/libnjd_set_unvoiced_vowel.a
+        ${OPENJTALK_SRC_DIR}/njd_set_pronunciation/libnjd_set_pronunciation.a
+        ${OPENJTALK_SRC_DIR}/njd_set_long_vowel/libnjd_set_long_vowel.a
+        ${OPENJTALK_SRC_DIR}/njd_set_digit/libnjd_set_digit.a
+        ${OPENJTALK_SRC_DIR}/njd_set_accent_type/libnjd_set_accent_type.a
+        ${OPENJTALK_SRC_DIR}/njd_set_accent_phrase/libnjd_set_accent_phrase.a
+        ${OPENJTALK_SRC_DIR}/njd/libnjd.a
+        ${OPENJTALK_SRC_DIR}/mecab2njd/libmecab2njd.a
+        ${OPENJTALK_SRC_DIR}/text2mecab/libtext2mecab.a
+        ${OPENJTALK_SRC_DIR}/mecab/src/libmecab.a
+        ${OPENJTALK_LIB_DIR}/libHTSEngine.a
+        m
+    )
+else()
+    message(FATAL_ERROR "OpenJTalk libraries not found. Please run fetch_dependencies.sh and build_dependencies.sh first.")
+endif()
 
 # Platform-specific settings
 if(WIN32)
