@@ -37,8 +37,6 @@ namespace uPiper.Core
         private readonly Dictionary<string, Model> _loadedModels;
         private readonly Dictionary<string, Worker> _workers;
         private readonly Queue<Worker> _workerPool;
-        private InferenceAudioGenerator _audioGenerator;
-        private PhonemeEncoder _phonemeEncoder;
 
         // Cache system
         private readonly Dictionary<string, byte[]> _phonemeCache;
@@ -336,13 +334,13 @@ namespace uPiper.Core
                 }
 
                 // Initialize audio generator if not already done
-                if (_audioGenerator == null)
+                if (_inferenceGenerator == null)
                 {
-                    _audioGenerator = new InferenceAudioGenerator();
+                    _inferenceGenerator = new InferenceAudioGenerator();
                 }
 
                 // Initialize the audio generator with the model
-                await _audioGenerator.InitializeAsync(modelAsset, voice, cancellationToken);
+                await _inferenceGenerator.InitializeAsync(modelAsset, voice, cancellationToken);
                 PiperLogger.LogInfo("Audio generator initialized for voice: {0}", voice.VoiceId);
 
                 // Initialize phoneme encoder
@@ -538,7 +536,7 @@ namespace uPiper.Core
                 AudioClip audioClip = null;
 
                 // Check if we have audio generator initialized
-                if (_audioGenerator != null && _audioGenerator.IsInitialized && _phonemeEncoder != null && phonemeResult != null)
+                if (_inferenceGenerator != null && _inferenceGenerator.IsInitialized && _phonemeEncoder != null && phonemeResult != null)
                 {
                     try
                     {
@@ -551,7 +549,7 @@ namespace uPiper.Core
                         _onProcessingProgress?.Invoke(0.6f);
 
                         // Generate audio using inference
-                        var audioData = await _audioGenerator.GenerateAudioAsync(phonemeIds, cancellationToken: cancellationToken);
+                        var audioData = await _inferenceGenerator.GenerateAudioAsync(phonemeIds, cancellationToken: cancellationToken);
                         PiperLogger.LogInfo($"Generated {audioData.Length} audio samples");
 
                         _onProcessingProgress?.Invoke(0.7f);
@@ -560,7 +558,7 @@ namespace uPiper.Core
                         var audioBuilder = new AudioClipBuilder();
                         audioClip = audioBuilder.BuildAudioClip(
                             audioData,
-                            _audioGenerator.SampleRate,
+                            _inferenceGenerator.SampleRate,
                             $"TTS_Output_{DateTime.Now:HHmmss}"
                         );
                         PiperLogger.LogInfo($"Created AudioClip: {audioClip.length:F2} seconds");
@@ -1308,77 +1306,6 @@ namespace uPiper.Core
             }
 
             return sentences;
-        }
-
-        #endregion
-
-        #region IDisposable Implementation
-
-        /// <summary>
-        /// Dispose of resources
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Protected dispose pattern
-        /// </summary>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_isDisposed)
-                return;
-
-            if (disposing)
-            {
-                // Dispose managed resources
-                lock (_lockObject)
-                {
-                    try
-                    {
-                        // Dispose audio generator
-                        _audioGenerator?.Dispose();
-                        _audioGenerator = null;
-
-                        // Dispose phonemizer
-                        if (_phonemizer is IDisposable disposablePhonemizer)
-                        {
-                            disposablePhonemizer.Dispose();
-                        }
-                        _phonemizer = null;
-
-                        // Clear collections
-                        _voices?.Clear();
-                        _phonemeCache?.Clear();
-                        _loadedModels?.Clear();
-                        _workers?.Clear();
-                        _workerPool?.Clear();
-
-                        // Reset state
-                        _currentVoiceId = null;
-                        _isInitialized = false;
-                        _phonemeEncoder = null;
-
-                        PiperLogger.LogInfo("PiperTTS disposed successfully");
-                    }
-                    catch (Exception ex)
-                    {
-                        PiperLogger.LogError($"Error during PiperTTS disposal: {ex.Message}");
-                    }
-                }
-            }
-
-            _isDisposed = true;
-        }
-
-        /// <summary>
-        /// Finalizer
-        /// </summary>
-        ~PiperTTS()
-        {
-            Dispose(false);
         }
 
         #endregion
