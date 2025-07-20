@@ -38,9 +38,11 @@ if [ ! -f "../external/openjtalk_build/install/lib/libHTSEngine.a" ]; then
     cd ..
     # Use CI-specific scripts for faster builds
     if [ -f "./fetch_dependencies_ci.sh" ]; then
+        chmod +x ./fetch_dependencies_ci.sh ./build_dependencies_ci.sh
         ./fetch_dependencies_ci.sh
         ./build_dependencies_ci.sh
     else
+        chmod +x ./fetch_dependencies.sh ./build_dependencies.sh
         ./fetch_dependencies.sh
         ./build_dependencies.sh
     fi
