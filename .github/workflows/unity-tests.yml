@@ -46,31 +46,11 @@ jobs:
       run: |
         cd NativePlugins/OpenJTalk
         
-        # Make build script executable on Unix-like systems
-        if [[ "${{ matrix.os }}" != "windows-latest" ]]; then
-          chmod +x build_ci.sh
-        fi
+        # Make build script executable
+        chmod +x build_ci.sh
         
-        # Run appropriate build script
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          # Windows build
-          mkdir build
-          cd build
-          cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DBUILD_FULL_VERSION=ON ..
-          cmake --build . --config Release
-          cd ..
-          
-          # Create test dictionary
-          if [ ! -f "test_dictionary/sys.dic" ]; then
-            mkdir -p test_dictionary
-            cd test_dictionary
-            python create_test_dict.py
-            cd ..
-          fi
-        else
-          # Linux/macOS build
-          ./build_ci.sh
-        fi
+        # Run build script (using simplified CI build for all platforms)
+        ./build_ci.sh
         
         # Create Plugins directory structure
         mkdir -p ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}
