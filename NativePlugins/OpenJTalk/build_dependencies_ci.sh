@@ -37,7 +37,7 @@ echo "=== Building hts_engine ==="
 if [ -d "hts_engine_API-1.10" ]; then
     cd hts_engine_API-1.10
     if [ ! -f "Makefile" ]; then
-        ./configure --prefix="$INSTALL_DIR" --enable-static --disable-shared || {
+        ./configure --prefix="$INSTALL_DIR" || {
             echo "ERROR: hts_engine configure failed"
             exit 1
         }
@@ -53,8 +53,7 @@ if [ -d "hts_engine_API-1.10" ]; then
     }
     cd ..
 else
-    echo "ERROR: hts_engine_API-1.10 directory not found!"
-    exit 1
+    echo "WARNING: hts_engine_API-1.10 directory not found, skipping..."
 fi
 
 # Build OpenJTalk

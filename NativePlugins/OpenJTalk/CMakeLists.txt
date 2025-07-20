@@ -46,8 +46,28 @@ include_directories(
 
 # Add include directory for CI builds
 if(NOT EXISTS "${OPENJTALK_INCLUDE_DIR}/jpcommon.h")
-    message(STATUS "OpenJTalk headers not found in install dir, using local include")
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+    message(STATUS "OpenJTalk headers not found in install dir, checking alternate locations")
+    # Check for HTSEngine headers
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/install/include")
+        include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/install/include)
+    endif()
+    # Check for OpenJTalk headers in build directory
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11")
+        include_directories(
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/jpcommon
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/njd
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/mecab/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/text2mecab
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/mecab2njd
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/njd_set_pronunciation
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/njd_set_digit
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_phrase
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_type
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/njd_set_unvoiced_vowel
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/njd_set_long_vowel
+            ${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/njd2jpcommon
+        )
+    endif()
 endif()
 
 # Create shared library
@@ -58,6 +78,16 @@ set(OPENJTALK_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open
 
 # Check if OpenJTalk libraries exist
 if(EXISTS "${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a")
+    # Check for HTSEngine library location
+    if(EXISTS "${OPENJTALK_LIB_DIR}/libHTSEngine.a")
+        set(HTSENGINE_LIB "${OPENJTALK_LIB_DIR}/libHTSEngine.a")
+    elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/install/lib/libHTSEngine.a")
+        set(HTSENGINE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/install/lib/libHTSEngine.a")
+    else()
+        message(WARNING "HTSEngine library not found - building without it")
+        set(HTSENGINE_LIB "")
+    endif()
+    
     # Link full OpenJTalk libraries
     target_link_libraries(openjtalk_wrapper
         ${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a
@@ -72,7 +102,7 @@ if(EXISTS "${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a")
         ${OPENJTALK_SRC_DIR}/mecab2njd/libmecab2njd.a
         ${OPENJTALK_SRC_DIR}/text2mecab/libtext2mecab.a
         ${OPENJTALK_SRC_DIR}/mecab/src/libmecab.a
-        ${OPENJTALK_LIB_DIR}/libHTSEngine.a
+        ${HTSENGINE_LIB}
         m
     )
 else()
