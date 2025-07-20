@@ -36,12 +36,15 @@ echo "Using $JOBS parallel jobs"
 echo "=== Building hts_engine ==="
 if [ -d "hts_engine_API-1.10" ]; then
     cd hts_engine_API-1.10
-    if [ ! -f "Makefile" ]; then
-        ./configure --prefix="$INSTALL_DIR" || {
-            echo "ERROR: hts_engine configure failed"
-            exit 1
-        }
+    # Clean previous builds for CI
+    if [ -f "Makefile" ]; then
+        make clean || true
     fi
+    # Configure with -fPIC for shared library compatibility
+    CFLAGS="-fPIC" ./configure --prefix="$INSTALL_DIR" || {
+        echo "ERROR: hts_engine configure failed"
+        exit 1
+    }
     echo "Starting make (this may take a few minutes)..."
     make -j$JOBS || {
         echo "ERROR: hts_engine build failed"
@@ -68,15 +71,18 @@ if [ -d "open_jtalk-1.11" ]; then
         cp -r "$SCRIPT_DIR/dictionary"/* mecab-naist-jdic/ 2>/dev/null || true
     fi
     
-    if [ ! -f "Makefile" ]; then
-        ./configure --prefix="$INSTALL_DIR" \
-            --with-hts-engine-header-path="$INSTALL_DIR/include" \
-            --with-hts-engine-library-path="$INSTALL_DIR/lib" \
-            --enable-static --disable-shared || {
-            echo "ERROR: OpenJTalk configure failed"
-            exit 1
-        }
+    # Clean previous builds for CI
+    if [ -f "Makefile" ]; then
+        make clean || true
     fi
+    # Configure with -fPIC for shared library compatibility
+    CFLAGS="-fPIC" CXXFLAGS="-fPIC" ./configure --prefix="$INSTALL_DIR" \
+        --with-hts-engine-header-path="$INSTALL_DIR/include" \
+        --with-hts-engine-library-path="$INSTALL_DIR/lib" \
+        --enable-static --disable-shared || {
+        echo "ERROR: OpenJTalk configure failed"
+        exit 1
+    }
     echo "Starting OpenJTalk build (this may take 5-10 minutes on Windows)..."
     # Windowsでは進捗を表示
     if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
