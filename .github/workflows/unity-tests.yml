@@ -73,23 +73,23 @@ jobs:
         fi
         
         # Create Plugins directory structure
-        mkdir -p ../../Plugins/${{ matrix.lib_path }}
+        mkdir -p ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}
         
         # Copy the built library to Unity Plugins directory
         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          cp build/bin/Release/openjtalk_wrapper.dll ../../Plugins/${{ matrix.lib_path }}/ || cp build/bin/openjtalk_wrapper.dll ../../Plugins/${{ matrix.lib_path }}/
+          cp build/bin/Release/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/ || cp build/bin/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/
         elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
           # Check if library already exists (from repository)
-          if [ ! -f "../../Plugins/${{ matrix.lib_path }}/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }}" ]; then
-            cp build/lib/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }} ../../Plugins/${{ matrix.lib_path }}/
+          if [ ! -f "../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }}" ]; then
+            cp build/lib/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }} ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/
           fi
         else
-          cp build/lib/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }} ../../Plugins/${{ matrix.lib_path }}/
+          cp build/lib/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }} ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/
         fi
         
         # Verify the library was copied
         echo "=== Verifying library placement ==="
-        ls -la ../../Plugins/${{ matrix.lib_path }}/ || dir ..\..\Plugins\${{ matrix.lib_path }}\
+        ls -la ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/ || dir ..\..\Assets\uPiper\Plugins\${{ matrix.lib_path }}\
         
         # For Ubuntu Docker environment, also copy to standard library paths
         if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
@@ -103,7 +103,7 @@ jobs:
           cp build/lib/libopenjtalk_wrapper.so ${{ github.workspace }}/
           
           # Set environment variable for library path
-          echo "LD_LIBRARY_PATH=${{ github.workspace }}/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
         fi
       shell: bash
         
@@ -141,7 +141,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         # Create symlink in the expected location for DllImport
-        cd Plugins
+        cd Assets/uPiper/Plugins
         if [ -f "Linux/x86_64/libopenjtalk_wrapper.so" ]; then
           ln -sf Linux/x86_64/libopenjtalk_wrapper.so openjtalk_wrapper.so || true
           ln -sf Linux/x86_64/libopenjtalk_wrapper.so libopenjtalk_wrapper.so || true
@@ -167,7 +167,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         PROJECT_PATH: .
-        LD_LIBRARY_PATH: ${{ github.workspace }}/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:${{ env.LD_LIBRARY_PATH }}
+        LD_LIBRARY_PATH: ${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:${{ env.LD_LIBRARY_PATH }}
       with:
         unityVersion: 6000.0.35f1
         testMode: all
@@ -408,17 +408,17 @@ jobs:
         
         # Verify the library exists in Plugins
         echo "=== Checking for existing library ==="
-        ls -la ../../Plugins/macOS/ || echo "macOS plugin directory not found"
+        ls -la ../../Assets/uPiper/Plugins/macOS/ || echo "macOS plugin directory not found"
         
         # Only copy if not already present
-        if [ ! -f "../../Plugins/macOS/libopenjtalk_wrapper.dylib" ]; then
-          mkdir -p ../../Plugins/macOS
-          cp build/lib/libopenjtalk_wrapper.dylib ../../Plugins/macOS/
+        if [ ! -f "../../Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" ]; then
+          mkdir -p ../../Assets/uPiper/Plugins/macOS
+          cp build/lib/libopenjtalk_wrapper.dylib ../../Assets/uPiper/Plugins/macOS/
         fi
         
         # Verify installation
         echo "=== Library verification ==="
-        ls -la ../../Plugins/macOS/
+        ls -la ../../Assets/uPiper/Plugins/macOS/
         
     - name: Run Native OpenJTalk Tests
       run: |
@@ -435,10 +435,10 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         
         # Check if library is properly built
-        if [ -f "Plugins/macOS/libopenjtalk_wrapper.dylib" ]; then
+        if [ -f "Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" ]; then
           echo "✅ OpenJTalk library built successfully" >> $GITHUB_STEP_SUMMARY
-          echo "- Location: Plugins/macOS/libopenjtalk_wrapper.dylib" >> $GITHUB_STEP_SUMMARY
-          echo "- Architecture: $(lipo -info Plugins/macOS/libopenjtalk_wrapper.dylib 2>&1)" >> $GITHUB_STEP_SUMMARY
+          echo "- Location: Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" >> $GITHUB_STEP_SUMMARY
+          echo "- Architecture: $(lipo -info Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib 2>&1)" >> $GITHUB_STEP_SUMMARY
         else
           echo "❌ OpenJTalk library not found" >> $GITHUB_STEP_SUMMARY
         fi
@@ -474,10 +474,10 @@ jobs:
         ./build_ci.sh
         
         # Create Plugins directory structure
-        mkdir -p ../../Plugins/Linux/x86_64
+        mkdir -p ../../Assets/uPiper/Plugins/Linux/x86_64
         
         # Copy the built library
-        cp build/lib/libopenjtalk_wrapper.so ../../Plugins/Linux/x86_64/
+        cp build/lib/libopenjtalk_wrapper.so ../../Assets/uPiper/Plugins/Linux/x86_64/
         
         # Install to system paths
         sudo cp build/lib/libopenjtalk_wrapper.so /usr/local/lib/
@@ -485,7 +485,7 @@ jobs:
         
         # Verify installation
         echo "=== Library verification ==="
-        ls -la ../../Plugins/Linux/x86_64/
+        ls -la ../../Assets/uPiper/Plugins/Linux/x86_64/
         ldd build/bin/test_openjtalk || echo "Test binary not found"
         
     - name: Run Native OpenJTalk Tests
