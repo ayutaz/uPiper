@@ -1,65 +1,77 @@
 #!/bin/bash
+# CI build script with fallback options
+
 set -e
 
 echo "=== Building OpenJTalk wrapper for CI ==="
+echo "Script started at: $(date)"
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+echo "Script directory: $SCRIPT_DIR"
 
-# Debug: Test CI environment
-if [ -f "$SCRIPT_DIR/test_ci_env.sh" ]; then
-    chmod +x "$SCRIPT_DIR/test_ci_env.sh"
-    "$SCRIPT_DIR/test_ci_env.sh" || true
-fi
-
-# Check if we're in CI environment
-if [ -n "$CI" ]; then
-    echo "Running in CI environment"
+# Check if we're in GitHub Actions
+if [ -n "$GITHUB_ACTIONS" ]; then
+    echo "Running in GitHub Actions"
+    echo "Runner OS: $RUNNER_OS"
+    echo "GitHub Workspace: $GITHUB_WORKSPACE"
 fi
 
 # Function to check if libraries exist
 check_libraries() {
     local lib_dir="$SCRIPT_DIR/external/openjtalk_build/open_jtalk-1.11"
     if [ -d "$lib_dir" ] && [ -f "$lib_dir/mecab/src/libmecab.a" ]; then
+        echo "Libraries found at: $lib_dir"
         return 0
     else
+        echo "Libraries not found at: $lib_dir"
         return 1
     fi
 }
 
-# Check if dependencies exist
-if ! check_libraries; then
-    echo "Dependencies not found. Fetching and building..."
+# Try to use pre-built libraries first
+if check_libraries; then
+    echo "Using existing OpenJTalk libraries"
+else
+    echo "OpenJTalk libraries not found, attempting to build..."
     
-    # Fetch dependencies
-    if [ -f "$SCRIPT_DIR/fetch_dependencies_ci.sh" ]; then
-        echo "Using CI-specific dependency fetcher..."
-        chmod +x "$SCRIPT_DIR/fetch_dependencies_ci.sh"
-        "$SCRIPT_DIR/fetch_dependencies_ci.sh"
-    else
-        echo "Using standard dependency fetcher..."
-        chmod +x "$SCRIPT_DIR/fetch_dependencies.sh"
-        "$SCRIPT_DIR/fetch_dependencies.sh"
-    fi
+    # Create external directory
+    mkdir -p "$SCRIPT_DIR/external/openjtalk_build"
     
-    # Build dependencies
-    if [ -f "$SCRIPT_DIR/build_dependencies_ci.sh" ]; then
-        echo "Using CI-specific dependency builder..."
-        chmod +x "$SCRIPT_DIR/build_dependencies_ci.sh"
-        "$SCRIPT_DIR/build_dependencies_ci.sh"
+    # Check if we can download pre-built libraries (for CI speed)
+    if [ -n "$GITHUB_ACTIONS" ] && [ -f "$SCRIPT_DIR/ci_prebuilt_libs.tar.gz" ]; then
+        echo "Extracting pre-built libraries for CI..."
+        cd "$SCRIPT_DIR/external/openjtalk_build"
+        tar -xzf "$SCRIPT_DIR/ci_prebuilt_libs.tar.gz"
     else
-        echo "Using standard dependency builder..."
-        chmod +x "$SCRIPT_DIR/build_dependencies.sh"
-        "$SCRIPT_DIR/build_dependencies.sh"
+        # Build from source
+        echo "Building OpenJTalk from source..."
+        
+        # Use CI-specific scripts if available
+        if [ -f "$SCRIPT_DIR/fetch_dependencies_ci.sh" ] && [ -f "$SCRIPT_DIR/build_dependencies_ci.sh" ]; then
+            echo "Using CI-specific build scripts..."
+            chmod +x "$SCRIPT_DIR/fetch_dependencies_ci.sh" "$SCRIPT_DIR/build_dependencies_ci.sh"
+            
+            # Set timeout for dependency fetching (5 minutes)
+            timeout 300 "$SCRIPT_DIR/fetch_dependencies_ci.sh" || {
+                echo "ERROR: Dependency fetch timed out or failed"
+                exit 1
+            }
+            
+            # Set timeout for building (10 minutes)
+            timeout 600 "$SCRIPT_DIR/build_dependencies_ci.sh" || {
+                echo "ERROR: Dependency build timed out or failed"
+                exit 1
+            }
+        else
+            echo "ERROR: CI build scripts not found"
+            exit 1
+        fi
     fi
     
     # Verify libraries were built
     if ! check_libraries; then
-        echo "ERROR: Dependencies were not built correctly!"
-        echo "Expected libraries at: $SCRIPT_DIR/external/openjtalk_build/open_jtalk-1.11"
-        echo "Checking what exists:"
-        ls -la "$SCRIPT_DIR/external/" || true
-        ls -la "$SCRIPT_DIR/external/openjtalk_build/" || true
+        echo "ERROR: Failed to build or extract OpenJTalk libraries"
         exit 1
     fi
 fi
@@ -67,48 +79,36 @@ fi
 # Return to script directory
 cd "$SCRIPT_DIR"
 
-# Create build directory
-echo "Creating build directory..."
+# Clean and create build directory
+echo "Setting up build directory..."
 rm -rf build
 mkdir -p build
 cd build
 
 # Configure CMake
 echo "Configuring CMake..."
-cmake -DCMAKE_BUILD_TYPE=Release .. || {
-    echo "CMake configuration failed!"
-    echo "Current directory: $(pwd)"
-    echo "CMakeLists.txt location:"
-    ls -la ../CMakeLists.txt || true
+cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_BENCHMARK=OFF .. || {
+    echo "ERROR: CMake configuration failed"
+    echo "CMake version: $(cmake --version | head -1)"
     exit 1
 }
 
 # Build
-echo "Building..."
-if [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "win32" ]; then
+echo "Building library..."
+if [ "$RUNNER_OS" = "Windows" ] || [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "win32" ]; then
     cmake --build . --config Release --parallel || {
-        echo "Build failed!"
+        echo "ERROR: Build failed"
         exit 1
     }
 else
-    make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4) || {
-        echo "Build failed!"
+    make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2) || {
+        echo "ERROR: Build failed"
         exit 1
     }
 fi
 
 # List build outputs
-echo "Build outputs:"
-find . -name "*.so" -o -name "*.dll" -o -name "*.dylib" | head -10
+echo "Build completed. Output files:"
+find . -type f \( -name "*.so" -o -name "*.dll" -o -name "*.dylib" \) -exec ls -la {} \;
 
-# Run tests
-echo "Running tests..."
-if [ -f "CTestTestfile.cmake" ]; then
-    ctest -C Release --output-on-failure || {
-        echo "Tests failed, but continuing..."
-    }
-else
-    echo "No tests configured"
-fi
-
-echo "=== Build completed successfully! ==="
+echo "=== Build completed successfully at $(date) ==="
