@@ -31,6 +31,11 @@ cd "$BUILD_DIR"
 
 # Configure with CMake
 echo "=== Configuring with CMake ==="
+# Use simplified CMakeLists for CI
+if [ -f "../CMakeLists_ci.txt" ]; then
+    echo "Using CMakeLists_ci.txt for simplified build"
+    cp ../CMakeLists_ci.txt ../CMakeLists.txt
+fi
 cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_TESTS=ON \
