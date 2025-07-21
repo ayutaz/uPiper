@@ -271,7 +271,8 @@ jobs:
         
         # Linux
         cp artifacts/openjtalk-linux-x86_64/linux/x86_64/*.so uPiper-OpenJTalk-Native/Plugins/Linux/x86_64/
-        cp artifacts/openjtalk-linux-aarch64/linux/aarch64/*.so uPiper-OpenJTalk-Native/Plugins/Linux/aarch64/
+        # Skip aarch64 for now as it's not being built
+        # cp artifacts/openjtalk-linux-aarch64/linux/aarch64/*.so uPiper-OpenJTalk-Native/Plugins/Linux/aarch64/
         
         # macOS
         cp artifacts/openjtalk-macos-universal/macos/*.dylib uPiper-OpenJTalk-Native/Plugins/macOS/
@@ -287,7 +288,7 @@ jobs:
         
         ## Supported Platforms
         - Windows (x64 only)
-        - Linux (x86_64, aarch64)
+        - Linux (x86_64)
         - macOS (Universal Binary: x86_64 + arm64)
         
         ## Installation
