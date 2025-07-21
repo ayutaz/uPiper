@@ -31,11 +31,36 @@ cd build_windows
 
 # Copy the wrapper source if not exists
 if [ ! -f "../src/openjtalk_full_wrapper.c" ]; then
-    cp ../src/openjtalk_wrapper.c ../src/openjtalk_full_wrapper.c
+    if [ -f "../src/openjtalk_wrapper.c" ]; then
+        cp ../src/openjtalk_wrapper.c ../src/openjtalk_full_wrapper.c
+        echo "Created openjtalk_full_wrapper.c from openjtalk_wrapper.c"
+    else
+        echo "ERROR: openjtalk_wrapper.c not found"
+        echo "Current directory: $(pwd)"
+        ls -la ../src/ || true
+        exit 1
+    fi
 fi
 
 # Use the cross-compilation specific CMakeLists
-cp ../CMakeLists_windows_cross.txt CMakeLists.txt
+if [ -f "../CMakeLists_windows_cross.txt" ]; then
+    cp ../CMakeLists_windows_cross.txt CMakeLists.txt
+else
+    echo "ERROR: CMakeLists_windows_cross.txt not found"
+    echo "Current directory: $(pwd)"
+    echo "Looking for: ../CMakeLists_windows_cross.txt"
+    ls -la ../CMakeLists* || true
+    exit 1
+fi
+
+# Check toolchain file exists
+if [ ! -f "../toolchain-mingw64.cmake" ]; then
+    echo "ERROR: toolchain-mingw64.cmake not found"
+    echo "Current directory: $(pwd)"
+    echo "Looking for: ../toolchain-mingw64.cmake"
+    ls -la ../toolchain* || true
+    exit 1
+fi
 
 # Configure with toolchain file
 cmake . -DCMAKE_BUILD_TYPE=Release \
