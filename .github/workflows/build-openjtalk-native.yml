@@ -41,7 +41,15 @@ jobs:
         cd NativePlugins/OpenJTalk
         echo "Fetching and building OpenJTalk dependencies for Windows..."
         chmod +x fetch_dependencies_ci.sh build_dependencies_cross.sh
+        
+        # Debug: Check if scripts exist
+        ls -la *.sh | grep -E "fetch|build"
+        
         ./fetch_dependencies_ci.sh
+        
+        # Debug: Check what was downloaded
+        ls -la external/openjtalk_build/
+        
         ./build_dependencies_cross.sh
     
     - name: Check Dictionary Files
