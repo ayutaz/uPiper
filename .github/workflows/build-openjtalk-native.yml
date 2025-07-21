@@ -64,6 +64,11 @@ jobs:
       shell: msys2 {0}
       run: |
         cd NativePlugins/OpenJTalk
+        # Check if dependencies were built correctly
+        echo "Checking for built dependencies..."
+        find external/openjtalk_build -name "*.a" -type f | head -10
+        ls -la external/openjtalk_build/open_jtalk-1.11/ || echo "OpenJTalk build directory not found"
+        
         rm -rf build
         mkdir build
         cd build
