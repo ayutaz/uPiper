@@ -7,7 +7,7 @@ using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers.Implementations;
 
-namespace uPiper.Editor
+namespace uPiper.Demo
 {
     /// <summary>
     /// Development version of Basic TTS Demo

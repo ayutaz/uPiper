@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using Unity.InferenceEngine;
 using System.IO;
 using System.Linq;
+using uPiper.Demo;
 
 namespace uPiper.Editor
 {
