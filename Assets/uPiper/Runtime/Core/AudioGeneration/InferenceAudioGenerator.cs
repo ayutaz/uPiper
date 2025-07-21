@@ -246,7 +246,7 @@ namespace uPiper.Core.AudioGeneration
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Copied {audioData.Length} samples");
 
                         // デバッグ用：最初の10サンプルの値を表示
-                        var sampleDebug = string.Join(", ", audioData.Take(10).Select(x => x.ToString("F4")));
+                        var sampleDebug = string.Join(", ", audioData.Take(10).Select(x => x.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
                         PiperLogger.LogDebug($"[InferenceAudioGenerator] First 10 samples: {sampleDebug}");
 
                         // 音声データの統計情報を表示

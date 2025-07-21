@@ -1,0 +1,136 @@
+name: Locale Compatibility Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  locale-test:
+    name: Unity Test Runner - ${{ matrix.os }} (${{ matrix.locale }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          # Windows with Japanese locale to test CultureInfo issues
+          - os: windows-latest
+            platform: Windows
+            lib_ext: dll
+            lib_prefix: ""
+            lib_path: Windows/x86_64
+            locale: ja-JP
+            culture_test: true
+          # Add more locale combinations as needed
+          # - os: windows-latest
+          #   platform: Windows
+          #   lib_ext: dll
+          #   lib_prefix: ""
+          #   lib_path: Windows/x86_64
+          #   locale: de-DE
+          #   culture_test: true
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+        
+    - name: Set Windows Locale
+      if: matrix.os == 'windows-latest' && matrix.culture_test
+      run: |
+        # Set current culture for PowerShell session
+        [System.Threading.Thread]::CurrentThread.CurrentCulture = '${{ matrix.locale }}'
+        [System.Threading.Thread]::CurrentThread.CurrentUICulture = '${{ matrix.locale }}'
+        echo "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false" >> $env:GITHUB_ENV
+        echo "LC_ALL=${{ matrix.locale }}.UTF-8" >> $env:GITHUB_ENV
+        echo "LANG=${{ matrix.locale }}.UTF-8" >> $env:GITHUB_ENV
+        echo "Setting locale to ${{ matrix.locale }}"
+      shell: powershell
+        
+    - name: Verify Locale Settings
+      if: matrix.culture_test
+      run: |
+        echo "Current locale settings:"
+        [System.Threading.Thread]::CurrentThread.CurrentCulture = '${{ matrix.locale }}'
+        [System.Threading.Thread]::CurrentThread.CurrentUICulture = '${{ matrix.locale }}'
+        echo "CurrentCulture: $([System.Threading.Thread]::CurrentThread.CurrentCulture)"
+        echo "CurrentUICulture: $([System.Threading.Thread]::CurrentThread.CurrentUICulture)"
+        # Test number formatting that caused issues
+        $testNumber = 50.0
+        echo "Test number formatting (50.0 as P0): '$($testNumber.ToString('P0'))'"
+        echo "Test number formatting (50.0 as P0, InvariantCulture): '$($testNumber.ToString('P0', [System.Globalization.CultureInfo]::InvariantCulture))'"
+      shell: powershell
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install CMake
+      uses: lukka/get-cmake@latest
+        
+    - name: Build OpenJTalk Native Library
+      run: |
+        cd NativePlugins/OpenJTalk
+        
+        # Make build script executable
+        chmod +x build_ci.sh
+        
+        # Build native library
+        ./build_ci.sh
+      shell: bash
+      
+    - name: Copy OpenJTalk Library
+      run: |
+        # Copy built library to Unity Plugins directory
+        $sourcePath = "NativePlugins/OpenJTalk/output/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }}"
+        $targetDir = "Assets/uPiper/Plugins/${{ matrix.lib_path }}"
+        $targetPath = "$targetDir/openjtalk_wrapper.${{ matrix.lib_ext }}"
+        
+        echo "Copying from $sourcePath to $targetPath"
+        
+        if (Test-Path $sourcePath) {
+          New-Item -ItemType Directory -Path $targetDir -Force
+          Copy-Item $sourcePath $targetPath -Force
+          echo "Library copied successfully"
+        } else {
+          echo "Source library not found at $sourcePath"
+          exit 1
+        }
+      shell: powershell
+
+    - name: Cache Unity Library
+      uses: actions/cache@v3
+      with:
+        path: Library
+        key: Library-${{ matrix.os }}-${{ matrix.locale }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+        restore-keys: |
+          Library-${{ matrix.os }}-${{ matrix.locale }}-
+          Library-${{ matrix.os }}-
+          
+    - name: Run Unity Tests (with Locale)
+      uses: game-ci/unity-test-runner@v4
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        # Set culture environment variables for Unity
+        DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: false
+        LC_ALL: ${{ matrix.locale }}.UTF-8
+        LANG: ${{ matrix.locale }}.UTF-8
+      with:
+        testMode: all
+        artifactsPath: test-results-${{ matrix.os }}-${{ matrix.locale }}
+        githubToken: ${{ secrets.GITHUB_TOKEN }}
+        checkName: Unity Test Results (${{ matrix.os }}-${{ matrix.locale }})
+        
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ matrix.os }}-${{ matrix.locale }}
+        path: test-results-${{ matrix.os }}-${{ matrix.locale }}

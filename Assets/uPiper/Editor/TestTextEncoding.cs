@@ -27,10 +27,10 @@ namespace uPiper.Editor
                 
                 // Show byte representation
                 var utf8Bytes = Encoding.UTF8.GetBytes(text);
-                Debug.Log($"  UTF-8 bytes ({utf8Bytes.Length}): {string.Join(" ", utf8Bytes.Select(b => b.ToString("X2")))}");
+                Debug.Log($"  UTF-8 bytes ({utf8Bytes.Length}): {string.Join(" ", utf8Bytes.Select(b => b.ToString("X2", System.Globalization.CultureInfo.InvariantCulture)))}");
                 
                 // Show Unicode code points
-                Debug.Log($"  Unicode code points: {string.Join(" ", text.Select(c => $"U+{((int)c):X4}"))}");
+                Debug.Log($"  Unicode code points: {string.Join(" ", text.Select(c => $"U+{((int)c).ToString("X4", System.Globalization.CultureInfo.InvariantCulture)}"))}");
                 
                 // Check for any special characters
                 var hasKanji = text.Any(c => c >= 0x4E00 && c <= 0x9FFF);

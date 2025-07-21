@@ -124,7 +124,7 @@ namespace uPiper.Editor
                     {
                         samples[i] = readableOutput[i];
                     }
-                    Debug.Log($"First 10 samples: [{string.Join(", ", samples.Select(x => x.ToString("F4")))}]");
+                    Debug.Log($"First 10 samples: [{string.Join(", ", samples.Select(x => x.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)))}]");
                     
                     readableOutput.Dispose();
                 }

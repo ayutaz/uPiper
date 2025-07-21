@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using NUnit.Framework;
 using UnityEngine;
 using uPiper.Core.Phonemizers;
+using uPiper.Core.Platform;
 
 namespace uPiper.Tests.Runtime.Native
 {
@@ -140,10 +141,17 @@ namespace uPiper.Tests.Runtime.Native
             
             string version = Marshal.PtrToStringAnsi(versionPtr);
             Assert.IsNotEmpty(version);
-            // Accept both version 2.x and 3.x as they are both valid OpenJTalk versions
-            // Version 2.0.0-full is used in some builds, while 3.x is used in others
-            Assert.That(version, Does.Match(@"^[23]\.\d+"));
-            Debug.Log($"OpenJTalk version: {version}");
+            
+            // Use VersionHelper for more robust version validation
+            Assert.IsTrue(VersionHelper.IsValidOpenJTalkVersion(version), 
+                $"Invalid OpenJTalk version: {version}. Expected version 2.x or 3.x");
+            
+            var versionInfo = VersionHelper.ParseVersion(version);
+            Assert.IsNotNull(versionInfo, $"Failed to parse version string: {version}");
+            Assert.IsTrue(versionInfo.IsCompatibleOpenJTalkVersion, 
+                $"Incompatible OpenJTalk version: {version}");
+            
+            Debug.Log($"OpenJTalk version: {version} (parsed as {versionInfo})");
         }
         
         [Test]

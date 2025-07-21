@@ -102,7 +102,7 @@ namespace uPiper.Core.AudioGeneration
                 if (multiCharPhonemeMap.TryGetValue(phoneme, out var puaChar))
                 {
                     phonemeToLookup = puaChar;
-                    var puaCode = ((int)puaChar[0]).ToString("X4");
+                    var puaCode = ((int)puaChar[0]).ToString("X4", System.Globalization.CultureInfo.InvariantCulture);
                     PiperLogger.LogInfo($"Mapped multi-char phoneme '{phoneme}' to PUA U+{puaCode}");
                 }
 

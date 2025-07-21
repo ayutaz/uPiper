@@ -324,7 +324,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 if (phonemeString.Length > 0 && phonemeString.Length < 200)
                 {
                     var bytes = System.Text.Encoding.UTF8.GetBytes(phonemeString);
-                    var hexString = string.Join(" ", bytes.Select(b => b.ToString("X2")));
+                    var hexString = string.Join(" ", bytes.Select(b => b.ToString("X2", System.Globalization.CultureInfo.InvariantCulture)));
                     Debug.Log($"[OpenJTalkPhonemizer] Raw bytes (hex): {hexString}");
                     
                     // Check for specific patterns
