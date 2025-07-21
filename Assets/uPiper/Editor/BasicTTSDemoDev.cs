@@ -72,11 +72,15 @@ namespace uPiper.Editor
             _audioGenerator = new InferenceAudioGenerator();
             
             // Create voice config
-            var voiceConfig = ScriptableObject.CreateInstance<PiperVoiceConfig>();
-            voiceConfig.ModelPath = "ja_JP-test-medium.onnx";
-            voiceConfig.Language = "ja_JP";
-            voiceConfig.SampleRate = _sampleRate;
-            voiceConfig.NumSpeakers = 1;
+            var voiceConfig = new PiperVoiceConfig
+            {
+                ModelPath = "ja_JP-test-medium.onnx",
+                Language = "ja_JP",
+                SampleRate = _sampleRate,
+                NumSpeakers = 1,
+                VoiceId = "ja_JP-test-medium",
+                DisplayName = "Japanese Test Medium"
+            };
             
             var initTask = _audioGenerator.InitializeAsync(_modelAsset, voiceConfig);
             yield return new WaitUntil(() => initTask.IsCompleted);
