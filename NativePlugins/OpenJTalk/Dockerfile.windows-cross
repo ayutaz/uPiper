@@ -28,18 +28,8 @@ ENV STRIP=x86_64-w64-mingw32-strip
 # Create working directory
 WORKDIR /build
 
-# Copy all necessary files
-COPY . /build/
-
 # Install dos2unix for line ending conversion
 RUN apt-get update && apt-get install -y dos2unix
-
-# Make scripts executable and fix line endings
-RUN chmod +x /build/*.sh && \
-    dos2unix /build/*.sh
-
-# Debug: Check what files are in /build
-RUN ls -la /build/
 
 # Note: Dependencies are fetched and built at runtime, not during image build
 # This allows the container to work with mounted volumes

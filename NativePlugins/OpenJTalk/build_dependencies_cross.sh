@@ -1,7 +1,7 @@
 #!/bin/bash
 # Cross-compile build script for Windows using MinGW on Linux
 
-set -e
+set -ex  # Enable verbose output and exit on error
 
 echo "=== Building OpenJTalk Dependencies for Windows Cross-Compilation ==="
 

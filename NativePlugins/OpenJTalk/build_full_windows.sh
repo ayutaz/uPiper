@@ -1,13 +1,19 @@
 #!/bin/bash
 # Complete build script for Windows DLL using cross-compilation
 
-set -e
+set -ex  # Enable verbose output and exit on error
 
 echo "=== Building Full OpenJTalk Windows DLL ==="
 
 # Clean previous builds
+echo "=== Cleaning previous builds ==="
+echo "Current directory at start: $(pwd)"
 rm -rf build_windows output_windows
+
+echo "=== Creating directories ==="
 mkdir -p build_windows output_windows
+echo "Created directories:"
+ls -la | grep -E "(build_windows|output_windows)"
 
 # Setup toolchain
 export CC=x86_64-w64-mingw32-gcc

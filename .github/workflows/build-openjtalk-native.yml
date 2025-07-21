@@ -52,8 +52,14 @@ jobs:
         echo "Checking build script exists:"
         ls -la build_full_windows.sh
         
+        # Debug: Check what's in the current directory
+        echo "=== Files in current directory before Docker run ==="
+        ls -la
+        echo "=== Checking if scripts are executable ==="
+        ls -la *.sh
+        
         # Run with error handling
-        docker run --rm -v "${PWD}:/workspace" openjtalk-windows-cross /bin/bash -c "cd /workspace && ./build_full_windows.sh" || {
+        docker run --rm -v "${PWD}:/workspace" -w /workspace openjtalk-windows-cross /bin/bash -c "pwd && ls -la && ./build_full_windows.sh" || {
           echo "Docker run failed with exit code $?"
           echo "=== Docker logs ==="
           docker logs $(docker ps -lq) || true
