@@ -29,33 +29,24 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup MSVC
-      uses: microsoft/setup-msbuild@v1.1
-    
-    - name: Setup MSVC Environment
-      uses: ilammy/msvc-dev-cmd@v1
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
       with:
-        arch: x64
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-cmake
+          make
     
     - name: Setup Dependencies
-      shell: cmd
+      shell: bash
       run: |
-        cd NativePlugins\OpenJTalk
-        echo Fetching and building OpenJTalk dependencies...
-        if exist fetch_dependencies.bat (
-          echo Using Windows batch script
-          call fetch_dependencies.bat
-        ) else (
-          echo Using Git Bash for shell script
-          "C:\Program Files\Git\bin\bash.exe" fetch_dependencies.sh
-        )
-        if exist build_dependencies_msvc.bat (
-          echo Using MSVC build script
-          call build_dependencies_msvc.bat
-        ) else (
-          echo Using Git Bash for build script
-          "C:\Program Files\Git\bin\bash.exe" build_dependencies.sh
-        )
+        cd NativePlugins/OpenJTalk
+        echo "Fetching and building OpenJTalk dependencies..."
+        chmod +x fetch_dependencies.sh build_dependencies.sh
+        ./fetch_dependencies.sh
+        ./build_dependencies.sh
     
     - name: Check Dictionary Files
       shell: bash
@@ -66,19 +57,21 @@ jobs:
         # No need to download, dictionary is already in repo
     
     - name: Build Native Library
-      shell: cmd
+      shell: msys2 {0}
       run: |
-        cd NativePlugins\OpenJTalk
-        if exist build rmdir /s /q build
+        cd NativePlugins/OpenJTalk
+        rm -rf build
         mkdir build
         cd build
-        echo Running CMake configuration...
-        cmake --version
-        cmake .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
-        echo Building project...
-        nmake
-        echo Build completed successfully
-        dir /s *.dll
+        echo "Running CMake configuration with MinGW..."
+        cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_C_FLAGS="-static-libgcc -static-libstdc++ -static" \
+          -DCMAKE_CXX_FLAGS="-static-libgcc -static-libstdc++ -static" \
+          -DCMAKE_SHARED_LINKER_FLAGS="-static-libgcc -static-libstdc++ -Wl,--no-undefined"
+        echo "Building project..."
+        mingw32-make -j$(nproc)
+        echo "Build completed successfully"
+        find . -name "*.dll" -type f
     
     - name: Run Tests
       shell: bash
