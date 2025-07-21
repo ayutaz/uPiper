@@ -230,8 +230,13 @@ namespace uPiper.Core.Phonemizers.Implementations
                 if (_handle == IntPtr.Zero)
                     throw new PiperInitializationException("OpenJTalk not initialized");
 
-                // Log input text
+                // Log input text with detailed encoding information
                 PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Processing text: '{text}' (length: {text.Length})");
+                
+                // Debug text encoding to identify Windows-specific issues
+                var textBytes = System.Text.Encoding.UTF8.GetBytes(text);
+                var hexText = string.Join(" ", textBytes.Select(b => b.ToString("X2", System.Globalization.CultureInfo.InvariantCulture)));
+                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Input text UTF-8 bytes: {hexText}");
                 
                 // Enable stderr output for debugging
                 if (Application.isEditor)
@@ -354,6 +359,13 @@ namespace uPiper.Core.Phonemizers.Implementations
                         PiperLogger.LogWarning($"[OpenJTalkPhonemizer] Phoneme count mismatch: expected {nativeResult.phoneme_count}, got {phonemeList.Length}");
                     }
 
+                    // Check for suspicious repetitive patterns (Windows-specific issue)
+                    if (DetectRepeatedPatterns(phonemeList))
+                    {
+                        PiperLogger.LogWarning($"[OpenJTalkPhonemizer] Detected repeated phoneme patterns, attempting to clean up");
+                        phonemeList = CleanRepeatedPhonemes(phonemeList, text);
+                    }
+                    
                     // Convert OpenJTalk phonemes to Piper phonemes using the mapping
                     var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(phonemeList);
                     
@@ -637,6 +649,97 @@ namespace uPiper.Core.Phonemizers.Implementations
             base.Dispose(disposing);
         }
 
+        #endregion
+
+        #region Windows Bug Workarounds
+        
+        /// <summary>
+        /// Detect repeated phoneme patterns that indicate a Windows-specific OpenJTalk bug
+        /// </summary>
+        private static bool DetectRepeatedPatterns(string[] phonemes)
+        {
+            if (phonemes.Length < 6) return false;
+            
+            // Look for patterns where the same phoneme sequence appears multiple times consecutively
+            for (int i = 0; i < phonemes.Length - 6; i++)
+            {
+                // Check for 3+ character sequences that repeat
+                for (int len = 3; len <= Math.Min(6, (phonemes.Length - i) / 2); len++)
+                {
+                    bool isRepeated = true;
+                    for (int j = 0; j < len && i + len + j < phonemes.Length; j++)
+                    {
+                        if (phonemes[i + j] != phonemes[i + len + j])
+                        {
+                            isRepeated = false;
+                            break;
+                        }
+                    }
+                    
+                    if (isRepeated)
+                    {
+                        PiperLogger.LogWarning($"[OpenJTalkPhonemizer] Found repeated pattern of length {len} starting at position {i}: {string.Join(" ", phonemes.Skip(i).Take(len))}");
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Attempt to clean repeated phonemes based on expected text content
+        /// </summary>
+        private static string[] CleanRepeatedPhonemes(string[] phonemes, string originalText)
+        {
+            var cleaned = new List<string>();
+            var skipUntil = -1;
+            
+            for (int i = 0; i < phonemes.Length; i++)
+            {
+                if (i <= skipUntil) continue;
+                
+                // Look for the start of a repeated pattern
+                for (int len = 3; len <= Math.Min(8, (phonemes.Length - i) / 2); len++)
+                {
+                    if (i + len * 2 > phonemes.Length) break;
+                    
+                    bool isRepeated = true;
+                    for (int j = 0; j < len; j++)
+                    {
+                        if (phonemes[i + j] != phonemes[i + len + j])
+                        {
+                            isRepeated = false;
+                            break;
+                        }
+                    }
+                    
+                    if (isRepeated)
+                    {
+                        // Add only the first occurrence
+                        for (int k = 0; k < len; k++)
+                        {
+                            cleaned.Add(phonemes[i + k]);
+                        }
+                        
+                        // Skip the repeated part
+                        skipUntil = i + len * 2 - 1;
+                        PiperLogger.LogInfo($"[OpenJTalkPhonemizer] Removed repeated pattern: {string.Join(" ", phonemes.Skip(i + len).Take(len))}");
+                        break;
+                    }
+                }
+                
+                // If no repetition found at this position, add the phoneme normally
+                if (skipUntil < i)
+                {
+                    cleaned.Add(phonemes[i]);
+                }
+            }
+            
+            PiperLogger.LogInfo($"[OpenJTalkPhonemizer] Cleaned phonemes: {phonemes.Length} -> {cleaned.Count}");
+            return cleaned.ToArray();
+        }
+        
         #endregion
     }
 }
