@@ -74,6 +74,14 @@ namespace uPiper.Core.Phonemizers
         /// <summary>
         /// Default Piper phoneme to ID mapping for Japanese.
         /// This should match the phoneme_id_map in the Piper model's JSON configuration.
+        /// 
+        /// IMPORTANT: These values are hardcoded to match pre-trained Piper models
+        /// =====================================================================
+        /// DO NOT CHANGE these values unless you're using a different model.
+        /// Each Piper model has its own phoneme_id_map defined in the model JSON.
+        /// These default values work with standard Japanese Piper models.
+        /// 
+        /// If using a custom model, override these values by loading from model JSON.
         /// </summary>
         private static readonly Dictionary<string, int> DefaultPiperPhonemeToId = new Dictionary<string, int>
         {
@@ -132,26 +140,46 @@ namespace uPiper.Core.Phonemizers
 
         /// <summary>
         /// Multi-character phonemes to PUA (Private Use Area) mapping
+        /// 
+        /// IMPORTANT: Why we use PUA characters
+        /// ====================================
+        /// Piper's VITS model expects one character per phoneme token.
+        /// Japanese has multi-character phonemes like "ky" (きゃ), "ch" (ち), "ts" (つ).
+        /// 
+        /// Solution: Map multi-char phonemes to single Unicode PUA characters (U+E000-U+F8FF).
+        /// These are guaranteed to never conflict with real text characters.
+        /// 
+        /// Example flow:
+        /// 1. OpenJTalk outputs: ["k", "y", "o", "u"] for "きょう"
+        /// 2. We combine "ky" → "\ue006" 
+        /// 3. Send to Piper: ["\ue006", "o", "u"]
+        /// 4. Piper model recognizes "\ue006" as the "ky" phoneme
+        /// 
+        /// This mapping MUST match the phoneme_id_map in the Piper model JSON.
+        /// If you change these values, the model won't recognize the phonemes correctly.
+        /// 
+        /// Reference: This approach is used by pyopenjtalk and Japanese Piper models.
         /// </summary>
         private static readonly Dictionary<string, string> PhonemeToPUA = new Dictionary<string, string>
         {
-            // Palatalized consonants
-            { "ky", "\ue006" },
-            { "gy", "\ue008" },
-            { "sy", "\ue010" },  // sh
-            { "zy", "\ue011" },
-            { "ty", "\ue00a" },
-            { "dy", "\ue00b" },
-            { "ny", "\ue013" },
-            { "hy", "\ue012" },
-            { "by", "\ue00d" },
-            { "py", "\ue00c" },
-            { "my", "\ue014" },
-            { "ry", "\ue015" },
+            // Palatalized consonants (拗音 - youon)
+            { "ky", "\ue006" },  // きゃ、きゅ、きょ
+            { "gy", "\ue008" },  // ぎゃ、ぎゅ、ぎょ
+            { "sy", "\ue010" },  // しゃ、しゅ、しょ (= sh)
+            { "zy", "\ue011" },  // じゃ、じゅ、じょ
+            { "ty", "\ue00a" },  // ちゃ、ちゅ、ちょ
+            { "dy", "\ue00b" },  // でゃ、でゅ、でょ (rare)
+            { "ny", "\ue013" },  // にゃ、にゅ、にょ
+            { "hy", "\ue012" },  // ひゃ、ひゅ、ひょ
+            { "by", "\ue00d" },  // びゃ、びゅ、びょ
+            { "py", "\ue00c" },  // ぴゃ、ぴゅ、ぴょ
+            { "my", "\ue014" },  // みゃ、みゅ、みょ
+            { "ry", "\ue015" },  // りゃ、りゅ、りょ
+            
             // Other multi-character phonemes
-            { "ch", "\ue00e" },
-            { "ts", "\ue00f" },
-            { "sh", "\ue010" }
+            { "ch", "\ue00e" },  // ち、ちゃ、ちゅ、ちょ
+            { "ts", "\ue00f" },  // つ
+            { "sh", "\ue010" }   // し、しゃ、しゅ、しょ (same as "sy")
         };
 
         /// <summary>

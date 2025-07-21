@@ -20,6 +20,37 @@ namespace uPiper.Demo
 {
     /// <summary>
     /// Phase 1.10 - Unity.InferenceEngineを使用したPiper TTSデモ（OpenJTalk統合版）
+    /// 
+    /// ARCHITECTURE OVERVIEW
+    /// ====================
+    /// This demo implements neural text-to-speech using the following pipeline:
+    /// 
+    /// 1. Text Input (Japanese/English)
+    ///    ↓
+    /// 2. Phonemization
+    ///    - Japanese: OpenJTalk (MeCab + dictionary) → phonemes
+    ///    - English: Simple word splitting (eSpeak-NG in future phases)
+    ///    ↓
+    /// 3. Phoneme Encoding
+    ///    - Multi-char phonemes → PUA characters (e.g., "ky" → "\ue006")
+    ///    - Phoneme strings → ID arrays for model input
+    ///    ↓
+    /// 4. Neural Synthesis (VITS model via Unity.InferenceEngine)
+    ///    - Input: phoneme IDs
+    ///    - Duration Predictor: automatically estimates phoneme timing
+    ///    - Decoder: generates audio waveform
+    ///    ↓
+    /// 5. Audio Output (Unity AudioSource)
+    /// 
+    /// IMPORTANT: Phoneme Timing Design
+    /// ================================
+    /// OpenJTalk provides fixed 50ms durations for all phonemes.
+    /// This is intentional because:
+    /// - VITS models have built-in Duration Predictor
+    /// - The model re-estimates timing during inference
+    /// - Precise input timing is not required for neural TTS
+    /// 
+    /// For details, see comments in openjtalk_full_wrapper.c
     /// </summary>
     public class InferenceEngineDemo : MonoBehaviour
     {
@@ -331,7 +362,10 @@ namespace uPiper.Demo
                 }
                 else
                 {
-                    // For non-Japanese languages when phonemizer is not available
+                    // TEMPORARY: Basic English phonemization
+                    // This is a placeholder implementation for Phase 1.10.
+                    // Phase 2 will integrate eSpeak-NG for proper English phonemization.
+                    // Current approach: simple word-based splitting (not real phonemes)
                     phonemes = _inputField.text.ToLower()
                         .Replace(",", " _")
                         .Replace(".", " _")

@@ -257,13 +257,37 @@ static PhonemeResult* labels_to_phonemes(OpenJTalkContext* ctx, JPCommon* jpcomm
         return NULL;
     }
     
+    // IMPORTANT: Phoneme Duration Design Decision (Phase 1.10)
+    // ======================================================
+    // We intentionally use fixed 50ms durations for all phonemes in this implementation.
+    // 
+    // Why this is OK:
+    // 1. Piper uses VITS neural model with built-in Duration Predictor
+    // 2. The VITS model automatically re-estimates phoneme durations during inference
+    // 3. Our fixed durations are only used as rough guidance, not final timing
+    // 4. The important part is correct phoneme sequence, not precise timing
+    //
+    // Traditional OpenJTalk approach (NOT used here):
+    // - Would use HTS Engine to estimate durations statistically
+    // - Requires acoustic models and additional complexity
+    // - Not necessary for neural TTS like Piper
+    //
+    // If you need precise phoneme timing for other purposes:
+    // - Consider integrating HTS Engine for duration estimation
+    // - Or implement rule-based duration estimation
+    // - Typical Japanese phoneme durations: consonants 30-50ms, vowels 60-100ms, 
+    //   long vowels 150-200ms, geminate consonants 100-150ms
+    //
+    // Reference: https://github.com/rhasspy/piper uses VITS architecture
+    // which handles timing internally via Duration Predictor module
+    
     // Set default values for phoneme IDs and durations
     for (int i = 0; i < phoneme_count; i++) {
         result->phoneme_ids[i] = 1; // Default non-silence ID
-        result->durations[i] = 0.05f; // Default 50ms duration
+        result->durations[i] = 0.05f; // Default 50ms duration (see above comment)
     }
     
-    // Calculate total duration
+    // Calculate total duration (rough estimate only)
     result->total_duration = phoneme_count * 0.05f;
     
     return result;
