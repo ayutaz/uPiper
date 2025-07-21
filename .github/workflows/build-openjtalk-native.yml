@@ -70,8 +70,6 @@ jobs:
           dos2unix *.sh
           echo '=== Testing environment first ==='
           bash ./test_docker.sh || true
-          echo '=== Running simple build test ==='
-          bash ./build_windows_simple.sh || true
           echo '=== Now running full build script ==='
           bash ./build_full_windows.sh
         " || {
