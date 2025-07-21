@@ -378,6 +378,9 @@ namespace uPiper.Core.Phonemizers.Implementations
                     // Convert OpenJTalk phonemes to Piper phonemes using the mapping
                     var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(phonemeList);
                     
+                    // Debug log the mapping result
+                    PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Phoneme mapping: {string.Join(" ", phonemeList)} -> {string.Join(" ", piperPhonemes.Select(p => p.Length == 1 && p[0] >= '\ue000' && p[0] <= '\uf8ff' ? $"PUA(U+{((int)p[0]):X4})" : $"'{p}'"))}");
+                    
                     for (int i = 0; i < Math.Min(piperPhonemes.Length, nativeResult.phoneme_count); i++)
                     {
                         phonemes[i] = piperPhonemes[i];
