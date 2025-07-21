@@ -13,6 +13,10 @@ namespace uPiper.Editor
         [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_get_version();
         
+        // Also try with full path
+        [DllImport("Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr openjtalk_get_version_fullpath();
+        
         [MenuItem("uPiper/Diagnose OpenJTalk DLL")]
         static void Init()
         {
@@ -64,12 +68,22 @@ namespace uPiper.Editor
             
             EditorGUILayout.Space();
             
+            // Check ENABLE_PINVOKE define
+            EditorGUILayout.LabelField("Compilation Defines:");
+#if ENABLE_PINVOKE
+            EditorGUILayout.HelpBox("ENABLE_PINVOKE is defined ✓", MessageType.Info);
+#else
+            EditorGUILayout.HelpBox("ENABLE_PINVOKE is NOT defined! P/Invoke calls are disabled!", MessageType.Error);
+#endif
+            
+            EditorGUILayout.Space();
+            
             // Unity restart reminder
             EditorGUILayout.HelpBox(
-                "After replacing the DLL, you MUST restart Unity Editor for changes to take effect!\n\n" +
-                "1. Close Unity Editor completely\n" +
-                "2. Make sure no Unity processes are running\n" +
-                "3. Restart Unity Editor\n" +
+                "After making changes:\n\n" +
+                "1. If you changed .asmdef files, Unity will recompile automatically\n" +
+                "2. If you replaced the DLL, restart Unity Editor\n" +
+                "3. Make sure no Unity processes are running\n" +
                 "4. Try running tests again",
                 MessageType.Warning);
             
@@ -97,11 +111,32 @@ namespace uPiper.Editor
             }
             catch (DllNotFoundException e)
             {
-                EditorUtility.DisplayDialog("DLL Not Found", 
-                    $"Cannot load openjtalk_wrapper.dll\n\n" +
-                    $"Error: {e.Message}\n\n" +
-                    $"Please restart Unity Editor after replacing the DLL!",
-                    "OK");
+                Debug.LogError($"DLL Not Found: {e.Message}");
+                
+                // Try alternate method
+                Debug.Log("Trying full path method...");
+                try
+                {
+                    var versionPtr2 = openjtalk_get_version_fullpath();
+                    if (versionPtr2 != IntPtr.Zero)
+                    {
+                        var version = Marshal.PtrToStringAnsi(versionPtr2);
+                        EditorUtility.DisplayDialog("Success with Full Path", 
+                            $"DLL loaded with full path!\nVersion: {version}", "OK");
+                    }
+                }
+                catch (Exception e2)
+                {
+                    EditorUtility.DisplayDialog("DLL Not Found", 
+                        $"Cannot load openjtalk_wrapper.dll\n\n" +
+                        $"Method 1: {e.Message}\n" +
+                        $"Method 2: {e2.Message}\n\n" +
+                        $"Check:\n" +
+                        $"1. DLL exists in the correct location\n" +
+                        $"2. ENABLE_PINVOKE is defined\n" +
+                        $"3. Unity Editor needs restart after DLL changes",
+                        "OK");
+                }
             }
             catch (Exception e)
             {

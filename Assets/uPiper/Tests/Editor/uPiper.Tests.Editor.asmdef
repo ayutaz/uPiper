@@ -20,6 +20,12 @@
     "defineConstraints": [
         "UNITY_INCLUDE_TESTS"
     ],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.engine",
+            "expression": "",
+            "define": "ENABLE_PINVOKE"
+        }
+    ],
     "noEngineReferences": false
 }
