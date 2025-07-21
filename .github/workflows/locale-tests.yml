@@ -104,7 +104,7 @@ jobs:
       shell: powershell
 
     - name: Cache Unity Library
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: Library
         key: Library-${{ matrix.os }}-${{ matrix.locale }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
@@ -129,7 +129,7 @@ jobs:
         checkName: Unity Test Results (${{ matrix.os }}-${{ matrix.locale }})
         
     - name: Upload Test Results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: test-results-${{ matrix.os }}-${{ matrix.locale }}
