@@ -26,7 +26,27 @@ namespace uPiper.Core.Phonemizers.Implementations
             
             // Check Plugins directory
 #if !UNITY_EDITOR
-            var pluginsPath = Path.Combine(Application.dataPath, "..", "Contents", "Plugins");
+            string pluginsPath;
+            if (Application.platform == RuntimePlatform.WindowsPlayer)
+            {
+                // Windows: DLLs are in the same directory as the .exe
+                pluginsPath = Path.Combine(Application.dataPath, "Plugins");
+            }
+            else if (Application.platform == RuntimePlatform.OSXPlayer)
+            {
+                // macOS: Plugins are in Contents/Plugins
+                pluginsPath = Path.Combine(Application.dataPath, "..", "Contents", "Plugins");
+            }
+            else if (Application.platform == RuntimePlatform.LinuxPlayer)
+            {
+                // Linux: Plugins are in the same directory as the executable
+                pluginsPath = Path.Combine(Application.dataPath, "Plugins");
+            }
+            else
+            {
+                pluginsPath = Path.Combine(Application.dataPath, "Plugins");
+            }
+            
             if (Directory.Exists(pluginsPath))
             {
                 Debug.Log($"[OpenJTalkDebug] Plugins directory exists: {pluginsPath}");
