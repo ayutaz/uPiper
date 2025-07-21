@@ -19,8 +19,15 @@ export CXXFLAGS="-O3 -static-libgcc -static-libstdc++"
 export LDFLAGS="-static-libgcc -static-libstdc++ -static"
 
 # First, ensure dependencies are fetched
+echo "=== Checking dependencies ==="
+echo "Current directory: $(pwd)"
+echo "Contents of current directory:"
+ls -la
 if [ ! -d "external/openjtalk_build" ]; then
+    echo "Dependencies not found, fetching..."
     ./fetch_dependencies_ci.sh
+else
+    echo "Dependencies already exist"
 fi
 
 # Build dependencies
@@ -28,6 +35,7 @@ fi
 
 # Build the wrapper DLL
 cd build_windows
+echo "Current directory after cd: $(pwd)"
 
 # Copy the wrapper source if not exists
 if [ ! -f "../src/openjtalk_full_wrapper.c" ]; then

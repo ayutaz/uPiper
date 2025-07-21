@@ -41,11 +41,8 @@ RUN chmod +x /build/*.sh && \
 # Debug: Check what files are in /build
 RUN ls -la /build/
 
-# Fetch dependencies
-RUN bash /build/fetch_dependencies_ci.sh
-
-# Build dependencies with cross-compilation
-RUN bash /build/build_dependencies_cross.sh
+# Note: Dependencies are fetched and built at runtime, not during image build
+# This allows the container to work with mounted volumes
 
 # Set up final build environment
 WORKDIR /workspace
