@@ -4,6 +4,14 @@
 
 ## セットアップ手順
 
+### 開発中のプロジェクトの場合
+
+1. **サンプルの手動インポート**
+   - `Assets/uPiper/Samples~/BasicTTSDemo` フォルダを
+   - `Assets/Samples/uPiper/BasicTTSDemo` にコピー
+
+### パッケージとしてインストールした場合
+
 1. **サンプルのインポート**
    - Unity Package Managerを開く（Window > Package Manager）
    - 左上のドロップダウンから "In Project" を選択

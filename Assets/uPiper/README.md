@@ -54,9 +54,15 @@ public class TTSExample : MonoBehaviour
 
 ## サンプル
 
-Unity Package Manager からサンプルをインポートできます：
+### 開発プロジェクトでの使用方法
 
-1. Package Manager で uPiper を選択
+1. `Assets/uPiper/Samples~/BasicTTSDemo` を `Assets/Samples/uPiper/BasicTTSDemo` にコピー
+2. メニューから `uPiper > Samples > Create Basic TTS Demo Scene` を選択
+3. シーンを保存して実行
+
+### パッケージとしてインストールした場合
+
+1. Unity Package Manager で uPiper を選択
 2. "Samples" タブを開く
 3. "Basic TTS Demo" の "Import" をクリック
 
