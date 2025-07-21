@@ -2,6 +2,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Unity.InferenceEngine;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers.Implementations;
@@ -21,11 +22,13 @@ namespace uPiper.Editor
         [SerializeField] private AudioSource _audioSource;
         
         [Header("Model Settings")]
-        [SerializeField] private string _modelPath = "ja_JP-test-medium.onnx";
+        [SerializeField] private ModelAsset _modelAsset;
         [SerializeField] private float _speakingRate = 1.0f;
+        [SerializeField] private int _sampleRate = 22050;
         
         private InferenceAudioGenerator _audioGenerator;
         private OpenJTalkPhonemizer _phonemizer;
+        private AudioClipBuilder _audioClipBuilder;
         private bool _isProcessing;
 
         private void Start()
@@ -48,21 +51,34 @@ namespace uPiper.Editor
             if (_generateButton != null)
                 _generateButton.interactable = false;
             
-            // Initialize phonemizer
+            // Initialize phonemizer (コンストラクタで初期化される)
             _phonemizer = new OpenJTalkPhonemizer();
-            var phonemizerInit = _phonemizer.InitializeAsync();
-            yield return new WaitUntil(() => phonemizerInit.IsCompleted);
             
-            if (!phonemizerInit.IsCompletedSuccessfully)
-            {
-                UpdateStatus("Failed to initialize phonemizer!", Color.red);
-                yield break;
-            }
+            // Initialize audio clip builder
+            _audioClipBuilder = new AudioClipBuilder();
             
             // Initialize audio generator
+            if (_modelAsset == null)
+            {
+                // Try to load model from Resources
+                _modelAsset = Resources.Load<ModelAsset>("Models/ja_JP-test-medium");
+                if (_modelAsset == null)
+                {
+                    UpdateStatus("Model asset not found! Please assign in inspector.", Color.red);
+                    yield break;
+                }
+            }
+            
             _audioGenerator = new InferenceAudioGenerator();
-            var modelResourcePath = System.IO.Path.GetFileNameWithoutExtension(_modelPath);
-            var initTask = _audioGenerator.InitializeAsync(modelResourcePath, 22050);
+            
+            // Create voice config
+            var voiceConfig = ScriptableObject.CreateInstance<PiperVoiceConfig>();
+            voiceConfig.ModelPath = "ja_JP-test-medium.onnx";
+            voiceConfig.Language = "ja_JP";
+            voiceConfig.SampleRate = _sampleRate;
+            voiceConfig.NumSpeakers = 1;
+            
+            var initTask = _audioGenerator.InitializeAsync(_modelAsset, voiceConfig);
             yield return new WaitUntil(() => initTask.IsCompleted);
             
             if (!initTask.IsCompletedSuccessfully)
@@ -111,7 +127,6 @@ namespace uPiper.Editor
             
             // Generate audio
             var generateTask = _audioGenerator.GenerateAudioAsync(
-                phonemeResult.Phonemes, 
                 phonemeResult.PhonemeIds,
                 _speakingRate
             );
@@ -129,7 +144,7 @@ namespace uPiper.Editor
             var audioData = generateTask.Result;
             
             // Create and play audio clip
-            var audioClip = AudioClipBuilder.CreateAudioClip(audioData, 22050, "GeneratedSpeech");
+            var audioClip = _audioClipBuilder.BuildAudioClip(audioData, _sampleRate, "GeneratedSpeech");
             if (_audioSource != null)
             {
                 _audioSource.clip = audioClip;

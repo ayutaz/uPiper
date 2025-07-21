@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
+using Unity.InferenceEngine;
 using System.IO;
 using System.Linq;
 
@@ -184,6 +185,21 @@ namespace uPiper.Editor
             serializedObject.FindProperty("_generateButton").objectReferenceValue = generateButton;
             serializedObject.FindProperty("_statusText").objectReferenceValue = statusText;
             serializedObject.FindProperty("_audioSource").objectReferenceValue = audioSource;
+            
+            // Try to find and assign model asset
+            var modelAssets = AssetDatabase.FindAssets("t:ModelAsset ja_JP");
+            if (modelAssets.Length > 0)
+            {
+                var modelPath = AssetDatabase.GUIDToAssetPath(modelAssets[0]);
+                var modelAsset = AssetDatabase.LoadAssetAtPath<ModelAsset>(modelPath);
+                serializedObject.FindProperty("_modelAsset").objectReferenceValue = modelAsset;
+                Debug.Log($"Model asset found and assigned: {modelPath}");
+            }
+            else
+            {
+                Debug.LogWarning("No ja_JP model asset found. Please assign manually in the inspector.");
+            }
+            
             serializedObject.ApplyModifiedProperties();
 
             // Mark scene as dirty

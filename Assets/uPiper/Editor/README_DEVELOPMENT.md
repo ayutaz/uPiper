@@ -7,6 +7,9 @@
 1. Unityメニューから `uPiper > Development > Create Basic TTS Demo Scene` を選択
 2. シーン保存先を選択
 3. シーンが自動的に作成され、必要なコンポーネントが配置されます
+4. BasicTTSDemoコンポーネントのインスペクターで`Model Asset`フィールドにONNXモデルアセットを設定
+   - 通常は自動的に検出・設定されます
+   - 手動で設定する場合は、`Assets/uPiper/Resources/Models/ja_JP-test-medium.onnx`を選択
 
 ## 方法2: サンプルスクリプトのコピー
 
