@@ -26,7 +26,14 @@ jobs:
     - name: Build Docker Image
       run: |
         cd NativePlugins/OpenJTalk
-        docker build -f Dockerfile.windows-cross -t openjtalk-windows-cross .
+        echo "=== Building Docker image ==="
+        echo "Current directory: $(pwd)"
+        echo "Checking Dockerfile exists:"
+        ls -la Dockerfile.windows-cross
+        docker build -f Dockerfile.windows-cross -t openjtalk-windows-cross . || {
+          echo "Docker build failed with exit code $?"
+          exit 1
+        }
     
     - name: Build Windows DLL with Docker
       run: |
@@ -40,7 +47,18 @@ jobs:
         chmod +x build_full_windows.sh fetch_dependencies_ci.sh build_dependencies_cross.sh
         
         # Run the build in Docker container
-        docker run --rm -v "${PWD}:/workspace" openjtalk-windows-cross /bin/bash -c "cd /workspace && ./build_full_windows.sh"
+        echo "=== Running build in Docker container ==="
+        echo "Current directory: $(pwd)"
+        echo "Checking build script exists:"
+        ls -la build_full_windows.sh
+        
+        # Run with error handling
+        docker run --rm -v "${PWD}:/workspace" openjtalk-windows-cross /bin/bash -c "cd /workspace && ./build_full_windows.sh" || {
+          echo "Docker run failed with exit code $?"
+          echo "=== Docker logs ==="
+          docker logs $(docker ps -lq) || true
+          exit 1
+        }
     
     - name: Test DLL Exports
       run: |
