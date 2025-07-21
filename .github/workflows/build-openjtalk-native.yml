@@ -36,19 +36,15 @@ jobs:
         update: true
         install: >-
           mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-g++
           mingw-w64-x86_64-cmake
-          mingw-w64-x86_64-make
-          base-devel
-          autoconf
-          automake
-          libtool
-          tar
-          gzip
+          make
     
     - name: Setup Dependencies
       shell: msys2 {0}
       run: |
+        # Install additional tools needed for building
+        pacman -S --noconfirm autoconf automake libtool
+        
         cd NativePlugins/OpenJTalk
         echo "Fetching and building OpenJTalk dependencies..."
         # Make scripts executable
