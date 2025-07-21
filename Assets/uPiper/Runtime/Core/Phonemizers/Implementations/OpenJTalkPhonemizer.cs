@@ -469,11 +469,44 @@ namespace uPiper.Core.Phonemizers.Implementations
                     return false;
                 }
                 
-                if (!File.Exists(libraryPath))
+                // For bundle format on macOS, check if directory exists
+                bool libraryExists = false;
+                if (PlatformHelper.IsMacOS && libraryPath.EndsWith(".bundle"))
                 {
-                    Debug.LogError($"[OpenJTalkPhonemizer] Library file not found: {libraryPath}");
+                    libraryExists = Directory.Exists(libraryPath);
+                    if (libraryExists)
+                    {
+                        // Verify the actual binary exists inside the bundle
+                        var binaryPath = Path.Combine(libraryPath, "Contents", "MacOS", "openjtalk_wrapper");
+                        if (!File.Exists(binaryPath))
+                        {
+                            Debug.LogError($"[OpenJTalkPhonemizer] Bundle exists but binary not found: {binaryPath}");
+                            libraryExists = false;
+                        }
+                    }
+                }
+                else
+                {
+                    libraryExists = File.Exists(libraryPath);
+                }
+                
+                if (!libraryExists)
+                {
+                    Debug.LogError($"[OpenJTalkPhonemizer] Library not found: {libraryPath}");
                     Debug.LogError($"[OpenJTalkPhonemizer] Current working directory: {Directory.GetCurrentDirectory()}");
                     Debug.LogError($"[OpenJTalkPhonemizer] Application.dataPath: {Application.dataPath}");
+                    
+                    // List contents of plugin directory for debugging
+                    var pluginDir = Path.GetDirectoryName(libraryPath);
+                    if (Directory.Exists(pluginDir))
+                    {
+                        Debug.LogError($"[OpenJTalkPhonemizer] Contents of {pluginDir}:");
+                        foreach (var item in Directory.GetFileSystemEntries(pluginDir))
+                        {
+                            Debug.LogError($"  - {Path.GetFileName(item)}");
+                        }
+                    }
+                    
                     return false;
                 }
                 
@@ -531,10 +564,18 @@ namespace uPiper.Core.Phonemizers.Implementations
             }
             else if (PlatformHelper.IsMacOS)
             {
-                var macPath = Path.Combine(uPiperPluginsPath, "macOS", "libopenjtalk_wrapper.dylib");
-                if (File.Exists(macPath)) return macPath;
+                // Check for bundle format first (Unity's preferred format for macOS)
+                var bundlePath = Path.Combine(uPiperPluginsPath, "macOS", "openjtalk_wrapper.bundle");
+                if (Directory.Exists(bundlePath)) return bundlePath;
                 
-                // Fallback to old path
+                // Check for dylib format
+                var dylibPath = Path.Combine(uPiperPluginsPath, "macOS", "libopenjtalk_wrapper.dylib");
+                if (File.Exists(dylibPath)) return dylibPath;
+                
+                // Fallback to old paths
+                var oldBundlePath = Path.Combine(Application.dataPath, "Plugins", "macOS", "openjtalk_wrapper.bundle");
+                if (Directory.Exists(oldBundlePath)) return oldBundlePath;
+                
                 return Path.Combine(Application.dataPath, "Plugins", "macOS", "libopenjtalk_wrapper.dylib");
             }
             else if (PlatformHelper.IsLinux)

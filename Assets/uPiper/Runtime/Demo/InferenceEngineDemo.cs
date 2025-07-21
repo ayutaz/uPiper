@@ -116,6 +116,12 @@ namespace uPiper.Demo
             _generator = new InferenceAudioGenerator();
             _audioBuilder = new AudioClipBuilder();
 
+            // Debug OpenJTalk library loading on non-WebGL platforms in builds
+#if !UNITY_WEBGL && !UNITY_EDITOR
+            PiperLogger.LogInfo("[InferenceEngineDemo] Running OpenJTalk debug helper...");
+            OpenJTalkDebugHelper.DebugLibraryLoading();
+#endif
+
 #if !UNITY_WEBGL
             // Initialize OpenJTalk phonemizer for Japanese
             try
