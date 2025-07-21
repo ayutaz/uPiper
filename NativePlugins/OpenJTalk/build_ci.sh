@@ -89,12 +89,25 @@ cd build
 # Configure CMake
 echo "Configuring CMake..."
 if [ "$RUNNER_OS" = "Windows" ] || [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "win32" ]; then
-    # Use MinGW on Windows to avoid MSVC issues
-    cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_BENCHMARK=OFF .. || {
-        echo "ERROR: CMake configuration failed"
-        echo "CMake version: $(cmake --version | head -1)"
-        exit 1
-    }
+    # Use MSYS Makefiles for MSYS2 environment, fallback to MinGW Makefiles
+    if [ "$MSYSTEM" = "MINGW64" ] || [ "$MSYSTEM" = "MINGW32" ]; then
+        echo "Using MSYS Makefiles generator for MSYS2 environment"
+        cmake -G "MSYS Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_BENCHMARK=OFF .. || {
+            echo "MSYS Makefiles failed, trying Unix Makefiles"
+            cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_BENCHMARK=OFF .. || {
+                echo "ERROR: CMake configuration failed"
+                echo "CMake version: $(cmake --version | head -1)"
+                exit 1
+            }
+        }
+    else
+        echo "Using MinGW Makefiles for Windows environment"
+        cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_BENCHMARK=OFF .. || {
+            echo "ERROR: CMake configuration failed"
+            echo "CMake version: $(cmake --version | head -1)"
+            exit 1
+        }
+    fi
 else
     cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_BENCHMARK=OFF .. || {
         echo "ERROR: CMake configuration failed"
@@ -106,10 +119,21 @@ fi
 # Build
 echo "Building library..."
 if [ "$RUNNER_OS" = "Windows" ] || [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "win32" ]; then
-    mingw32-make -j$(nproc 2>/dev/null || echo 2) || {
-        echo "ERROR: Build failed"
+    # Try different make commands available in MSYS2/MinGW environment
+    if command -v mingw32-make >/dev/null 2>&1; then
+        mingw32-make -j$(nproc 2>/dev/null || echo 2) || {
+            echo "ERROR: Build failed with mingw32-make"
+            exit 1
+        }
+    elif command -v make >/dev/null 2>&1; then
+        make -j$(nproc 2>/dev/null || echo 2) || {
+            echo "ERROR: Build failed with make"
+            exit 1
+        }
+    else
+        echo "ERROR: No make command found (tried mingw32-make, make)"
         exit 1
-    }
+    fi
 else
     make -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2) || {
         echo "ERROR: Build failed"

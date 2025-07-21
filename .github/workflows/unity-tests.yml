@@ -52,21 +52,38 @@ jobs:
           mingw-w64-x86_64-toolchain
           mingw-w64-x86_64-cmake
           mingw-w64-x86_64-make
+          autoconf
+          automake
+          libtool
+          pkg-config
+          curl
+          tar
+          gzip
         
     - name: Build OpenJTalk Native Library
       run: |
         cd NativePlugins/OpenJTalk
         
+        # Debug environment information for Windows
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          echo "=== Windows Environment Debug ==="
+          echo "OSTYPE: $OSTYPE"
+          echo "MSYSTEM: $MSYSTEM"
+          echo "PATH: $PATH"
+          echo "Available compilers:"
+          command -v gcc && gcc --version | head -1 || echo "gcc not found"
+          command -v make && make --version | head -1 || echo "make not found"
+          command -v mingw32-make && mingw32-make --version | head -1 || echo "mingw32-make not found"
+          command -v cmake && cmake --version | head -1 || echo "cmake not found"
+          echo "=========================="
+        fi
+        
         # Make build script executable
         chmod +x build_ci.sh
         
         # Run build script (using simplified CI build for all platforms)
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          # Use MSYS2 environment for Windows
-          msys2 -c './build_ci.sh'
-        else
-          ./build_ci.sh
-        fi
+        ./build_ci.sh
+      shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || 'bash' }}
         
         # Create Plugins directory structure
         mkdir -p ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}
