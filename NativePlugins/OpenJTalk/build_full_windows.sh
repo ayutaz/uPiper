@@ -44,7 +44,13 @@ cmake . -DCMAKE_BUILD_TYPE=Release \
 make -j$(nproc)
 
 # Copy output
-cp bin/openjtalk_wrapper.dll ../output_windows/
+if [ -f bin/openjtalk_wrapper.dll ]; then
+    cp bin/openjtalk_wrapper.dll ../output_windows/
+    echo "DLL built successfully: $(ls -la bin/openjtalk_wrapper.dll)"
+else
+    echo "ERROR: DLL not found at bin/openjtalk_wrapper.dll"
+    exit 1
+fi
 cd ..
 
 echo "=== Build Complete ==="
