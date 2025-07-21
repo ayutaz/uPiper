@@ -61,17 +61,28 @@ namespace uPiper.Tests.Editor
                     Debug.Log($"Input text: '{text}'");
                     Debug.Log($"Expected reading: {reading}");
                     Debug.Log($"Phoneme count: {result.Phonemes.Length}");
-                    Debug.Log($"Phonemes: {string.Join(" ", result.Phonemes)}");
+                    
+                    // PUA文字を含む音素を正しく表示
+                    var phonemeDisplay = result.Phonemes.Select(p => {
+                        if (p.Length == 1 && p[0] >= '\ue000' && p[0] <= '\uf8ff')
+                        {
+                            return $"PUA(U+{((int)p[0]):X4})";
+                        }
+                        return p;
+                    }).ToArray();
+                    Debug.Log($"Phonemes: {string.Join(" ", phonemeDisplay)}");
                     
                     // 期待されるフォネームの大まかな数をチェック
-                    // 日本語の場合、通常1文字あたり1-2フォネーム
-                    var minExpectedPhonemes = text.Length;
+                    // 日本語の場合、通常1文字あたり1-2フォネーム + ポーズ(_)
+                    // ポーズを除外してカウント
+                    var nonPausePhonemes = result.Phonemes.Where(p => p != "_").Count();
+                    var minExpectedPhonemes = Math.Max(1, text.Length - 1); // 最低1音素
                     var maxExpectedPhonemes = text.Length * 3;
                     
-                    Assert.GreaterOrEqual(result.Phonemes.Length, minExpectedPhonemes, 
-                        $"Too few phonemes for '{text}'");
-                    Assert.LessOrEqual(result.Phonemes.Length, maxExpectedPhonemes, 
-                        $"Too many phonemes for '{text}'");
+                    Assert.GreaterOrEqual(nonPausePhonemes, minExpectedPhonemes, 
+                        $"Too few phonemes for '{text}' (excluding pauses)");
+                    Assert.LessOrEqual(nonPausePhonemes, maxExpectedPhonemes, 
+                        $"Too many phonemes for '{text}' (excluding pauses)");
                     
                     // 特定のパターンチェック
                     var phonemeString = string.Join(" ", result.Phonemes);
@@ -79,18 +90,29 @@ namespace uPiper.Tests.Editor
                     // 「今日」のチェック
                     if (text.StartsWith("今日"))
                     {
-                        // "k y o:"または類似のパターンを期待
-                        // Windows版では音素化に問題がある可能性があるため、一時的にスキップ
-                        PiperLogger.LogWarning($"[WindowsTextAnalysisTest] '今日' phonemization issue detected. Got: {phonemeString}");
-                        
-                        // TODO: Windows版のOpenJTalkで「今日」が正しく音素化されない問題を調査
-                        // 期待値: k y o o または k y o:
-                        // 実際値: 音素が欠落している可能性
-                        
-                        // 一時的にテストを通すが、警告を出力
-                        if (!phonemeString.Contains("k y o") && !phonemeString.Contains("k i y o"))
+                        // "ky"がPUA文字（U+E006）に変換されているかチェック
+                        bool hasKyoPUA = false;
+                        for (int i = 0; i < result.Phonemes.Length - 1; i++)
                         {
-                            PiperLogger.LogWarning($"[WindowsTextAnalysisTest] Known issue: '今日' not properly phonemized on Windows");
+                            var phoneme = result.Phonemes[i];
+                            if (phoneme.Length == 1 && phoneme[0] == '\ue006') // "ky"のPUA文字
+                            {
+                                if (i + 1 < result.Phonemes.Length && result.Phonemes[i + 1] == "o")
+                                {
+                                    hasKyoPUA = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // 旧形式のチェック（互換性のため）
+                        bool hasKyoOld = phonemeString.Contains("k y o") || phonemeString.Contains("k i y o");
+                        
+                        if (!hasKyoPUA && !hasKyoOld)
+                        {
+                            PiperLogger.LogWarning($"[WindowsTextAnalysisTest] '今日' not properly phonemized. Got: {phonemeString}");
+                            // テストを失敗させる
+                            Assert.Fail("'今日' was not properly phonemized");
                         }
                     }
                     
