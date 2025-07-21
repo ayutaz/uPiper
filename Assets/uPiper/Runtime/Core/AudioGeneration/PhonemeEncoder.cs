@@ -81,8 +81,14 @@ namespace uPiper.Core.AudioGeneration
 
             var ids = new List<int>();
 
-            // Piper TTSモデルはBOS/EOSトークンを使用しない場合が多いため、
-            // 音素のみをエンコードする
+            // BOS/EOSトークンを追加するかどうかのフラグ（デバッグ用）
+            bool addSpecialTokens = false; // 一旦falseにして、後で必要に応じて有効化
+            
+            if (addSpecialTokens)
+            {
+                // BOSトークンを追加
+                ids.Add(GetBosId());
+            }
 
             // 各音素をIDに変換
             foreach (var phoneme in phonemes)
@@ -96,7 +102,7 @@ namespace uPiper.Core.AudioGeneration
                 if (multiCharPhonemeMap.TryGetValue(phoneme, out var puaChar))
                 {
                     phonemeToLookup = puaChar;
-                    var puaCode = ((int)puaChar[0]).ToString("X4");
+                    var puaCode = ((int)puaChar[0]).ToString("X4", System.Globalization.CultureInfo.InvariantCulture);
                     PiperLogger.LogInfo($"Mapped multi-char phoneme '{phoneme}' to PUA U+{puaCode}");
                 }
 
@@ -111,13 +117,19 @@ namespace uPiper.Core.AudioGeneration
                 }
             }
 
+            // EOSトークンを追加
+            if (addSpecialTokens)
+            {
+                ids.Add(GetEosId());
+            }
+            
             // 空の結果になった場合は、無音を表すPADトークンを1つ追加
             if (ids.Count == 0)
             {
                 ids.Add(GetPadId());
             }
 
-            PiperLogger.LogDebug($"Encoded {phonemes.Length} phonemes to {ids.Count} IDs (BOS/EOS tokens excluded during encoding)");
+            PiperLogger.LogDebug($"Encoded {phonemes.Length} phonemes to {ids.Count} IDs (special tokens: {addSpecialTokens})");
             return ids.ToArray();
         }
 

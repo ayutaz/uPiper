@@ -8,11 +8,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core.Logging;
 using uPiper.Core.Platform;
 
 namespace uPiper.Core.Phonemizers.Implementations
@@ -23,28 +25,13 @@ namespace uPiper.Core.Phonemizers.Implementations
     /// </summary>
     public class OpenJTalkPhonemizer : BasePhonemizer
     {
-        #region Mock Mode Support
-
-        private static bool mockMode = false;
-        private static bool forceUseMock = false;
-
-        /// <summary>
-        /// Enable mock mode for testing without native library
-        /// </summary>
-        public static bool MockMode
-        {
-            get => mockMode || forceUseMock;
-            set => forceUseMock = value;
-        }
-
-        #endregion
 
         #region Native Structures
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        [StructLayout(LayoutKind.Sequential)]
         private struct NativePhonemeResult
         {
-            public IntPtr phonemes;      // char* - space-separated phoneme string
+            public IntPtr phonemes;      // char* - space-separated phoneme string (UTF-8)
             public IntPtr phoneme_ids;   // int*
             public int phoneme_count;
             public IntPtr durations;     // float*
@@ -58,12 +45,13 @@ namespace uPiper.Core.Phonemizers.Implementations
         private const string LIBRARY_NAME = "openjtalk_wrapper";
 
 #if ENABLE_PINVOKE
-        [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr openjtalk_create(string dict_path);
+        [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        private static extern IntPtr openjtalk_create([MarshalAs(UnmanagedType.LPStr)] string dict_path);
 
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern void openjtalk_destroy(IntPtr handle);
 
+        // Unity uses UTF-8 by default, remove CharSet to let Unity handle the marshalling
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_phonemize(IntPtr handle, string text);
 
@@ -98,28 +86,8 @@ namespace uPiper.Core.Phonemizers.Implementations
         private bool _disposed;
         private readonly string _dictionaryPath;
 
-        // Phoneme mapping from OpenJTalk to Piper format
-        private static readonly Dictionary<string, int> phonemeToId = new Dictionary<string, int>
-        {
-            // Japanese phonemes (example mapping - needs to be completed based on actual Piper model)
-            {"pau", 0}, {"sil", 0}, // Silence
-            {"a", 1}, {"i", 2}, {"u", 3}, {"e", 4}, {"o", 5},
-            {"ka", 6}, {"ki", 7}, {"ku", 8}, {"ke", 9}, {"ko", 10},
-            {"ga", 11}, {"gi", 12}, {"gu", 13}, {"ge", 14}, {"go", 15},
-            {"sa", 16}, {"shi", 17}, {"su", 18}, {"se", 19}, {"so", 20},
-            {"za", 21}, {"ji", 22}, {"zu", 23}, {"ze", 24}, {"zo", 25},
-            {"ta", 26}, {"chi", 27}, {"tsu", 28}, {"te", 29}, {"to", 30},
-            {"da", 31}, {"di", 32}, {"du", 33}, {"de", 34}, {"do", 35},
-            {"na", 36}, {"ni", 37}, {"nu", 38}, {"ne", 39}, {"no", 40},
-            {"ha", 41}, {"hi", 42}, {"fu", 43}, {"he", 44}, {"ho", 45},
-            {"ba", 46}, {"bi", 47}, {"bu", 48}, {"be", 49}, {"bo", 50},
-            {"pa", 51}, {"pi", 52}, {"pu", 53}, {"pe", 54}, {"po", 55},
-            {"ma", 56}, {"mi", 57}, {"mu", 58}, {"me", 59}, {"mo", 60},
-            {"ya", 61}, {"yu", 62}, {"yo", 63},
-            {"ra", 64}, {"ri", 65}, {"ru", 66}, {"re", 67}, {"ro", 68},
-            {"wa", 69}, {"wo", 70}, {"n", 71},
-            // Add more mappings as needed
-        };
+        // Note: Phoneme to ID mapping is now handled by PhonemeEncoder based on the model's config
+        // The phonemizer only returns the phoneme strings, not IDs
 
         #endregion
 
@@ -133,22 +101,9 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region Constructor and Destructor
 
-        public OpenJTalkPhonemizer(int cacheCapacity = 1000, string dictionaryPath = null, bool forceMockMode = false)
+        public OpenJTalkPhonemizer(int cacheCapacity = 1000, string dictionaryPath = null)
             : base(cacheCapacity)
         {
-            // Allow explicit control over mock mode
-            if (forceMockMode)
-            {
-                mockMode = true;
-                Debug.Log("[OpenJTalkPhonemizer] Mock mode forced.");
-            }
-            else if (IsInTestRunner() && !IsNativeTestContext())
-            {
-                // Auto-enable mock mode in test runner, except for native tests
-                mockMode = true;
-                Debug.Log("[OpenJTalkPhonemizer] Test runner detected. Using mock mode.");
-            }
-
             _dictionaryPath = dictionaryPath ?? GetDefaultDictionaryPath();
             Initialize();
         }
@@ -169,13 +124,23 @@ namespace uPiper.Core.Phonemizers.Implementations
                 if (_handle != IntPtr.Zero)
                     return;
 
-                // Check if we should use mock mode
-                if (MockMode || !IsNativeLibraryAvailable())
+                if (!IsNativeLibraryAvailable())
                 {
-                    mockMode = true;
-                    _handle = new IntPtr(1); // Fake handle for mock mode
-                    Debug.Log("[OpenJTalkPhonemizer] Running in mock mode (native library not available)");
-                    return;
+                    var expectedPath = GetExpectedLibraryPath();
+                    var nativePluginsPath = Path.GetFullPath(Path.Combine(Application.dataPath, "../NativePlugins/OpenJTalk/"));
+                    
+                    throw new PiperInitializationException(
+                        $"OpenJTalk native library not found at: {expectedPath}\n\n" +
+                        "To install the OpenJTalk native library:\n" +
+                        $"1. Navigate to: {nativePluginsPath}\n" +
+                        "2. Run the build script:\n" +
+                        "   - macOS/Linux: ./build.sh\n" +
+                        "   - Windows: build.bat\n" +
+                        "3. Restart Unity Editor to reload native plugins\n\n" +
+                        "Expected library locations after build:\n" +
+                        $"  - macOS: {Path.Combine(Application.dataPath, "uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib")}\n" +
+                        $"  - Windows: {Path.Combine(Application.dataPath, "uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll")}\n" +
+                        $"  - Linux: {Path.Combine(Application.dataPath, "uPiper/Plugins/Linux/x86_64/libopenjtalk_wrapper.so")}");
                 }
 
                 if (!Directory.Exists(_dictionaryPath))
@@ -187,6 +152,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 try
                 {
 #if ENABLE_PINVOKE
+                    Debug.Log($"[OpenJTalkPhonemizer] Attempting to create OpenJTalk instance with dictionary: {_dictionaryPath}");
                     _handle = openjtalk_create(_dictionaryPath);
                     if (_handle == IntPtr.Zero)
                     {
@@ -195,30 +161,26 @@ namespace uPiper.Core.Phonemizers.Implementations
                     }
 
                     // Log version info
-                    Debug.Log($"[OpenJTalkPhonemizer] Initialized with version: {Version}");
+                    var version = GetVersionString();
+                    Debug.Log($"[OpenJTalkPhonemizer] Successfully initialized OpenJTalk");
+                    Debug.Log($"[OpenJTalkPhonemizer] Version: {version}");
+                    Debug.Log($"[OpenJTalkPhonemizer] Dictionary path: {_dictionaryPath}");
+                    Debug.Log($"[OpenJTalkPhonemizer] Native handle: 0x{_handle.ToInt64():X}");
 #else
-                    // P/Invoke is disabled, use mock mode
-                    mockMode = true;
-                    _handle = new IntPtr(1); // Fake handle for mock mode
-                    Debug.LogWarning($"[OpenJTalkPhonemizer] P/Invoke disabled. Running in mock mode.");
+                    throw new PiperInitializationException(
+                        "OpenJTalk is not supported on this platform. P/Invoke is disabled.");
 #endif
                 }
                 catch (Exception ex)
                 {
-                    mockMode = true;
-                    _handle = new IntPtr(1); // Fake handle for mock mode
-                    Debug.LogWarning($"[OpenJTalkPhonemizer] Failed to initialize: {ex.Message}. Running in mock mode.");
+                    throw new PiperInitializationException(
+                        $"Failed to initialize OpenJTalk: {ex.Message}", ex);
                 }
             }
         }
 
         private string GetVersionString()
         {
-            if (MockMode)
-            {
-                return "1.0.0-mock";
-            }
-
 #if ENABLE_PINVOKE
             try
             {
@@ -269,17 +231,35 @@ namespace uPiper.Core.Phonemizers.Implementations
                 if (_handle == IntPtr.Zero)
                     throw new PiperInitializationException("OpenJTalk not initialized");
 
-                // Use mock implementation if in mock mode
-                if (MockMode)
+                // Log input text with detailed encoding information
+                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Processing text: '{text}' (length: {text.Length})");
+                
+                // Debug text encoding to identify Windows-specific issues
+                var textBytes = System.Text.Encoding.UTF8.GetBytes(text);
+                var hexText = string.Join(" ", textBytes.Select(b => b.ToString("X2", System.Globalization.CultureInfo.InvariantCulture)));
+                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Input text UTF-8 bytes: {hexText}");
+                
+                // Additional character analysis for Windows debugging
+                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Character analysis:");
+                for (int i = 0; i < Math.Min(text.Length, 10); i++)
                 {
-                    return GenerateMockPhonemes(text);
+                    var ch = text[i];
+                    var unicode = ((int)ch).ToString("X4", System.Globalization.CultureInfo.InvariantCulture);
+                    PiperLogger.LogDebug($"  [{i}] '{ch}' = U+{unicode}");
+                }
+                
+                // Enable stderr output for debugging
+                if (Application.isEditor)
+                {
+                    // In Unity Editor, stderr should be visible in Console
+                    Debug.Log("[OpenJTalkPhonemizer] Note: Debug logs from native library will appear in stderr/console");
                 }
 
                 IntPtr resultPtr = IntPtr.Zero;
                 try
                 {
 #if ENABLE_PINVOKE
-                    // Call native phonemize function
+                    // Call native phonemize function (Unity marshals as UTF-8 by default)
                     resultPtr = openjtalk_phonemize(_handle, text);
                     if (resultPtr == IntPtr.Zero)
                     {
@@ -299,6 +279,9 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                     // Marshal the result
                     var nativeResult = Marshal.PtrToStructure<NativePhonemeResult>(resultPtr);
+                    
+                    // Log native result info
+                    PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Native result - phoneme_count: {nativeResult.phoneme_count}, total_duration: {nativeResult.total_duration:F3}");
 
                     // Convert to PhonemeResult
                     return ConvertToPhonemeResult(nativeResult);
@@ -339,34 +322,81 @@ namespace uPiper.Core.Phonemizers.Implementations
             if (nativeResult.phonemes != IntPtr.Zero)
             {
                 var phonemeString = Marshal.PtrToStringAnsi(nativeResult.phonemes);
+                
+                // Debug log the raw phoneme string from native library
+                Debug.Log($"[OpenJTalkPhonemizer] Native phoneme string: '{phonemeString}'");
+                Debug.Log($"[OpenJTalkPhonemizer] Native phoneme count: {nativeResult.phoneme_count}");
+                
+                // Calculate checksum for comparison
+                uint checksum = 0;
+                foreach (char c in phonemeString)
+                {
+                    checksum = checksum * 31 + (uint)c;
+                }
+                Debug.Log($"[OpenJTalkPhonemizer] C# checksum: {checksum}");
+                
+                // Log raw bytes for debugging
+                if (phonemeString.Length > 0 && phonemeString.Length < 200)
+                {
+                    var bytes = System.Text.Encoding.UTF8.GetBytes(phonemeString);
+                    var hexString = string.Join(" ", bytes.Select(b => b.ToString("X2", System.Globalization.CultureInfo.InvariantCulture)));
+                    Debug.Log($"[OpenJTalkPhonemizer] Raw bytes (hex): {hexString}");
+                    
+                    // Check for specific patterns
+                    var firstSpace = phonemeString.IndexOf(' ');
+                    var lastSpace = phonemeString.LastIndexOf(' ');
+                    Debug.Log($"[OpenJTalkPhonemizer] First space at: {firstSpace}, Last space at: {lastSpace}");
+                    
+                    // Log first few phonemes individually
+                    var parts = phonemeString.Split(' ');
+                    if (parts.Length > 0)
+                    {
+                        Debug.Log($"[OpenJTalkPhonemizer] First 10 phonemes:");
+                        for (int i = 0; i < Math.Min(10, parts.Length); i++)
+                        {
+                            Debug.Log($"  [{i}] '{parts[i]}'");
+                        }
+                    }
+                }
+                
                 if (!string.IsNullOrEmpty(phonemeString))
                 {
                     var phonemeList = phonemeString.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    var unknownPhonemes = new System.Collections.Generic.HashSet<string>();
-
-                    for (int i = 0; i < Math.Min(phonemeList.Length, nativeResult.phoneme_count); i++)
+                    
+                    // Log if phoneme count mismatch
+                    if (phonemeList.Length != nativeResult.phoneme_count)
                     {
-                        phonemes[i] = phonemeList[i];
-
-                        // Map phoneme to ID
-                        if (phonemeToId.TryGetValue(phonemes[i], out var id))
-                        {
-                            phonemeIds[i] = id;
-                        }
-                        else
-                        {
-                            // Default to unknown phoneme ID
-                            phonemeIds[i] = 0;
-                            unknownPhonemes.Add(phonemes[i]);
-                        }
+                        PiperLogger.LogWarning($"[OpenJTalkPhonemizer] Phoneme count mismatch: expected {nativeResult.phoneme_count}, got {phonemeList.Length}");
                     }
 
-                    // Log unknown phonemes once per conversion
-                    if (unknownPhonemes.Count > 0)
+                    // Check for suspicious repetitive patterns (Windows-specific issue)
+                    if (DetectRepeatedPatterns(phonemeList))
                     {
-                        Debug.LogWarning($"[OpenJTalkPhonemizer] Unknown phonemes: {string.Join(", ", unknownPhonemes)}");
+                        PiperLogger.LogWarning($"[OpenJTalkPhonemizer] Detected repeated phoneme patterns, attempting to clean up");
+                        phonemeList = CleanRepeatedPhonemes(phonemeList);
+                    }
+                    
+                    // Convert OpenJTalk phonemes to Piper phonemes using the mapping
+                    var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(phonemeList);
+                    
+                    // Debug log the mapping result
+                    PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Phoneme mapping: {string.Join(" ", phonemeList)} -> {string.Join(" ", piperPhonemes.Select(p => p.Length == 1 && p[0] >= '\ue000' && p[0] <= '\uf8ff' ? $"PUA(U+{((int)p[0]):X4})" : $"'{p}'"))}");
+                    
+                    for (int i = 0; i < Math.Min(piperPhonemes.Length, nativeResult.phoneme_count); i++)
+                    {
+                        phonemes[i] = piperPhonemes[i];
+                        // PhonemeIds will be set by PhonemeEncoder based on the model's phoneme mapping
+                        phonemeIds[i] = 0; // Placeholder - not used anymore
                     }
                 }
+                else
+                {
+                    PiperLogger.LogError("[OpenJTalkPhonemizer] Phoneme string is empty!");
+                }
+            }
+            else
+            {
+                PiperLogger.LogError("[OpenJTalkPhonemizer] Native phonemes pointer is null!");
             }
 
             // Marshal phoneme IDs (if provided by native)
@@ -409,9 +439,11 @@ namespace uPiper.Core.Phonemizers.Implementations
             // Look for dictionary in various locations
             var possiblePaths = new[]
             {
-                Path.Combine(Application.dataPath, "uPiper", "Native", "OpenJTalk", "dictionary"),
-                Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "dictionary"),
+                // NAIST dictionary path in StreamingAssets (priority)
+                Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11"),
+                // Legacy dictionary paths
                 Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "dictionary"),
+                Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "dictionary"),
                 Path.Combine(PlatformHelper.GetNativeLibraryDirectory(), "OpenJTalk", "dictionary"),
             };
 
@@ -449,170 +481,153 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #endregion
 
-        #region Mock Implementation
-
-        private PhonemeResult GenerateMockPhonemes(string text)
-        {
-            // Simple mock implementation for testing
-            var mockPhonemes = new List<string>();
-            var mockIds = new List<int>();
-            var mockDurations = new List<float>();
-            var mockPitches = new List<float>();
-
-            // Generate simple mock phonemes based on text length
-            foreach (char c in text)
-            {
-                if (char.IsWhiteSpace(c)) continue;
-
-                // Add a mock phoneme
-                mockPhonemes.Add("mock_" + c);
-                mockIds.Add(mockPhonemes.Count);
-                mockDurations.Add(0.1f);
-                mockPitches.Add(1.0f);
-            }
-
-            if (mockPhonemes.Count == 0)
-            {
-                mockPhonemes.Add("sil");
-                mockIds.Add(0);
-                mockDurations.Add(0.1f);
-                mockPitches.Add(1.0f);
-            }
-
-            return new PhonemeResult
-            {
-                OriginalText = text,
-                Phonemes = mockPhonemes.ToArray(),
-                PhonemeIds = mockIds.ToArray(),
-                Durations = mockDurations.ToArray(),
-                Pitches = mockPitches.ToArray(),
-                Language = "ja",
-                ProcessingTime = TimeSpan.FromMilliseconds(10),
-                Metadata = "TotalDuration:" + (mockDurations.Count * 0.1f)
-            };
-        }
-
         private bool IsNativeLibraryAvailable()
         {
             try
             {
-                // Always use mock mode in test runner or when P/Invoke is disabled
-#if !ENABLE_PINVOKE
-                return false;
-#endif
-
-                // First check if we're in a test environment
-                // Check environment variable first for explicit test mode
-                if (Environment.GetEnvironmentVariable("UPIPER_TEST_MODE") == "true" ||
-                    Environment.GetEnvironmentVariable("IS_TEST_ENVIRONMENT") == "true")
-                {
-                    return false;
-                }
-
-                // Fallback to Unity application state check
-                if (Application.isEditor && !Application.isPlaying)
-                {
-                    // In test runner, always use mock mode to avoid crashes
-                    return false;
-                }
-
-                // Check platform-specific library file existence
+#if UNITY_EDITOR
+                // In Editor, check if the library file exists
                 var libraryPath = GetExpectedLibraryPath();
-                if (!string.IsNullOrEmpty(libraryPath) && File.Exists(libraryPath))
+                if (string.IsNullOrEmpty(libraryPath))
                 {
-                    return true;
+                    Debug.LogError("[OpenJTalkPhonemizer] No library path defined for current platform");
+                    return false;
                 }
-
-                return false;
+                
+                // For bundle format on macOS, check if directory exists
+                bool libraryExists = false;
+                if (PlatformHelper.IsMacOS && libraryPath.EndsWith(".bundle"))
+                {
+                    libraryExists = Directory.Exists(libraryPath);
+                    if (libraryExists)
+                    {
+                        // Verify the actual binary exists inside the bundle
+                        var binaryPath = Path.Combine(libraryPath, "Contents", "MacOS", "openjtalk_wrapper");
+                        if (!File.Exists(binaryPath))
+                        {
+                            Debug.LogError($"[OpenJTalkPhonemizer] Bundle exists but binary not found: {binaryPath}");
+                            libraryExists = false;
+                        }
+                    }
+                }
+                else
+                {
+                    libraryExists = File.Exists(libraryPath);
+                }
+                
+                if (!libraryExists)
+                {
+                    Debug.LogError($"[OpenJTalkPhonemizer] Library not found: {libraryPath}");
+                    Debug.LogError($"[OpenJTalkPhonemizer] Current working directory: {Directory.GetCurrentDirectory()}");
+                    Debug.LogError($"[OpenJTalkPhonemizer] Application.dataPath: {Application.dataPath}");
+                    
+                    // List contents of plugin directory for debugging
+                    var pluginDir = Path.GetDirectoryName(libraryPath);
+                    if (Directory.Exists(pluginDir))
+                    {
+                        Debug.LogError($"[OpenJTalkPhonemizer] Contents of {pluginDir}:");
+                        foreach (var item in Directory.GetFileSystemEntries(pluginDir))
+                        {
+                            Debug.LogError($"  - {Path.GetFileName(item)}");
+                        }
+                    }
+                    
+                    return false;
+                }
+                
+                Debug.Log($"[OpenJTalkPhonemizer] Native library found at: {libraryPath}");
+                return true;
+#else
+                // In built application, try to call a simple function to check if library is loaded
+                try
+                {
+#if ENABLE_PINVOKE
+                    // Try to get version as a simple test
+                    var version = Marshal.PtrToStringAnsi(openjtalk_get_version());
+                    if (!string.IsNullOrEmpty(version))
+                    {
+                        Debug.Log($"[OpenJTalkPhonemizer] Native library loaded successfully (version: {version})");
+                        return true;
+                    }
+#endif
+                    return false;
+                }
+                catch (DllNotFoundException)
+                {
+                    Debug.LogError("[OpenJTalkPhonemizer] Native library not found. Please ensure the plugin is properly included in the build.");
+                    Debug.LogError("[OpenJTalkPhonemizer] Expected library name: " + GetExpectedLibraryPath());
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[OpenJTalkPhonemizer] Error loading native library: {ex.Message}");
+                    return false;
+                }
+#endif
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.LogError($"[OpenJTalkPhonemizer] Error checking library availability: {ex.Message}");
                 return false;
             }
         }
 
         private string GetExpectedLibraryPath()
         {
-            var pluginsPath = Path.Combine(Application.dataPath, "Plugins");
-
+            // In Unity Editor
+#if UNITY_EDITOR
+            // First try uPiper/Plugins path
+            var uPiperPluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins");
+            
             if (PlatformHelper.IsWindows)
             {
-                return Path.Combine(pluginsPath, "x86_64", "openjtalk_wrapper.dll");
+                var windowsPath = Path.Combine(uPiperPluginsPath, "Windows", "x86_64", "openjtalk_wrapper.dll");
+                if (File.Exists(windowsPath)) return windowsPath;
+                
+                // Fallback to old path
+                return Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll");
             }
             else if (PlatformHelper.IsMacOS)
             {
-                return Path.Combine(pluginsPath, "macOS", "libopenjtalk_wrapper.dylib");
+                // Check for bundle format first (Unity's preferred format for macOS)
+                var bundlePath = Path.Combine(uPiperPluginsPath, "macOS", "openjtalk_wrapper.bundle");
+                if (Directory.Exists(bundlePath)) return bundlePath;
+                
+                // Check for dylib format
+                var dylibPath = Path.Combine(uPiperPluginsPath, "macOS", "libopenjtalk_wrapper.dylib");
+                if (File.Exists(dylibPath)) return dylibPath;
+                
+                // Fallback to old paths
+                var oldBundlePath = Path.Combine(Application.dataPath, "Plugins", "macOS", "openjtalk_wrapper.bundle");
+                if (Directory.Exists(oldBundlePath)) return oldBundlePath;
+                
+                return Path.Combine(Application.dataPath, "Plugins", "macOS", "libopenjtalk_wrapper.dylib");
             }
             else if (PlatformHelper.IsLinux)
             {
-                return Path.Combine(pluginsPath, "x86_64", "libopenjtalk_wrapper.so");
+                var linuxPath = Path.Combine(uPiperPluginsPath, "Linux", "x86_64", "libopenjtalk_wrapper.so");
+                if (File.Exists(linuxPath)) return linuxPath;
+                
+                // Fallback to old path
+                return Path.Combine(Application.dataPath, "Plugins", "x86_64", "libopenjtalk_wrapper.so");
             }
+#else
+            // In built application, Unity automatically loads native plugins
+            // We just need to verify if the library was loaded successfully
+            // The actual path checking is not necessary as Unity handles plugin loading
+            
+            // Return a dummy path that indicates the library should be loaded by Unity
+            if (PlatformHelper.IsWindows)
+                return "openjtalk_wrapper.dll";
+            else if (PlatformHelper.IsMacOS)
+                return "libopenjtalk_wrapper.dylib";
+            else if (PlatformHelper.IsLinux)
+                return "libopenjtalk_wrapper.so";
+#endif
 
             return null;
         }
 
-        private bool IsInTestRunner()
-        {
-            // Check if we're running in Unity Test Runner
-            try
-            {
-                // Test runner has specific execution context
-                var stackTrace = new System.Diagnostics.StackTrace();
-                var frames = stackTrace.GetFrames();
-
-                foreach (var frame in frames)
-                {
-                    var method = frame.GetMethod();
-                    if (method != null)
-                    {
-                        var typeName = method.DeclaringType?.FullName ?? "";
-                        if (typeName.Contains("NUnit") ||
-                            typeName.Contains("UnityEngine.TestRunner") ||
-                            typeName.Contains("UnityEditor.TestRunner"))
-                        {
-                            return true;
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Ignore any errors in detection
-            }
-
-            return false;
-        }
-
-        private bool IsNativeTestContext()
-        {
-            // Check if we're being called from native tests
-            try
-            {
-                var stackTrace = new System.Diagnostics.StackTrace();
-                var frames = stackTrace.GetFrames();
-
-                foreach (var frame in frames)
-                {
-                    var method = frame.GetMethod();
-                    if (method != null)
-                    {
-                        var typeName = method.DeclaringType?.FullName ?? "";
-                        if (typeName.Contains("OpenJTalkNativeTest"))
-                        {
-                            return true;
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                // Ignore any errors in detection
-            }
-
-            return false;
-        }
-
-        #endregion
 
         #region IDisposable Implementation
 
@@ -627,10 +642,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                         try
                         {
 #if ENABLE_PINVOKE
-                            if (!MockMode)
-                            {
-                                openjtalk_destroy(_handle);
-                            }
+                            openjtalk_destroy(_handle);
 #endif
                         }
                         catch (Exception ex)
@@ -650,6 +662,97 @@ namespace uPiper.Core.Phonemizers.Implementations
             base.Dispose(disposing);
         }
 
+        #endregion
+
+        #region Windows Bug Workarounds
+        
+        /// <summary>
+        /// Detect repeated phoneme patterns that indicate a Windows-specific OpenJTalk bug
+        /// </summary>
+        private static bool DetectRepeatedPatterns(string[] phonemes)
+        {
+            if (phonemes.Length < 6) return false;
+            
+            // Look for patterns where the same phoneme sequence appears multiple times consecutively
+            for (int i = 0; i < phonemes.Length - 6; i++)
+            {
+                // Check for 3+ character sequences that repeat
+                for (int len = 3; len <= Math.Min(6, (phonemes.Length - i) / 2); len++)
+                {
+                    bool isRepeated = true;
+                    for (int j = 0; j < len && i + len + j < phonemes.Length; j++)
+                    {
+                        if (phonemes[i + j] != phonemes[i + len + j])
+                        {
+                            isRepeated = false;
+                            break;
+                        }
+                    }
+                    
+                    if (isRepeated)
+                    {
+                        PiperLogger.LogWarning($"[OpenJTalkPhonemizer] Found repeated pattern of length {len} starting at position {i}: {string.Join(" ", phonemes.Skip(i).Take(len))}");
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Attempt to clean repeated phonemes by removing duplicate patterns
+        /// </summary>
+        private static string[] CleanRepeatedPhonemes(string[] phonemes)
+        {
+            var cleaned = new List<string>();
+            var skipUntil = -1;
+            
+            for (int i = 0; i < phonemes.Length; i++)
+            {
+                if (i <= skipUntil) continue;
+                
+                // Look for the start of a repeated pattern
+                for (int len = 3; len <= Math.Min(8, (phonemes.Length - i) / 2); len++)
+                {
+                    if (i + len * 2 > phonemes.Length) break;
+                    
+                    bool isRepeated = true;
+                    for (int j = 0; j < len; j++)
+                    {
+                        if (phonemes[i + j] != phonemes[i + len + j])
+                        {
+                            isRepeated = false;
+                            break;
+                        }
+                    }
+                    
+                    if (isRepeated)
+                    {
+                        // Add only the first occurrence
+                        for (int k = 0; k < len; k++)
+                        {
+                            cleaned.Add(phonemes[i + k]);
+                        }
+                        
+                        // Skip the repeated part
+                        skipUntil = i + len * 2 - 1;
+                        PiperLogger.LogInfo($"[OpenJTalkPhonemizer] Removed repeated pattern: {string.Join(" ", phonemes.Skip(i + len).Take(len))}");
+                        break;
+                    }
+                }
+                
+                // If no repetition found at this position, add the phoneme normally
+                if (skipUntil < i)
+                {
+                    cleaned.Add(phonemes[i]);
+                }
+            }
+            
+            PiperLogger.LogInfo($"[OpenJTalkPhonemizer] Cleaned phonemes: {phonemes.Length} -> {cleaned.Count}");
+            return cleaned.ToArray();
+        }
+        
         #endregion
     }
 }

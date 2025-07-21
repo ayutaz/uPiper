@@ -39,6 +39,34 @@
 1. Unity Editorで `uPiper/Build/Configure Build Settings` を実行
 2. `uPiper/Build/Build All Platforms` で全プラットフォームをビルド
 
+## アーキテクチャと設計判断
+
+### 音声合成パイプライン
+uPiperは、ニューラルネットワークベースの音声合成（VITS）を採用しています：
+
+```
+テキスト → 音素化（OpenJTalk/eSpeak-NG） → VITSモデル → 音声
+```
+
+### 重要な設計判断（Phase 1.10）
+
+#### 1. 音素タイミングの簡略化
+- **現状**: OpenJTalkから出力される音素の継続時間は全て50ms固定
+- **理由**: VITSモデル内のDuration Predictorが自動的に適切なタイミングを再計算するため
+- **影響**: 音声品質への影響なし（ニューラルモデルが補正）
+
+#### 2. PUA（Private Use Area）文字の使用
+- **目的**: 複数文字の音素（"ky", "ch", "ts"など）を単一文字として表現
+- **理由**: Piperモデルは1音素=1文字を期待するため
+- **実装**: Unicode PUA領域（U+E000-U+F8FF）を使用
+
+#### 3. HTS Engine非使用
+- **決定**: OpenJTalkのHTS Engine音声合成機能は使用しない
+- **理由**: Piperはニューラル音声合成（VITS）を使用するため、HMMベースの合成は不要
+- **利点**: 依存関係の削減、ビルドサイズの縮小
+
+詳細な技術情報は[ドキュメント](docs/)を参照してください。
+
 ## ライセンス
 
 ### フォント
