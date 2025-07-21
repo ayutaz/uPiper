@@ -460,7 +460,8 @@ namespace uPiper.Core.Phonemizers.Implementations
         {
             try
             {
-                    // Check platform-specific library file existence
+#if UNITY_EDITOR
+                // In Editor, check if the library file exists
                 var libraryPath = GetExpectedLibraryPath();
                 if (string.IsNullOrEmpty(libraryPath))
                 {
@@ -478,6 +479,33 @@ namespace uPiper.Core.Phonemizers.Implementations
                 
                 Debug.Log($"[OpenJTalkPhonemizer] Native library found at: {libraryPath}");
                 return true;
+#else
+                // In built application, try to call a simple function to check if library is loaded
+                try
+                {
+#if ENABLE_PINVOKE
+                    // Try to get version as a simple test
+                    var version = Marshal.PtrToStringAnsi(openjtalk_get_version());
+                    if (!string.IsNullOrEmpty(version))
+                    {
+                        Debug.Log($"[OpenJTalkPhonemizer] Native library loaded successfully (version: {version})");
+                        return true;
+                    }
+#endif
+                    return false;
+                }
+                catch (DllNotFoundException)
+                {
+                    Debug.LogError("[OpenJTalkPhonemizer] Native library not found. Please ensure the plugin is properly included in the build.");
+                    Debug.LogError("[OpenJTalkPhonemizer] Expected library name: " + GetExpectedLibraryPath());
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[OpenJTalkPhonemizer] Error loading native library: {ex.Message}");
+                    return false;
+                }
+#endif
             }
             catch (Exception ex)
             {
@@ -488,6 +516,8 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         private string GetExpectedLibraryPath()
         {
+            // In Unity Editor
+#if UNITY_EDITOR
             // First try uPiper/Plugins path
             var uPiperPluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins");
             
@@ -515,6 +545,19 @@ namespace uPiper.Core.Phonemizers.Implementations
                 // Fallback to old path
                 return Path.Combine(Application.dataPath, "Plugins", "x86_64", "libopenjtalk_wrapper.so");
             }
+#else
+            // In built application, Unity automatically loads native plugins
+            // We just need to verify if the library was loaded successfully
+            // The actual path checking is not necessary as Unity handles plugin loading
+            
+            // Return a dummy path that indicates the library should be loaded by Unity
+            if (PlatformHelper.IsWindows)
+                return "openjtalk_wrapper.dll";
+            else if (PlatformHelper.IsMacOS)
+                return "libopenjtalk_wrapper.dylib";
+            else if (PlatformHelper.IsLinux)
+                return "libopenjtalk_wrapper.so";
+#endif
 
             return null;
         }
