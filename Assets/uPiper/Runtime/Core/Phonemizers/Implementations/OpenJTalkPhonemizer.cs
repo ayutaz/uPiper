@@ -51,7 +51,8 @@ namespace uPiper.Core.Phonemizers.Implementations
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern void openjtalk_destroy(IntPtr handle);
 
-        [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        // Unity uses UTF-8 by default, remove CharSet to let Unity handle the marshalling
+        [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_phonemize(IntPtr handle, string text);
 
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
