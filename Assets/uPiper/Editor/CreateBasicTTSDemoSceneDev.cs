@@ -206,10 +206,16 @@ namespace uPiper.Editor
             // Mark scene as dirty
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
 
-            // Save dialog
+            // Save dialog - suggest uPiper/Scenes folder
+            var defaultPath = "Assets/uPiper/Scenes";
+            if (!System.IO.Directory.Exists(defaultPath))
+            {
+                defaultPath = "Assets/Scenes";
+            }
+            
             var path = EditorUtility.SaveFilePanel(
                 "Save Basic TTS Demo Scene",
-                "Assets/Scenes",
+                defaultPath,
                 "BasicTTSDemo.unity",
                 "unity"
             );
