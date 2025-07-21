@@ -363,7 +363,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     if (DetectRepeatedPatterns(phonemeList))
                     {
                         PiperLogger.LogWarning($"[OpenJTalkPhonemizer] Detected repeated phoneme patterns, attempting to clean up");
-                        phonemeList = CleanRepeatedPhonemes(phonemeList, text);
+                        phonemeList = CleanRepeatedPhonemes(phonemeList);
                     }
                     
                     // Convert OpenJTalk phonemes to Piper phonemes using the mapping
@@ -688,9 +688,9 @@ namespace uPiper.Core.Phonemizers.Implementations
         }
         
         /// <summary>
-        /// Attempt to clean repeated phonemes based on expected text content
+        /// Attempt to clean repeated phonemes by removing duplicate patterns
         /// </summary>
-        private static string[] CleanRepeatedPhonemes(string[] phonemes, string originalText)
+        private static string[] CleanRepeatedPhonemes(string[] phonemes)
         {
             var cleaned = new List<string>();
             var skipUntil = -1;
