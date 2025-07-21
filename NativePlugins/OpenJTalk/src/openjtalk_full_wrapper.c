@@ -261,12 +261,14 @@ static PhonemeResult* labels_to_phonemes(OpenJTalkContext* ctx, JPCommon* jpcomm
     result->phoneme_ids = (int*)calloc(phoneme_count, sizeof(int));
     result->durations = (float*)calloc(phoneme_count, sizeof(float));
     
-    // Add a simple checksum for debugging
+    // Add a simple checksum for debugging (outside Windows block)
+#ifndef _WIN32
     unsigned int checksum = 0;
     for (char* p = phoneme_buffer; *p; p++) {
         checksum = checksum * 31 + (unsigned char)*p;
     }
     DEBUG_LOG("Phoneme buffer checksum: %u", checksum);
+#endif
     
     if (!result->phonemes || !result->phoneme_ids || !result->durations) {
         openjtalk_free_result(result);

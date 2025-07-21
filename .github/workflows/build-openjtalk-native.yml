@@ -68,7 +68,11 @@ jobs:
           chmod +x *.sh
           echo '=== Converting line endings ==='
           dos2unix *.sh
-          echo '=== Running build script ==='
+          echo '=== Testing environment first ==='
+          bash ./test_docker.sh || true
+          echo '=== Running simple build test ==='
+          bash ./build_windows_simple.sh || true
+          echo '=== Now running full build script ==='
           bash ./build_full_windows.sh
         " || {
           echo "Docker run failed with exit code $?"
