@@ -111,7 +111,27 @@ if(EXISTS "${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a")
         target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} m)
     endif()
 else()
-    message(FATAL_ERROR "OpenJTalk libraries not found. Please run fetch_dependencies.sh and build_dependencies.sh first.")
+    # Check if we're on Windows and can use mock libraries
+    if(WIN32)
+        message(WARNING "OpenJTalk libraries not found on Windows. Using mock library configuration for text2mecab bypass.")
+        message(STATUS "Windows build will use text2mecab bypass implementation in openjtalk_full_wrapper.c")
+        
+        # Create minimal library list for Windows linking
+        set(MOCK_OPENJTALK_LIBS "")
+        
+        # Try to find any .a files that might exist from mock setup
+        file(GLOB_RECURSE MOCK_LIBS "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11/*/*.a")
+        
+        if(MOCK_LIBS)
+            message(STATUS "Found mock libraries: ${MOCK_LIBS}")
+            target_link_libraries(openjtalk_wrapper ${MOCK_LIBS} stdc++ winmm)
+        else
+            message(STATUS "No mock libraries found, linking only system libraries")
+            target_link_libraries(openjtalk_wrapper stdc++ winmm)
+        fi
+    else()
+        message(FATAL_ERROR "OpenJTalk libraries not found. Please run fetch_dependencies.sh and build_dependencies.sh first.")
+    endif()
 endif()
 
 # Platform-specific settings
