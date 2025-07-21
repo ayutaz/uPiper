@@ -18,7 +18,7 @@ set(OPENJTALK_SRC_DIR "${OPENJTALK_ROOT}/open_jtalk-1.11")
 
 # Source files
 set(SOURCES
-    ../src/openjtalk_full_wrapper.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/openjtalk_full_wrapper.c
 )
 
 # Include directories
@@ -93,4 +93,5 @@ message(STATUS "Cross-compiling OpenJTalk Wrapper for Windows")
 message(STATUS "  Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  OpenJTalk root: ${OPENJTALK_ROOT}")
 message(STATUS "  Source file: ${SOURCES}")
+message(STATUS "  CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "  Static linking: YES")
