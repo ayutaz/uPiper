@@ -238,6 +238,15 @@ namespace uPiper.Core.Phonemizers.Implementations
                 var hexText = string.Join(" ", textBytes.Select(b => b.ToString("X2", System.Globalization.CultureInfo.InvariantCulture)));
                 PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Input text UTF-8 bytes: {hexText}");
                 
+                // Additional character analysis for Windows debugging
+                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Character analysis:");
+                for (int i = 0; i < Math.Min(text.Length, 10); i++)
+                {
+                    var ch = text[i];
+                    var unicode = ((int)ch).ToString("X4", System.Globalization.CultureInfo.InvariantCulture);
+                    PiperLogger.LogDebug($"  [{i}] '{ch}' = U+{unicode}");
+                }
+                
                 // Enable stderr output for debugging
                 if (Application.isEditor)
                 {
