@@ -16,82 +16,48 @@ on:
 
 jobs:
   build-windows-cross:
-    name: Build Windows (Cross-compile)
+    name: Build Windows (Cross-compile with Docker)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Install Cross-compilation Tools
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          mingw-w64 \
-          mingw-w64-tools \
-          cmake \
-          make \
-          autoconf \
-          automake \
-          libtool \
-          pkg-config
-    
-    - name: Setup Dependencies
+    - name: Build Docker Image
       run: |
         cd NativePlugins/OpenJTalk
-        echo "Fetching and building OpenJTalk dependencies for Windows..."
-        chmod +x fetch_dependencies_ci.sh build_dependencies_cross.sh
-        
-        # Debug: Check if scripts exist
-        ls -la *.sh | grep -E "fetch|build"
-        
-        ./fetch_dependencies_ci.sh
-        
-        # Debug: Check what was downloaded
-        ls -la external/openjtalk_build/
-        
-        ./build_dependencies_cross.sh
+        docker build -f Dockerfile.windows-cross -t openjtalk-windows-cross .
     
-    - name: Check Dictionary Files
+    - name: Build Windows DLL with Docker
       run: |
         cd NativePlugins/OpenJTalk
-        echo "Checking dictionary files..."
-        ls -la dictionary/ || echo "Dictionary directory not found"
-    
-    - name: Build Native Library
-      run: |
-        cd NativePlugins/OpenJTalk
-        mkdir -p build
-        cd build
         
-        # Use cross-compilation CMakeLists.txt
-        cp ../CMakeLists_cross.txt ../CMakeLists_tmp.txt
-        mv ../CMakeLists.txt ../CMakeLists_original.txt
-        mv ../CMakeLists_tmp.txt ../CMakeLists.txt
+        # Convert line endings to Unix format
+        sudo apt-get update && sudo apt-get install -y dos2unix
+        dos2unix *.sh
         
-        # Configure with cross-compilation toolchain
-        cmake .. -DCMAKE_BUILD_TYPE=Release
+        # Make scripts executable
+        chmod +x build_full_windows.sh fetch_dependencies_ci.sh build_dependencies_cross.sh
         
-        # Build
-        make -j$(nproc)
-        
-        # Restore original CMakeLists.txt
-        mv ../CMakeLists_original.txt ../CMakeLists.txt
-        
-        echo "Build completed"
-        find . -name "*.dll" -type f
+        # Run the build in Docker container
+        docker run --rm -v "${PWD}:/workspace" openjtalk-windows-cross /bin/bash -c "cd /workspace && ./build_full_windows.sh"
     
     - name: Test DLL Exports
       run: |
-        cd NativePlugins/OpenJTalk/build
+        cd NativePlugins/OpenJTalk
         echo "Checking DLL exports..."
-        x86_64-w64-mingw32-objdump -p bin/openjtalk_wrapper.dll | grep -E "DLL Name:|EXPORT" | head -20
+        # Install mingw tools for objdump
+        sudo apt-get install -y binutils-mingw-w64-x86-64
+        x86_64-w64-mingw32-objdump -p output_windows/openjtalk_wrapper.dll | grep -E "DLL Name:|EXPORT" | head -20
+        
+        # Check DLL size
+        ls -la output_windows/openjtalk_wrapper.dll
     
     - name: Prepare Artifacts
       run: |
         mkdir -p artifacts/windows/x64
         # Copy the cross-compiled DLL
-        cp NativePlugins/OpenJTalk/build/bin/*.dll artifacts/windows/x64/ || true
+        cp NativePlugins/OpenJTalk/output_windows/*.dll artifacts/windows/x64/
         # Copy header files
         cp NativePlugins/OpenJTalk/include/*.h artifacts/ || true
         # Show artifact info
