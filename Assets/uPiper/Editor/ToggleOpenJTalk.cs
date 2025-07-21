@@ -10,28 +10,15 @@ namespace uPiper.Editor
     {
         private const string DISABLE_OPENJTALK_KEY = "uPiper_DisableOpenJTalk";
         
-        [MenuItem("uPiper/Debug/Toggle OpenJTalk (Currently: Enabled)", true)]
-        private static bool ValidateToggleOpenJTalkEnabled()
+        [MenuItem("uPiper/Debug/OpenJTalk/Toggle Enabled State")]
+        private static void ToggleOpenJTalk()
+        {
+            SetOpenJTalkDisabled(!IsOpenJTalkDisabled());
+        }
+        
+        public static bool IsOpenJTalkEnabled()
         {
             return !IsOpenJTalkDisabled();
-        }
-        
-        [MenuItem("uPiper/Debug/Toggle OpenJTalk (Currently: Enabled)")]
-        private static void ToggleOpenJTalkEnabled()
-        {
-            SetOpenJTalkDisabled(true);
-        }
-        
-        [MenuItem("uPiper/Debug/Toggle OpenJTalk (Currently: Disabled)", true)]
-        private static bool ValidateToggleOpenJTalkDisabled()
-        {
-            return IsOpenJTalkDisabled();
-        }
-        
-        [MenuItem("uPiper/Debug/Toggle OpenJTalk (Currently: Disabled)")]
-        private static void ToggleOpenJTalkDisabled()
-        {
-            SetOpenJTalkDisabled(false);
         }
         
         private static bool IsOpenJTalkDisabled()
@@ -53,20 +40,5 @@ namespace uPiper.Editor
             }
         }
         
-        [MenuItem("uPiper/Debug/Force Regenerate InferenceEngineDemo Scene")]
-        private static void ForceRegenerateScene()
-        {
-            // Delete the current scene if it exists
-            if (AssetDatabase.LoadAssetAtPath<SceneAsset>("Assets/uPiper/Scenes/InferenceEngineDemo.unity") != null)
-            {
-                AssetDatabase.DeleteAsset("Assets/uPiper/Scenes/InferenceEngineDemo.unity");
-                AssetDatabase.Refresh();
-                Debug.Log("Deleted existing InferenceEngineDemo scene");
-            }
-            
-            // Trigger scene creation
-            CreateInferenceDemoScene.CreateDemoScene();
-            Debug.Log("InferenceEngineDemo scene regenerated");
-        }
     }
 }

@@ -11,7 +11,7 @@ namespace uPiper.Editor
     /// </summary>
     public static class DebugONNXModel
     {
-        [MenuItem("uPiper/Debug/Inspect ONNX Model (ja_JP-test-medium)")]
+        [MenuItem("uPiper/Debug/ONNX/Inspect Model")]
         public static void InspectJapaneseModel()
         {
             InspectModel("Models/ja_JP-test-medium");
@@ -73,7 +73,7 @@ namespace uPiper.Editor
             Debug.Log("\n=== Inspection Complete ===");
         }
         
-        [MenuItem("uPiper/Debug/Test Simple Inference")]
+        [MenuItem("uPiper/Debug/ONNX/Test Simple Inference")]
         public static void TestSimpleInference()
         {
             Debug.Log("=== Testing Simple Inference ===");

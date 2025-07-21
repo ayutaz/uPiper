@@ -12,7 +12,7 @@ namespace uPiper.Editor
     {
         private const string WEBGL_DEMO_SCENE_PATH = "Assets/uPiper/Samples~/WebGLDemo/WebGLDemoScene.unity";
 
-        [MenuItem("uPiper/Open WebGL Demo Scene")]
+        [MenuItem("uPiper/Advanced/Open WebGL Demo Scene")]
         public static void OpenWebGLDemoScene()
         {
             // 現在のシーンに変更がある場合は保存を促す

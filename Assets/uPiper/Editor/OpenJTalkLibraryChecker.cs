@@ -15,7 +15,7 @@ namespace uPiper.Editor
         [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_get_version();
 
-        [MenuItem("uPiper/Debug/Check OpenJTalk Library")]
+        [MenuItem("uPiper/Debug/OpenJTalk/Check Library")]
         public static void CheckLibrary()
         {
             Debug.Log("=== OpenJTalk Library Check ===");

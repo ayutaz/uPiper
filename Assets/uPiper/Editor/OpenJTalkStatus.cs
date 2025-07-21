@@ -9,7 +9,7 @@ namespace uPiper.Editor
 {
     public static class OpenJTalkStatus
     {
-        [MenuItem("uPiper/Debug/Show OpenJTalk Status")]
+        [MenuItem("uPiper/Debug/OpenJTalk/Show Status")]
         public static void ShowStatus()
         {
             Debug.Log("=== OpenJTalk Status Report ===");
