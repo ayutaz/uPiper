@@ -86,19 +86,47 @@ jobs:
       
     - name: Copy OpenJTalk Library
       run: |
-        # Copy built library to Unity Plugins directory
-        $sourcePath = "NativePlugins/OpenJTalk/output/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }}"
+        # Find and copy built library to Unity Plugins directory
         $targetDir = "Assets/uPiper/Plugins/${{ matrix.lib_path }}"
         $targetPath = "$targetDir/openjtalk_wrapper.${{ matrix.lib_ext }}"
         
-        echo "Copying from $sourcePath to $targetPath"
+        # Check multiple possible locations
+        $possiblePaths = @(
+          "NativePlugins/OpenJTalk/output/windows/openjtalk_wrapper.${{ matrix.lib_ext }}",
+          "NativePlugins/OpenJTalk/output/openjtalk_wrapper.${{ matrix.lib_ext }}",
+          "NativePlugins/OpenJTalk/build/bin/Release/openjtalk_wrapper.${{ matrix.lib_ext }}",
+          "NativePlugins/OpenJTalk/build/bin/openjtalk_wrapper.${{ matrix.lib_ext }}"
+        )
         
-        if (Test-Path $sourcePath) {
-          New-Item -ItemType Directory -Path $targetDir -Force
-          Copy-Item $sourcePath $targetPath -Force
-          echo "Library copied successfully"
-        } else {
-          echo "Source library not found at $sourcePath"
+        $found = $false
+        foreach ($sourcePath in $possiblePaths) {
+          echo "Checking: $sourcePath"
+          if (Test-Path $sourcePath) {
+            echo "Found library at: $sourcePath"
+            New-Item -ItemType Directory -Path $targetDir -Force
+            Copy-Item $sourcePath $targetPath -Force
+            echo "Library copied successfully to $targetPath"
+            $found = $true
+            break
+          }
+        }
+        
+        if (-not $found) {
+          echo "ERROR: Library not found in any expected location"
+          echo "Searched paths:"
+          $possiblePaths | ForEach-Object { echo "  $_" }
+          
+          # List actual files to debug
+          echo ""
+          echo "Files in output directory:"
+          if (Test-Path "NativePlugins/OpenJTalk/output") {
+            Get-ChildItem -Path "NativePlugins/OpenJTalk/output" -Recurse -Filter "*.dll" | ForEach-Object { echo $_.FullName }
+          }
+          echo ""
+          echo "Files in build directory:"
+          if (Test-Path "NativePlugins/OpenJTalk/build") {
+            Get-ChildItem -Path "NativePlugins/OpenJTalk/build" -Recurse -Filter "*.dll" | ForEach-Object { echo $_.FullName }
+          }
           exit 1
         }
       shell: powershell
