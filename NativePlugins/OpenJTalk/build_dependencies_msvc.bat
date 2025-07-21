@@ -6,12 +6,12 @@ echo Building OpenJTalk dependencies with MSVC...
 cd /d "%~dp0"
 
 :: Check if dependencies exist
-if not exist external\openjtalk_build\open_jtalk-1.11 (
-    echo Error: Dependencies not found. Run fetch_dependencies.sh first.
+if not exist external\hts_engine_API-1.10 (
+    echo Error: Dependencies not found. Run fetch_dependencies.bat first.
     exit /b 1
 )
 
-cd external\openjtalk_build
+cd external
 
 :: Build hts_engine_API
 echo.
@@ -20,23 +20,26 @@ cd hts_engine_API-1.10
 if exist build rmdir /s /q build
 mkdir build
 cd build
-cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install
+cmake .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install
 if errorlevel 1 (
     echo CMake configuration failed for hts_engine_API
     exit /b 1
 )
-cmake --build . --config Release
+nmake
 if errorlevel 1 (
     echo Build failed for hts_engine_API
     exit /b 1
 )
-cmake --build . --config Release --target install
+nmake install
 cd ..\..
 
 :: Build open_jtalk
 echo.
 echo Building open_jtalk...
 cd open_jtalk-1.11
+
+:: For MSVC, we'll use a simplified build approach
+echo Creating static libraries from source files...
 
 :: Build each component separately with MSVC
 set COMPONENTS=text2mecab mecab mecab2njd njd njd_set_pronunciation njd_set_digit njd_set_accent_phrase njd_set_accent_type njd_set_unvoiced_vowel njd_set_long_vowel njd2jpcommon jpcommon
@@ -91,8 +94,8 @@ for %%C in (%COMPONENTS%) do (
     if exist build rmdir /s /q build
     mkdir build
     cd build
-    cmake .. -G "Visual Studio 17 2022" -A x64
-    cmake --build . --config Release
+    cmake .. -G "NMake Makefiles" -DCMAKE_C_FLAGS="/I../../.. /I../../../install/include"
+    nmake
     
     :: Copy the lib file
     copy /Y Release\%%C.lib ..\..\lib%%C.a

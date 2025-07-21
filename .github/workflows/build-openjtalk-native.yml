@@ -32,21 +32,26 @@ jobs:
     - name: Setup MSVC
       uses: microsoft/setup-msbuild@v1.1
     
+    - name: Setup MSVC Environment
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+    
     - name: Setup Dependencies
-      shell: bash
+      shell: cmd
       run: |
-        cd NativePlugins/OpenJTalk
-        echo "Fetching and building OpenJTalk dependencies..."
-        # Use CI-specific scripts for better reliability
-        if [ -f "fetch_dependencies_ci.sh" ]; then
-          chmod +x fetch_dependencies_ci.sh build_dependencies_ci.sh
-          ./fetch_dependencies_ci.sh
-          ./build_dependencies_ci.sh
-        else
-          chmod +x fetch_dependencies.sh build_dependencies.sh
-          ./fetch_dependencies.sh
-          ./build_dependencies.sh
-        fi
+        cd NativePlugins\OpenJTalk
+        echo Fetching and building OpenJTalk dependencies...
+        if exist fetch_dependencies.bat (
+          call fetch_dependencies.bat
+        ) else (
+          bash fetch_dependencies.sh
+        )
+        if exist build_dependencies_msvc.bat (
+          call build_dependencies_msvc.bat
+        ) else (
+          bash build_dependencies.sh
+        )
     
     - name: Check Dictionary Files
       shell: bash
@@ -63,10 +68,11 @@ jobs:
         if exist build rmdir /s /q build
         mkdir build
         cd build
-        echo Running CMake configuration with Visual Studio...
-        cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
+        echo Running CMake configuration...
+        cmake --version
+        cmake .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
         echo Building project...
-        cmake --build . --config Release --parallel
+        nmake
         echo Build completed successfully
         dir /s *.dll
     
