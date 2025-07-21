@@ -1,0 +1,9 @@
+{
+  "name": "com.yousan.upiper.samples.basictts",
+  "displayName": "uPiper Basic TTS Demo",
+  "version": "0.1.0",
+  "description": "Basic text-to-speech demo for uPiper showing Japanese synthesis",
+  "dependencies": {
+    "com.yousan.upiper": "0.1.0"
+  }
+}
