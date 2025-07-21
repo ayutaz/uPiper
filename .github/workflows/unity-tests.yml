@@ -42,6 +42,17 @@ jobs:
     - name: Install CMake
       uses: lukka/get-cmake@latest
         
+    - name: Setup MinGW for Windows
+      if: matrix.os == 'windows-latest'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        install: >-
+          base-devel
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-make
+        
     - name: Build OpenJTalk Native Library
       run: |
         cd NativePlugins/OpenJTalk
@@ -50,14 +61,20 @@ jobs:
         chmod +x build_ci.sh
         
         # Run build script (using simplified CI build for all platforms)
-        ./build_ci.sh
+        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          # Use MSYS2 environment for Windows
+          msys2 -c './build_ci.sh'
+        else
+          ./build_ci.sh
+        fi
         
         # Create Plugins directory structure
         mkdir -p ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}
         
         # Copy the built library to Unity Plugins directory
         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          cp build/bin/Release/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/ || cp build/bin/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/
+          # Copy from MSYS2 build output
+          cp build/bin/Release/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/ || cp build/bin/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/ || cp build/lib/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/
         elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
           # Check if library already exists (from repository)
           if [ ! -f "../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }}" ]; then
