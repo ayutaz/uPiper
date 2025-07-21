@@ -239,6 +239,22 @@ static PhonemeResult* labels_to_phonemes(OpenJTalkContext* ctx, JPCommon* jpcomm
         else break;
     }
     
+#ifdef _WIN32
+    // Additional Windows-specific debugging
+    DEBUG_LOG("Windows-specific debugging:");
+    DEBUG_LOG("  Phoneme buffer length: %zu", strlen(phoneme_buffer));
+    unsigned int checksum = 0;
+    for (const char* p = phoneme_buffer; *p; p++) {
+        checksum = checksum * 31 + (unsigned char)*p;
+    }
+    DEBUG_LOG("  C checksum: %u", checksum);
+    
+    // Check for common Windows-specific issues
+    if (phoneme_count > 0 && strlen(phoneme_buffer) > phoneme_count * 10) {
+        DEBUG_LOG("  WARNING: Suspiciously long phoneme buffer for phoneme count");
+    }
+#endif
+    
     // Allocate result arrays
     result->phoneme_count = phoneme_count;
     result->phonemes = strdup(phoneme_buffer);
@@ -307,6 +323,18 @@ PhonemeResult* openjtalk_phonemize(void* handle, const char* text) {
     }
     
     DEBUG_LOG("Phonemizing text: %s", text);
+    DEBUG_LOG("Text length: %zu", strlen(text));
+    
+#ifdef _WIN32
+    // Windows-specific input debugging
+    DEBUG_LOG("Windows input debugging:");
+    DEBUG_LOG("  First 10 bytes (hex):");
+    const unsigned char* bytes = (const unsigned char*)text;
+    for (int i = 0; i < 10 && i < strlen(text); i++) {
+        fprintf(stderr, "  [%d] 0x%02X '%c'\n", i, bytes[i], 
+                (bytes[i] >= 32 && bytes[i] < 127) ? bytes[i] : '?');
+    }
+#endif
     
     // Clear previous data
     NJD_clear(ctx->njd);
@@ -316,12 +344,17 @@ PhonemeResult* openjtalk_phonemize(void* handle, const char* text) {
     char mecab_text[8192];
     text2mecab(mecab_text, text);
     
+    DEBUG_LOG("After text2mecab: %s", mecab_text);
+    DEBUG_LOG("Mecab text length: %zu", strlen(mecab_text));
+    
     // Mecab analysis
     if (Mecab_analysis(ctx->mecab, mecab_text) != TRUE) {
         ctx->last_error = OPENJTALK_ERROR_PHONEMIZATION_FAILED;
         DEBUG_LOG("Mecab analysis failed");
         return NULL;
     }
+    
+    DEBUG_LOG("Mecab analysis succeeded");
     
     // Convert Mecab to NJD
     mecab2njd(ctx->njd, Mecab_get_feature(ctx->mecab), Mecab_get_size(ctx->mecab));

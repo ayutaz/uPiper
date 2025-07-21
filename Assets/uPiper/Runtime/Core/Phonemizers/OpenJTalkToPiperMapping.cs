@@ -50,14 +50,9 @@ namespace uPiper.Core.Phonemizers
             { "sh", "sh" },  // し -> Will be mapped to PUA by PhonemeEncoder
             { "j", "j" },    // じ
             { "f", "f" },    // ふ
-            { "ry", "r" },   // りゃ行 - simplified to r
-            { "ky", "k" },   // きゃ行 - simplified to k
-            { "gy", "g" },   // ぎゃ行 - simplified to g
-            { "ny", "n" },   // にゃ行 - simplified to n
-            { "hy", "h" },   // ひゃ行 - simplified to h
-            { "by", "b" },   // びゃ行 - simplified to b
-            { "py", "p" },   // ぴゃ行 - simplified to p
-            { "my", "m" },   // みゃ行 - simplified to m
+            // NOTE: Palatalized consonants (ky, gy, ny, etc.) are NOT mapped here
+            // They are handled by PUA mapping to preserve the palatalization
+            { "ry", "r" },   // りゃ行 - simplified to r (less common)
             { "ty", "ch" },  // てぃ -> ち (OpenJTalk may output ty for ち)
             
             // Long vowels (map to regular vowels for simplicity)
@@ -198,6 +193,7 @@ namespace uPiper.Core.Phonemizers
                     continue;
                 
                 // Check if this is a multi-character phoneme that needs PUA conversion
+                // This should be checked BEFORE the simple mapping to ensure "ky" -> PUA, not "ky" -> "k"
                 if (PhonemeToPUA.ContainsKey(phoneme.ToLower()))
                 {
                     result.Add(PhonemeToPUA[phoneme.ToLower()]);
