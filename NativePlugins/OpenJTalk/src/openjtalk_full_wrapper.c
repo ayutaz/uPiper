@@ -312,9 +312,39 @@ PhonemeResult* openjtalk_phonemize(void* handle, const char* text) {
     NJD_clear(ctx->njd);
     JPCommon_clear(ctx->jpcommon);
     
-    // Convert text to Mecab input
+    // WINDOWS FIX: Direct text processing to avoid text2mecab duplication issues
     char mecab_text[8192];
+    
+#ifdef _WIN32
+    // Windows workaround: Use input text directly to avoid text2mecab duplication bug
+    // text2mecab on Windows can cause character duplication in certain builds
+    DEBUG_LOG("Windows detected: bypassing text2mecab for direct processing");
+    
+    // Simple text preprocessing for direct Mecab input
+    // This bypasses the problematic text2mecab function on Windows
+    size_t input_len = strlen(text);
+    if (input_len >= sizeof(mecab_text) - 1) {
+        ctx->last_error = OPENJTALK_ERROR_INVALID_INPUT;
+        DEBUG_LOG("Input text too long: %zu bytes", input_len);
+        return NULL;
+    }
+    
+    // Copy input directly with minimal preprocessing
+    strcpy(mecab_text, text);
+    
+    // Add newline if not present (required by Mecab)
+    if (input_len > 0 && mecab_text[input_len - 1] != '\n') {
+        mecab_text[input_len] = '\n';
+        mecab_text[input_len + 1] = '\0';
+    }
+    
+    DEBUG_LOG("Direct Mecab input: %s", mecab_text);
+#else
+    // Non-Windows: Use standard text2mecab function
+    DEBUG_LOG("Non-Windows: using standard text2mecab");
     text2mecab(mecab_text, text);
+    DEBUG_LOG("text2mecab output: %s", mecab_text);
+#endif
     
     // Mecab analysis
     if (Mecab_analysis(ctx->mecab, mecab_text) != TRUE) {
