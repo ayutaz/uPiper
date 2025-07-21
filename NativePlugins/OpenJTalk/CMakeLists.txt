@@ -29,9 +29,15 @@ option(BUILD_TESTS "Build test executables" ON)
 option(BUILD_BENCHMARK "Build benchmark executable" ON)
 
 # Find OpenJTalk installation
-set(OPENJTALK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/install")
+set(OPENJTALK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/install")
 set(OPENJTALK_INCLUDE_DIR "${OPENJTALK_ROOT}/include")
 set(OPENJTALK_LIB_DIR "${OPENJTALK_ROOT}/lib")
+# Alternate path for CI builds
+if(NOT EXISTS "${OPENJTALK_ROOT}")
+    set(OPENJTALK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/install")
+    set(OPENJTALK_INCLUDE_DIR "${OPENJTALK_ROOT}/include")
+    set(OPENJTALK_LIB_DIR "${OPENJTALK_ROOT}/lib")
+endif()
 
 # Source files - Full OpenJTalk wrapper only
 set(SOURCES
@@ -74,7 +80,10 @@ endif()
 add_library(openjtalk_wrapper SHARED ${SOURCES})
 
 # Link libraries
-set(OPENJTALK_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11")
+set(OPENJTALK_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/open_jtalk-1.11")
+if(NOT EXISTS "${OPENJTALK_SRC_DIR}")
+    set(OPENJTALK_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11")
+endif()
 
 # Check if OpenJTalk libraries exist
 if(EXISTS "${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a")

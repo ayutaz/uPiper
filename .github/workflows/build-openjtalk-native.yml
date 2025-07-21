@@ -43,14 +43,18 @@ jobs:
         cd NativePlugins\OpenJTalk
         echo Fetching and building OpenJTalk dependencies...
         if exist fetch_dependencies.bat (
+          echo Using Windows batch script
           call fetch_dependencies.bat
         ) else (
-          bash fetch_dependencies.sh
+          echo Using Git Bash for shell script
+          "C:\Program Files\Git\bin\bash.exe" fetch_dependencies.sh
         )
         if exist build_dependencies_msvc.bat (
+          echo Using MSVC build script
           call build_dependencies_msvc.bat
         ) else (
-          bash build_dependencies.sh
+          echo Using Git Bash for build script
+          "C:\Program Files\Git\bin\bash.exe" build_dependencies.sh
         )
     
     - name: Check Dictionary Files
