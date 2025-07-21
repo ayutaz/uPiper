@@ -74,7 +74,7 @@ uPiper/
 - Unity 6000.0.35f1 以降
 - Unity AI Interface (Inference Engine) 2.2.1
 - 各プラットフォームの要件:
-  - Windows: Windows 10 以降（x86, x64）
+  - Windows: Windows 10 以降（x64のみ）
   - Linux: Ubuntu 20.04 以降（x86_64, aarch64）
   - macOS: macOS 10.15 以降（Universal）
 

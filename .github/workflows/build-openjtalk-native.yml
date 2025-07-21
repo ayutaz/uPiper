@@ -21,12 +21,10 @@ jobs:
     timeout-minutes: 45  # Windowsビルドは時間がかかるため45分
     strategy:
       matrix:
-        arch: [x64, x86]
+        arch: [x64]
         include:
           - arch: x64
             cmake_arch: x64
-          - arch: x86
-            cmake_arch: Win32
     
     steps:
     - uses: actions/checkout@v4
@@ -254,7 +252,6 @@ jobs:
     
     - name: Create Unity Plugin Structure
       run: |
-        mkdir -p uPiper-OpenJTalk-Native/Plugins/Windows/x86
         mkdir -p uPiper-OpenJTalk-Native/Plugins/Windows/x86_64
         mkdir -p uPiper-OpenJTalk-Native/Plugins/Linux/x86_64
         mkdir -p uPiper-OpenJTalk-Native/Plugins/Linux/aarch64
@@ -262,7 +259,6 @@ jobs:
         mkdir -p uPiper-OpenJTalk-Native/Include
         
         # Windows
-        cp artifacts/openjtalk-windows-x86/windows/x86/*.dll uPiper-OpenJTalk-Native/Plugins/Windows/x86/
         cp artifacts/openjtalk-windows-x64/windows/x64/*.dll uPiper-OpenJTalk-Native/Plugins/Windows/x86_64/
         
         # Linux
@@ -282,7 +278,7 @@ jobs:
         This package contains pre-built OpenJTalk native libraries for Unity.
         
         ## Supported Platforms
-        - Windows (x86, x64)
+        - Windows (x64 only)
         - Linux (x86_64, aarch64)
         - macOS (Universal Binary: x86_64 + arm64)
         

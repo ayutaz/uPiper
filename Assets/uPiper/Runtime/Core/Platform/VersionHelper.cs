@@ -69,6 +69,8 @@ namespace uPiper.Core.Platform
             }
 
             string suffix = match.Groups[4].Value;
+            if (string.IsNullOrEmpty(suffix))
+                suffix = null;
 
             return new VersionInfo(major, minor, patch, suffix);
         }
