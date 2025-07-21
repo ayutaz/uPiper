@@ -34,7 +34,18 @@ fi
 ./build_dependencies_cross.sh
 
 # Build the wrapper DLL
-cd build_windows
+echo "=== Before cd to build_windows ==="
+echo "Current directory: $(pwd)"
+echo "Directory contents:"
+ls -la
+echo "Checking if build_windows exists:"
+ls -la | grep build_windows || echo "build_windows not found"
+
+cd build_windows || {
+    echo "ERROR: Failed to cd to build_windows"
+    echo "Current directory: $(pwd)"
+    exit 2
+}
 echo "Current directory after cd: $(pwd)"
 
 # Copy the wrapper source if not exists
@@ -71,8 +82,16 @@ if [ ! -f "../toolchain-mingw64.cmake" ]; then
 fi
 
 # Configure with toolchain file
+echo "=== Running CMake ==="
+echo "Current directory: $(pwd)"
+echo "CMakeLists.txt content (first 10 lines):"
+head -10 CMakeLists.txt || echo "CMakeLists.txt not found"
+
 cmake . -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_TOOLCHAIN_FILE=../toolchain-mingw64.cmake
+    -DCMAKE_TOOLCHAIN_FILE=../toolchain-mingw64.cmake || {
+    echo "ERROR: CMake failed with exit code $?"
+    exit 2
+}
 
 make -j$(nproc)
 
