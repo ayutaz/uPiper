@@ -15,6 +15,32 @@ namespace uPiper.Editor
     /// </summary>
     public static class CreateBasicTTSDemoSceneDev
     {
+        [MenuItem("uPiper/Development/Copy Working Demo to Samples")]
+        public static void CopyWorkingDemo()
+        {
+            var sourcePath = "Assets/uPiper/Scenes/InferenceEngineDemo.unity";
+            var destPath = "Assets/Samples/uPiper/BasicTTSDemo/BasicTTSDemo.unity";
+            
+            if (!File.Exists(sourcePath))
+            {
+                Debug.LogError($"Source scene not found: {sourcePath}");
+                return;
+            }
+            
+            // Create destination directory
+            var destDir = Path.GetDirectoryName(destPath);
+            Directory.CreateDirectory(destDir);
+            
+            // Copy scene file
+            File.Copy(sourcePath, destPath, true);
+            
+            AssetDatabase.Refresh();
+            Debug.Log($"Demo scene copied to: {destPath}");
+            
+            // Open the copied scene
+            UnityEditor.SceneManagement.EditorSceneManager.OpenScene(destPath);
+        }
+        
         [MenuItem("uPiper/Development/Create Basic TTS Demo Scene")]
         public static void CreateScene()
         {

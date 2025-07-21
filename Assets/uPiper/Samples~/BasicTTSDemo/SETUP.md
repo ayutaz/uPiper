@@ -10,6 +10,10 @@
    - `Assets/uPiper/Samples~/BasicTTSDemo` フォルダを
    - `Assets/Samples/uPiper/BasicTTSDemo` にコピー
 
+2. **シーンを開く**
+   - コピーされた `BasicTTSDemo.unity` シーンを開く
+   - またはメニューから `uPiper > Demo > Open Inference Demo Scene` を選択
+
 ### パッケージとしてインストールした場合
 
 1. **サンプルのインポート**
@@ -19,10 +23,8 @@
    - "Samples" タブを開く
    - "Basic TTS Demo" の "Import" ボタンをクリック
 
-2. **シーンの作成**
-   - Unityのメニューから `uPiper > Samples > Create Basic TTS Demo Scene` を選択
-   - 自動的にデモシーンが作成されます
-   - シーンを保存する場所を選択してください（推奨: Assets/Samples/uPiper/BasicTTSDemo/BasicTTSDemo.unity）
+2. **シーンを開く**
+   - インポートされた `BasicTTSDemo.unity` シーンを開く
 
 3. **実行**
    - 作成されたシーンを開く
