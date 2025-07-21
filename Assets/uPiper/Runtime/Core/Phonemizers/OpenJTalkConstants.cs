@@ -13,7 +13,11 @@ namespace uPiper.Core.Phonemizers
             "sys.dic",
             "unk.dic",
             "char.bin",
-            "matrix.bin"
+            "matrix.bin",
+            "left-id.def",
+            "right-id.def",
+            "pos-id.def",
+            "rewrite.def"
         };
 
         /// <summary>

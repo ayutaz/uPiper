@@ -140,7 +140,12 @@ namespace uPiper.Core.Platform
         /// </summary>
         public static string GetArchitecture()
         {
-            if (IsWindows || IsLinux || IsMacOS)
+            if (IsWindows)
+            {
+                // Windows: 64-bit only
+                return "x64";
+            }
+            else if (IsLinux || IsMacOS)
             {
                 return IntPtr.Size == 8 ? "x64" : "x86";
             }

@@ -4,7 +4,8 @@
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "Unity.InferenceEngine"
+        "Unity.InferenceEngine",
+        "uPiper.Runtime"
     ],
     "includePlatforms": [
         "Editor"
@@ -19,6 +20,12 @@
     "defineConstraints": [
         "UNITY_INCLUDE_TESTS"
     ],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.engine",
+            "expression": "",
+            "define": "ENABLE_PINVOKE"
+        }
+    ],
     "noEngineReferences": false
 }

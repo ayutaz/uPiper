@@ -326,8 +326,26 @@ namespace uPiper.Core
             {
                 PiperLogger.LogInfo("Loading voice: {0}", voice.VoiceId);
 
-                // Voice loading is now handled by InferenceAudioGenerator
-                await Task.Delay(50, cancellationToken);
+                // Load model asset
+                var modelAsset = Resources.Load<ModelAsset>($"Models/{voice.VoiceId}");
+                if (modelAsset == null)
+                {
+                    throw new PiperException($"Model asset not found: Models/{voice.VoiceId}");
+                }
+
+                // Initialize audio generator if not already done
+                if (_inferenceGenerator == null)
+                {
+                    _inferenceGenerator = new InferenceAudioGenerator();
+                }
+
+                // Initialize the audio generator with the model
+                await _inferenceGenerator.InitializeAsync(modelAsset, voice, cancellationToken);
+                PiperLogger.LogInfo("Audio generator initialized for voice: {0}", voice.VoiceId);
+
+                // Initialize phoneme encoder
+                _phonemeEncoder = new PhonemeEncoder(voice);
+                PiperLogger.LogInfo("Phoneme encoder initialized with {0} phonemes", voice.PhonemeIdMap?.Count ?? 0);
 
                 lock (_lockObject)
                 {
@@ -482,7 +500,9 @@ namespace uPiper.Core
                             _onProcessingProgress?.Invoke(1.0f);
 
                             // Return cached audio clip
+#pragma warning disable CS0618 // Type or member is obsolete
                             return CreateDummyAudioClip(text);
+#pragma warning restore CS0618 // Type or member is obsolete
                         }
                         else
                         {
@@ -515,13 +535,54 @@ namespace uPiper.Core
 
                 _onProcessingProgress?.Invoke(0.5f);
 
-                // Audio synthesis is now handled by InferenceAudioGenerator
-                // This is a legacy path for test mode
-                await Task.Delay(100, cancellationToken);
+                AudioClip audioClip = null;
+
+                // Check if we have audio generator initialized
+                if (_inferenceGenerator != null && _inferenceGenerator.IsInitialized && _phonemeEncoder != null && phonemeResult != null)
+                {
+                    try
+                    {
+                        PiperLogger.LogInfo("Using InferenceAudioGenerator for audio synthesis");
+                        
+                        // Encode phonemes to IDs
+                        var phonemeIds = _phonemeEncoder.Encode(phonemeResult.Phonemes);
+                        PiperLogger.LogInfo($"Encoded {phonemeIds.Length} phoneme IDs");
+
+                        _onProcessingProgress?.Invoke(0.6f);
+
+                        // Generate audio using inference
+                        var audioData = await _inferenceGenerator.GenerateAudioAsync(phonemeIds, cancellationToken: cancellationToken);
+                        PiperLogger.LogInfo($"Generated {audioData.Length} audio samples");
+
+                        _onProcessingProgress?.Invoke(0.7f);
+
+                        // Create AudioClip from generated data
+                        var audioBuilder = new AudioClipBuilder();
+                        audioClip = audioBuilder.BuildAudioClip(
+                            audioData,
+                            _inferenceGenerator.SampleRate,
+                            $"TTS_Output_{DateTime.Now:HHmmss}"
+                        );
+                        PiperLogger.LogInfo($"Created AudioClip: {audioClip.length:F2} seconds");
+                    }
+                    catch (Exception ex)
+                    {
+                        PiperLogger.LogError($"Failed to generate audio with InferenceAudioGenerator: {ex.Message}");
+                        // Fall back to dummy audio
+#pragma warning disable CS0618 // Type or member is obsolete
+                        audioClip = CreateDummyAudioClip(text);
+#pragma warning restore CS0618 // Type or member is obsolete
+                    }
+                }
+                else
+                {
+                    PiperLogger.LogWarning("InferenceAudioGenerator not available, using dummy audio");
+#pragma warning disable CS0618 // Type or member is obsolete
+                    audioClip = CreateDummyAudioClip(text);
+#pragma warning restore CS0618 // Type or member is obsolete
+                }
 
                 _onProcessingProgress?.Invoke(0.8f);
-
-                var audioClip = CreateDummyAudioClip(text);
 
                 // Cache the result if enabled
                 if (_config.EnablePhonemeCache && phonemeResult != null)
@@ -1086,15 +1147,15 @@ namespace uPiper.Core
                     PiperLogger.LogInfo("Initialized OpenJTalkPhonemizer for Japanese");
 #else
                     PiperLogger.LogWarning("OpenJTalkPhonemizer is not supported on WebGL platform");
-                    _phonemizer = new MockPhonemizer(); // Fallback to mock
+                    _phonemizer = null; // No phonemizer available on WebGL
 #endif
                 }
                 else
                 {
-                    // For other languages, use mock phonemizer
+                    // For other languages, phonemizer is not available yet
                     // espeak-ng phonemizer will be implemented in a future phase
-                    _phonemizer = new MockPhonemizer();
-                    PiperLogger.LogInfo("Initialized MockPhonemizer for language: {0}", _config.DefaultLanguage);
+                    _phonemizer = null;
+                    PiperLogger.LogWarning("No phonemizer available for language: {0}. Text-to-speech will use fallback mode.", _config.DefaultLanguage);
                 }
 
                 // Small delay to simulate async operation
@@ -1188,6 +1249,7 @@ namespace uPiper.Core
         /// <summary>
         /// Create a dummy audio clip for testing
         /// </summary>
+        [Obsolete("This is a fallback method. Use InferenceAudioGenerator for actual TTS.")]
         private AudioClip CreateDummyAudioClip(string text)
         {
             // Calculate duration based on text length (rough estimate)

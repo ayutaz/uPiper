@@ -1,0 +1,38 @@
+# Windows cross-compilation Docker image for OpenJTalk
+FROM ubuntu:22.04
+
+# Install required packages
+RUN apt-get update && apt-get install -y \
+    mingw-w64 \
+    mingw-w64-tools \
+    cmake \
+    make \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
+    git \
+    curl \
+    tar \
+    gzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up MinGW environment
+ENV CC=x86_64-w64-mingw32-gcc
+ENV CXX=x86_64-w64-mingw32-g++
+ENV AR=x86_64-w64-mingw32-ar
+ENV RANLIB=x86_64-w64-mingw32-ranlib
+ENV WINDRES=x86_64-w64-mingw32-windres
+ENV STRIP=x86_64-w64-mingw32-strip
+
+# Create working directory
+WORKDIR /build
+
+# Install dos2unix for line ending conversion
+RUN apt-get update && apt-get install -y dos2unix
+
+# Note: Dependencies are fetched and built at runtime, not during image build
+# This allows the container to work with mounted volumes
+
+# Set up final build environment
+WORKDIR /workspace

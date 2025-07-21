@@ -138,9 +138,14 @@ namespace uPiper.Core
         /// </summary>
         public override string ToString()
         {
-            return $"Cache Stats: {EntryCount} entries, {TotalSizeMB:F2}/{MaxSizeMB:F2} MB ({UsagePercentage:P0}), " +
-                   $"Hit Rate: {HitRate:P1} ({HitCount} hits, {MissCount} misses), " +
-                   $"Evictions: {EvictionCount}";
+            // Use invariant culture to ensure consistent formatting across platforms
+            var formattedString = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "Cache Stats: {0} entries, {1:F2}/{2:F2} MB ({3:P0}), " +
+                "Hit Rate: {4:P1} ({5} hits, {6} misses), " +
+                "Evictions: {7}",
+                EntryCount, TotalSizeMB, MaxSizeMB, UsagePercentage,
+                HitRate, HitCount, MissCount, EvictionCount);
+            return formattedString;
         }
 
         /// <summary>

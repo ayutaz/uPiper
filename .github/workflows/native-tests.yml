@@ -10,6 +10,7 @@ jobs:
   test:
     name: Native Tests - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30  # 30分のタイムアウト（デフォルトは6分）
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -29,7 +30,7 @@ jobs:
       
     - name: Create Test Dictionary
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/test_dictionary
+        cd NativePlugins/OpenJTalk/test_dictionary
         # Check if Python script exists and try to run it
         if [ -f "create_test_dict.py" ]; then
           echo "Creating test dictionary with Python script..."
@@ -42,14 +43,14 @@ jobs:
       
     - name: Build and Test OpenJTalk Native
       run: |
-        cd Assets/uPiper/Native/OpenJTalk
+        cd NativePlugins/OpenJTalk
         chmod +x build_ci.sh
         ./build_ci.sh
       shell: bash
       
     - name: Verify Platform Compatibility
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build
+        cd NativePlugins/OpenJTalk/build
         echo "=== Platform: ${{ matrix.os }} ==="
         
         # Check library exists
@@ -78,7 +79,7 @@ jobs:
       with:
         name: native-openjtalk-${{ matrix.os }}
         path: |
-          Assets/uPiper/Native/OpenJTalk/output/**
+          NativePlugins/OpenJTalk/output/**
         retention-days: 7
         
     - name: Upload Test Results
@@ -87,14 +88,14 @@ jobs:
       with:
         name: test-results-native-${{ matrix.os }}
         path: |
-          Assets/uPiper/Native/OpenJTalk/build/Testing/**/*.xml
-          Assets/uPiper/Native/OpenJTalk/build/bin/benchmark_results.txt
+          NativePlugins/OpenJTalk/build/Testing/**/*.xml
+          NativePlugins/OpenJTalk/build/bin/benchmark_results.txt
         retention-days: 7
         
     - name: Performance Report
       if: always()
       run: |
-        cd Assets/uPiper/Native/OpenJTalk/build
+        cd NativePlugins/OpenJTalk/build
         echo "## Performance Report - ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         if [ -f bin/benchmark_results.txt ]; then

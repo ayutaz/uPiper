@@ -269,6 +269,27 @@ namespace uPiper.Editor
             // Template を非表示
             templateGO.SetActive(false);
 
+            // フレーズ選択ドロップダウン
+            var phraseLabelGO = new GameObject("PhraseLabel");
+            phraseLabelGO.transform.SetParent(panelGO.transform, false);
+            var phraseLabel = phraseLabelGO.AddComponent<TextMeshProUGUI>();
+            phraseLabel.text = "Phrase:";
+            phraseLabel.fontSize = 16;
+            phraseLabel.color = Color.white;
+            var phraseLabelRect = phraseLabelGO.GetComponent<RectTransform>();
+            phraseLabelRect.anchorMin = new Vector2(0.1f, 0.55f);
+            phraseLabelRect.anchorMax = new Vector2(0.3f, 0.65f);
+            phraseLabelRect.offsetMin = Vector2.zero;
+            phraseLabelRect.offsetMax = Vector2.zero;
+
+            var phraseDropdownGO = CreateDropdown("PhraseDropdown", panelGO.transform);
+            var phraseDropdownRect = phraseDropdownGO.GetComponent<RectTransform>();
+            phraseDropdownRect.anchorMin = new Vector2(0.3f, 0.55f);
+            phraseDropdownRect.anchorMax = new Vector2(0.9f, 0.65f);
+            phraseDropdownRect.offsetMin = Vector2.zero;
+            phraseDropdownRect.offsetMax = Vector2.zero;
+            var phraseDropdown = phraseDropdownGO.GetComponent<TMP_Dropdown>();
+
             // 入力フィールド
             var inputLabelGO = new GameObject("InputLabel");
             inputLabelGO.transform.SetParent(panelGO.transform, false);
@@ -277,8 +298,8 @@ namespace uPiper.Editor
             inputLabel.fontSize = 16;
             inputLabel.color = Color.white;
             var inputLabelRect = inputLabelGO.GetComponent<RectTransform>();
-            inputLabelRect.anchorMin = new Vector2(0.1f, 0.5f);
-            inputLabelRect.anchorMax = new Vector2(0.3f, 0.6f);
+            inputLabelRect.anchorMin = new Vector2(0.1f, 0.4f);
+            inputLabelRect.anchorMax = new Vector2(0.3f, 0.5f);
             inputLabelRect.offsetMin = Vector2.zero;
             inputLabelRect.offsetMax = Vector2.zero;
 
@@ -288,8 +309,8 @@ namespace uPiper.Editor
             inputImage.color = Color.white;
             var inputField = inputGO.AddComponent<TMP_InputField>();
             var inputRect = inputGO.GetComponent<RectTransform>();
-            inputRect.anchorMin = new Vector2(0.3f, 0.4f);
-            inputRect.anchorMax = new Vector2(0.9f, 0.6f);
+            inputRect.anchorMin = new Vector2(0.3f, 0.3f);
+            inputRect.anchorMax = new Vector2(0.9f, 0.5f);
             inputRect.offsetMin = Vector2.zero;
             inputRect.offsetMax = Vector2.zero;
 
@@ -369,10 +390,24 @@ namespace uPiper.Editor
             statusText.color = Color.yellow;
             statusText.alignment = TextAlignmentOptions.Center;
             var statusRect = statusGO.GetComponent<RectTransform>();
-            statusRect.anchorMin = new Vector2(0.1f, 0.05f);
+            statusRect.anchorMin = new Vector2(0.1f, 0.1f);
             statusRect.anchorMax = new Vector2(0.9f, 0.15f);
             statusRect.offsetMin = Vector2.zero;
             statusRect.offsetMax = Vector2.zero;
+            
+            // 音素詳細テキスト
+            var phonemeDetailsGO = new GameObject("PhonemeDetailsText");
+            phonemeDetailsGO.transform.SetParent(panelGO.transform, false);
+            var phonemeDetailsText = phonemeDetailsGO.AddComponent<TextMeshProUGUI>();
+            phonemeDetailsText.text = "";
+            phonemeDetailsText.fontSize = 12;
+            phonemeDetailsText.color = new Color(0.8f, 0.8f, 0.8f);
+            phonemeDetailsText.alignment = TextAlignmentOptions.MidlineLeft;
+            var phonemeDetailsRect = phonemeDetailsGO.GetComponent<RectTransform>();
+            phonemeDetailsRect.anchorMin = new Vector2(0.1f, 0.02f);
+            phonemeDetailsRect.anchorMax = new Vector2(0.9f, 0.08f);
+            phonemeDetailsRect.offsetMin = Vector2.zero;
+            phonemeDetailsRect.offsetMax = Vector2.zero;
 
             // デモコントローラーを作成
             var controllerGO = new GameObject("InferenceEngineDemo");
@@ -386,6 +421,8 @@ namespace uPiper.Editor
             serializedObject.FindProperty("_statusText").objectReferenceValue = statusText;
             serializedObject.FindProperty("_audioSource").objectReferenceValue = audioSource;
             serializedObject.FindProperty("_modelDropdown").objectReferenceValue = dropdown;
+            serializedObject.FindProperty("_phraseDropdown").objectReferenceValue = phraseDropdown;
+            serializedObject.FindProperty("_phonemeDetailsText").objectReferenceValue = phonemeDetailsText;
             serializedObject.ApplyModifiedProperties();
 
             // シーンを保存
@@ -394,8 +431,184 @@ namespace uPiper.Editor
 
             Debug.Log($"デモシーンを作成しました: {ScenePath}");
             EditorUtility.DisplayDialog("完了",
-                $"デモシーンを作成しました。\n{ScenePath}\n\nPlayモードで実行してください。",
+                $"Phase 1.10 デモシーンを作成しました。\n{ScenePath}\n\nOpenJTalk統合による正確な日本語音素変換が利用できます。\nPlayモードで実行してください。",
                 "OK");
+        }
+
+        private static GameObject CreateDropdown(string name, Transform parent)
+        {
+            var dropdownGO = new GameObject(name);
+            dropdownGO.transform.SetParent(parent, false);
+            var dropdownImage = dropdownGO.AddComponent<Image>();
+            dropdownImage.color = new Color(0.3f, 0.3f, 0.3f);
+            var dropdown = dropdownGO.AddComponent<TMP_Dropdown>();
+
+            // Dropdown Template を作成
+            var templateGO = new GameObject("Template", typeof(RectTransform));
+            templateGO.transform.SetParent(dropdownGO.transform, false);
+            var templateImage = templateGO.AddComponent<Image>();
+            templateImage.color = Color.white;
+            var templateRect = templateGO.GetComponent<RectTransform>();
+            templateRect.anchorMin = new Vector2(0, 0);
+            templateRect.anchorMax = new Vector2(1, 0);
+            templateRect.pivot = new Vector2(0.5f, 1);
+            templateRect.anchoredPosition = new Vector2(0, 2);
+            templateRect.sizeDelta = new Vector2(0, 150);
+
+            // Viewport
+            var viewportGO = new GameObject("Viewport", typeof(RectTransform));
+            viewportGO.transform.SetParent(templateGO.transform, false);
+            viewportGO.AddComponent<Image>();
+            viewportGO.AddComponent<Mask>().showMaskGraphic = false;
+            var viewportRect = viewportGO.GetComponent<RectTransform>();
+            viewportRect.anchorMin = Vector2.zero;
+            viewportRect.anchorMax = Vector2.one;
+            viewportRect.sizeDelta = new Vector2(-18, 0);
+            viewportRect.pivot = new Vector2(0, 1);
+
+            // Content
+            var contentGO = new GameObject("Content", typeof(RectTransform));
+            contentGO.transform.SetParent(viewportGO.transform, false);
+            var contentRect = contentGO.GetComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0, 1);
+            contentRect.anchorMax = new Vector2(1, 1);
+            contentRect.pivot = new Vector2(0.5f, 1);
+            contentRect.anchoredPosition = Vector2.zero;
+            contentRect.sizeDelta = new Vector2(0, 28);
+
+            // Item
+            var itemGO = new GameObject("Item", typeof(RectTransform));
+            itemGO.transform.SetParent(contentGO.transform, false);
+            var itemToggle = itemGO.AddComponent<Toggle>();
+            var itemRect = itemGO.GetComponent<RectTransform>();
+            itemRect.anchorMin = new Vector2(0, 0.5f);
+            itemRect.anchorMax = new Vector2(1, 0.5f);
+            itemRect.sizeDelta = new Vector2(0, 20);
+
+            // Item Background
+            var itemBgGO = new GameObject("Item Background", typeof(RectTransform));
+            itemBgGO.transform.SetParent(itemGO.transform, false);
+            var itemBgImage = itemBgGO.AddComponent<Image>();
+            itemBgImage.color = new Color(0.9f, 0.9f, 0.9f);
+            var itemBgRect = itemBgGO.GetComponent<RectTransform>();
+            itemBgRect.anchorMin = Vector2.zero;
+            itemBgRect.anchorMax = Vector2.one;
+            itemBgRect.offsetMin = Vector2.zero;
+            itemBgRect.offsetMax = Vector2.zero;
+
+            // Item Checkmark
+            var itemCheckGO = new GameObject("Item Checkmark", typeof(RectTransform));
+            itemCheckGO.transform.SetParent(itemGO.transform, false);
+            var itemCheckImage = itemCheckGO.AddComponent<Image>();
+            itemCheckImage.color = Color.black;
+            var itemCheckRect = itemCheckGO.GetComponent<RectTransform>();
+            itemCheckRect.anchorMin = new Vector2(0, 0.5f);
+            itemCheckRect.anchorMax = new Vector2(0, 0.5f);
+            itemCheckRect.sizeDelta = new Vector2(20, 20);
+            itemCheckRect.anchoredPosition = new Vector2(10, 0);
+
+            // Item Label
+            var itemLabelGO = new GameObject("Item Label", typeof(RectTransform));
+            itemLabelGO.transform.SetParent(itemGO.transform, false);
+            var itemLabel = itemLabelGO.AddComponent<TextMeshProUGUI>();
+            itemLabel.text = "Option";
+            itemLabel.fontSize = 14;
+            itemLabel.color = Color.black;
+            var itemLabelRect = itemLabelGO.GetComponent<RectTransform>();
+            itemLabelRect.anchorMin = Vector2.zero;
+            itemLabelRect.anchorMax = Vector2.one;
+            itemLabelRect.offsetMin = new Vector2(20, 1);
+            itemLabelRect.offsetMax = new Vector2(-10, -2);
+
+            // Toggle設定
+            itemToggle.targetGraphic = itemBgImage;
+            itemToggle.graphic = itemCheckImage;
+            itemToggle.isOn = true;
+
+            // Scrollbar
+            var scrollbarGO = new GameObject("Scrollbar", typeof(RectTransform));
+            scrollbarGO.transform.SetParent(templateGO.transform, false);
+            var scrollbarImage = scrollbarGO.AddComponent<Image>();
+            scrollbarImage.color = new Color(0.8f, 0.8f, 0.8f);
+            var scrollbar = scrollbarGO.AddComponent<Scrollbar>();
+            scrollbar.direction = Scrollbar.Direction.TopToBottom;
+            var scrollbarRect = scrollbarGO.GetComponent<RectTransform>();
+            scrollbarRect.anchorMin = new Vector2(1, 0);
+            scrollbarRect.anchorMax = new Vector2(1, 1);
+            scrollbarRect.pivot = Vector2.one;
+            scrollbarRect.sizeDelta = new Vector2(20, 0);
+            scrollbarRect.anchoredPosition = new Vector2(0, 0);
+
+            // Sliding Area
+            var slidingAreaGO = new GameObject("Sliding Area", typeof(RectTransform));
+            slidingAreaGO.transform.SetParent(scrollbarGO.transform, false);
+            var slidingAreaRect = slidingAreaGO.GetComponent<RectTransform>();
+            slidingAreaRect.anchorMin = Vector2.zero;
+            slidingAreaRect.anchorMax = Vector2.one;
+            slidingAreaRect.offsetMin = new Vector2(10, 10);
+            slidingAreaRect.offsetMax = new Vector2(-10, -10);
+
+            // Handle
+            var handleGO = new GameObject("Handle", typeof(RectTransform));
+            handleGO.transform.SetParent(slidingAreaGO.transform, false);
+            var handleImage = handleGO.AddComponent<Image>();
+            handleImage.color = new Color(0.5f, 0.5f, 0.5f);
+            var handleRect = handleGO.GetComponent<RectTransform>();
+            handleRect.anchorMin = Vector2.zero;
+            handleRect.anchorMax = Vector2.one;
+            handleRect.offsetMin = new Vector2(-10, -10);
+            handleRect.offsetMax = new Vector2(10, 10);
+
+            scrollbar.handleRect = handleRect;
+            scrollbar.targetGraphic = handleImage;
+
+            // ScrollRect設定
+            var scrollRect = templateGO.AddComponent<ScrollRect>();
+            scrollRect.content = contentRect;
+            scrollRect.viewport = viewportRect;
+            scrollRect.vertical = true;
+            scrollRect.horizontal = false;
+            scrollRect.verticalScrollbar = scrollbar;
+            scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
+            scrollRect.verticalScrollbarSpacing = -3;
+
+            // Dropdown設定
+            dropdown.template = templateRect;
+            dropdown.captionText = dropdownGO.GetComponentInChildren<TextMeshProUGUI>();
+            dropdown.itemText = itemLabel;
+
+            // Label
+            var labelGO = new GameObject("Label", typeof(RectTransform));
+            labelGO.transform.SetParent(dropdownGO.transform, false);
+            var label = labelGO.AddComponent<TextMeshProUGUI>();
+            label.text = "Option A";
+            label.fontSize = 14;
+            label.color = Color.black;
+            var labelRect = labelGO.GetComponent<RectTransform>();
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = new Vector2(10, 2);
+            labelRect.offsetMax = new Vector2(-25, -2);
+
+            // Arrow
+            var arrowGO = new GameObject("Arrow", typeof(RectTransform));
+            arrowGO.transform.SetParent(dropdownGO.transform, false);
+            var arrowText = arrowGO.AddComponent<TextMeshProUGUI>();
+            arrowText.text = "▼";
+            arrowText.fontSize = 14;
+            arrowText.color = Color.black;
+            var arrowRect = arrowGO.GetComponent<RectTransform>();
+            arrowRect.anchorMin = new Vector2(1, 0.5f);
+            arrowRect.anchorMax = new Vector2(1, 0.5f);
+            arrowRect.sizeDelta = new Vector2(20, 20);
+            arrowRect.anchoredPosition = new Vector2(-15, 0);
+
+            dropdown.captionText = label;
+
+            // Template を非表示
+            templateGO.SetActive(false);
+
+            return dropdownGO;
         }
     }
 }
