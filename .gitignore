@@ -13,6 +13,9 @@
 .claude/
 CLAUDE.md
 
+# VS Code settings
+.vscode/settings.json
+
 # User-specific stuff
 .idea/**/workspace.xml
 .idea/**/tasks.xml
