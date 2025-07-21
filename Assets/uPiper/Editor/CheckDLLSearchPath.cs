@@ -65,7 +65,7 @@ namespace uPiper.Editor
                             Debug.Log($"  FOUND: {dll} (Size: {fileInfo.Length} bytes)");
                         }
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         // Ignore access denied errors
                     }
