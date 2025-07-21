@@ -28,15 +28,24 @@ ENV STRIP=x86_64-w64-mingw32-strip
 # Create working directory
 WORKDIR /build
 
-# Copy build scripts
-COPY fetch_dependencies_ci.sh build_dependencies_cross.sh ./
-RUN chmod +x fetch_dependencies_ci.sh build_dependencies_cross.sh
+# Copy all necessary files
+COPY . /build/
+
+# Install dos2unix for line ending conversion
+RUN apt-get update && apt-get install -y dos2unix
+
+# Make scripts executable and fix line endings
+RUN chmod +x /build/*.sh && \
+    dos2unix /build/*.sh
+
+# Debug: Check what files are in /build
+RUN ls -la /build/
 
 # Fetch dependencies
-RUN ./fetch_dependencies_ci.sh
+RUN bash /build/fetch_dependencies_ci.sh
 
 # Build dependencies with cross-compilation
-RUN ./build_dependencies_cross.sh
+RUN bash /build/build_dependencies_cross.sh
 
 # Set up final build environment
 WORKDIR /workspace
