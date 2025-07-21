@@ -47,11 +47,10 @@ jobs:
         
         cd NativePlugins/OpenJTalk
         echo "Fetching and building OpenJTalk dependencies..."
-        # Make scripts executable
-        chmod +x fetch_dependencies.sh build_dependencies.sh
-        # Run shell scripts in MSYS2 environment
-        ./fetch_dependencies.sh
-        ./build_dependencies.sh
+        # Use CI-specific scripts
+        chmod +x fetch_dependencies_ci.sh build_dependencies_ci.sh
+        ./fetch_dependencies_ci.sh
+        ./build_dependencies_ci.sh
     
     - name: Check Dictionary Files
       shell: bash
