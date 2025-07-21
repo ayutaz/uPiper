@@ -368,18 +368,12 @@ namespace uPiper.Core.Phonemizers.Implementations
                         PiperLogger.LogWarning($"[OpenJTalkPhonemizer] Phoneme count mismatch: expected {nativeResult.phoneme_count}, got {phonemeList.Length}");
                     }
 
-                    // NOTE: Native-level fix implemented in openjtalk_full_wrapper.c for Windows
-                    // Windows text2mecab duplication issue is now handled at the native level
-                    // by bypassing text2mecab function and using direct text processing
-                    
-                    // Legacy C# workaround - now disabled in favor of native fix
-                    /*
+                    // Check for suspicious repetitive patterns (Windows-specific issue)
                     if (DetectRepeatedPatterns(phonemeList))
                     {
                         PiperLogger.LogWarning($"[OpenJTalkPhonemizer] Detected repeated phoneme patterns, attempting to clean up");
                         phonemeList = CleanRepeatedPhonemes(phonemeList);
                     }
-                    */
                     
                     // Convert OpenJTalk phonemes to Piper phonemes using the mapping
                     var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(phonemeList);

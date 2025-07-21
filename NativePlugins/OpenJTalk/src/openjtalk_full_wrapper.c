@@ -312,68 +312,9 @@ PhonemeResult* openjtalk_phonemize(void* handle, const char* text) {
     NJD_clear(ctx->njd);
     JPCommon_clear(ctx->jpcommon);
     
-    // WINDOWS FIX: Direct text processing to avoid text2mecab duplication issues
+    // Convert text to Mecab input
     char mecab_text[8192];
-    
-#ifdef _WIN32
-    // Windows workaround: Use input text directly to avoid text2mecab duplication bug
-    // text2mecab on Windows can cause character duplication in certain builds
-    DEBUG_LOG("Windows detected: bypassing text2mecab for direct processing");
-    
-    // Simple text preprocessing for direct Mecab input
-    // This bypasses the problematic text2mecab function on Windows
-    size_t input_len = strlen(text);
-    if (input_len >= sizeof(mecab_text) - 1) {
-        ctx->last_error = OPENJTALK_ERROR_INVALID_INPUT;
-        DEBUG_LOG("Input text too long: %zu bytes", input_len);
-        return NULL;
-    }
-    
-    // Copy input directly with minimal preprocessing
-    strcpy(mecab_text, text);
-    
-    // Add newline if not present (required by Mecab)
-    if (input_len > 0 && mecab_text[input_len - 1] != '\n') {
-        mecab_text[input_len] = '\n';
-        mecab_text[input_len + 1] = '\0';
-    }
-    
-    DEBUG_LOG("Direct Mecab input: %s", mecab_text);
-#else
-    // Non-Windows: Use standard text2mecab function with safety checks
-    DEBUG_LOG("Non-Windows: using standard text2mecab");
-    
-    // Safety check for input length
-    size_t input_len = strlen(text);
-    if (input_len >= 4096) { // Conservative limit for text2mecab
-        ctx->last_error = OPENJTALK_ERROR_INVALID_INPUT;
-        DEBUG_LOG("Input text too long for text2mecab: %zu bytes", input_len);
-        return NULL;
-    }
-    
     text2mecab(mecab_text, text);
-    
-    // Verify text2mecab output didn't exceed buffer
-    size_t output_len = strlen(mecab_text);
-    if (output_len >= sizeof(mecab_text) - 1) {
-        ctx->last_error = OPENJTALK_ERROR_PROCESSING;
-        DEBUG_LOG("text2mecab output truncated: %zu bytes", output_len);
-        return NULL;
-    }
-    
-    DEBUG_LOG("text2mecab output: %s (length: %zu)", mecab_text, output_len);
-    
-    // Additional safety: Check for suspicious repetitive patterns in output
-    // This provides an extra layer of protection in case text2mecab issues occur on other platforms
-    char* first_space = strchr(mecab_text, ' ');
-    if (first_space && output_len > 50) {
-        char* duplicate_check = strstr(first_space + 1, mecab_text);
-        if (duplicate_check && (duplicate_check - mecab_text) < (int)(output_len / 2)) {
-            DEBUG_LOG("WARNING: Potential duplication detected in text2mecab output");
-            // Log but don't fail - text2mecab on non-Windows should be reliable
-        }
-    }
-#endif
     
     // Mecab analysis
     if (Mecab_analysis(ctx->mecab, mecab_text) != TRUE) {

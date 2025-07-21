@@ -42,56 +42,22 @@ jobs:
     - name: Install CMake
       uses: lukka/get-cmake@latest
         
-    - name: Setup MinGW for Windows
-      if: matrix.os == 'windows-latest'
-      uses: msys2/setup-msys2@v2
-      with:
-        msystem: MINGW64
-        install: >-
-          base-devel
-          mingw-w64-x86_64-toolchain
-          mingw-w64-x86_64-cmake
-          mingw-w64-x86_64-make
-          autoconf
-          automake
-          libtool
-          pkg-config
-          curl
-          tar
-          gzip
-        
     - name: Build OpenJTalk Native Library
       run: |
         cd NativePlugins/OpenJTalk
-        
-        # Debug environment information for Windows
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          echo "=== Windows Environment Debug ==="
-          echo "OSTYPE: $OSTYPE"
-          echo "MSYSTEM: $MSYSTEM"
-          echo "PATH: $PATH"
-          echo "Available compilers:"
-          command -v gcc && gcc --version | head -1 || echo "gcc not found"
-          command -v make && make --version | head -1 || echo "make not found"
-          command -v mingw32-make && mingw32-make --version | head -1 || echo "mingw32-make not found"
-          command -v cmake && cmake --version | head -1 || echo "cmake not found"
-          echo "=========================="
-        fi
         
         # Make build script executable
         chmod +x build_ci.sh
         
         # Run build script (using simplified CI build for all platforms)
         ./build_ci.sh
-      shell: ${{ matrix.os == 'windows-latest' && 'msys2 {0}' || 'bash' }}
         
         # Create Plugins directory structure
         mkdir -p ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}
         
         # Copy the built library to Unity Plugins directory
         if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          # Copy from MSYS2 build output
-          cp build/bin/Release/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/ || cp build/bin/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/ || cp build/lib/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/
+          cp build/bin/Release/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/ || cp build/bin/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/
         elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
           # Check if library already exists (from repository)
           if [ ! -f "../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }}" ]; then
@@ -104,18 +70,6 @@ jobs:
         # Verify the library was copied
         echo "=== Verifying library placement ==="
         ls -la ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/ || dir ..\..\Assets\uPiper\Plugins\${{ matrix.lib_path }}\
-        
-        # On Windows, also show detailed info about the built DLL
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          echo "=== Windows DLL Details ==="
-          if [ -f "../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/openjtalk_wrapper.dll" ]; then
-            ls -la ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/openjtalk_wrapper.dll
-            file ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/openjtalk_wrapper.dll || echo "file command not available"
-          else
-            echo "WARNING: openjtalk_wrapper.dll not found in expected location"
-            find ../../Assets -name "*.dll" -type f | head -10
-          fi
-        fi
         
         # For Ubuntu Docker environment, also copy to standard library paths
         if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
@@ -131,38 +85,6 @@ jobs:
           # Set environment variable for library path
           echo "LD_LIBRARY_PATH=${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
         fi
-      shell: bash
-    
-    # Upload Windows DLL as artifact for manual download
-    - name: Upload Windows DLL Artifact
-      if: matrix.os == 'windows-latest'
-      uses: actions/upload-artifact@v4
-      with:
-        name: openjtalk-wrapper-windows-dll-${{ github.sha }}
-        path: Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll
-        if-no-files-found: warn
-        retention-days: 30
-    
-    # Windows build completion summary
-    - name: Windows Build Summary
-      if: matrix.os == 'windows-latest'
-      run: |
-        echo "## Windows OpenJTalk Build Completed" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ **OpenJTalk wrapper DLL built successfully**" >> $GITHUB_STEP_SUMMARY
-        echo "- **Features**: Text2mecab bypass for Windows duplication fix" >> $GITHUB_STEP_SUMMARY
-        echo "- **Location**: Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" >> $GITHUB_STEP_SUMMARY
-        echo "- **Artifact**: openjtalk-wrapper-windows-dll-${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "📁 **Download Instructions**:" >> $GITHUB_STEP_SUMMARY
-        echo "1. Go to Actions tab → This workflow run" >> $GITHUB_STEP_SUMMARY
-        echo "2. Download the DLL artifact" >> $GITHUB_STEP_SUMMARY
-        echo "3. Replace local DLL in Assets/uPiper/Plugins/Windows/x86_64/" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "🔧 **Technical Details**:" >> $GITHUB_STEP_SUMMARY
-        echo "- Fixes Windows text2mecab phoneme duplication issue" >> $GITHUB_STEP_SUMMARY
-        echo "- Implements direct text processing for Windows" >> $GITHUB_STEP_SUMMARY
-        echo "- Maintains compatibility with macOS/Linux" >> $GITHUB_STEP_SUMMARY
       shell: bash
         
     - name: Cache Library
@@ -218,8 +140,8 @@ jobs:
     # Unity 6対応 - game-ci/unity-test-runnerを使用
     - name: Run Unity Tests
       uses: game-ci/unity-test-runner@v4
-      # Skip on macOS as Docker is not supported, and temporarily skip on Windows for CI stability
-      if: matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      # Skip on macOS as Docker is not supported
+      if: matrix.os != 'macos-latest'
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -240,7 +162,7 @@ jobs:
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
       uses: actions/upload-artifact@v4
-      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: always() && matrix.os != 'macos-latest'
       with:
         name: Test Results - Unity - ${{ matrix.platform }}
         path: |
@@ -252,7 +174,7 @@ jobs:
         
     # テスト結果のデバッグ情報
     - name: Debug Test Results
-      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: always() && matrix.os != 'macos-latest'
       shell: bash
       run: |
         echo "=== Test Results Directory Contents ==="
@@ -270,7 +192,7 @@ jobs:
     
     # テスト結果のサマリーを作成
     - name: Create Test Summary
-      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: always() && matrix.os != 'macos-latest'
       shell: bash
       run: |
         echo "## Unity Test Results Summary" >> $GITHUB_STEP_SUMMARY
@@ -321,7 +243,7 @@ jobs:
     # カバレッジレポートをアップロード
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
-      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: always() && matrix.os != 'macos-latest'
       with:
         name: Coverage Report - ${{ matrix.platform }}
         path: |
@@ -338,7 +260,7 @@ jobs:
         
     # コードカバレッジチェック
     - name: Check Code Coverage
-      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: always() && matrix.os != 'macos-latest'
       shell: bash
       run: |
         # カバレッジサマリーファイルを探す
@@ -426,7 +348,7 @@ jobs:
     # Codecovにカバレッジをアップロード
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
-      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: always() && matrix.os != 'macos-latest'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         directory: ./
