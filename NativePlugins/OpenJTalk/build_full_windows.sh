@@ -34,8 +34,8 @@ if [ ! -f "../src/openjtalk_full_wrapper.c" ]; then
     cp ../src/openjtalk_wrapper.c ../src/openjtalk_full_wrapper.c
 fi
 
-# Use the CMakeLists_full.txt for cross-compilation
-cp ../CMakeLists_full.txt CMakeLists.txt
+# Use the cross-compilation specific CMakeLists
+cp ../CMakeLists_windows_cross.txt CMakeLists.txt
 
 # Configure with toolchain file
 cmake . -DCMAKE_BUILD_TYPE=Release \
