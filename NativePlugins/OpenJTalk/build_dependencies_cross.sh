@@ -96,8 +96,17 @@ if [ -d "open_jtalk-1.11" ]; then
     }
     
     echo "Building OpenJTalk libraries..."
-    # Build only the libraries, not the command-line tools
-    for dir in text2mecab mecab mecab2njd njd njd_set_pronunciation njd_set_digit njd_set_accent_phrase njd_set_accent_type njd_set_unvoiced_vowel njd_set_long_vowel njd2jpcommon jpcommon; do
+    # Build mecab library first (without the executable)
+    if [ -d "mecab/src" ]; then
+        echo "Building mecab library..."
+        (cd mecab/src && make libmecab.a -j$JOBS) || {
+            echo "ERROR: Failed to build mecab library"
+            exit 1
+        }
+    fi
+    
+    # Build other libraries
+    for dir in text2mecab mecab2njd njd njd_set_pronunciation njd_set_digit njd_set_accent_phrase njd_set_accent_type njd_set_unvoiced_vowel njd_set_long_vowel njd2jpcommon jpcommon; do
         if [ -d "$dir" ]; then
             echo "Building $dir..."
             (cd "$dir" && make -j$JOBS) || {
