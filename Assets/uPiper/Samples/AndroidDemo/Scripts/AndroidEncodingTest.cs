@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Text;
+using System;
 
 namespace uPiper.Samples.AndroidDemo
 {

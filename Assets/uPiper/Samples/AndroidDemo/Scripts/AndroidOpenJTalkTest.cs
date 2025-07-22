@@ -42,24 +42,32 @@ namespace uPiper.Samples.AndroidDemo
             yield return new WaitForSeconds(0.5f);
 
             // Test 2: Try to create OpenJTalkPhonemizer
+            OpenJTalkPhonemizer phonemizer = null;
+            
             try
             {
                 UpdateStatus("Creating OpenJTalkPhonemizer...");
-                var phonemizer = new OpenJTalkPhonemizer();
+                phonemizer = new OpenJTalkPhonemizer();
                 UpdateStatus("✓ OpenJTalkPhonemizer created successfully");
-                
-                // Test 3: Check if initialized
+            }
+            catch (System.Exception e)
+            {
+                UpdateStatus($"✗ Error creating phonemizer: {e.Message}");
+                Debug.LogError($"[AndroidOpenJTalkTest] Creation error: {e}");
+            }
+            
+            if (phonemizer != null)
+            {
                 yield return new WaitForSeconds(0.5f);
-                UpdateStatus($"IsInitialized: {phonemizer.IsInitialized}");
                 
-                // Test 4: Try to phonemize simple text
-                if (phonemizer.IsInitialized)
+                // Test 3: Try to phonemize simple text
+                try
                 {
                     UpdateStatus("Testing phonemization...");
                     string testText = "こんにちは";
                     UpdateStatus($"Input text: {testText}");
                     
-                    var result = phonemizer.PhonemizeText(testText);
+                    var result = phonemizer.Phonemize(testText);
                     if (result != null)
                     {
                         UpdateStatus($"✓ Phonemes: {string.Join(" ", result.Phonemes)}");
@@ -70,9 +78,9 @@ namespace uPiper.Samples.AndroidDemo
                         UpdateStatus("✗ Phonemization returned null");
                     }
                 }
-                else
+                catch (System.Exception e)
                 {
-                    UpdateStatus("✗ OpenJTalkPhonemizer not initialized");
+                    UpdateStatus($"✗ Phonemization error: {e.Message}");
                     UpdateStatus("Checking library availability...");
                     
                     // Additional debug info
@@ -83,21 +91,27 @@ namespace uPiper.Samples.AndroidDemo
                 
                 phonemizer.Dispose();
             }
-            catch (System.Exception e)
-            {
-                UpdateStatus($"✗ Error: {e.Message}");
-                Debug.LogError($"[AndroidOpenJTalkTest] Full error: {e}");
-            }
 
             // Test 5: Test PiperTTS
             yield return new WaitForSeconds(1f);
             UpdateStatus("\nTesting PiperTTS...");
             
+            PiperTTS piperTTS = null;
+            
             try
             {
                 var config = new PiperConfig();
-                var piperTTS = new PiperTTS(config);
-                
+                piperTTS = new PiperTTS(config);
+                UpdateStatus("PiperTTS instance created");
+            }
+            catch (System.Exception e)
+            {
+                UpdateStatus($"✗ PiperTTS creation error: {e.Message}");
+                Debug.LogError($"[AndroidOpenJTalkTest] PiperTTS creation error: {e}");
+            }
+            
+            if (piperTTS != null)
+            {
                 UpdateStatus("Waiting for PiperTTS initialization...");
                 float timeout = 5f;
                 float elapsed = 0f;
@@ -113,23 +127,31 @@ namespace uPiper.Samples.AndroidDemo
                     UpdateStatus("✓ PiperTTS initialized");
                     
                     // Try to generate audio
-                    string testText = "テスト";
-                    UpdateStatus($"Generating audio for: {testText}");
-                    
-                    var audioClip = piperTTS.GenerateAudio(testText);
-                    if (audioClip != null)
+                    try
                     {
-                        UpdateStatus($"✓ Audio generated: {audioClip.length}s");
+                        string testText = "テスト";
+                        UpdateStatus($"Generating audio for: {testText}");
                         
-                        if (audioSource != null)
+                        var audioClip = piperTTS.GenerateAudio(testText);
+                        if (audioClip != null)
                         {
-                            audioSource.clip = audioClip;
-                            audioSource.Play();
+                            UpdateStatus($"✓ Audio generated: {audioClip.length}s");
+                            
+                            if (audioSource != null)
+                            {
+                                audioSource.clip = audioClip;
+                                audioSource.Play();
+                            }
+                        }
+                        else
+                        {
+                            UpdateStatus("✗ Failed to generate audio");
                         }
                     }
-                    else
+                    catch (System.Exception e)
                     {
-                        UpdateStatus("✗ Failed to generate audio");
+                        UpdateStatus($"✗ Audio generation error: {e.Message}");
+                        Debug.LogError($"[AndroidOpenJTalkTest] Audio generation error: {e}");
                     }
                 }
                 else
@@ -138,11 +160,6 @@ namespace uPiper.Samples.AndroidDemo
                 }
                 
                 piperTTS.Dispose();
-            }
-            catch (System.Exception e)
-            {
-                UpdateStatus($"✗ PiperTTS Error: {e.Message}");
-                Debug.LogError($"[AndroidOpenJTalkTest] PiperTTS error: {e}");
             }
 
             UpdateStatus("\nTest completed!");
