@@ -40,8 +40,30 @@ namespace uPiper.Core.Phonemizers.Implementations
         public override string Version => "1.0.0";
         public override string[] SupportedLanguages => new[] { "ja_JP", "en_US" };
 
-        public MockPhonemizer() : base("Mock", new[] { "ja_JP", "en_US" })
+        public MockPhonemizer() : base()
         {
+        }
+
+        protected override void InitializeLanguages()
+        {
+            // Initialize supported languages
+            _languageInfos["ja_JP"] = new LanguageInfo
+            {
+                Code = "ja_JP",
+                Name = "Japanese",
+                NativeName = "日本語",
+                RequiresPreprocessing = true,
+                SupportsAccents = true
+            };
+
+            _languageInfos["en_US"] = new LanguageInfo
+            {
+                Code = "en_US",
+                Name = "English",
+                NativeName = "English",
+                RequiresPreprocessing = false,
+                SupportsAccents = false
+            };
         }
 
         protected override async Task<PhonemeResult> PhonemizeInternalAsync(
@@ -91,12 +113,13 @@ namespace uPiper.Core.Phonemizers.Implementations
 
             var result = new PhonemeResult
             {
+                OriginalText = text,
+                Language = language,
                 Phonemes = phonemes.ToArray(),
                 PhonemeIds = phonemeIds.ToArray(),
                 Durations = durations.ToArray(),
-                TotalDuration = durations.Sum(),
-                ProcessingTime = 0.001f,
-                WasCached = false
+                ProcessingTime = TimeSpan.FromMilliseconds(1),
+                FromCache = false
             };
 
             Debug.Log($"[MockPhonemizer] Generated {phonemes.Count} phonemes for text: {text}");
