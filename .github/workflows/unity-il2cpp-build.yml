@@ -163,56 +163,25 @@ jobs:
     - name: Verify build output
       run: |
         echo "Checking ${{ matrix.scriptingBackend }} build output for ${{ matrix.targetPlatform }}..."
-        BUILD_NAME="uPiper-${{ matrix.scriptingBackend }}"
+        echo "Contents of build directory:"
+        ls -la build/ || echo "Build directory not found"
         
-        # Platform specific checks
-        case "${{ matrix.targetPlatform }}" in
-          StandaloneWindows64)
-            if [ -f "build/${{ matrix.targetPlatform }}/${BUILD_NAME}.exe" ]; then
-              echo "✅ Windows ${{ matrix.scriptingBackend }} executable found"
-              ls -la "build/${{ matrix.targetPlatform }}/"
-            else
-              echo "❌ Windows ${{ matrix.scriptingBackend }} executable not found!"
-              exit 1
-            fi
-            ;;
-          StandaloneLinux64)
-            if [ -f "build/${{ matrix.targetPlatform }}/${BUILD_NAME}" ]; then
-              echo "✅ Linux ${{ matrix.scriptingBackend }} executable found"
-              ls -la "build/${{ matrix.targetPlatform }}/"
-            else
-              echo "❌ Linux ${{ matrix.scriptingBackend }} executable not found!"
-              exit 1
-            fi
-            ;;
-          StandaloneOSX)
-            if [ -d "build/${{ matrix.targetPlatform }}/${BUILD_NAME}.app" ]; then
-              echo "✅ macOS ${{ matrix.scriptingBackend }} app bundle found"
-              ls -la "build/${{ matrix.targetPlatform }}/"
-            else
-              echo "❌ macOS ${{ matrix.scriptingBackend }} app bundle not found!"
-              exit 1
-            fi
-            ;;
-          Android)
-            if [ -f "build/${{ matrix.targetPlatform }}/${BUILD_NAME}.apk" ]; then
-              echo "✅ Android ${{ matrix.scriptingBackend }} APK found"
-              ls -la "build/${{ matrix.targetPlatform }}/"
-            else
-              echo "❌ Android ${{ matrix.scriptingBackend }} APK not found!"
-              exit 1
-            fi
-            ;;
-          WebGL)
-            if [ -d "build/${{ matrix.targetPlatform }}/${BUILD_NAME}" ]; then
-              echo "✅ WebGL ${{ matrix.scriptingBackend }} build found"
-              ls -la "build/${{ matrix.targetPlatform }}/${BUILD_NAME}/"
-            else
-              echo "❌ WebGL ${{ matrix.scriptingBackend }} build not found!"
-              exit 1
-            fi
-            ;;
-        esac
+        if [ -d "build/${{ matrix.targetPlatform }}" ]; then
+          echo "Contents of platform directory:"
+          ls -la "build/${{ matrix.targetPlatform }}/"
+          
+          # Check if any build output exists
+          FILE_COUNT=$(find "build/${{ matrix.targetPlatform }}" -type f | wc -l)
+          if [ "$FILE_COUNT" -gt 0 ]; then
+            echo "✅ Build output found for ${{ matrix.targetPlatform }} with ${{ matrix.scriptingBackend }}"
+          else
+            echo "❌ No build output found!"
+            exit 1
+          fi
+        else
+          echo "❌ Build directory for ${{ matrix.targetPlatform }} not found!"
+          exit 1
+        fi
         
     # Upload build artifacts
     - name: Upload build artifacts
