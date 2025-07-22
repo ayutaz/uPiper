@@ -1,12 +1,12 @@
 # Phase 1: Windows/Linux 基盤実装 - 進捗詳細
 
-最終更新: 2025年1月21日
+最終更新: 2025年1月22日
 
 ## 進捗サマリー
 
 - **Phase 1.1**: Core API インターフェース設計 ✅ 完了
-- **Phase 1.2**: Core API 実装 ✅ 完了（PR #13でマージ）
-- **Phase 1.3**: Core API テスト ✅ 完了（108テスト全て成功）
+- **Phase 1.2**: Core API 実装 ✅ 完了（実装済み、ドキュメント更新: 2025年1月22日）
+- **Phase 1.3**: Core API テスト ✅ 完了（108テスト全て成功、1.3.2-1.3.3含む）
 - **Phase 1.4**: Phonemizer システム基盤 ✅ 完了
 - **Phase 1.5**: キャッシュとテキスト処理 ✅ 完了
 - **Phase 1.6**: テスト実装 ✅ 完了（PR #14で実装）
@@ -14,6 +14,7 @@
 - **Phase 1.8**: P/Invoke バインディング実装 ✅ 完了（2025年1月18日）
 - **Phase 1.9**: Unity.InferenceEngine 統合 ✅ 完了（2025年1月19日、PR #24）
 - **Phase 1.10**: OpenJTalk統合による日本語発音改善 ✅ 完了（2025年1月21日）
+- **Phase 1.11**: Unity基本統合 ✅ 完了（2025年1月21日、PR #27）
 - **テストカバレッジ**: 完全なカバレッジを達成（250+テスト全て成功）
 - **CI/CD**: 全プラットフォームビルド成功（Windows/Linux/macOS）
 
@@ -54,8 +55,9 @@
   - ヒット率、使用率の計算
   - 統計情報のロギング機能
 
-### 1.3 Core API - テスト（2人日）✅
+### 1.3 Core API - テスト（2人日）✅ 完了
 
+#### 1.3.1 ユニットテスト実装（1人日）✅
 #### 実装済みテスト（108テスト - 全て成功）
 - **PiperConfigTest.cs**: 
   - デフォルト設定、検証ロジック
@@ -76,16 +78,26 @@
 - **PiperExceptionTest.cs**: 
   - 各種例外クラス、エラーコード
   - メッセージフォーマット
-- **PiperTTSFunctionTest.cs**（新規）:
+
+#### 1.3.2 PiperTTS初期化テスト（0.5人日）✅
+- **PiperTTSFunctionTest.cs**:
   - 音声ロード、アンロード機能
   - キャッシュ操作（クリア、個別削除）
   - 音声リスト取得、存在確認
   - 状態管理、イベント発火
-- **PiperTTSSimpleTest.cs**（新規）:
+
+#### 1.3.3 PiperTTS音声生成テスト（0.5人日）✅
+- **PiperTTSSimpleTest.cs**:
   - 基本的な初期化、破棄
   - 音声生成（同期/非同期）
   - ストリーミング生成
   - エラーハンドリング
+- **InferenceAudioGeneratorTests.cs**:
+  - Unity.InferenceEngine統合テスト
+  - ONNX推論の動作確認
+- **PhonemeEncoderTests.cs**:
+  - 音素エンコーディングテスト
+  - PUA文字マッピング検証
 
 #### Editorツール
 - **TestCoreAPI.cs**: Core APIの手動テスト用メニュー
@@ -218,7 +230,15 @@
 
 ## 進行中のタスク
 
-なし（Phase 1.6 完了）
+### Phase 1.12: IL2CPPサポート（2人日）- 進行中
+
+#### 1.12.1 IL2CPP互換性検証（0.5人日）✅ 完了
+- **成果物**: `docs/technical/IL2CPP-COMPATIBILITY.md`
+- **実装内容**:
+  - P/Invoke宣言の検証完了
+  - マーシャリング属性の確認完了
+  - AOT制約の調査（IAsyncEnumerable要確認）
+  - Unity.InferenceEngineのIL2CPP対応確認
 
 ## 成果物一覧
 
