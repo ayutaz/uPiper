@@ -254,7 +254,39 @@ namespace uPiper.Demo
 
             _isGenerating = true;
             SetStatus("処理中...");
-            PiperLogger.LogInfo($"Starting audio generation for text: {_inputField.text}");
+            
+            // Debug text encoding
+            string inputText = _inputField.text;
+            PiperLogger.LogInfo($"Starting audio generation for text: {inputText}");
+            
+            #if UNITY_ANDROID
+            // Additional encoding debug on Android
+            byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(inputText);
+            PiperLogger.LogInfo($"[Android] Text length: {inputText.Length} chars, UTF-8 bytes: {utf8Bytes.Length}");
+            PiperLogger.LogInfo($"[Android] First few bytes: {string.Join(" ", utf8Bytes.Take(20).Select(b => b.ToString("X2")))}");
+            
+            // Try to detect if the text is correctly encoded
+            if (inputText.Contains("こんにちは"))
+            {
+                PiperLogger.LogInfo("[Android] Detected 'こんにちは' in input text - encoding appears correct");
+            }
+            else if (inputText.Contains("縺"))
+            {
+                PiperLogger.LogWarning("[Android] Detected mojibake (文字化け) - text encoding issue!");
+                // Try to fix common mojibake
+                try
+                {
+                    // This might be Shift-JIS interpreted as UTF-8
+                    byte[] possibleShiftJis = System.Text.Encoding.GetEncoding("shift_jis").GetBytes("こんにちは");
+                    string mojibake = System.Text.Encoding.UTF8.GetString(possibleShiftJis);
+                    PiperLogger.LogInfo($"[Android] Expected mojibake for 'こんにちは': {mojibake}");
+                }
+                catch (Exception e)
+                {
+                    PiperLogger.LogWarning($"[Android] Could not test encoding conversion: {e.Message}");
+                }
+            }
+            #endif
 
             // Start overall timing
             var totalStopwatch = Stopwatch.StartNew();
@@ -364,6 +396,15 @@ namespace uPiper.Demo
                                   "1. Navigate to NativePlugins/OpenJTalk/\n" +
                                   "2. Run ./build.sh (macOS/Linux) or build.bat (Windows)\n" +
                                   "3. Restart Unity Editor";
+                    
+                    #if UNITY_ANDROID && !UNITY_EDITOR
+                    // Add Android-specific error info
+                    errorMsg += "\n\nOn Android:\n" +
+                                "- Check if libopenjtalk_wrapper.so is in Plugins/Android/libs/{ABI}/\n" +
+                                "- Check if dictionary files are in StreamingAssets\n" +
+                                "- Dictionary will be extracted to persistent data path on first run";
+                    #endif
+                    
                     throw new Exception(errorMsg);
                 }
                 else
