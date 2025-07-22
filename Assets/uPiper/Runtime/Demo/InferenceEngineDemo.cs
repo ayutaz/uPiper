@@ -64,7 +64,7 @@ namespace uPiper.Demo
         [SerializeField] private TextMeshProUGUI _phonemeDetailsText;
 
         [Header("Settings")]
-        [SerializeField] private string _defaultJapaneseText = "こんにちは";
+        [SerializeField] private string _defaultJapaneseText = "";  // Will be set in Start()
         [SerializeField] private string _defaultEnglishText = "Hello world";
 
         private InferenceAudioGenerator _generator;
@@ -82,21 +82,8 @@ namespace uPiper.Demo
             { "test_voice", "en" }
         };
 
-        // テスト用の定型文
-        private readonly List<string> _japaneseTestPhrases = new List<string>
-        {
-            "自由入力",  // Custom input option
-            "こんにちは",
-            "こんにちは、世界！",
-            "ありがとうございます",
-            "日本の日本橋の上で箸を使ってご飯を食べる",
-            "私は東京に住んでいます",
-            "今日はいい天気ですね",
-            "音声合成のテストです",
-            "ユニティで日本語音声合成ができました",
-            "おはようございます、今日も一日頑張りましょう",
-            "すみません、ちょっとお聞きしたいことがあります"
-        };
+        // テスト用の定型文 - will be initialized in Start() to avoid encoding issues
+        private List<string> _japaneseTestPhrases;
 
         private readonly List<string> _englishTestPhrases = new List<string>
         {
@@ -113,6 +100,25 @@ namespace uPiper.Demo
 
         private void Start()
         {
+            // Set default Japanese text dynamically to avoid encoding issues
+            _defaultJapaneseText = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
+            
+            // Initialize Japanese test phrases dynamically
+            _japaneseTestPhrases = new List<string>
+            {
+                "自由入力",  // Custom input option
+                new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' }),
+                new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は', '、', '世', '界', '！' }),
+                new string(new char[] { 'あ', 'り', 'が', 'と', 'う', 'ご', 'ざ', 'い', 'ま', 'す' }),
+                new string(new char[] { '日', '本', 'の', '日', '本', '橋', 'の', '上', 'で', '箸', 'を', '使', 'っ', 'て', 'ご', '飯', 'を', '食', 'べ', 'る' }),
+                new string(new char[] { '私', 'は', '東', '京', 'に', '住', 'ん', 'で', 'い', 'ま', 'す' }),
+                new string(new char[] { '今', '日', 'は', 'い', 'い', '天', '気', 'で', 'す', 'ね' }),
+                new string(new char[] { '音', '声', '合', '成', 'の', 'テ', 'ス', 'ト', 'で', 'す' }),
+                new string(new char[] { 'ユ', 'ニ', 'テ', 'ィ', 'で', '日', '本', '語', '音', '声', '合', '成', 'が', 'で', 'き', 'ま', 'し', 'た' }),
+                new string(new char[] { 'お', 'は', 'よ', 'う', 'ご', 'ざ', 'い', 'ま', 'す', '、', '今', '日', 'も', '一', '日', '頑', '張', 'り', 'ま', 'し', 'ょ', 'う' }),
+                new string(new char[] { 'す', 'み', 'ま', 'せ', 'ん', '、', 'ち', 'ょ', 'っ', 'と', 'お', '聞', 'き', 'し', 'た', 'い', 'こ', 'と', 'が', 'あ', 'り', 'ま', 'す' })
+            };
+            
             _generator = new InferenceAudioGenerator();
             _audioBuilder = new AudioClipBuilder();
 
@@ -270,26 +276,16 @@ namespace uPiper.Demo
             PiperLogger.LogInfo($"[Android] Text length: {inputText.Length} chars, UTF-8 bytes: {utf8Bytes.Length}");
             PiperLogger.LogInfo($"[Android] First few bytes: {string.Join(" ", utf8Bytes.Take(20).Select(b => b.ToString("X2")))}");
             
-            // Try to detect if the text is correctly encoded
-            if (inputText.Contains("こんにちは"))
+            // Try to detect if the text is correctly encoded by checking UTF-8 bytes
+            string testPhrase = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
+            if (inputText == testPhrase)
             {
-                PiperLogger.LogInfo("[Android] Detected 'こんにちは' in input text - encoding appears correct");
+                PiperLogger.LogInfo("[Android] Input matches expected 'こんにちは' - encoding is correct");
             }
             else if (inputText.Contains("縺"))
             {
                 PiperLogger.LogWarning("[Android] Detected mojibake (文字化け) - text encoding issue!");
-                // Try to fix common mojibake
-                try
-                {
-                    // This might be Shift-JIS interpreted as UTF-8
-                    byte[] possibleShiftJis = System.Text.Encoding.GetEncoding("shift_jis").GetBytes("こんにちは");
-                    string mojibake = System.Text.Encoding.UTF8.GetString(possibleShiftJis);
-                    PiperLogger.LogInfo($"[Android] Expected mojibake for 'こんにちは': {mojibake}");
-                }
-                catch (Exception e)
-                {
-                    PiperLogger.LogWarning($"[Android] Could not test encoding conversion: {e.Message}");
-                }
+                PiperLogger.LogWarning("[Android] The text field may be corrupted. Please use the dropdown to select a test phrase.");
             }
             #endif
 
@@ -376,7 +372,7 @@ namespace uPiper.Demo
                     if (_phonemeDetailsText != null)
                     {
                         // Special handling for こんにちは to debug
-                        if (_inputField.text.Contains("こんにちは"))
+                        if (_inputField.text == konnichiwa)
                         {
                             _phonemeDetailsText.text = $"[DEBUG こんにちは]\nOpenJTalk: {string.Join(" ", openJTalkPhonemes)}\nPiper: {string.Join(" ", phonemes)}\n" +
                                 $"Expected: k o n n i ch i w a\nCheck if 'ch i' sounds like 'ch u'";
@@ -449,7 +445,8 @@ namespace uPiper.Demo
                 PiperLogger.LogDebug($"Input text: '{_inputField.text}'");
 
                 // 「こんにちは」の場合、特に詳しくログ
-                if (_inputField.text.Contains("こんにちは"))
+                string konnichiwa = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
+                if (_inputField.text == konnichiwa)
                 {
                     PiperLogger.LogInfo("=== Special debug for 'こんにちは' ===");
                     for (int i = 0; i < phonemes.Length; i++)
@@ -728,7 +725,7 @@ namespace uPiper.Demo
             
             // Text encoding test
             PiperLogger.LogInfo("[Android Debug] === Text Encoding Test ===");
-            string testText = "こんにちは";
+            string testText = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
             byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(testText);
             PiperLogger.LogInfo($"[Android Debug] Test text: {testText}");
             PiperLogger.LogInfo($"[Android Debug] UTF-8 bytes ({utf8Bytes.Length}): {BitConverter.ToString(utf8Bytes)}");
@@ -737,6 +734,22 @@ namespace uPiper.Demo
             string decoded = System.Text.Encoding.UTF8.GetString(utf8Bytes);
             PiperLogger.LogInfo($"[Android Debug] Decoded back: {decoded}");
             PiperLogger.LogInfo($"[Android Debug] Encoding round-trip success: {testText == decoded}");
+            
+            // Expected UTF-8 bytes for "こんにちは"
+            byte[] expectedBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+            bool bytesMatch = utf8Bytes.Length == expectedBytes.Length;
+            if (bytesMatch)
+            {
+                for (int i = 0; i < utf8Bytes.Length; i++)
+                {
+                    if (utf8Bytes[i] != expectedBytes[i])
+                    {
+                        bytesMatch = false;
+                        break;
+                    }
+                }
+            }
+            PiperLogger.LogInfo($"[Android Debug] UTF-8 bytes match expected: {bytesMatch}");
             
             PiperLogger.LogInfo("[Android Debug] === End Android Setup Debug ===");
         }
