@@ -22,7 +22,8 @@ if(NOT DEFINED ANDROID_ABI)
 endif()
 
 # Compiler settings
-set(CMAKE_ANDROID_STL_TYPE c++_static)
+# Use c++_shared to resolve undefined symbols issues
+set(CMAKE_ANDROID_STL_TYPE c++_shared)
 
 # Platform definitions
 add_definitions(-DANDROID)

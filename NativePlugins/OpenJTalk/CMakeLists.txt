@@ -153,6 +153,24 @@ elseif(NOT ANDROID AND EXISTS "${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a")
     )
 endif()
 
+# Android-specific optimizations
+if(ANDROID)
+    # Size optimization flags
+    target_compile_options(openjtalk_wrapper PRIVATE 
+        -Os                         # Optimize for size
+        -ffunction-sections         # Place functions in separate sections
+        -fdata-sections            # Place data in separate sections
+        -fvisibility=hidden        # Hide symbols by default
+    )
+    
+    # Link-time optimizations
+    target_link_options(openjtalk_wrapper PRIVATE
+        -Wl,--gc-sections          # Remove unused sections
+        -Wl,--strip-debug          # Strip debug info
+        -Wl,--exclude-libs,ALL     # Hide symbols from static libs
+    )
+endif()
+
 # Link libraries based on platform
 if(ANDROID)
     target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} c++_shared m log)

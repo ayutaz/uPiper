@@ -183,6 +183,79 @@ jobs:
         name: openjtalk-linux-${{ matrix.arch }}
         path: artifacts/
 
+  build-android:
+    name: Build Android (${{ matrix.abi }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a, x86, x86_64]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build Android Libraries
+      run: |
+        cd NativePlugins/OpenJTalk
+        
+        # Build Docker image
+        docker build -f Dockerfile.android -t openjtalk-android .
+        
+        # Run build for specific ABI
+        docker run --rm -v "${PWD}:/workspace" -w /workspace openjtalk-android bash -c "
+          # Fix permissions
+          chmod +x *.sh
+          dos2unix *.sh
+          
+          # Fetch dependencies if needed
+          if [ ! -d external/open_jtalk-1.11 ]; then
+            ./fetch_dependencies.sh
+          fi
+          
+          # Build dependencies
+          if [ ! -d external/openjtalk_build/android_${{ matrix.abi }} ]; then
+            # Build only for this ABI
+            export TARGET_ABI=${{ matrix.abi }}
+            # Modified build script to build only one ABI
+            sed -i 's/ABIS=.*/ABIS=(\"${{ matrix.abi }}\")/' build_dependencies_android.sh
+            ./build_dependencies_android.sh
+          fi
+          
+          # Build wrapper library
+          mkdir -p build_android_${{ matrix.abi }}
+          cd build_android_${{ matrix.abi }}
+          cmake -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake \
+                -DANDROID_ABI=${{ matrix.abi }} \
+                -DANDROID_PLATFORM=android-21 \
+                -DANDROID_STL=c++_shared \
+                -DCMAKE_BUILD_TYPE=Release ..
+          make -j\$(nproc)
+          
+          # Copy output
+          mkdir -p ../output/android/${{ matrix.abi }}
+          cp lib/libopenjtalk_wrapper.so ../output/android/${{ matrix.abi }}/
+        "
+    
+    - name: Verify Android Library
+      run: |
+        cd NativePlugins/OpenJTalk
+        ls -la output/android/${{ matrix.abi }}/
+        file output/android/${{ matrix.abi }}/libopenjtalk_wrapper.so
+    
+    - name: Prepare Artifacts
+      run: |
+        mkdir -p artifacts/android/${{ matrix.abi }}
+        cp NativePlugins/OpenJTalk/output/android/${{ matrix.abi }}/*.so artifacts/android/${{ matrix.abi }}/
+    
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: openjtalk-android-${{ matrix.abi }}
+        path: artifacts/
+
   build-macos:
     name: Build macOS
     runs-on: macos-latest
@@ -246,7 +319,7 @@ jobs:
   # Validate all platform builds
   validate-builds:
     name: Validate Cross-Platform Builds
-    needs: [build-windows-cross, build-linux, build-macos]
+    needs: [build-windows-cross, build-linux, build-macos, build-android]
     runs-on: ubuntu-latest
     
     steps:
@@ -291,6 +364,19 @@ jobs:
           exit 1
         fi
         
+        # Check Android libraries
+        echo ""
+        echo "Checking Android libraries..."
+        for abi in arm64-v8a armeabi-v7a x86 x86_64; do
+          if [ -f "libraries/openjtalk-android-${abi}/android/${abi}/libopenjtalk_wrapper.so" ]; then
+            echo "✓ Android ${abi} SO found"
+            ls -la "libraries/openjtalk-android-${abi}/android/${abi}/"
+          else
+            echo "✗ Android ${abi} SO missing"
+            find libraries -name "*.so" | grep "${abi}" || true
+          fi
+        done
+        
         echo ""
         echo "All platform libraries validated successfully!"
         
@@ -305,6 +391,7 @@ jobs:
         echo "| Windows | x64 | ${{ needs.build-windows-cross.result }} |" >> $GITHUB_STEP_SUMMARY
         echo "| Linux | x86_64 | ${{ needs.build-linux.result }} |" >> $GITHUB_STEP_SUMMARY
         echo "| macOS | Universal | ${{ needs.build-macos.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Android | Multi-ABI | ${{ needs.build-android.result }} |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "## Unity Integration Status" >> $GITHUB_STEP_SUMMARY
         echo "✅ P/Invoke compatible interface" >> $GITHUB_STEP_SUMMARY
@@ -313,7 +400,7 @@ jobs:
 
   create-release:
     name: Create Release Package
-    needs: [build-windows-cross, build-linux, build-macos]
+    needs: [build-windows-cross, build-linux, build-macos, build-android]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
     
@@ -331,6 +418,10 @@ jobs:
         mkdir -p uPiper-OpenJTalk-Native/Plugins/Linux/x86_64
         mkdir -p uPiper-OpenJTalk-Native/Plugins/Linux/aarch64
         mkdir -p uPiper-OpenJTalk-Native/Plugins/macOS
+        mkdir -p uPiper-OpenJTalk-Native/Plugins/Android/libs/arm64-v8a
+        mkdir -p uPiper-OpenJTalk-Native/Plugins/Android/libs/armeabi-v7a
+        mkdir -p uPiper-OpenJTalk-Native/Plugins/Android/libs/x86
+        mkdir -p uPiper-OpenJTalk-Native/Plugins/Android/libs/x86_64
         mkdir -p uPiper-OpenJTalk-Native/Include
         
         # Windows
@@ -343,6 +434,12 @@ jobs:
         
         # macOS
         cp artifacts/openjtalk-macos-universal/macos/*.dylib uPiper-OpenJTalk-Native/Plugins/macOS/
+        
+        # Android
+        cp artifacts/openjtalk-android-arm64-v8a/android/arm64-v8a/*.so uPiper-OpenJTalk-Native/Plugins/Android/libs/arm64-v8a/
+        cp artifacts/openjtalk-android-armeabi-v7a/android/armeabi-v7a/*.so uPiper-OpenJTalk-Native/Plugins/Android/libs/armeabi-v7a/
+        cp artifacts/openjtalk-android-x86/android/x86/*.so uPiper-OpenJTalk-Native/Plugins/Android/libs/x86/
+        cp artifacts/openjtalk-android-x86_64/android/x86_64/*.so uPiper-OpenJTalk-Native/Plugins/Android/libs/x86_64/
         
         # Headers
         cp artifacts/openjtalk-windows-x64/*.h uPiper-OpenJTalk-Native/Include/
@@ -357,6 +454,7 @@ jobs:
         - Windows (x64 only)
         - Linux (x86_64)
         - macOS (Universal Binary: x86_64 + arm64)
+        - Android (arm64-v8a, armeabi-v7a, x86, x86_64)
         
         ## Installation
         1. Copy the contents of the Plugins folder to your Unity project's Assets/Plugins folder
