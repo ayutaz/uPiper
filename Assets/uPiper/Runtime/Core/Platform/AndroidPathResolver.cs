@@ -78,7 +78,7 @@ namespace uPiper.Core.Platform
         /// </summary>
         public static string GetOpenJTalkDictionaryPath()
         {
-            const string dictRelativePath = "uPiper/OpenJTalk/open_jtalk_dic_utf_8-1.11";
+            const string dictRelativePath = "uPiper/OpenJTalk/naist_jdic/open_jtalk_dic_utf_8-1.11";
             string persistentPath = GetPersistentPath(dictRelativePath);
 
             // Check if we need to extract the dictionary
