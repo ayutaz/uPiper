@@ -1,4 +1,5 @@
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 using System.IO;
 
@@ -14,17 +15,21 @@ namespace uPiper.Editor
         {
             Debug.Log("Configuring IL2CPP settings for uPiper...");
 
+            // Get NamedBuildTarget from current build target group
+            var targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+            var namedTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
+
             // Set scripting backend to IL2CPP
-            PlayerSettings.SetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup, ScriptingImplementation.IL2CPP);
+            PlayerSettings.SetScriptingBackend(namedTarget, ScriptingImplementation.IL2CPP);
 
             // Set API compatibility level to .NET Standard 2.1
-            PlayerSettings.SetApiCompatibilityLevel(EditorUserBuildSettings.selectedBuildTargetGroup, ApiCompatibilityLevel.NET_Standard_2_0);
+            PlayerSettings.SetApiCompatibilityLevel(namedTarget, ApiCompatibilityLevel.NET_Standard_2_0);
 
             // Configure stripping level
-            PlayerSettings.SetManagedStrippingLevel(EditorUserBuildSettings.selectedBuildTargetGroup, ManagedStrippingLevel.Low);
+            PlayerSettings.SetManagedStrippingLevel(namedTarget, ManagedStrippingLevel.Low);
 
             // Set IL2CPP compiler configuration
-            PlayerSettings.SetIl2CppCompilerConfiguration(EditorUserBuildSettings.selectedBuildTargetGroup, Il2CppCompilerConfiguration.Release);
+            PlayerSettings.SetIl2CppCompilerConfiguration(namedTarget, Il2CppCompilerConfiguration.Release);
 
             // Enable incremental GC for better performance
             PlayerSettings.gcIncremental = true;
@@ -66,7 +71,7 @@ namespace uPiper.Editor
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
 
             // Minimum API level for IL2CPP
-            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel21;
+            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
 
             Debug.Log("Android IL2CPP settings configured:");
             Debug.Log($"Target Architectures: ARM64, ARMv7");
@@ -76,7 +81,8 @@ namespace uPiper.Editor
         private static void ConfigureiOSSettings()
         {
             // Target architectures
-            PlayerSettings.SetArchitecture(BuildTargetGroup.iOS, 2); // Universal architecture
+            var namedTarget = NamedBuildTarget.FromBuildTargetGroup(BuildTargetGroup.iOS);
+            PlayerSettings.SetArchitecture(namedTarget, 2); // Universal architecture
 
             // Minimum iOS version
             PlayerSettings.iOS.targetOSVersionString = "11.0";
@@ -117,13 +123,14 @@ namespace uPiper.Editor
         public static void VerifyIL2CPPConfiguration()
         {
             var targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+            var namedTarget = NamedBuildTarget.FromBuildTargetGroup(targetGroup);
 
             Debug.Log("=== IL2CPP Configuration Verification ===");
             Debug.Log($"Target Platform: {targetGroup}");
-            Debug.Log($"Scripting Backend: {PlayerSettings.GetScriptingBackend(targetGroup)}");
-            Debug.Log($"API Compatibility: {PlayerSettings.GetApiCompatibilityLevel(targetGroup)}");
-            Debug.Log($"Stripping Level: {PlayerSettings.GetManagedStrippingLevel(targetGroup)}");
-            Debug.Log($"IL2CPP Compiler: {PlayerSettings.GetIl2CppCompilerConfiguration(targetGroup)}");
+            Debug.Log($"Scripting Backend: {PlayerSettings.GetScriptingBackend(namedTarget)}");
+            Debug.Log($"API Compatibility: {PlayerSettings.GetApiCompatibilityLevel(namedTarget)}");
+            Debug.Log($"Stripping Level: {PlayerSettings.GetManagedStrippingLevel(namedTarget)}");
+            Debug.Log($"IL2CPP Compiler: {PlayerSettings.GetIl2CppCompilerConfiguration(namedTarget)}");
 
             // Check if link.xml exists
             var linkXmlPath = Path.Combine(Application.dataPath, "uPiper", "link.xml");

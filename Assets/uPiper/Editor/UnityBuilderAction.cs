@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
@@ -28,25 +29,26 @@ namespace UnityBuilderAction
             // Parse target platform
             var buildTarget = EditorUserBuildSettings.activeBuildTarget;
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
 
             // Configure scripting backend
             if (scriptingBackend.ToLower() == "il2cpp")
             {
                 Debug.Log("Configuring IL2CPP build...");
-                PlayerSettings.SetScriptingBackend(buildTargetGroup, ScriptingImplementation.IL2CPP);
+                PlayerSettings.SetScriptingBackend(namedBuildTarget, ScriptingImplementation.IL2CPP);
 
                 // Configure IL2CPP specific settings
-                PlayerSettings.SetIl2CppCompilerConfiguration(buildTargetGroup, Il2CppCompilerConfiguration.Release);
-                PlayerSettings.SetManagedStrippingLevel(buildTargetGroup, ManagedStrippingLevel.Low);
+                PlayerSettings.SetIl2CppCompilerConfiguration(namedBuildTarget, Il2CppCompilerConfiguration.Release);
+                PlayerSettings.SetManagedStrippingLevel(namedBuildTarget, ManagedStrippingLevel.Low);
                 PlayerSettings.gcIncremental = true;
 
                 // Platform specific IL2CPP settings
-                ConfigurePlatformSpecificIL2CPP(buildTarget, buildTargetGroup);
+                ConfigurePlatformSpecificIL2CPP(buildTarget, namedBuildTarget);
             }
             else
             {
                 Debug.Log("Configuring Mono build...");
-                PlayerSettings.SetScriptingBackend(buildTargetGroup, ScriptingImplementation.Mono2x);
+                PlayerSettings.SetScriptingBackend(namedBuildTarget, ScriptingImplementation.Mono2x);
             }
 
             // Get build location
@@ -84,17 +86,17 @@ namespace UnityBuilderAction
             }
         }
 
-        private static void ConfigurePlatformSpecificIL2CPP(BuildTarget target, BuildTargetGroup targetGroup)
+        private static void ConfigurePlatformSpecificIL2CPP(BuildTarget target, NamedBuildTarget namedTarget)
         {
             switch (target)
             {
                 case BuildTarget.Android:
                     PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
-                    PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel21;
+                    PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
                     break;
 
                 case BuildTarget.iOS:
-                    PlayerSettings.SetArchitecture(targetGroup, 2); // Universal
+                    PlayerSettings.SetArchitecture(namedTarget, 2); // Universal
                     PlayerSettings.iOS.targetOSVersionString = "11.0";
                     break;
 
