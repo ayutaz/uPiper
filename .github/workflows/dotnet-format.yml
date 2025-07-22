@@ -62,45 +62,19 @@ jobs:
         # Phase-based checking
         case "$CHECK_PHASE" in
           "whitespace_only")
-            echo "\n🔍 Phase 1: Checking whitespace formatting only"
-            if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ steps.changed-files.outputs.any_changed }}" = "true" ]; then
-              # Check only changed files using folder mode with specific includes
-              echo "Creating temporary file list..."
-              echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' > changed_files.txt
-              
-              # Run format check on all files at once using folder mode
-              dotnet format whitespace . --folder --include $(cat changed_files.txt | tr '\n' ' ') --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes
-            else
-              # Check all files (manual run)
-              echo "Checking all C# files..."
-              dotnet format whitespace . --folder --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes
-            fi
+            echo -e "\n🔍 Phase 1: Checking whitespace formatting only"
+            # Always check all files using folder mode (as in the successful workflow)
+            dotnet format whitespace . --folder --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes
             ;;
             
           "style_check")
-            echo "\n🔍 Phase 2: Checking code style issues"
-            if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ steps.changed-files.outputs.any_changed }}" = "true" ]; then
-              echo "Creating temporary file list..."
-              echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' > changed_files.txt
-              
-              # Run format check on all files at once using folder mode
-              dotnet format style . --folder --include $(cat changed_files.txt | tr '\n' ' ') --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes
-            else
-              dotnet format style . --folder --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes
-            fi
+            echo -e "\n🔍 Phase 2: Checking code style issues"
+            dotnet format style . --folder --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes
             ;;
             
           "full_enforcement")
-            echo "\n🔍 Phase 3: Full format enforcement"
-            if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ steps.changed-files.outputs.any_changed }}" = "true" ]; then
-              echo "Creating temporary file list..."
-              echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' > changed_files.txt
-              
-              # Run format check on all files at once using folder mode
-              dotnet format . --folder --include $(cat changed_files.txt | tr '\n' ' ') --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes
-            else
-              dotnet format . --folder --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes
-            fi
+            echo -e "\n🔍 Phase 3: Full format enforcement"
+            dotnet format . --folder --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes
             ;;
             
           *)
@@ -109,4 +83,4 @@ jobs:
             ;;
         esac
         
-        echo "\n✅ Format check completed successfully"
+        echo -e "\n✅ Format check completed successfully"
