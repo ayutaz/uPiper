@@ -14,25 +14,25 @@ namespace uPiper.Editor
         private bool _isRunning = false;
         private StringBuilder _results = new StringBuilder();
         private Vector2 _scrollPosition;
-        
+
         [MenuItem("uPiper/IL2CPP Benchmark Runner")]
         public static void ShowWindow()
         {
             var window = GetWindow<IL2CPPBenchmarkRunner>("IL2CPP Benchmark");
             window.minSize = new Vector2(600, 400);
         }
-        
+
         private void OnGUI()
         {
             EditorGUILayout.LabelField("IL2CPP Performance Benchmark Runner", EditorStyles.boldLabel);
             EditorGUILayout.Space();
-            
+
             // Current backend info
             var currentBackend = PlayerSettings.GetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup);
             EditorGUILayout.LabelField("Current Scripting Backend:", currentBackend.ToString());
-            
+
             EditorGUILayout.Space();
-            
+
             // Instructions
             EditorGUILayout.HelpBox(
                 "This tool helps you run performance benchmarks on both Mono and IL2CPP backends.\n\n" +
@@ -42,9 +42,9 @@ namespace uPiper.Editor
                 "3. Build and run benchmarks\n" +
                 "4. Compare results",
                 MessageType.Info);
-            
+
             EditorGUILayout.Space();
-            
+
             // Action buttons
             using (new EditorGUI.DisabledScope(_isRunning))
             {
@@ -52,9 +52,9 @@ namespace uPiper.Editor
                 {
                     RunEditorBenchmarks();
                 }
-                
+
                 EditorGUILayout.Space();
-                
+
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     if (currentBackend == ScriptingImplementation.Mono2x)
@@ -71,30 +71,30 @@ namespace uPiper.Editor
                             SwitchToMono();
                         }
                     }
-                    
+
                     if (GUILayout.Button("Configure Build Settings", GUILayout.Height(25)))
                     {
                         IL2CPPBuildSettings.ConfigureIL2CPPSettings();
                     }
                 }
-                
+
                 EditorGUILayout.Space();
-                
+
                 if (GUILayout.Button("Build Benchmark Player", GUILayout.Height(30)))
                 {
                     BuildBenchmarkPlayer();
                 }
             }
-            
+
             EditorGUILayout.Space();
-            
+
             // Results display
             EditorGUILayout.LabelField("Benchmark Results:", EditorStyles.boldLabel);
-            
+
             using (var scrollView = new EditorGUILayout.ScrollViewScope(_scrollPosition, GUILayout.ExpandHeight(true)))
             {
                 _scrollPosition = scrollView.scrollPosition;
-                
+
                 if (_results.Length > 0)
                 {
                     EditorGUILayout.TextArea(_results.ToString(), GUILayout.ExpandHeight(true));
@@ -104,9 +104,9 @@ namespace uPiper.Editor
                     EditorGUILayout.HelpBox("No benchmark results yet. Run benchmarks to see results.", MessageType.None);
                 }
             }
-            
+
             EditorGUILayout.Space();
-            
+
             // Export buttons
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -115,7 +115,7 @@ namespace uPiper.Editor
                     _results.Clear();
                     Repaint();
                 }
-                
+
                 using (new EditorGUI.DisabledScope(_results.Length == 0))
                 {
                     if (GUILayout.Button("Export Results"))
@@ -125,7 +125,7 @@ namespace uPiper.Editor
                 }
             }
         }
-        
+
         private void RunEditorBenchmarks()
         {
             _isRunning = true;
@@ -134,7 +134,7 @@ namespace uPiper.Editor
             _results.AppendLine($"Unity Version: {Application.unityVersion}");
             _results.AppendLine($"Platform: {Application.platform}");
             _results.AppendLine();
-            
+
             // Note: In a real implementation, you would run the actual benchmark tests here
             // For now, we'll add placeholder text
             _results.AppendLine("To run actual benchmarks:");
@@ -143,11 +143,11 @@ namespace uPiper.Editor
             _results.AppendLine("3. Run IL2CPPPerformanceTest");
             _results.AppendLine("4. Copy results here");
             _results.AppendLine();
-            
+
             _isRunning = false;
             Repaint();
         }
-        
+
         private void SwitchToIL2CPP()
         {
             var targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
@@ -155,7 +155,7 @@ namespace uPiper.Editor
             Debug.Log("Switched to IL2CPP backend");
             Repaint();
         }
-        
+
         private void SwitchToMono()
         {
             var targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
@@ -163,7 +163,7 @@ namespace uPiper.Editor
             Debug.Log("Switched to Mono backend");
             Repaint();
         }
-        
+
         private void BuildBenchmarkPlayer()
         {
             var buildPath = EditorUtility.SaveFilePanel(
@@ -171,13 +171,13 @@ namespace uPiper.Editor
                 "",
                 $"uPiper_Benchmark_{PlayerSettings.GetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup)}",
                 GetBuildExtension());
-            
+
             if (string.IsNullOrEmpty(buildPath))
                 return;
-            
+
             // Configure build options
             var buildOptions = BuildOptions.Development | BuildOptions.IncludeTestAssemblies;
-            
+
             var buildPlayerOptions = new BuildPlayerOptions
             {
                 scenes = new[] { "Assets/uPiper/Scenes/InferenceEngineDemo.unity" },
@@ -185,9 +185,9 @@ namespace uPiper.Editor
                 target = EditorUserBuildSettings.activeBuildTarget,
                 options = buildOptions
             };
-            
+
             var report = BuildPipeline.BuildPlayer(buildPlayerOptions);
-            
+
             if (report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded)
             {
                 Debug.Log($"Benchmark build completed: {buildPath}");
@@ -198,7 +198,7 @@ namespace uPiper.Editor
                 Debug.LogError($"Build failed: {report.summary.result}");
             }
         }
-        
+
         private string GetBuildExtension()
         {
             return EditorUserBuildSettings.activeBuildTarget switch
@@ -209,7 +209,7 @@ namespace uPiper.Editor
                 _ => ""
             };
         }
-        
+
         private void ExportResults()
         {
             var path = EditorUtility.SaveFilePanel(
@@ -217,7 +217,7 @@ namespace uPiper.Editor
                 "",
                 $"benchmark_results_{DateTime.Now:yyyyMMdd_HHmmss}.txt",
                 "txt");
-            
+
             if (!string.IsNullOrEmpty(path))
             {
                 File.WriteAllText(path, _results.ToString());
