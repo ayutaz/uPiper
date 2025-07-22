@@ -11,7 +11,7 @@ namespace uPiper.Editor.Build
     /// </summary>
     public class AndroidPostBuildProcessor : IPostprocessBuildWithReport
     {
-        public int callbackOrder => 100;
+        public int callbackOrder { get { return 100; } }
 
         public void OnPostprocessBuild(BuildReport report)
         {
@@ -35,11 +35,15 @@ namespace uPiper.Editor.Build
             string[] requiredLibraries = { "libopenjtalk_wrapper.so" };
             string[] supportedAbis = { "arm64-v8a", "armeabi-v7a", "x86", "x86_64" };
 
-            foreach (var file in report.files)
+            // Check build report files if available
+            if (report.files != null)
             {
-                if (file.path.Contains("libopenjtalk_wrapper.so"))
+                foreach (var file in report.files)
                 {
-                    Debug.Log($"[uPiper] Found native library: {file.path} (size: {file.size / 1024}KB)");
+                    if (file.path.Contains("libopenjtalk_wrapper.so"))
+                    {
+                        Debug.Log($"[uPiper] Found native library: {file.path} (size: {file.size / 1024}KB)");
+                    }
                 }
             }
 
@@ -92,18 +96,28 @@ namespace uPiper.Editor.Build
             long nativeLibSize = 0;
             long dictionarySize = 0;
 
-            foreach (var file in report.files)
+            // Check if files property is available
+            if (report.files != null)
             {
-                totalSize += file.size;
-                
-                if (file.path.Contains("libopenjtalk_wrapper.so"))
+                foreach (var file in report.files)
                 {
-                    nativeLibSize += file.size;
+                    totalSize += file.size;
+                    
+                    if (file.path.Contains("libopenjtalk_wrapper.so"))
+                    {
+                        nativeLibSize += file.size;
+                    }
+                    else if (file.path.Contains("OpenJTalk") && file.path.Contains("dic"))
+                    {
+                        dictionarySize += file.size;
+                    }
                 }
-                else if (file.path.Contains("OpenJTalk") && file.path.Contains("dic"))
-                {
-                    dictionarySize += file.size;
-                }
+            }
+            else
+            {
+                // Fallback: use summary information
+                totalSize = report.summary.totalSize;
+                Debug.Log("[uPiper] Detailed file information not available in build report.");
             }
 
             Debug.Log($"[uPiper] APK Total Size: {totalSize / 1024 / 1024}MB");

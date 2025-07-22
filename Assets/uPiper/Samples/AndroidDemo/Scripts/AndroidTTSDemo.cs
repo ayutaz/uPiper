@@ -4,6 +4,10 @@ using UnityEngine.UI;
 using uPiper.Core;
 using uPiper.Core.Phonemizers;
 
+#if UNITY_2021_2_OR_NEWER
+using TMPro;
+#endif
+
 namespace uPiper.Samples.AndroidDemo
 {
     /// <summary>
@@ -12,11 +16,20 @@ namespace uPiper.Samples.AndroidDemo
     public class AndroidTTSDemo : MonoBehaviour
     {
         [Header("UI References")]
+#if UNITY_2021_2_OR_NEWER
+        [SerializeField] private TMP_InputField inputField;
+#else
         [SerializeField] private InputField inputField;
+#endif
         [SerializeField] private Button speakButton;
+#if UNITY_2021_2_OR_NEWER
+        [SerializeField] private TextMeshProUGUI statusText;
+        [SerializeField] private TextMeshProUGUI speedText;
+#else
         [SerializeField] private Text statusText;
-        [SerializeField] private Slider speedSlider;
         [SerializeField] private Text speedText;
+#endif
+        [SerializeField] private Slider speedSlider;
         [SerializeField] private AudioSource audioSource;
 
         [Header("Test Sentences")]
