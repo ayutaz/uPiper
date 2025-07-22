@@ -693,19 +693,21 @@ namespace uPiper.Demo
                 PiperLogger.LogError($"[Android Debug] Error checking dictionary: {e.Message}");
             }
             
-            // Check native library
+            // Check native library loading
             try
             {
-                string libPath = System.IO.Path.Combine(Application.nativeLibrariesPath, "libopenjtalk_wrapper.so");
-                if (System.IO.File.Exists(libPath))
-                {
-                    var fileInfo = new System.IO.FileInfo(libPath);
-                    PiperLogger.LogInfo($"[Android Debug] ✓ Native library found: {fileInfo.Length} bytes");
-                }
-                else
-                {
-                    PiperLogger.LogWarning($"[Android Debug] ✗ Native library not found at: {libPath}");
-                }
+                // On Android, native libraries are loaded from the APK
+                // We can check if OpenJTalk can be loaded by checking if the phonemizer works
+                PiperLogger.LogInfo("[Android Debug] Checking native library loading...");
+                
+                // Try to get library path from OpenJTalkPhonemizer
+                var expectedPath = OpenJTalkPhonemizer.GetExpectedLibraryPath();
+                PiperLogger.LogInfo($"[Android Debug] Expected library name: {expectedPath}");
+                
+                // The actual check will happen when OpenJTalkPhonemizer is initialized
+                // Here we just log that we expect the library to be loaded from APK
+                PiperLogger.LogInfo("[Android Debug] Native libraries on Android are loaded directly from APK");
+                PiperLogger.LogInfo("[Android Debug] Library loading will be verified during OpenJTalk initialization");
             }
             catch (Exception e)
             {
