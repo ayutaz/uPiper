@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Text;
 using System.Collections;
+using System;
 
 namespace uPiper.Samples.AndroidDemo
 {
