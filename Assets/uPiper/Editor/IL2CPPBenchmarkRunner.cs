@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 
 namespace uPiper.Editor
@@ -28,7 +29,8 @@ namespace uPiper.Editor
             EditorGUILayout.Space();
 
             // Current backend info
-            var currentBackend = PlayerSettings.GetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup);
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            var currentBackend = PlayerSettings.GetScriptingBackend(namedBuildTarget);
             EditorGUILayout.LabelField("Current Scripting Backend:", currentBackend.ToString());
 
             EditorGUILayout.Space();
@@ -130,7 +132,8 @@ namespace uPiper.Editor
         {
             _isRunning = true;
             _results.AppendLine($"=== Benchmark Run: {DateTime.Now:yyyy-MM-dd HH:mm:ss} ===");
-            _results.AppendLine($"Backend: {PlayerSettings.GetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup)}");
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            _results.AppendLine($"Backend: {PlayerSettings.GetScriptingBackend(namedBuildTarget)}");
             _results.AppendLine($"Unity Version: {Application.unityVersion}");
             _results.AppendLine($"Platform: {Application.platform}");
             _results.AppendLine();
@@ -150,26 +153,27 @@ namespace uPiper.Editor
 
         private void SwitchToIL2CPP()
         {
-            var targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
-            PlayerSettings.SetScriptingBackend(targetGroup, ScriptingImplementation.IL2CPP);
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            PlayerSettings.SetScriptingBackend(namedBuildTarget, ScriptingImplementation.IL2CPP);
             Debug.Log("Switched to IL2CPP backend");
             Repaint();
         }
 
         private void SwitchToMono()
         {
-            var targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
-            PlayerSettings.SetScriptingBackend(targetGroup, ScriptingImplementation.Mono2x);
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            PlayerSettings.SetScriptingBackend(namedBuildTarget, ScriptingImplementation.Mono2x);
             Debug.Log("Switched to Mono backend");
             Repaint();
         }
 
         private void BuildBenchmarkPlayer()
         {
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
             var buildPath = EditorUtility.SaveFilePanel(
                 "Save Benchmark Build",
                 "",
-                $"uPiper_Benchmark_{PlayerSettings.GetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup)}",
+                $"uPiper_Benchmark_{PlayerSettings.GetScriptingBackend(namedBuildTarget)}",
                 GetBuildExtension());
 
             if (string.IsNullOrEmpty(buildPath))
