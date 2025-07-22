@@ -1,4 +1,4 @@
-name: Unity IL2CPP Build Verification
+name: Unity Build Verification (Mono & IL2CPP)
 
 on:
   push:
@@ -72,26 +72,40 @@ jobs:
         echo "IL2CPP specific files:"
         find Assets/uPiper -name "*IL2CPP*" -type f | head -20
 
-  build-il2cpp:
-    name: Build IL2CPP - ${{ matrix.targetPlatform }}
+  build-unity:
+    name: Build ${{ matrix.scriptingBackend }} - ${{ matrix.targetPlatform }}
     runs-on: ${{ matrix.os }}
     needs: il2cpp-compatibility-check
     strategy:
       fail-fast: false
       matrix:
         include:
+          # Windows builds
+          - targetPlatform: StandaloneWindows64
+            os: ubuntu-latest
+            scriptingBackend: Mono2x
           - targetPlatform: StandaloneWindows64
             os: ubuntu-latest
             scriptingBackend: IL2CPP
+          # macOS builds
+          - targetPlatform: StandaloneOSX
+            os: ubuntu-latest
+            scriptingBackend: Mono2x
           - targetPlatform: StandaloneOSX
             os: ubuntu-latest
             scriptingBackend: IL2CPP
+          # Linux builds
+          - targetPlatform: StandaloneLinux64
+            os: ubuntu-latest
+            scriptingBackend: Mono2x
           - targetPlatform: StandaloneLinux64
             os: ubuntu-latest
             scriptingBackend: IL2CPP
+          # Android builds (IL2CPP only - Android doesn't support Mono)
           - targetPlatform: Android
             os: ubuntu-latest
             scriptingBackend: IL2CPP
+          # WebGL builds (IL2CPP only - WebGL doesn't support Mono)
           - targetPlatform: WebGL
             os: ubuntu-latest
             scriptingBackend: IL2CPP
@@ -105,9 +119,9 @@ jobs:
       uses: actions/cache@v4
       with:
         path: Library
-        key: Library-IL2CPP-${{ matrix.targetPlatform }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+        key: Library-${{ matrix.scriptingBackend }}-${{ matrix.targetPlatform }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
         restore-keys: |
-          Library-IL2CPP-${{ matrix.targetPlatform }}-
+          Library-${{ matrix.scriptingBackend }}-${{ matrix.targetPlatform }}-
           Library-${{ matrix.targetPlatform }}-
           
     # Free up disk space for IL2CPP builds (they need more space)
@@ -130,8 +144,8 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y clang gcc-multilib g++-multilib
         
-    # Build with IL2CPP
-    - name: Build Unity project with IL2CPP
+    # Build Unity project
+    - name: Build Unity project with ${{ matrix.scriptingBackend }}
       uses: game-ci/unity-builder@v4
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -140,113 +154,125 @@ jobs:
       with:
         unityVersion: 6000.0.35f1
         targetPlatform: ${{ matrix.targetPlatform }}
-        buildName: uPiper-IL2CPP
+        buildName: uPiper-${{ matrix.scriptingBackend }}
         buildsPath: build
         buildMethod: UnityBuilderAction.BuildScript.Build
         customParameters: -scriptingBackend ${{ matrix.scriptingBackend }}
         
-    # Verify IL2CPP build output
-    - name: Verify IL2CPP build
+    # Verify build output
+    - name: Verify build output
       run: |
-        echo "Checking IL2CPP build output for ${{ matrix.targetPlatform }}..."
+        echo "Checking ${{ matrix.scriptingBackend }} build output for ${{ matrix.targetPlatform }}..."
+        BUILD_NAME="uPiper-${{ matrix.scriptingBackend }}"
         
         # Platform specific checks
         case "${{ matrix.targetPlatform }}" in
           StandaloneWindows64)
-            if [ -f "build/${{ matrix.targetPlatform }}/uPiper-IL2CPP.exe" ]; then
-              echo "✅ Windows IL2CPP executable found"
+            if [ -f "build/${{ matrix.targetPlatform }}/${BUILD_NAME}.exe" ]; then
+              echo "✅ Windows ${{ matrix.scriptingBackend }} executable found"
               ls -la "build/${{ matrix.targetPlatform }}/"
             else
-              echo "❌ Windows IL2CPP executable not found!"
+              echo "❌ Windows ${{ matrix.scriptingBackend }} executable not found!"
               exit 1
             fi
             ;;
           StandaloneLinux64)
-            if [ -f "build/${{ matrix.targetPlatform }}/uPiper-IL2CPP" ]; then
-              echo "✅ Linux IL2CPP executable found"
+            if [ -f "build/${{ matrix.targetPlatform }}/${BUILD_NAME}" ]; then
+              echo "✅ Linux ${{ matrix.scriptingBackend }} executable found"
               ls -la "build/${{ matrix.targetPlatform }}/"
             else
-              echo "❌ Linux IL2CPP executable not found!"
+              echo "❌ Linux ${{ matrix.scriptingBackend }} executable not found!"
               exit 1
             fi
             ;;
           StandaloneOSX)
-            if [ -d "build/${{ matrix.targetPlatform }}/uPiper-IL2CPP.app" ]; then
-              echo "✅ macOS IL2CPP app bundle found"
+            if [ -d "build/${{ matrix.targetPlatform }}/${BUILD_NAME}.app" ]; then
+              echo "✅ macOS ${{ matrix.scriptingBackend }} app bundle found"
               ls -la "build/${{ matrix.targetPlatform }}/"
             else
-              echo "❌ macOS IL2CPP app bundle not found!"
+              echo "❌ macOS ${{ matrix.scriptingBackend }} app bundle not found!"
               exit 1
             fi
             ;;
           Android)
-            if [ -f "build/${{ matrix.targetPlatform }}/uPiper-IL2CPP.apk" ]; then
-              echo "✅ Android IL2CPP APK found"
+            if [ -f "build/${{ matrix.targetPlatform }}/${BUILD_NAME}.apk" ]; then
+              echo "✅ Android ${{ matrix.scriptingBackend }} APK found"
               ls -la "build/${{ matrix.targetPlatform }}/"
             else
-              echo "❌ Android IL2CPP APK not found!"
+              echo "❌ Android ${{ matrix.scriptingBackend }} APK not found!"
               exit 1
             fi
             ;;
           WebGL)
-            if [ -d "build/${{ matrix.targetPlatform }}/uPiper-IL2CPP" ]; then
-              echo "✅ WebGL IL2CPP build found"
-              ls -la "build/${{ matrix.targetPlatform }}/uPiper-IL2CPP/"
+            if [ -d "build/${{ matrix.targetPlatform }}/${BUILD_NAME}" ]; then
+              echo "✅ WebGL ${{ matrix.scriptingBackend }} build found"
+              ls -la "build/${{ matrix.targetPlatform }}/${BUILD_NAME}/"
             else
-              echo "❌ WebGL IL2CPP build not found!"
+              echo "❌ WebGL ${{ matrix.scriptingBackend }} build not found!"
               exit 1
             fi
             ;;
         esac
         
-    # Upload IL2CPP build artifacts
-    - name: Upload IL2CPP build artifacts
+    # Upload build artifacts
+    - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: IL2CPP-Build-${{ matrix.targetPlatform }}
+        name: Build-${{ matrix.scriptingBackend }}-${{ matrix.targetPlatform }}
         path: build/${{ matrix.targetPlatform }}
         retention-days: 7
         
   performance-comparison:
     name: Performance Report
-    needs: build-il2cpp
+    needs: build-unity
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     
-    - name: Generate IL2CPP Performance Summary
+    - name: Generate Build Summary
       run: |
-        echo "# IL2CPP Build Verification Summary" > il2cpp-summary.md
-        echo "" >> il2cpp-summary.md
-        echo "## Build Status" >> il2cpp-summary.md
-        echo "" >> il2cpp-summary.md
-        echo "| Platform | IL2CPP Build | Status |" >> il2cpp-summary.md
-        echo "|----------|--------------|--------|" >> il2cpp-summary.md
-        echo "| Windows  | ✅ | Passed |" >> il2cpp-summary.md
-        echo "| macOS    | ✅ | Passed |" >> il2cpp-summary.md
-        echo "| Linux    | ✅ | Passed |" >> il2cpp-summary.md
-        echo "| Android  | ✅ | Passed |" >> il2cpp-summary.md
-        echo "| WebGL    | ✅ | Passed |" >> il2cpp-summary.md
-        echo "" >> il2cpp-summary.md
-        echo "## Configuration" >> il2cpp-summary.md
-        echo "" >> il2cpp-summary.md
-        echo "- Unity Version: 6000.0.35f1" >> il2cpp-summary.md
-        echo "- Scripting Backend: IL2CPP" >> il2cpp-summary.md
-        echo "- link.xml: Present" >> il2cpp-summary.md
-        echo "- Stripping Level: Low (configurable)" >> il2cpp-summary.md
-        echo "" >> il2cpp-summary.md
-        echo "## Optimizations Applied" >> il2cpp-summary.md
-        echo "" >> il2cpp-summary.md
-        echo "- Type preservation via link.xml" >> il2cpp-summary.md
-        echo "- [Preserve] attributes on P/Invoke types" >> il2cpp-summary.md
-        echo "- Generic type pre-instantiation" >> il2cpp-summary.md
-        echo "- Platform-specific worker thread configuration" >> il2cpp-summary.md
+        echo "# uPiper Build Verification Summary" > build-summary.md
+        echo "" >> build-summary.md
+        echo "## Build Matrix Status" >> build-summary.md
+        echo "" >> build-summary.md
+        echo "| Platform | Mono2x | IL2CPP | Notes |" >> build-summary.md
+        echo "|----------|--------|--------|-------|" >> build-summary.md
+        echo "| Windows 64-bit | ✅ | ✅ | Both backends supported |" >> build-summary.md
+        echo "| macOS | ✅ | ✅ | Both backends supported |" >> build-summary.md
+        echo "| Linux 64-bit | ✅ | ✅ | Both backends supported |" >> build-summary.md
+        echo "| Android | N/A | ✅ | IL2CPP only platform |" >> build-summary.md
+        echo "| WebGL | N/A | ✅ | IL2CPP only platform |" >> build-summary.md
+        echo "" >> build-summary.md
+        echo "## Build Configuration" >> build-summary.md
+        echo "" >> build-summary.md
+        echo "- Unity Version: 6000.0.35f1" >> build-summary.md
+        echo "- link.xml: Present ✅" >> build-summary.md
+        echo "- [Preserve] attributes: Applied ✅" >> build-summary.md
+        echo "- Custom build script: UnityBuilderAction.BuildScript ✅" >> build-summary.md
+        echo "" >> build-summary.md
+        echo "## IL2CPP Optimizations" >> build-summary.md
+        echo "" >> build-summary.md
+        echo "- Type preservation via link.xml" >> build-summary.md
+        echo "- Platform-specific settings:" >> build-summary.md
+        echo "  - Android: ARM64 + ARMv7, Min API 21" >> build-summary.md
+        echo "  - iOS: Universal architecture, Min iOS 11.0" >> build-summary.md
+        echo "  - WebGL: WebAssembly target, 512MB memory" >> build-summary.md
+        echo "" >> build-summary.md
+        echo "## Mono vs IL2CPP Comparison" >> build-summary.md
+        echo "" >> build-summary.md
+        echo "| Aspect | Mono2x | IL2CPP |" >> build-summary.md
+        echo "|--------|--------|--------|" >> build-summary.md
+        echo "| Build Time | Fast ⚡ | Slower 🐢 |" >> build-summary.md
+        echo "| Runtime Performance | Good | Better 🚀 |" >> build-summary.md
+        echo "| Platform Support | Desktop | All platforms |" >> build-summary.md
+        echo "| Debugging | Easy | Limited |" >> build-summary.md
+        echo "| Code Security | Low | High 🔒 |" >> build-summary.md
         
     - name: Upload performance summary
       uses: actions/upload-artifact@v4
       with:
-        name: IL2CPP-Performance-Summary
-        path: il2cpp-summary.md
+        name: Build-Summary
+        path: build-summary.md
         retention-days: 7
         
     # Post summary as PR comment if this is a PR
@@ -256,7 +282,7 @@ jobs:
       with:
         script: |
           const fs = require('fs');
-          const summary = fs.readFileSync('il2cpp-summary.md', 'utf8');
+          const summary = fs.readFileSync('build-summary.md', 'utf8');
           
           github.rest.issues.createComment({
             issue_number: context.issue.number,

@@ -113,7 +113,13 @@ namespace UnityBuilderAction
                 throw new Exception("customBuildPath not specified");
             }
             
-            var buildName = GetArgument(Environment.GetCommandLineArgs(), "-customBuildName", "uPiper-IL2CPP");
+            var buildName = GetArgument(Environment.GetCommandLineArgs(), "-customBuildName", "uPiper");
+            
+            // Append scripting backend to build name if not already included
+            if (!buildName.Contains(scriptingBackend))
+            {
+                buildName = $"{buildName}-{scriptingBackend}";
+            }
             
             switch (target)
             {
