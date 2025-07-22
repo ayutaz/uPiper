@@ -1,19 +1,27 @@
-name: .NET Format Check
+name: C# Code Format Check
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
     paths:
       - '**.cs'
       - '**.csproj'
       - '.editorconfig'
       - '.github/workflows/dotnet-format.yml'
+  workflow_dispatch:
+    inputs:
+      check_all:
+        description: 'Check all files (not just changed)'
+        required: false
+        default: 'false'
+        type: boolean
 
 env:
-  # Skip format check for now - will be enabled after fixing existing code format
-  SKIP_FORMAT_CHECK: true
-  # Check only new test file
-  CHECK_ONLY_TEST: true
+  # Gradually enable format checks
+  # Phase 1: Check only whitespace issues (current)
+  # Phase 2: Check code style issues
+  # Phase 3: Full enforcement
+  CHECK_PHASE: "whitespace_only"
 
 jobs:
   check-format:
@@ -29,44 +37,73 @@ jobs:
       with:
         dotnet-version: 6.0.x  # Unity 6 uses .NET Standard 2.1 which is supported by .NET 6
 
+    - name: Get changed files
+      if: github.event_name == 'pull_request' && github.event.inputs.check_all != 'true'
+      id: changed-files
+      uses: tj-actions/changed-files@v44
+      with:
+        files: |
+          **/*.cs
+        separator: ' '
+    
     - name: Check format
       run: |
-        if [ "$CHECK_ONLY_TEST" = "true" ]; then
-          echo "🔍 Checking format and code style for test file"
-          echo "This will fail CI if any lint rules are violated"
-          
-          # Create a temporary solution file for the test
-          echo "Creating temporary solution for lint check..."
-          cat > TestLint.csproj << 'EOF'
-        <Project Sdk="Microsoft.NET.Sdk">
-          <PropertyGroup>
-            <TargetFramework>netstandard2.1</TargetFramework>
-            <LangVersion>9.0</LangVersion>
-            <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
-            <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-            <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-          </PropertyGroup>
-          <ItemGroup>
-            <Compile Include="Assets/uPiper/Scripts/LintTestScript.cs" />
-          </ItemGroup>
-        </Project>
-        EOF
-          
-          # Run format checks - these will fail if there are violations
-          echo "Running whitespace check..."
-          dotnet format whitespace TestLint.csproj --verify-no-changes --verbosity diagnostic
-          
-          echo "Running style check..."
-          dotnet format style TestLint.csproj --verify-no-changes --verbosity diagnostic
-          
-          # Exit with success only if both checks pass
-          exit 0
+        echo "📋 Format Check Configuration:"
+        echo "  Phase: $CHECK_PHASE"
+        echo "  Event: ${{ github.event_name }}"
+        
+        if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ steps.changed-files.outputs.any_changed }}" = "true" ]; then
+          echo "  Changed C# files:"
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            echo "    - $file"
+          done
         fi
-        if [ "$SKIP_FORMAT_CHECK" = "true" ]; then
-          echo "⚠️ Format check is currently disabled"
-          echo "This is temporary while we fix formatting in existing code"
-          echo "New code should still follow the .editorconfig rules"
-          exit 0
-        fi
-        # Use dotnet format with folder option (doesn't require project file)
-        dotnet format whitespace . --folder --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes --verbosity diagnostic
+        
+        # Phase-based checking
+        case "$CHECK_PHASE" in
+          "whitespace_only")
+            echo "\n🔍 Phase 1: Checking whitespace formatting only"
+            if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ steps.changed-files.outputs.any_changed }}" = "true" ]; then
+              # Check only changed files
+              for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+                echo "Checking: $file"
+                dotnet format whitespace --include "$file" --verify-no-changes || exit 1
+              done
+            else
+              # Check all files (manual run)
+              echo "Checking all C# files..."
+              dotnet format whitespace . --folder --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes
+            fi
+            ;;
+            
+          "style_check")
+            echo "\n🔍 Phase 2: Checking code style issues"
+            if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ steps.changed-files.outputs.any_changed }}" = "true" ]; then
+              for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+                echo "Checking: $file"
+                dotnet format style --include "$file" --verify-no-changes || exit 1
+              done
+            else
+              dotnet format style . --folder --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes
+            fi
+            ;;
+            
+          "full_enforcement")
+            echo "\n🔍 Phase 3: Full format enforcement"
+            if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ steps.changed-files.outputs.any_changed }}" = "true" ]; then
+              for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+                echo "Checking: $file"
+                dotnet format --include "$file" --verify-no-changes || exit 1
+              done
+            else
+              dotnet format . --folder --exclude "**/Library/**" --exclude "**/Temp/**" --exclude "**/Packages/**" --exclude "**/obj/**" --verify-no-changes
+            fi
+            ;;
+            
+          *)
+            echo "❌ Unknown CHECK_PHASE: $CHECK_PHASE"
+            exit 1
+            ;;
+        esac
+        
+        echo "\n✅ Format check completed successfully"
