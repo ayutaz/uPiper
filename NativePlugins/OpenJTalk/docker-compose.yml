@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  android-build:
+    build:
+      context: .
+      dockerfile: Dockerfile.android
+    image: upiper-android-build:latest
+    container_name: upiper-android-builder
+    volumes:
+      # Mount the entire OpenJTalk directory
+      - .:/workspace
+      # Cache for build artifacts
+      - android-build-cache:/workspace/build_cache
+    environment:
+      - ANDROID_HOME=/opt/android-sdk
+      - ANDROID_NDK_HOME=/opt/android-ndk
+    working_dir: /workspace
+    command: /bin/bash
+    
+  # Service for CI/CD builds
+  android-ci:
+    extends: android-build
+    command: ./build_android.sh
+    
+volumes:
+  android-build-cache:
+    driver: local

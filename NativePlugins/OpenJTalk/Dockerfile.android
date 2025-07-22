@@ -47,23 +47,32 @@ ENV PATH=${PATH}:${ANDROID_NDK_HOME}
 RUN sdkmanager "ndk;25.2.9519653" && \
     ln -s ${ANDROID_HOME}/ndk/25.2.9519653 ${ANDROID_NDK_HOME}
 
-# Create a non-root user for builds (optional, for security)
-RUN useradd -m -s /bin/bash builder
-USER builder
-WORKDIR /home/builder
+# Create working directory
+WORKDIR /workspace
 
-# Set up environment for builder user
+# Copy only necessary scripts first (for better caching)
+COPY scripts/download_*.sh /workspace/scripts/
+COPY fetch_dependencies.sh build_dependencies.sh /workspace/
+RUN chmod +x scripts/*.sh *.sh
+
+# Pre-download OpenJTalk dependencies in the image
+RUN mkdir -p external && \
+    cd scripts && \
+    ./download_openjtalk_source.sh && \
+    ./download_naist_dict.sh && \
+    cd .. && \
+    echo "Dependencies pre-downloaded"
+
+# Create a non-root user for builds (optional, for security)
+RUN useradd -m -s /bin/bash builder && \
+    chown -R builder:builder /workspace
+
+# Set up environment
 ENV ANDROID_HOME=/opt/android-sdk
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
 ENV ANDROID_NDK_HOME=/opt/android-ndk
 ENV ANDROID_NDK_ROOT=/opt/android-ndk
 ENV PATH=${PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_NDK_HOME}
-
-# Default working directory for builds
-WORKDIR /workspace
-
-# Switch back to root for the final setup
-USER root
 
 # Default command
 CMD ["/bin/bash"]
