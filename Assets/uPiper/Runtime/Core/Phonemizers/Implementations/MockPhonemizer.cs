@@ -36,14 +36,12 @@ namespace uPiper.Core.Phonemizers.Implementations
             { "test", new[] { "t", "e", "s", "t" } },
         };
 
+        public override string Name => "MockPhonemizer";
+        public override string Version => "1.0.0";
+        public override string[] SupportedLanguages => new[] { "ja_JP", "en_US" };
+
         public MockPhonemizer() : base("Mock", new[] { "ja_JP", "en_US" })
         {
-        }
-
-        protected override bool IsSupportedLanguageInternal(string language)
-        {
-            // Support Japanese and English for testing
-            return language.StartsWith("ja") || language.StartsWith("en");
         }
 
         protected override async Task<PhonemeResult> PhonemizeInternalAsync(
@@ -107,10 +105,5 @@ namespace uPiper.Core.Phonemizers.Implementations
             return result;
         }
 
-        public override void Dispose()
-        {
-            base.Dispose();
-            Debug.Log("[MockPhonemizer] Disposed");
-        }
     }
 }
