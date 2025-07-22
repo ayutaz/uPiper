@@ -68,8 +68,8 @@ jobs:
         targetPlatform: ${{ matrix.targetPlatform }}
         buildName: uPiper${{ github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
         buildsPath: build
-        buildMethod: ${{ github.event.inputs.useIL2CPP == 'true' && 'UnityBuilderAction.BuildScript.Build' || '' }}
-        customParameters: ${{ github.event.inputs.useIL2CPP == 'true' && '-scriptingBackend IL2CPP' || '' }}
+        buildMethod: UnityBuilderAction.BuildScript.Build
+        customParameters: ${{ github.event.inputs.useIL2CPP == 'true' && '-scriptingBackend IL2CPP' || '-scriptingBackend Mono2x' }}
         
     # ビルド成果物をアップロード
     - name: Upload build artifacts
