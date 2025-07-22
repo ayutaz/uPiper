@@ -140,12 +140,24 @@ namespace uPiper.Samples.AndroidDemo
             // Step 3: Test PiperTTS
             AddLog("\n3. Testing PiperTTS...");
             
+            PiperTTS piperTTS = null;
+            bool initSuccess = false;
+            
             try
             {
                 var config = new PiperConfig();
-                var piperTTS = new PiperTTS(config);
+                piperTTS = new PiperTTS(config);
                 AddLog("✓ PiperTTS created");
-                
+                initSuccess = true;
+            }
+            catch (System.Exception e)
+            {
+                AddLog($"✗ PiperTTS creation error: {e.Message}");
+                AddLog($"Stack trace: {e.StackTrace}");
+            }
+            
+            if (initSuccess && piperTTS != null)
+            {
                 // Wait for initialization
                 float timeout = 5f;
                 float elapsed = 0f;
@@ -155,42 +167,50 @@ namespace uPiper.Samples.AndroidDemo
                     elapsed += 0.1f;
                 }
                 
-                if (piperTTS.IsInitialized)
+                try
                 {
-                    AddLog("✓ PiperTTS initialized");
-                    
-                    // Generate audio
-                    string testText = "こんにちは";
-                    AddLog($"Generating audio for: {testText}");
-                    
-                    var audioClip = piperTTS.GenerateAudio(testText);
-                    if (audioClip != null)
+                    if (piperTTS.IsInitialized)
                     {
-                        AddLog($"✓ Audio generated: {audioClip.length:F2}s, {audioClip.samples} samples");
+                        AddLog("✓ PiperTTS initialized");
                         
-                        if (audioSource != null)
+                        // Generate audio
+                        string testText = "こんにちは";
+                        AddLog($"Generating audio for: {testText}");
+                        
+                        var audioClip = piperTTS.GenerateAudio(testText);
+                        if (audioClip != null)
                         {
-                            audioSource.clip = audioClip;
-                            audioSource.Play();
-                            AddLog("✓ Playing audio...");
+                            AddLog($"✓ Audio generated: {audioClip.length:F2}s, {audioClip.samples} samples");
+                            
+                            if (audioSource != null)
+                            {
+                                audioSource.clip = audioClip;
+                                audioSource.Play();
+                                AddLog("✓ Playing audio...");
+                            }
+                        }
+                        else
+                        {
+                            AddLog("✗ Audio generation failed");
                         }
                     }
                     else
                     {
-                        AddLog("✗ Audio generation failed");
+                        AddLog("✗ PiperTTS initialization timeout");
                     }
                 }
-                else
+                catch (System.Exception e)
                 {
-                    AddLog("✗ PiperTTS initialization timeout");
+                    AddLog($"✗ PiperTTS usage error: {e.Message}");
+                    AddLog($"Stack trace: {e.StackTrace}");
                 }
-                
-                piperTTS.Dispose();
-            }
-            catch (System.Exception e)
-            {
-                AddLog($"✗ PiperTTS error: {e.Message}");
-                AddLog($"Stack trace: {e.StackTrace}");
+                finally
+                {
+                    if (piperTTS != null)
+                    {
+                        piperTTS.Dispose();
+                    }
+                }
             }
             
             AddLog("\n--- Test Complete ---");
