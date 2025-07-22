@@ -24,6 +24,9 @@
 - [implementation/](./implementation/) - 実装関連ドキュメント
   - `phase1-implementation-guide-ja.md` - Phase 1実装ガイド
   - `phase1-kickoff.md` - Phase 1キックオフ
+  - `phase2-android-implementation-guide-ja.md` - Phase 2 Android実装ガイド
+  - `phase2-android-technical-report.md` - Phase 2 Android技術調査報告
+  - `phase2-android-build-settings.md` - Android ビルド設定ガイド
   - `completion-reports/` - 各フェーズの完了報告書
 
 ### 📊 計画
