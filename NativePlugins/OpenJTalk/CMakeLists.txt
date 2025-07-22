@@ -38,14 +38,21 @@ option(BUILD_TESTS "Build test executables" ON)
 option(BUILD_BENCHMARK "Build benchmark executable" ON)
 
 # Find OpenJTalk installation
-set(OPENJTALK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/install")
-set(OPENJTALK_INCLUDE_DIR "${OPENJTALK_ROOT}/include")
-set(OPENJTALK_LIB_DIR "${OPENJTALK_ROOT}/lib")
-# Alternate path for CI builds
-if(NOT EXISTS "${OPENJTALK_ROOT}")
-    set(OPENJTALK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/install")
+if(ANDROID)
+    # For Android, use ABI-specific paths
+    set(OPENJTALK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/android_${ANDROID_ABI}")
     set(OPENJTALK_INCLUDE_DIR "${OPENJTALK_ROOT}/include")
     set(OPENJTALK_LIB_DIR "${OPENJTALK_ROOT}/lib")
+else()
+    set(OPENJTALK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/install")
+    set(OPENJTALK_INCLUDE_DIR "${OPENJTALK_ROOT}/include")
+    set(OPENJTALK_LIB_DIR "${OPENJTALK_ROOT}/lib")
+    # Alternate path for CI builds
+    if(NOT EXISTS "${OPENJTALK_ROOT}")
+        set(OPENJTALK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/install")
+        set(OPENJTALK_INCLUDE_DIR "${OPENJTALK_ROOT}/include")
+        set(OPENJTALK_LIB_DIR "${OPENJTALK_ROOT}/lib")
+    endif()
 endif()
 
 # Source files - Full OpenJTalk wrapper only
@@ -89,13 +96,35 @@ endif()
 add_library(openjtalk_wrapper SHARED ${SOURCES})
 
 # Link libraries
-set(OPENJTALK_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/open_jtalk-1.11")
-if(NOT EXISTS "${OPENJTALK_SRC_DIR}")
-    set(OPENJTALK_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11")
+if(ANDROID)
+    # For Android, use pre-built libraries from Android-specific location
+    set(OPENJTALK_LIBS_DIR "${OPENJTALK_LIB_DIR}")
+else()
+    set(OPENJTALK_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/open_jtalk-1.11")
+    if(NOT EXISTS "${OPENJTALK_SRC_DIR}")
+        set(OPENJTALK_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11")
+    endif()
 endif()
 
 # Check if OpenJTalk libraries exist
-if(EXISTS "${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a")
+if(ANDROID AND EXISTS "${OPENJTALK_LIBS_DIR}/libjpcommon.a")
+    # Use pre-built Android libraries (order is important for static linking)
+    set(OPENJTALK_LIBS
+        ${OPENJTALK_LIBS_DIR}/libtext2mecab.a
+        ${OPENJTALK_LIBS_DIR}/libmecab.a
+        ${OPENJTALK_LIBS_DIR}/libmecab2njd.a
+        ${OPENJTALK_LIBS_DIR}/libnjd.a
+        ${OPENJTALK_LIBS_DIR}/libnjd_set_pronunciation.a
+        ${OPENJTALK_LIBS_DIR}/libnjd_set_digit.a
+        ${OPENJTALK_LIBS_DIR}/libnjd_set_accent_phrase.a
+        ${OPENJTALK_LIBS_DIR}/libnjd_set_accent_type.a
+        ${OPENJTALK_LIBS_DIR}/libnjd_set_unvoiced_vowel.a
+        ${OPENJTALK_LIBS_DIR}/libnjd_set_long_vowel.a
+        ${OPENJTALK_LIBS_DIR}/libnjd2jpcommon.a
+        ${OPENJTALK_LIBS_DIR}/libjpcommon.a
+        ${OPENJTALK_LIBS_DIR}/libHTSEngine.a
+    )
+elseif(NOT ANDROID AND EXISTS "${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a")
     # Check for HTSEngine library location
     if(EXISTS "${OPENJTALK_LIB_DIR}/libHTSEngine.a")
         set(HTSENGINE_LIB "${OPENJTALK_LIB_DIR}/libHTSEngine.a")
@@ -122,19 +151,20 @@ if(EXISTS "${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a")
         ${OPENJTALK_SRC_DIR}/mecab/src/libmecab.a
         ${HTSENGINE_LIB}
     )
-    
-    if(WIN32)
-        # For MSVC builds, we don't need stdc++
-        if(MSVC)
-            target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} winmm)
-        else()
-            target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} stdc++ winmm)
-        endif()
+endif()
+
+# Link libraries based on platform
+if(ANDROID)
+    target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} c++_shared m log)
+elseif(WIN32)
+    # For MSVC builds, we don't need stdc++
+    if(MSVC)
+        target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} winmm)
     else()
-        target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} m)
+        target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} stdc++ winmm)
     endif()
 else()
-    message(FATAL_ERROR "OpenJTalk libraries not found. Please run fetch_dependencies.sh and build_dependencies.sh first.")
+    target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} m)
 endif()
 
 # Platform-specific settings

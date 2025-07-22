@@ -20,7 +20,12 @@ RUN apt-get update && apt-get install -y \
     automake \
     libtool \
     pkg-config \
+    openjdk-11-jdk \
     && rm -rf /var/lib/apt/lists/*
+
+# Set JAVA_HOME
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV PATH=${PATH}:${JAVA_HOME}/bin
 
 # Install Android SDK Command Line Tools
 ENV ANDROID_HOME=/opt/android-sdk
@@ -50,18 +55,15 @@ RUN sdkmanager "ndk;25.2.9519653" && \
 # Create working directory
 WORKDIR /workspace
 
-# Copy only necessary scripts first (for better caching)
-COPY scripts/download_*.sh /workspace/scripts/
-COPY fetch_dependencies.sh build_dependencies.sh /workspace/
-RUN chmod +x scripts/*.sh *.sh
+# Copy scripts for dependency management
+COPY scripts/ /workspace/scripts/
+COPY fetch_dependencies.sh /workspace/
+COPY build_dependencies.sh /workspace/
+COPY *.sh /workspace/
+RUN chmod +x /workspace/*.sh /workspace/scripts/*.sh || true
 
-# Pre-download OpenJTalk dependencies in the image
-RUN mkdir -p external && \
-    cd scripts && \
-    ./download_openjtalk_source.sh && \
-    ./download_naist_dict.sh && \
-    cd .. && \
-    echo "Dependencies pre-downloaded"
+# Note: Dependencies will be downloaded when the container runs
+# This allows for better caching and flexibility
 
 # Create a non-root user for builds (optional, for security)
 RUN useradd -m -s /bin/bash builder && \

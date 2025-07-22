@@ -37,11 +37,16 @@ echo "Using Android NDK at: $ANDROID_NDK_HOME"
 ABIS=("armeabi-v7a" "arm64-v8a" "x86" "x86_64")
 
 # Build dependencies if not already built
-if [ ! -d "external/openjtalk_build" ]; then
-    echo "Building dependencies first..."
+if [ ! -d "external/open_jtalk-1.11" ]; then
+    echo "Fetching dependencies first..."
     ./fetch_dependencies.sh
+fi
+
+# Function to build dependencies for Android
+build_android_dependencies() {
+    echo "Building dependencies for Android..."
     
-    # Create Android-specific build script for dependencies
+    # Create build script inline
     cat > build_dependencies_android.sh << 'EOF'
 #!/bin/bash
 set -e
@@ -162,6 +167,7 @@ for ABI in "${ABIS[@]}"; do
     cmake -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
           -DANDROID_ABI=$ABI \
           -DANDROID_PLATFORM=android-21 \
+          -DANDROID_STL=c++_shared \
           -DCMAKE_BUILD_TYPE=Release \
           -DBUILD_TESTS=OFF \
           -DBUILD_BENCHMARK=OFF \
