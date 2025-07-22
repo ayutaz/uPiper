@@ -230,15 +230,7 @@
 
 ## 進行中のタスク
 
-### Phase 1.12: IL2CPPサポート（2人日）- 進行中
-
-#### 1.12.1 IL2CPP互換性検証（0.5人日）✅ 完了
-- **成果物**: `docs/technical/IL2CPP-COMPATIBILITY.md`
-- **実装内容**:
-  - P/Invoke宣言の検証完了
-  - マーシャリング属性の確認完了
-  - AOT制約の調査（IAsyncEnumerable要確認）
-  - Unity.InferenceEngineのIL2CPP対応確認
+なし（Phase 1.12 完了）
 
 ## 成果物一覧
 
@@ -562,4 +554,46 @@ Phase 1の全タスクが完了し、当初の目標を大幅に超える成果�
 5. ~~ONNX モデル統合（Phase 1.9）~~ ✅ 完了
 6. ~~OpenJTalk統合による日本語発音改善（Phase 1.10）~~ ✅ 完了
 7. ~~Unity基本統合（Phase 1.11）~~ ✅ 完了
-8. Phase 1.12: IL2CPPサポート（次の実装予定）
+8. ~~IL2CPPサポート（Phase 1.12）~~ ✅ 完了
+
+### Phase 1.12: IL2CPPサポート（2人日）✅ 完了（2025年1月22日）
+
+#### 1.12.1 IL2CPP互換性検証（0.5人日）✅
+- **成果物**: `docs/technical/IL2CPP-COMPATIBILITY.md`
+- **実装内容**:
+  - P/Invoke宣言の検証完了
+  - マーシャリング属性の確認完了
+  - AOT制約の調査（IAsyncEnumerable要確認）
+  - Unity.InferenceEngineのIL2CPP対応確認
+
+#### 1.12.2 IL2CPPビルド設定（0.5人日）✅
+- **成果物**:
+  - `Assets/uPiper/link.xml` - 型保持設定
+  - `Assets/uPiper/Editor/IL2CPPBuildSettings.cs` - 自動設定ツール
+  - `docs/technical/IL2CPP-BUILD-SETTINGS.md` - 設定ガイド
+- **実装内容**:
+  - Unity.AI.InferenceEngineの完全保持
+  - プラットフォーム別の最適化設定
+  - ネイティブライブラリ配置の検証
+
+#### 1.12.3 IL2CPP固有の対応（0.5人日）✅
+- **成果物**:
+  - `Assets/uPiper/Runtime/Core/IL2CPP/IL2CPPCompatibility.cs`
+  - `Assets/uPiper/Runtime/Core/IL2CPP/AsyncEnumerableCompat.cs`
+- **実装内容**:
+  - [Preserve]属性による型保持
+  - ジェネリック型の明示的インスタンス化
+  - IAsyncEnumerable互換レイヤー
+  - プラットフォーム別の推奨設定（スレッド数、キャッシュサイズ）
+
+#### 1.12.4 IL2CPPパフォーマンステスト（0.5人日）✅
+- **成果物**:
+  - `Assets/uPiper/Tests/Runtime/Performance/IL2CPPPerformanceTest.cs`
+  - `docs/technical/IL2CPP-PERFORMANCE-REPORT.md`
+  - `Assets/uPiper/Editor/IL2CPPBenchmarkRunner.cs`
+- **実装内容**:
+  - マーシャリング性能測定
+  - コレクション操作ベンチマーク
+  - 非同期処理パフォーマンステスト
+  - メモリ使用パターン分析
+  - ベンチマーク実行支援ツール
