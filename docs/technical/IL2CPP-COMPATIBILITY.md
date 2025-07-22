@@ -158,3 +158,24 @@ uPiperは基本的にIL2CPP互換性が高く、大きな修正は不要です�
 3. プラットフォーム固有のネイティブライブラリビルド
 
 推定作業時間: 0.5人日（計画通り）
+
+## CI/CD環境での制限事項
+
+### Dockerベースの制限
+Unity BuilderのDockerイメージには以下の制限があります：
+
+1. **Windows IL2CPP**: ❌ サポートされていない
+   - Visual StudioとWindows SDKが必要
+   - Linuxコンテナでは実行不可
+
+2. **macOS IL2CPP**: ❌ サポートされていない  
+   - Xcodeとネイティブツールチェーンが必要
+   - macOSランナーでの直接実行が必要
+
+3. **Linux IL2CPP**: ✅ 完全サポート
+   - Dockerイメージに必要なツールが含まれている
+
+### 回避策
+- **セルフホストランナー**: Windows/macOS環境でUnity+IL2CPPをインストール
+- **クラウドビルドサービス**: Unity Cloud Buildなどの利用
+- **プラットフォーム別ランナー**: GitHub ActionsのWindows/macOSランナーを使用（ライセンス追加必要）

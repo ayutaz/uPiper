@@ -84,17 +84,19 @@ jobs:
           - targetPlatform: StandaloneWindows64
             os: ubuntu-latest
             scriptingBackend: Mono2x
-          - targetPlatform: StandaloneWindows64
-            os: ubuntu-latest
-            scriptingBackend: IL2CPP
+          # Windows IL2CPP currently not supported in Docker
+          # - targetPlatform: StandaloneWindows64
+          #   os: ubuntu-latest
+          #   scriptingBackend: IL2CPP
           # macOS builds
           - targetPlatform: StandaloneOSX
             os: ubuntu-latest
             scriptingBackend: Mono2x
-          - targetPlatform: StandaloneOSX
-            os: ubuntu-latest
-            scriptingBackend: IL2CPP
-          # Linux builds
+          # macOS IL2CPP needs native runner
+          # - targetPlatform: StandaloneOSX
+          #   os: macos-latest
+          #   scriptingBackend: IL2CPP
+          # Linux builds (IL2CPP works in Docker)
           - targetPlatform: StandaloneLinux64
             os: ubuntu-latest
             scriptingBackend: Mono2x
@@ -204,11 +206,16 @@ jobs:
         echo "" >> build-summary.md
         echo "| Platform | Mono2x | IL2CPP | Notes |" >> build-summary.md
         echo "|----------|--------|--------|-------|" >> build-summary.md
-        echo "| Windows 64-bit | ✅ | ✅ | Both backends supported |" >> build-summary.md
-        echo "| macOS | ✅ | ✅ | Both backends supported |" >> build-summary.md
+        echo "| Windows 64-bit | ✅ | ⚠️ | IL2CPP requires native runner |" >> build-summary.md
+        echo "| macOS | ✅ | ⚠️ | IL2CPP requires native runner |" >> build-summary.md
         echo "| Linux 64-bit | ✅ | ✅ | Both backends supported |" >> build-summary.md
         echo "| Android | N/A | - | Mobile support not implemented |" >> build-summary.md
         echo "| WebGL | N/A | - | WebGL support not implemented |" >> build-summary.md
+        echo "" >> build-summary.md
+        echo "⚠️ **IL2CPP Limitations in CI**:" >> build-summary.md
+        echo "- Windows IL2CPP builds require Visual Studio and cannot run in Linux Docker containers" >> build-summary.md
+        echo "- macOS IL2CPP builds must run on macOS runners directly" >> build-summary.md
+        echo "- Only Linux IL2CPP builds are fully supported in Docker-based CI" >> build-summary.md
         echo "" >> build-summary.md
         echo "## Build Configuration" >> build-summary.md
         echo "" >> build-summary.md
