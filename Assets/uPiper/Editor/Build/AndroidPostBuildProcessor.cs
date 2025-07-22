@@ -36,9 +36,9 @@ namespace uPiper.Editor.Build
             string[] supportedAbis = { "arm64-v8a", "armeabi-v7a", "x86", "x86_64" };
 
             // Check build report files if available
-            if (report.files != null)
+            if (report.GetFiles() != null)
             {
-                foreach (var file in report.files)
+                foreach (var file in report.GetFiles())
                 {
                     if (file.path.Contains("libopenjtalk_wrapper.so"))
                     {
@@ -97,26 +97,26 @@ namespace uPiper.Editor.Build
             long dictionarySize = 0;
 
             // Check if files property is available
-            if (report.files != null)
+            if (report.GetFiles() != null)
             {
-                foreach (var file in report.files)
+                foreach (var file in report.GetFiles())
                 {
-                    totalSize += file.size;
+                    totalSize += (long)file.size;
                     
                     if (file.path.Contains("libopenjtalk_wrapper.so"))
                     {
-                        nativeLibSize += file.size;
+                        nativeLibSize += (long)file.size;
                     }
                     else if (file.path.Contains("OpenJTalk") && file.path.Contains("dic"))
                     {
-                        dictionarySize += file.size;
+                        dictionarySize += (long)file.size;
                     }
                 }
             }
             else
             {
                 // Fallback: use summary information
-                totalSize = report.summary.totalSize;
+                totalSize = (long)report.summary.totalSize;
                 Debug.Log("[uPiper] Detailed file information not available in build report.");
             }
 

@@ -79,12 +79,13 @@ namespace uPiper.Samples.AndroidDemo
 
             try
             {
-                // Get or create PiperTTS instance
-                piperTTS = PiperTTS.Instance;
+                // Create PiperTTS instance
+                var config = ScriptableObject.CreateInstance<PiperConfig>();
+                piperTTS = new PiperTTS(config);
 
                 if (piperTTS == null)
                 {
-                    UpdateStatus("Failed to get PiperTTS instance");
+                    UpdateStatus("Failed to create PiperTTS instance");
                     yield break;
                 }
 

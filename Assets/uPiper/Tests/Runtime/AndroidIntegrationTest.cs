@@ -25,9 +25,15 @@ namespace uPiper.Tests.Runtime
             }
 
             // Test dictionary extraction
+#if !UNITY_EDITOR
             string dictPath = AndroidPathResolver.GetOpenJTalkDictionaryPath();
             Assert.IsNotNull(dictPath);
             Assert.IsTrue(Directory.Exists(dictPath), $"Dictionary directory should exist at: {dictPath}");
+#else
+            // In editor, just check streaming assets
+            string dictPath = Path.Combine(Application.streamingAssetsPath, "uPiper/OpenJTalk/open_jtalk_dic_utf_8-1.11");
+            Assert.IsTrue(Directory.Exists(dictPath), $"Dictionary should exist in StreamingAssets");
+#endif
 
             // Verify dictionary files
             string[] requiredFiles = { "char.bin", "sys.dic", "unk.dic", "matrix.bin" };
@@ -50,7 +56,8 @@ namespace uPiper.Tests.Runtime
             }
 
             // Create PiperTTS instance
-            var piperTTS = PiperTTS.Instance;
+            var config = new PiperConfig();
+            var piperTTS = new PiperTTS(config);
             Assert.IsNotNull(piperTTS);
 
             // Wait for initialization
@@ -75,7 +82,8 @@ namespace uPiper.Tests.Runtime
                 yield break;
             }
 
-            var piperTTS = PiperTTS.Instance;
+            var config = new PiperConfig();
+            var piperTTS = new PiperTTS(config);
             
             // Wait for initialization
             float timeout = 10f;
@@ -144,7 +152,7 @@ namespace uPiper.Tests.Runtime
 
             // On Android 10+ (API 29+), we use scoped storage
             // No special permissions needed for app's private directory
-            bool hasStorageAccess = Application.HasUserAuthorization(UnityEngine.Android.Permission.ExternalStorageWrite) ||
+            bool hasStorageAccess = UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.ExternalStorageWrite) ||
                                    SystemInfo.operatingSystem.Contains("API-29") ||
                                    SystemInfo.operatingSystem.Contains("API-30") ||
                                    SystemInfo.operatingSystem.Contains("API-31") ||
@@ -163,7 +171,8 @@ namespace uPiper.Tests.Runtime
                 yield break;
             }
 
-            var piperTTS = PiperTTS.Instance;
+            var config = new PiperConfig();
+            var piperTTS = new PiperTTS(config);
             
             // Wait for initialization
             while (!piperTTS.IsInitialized)
