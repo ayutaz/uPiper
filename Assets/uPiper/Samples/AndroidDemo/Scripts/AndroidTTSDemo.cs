@@ -80,7 +80,7 @@ namespace uPiper.Samples.AndroidDemo
             try
             {
                 // Create PiperTTS instance
-                var config = ScriptableObject.CreateInstance<PiperConfig>();
+                var config = new PiperConfig();
                 piperTTS = new PiperTTS(config);
 
                 if (piperTTS == null)
@@ -88,38 +88,39 @@ namespace uPiper.Samples.AndroidDemo
                     UpdateStatus("Failed to create PiperTTS instance");
                     yield break;
                 }
-
-                // Wait for initialization
-                float timeout = 10f;
-                float elapsed = 0f;
-
-                while (!piperTTS.IsInitialized && elapsed < timeout)
-                {
-                    yield return new WaitForSeconds(0.1f);
-                    elapsed += 0.1f;
-                }
-
-                if (piperTTS.IsInitialized)
-                {
-                    isInitialized = true;
-                    UpdateStatus("Ready to speak!");
-                    
-                    if (speakButton != null)
-                        speakButton.interactable = true;
-
-                    // Log system info
-                    LogSystemInfo();
-                }
-                else
-                {
-                    UpdateStatus("Initialization timeout");
-                    Debug.LogError("[AndroidTTSDemo] PiperTTS initialization timeout");
-                }
             }
             catch (System.Exception e)
             {
                 UpdateStatus($"Initialization error: {e.Message}");
                 Debug.LogError($"[AndroidTTSDemo] Initialization error: {e}");
+                yield break;
+            }
+
+            // Wait for initialization
+            float timeout = 10f;
+            float elapsed = 0f;
+
+            while (!piperTTS.IsInitialized && elapsed < timeout)
+            {
+                yield return new WaitForSeconds(0.1f);
+                elapsed += 0.1f;
+            }
+
+            if (piperTTS.IsInitialized)
+            {
+                isInitialized = true;
+                UpdateStatus("Ready to speak!");
+                
+                if (speakButton != null)
+                    speakButton.interactable = true;
+
+                // Log system info
+                LogSystemInfo();
+            }
+            else
+            {
+                UpdateStatus("Initialization timeout");
+                Debug.LogError("[AndroidTTSDemo] PiperTTS initialization timeout");
             }
         }
 
@@ -148,44 +149,49 @@ namespace uPiper.Samples.AndroidDemo
 
             float startTime = Time.realtimeSinceStartup;
 
+            AudioClip audioClip = null;
+            System.Exception error = null;
+
             try
             {
                 // Generate audio clip
-                var audioClip = piperTTS.GenerateAudioClip(text);
-                
-                if (audioClip != null)
-                {
-                    float generationTime = Time.realtimeSinceStartup - startTime;
-                    UpdateStatus($"Generated in {generationTime:F2}s");
-
-                    // Play audio
-                    if (audioSource != null)
-                    {
-                        audioSource.clip = audioClip;
-                        audioSource.Play();
-
-                        // Wait for playback to complete
-                        yield return new WaitForSeconds(audioClip.length);
-                    }
-
-                    UpdateStatus("Ready to speak!");
-                }
-                else
-                {
-                    UpdateStatus("Failed to generate audio");
-                }
+                audioClip = piperTTS.GenerateAudio(text);
             }
             catch (System.Exception e)
             {
-                UpdateStatus($"Error: {e.Message}");
-                Debug.LogError($"[AndroidTTSDemo] Speech generation error: {e}");
+                error = e;
             }
-            finally
+
+            if (error != null)
             {
-                isSpeaking = false;
-                if (speakButton != null)
-                    speakButton.interactable = true;
+                UpdateStatus($"Error: {error.Message}");
+                Debug.LogError($"[AndroidTTSDemo] Speech generation error: {error}");
             }
+            else if (audioClip != null)
+            {
+                float generationTime = Time.realtimeSinceStartup - startTime;
+                UpdateStatus($"Generated in {generationTime:F2}s");
+
+                // Play audio
+                if (audioSource != null)
+                {
+                    audioSource.clip = audioClip;
+                    audioSource.Play();
+
+                    // Wait for playback to complete
+                    yield return new WaitForSeconds(audioClip.length);
+                }
+
+                UpdateStatus("Ready to speak!");
+            }
+            else
+            {
+                UpdateStatus("Failed to generate audio");
+            }
+
+            isSpeaking = false;
+            if (speakButton != null)
+                speakButton.interactable = true;
         }
 
         private void OnSpeedChanged(float value)
@@ -195,9 +201,9 @@ namespace uPiper.Samples.AndroidDemo
                 speedText.text = $"Speed: {value:F1}x";
             }
 
-            if (piperTTS != null && piperTTS.Config != null)
+            if (piperTTS != null && piperTTS.Configuration != null)
             {
-                piperTTS.Config.SpeechRate = value;
+                piperTTS.Configuration.SpeechRate = value;
             }
         }
 

@@ -99,7 +99,7 @@ namespace uPiper.Tests.Runtime
 
             // Generate audio
             string testText = "こんにちは";
-            var audioClip = piperTTS.GenerateAudioClip(testText);
+            var audioClip = piperTTS.GenerateAudio(testText);
             
             Assert.IsNotNull(audioClip, "Should generate audio clip");
             Assert.Greater(audioClip.length, 0f, "Audio clip should have duration");
@@ -184,7 +184,7 @@ namespace uPiper.Tests.Runtime
             string testText = "これはパフォーマンステストです。";
             
             var startTime = Time.realtimeSinceStartup;
-            var audioClip = piperTTS.GenerateAudioClip(testText);
+            var audioClip = piperTTS.GenerateAudio(testText);
             var generationTime = Time.realtimeSinceStartup - startTime;
 
             Assert.IsNotNull(audioClip);
