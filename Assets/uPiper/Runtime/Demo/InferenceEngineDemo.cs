@@ -120,6 +120,11 @@ namespace uPiper.Demo
 #if !UNITY_WEBGL && !UNITY_EDITOR
             PiperLogger.LogInfo("[InferenceEngineDemo] Running OpenJTalk debug helper...");
             OpenJTalkDebugHelper.DebugLibraryLoading();
+            
+            // Additional Android debugging
+            #if UNITY_ANDROID
+            DebugAndroidSetup();
+            #endif
 #endif
 
 #if !UNITY_WEBGL
@@ -637,5 +642,90 @@ namespace uPiper.Demo
                 _phonemeDetailsText.text = "";
             }
         }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+        private void DebugAndroidSetup()
+        {
+            PiperLogger.LogInfo("[Android Debug] === Android Setup Debug ===");
+            
+            // Check platform
+            PiperLogger.LogInfo($"[Android Debug] Platform: {Application.platform}");
+            PiperLogger.LogInfo($"[Android Debug] System Language: {Application.systemLanguage}");
+            
+            // Check paths
+            PiperLogger.LogInfo($"[Android Debug] Persistent Data Path: {Application.persistentDataPath}");
+            PiperLogger.LogInfo($"[Android Debug] Streaming Assets Path: {Application.streamingAssetsPath}");
+            
+            // Check OpenJTalk dictionary
+            try
+            {
+                string dictPath = uPiper.Core.Platform.AndroidPathResolver.GetOpenJTalkDictionaryPath();
+                PiperLogger.LogInfo($"[Android Debug] OpenJTalk Dictionary Path: {dictPath}");
+                
+                if (System.IO.Directory.Exists(dictPath))
+                {
+                    PiperLogger.LogInfo("[Android Debug] ✓ Dictionary directory exists");
+                    
+                    // Check for required files
+                    string[] requiredFiles = { "char.bin", "sys.dic", "unk.dic", "matrix.bin", "left-id.def", "pos-id.def", "rewrite.def", "right-id.def" };
+                    foreach (var file in requiredFiles)
+                    {
+                        string filePath = System.IO.Path.Combine(dictPath, file);
+                        if (System.IO.File.Exists(filePath))
+                        {
+                            var fileInfo = new System.IO.FileInfo(filePath);
+                            PiperLogger.LogInfo($"[Android Debug] ✓ {file}: {fileInfo.Length} bytes");
+                        }
+                        else
+                        {
+                            PiperLogger.LogWarning($"[Android Debug] ✗ {file}: NOT FOUND");
+                        }
+                    }
+                }
+                else
+                {
+                    PiperLogger.LogWarning("[Android Debug] ✗ Dictionary directory does not exist");
+                    PiperLogger.LogInfo("[Android Debug] Will attempt to extract from StreamingAssets on first use");
+                }
+            }
+            catch (Exception e)
+            {
+                PiperLogger.LogError($"[Android Debug] Error checking dictionary: {e.Message}");
+            }
+            
+            // Check native library
+            try
+            {
+                string libPath = System.IO.Path.Combine(Application.nativeLibrariesPath, "libopenjtalk_wrapper.so");
+                if (System.IO.File.Exists(libPath))
+                {
+                    var fileInfo = new System.IO.FileInfo(libPath);
+                    PiperLogger.LogInfo($"[Android Debug] ✓ Native library found: {fileInfo.Length} bytes");
+                }
+                else
+                {
+                    PiperLogger.LogWarning($"[Android Debug] ✗ Native library not found at: {libPath}");
+                }
+            }
+            catch (Exception e)
+            {
+                PiperLogger.LogError($"[Android Debug] Error checking native library: {e.Message}");
+            }
+            
+            // Text encoding test
+            PiperLogger.LogInfo("[Android Debug] === Text Encoding Test ===");
+            string testText = "こんにちは";
+            byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(testText);
+            PiperLogger.LogInfo($"[Android Debug] Test text: {testText}");
+            PiperLogger.LogInfo($"[Android Debug] UTF-8 bytes ({utf8Bytes.Length}): {BitConverter.ToString(utf8Bytes)}");
+            
+            // Check if we can properly decode it back
+            string decoded = System.Text.Encoding.UTF8.GetString(utf8Bytes);
+            PiperLogger.LogInfo($"[Android Debug] Decoded back: {decoded}");
+            PiperLogger.LogInfo($"[Android Debug] Encoding round-trip success: {testText == decoded}");
+            
+            PiperLogger.LogInfo("[Android Debug] === End Android Setup Debug ===");
+        }
+#endif
     }
 }
