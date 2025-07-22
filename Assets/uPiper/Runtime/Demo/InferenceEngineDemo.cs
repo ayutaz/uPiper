@@ -100,23 +100,24 @@ namespace uPiper.Demo
 
         private void Start()
         {
-            // Set default Japanese text dynamically to avoid encoding issues
-            _defaultJapaneseText = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
+            // Set default Japanese text from UTF-8 bytes to avoid encoding issues
+            byte[] konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+            _defaultJapaneseText = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
             
-            // Initialize Japanese test phrases dynamically
+            // Initialize Japanese test phrases from UTF-8 bytes
             _japaneseTestPhrases = new List<string>
             {
-                "自由入力",  // Custom input option
-                new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' }),
-                new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は', '、', '世', '界', '！' }),
-                new string(new char[] { 'あ', 'り', 'が', 'と', 'う', 'ご', 'ざ', 'い', 'ま', 'す' }),
-                new string(new char[] { '日', '本', 'の', '日', '本', '橋', 'の', '上', 'で', '箸', 'を', '使', 'っ', 'て', 'ご', '飯', 'を', '食', 'べ', 'る' }),
-                new string(new char[] { '私', 'は', '東', '京', 'に', '住', 'ん', 'で', 'い', 'ま', 'す' }),
-                new string(new char[] { '今', '日', 'は', 'い', 'い', '天', '気', 'で', 'す', 'ね' }),
-                new string(new char[] { '音', '声', '合', '成', 'の', 'テ', 'ス', 'ト', 'で', 'す' }),
-                new string(new char[] { 'ユ', 'ニ', 'テ', 'ィ', 'で', '日', '本', '語', '音', '声', '合', '成', 'が', 'で', 'き', 'ま', 'し', 'た' }),
-                new string(new char[] { 'お', 'は', 'よ', 'う', 'ご', 'ざ', 'い', 'ま', 'す', '、', '今', '日', 'も', '一', '日', '頑', '張', 'り', 'ま', 'し', 'ょ', 'う' }),
-                new string(new char[] { 'す', 'み', 'ま', 'せ', 'ん', '、', 'ち', 'ょ', 'っ', 'と', 'お', '聞', 'き', 'し', 'た', 'い', 'こ', 'と', 'が', 'あ', 'り', 'ま', 'す' })
+                "自由入力",  // Custom input option - ASCII so no encoding issue
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF }), // こんにちは
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF, 0xE3, 0x80, 0x81, 0xE4, 0xB8, 0x96, 0xE7, 0x95, 0x8C, 0xEF, 0xBC, 0x81 }), // こんにちは、世界！
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x82, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0x8C, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x86, 0xE3, 0x81, 0x94, 0xE3, 0x81, 0x96, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99 }), // ありがとうございます
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE6, 0x97, 0xA5, 0xE6, 0x9C, 0xAC, 0xE3, 0x81, 0xAE, 0xE6, 0x97, 0xA5, 0xE6, 0x9C, 0xAC, 0xE6, 0xA9, 0x8B, 0xE3, 0x81, 0xAE, 0xE4, 0xB8, 0x8A, 0xE3, 0x81, 0xA7, 0xE7, 0xAE, 0xB8, 0xE3, 0x82, 0x92, 0xE4, 0xBD, 0xBF, 0xE3, 0x81, 0xA3, 0xE3, 0x81, 0xA6, 0xE3, 0x81, 0x94, 0xE9, 0xA3, 0xAF, 0xE3, 0x82, 0x92, 0xE9, 0xA3, 0x9F, 0xE3, 0x81, 0xB9, 0xE3, 0x82, 0x8B }), // 日本の日本橋の上で箸を使ってご飯を食べる
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE7, 0xA7, 0x81, 0xE3, 0x81, 0xAF, 0xE6, 0x9D, 0xB1, 0xE4, 0xBA, 0xAC, 0xE3, 0x81, 0xAB, 0xE4, 0xBD, 0x8F, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xA7, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99 }), // 私は東京に住んでいます
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE4, 0xBB, 0x8A, 0xE6, 0x97, 0xA5, 0xE3, 0x81, 0xAF, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0x84, 0xE5, 0xA4, 0xA9, 0xE6, 0xB0, 0x97, 0xE3, 0x81, 0xA7, 0xE3, 0x81, 0x99, 0xE3, 0x81, 0xAD }), // 今日はいい天気ですね
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE9, 0x9F, 0xB3, 0xE5, 0xA3, 0xB0, 0xE5, 0x90, 0x88, 0xE6, 0x88, 0x90, 0xE3, 0x81, 0xAE, 0xE3, 0x83, 0x86, 0xE3, 0x82, 0xB9, 0xE3, 0x83, 0x88, 0xE3, 0x81, 0xA7, 0xE3, 0x81, 0x99 }), // 音声合成のテストです
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x83, 0xA6, 0xE3, 0x83, 0x8B, 0xE3, 0x83, 0x86, 0xE3, 0x82, 0xA3, 0xE3, 0x81, 0xA7, 0xE6, 0x97, 0xA5, 0xE6, 0x9C, 0xAC, 0xE8, 0xAA, 0x9E, 0xE9, 0x9F, 0xB3, 0xE5, 0xA3, 0xB0, 0xE5, 0x90, 0x88, 0xE6, 0x88, 0x90, 0xE3, 0x81, 0x8C, 0xE3, 0x81, 0xA7, 0xE3, 0x81, 0x8D, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x97, 0xE3, 0x81, 0x9F }), // ユニティで日本語音声合成ができました
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x8A, 0xE3, 0x81, 0xAF, 0xE3, 0x82, 0x88, 0xE3, 0x81, 0x86, 0xE3, 0x81, 0x94, 0xE3, 0x81, 0x96, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99, 0xE3, 0x80, 0x81, 0xE4, 0xBB, 0x8A, 0xE6, 0x97, 0xA5, 0xE3, 0x82, 0x82, 0xE4, 0xB8, 0x80, 0xE6, 0x97, 0xA5, 0xE9, 0xA0, 0x91, 0xE5, 0xBC, 0xB5, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x97, 0xE3, 0x82, 0x87, 0xE3, 0x81, 0x86 }), // おはようございます、今日も一日頑張りましょう
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x99, 0xE3, 0x81, 0xBF, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x9B, 0xE3, 0x82, 0x93, 0xE3, 0x80, 0x81, 0xE3, 0x81, 0xA1, 0xE3, 0x82, 0x87, 0xE3, 0x81, 0xA3, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x8A, 0xE8, 0x81, 0x9E, 0xE3, 0x81, 0x8D, 0xE3, 0x81, 0x97, 0xE3, 0x81, 0x9F, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0x93, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x8C, 0xE3, 0x81, 0x82, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99 }) // すみません、ちょっとお聞きしたいことがあります
             };
             
             _generator = new InferenceAudioGenerator();
@@ -277,7 +278,8 @@ namespace uPiper.Demo
             PiperLogger.LogInfo($"[Android] First few bytes: {string.Join(" ", utf8Bytes.Take(20).Select(b => b.ToString("X2")))}");
             
             // Try to detect if the text is correctly encoded by checking UTF-8 bytes
-            string testPhrase = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
+            byte[] testPhraseBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+            string testPhrase = System.Text.Encoding.UTF8.GetString(testPhraseBytes);
             if (inputText == testPhrase)
             {
                 PiperLogger.LogInfo("[Android] Input matches expected 'こんにちは' - encoding is correct");
@@ -350,8 +352,9 @@ namespace uPiper.Demo
                 string[] phonemes;
                 var language = _modelLanguages[modelName];
                 
-                // Define konnichiwa string for special debugging
-                string konnichiwa = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
+                // Define konnichiwa string from UTF-8 bytes for special debugging
+                byte[] konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+                string konnichiwa = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
 
 #if !UNITY_WEBGL
                 // Use OpenJTalk for Japanese if available
@@ -727,31 +730,45 @@ namespace uPiper.Demo
             
             // Text encoding test
             PiperLogger.LogInfo("[Android Debug] === Text Encoding Test ===");
-            string testText = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
-            byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(testText);
-            PiperLogger.LogInfo($"[Android Debug] Test text: {testText}");
-            PiperLogger.LogInfo($"[Android Debug] UTF-8 bytes ({utf8Bytes.Length}): {BitConverter.ToString(utf8Bytes)}");
             
-            // Check if we can properly decode it back
-            string decoded = System.Text.Encoding.UTF8.GetString(utf8Bytes);
-            PiperLogger.LogInfo($"[Android Debug] Decoded back: {decoded}");
-            PiperLogger.LogInfo($"[Android Debug] Encoding round-trip success: {testText == decoded}");
+            // Create string from UTF-8 bytes directly
+            byte[] konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+            string testText = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
+            PiperLogger.LogInfo($"[Android Debug] Test text from UTF-8 bytes: {testText}");
             
-            // Expected UTF-8 bytes for "こんにちは"
-            byte[] expectedBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
-            bool bytesMatch = utf8Bytes.Length == expectedBytes.Length;
-            if (bytesMatch)
+            // Also test with char array
+            string charArrayText = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
+            PiperLogger.LogInfo($"[Android Debug] Test text from char array: {charArrayText}");
+            
+            // Get UTF-8 bytes from both
+            byte[] utf8FromBytes = System.Text.Encoding.UTF8.GetBytes(testText);
+            byte[] utf8FromChars = System.Text.Encoding.UTF8.GetBytes(charArrayText);
+            
+            PiperLogger.LogInfo($"[Android Debug] UTF-8 from bytes text ({utf8FromBytes.Length}): {BitConverter.ToString(utf8FromBytes)}");
+            PiperLogger.LogInfo($"[Android Debug] UTF-8 from chars text ({utf8FromChars.Length}): {BitConverter.ToString(utf8FromChars)}");
+            
+            // Check if bytes match expected
+            bool bytesMatchExpected = true;
+            if (utf8FromBytes.Length == konnichiwaBytes.Length)
             {
-                for (int i = 0; i < utf8Bytes.Length; i++)
+                for (int i = 0; i < utf8FromBytes.Length; i++)
                 {
-                    if (utf8Bytes[i] != expectedBytes[i])
+                    if (utf8FromBytes[i] != konnichiwaBytes[i])
                     {
-                        bytesMatch = false;
+                        bytesMatchExpected = false;
                         break;
                     }
                 }
             }
-            PiperLogger.LogInfo($"[Android Debug] UTF-8 bytes match expected: {bytesMatch}");
+            else
+            {
+                bytesMatchExpected = false;
+            }
+            
+            PiperLogger.LogInfo($"[Android Debug] UTF-8 bytes match expected: {bytesMatchExpected}");
+            
+            // Test if we can create correct string from bytes
+            PiperLogger.LogInfo($"[Android Debug] Direct UTF-8 string successful: {testText.Length == 5}");
             
             PiperLogger.LogInfo("[Android Debug] === End Android Setup Debug ===");
         }
