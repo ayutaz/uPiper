@@ -33,17 +33,17 @@ namespace uPiper.Core.IL2CPP
                 _ = new System.Collections.Generic.Dictionary<string, PiperVoiceConfig>();
                 _ = new System.Collections.Generic.Dictionary<string, Unity.InferenceEngine.Model>();
                 _ = new System.Collections.Generic.Dictionary<string, Unity.InferenceEngine.Worker>();
-                
+
                 // List types
                 _ = new System.Collections.Generic.List<AudioChunk>();
                 _ = new System.Collections.Generic.List<string>();
                 _ = new System.Collections.Generic.List<float>();
                 _ = new System.Collections.Generic.List<int>();
-                
+
                 // Queue types
                 _ = new System.Collections.Generic.Queue<Unity.InferenceEngine.Worker>();
                 _ = new System.Collections.Generic.Queue<AudioChunk>();
-                
+
                 // LinkedList for LRU cache
                 _ = new System.Collections.Generic.LinkedList<string>();
             }
@@ -56,7 +56,7 @@ namespace uPiper.Core.IL2CPP
                 _ = typeof(System.Threading.Tasks.Task<bool>);
                 _ = typeof(System.Threading.Tasks.Task<PiperVoiceConfig>);
                 _ = typeof(System.Threading.Tasks.TaskCompletionSource<AudioClip>);
-                
+
                 // Async enumerable (if available)
 #if UNITY_2023_1_OR_NEWER
                 _ = typeof(System.Collections.Generic.IAsyncEnumerable<AudioChunk>);

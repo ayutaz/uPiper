@@ -125,14 +125,14 @@ namespace uPiper.Core
         public static PiperConfig CreateDefault()
         {
             var config = new PiperConfig();
-            
+
             // Apply IL2CPP-specific optimizations
             if (IL2CPP.IL2CPPCompatibility.PlatformSettings.IsIL2CPP)
             {
                 config.WorkerThreads = IL2CPP.IL2CPPCompatibility.PlatformSettings.GetRecommendedWorkerThreads();
                 config.MaxCacheSizeMB = IL2CPP.IL2CPPCompatibility.PlatformSettings.GetRecommendedCacheSizeMB();
             }
-            
+
             return config;
         }
 

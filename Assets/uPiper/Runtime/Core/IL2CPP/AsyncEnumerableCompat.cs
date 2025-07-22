@@ -97,7 +97,7 @@ namespace uPiper.Core.IL2CPP
         public static async Task<List<T>> ToListAsync<T>(IAsyncEnumerable<T> source, CancellationToken cancellationToken = default)
         {
             var list = new List<T>();
-            
+
 #if UNITY_2023_1_OR_NEWER
             await foreach (var item in source.WithCancellation(cancellationToken))
             {
@@ -118,7 +118,7 @@ namespace uPiper.Core.IL2CPP
                 await enumerator.DisposeAsync();
             }
 #endif
-            
+
             return list;
         }
 
