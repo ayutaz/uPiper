@@ -128,7 +128,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 {
                     var expectedPath = GetExpectedLibraryPath();
                     var nativePluginsPath = Path.GetFullPath(Path.Combine(Application.dataPath, "../NativePlugins/OpenJTalk/"));
-                    
+
                     throw new PiperInitializationException(
                         $"OpenJTalk native library not found at: {expectedPath}\n\n" +
                         "To install the OpenJTalk native library:\n" +
@@ -233,12 +233,12 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                 // Log input text with detailed encoding information
                 PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Processing text: '{text}' (length: {text.Length})");
-                
+
                 // Debug text encoding to identify Windows-specific issues
                 var textBytes = System.Text.Encoding.UTF8.GetBytes(text);
                 var hexText = string.Join(" ", textBytes.Select(b => b.ToString("X2", System.Globalization.CultureInfo.InvariantCulture)));
                 PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Input text UTF-8 bytes: {hexText}");
-                
+
                 // Additional character analysis for Windows debugging
                 PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Character analysis:");
                 for (int i = 0; i < Math.Min(text.Length, 10); i++)
@@ -247,7 +247,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     var unicode = ((int)ch).ToString("X4", System.Globalization.CultureInfo.InvariantCulture);
                     PiperLogger.LogDebug($"  [{i}] '{ch}' = U+{unicode}");
                 }
-                
+
                 // Enable stderr output for debugging
                 if (Application.isEditor)
                 {
@@ -279,7 +279,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                     // Marshal the result
                     var nativeResult = Marshal.PtrToStructure<NativePhonemeResult>(resultPtr);
-                    
+
                     // Log native result info
                     PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Native result - phoneme_count: {nativeResult.phoneme_count}, total_duration: {nativeResult.total_duration:F3}");
 
@@ -322,11 +322,11 @@ namespace uPiper.Core.Phonemizers.Implementations
             if (nativeResult.phonemes != IntPtr.Zero)
             {
                 var phonemeString = Marshal.PtrToStringAnsi(nativeResult.phonemes);
-                
+
                 // Debug log the raw phoneme string from native library
                 Debug.Log($"[OpenJTalkPhonemizer] Native phoneme string: '{phonemeString}'");
                 Debug.Log($"[OpenJTalkPhonemizer] Native phoneme count: {nativeResult.phoneme_count}");
-                
+
                 // Calculate checksum for comparison
                 uint checksum = 0;
                 foreach (char c in phonemeString)
@@ -334,19 +334,19 @@ namespace uPiper.Core.Phonemizers.Implementations
                     checksum = checksum * 31 + (uint)c;
                 }
                 Debug.Log($"[OpenJTalkPhonemizer] C# checksum: {checksum}");
-                
+
                 // Log raw bytes for debugging
                 if (phonemeString.Length > 0 && phonemeString.Length < 200)
                 {
                     var bytes = System.Text.Encoding.UTF8.GetBytes(phonemeString);
                     var hexString = string.Join(" ", bytes.Select(b => b.ToString("X2", System.Globalization.CultureInfo.InvariantCulture)));
                     Debug.Log($"[OpenJTalkPhonemizer] Raw bytes (hex): {hexString}");
-                    
+
                     // Check for specific patterns
                     var firstSpace = phonemeString.IndexOf(' ');
                     var lastSpace = phonemeString.LastIndexOf(' ');
                     Debug.Log($"[OpenJTalkPhonemizer] First space at: {firstSpace}, Last space at: {lastSpace}");
-                    
+
                     // Log first few phonemes individually
                     var parts = phonemeString.Split(' ');
                     if (parts.Length > 0)
@@ -358,11 +358,11 @@ namespace uPiper.Core.Phonemizers.Implementations
                         }
                     }
                 }
-                
+
                 if (!string.IsNullOrEmpty(phonemeString))
                 {
                     var phonemeList = phonemeString.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    
+
                     // Log if phoneme count mismatch
                     if (phonemeList.Length != nativeResult.phoneme_count)
                     {
@@ -375,13 +375,13 @@ namespace uPiper.Core.Phonemizers.Implementations
                         PiperLogger.LogWarning($"[OpenJTalkPhonemizer] Detected repeated phoneme patterns, attempting to clean up");
                         phonemeList = CleanRepeatedPhonemes(phonemeList);
                     }
-                    
+
                     // Convert OpenJTalk phonemes to Piper phonemes using the mapping
                     var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(phonemeList);
-                    
+
                     // Debug log the mapping result
                     PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Phoneme mapping: {string.Join(" ", phonemeList)} -> {string.Join(" ", piperPhonemes.Select(p => p.Length == 1 && p[0] >= '\ue000' && p[0] <= '\uf8ff' ? $"PUA(U+{((int)p[0]):X4})" : $"'{p}'"))}");
-                    
+
                     for (int i = 0; i < Math.Min(piperPhonemes.Length, nativeResult.phoneme_count); i++)
                     {
                         phonemes[i] = piperPhonemes[i];
@@ -615,7 +615,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             // In built application, Unity automatically loads native plugins
             // We just need to verify if the library was loaded successfully
             // The actual path checking is not necessary as Unity handles plugin loading
-            
+
             // Return a dummy path that indicates the library should be loaded by Unity
             if (PlatformHelper.IsWindows)
                 return "openjtalk_wrapper.dll";
@@ -665,14 +665,14 @@ namespace uPiper.Core.Phonemizers.Implementations
         #endregion
 
         #region Windows Bug Workarounds
-        
+
         /// <summary>
         /// Detect repeated phoneme patterns that indicate a Windows-specific OpenJTalk bug
         /// </summary>
         private static bool DetectRepeatedPatterns(string[] phonemes)
         {
             if (phonemes.Length < 6) return false;
-            
+
             // Look for patterns where the same phoneme sequence appears multiple times consecutively
             for (int i = 0; i < phonemes.Length - 6; i++)
             {
@@ -688,7 +688,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                             break;
                         }
                     }
-                    
+
                     if (isRepeated)
                     {
                         PiperLogger.LogWarning($"[OpenJTalkPhonemizer] Found repeated pattern of length {len} starting at position {i}: {string.Join(" ", phonemes.Skip(i).Take(len))}");
@@ -696,10 +696,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                     }
                 }
             }
-            
+
             return false;
         }
-        
+
         /// <summary>
         /// Attempt to clean repeated phonemes by removing duplicate patterns
         /// </summary>
@@ -707,16 +707,16 @@ namespace uPiper.Core.Phonemizers.Implementations
         {
             var cleaned = new List<string>();
             var skipUntil = -1;
-            
+
             for (int i = 0; i < phonemes.Length; i++)
             {
                 if (i <= skipUntil) continue;
-                
+
                 // Look for the start of a repeated pattern
                 for (int len = 3; len <= Math.Min(8, (phonemes.Length - i) / 2); len++)
                 {
                     if (i + len * 2 > phonemes.Length) break;
-                    
+
                     bool isRepeated = true;
                     for (int j = 0; j < len; j++)
                     {
@@ -726,7 +726,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                             break;
                         }
                     }
-                    
+
                     if (isRepeated)
                     {
                         // Add only the first occurrence
@@ -734,25 +734,25 @@ namespace uPiper.Core.Phonemizers.Implementations
                         {
                             cleaned.Add(phonemes[i + k]);
                         }
-                        
+
                         // Skip the repeated part
                         skipUntil = i + len * 2 - 1;
                         PiperLogger.LogInfo($"[OpenJTalkPhonemizer] Removed repeated pattern: {string.Join(" ", phonemes.Skip(i + len).Take(len))}");
                         break;
                     }
                 }
-                
+
                 // If no repetition found at this position, add the phoneme normally
                 if (skipUntil < i)
                 {
                     cleaned.Add(phonemes[i]);
                 }
             }
-            
+
             PiperLogger.LogInfo($"[OpenJTalkPhonemizer] Cleaned phonemes: {phonemes.Length} -> {cleaned.Count}");
             return cleaned.ToArray();
         }
-        
+
         #endregion
     }
 }

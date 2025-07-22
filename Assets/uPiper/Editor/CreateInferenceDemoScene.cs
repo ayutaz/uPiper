@@ -394,7 +394,7 @@ namespace uPiper.Editor
             statusRect.anchorMax = new Vector2(0.9f, 0.15f);
             statusRect.offsetMin = Vector2.zero;
             statusRect.offsetMax = Vector2.zero;
-            
+
             // 音素詳細テキスト
             var phonemeDetailsGO = new GameObject("PhonemeDetailsText");
             phonemeDetailsGO.transform.SetParent(panelGO.transform, false);

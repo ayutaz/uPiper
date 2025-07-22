@@ -13,10 +13,10 @@ namespace uPiper.Editor
         public static void ShowStatus()
         {
             Debug.Log("=== OpenJTalk Status Report ===");
-            
+
             // Try to create phonemizer to check status
             OpenJTalkPhonemizer phonemizer = null;
-            
+
             try
             {
                 phonemizer = new OpenJTalkPhonemizer();
@@ -35,7 +35,7 @@ namespace uPiper.Editor
                 Debug.LogError("3. Restart Unity Editor");
                 return;
             }
-            
+
             // Test various Japanese texts
             var testCases = new Dictionary<string, string>
             {
@@ -45,11 +45,11 @@ namespace uPiper.Editor
                 { "東京", "Kanji only" },
                 { "私は学生です", "Mixed kanji/hiragana" }
             };
-            
+
             Debug.Log("\n=== Test Results ===");
             int workingCount = 0;
             int brokenCount = 0;
-            
+
             foreach (var testCase in testCases)
             {
                 try
@@ -58,12 +58,12 @@ namespace uPiper.Editor
                     if (result != null && result.Phonemes != null)
                     {
                         var phonemes = result.Phonemes;
-                        
+
                         // Check for repeating patterns
                         var hasRepeatingPattern = phonemes
                             .GroupBy(p => p)
                             .Any(g => g.Count() > 3);
-                        
+
                         if (hasRepeatingPattern)
                         {
                             Debug.LogError($"✗ '{testCase.Key}' - BROKEN: Repeating pattern detected");
@@ -95,18 +95,18 @@ namespace uPiper.Editor
                     brokenCount++;
                 }
             }
-            
+
             Debug.Log($"\n=== Summary ===");
             Debug.Log($"Working: {workingCount}/{testCases.Count}");
             Debug.Log($"Broken: {brokenCount}/{testCases.Count}");
-            
+
             if (brokenCount > 0)
             {
                 Debug.LogError("\n⚠️ OpenJTalk native library has issues with kanji processing!");
                 Debug.LogError("The native library is returning incorrect phoneme sequences for text containing kanji.");
                 Debug.LogError("This is a known issue in the current OpenJTalk wrapper implementation.");
             }
-            
+
             phonemizer?.Dispose();
             Debug.Log("\n=== End of Status Report ===");
         }

@@ -261,7 +261,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             try
             {
                 var phonemizer = new OpenJTalkPhonemizer();
-                
+
                 Assert.DoesNotThrow(() =>
                 {
                     phonemizer.Dispose();
