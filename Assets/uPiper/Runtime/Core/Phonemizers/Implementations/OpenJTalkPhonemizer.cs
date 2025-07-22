@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Scripting;
 using uPiper.Core.Logging;
 using uPiper.Core.Platform;
 
@@ -23,12 +24,14 @@ namespace uPiper.Core.Phonemizers.Implementations
     /// OpenJTalk-based phonemizer for Japanese text processing.
     /// Uses P/Invoke to call native OpenJTalk library.
     /// </summary>
+    [Preserve]
     public class OpenJTalkPhonemizer : BasePhonemizer
     {
 
         #region Native Structures
 
         [StructLayout(LayoutKind.Sequential)]
+        [Preserve]
         private struct NativePhonemeResult
         {
             public IntPtr phonemes;      // char* - space-separated phoneme string (UTF-8)
