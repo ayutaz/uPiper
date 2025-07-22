@@ -11,7 +11,7 @@ namespace uPiper.Editor
         private const string DISABLE_OPENJTALK_KEY = "uPiper_DisableOpenJTalk";
         
         [MenuItem("uPiper/Debug/OpenJTalk/Toggle Enabled State")]
-        private static void ToggleOpenJTalk()
+        private static void ToggleEnabledState()
         {
             SetOpenJTalkDisabled(!IsOpenJTalkDisabled());
         }
