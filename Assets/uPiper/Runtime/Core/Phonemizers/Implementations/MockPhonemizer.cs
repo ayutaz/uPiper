@@ -53,7 +53,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 Name = "Japanese",
                 NativeName = "日本語",
                 RequiresPreprocessing = true,
-                SupportsAccents = true
+                SupportsAccent = true
             };
 
             _languageInfos["en_US"] = new LanguageInfo
@@ -62,7 +62,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 Name = "English",
                 NativeName = "English",
                 RequiresPreprocessing = false,
-                SupportsAccents = false
+                SupportsAccent = false
             };
         }
 
