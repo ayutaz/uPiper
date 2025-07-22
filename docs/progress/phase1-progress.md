@@ -510,6 +510,29 @@ Phase 1の全タスクが完了し、当初の目標を大幅に超える成果�
   - 形態素解析による正確な読み分け
   - 自然な音声生成の実現
 
+### 1.11 Unity基本統合（1人日）✅
+
+#### 1.11.1 Unityパッケージ構造（0.5人日）✅
+- **成果物**: 
+  - `Assets/uPiper/package.json` - Unity Package Manager対応
+  - Assembly Definition Files（.asmdef）の整備
+- **実装内容**:
+  - Package Managerからのインストール対応
+  - バージョン0.1.0、Unity 6000.0.35f1対応
+  - 依存関係の明確化（Unity.AI.Inference 2.2.1等）
+  - サンプル定義の追加（Basic TTS Demo、Advanced Integration）
+
+#### 1.11.2 基本的なデモシーン（0.5人日）✅
+- **成果物**:
+  - `Assets/uPiper/Scenes/InferenceEngineDemo.unity`
+  - `Assets/uPiper/Samples~/BasicTTSDemo/`
+  - `BasicTTSDemoDev.cs`、`InferenceEngineDemo.cs`
+- **実装内容**:
+  - TextMeshProを使用したUIの実装
+  - 日本語テキストの音声合成デモ
+  - Unity AI Inference Engineとの統合確認
+  - サンプルとしてPackage Managerからインポート可能
+
 ## 次のステップ
 
 1. ~~PiperTTSクラスの具体実装（タスク1.2）~~ ✅ 完了
@@ -518,5 +541,5 @@ Phase 1の全タスクが完了し、当初の目標を大幅に超える成果�
 4. ~~P/Invoke バインディング実装（Phase 1.8）~~ ✅ 完了
 5. ~~ONNX モデル統合（Phase 1.9）~~ ✅ 完了
 6. ~~OpenJTalk統合による日本語発音改善（Phase 1.10）~~ ✅ 完了
-7. Phase 1.11: Unity基本統合（パッケージ構造とデモシーン）
-8. Phase 1.12: IL2CPPサポート
+7. ~~Unity基本統合（Phase 1.11）~~ ✅ 完了
+8. Phase 1.12: IL2CPPサポート（次の実装予定）
