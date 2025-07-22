@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -57,6 +58,7 @@ namespace uPiper.Demo
         [Header("UI References")]
         [SerializeField] private TMP_InputField _inputField;
         [SerializeField] private Button _generateButton;
+        [SerializeField] private Button _inferenceButton; // Add for Android auto-test
         [SerializeField] private TextMeshProUGUI _statusText;
         [SerializeField] private AudioSource _audioSource;
         [SerializeField] private TMP_Dropdown _modelDropdown;
@@ -131,6 +133,8 @@ namespace uPiper.Demo
             // Additional Android debugging
             #if UNITY_ANDROID
             DebugAndroidSetup();
+            // Auto-test TTS generation after 2 seconds
+            StartCoroutine(AutoTestTTSGeneration());
             #endif
 #endif
 
@@ -771,6 +775,30 @@ namespace uPiper.Demo
             PiperLogger.LogInfo($"[Android Debug] Direct UTF-8 string successful: {testText.Length == 5}");
             
             PiperLogger.LogInfo("[Android Debug] === End Android Setup Debug ===");
+        }
+        
+        private System.Collections.IEnumerator AutoTestTTSGeneration()
+        {
+            PiperLogger.LogInfo("[uPiper] Waiting 2 seconds before auto-testing TTS...");
+            yield return new WaitForSeconds(2f);
+            
+            PiperLogger.LogInfo("[uPiper] Starting auto TTS test...");
+            
+            // Try to generate TTS
+            if (_generateButton != null && _generateButton.isActiveAndEnabled)
+            {
+                PiperLogger.LogInfo("[uPiper] Clicking generate button programmatically...");
+                _ = GenerateAudioAsync();
+                
+                // Wait for generation
+                yield return new WaitForSeconds(5f);
+                
+                PiperLogger.LogInfo("[uPiper] Auto test completed. Check if audio was generated.");
+            }
+            else
+            {
+                PiperLogger.LogError("[uPiper] Generate button not available for auto test");
+            }
         }
 #endif
     }
