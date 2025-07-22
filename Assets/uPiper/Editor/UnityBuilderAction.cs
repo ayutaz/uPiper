@@ -11,8 +11,6 @@ namespace UnityBuilderAction
     /// </summary>
     public static class BuildScript
     {
-        private static string scriptingBackend;
-
         private static string[] GetScenes()
         {
             return EditorBuildSettings.scenes
@@ -52,7 +50,7 @@ namespace UnityBuilderAction
             }
 
             // Get build location
-            var buildLocation = GetBuildLocation(buildTarget);
+            var buildLocation = GetBuildLocation(buildTarget, scriptingBackend);
 
             Debug.Log($"Building for {buildTarget} with {scriptingBackend} backend...");
             Debug.Log($"Build location: {buildLocation}");
@@ -107,7 +105,7 @@ namespace UnityBuilderAction
             }
         }
 
-        private static string GetBuildLocation(BuildTarget target)
+        private static string GetBuildLocation(BuildTarget target, string scriptingBackend)
         {
             var buildPath = GetArgument(Environment.GetCommandLineArgs(), "-customBuildPath", "");
             if (string.IsNullOrEmpty(buildPath))
