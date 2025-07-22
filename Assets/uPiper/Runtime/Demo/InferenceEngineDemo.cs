@@ -349,6 +349,9 @@ namespace uPiper.Demo
                 var phonemeStopwatch = Stopwatch.StartNew();
                 string[] phonemes;
                 var language = _modelLanguages[modelName];
+                
+                // Define konnichiwa string for special debugging
+                string konnichiwa = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
 
 #if !UNITY_WEBGL
                 // Use OpenJTalk for Japanese if available
@@ -445,7 +448,6 @@ namespace uPiper.Demo
                 PiperLogger.LogDebug($"Input text: '{_inputField.text}'");
 
                 // 「こんにちは」の場合、特に詳しくログ
-                string konnichiwa = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
                 if (_inputField.text == konnichiwa)
                 {
                     PiperLogger.LogInfo("=== Special debug for 'こんにちは' ===");
