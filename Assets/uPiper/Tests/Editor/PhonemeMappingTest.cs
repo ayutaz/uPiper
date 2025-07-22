@@ -12,7 +12,7 @@ namespace uPiper.Tests.Editor
             // Test that "ky" is correctly converted to PUA character
             var input = new[] { "pau", "ky", "o", "o", "pau" };
             var result = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(input);
-            
+
             Assert.AreEqual(5, result.Length);
             Assert.AreEqual("_", result[0]); // pau -> _
             Assert.AreEqual("\ue006", result[1]); // ky -> PUA character
@@ -20,7 +20,7 @@ namespace uPiper.Tests.Editor
             Assert.AreEqual("o", result[3]);
             Assert.AreEqual("_", result[4]); // pau -> _
         }
-        
+
         [Test]
         public void TestOtherPalatizedConsonants()
         {
@@ -35,7 +35,7 @@ namespace uPiper.Tests.Editor
                 ("my", "\ue014"),
                 ("ry", "\ue015")
             };
-            
+
             foreach (var (input, expected) in testCases)
             {
                 var result = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(new[] { input });

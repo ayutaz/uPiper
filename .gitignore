@@ -200,6 +200,7 @@ Desktop.ini
 
 # Editor temporary files
 *~
+!Samples~/
 *.swp
 *.swo
 *.orig

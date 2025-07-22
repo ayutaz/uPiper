@@ -1,0 +1,19 @@
+{
+    "name": "uPiper.Samples.BasicTTSDemo",
+    "rootNamespace": "uPiper.Samples.BasicTTSDemo",
+    "references": [
+        "uPiper.Runtime",
+        "Unity.InferenceEngine",
+        "Unity.TextMeshPro",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

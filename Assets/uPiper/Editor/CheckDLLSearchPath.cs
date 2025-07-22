@@ -9,7 +9,7 @@ namespace uPiper.Editor
 {
     public static class CheckDLLSearchPath
     {
-        [MenuItem("uPiper/Debug/Check DLL Search Path")]
+        [MenuItem("uPiper/Debug/DLL/Check Search Path")]
         static void CheckSearchPath()
         {
             Debug.Log("[CheckDLLSearchPath] === DLL Search Path Analysis ===");
@@ -65,7 +65,7 @@ namespace uPiper.Editor
                             Debug.Log($"  FOUND: {dll} (Size: {fileInfo.Length} bytes)");
                         }
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         // Ignore access denied errors
                     }
@@ -82,7 +82,7 @@ namespace uPiper.Editor
             Debug.Log($"  - Processor Architecture: {Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE")}");
         }
         
-        [MenuItem("uPiper/Debug/Force Reimport DLL")]
+        [MenuItem("uPiper/Debug/DLL/Force Reimport")]
         static void ForceReimportDLL()
         {
             var dllPath = "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll";

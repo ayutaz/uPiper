@@ -55,11 +55,5 @@ namespace uPiper.Editor
             }
         }
 
-        [MenuItem("uPiper/Demo/Reset Demo Scene Check")]
-        public static void ResetCheck()
-        {
-            EditorPrefs.DeleteKey(CheckedKey);
-            Debug.Log("デモシーンチェックをリセットしました。次回起動時に確認ダイアログが表示されます。");
-        }
     }
 }

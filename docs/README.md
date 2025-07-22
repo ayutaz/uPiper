@@ -17,6 +17,9 @@
 - [technical/](./technical/) - 技術仕様書
   - `IL2CPP.md` - IL2CPPサポートガイド
 
+### 🔧 インフラ・運用
+- [CI-CD.md](./CI-CD.md) - GitHub Actionsワークフローとビルドプロセス
+
 ### 📝 実装ガイド
 - [implementation/](./implementation/) - 実装関連ドキュメント
   - `phase1-implementation-guide-ja.md` - Phase 1実装ガイド

@@ -18,6 +18,22 @@
 * Unity 6000.0.35f1
 * Unity AI Interface (Inference Engine) 2.2.x
 
+## インストール
+
+### Unity Package Manager経由（推奨）
+1. Unity Editorで `Window > Package Manager` を開く
+2. `+` ボタンから `Add package from git URL...` を選択
+3. 以下のURLを入力：
+   ```
+   https://github.com/ayutaz/uPiper.git?path=Assets/uPiper
+   ```
+
+### サンプルのインポート
+1. Package Managerで uPiper を選択
+2. `Samples` タブを開く
+3. `Basic TTS Demo` の `Import` をクリック
+4. インポートされたサンプルシーンを開いて実行
+
 ## サポートプラットフォーム
 
 ### 現在サポート中
@@ -66,6 +82,16 @@ uPiperは、ニューラルネットワークベースの音声合成（VITS）�
 - **利点**: 依存関係の削減、ビルドサイズの縮小
 
 詳細な技術情報は[ドキュメント](docs/)を参照してください。
+
+## 実装進捗
+
+### Phase 1: 基盤実装
+- ✅ 1.1-1.9: Core API、音素化システム、OpenJTalkライブラリ実装
+- ✅ 1.10: OpenJTalk統合による日本語発音改善（2025年1月完了）
+- ✅ 1.11: Unity基本統合 - Package Manager対応、デモシーン作成（2025年1月完了）
+- 🚧 1.12: IL2CPPサポート（次の実装予定）
+
+詳細な進捗は[ロードマップ](docs/ROADMAP.md)を参照してください。
 
 ## ライセンス
 

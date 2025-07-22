@@ -316,25 +316,25 @@ namespace uPiper.Demo
                 var phonemeStopwatch = Stopwatch.StartNew();
                 string[] phonemes;
                 var language = _modelLanguages[modelName];
-                
+
 #if !UNITY_WEBGL
                 // Use OpenJTalk for Japanese if available
                 if (language == "ja" && _phonemizer != null)
                 {
                     PiperLogger.LogDebug("[InferenceEngineDemo] Using OpenJTalk phonemizer for Japanese text");
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
-                    
+
                     var openJTalkStopwatch = Stopwatch.StartNew();
                     var phonemeResult = await _phonemizer.PhonemizeAsync(_inputField.text, language);
                     timings["OpenJTalk"] = openJTalkStopwatch.ElapsedMilliseconds;
                     var openJTalkPhonemes = phonemeResult.Phonemes;
-                    
+
                     PiperLogger.LogInfo($"[OpenJTalk] Raw phonemes ({openJTalkPhonemes.Length}): {string.Join(" ", openJTalkPhonemes)}");
-                    
+
                     // Convert OpenJTalk phonemes to Piper phonemes
                     phonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(openJTalkPhonemes);
                     PiperLogger.LogInfo($"[OpenJTalk] Converted to Piper phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
-                    
+
                     // Show phoneme details in UI
                     if (_phonemeDetailsText != null)
                     {
@@ -349,7 +349,7 @@ namespace uPiper.Demo
                             _phonemeDetailsText.text = $"OpenJTalk: {string.Join(" ", openJTalkPhonemes)}\nPiper: {string.Join(" ", phonemes)}";
                         }
                     }
-                    
+
                     // Log detailed phoneme information
                     if (phonemeResult.Durations != null && phonemeResult.Durations.Length > 0)
                     {
@@ -401,7 +401,7 @@ namespace uPiper.Demo
 
                 // 音素変換の詳細をログ出力
                 PiperLogger.LogDebug($"Input text: '{_inputField.text}'");
-                
+
                 // 「こんにちは」の場合、特に詳しくログ
                 if (_inputField.text.Contains("こんにちは"))
                 {
@@ -423,7 +423,7 @@ namespace uPiper.Demo
                 var phonemeIds = _encoder.Encode(phonemes);
                 PiperLogger.LogInfo($"Phoneme IDs ({phonemeIds.Length}): {string.Join(", ", phonemeIds)}");
                 timings["Encoding"] = encodeStopwatch.ElapsedMilliseconds;
-                
+
                 // Log phoneme to ID mapping for debugging
                 var phonemeIdPairs = new List<string>();
                 for (int i = 0; i < Math.Min(phonemes.Length, phonemeIds.Length); i++)
@@ -498,7 +498,7 @@ namespace uPiper.Demo
                 {
                     PiperLogger.LogInfo($"{timing.Key}: {timing.Value}ms");
                 }
-                
+
                 // Check if we meet the <100ms requirement
                 var processingTime = timings["Total"];
                 var meetsRequirement = processingTime < 100;
@@ -506,7 +506,7 @@ namespace uPiper.Demo
 
                 // Update status with timing info
                 SetStatus($"生成完了！ ({audioClip.length:F2}秒) - 処理時間: {processingTime}ms");
-                
+
                 // Show timing details in phoneme details text
                 if (_phonemeDetailsText != null)
                 {
@@ -589,7 +589,7 @@ namespace uPiper.Demo
             {
                 _generateButton.interactable = !_isGenerating;
             }
-            
+
             // Clear phoneme details when starting new generation
             if (_isGenerating && _phonemeDetailsText != null)
             {
