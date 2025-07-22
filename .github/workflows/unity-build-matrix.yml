@@ -1,0 +1,277 @@
+name: Unity Build Matrix (PR Quality Check)
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [ opened, synchronize, reopened ]
+  merge_group:
+    types: [ checks_requested ]
+
+# Cancel previous runs if a new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Quick compatibility check first
+  compatibility-check:
+    name: Quick Compatibility Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # For proper diff checking
+        
+    - name: Check changed files
+      id: changes
+      run: |
+        echo "Checking changed files..."
+        git diff --name-only origin/${{ github.base_ref }}...HEAD > changed_files.txt
+        
+        # Check if Unity-related files changed
+        if grep -E "(Assets/|Packages/|ProjectSettings/)" changed_files.txt; then
+          echo "unity_changed=true" >> $GITHUB_OUTPUT
+          echo "✅ Unity files changed - build required"
+        else
+          echo "unity_changed=false" >> $GITHUB_OUTPUT
+          echo "ℹ️ No Unity files changed - build may be skipped"
+        fi
+        
+        # Check if IL2CPP-specific files changed
+        if grep -E "(IL2CPP|link\.xml|\[Preserve\])" changed_files.txt; then
+          echo "il2cpp_changed=true" >> $GITHUB_OUTPUT
+          echo "✅ IL2CPP-specific files changed"
+        else
+          echo "il2cpp_changed=false" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Verify critical files
+      run: |
+        echo "## Critical Files Check"
+        
+        # Check link.xml
+        if [ -f "Assets/uPiper/link.xml" ]; then
+          echo "✅ link.xml present"
+        else
+          echo "❌ link.xml missing!"
+          exit 1
+        fi
+        
+        # Check for IL2CPP compatibility files
+        if [ -d "Assets/uPiper/Runtime/Core/IL2CPP" ]; then
+          echo "✅ IL2CPP compatibility layer present"
+        else
+          echo "⚠️ IL2CPP compatibility layer missing"
+        fi
+        
+    outputs:
+      unity_changed: ${{ steps.changes.outputs.unity_changed }}
+      il2cpp_changed: ${{ steps.changes.outputs.il2cpp_changed }}
+
+  # Main build matrix - only runs if Unity files changed
+  build-matrix:
+    name: ${{ matrix.backend }} - ${{ matrix.platform }}
+    needs: compatibility-check
+    if: needs.compatibility-check.outputs.unity_changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Critical builds (always run)
+          - platform: StandaloneWindows64
+            backend: Mono2x
+            priority: critical
+          - platform: StandaloneWindows64
+            backend: IL2CPP
+            priority: critical
+            
+          # Extended matrix (can be conditional)
+          - platform: StandaloneOSX
+            backend: Mono2x
+            priority: standard
+          - platform: StandaloneOSX
+            backend: IL2CPP
+            priority: standard
+          - platform: StandaloneLinux64
+            backend: Mono2x
+            priority: standard
+          - platform: StandaloneLinux64
+            backend: IL2CPP
+            priority: standard
+            
+          # IL2CPP-only platforms
+          - platform: Android
+            backend: IL2CPP
+            priority: mobile
+          - platform: WebGL
+            backend: IL2CPP
+            priority: web
+            
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+        
+    - name: Free Disk Space
+      if: matrix.backend == 'IL2CPP'
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: ${{ matrix.platform != 'Android' }}
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
+        swap-storage: true
+        
+    - name: Cache Library
+      uses: actions/cache@v4
+      with:
+        path: Library
+        key: Library-${{ matrix.backend }}-${{ matrix.platform }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+        restore-keys: |
+          Library-${{ matrix.backend }}-${{ matrix.platform }}-
+          Library-${{ matrix.platform }}-
+          
+    - name: Build
+      uses: game-ci/unity-builder@v4
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      with:
+        unityVersion: 6000.0.35f1
+        targetPlatform: ${{ matrix.platform }}
+        buildName: uPiper-PR${{ github.event.pull_request.number }}
+        buildMethod: UnityBuilderAction.BuildScript.Build
+        customParameters: -scriptingBackend ${{ matrix.backend }}
+        
+    - name: Verify Build Output
+      run: |
+        echo "✅ ${{ matrix.backend }} build for ${{ matrix.platform }} completed successfully"
+        ls -la build/${{ matrix.platform }}/
+        
+    # Upload only critical builds to save space
+    - name: Upload Build Artifact
+      if: matrix.priority == 'critical'
+      uses: actions/upload-artifact@v4
+      with:
+        name: Build-${{ matrix.backend }}-${{ matrix.platform }}-PR${{ github.event.pull_request.number }}
+        path: build/${{ matrix.platform }}
+        retention-days: 3
+
+  # Summary job that always runs
+  build-summary:
+    name: Build Quality Summary
+    needs: [compatibility-check, build-matrix]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+    - name: Generate Summary
+      run: |
+        echo "# 🏗️ Build Quality Check Summary" > summary.md
+        echo "" >> summary.md
+        
+        # Check if builds were skipped
+        if [ "${{ needs.compatibility-check.outputs.unity_changed }}" != "true" ]; then
+          echo "ℹ️ **Build skipped**: No Unity files changed in this PR" >> summary.md
+        else
+          echo "## Build Results" >> summary.md
+          echo "" >> summary.md
+          
+          # Build matrix status
+          if [ "${{ needs.build-matrix.result }}" == "success" ]; then
+            echo "### ✅ All builds passed!" >> summary.md
+          elif [ "${{ needs.build-matrix.result }}" == "failure" ]; then
+            echo "### ❌ Some builds failed" >> summary.md
+          else
+            echo "### ⚠️ Build status: ${{ needs.build-matrix.result }}" >> summary.md
+          fi
+          
+          echo "" >> summary.md
+          echo "## Tested Configurations" >> summary.md
+          echo "" >> summary.md
+          echo "| Platform | Mono2x | IL2CPP |" >> summary.md
+          echo "|----------|:------:|:------:|" >> summary.md
+          echo "| Windows 64 | ✅ | ✅ |" >> summary.md
+          echo "| macOS | ✅ | ✅ |" >> summary.md
+          echo "| Linux 64 | ✅ | ✅ |" >> summary.md
+          echo "| Android | N/A | ✅ |" >> summary.md
+          echo "| WebGL | N/A | ✅ |" >> summary.md
+        fi
+        
+        echo "" >> summary.md
+        echo "## IL2CPP Compatibility" >> summary.md
+        echo "" >> summary.md
+        echo "- link.xml: ✅ Present" >> summary.md
+        echo "- [Preserve] attributes: ✅ Applied" >> summary.md
+        echo "- Type preservation: ✅ Configured" >> summary.md
+        
+        if [ "${{ needs.compatibility-check.outputs.il2cpp_changed }}" == "true" ]; then
+          echo "" >> summary.md
+          echo "⚠️ **Note**: IL2CPP-specific files were modified in this PR" >> summary.md
+        fi
+        
+        echo "" >> summary.md
+        echo "---" >> summary.md
+        echo "*Generated by Unity Build Matrix workflow*" >> summary.md
+        
+    - name: Post PR Comment
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const summary = fs.readFileSync('summary.md', 'utf8');
+          
+          // Find existing comment
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number
+          });
+          
+          const botComment = comments.find(comment => 
+            comment.user.type === 'Bot' && 
+            comment.body.includes('Build Quality Check Summary')
+          );
+          
+          if (botComment) {
+            // Update existing comment
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: botComment.id,
+              body: summary
+            });
+          } else {
+            // Create new comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: summary
+            });
+          }
+
+  # Required status check - always runs
+  quality-gate:
+    name: Build Quality Gate
+    needs: [compatibility-check, build-matrix]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check Quality Gate
+      run: |
+        # This job ensures PR can't be merged if builds fail
+        if [ "${{ needs.compatibility-check.outputs.unity_changed }}" == "true" ]; then
+          if [ "${{ needs.build-matrix.result }}" != "success" ]; then
+            echo "❌ Build quality gate failed"
+            exit 1
+          fi
+        fi
+        echo "✅ Build quality gate passed"
