@@ -154,7 +154,6 @@ jobs:
       with:
         unityVersion: 6000.0.35f1
         targetPlatform: ${{ matrix.targetPlatform }}
-        buildName: uPiper-${{ matrix.scriptingBackend }}
         buildsPath: build
         buildMethod: UnityBuilderAction.BuildScript.Build
         customParameters: -scriptingBackend ${{ matrix.scriptingBackend }}

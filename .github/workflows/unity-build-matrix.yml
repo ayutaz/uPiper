@@ -145,7 +145,6 @@ jobs:
       with:
         unityVersion: 6000.0.35f1
         targetPlatform: ${{ matrix.platform }}
-        buildName: uPiper-PR${{ github.event.pull_request.number }}
         buildMethod: UnityBuilderAction.BuildScript.Build
         customParameters: -scriptingBackend ${{ matrix.backend }}
         
