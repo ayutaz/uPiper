@@ -628,6 +628,8 @@ namespace uPiper.Core.Phonemizers.Implementations
                 return "libopenjtalk_wrapper.dylib";
             else if (PlatformHelper.IsLinux)
                 return "libopenjtalk_wrapper.so";
+            else if (PlatformHelper.IsAndroid)
+                return "libopenjtalk_wrapper.so";
 #endif
 
             return null;
