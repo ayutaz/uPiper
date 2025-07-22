@@ -201,10 +201,9 @@ namespace uPiper.Samples.AndroidDemo
                 speedText.text = $"Speed: {value:F1}x";
             }
 
-            if (piperTTS != null && piperTTS.Configuration != null)
-            {
-                piperTTS.Configuration.SpeechRate = value;
-            }
+            // Note: Speech rate adjustment would need to be implemented
+            // through voice configuration or audio post-processing
+            Debug.Log($"[AndroidTTSDemo] Speed changed to: {value}x (not implemented yet)");
         }
 
         private void UpdateStatus(string message)
