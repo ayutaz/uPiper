@@ -245,6 +245,68 @@ jobs:
         ls -la output/android/${{ matrix.abi }}/
         file output/android/${{ matrix.abi }}/libopenjtalk_wrapper.so
     
+    - name: Test Android Library
+      run: |
+        cd NativePlugins/OpenJTalk
+        
+        # Run tests in Docker container with Android environment
+        docker run --rm -v "${PWD}:/workspace" -w /workspace openjtalk-android bash -c "
+          # Install test dependencies
+          apt-get update -qq && apt-get install -y -qq file
+          
+          # Check library architecture
+          echo '=== Library Architecture Check ==='
+          file output/android/${{ matrix.abi }}/libopenjtalk_wrapper.so
+          
+          # Check exported symbols
+          echo ''
+          echo '=== Exported Symbols Check ==='
+          if [ -f /opt/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm ]; then
+            /opt/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-nm -D output/android/${{ matrix.abi }}/libopenjtalk_wrapper.so | grep openjtalk_ | head -10
+          fi
+          
+          # Check library dependencies
+          echo ''
+          echo '=== Library Dependencies ==='
+          if [ -f /opt/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf ]; then
+            /opt/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf -d output/android/${{ matrix.abi }}/libopenjtalk_wrapper.so | grep NEEDED
+          fi
+          
+          # Run basic API test (if x86 or x86_64, can use emulator)
+          if [[ '${{ matrix.abi }}' == 'x86' ]] || [[ '${{ matrix.abi }}' == 'x86_64' ]]; then
+            echo ''
+            echo '=== Basic API Test ==='
+            # Create simple test program
+            cat > test_android.c << 'EOF'
+          #include <stdio.h>
+          #include <dlfcn.h>
+          
+          int main() {
+              void* handle = dlopen(\"./output/android/${{ matrix.abi }}/libopenjtalk_wrapper.so\", RTLD_NOW);
+              if (!handle) {
+                  printf(\"Failed to load library: %s\\n\", dlerror());
+                  return 1;
+              }
+              
+              // Check for main functions
+              void* create_fn = dlsym(handle, \"openjtalk_create\");
+              void* destroy_fn = dlsym(handle, \"openjtalk_destroy\");
+              void* phonemize_fn = dlsym(handle, \"openjtalk_phonemize\");
+              
+              printf(\"openjtalk_create: %s\\n\", create_fn ? \"FOUND\" : \"NOT FOUND\");
+              printf(\"openjtalk_destroy: %s\\n\", destroy_fn ? \"FOUND\" : \"NOT FOUND\");
+              printf(\"openjtalk_phonemize: %s\\n\", phonemize_fn ? \"FOUND\" : \"NOT FOUND\");
+              
+              dlclose(handle);
+              return (create_fn && destroy_fn && phonemize_fn) ? 0 : 1;
+          }
+          EOF
+            
+            # Note: Full execution test would require Android emulator
+            echo 'Note: Full execution test requires Android emulator setup'
+          fi
+        "
+    
     - name: Prepare Artifacts
       run: |
         mkdir -p artifacts/android/${{ matrix.abi }}

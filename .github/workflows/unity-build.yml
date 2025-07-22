@@ -24,6 +24,11 @@ on:
         required: false
         default: 'true'
         type: boolean
+      buildAndroid:
+        description: 'Build for Android'
+        required: false
+        default: 'true'
+        type: boolean
 
 jobs:
   build:
@@ -36,6 +41,7 @@ jobs:
           - StandaloneWindows64
           - StandaloneOSX
           - StandaloneLinux64
+          - Android
     
     steps:
     - uses: actions/checkout@v4
@@ -51,6 +57,28 @@ jobs:
           Library-${{ matrix.targetPlatform }}-
           Library-
           
+    # Download native libraries for Android build
+    - name: Download Android Native Libraries
+      if: matrix.targetPlatform == 'Android'
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        workflow: build-openjtalk-native.yml
+        workflow_conclusion: success
+        name: |
+          openjtalk-android-arm64-v8a
+          openjtalk-android-armeabi-v7a
+          openjtalk-android-x86
+          openjtalk-android-x86_64
+        path: native-android-libs
+        
+    # Place Android native libraries in correct location
+    - name: Setup Android Native Libraries
+      if: matrix.targetPlatform == 'Android'
+      run: |
+        mkdir -p Assets/uPiper/Plugins/Android/libs
+        cp -r native-android-libs/*/android/* Assets/uPiper/Plugins/Android/libs/ || true
+        ls -la Assets/uPiper/Plugins/Android/libs/
+        
     # Unity Builder を使用してビルド
     - name: Build Unity project
       uses: game-ci/unity-builder@v4
@@ -63,6 +91,11 @@ jobs:
         targetPlatform: ${{ matrix.targetPlatform }}
         buildName: uPiper
         buildsPath: build
+        androidAppBundle: false
+        androidKeystoreName: ''
+        androidKeystorePass: ''
+        androidKeyaliasName: ''
+        androidKeyaliasPass: ''
         
     # ビルド成果物をアップロード
     - name: Upload build artifacts
