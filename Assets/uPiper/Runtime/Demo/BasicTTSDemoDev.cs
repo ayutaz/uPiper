@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using Unity.InferenceEngine;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
+using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Demo
@@ -27,7 +28,7 @@ namespace uPiper.Demo
         [SerializeField] private int _sampleRate = 22050;
 
         private InferenceAudioGenerator _audioGenerator;
-        private OpenJTalkPhonemizer _phonemizer;
+        private IPhonemizer _phonemizer;
         private AudioClipBuilder _audioClipBuilder;
         private bool _isProcessing;
 
@@ -51,8 +52,24 @@ namespace uPiper.Demo
             if (_generateButton != null)
                 _generateButton.interactable = false;
 
-            // Initialize phonemizer (コンストラクタで初期化される)
-            _phonemizer = new OpenJTalkPhonemizer();
+            // Initialize phonemizer
+#if UNITY_WEBGL || UNITY_ANDROID || UNITY_IOS
+            // Use MockPhonemizer for platforms without native library support
+            _phonemizer = new MockPhonemizer();
+            UpdateStatus("Using MockPhonemizer (no native library support on this platform)");
+#else
+            // Use OpenJTalkPhonemizer for desktop platforms
+            try
+            {
+                _phonemizer = new OpenJTalkPhonemizer();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Failed to initialize OpenJTalkPhonemizer: {e.Message}");
+                _phonemizer = new MockPhonemizer();
+                UpdateStatus("Falling back to MockPhonemizer");
+            }
+#endif
 
             // Initialize audio clip builder
             _audioClipBuilder = new AudioClipBuilder();
