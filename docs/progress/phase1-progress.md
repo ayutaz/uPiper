@@ -605,10 +605,12 @@ Phase 1の全タスクが完了し、当初の目標を大幅に超える成果�
 - **成果物**:
   - `.github/workflows/unity-il2cpp-build.yml` - IL2CPP専用ビルド
   - `.github/workflows/unity-build-matrix.yml` - PR品質チェック
-  - `docs/technical/CI-CD-SETUP.md` - CI/CD設定ガイド
+  - `.github/workflows/unity-il2cpp-native.yml` - ネイティブランナー用ワークフロー
+  - `docs/ci-cd/IL2CPP-CI-SOLUTIONS.md` - CI/CDソリューションガイド
 - **実装内容**:
-  - MonoとIL2CPP両方のビルドサポート
-  - 全プラットフォーム対応（Windows、macOS、Linux、Android、WebGL）
+  - Linux IL2CPP: Dockerで完全サポート（CIで自動実行）
+  - Windows/macOS IL2CPP: ネイティブランナー用ワークフロー作成
+  - Monoビルド: 全プラットフォーム対応
   - ビルド品質ゲートの実装
 
 #### 技術的課題の解決 ✅
@@ -616,3 +618,5 @@ Phase 1の全タスクが完了し、当初の目標を大幅に超える成果�
 - AndroidApiLevel21 → AndroidApiLevel23への更新
 - .gitignore問題の解決（link.xmlの強制追加）
 - ジェネリック型エラーの修正
+- MockPhonemizerによるプラットフォーム固有問題の解決
+- Docker環境でのIL2CPP制限への対応

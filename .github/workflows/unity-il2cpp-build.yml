@@ -16,32 +16,6 @@ on:
       - 'ProjectSettings/**'
       - '.github/workflows/unity-il2cpp-build.yml'
   workflow_dispatch:
-    inputs:
-      testWindows:
-        description: 'Test Windows IL2CPP build'
-        required: false
-        default: 'true'
-        type: boolean
-      testMacOS:
-        description: 'Test macOS IL2CPP build'
-        required: false
-        default: 'true'
-        type: boolean
-      testLinux:
-        description: 'Test Linux IL2CPP build'
-        required: false
-        default: 'true'
-        type: boolean
-      testAndroid:
-        description: 'Test Android IL2CPP build'
-        required: false
-        default: 'true'
-        type: boolean
-      testWebGL:
-        description: 'Test WebGL IL2CPP build'
-        required: false
-        default: 'true'
-        type: boolean
 
 jobs:
   il2cpp-compatibility-check:
@@ -80,36 +54,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Windows builds
+          # Mono builds for all desktop platforms
           - targetPlatform: StandaloneWindows64
             os: ubuntu-latest
             scriptingBackend: Mono2x
-          # Windows IL2CPP currently not supported in Docker
-          # - targetPlatform: StandaloneWindows64
-          #   os: ubuntu-latest
-          #   scriptingBackend: IL2CPP
-          # macOS builds
           - targetPlatform: StandaloneOSX
             os: ubuntu-latest
             scriptingBackend: Mono2x
-          # macOS IL2CPP needs native runner
-          # - targetPlatform: StandaloneOSX
-          #   os: macos-latest
-          #   scriptingBackend: IL2CPP
-          # Linux builds (IL2CPP works in Docker)
           - targetPlatform: StandaloneLinux64
             os: ubuntu-latest
             scriptingBackend: Mono2x
+          # IL2CPP build for Linux only (fully supported in Docker)
           - targetPlatform: StandaloneLinux64
             os: ubuntu-latest
             scriptingBackend: IL2CPP
-          # Mobile/Web platforms excluded per user request
-          # - targetPlatform: Android
-          #   os: ubuntu-latest
-          #   scriptingBackend: IL2CPP
-          # - targetPlatform: WebGL
-          #   os: ubuntu-latest
-          #   scriptingBackend: IL2CPP
     
     steps:
     - uses: actions/checkout@v4
@@ -206,16 +164,13 @@ jobs:
         echo "" >> build-summary.md
         echo "| Platform | Mono2x | IL2CPP | Notes |" >> build-summary.md
         echo "|----------|--------|--------|-------|" >> build-summary.md
-        echo "| Windows 64-bit | ✅ | ⚠️ | IL2CPP requires native runner |" >> build-summary.md
-        echo "| macOS | ✅ | ⚠️ | IL2CPP requires native runner |" >> build-summary.md
+        echo "| Windows 64-bit | ✅ | - | Mono only |" >> build-summary.md
+        echo "| macOS | ✅ | - | Mono only |" >> build-summary.md
         echo "| Linux 64-bit | ✅ | ✅ | Both backends supported |" >> build-summary.md
-        echo "| Android | N/A | - | Mobile support not implemented |" >> build-summary.md
-        echo "| WebGL | N/A | - | WebGL support not implemented |" >> build-summary.md
         echo "" >> build-summary.md
-        echo "⚠️ **IL2CPP Limitations in CI**:" >> build-summary.md
-        echo "- Windows IL2CPP builds require Visual Studio and cannot run in Linux Docker containers" >> build-summary.md
-        echo "- macOS IL2CPP builds must run on macOS runners directly" >> build-summary.md
-        echo "- Only Linux IL2CPP builds are fully supported in Docker-based CI" >> build-summary.md
+        echo "**CI/CD Configuration**:" >> build-summary.md
+        echo "- Linux IL2CPP is fully supported and tested in CI" >> build-summary.md
+        echo "- Windows/macOS IL2CPP available via manual workflow (unity-il2cpp-native.yml)" >> build-summary.md
         echo "" >> build-summary.md
         echo "## Build Configuration" >> build-summary.md
         echo "" >> build-summary.md

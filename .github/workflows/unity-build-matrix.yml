@@ -80,37 +80,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Critical builds (always run)
+          # Mono builds for all platforms
           - platform: StandaloneWindows64
             backend: Mono2x
             priority: critical
-          # Windows IL2CPP not supported in Docker
-          # - platform: StandaloneWindows64
-          #   backend: IL2CPP
-          #   priority: critical
-            
-          # Extended matrix (can be conditional)
           - platform: StandaloneOSX
             backend: Mono2x
             priority: standard
-          # macOS IL2CPP needs native runner
-          # - platform: StandaloneOSX
-          #   backend: IL2CPP
-          #   priority: standard
           - platform: StandaloneLinux64
             backend: Mono2x
             priority: standard
+          # IL2CPP build for Linux only (Docker supported)
           - platform: StandaloneLinux64
             backend: IL2CPP
-            priority: standard
-            
-          # IL2CPP-only platforms (mobile excluded per user request)
-          # - platform: Android
-          #   backend: IL2CPP
-          #   priority: mobile
-          # - platform: WebGL
-          #   backend: IL2CPP
-          #   priority: web
+            priority: critical
             
     steps:
     - uses: actions/checkout@v4
@@ -199,14 +182,12 @@ jobs:
           echo "" >> summary.md
           echo "| Platform | Mono2x | IL2CPP |" >> summary.md
           echo "|----------|:------:|:------:|" >> summary.md
-          echo "| Windows 64 | ✅ | ⚠️ |" >> summary.md
-          echo "| macOS | ✅ | ⚠️ |" >> summary.md
+          echo "| Windows 64 | ✅ | - |" >> summary.md
+          echo "| macOS | ✅ | - |" >> summary.md
           echo "| Linux 64 | ✅ | ✅ |" >> summary.md
-          echo "| Android | N/A | - |" >> summary.md
-          echo "| WebGL | N/A | - |" >> summary.md
           echo "" >> summary.md
-          echo "⚠️ **Note**: Windows/macOS IL2CPP builds are temporarily disabled due to Docker limitations." >> summary.md
-          echo "IL2CPP for these platforms requires native runners or self-hosted environments." >> summary.md
+          echo "**Note**: IL2CPP builds are enabled for Linux only." >> summary.md
+          echo "Windows/macOS IL2CPP require native runners (see unity-il2cpp-native.yml)." >> summary.md
         fi
         
         echo "" >> summary.md
