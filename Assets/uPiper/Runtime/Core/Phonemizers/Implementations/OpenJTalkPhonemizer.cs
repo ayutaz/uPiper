@@ -436,6 +436,10 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         private static string GetDefaultDictionaryPath()
         {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            // On Android, use the persistent data path where we extract the dictionary
+            return AndroidPathResolver.GetOpenJTalkDictionaryPath();
+#else
             // Look for dictionary in various locations
             var possiblePaths = new[]
             {
@@ -477,6 +481,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             Debug.LogWarning($"[OpenJTalkPhonemizer] Dictionary not found in any of the expected locations");
             // Return first path as default (will fail later if not found)
             return possiblePaths[0];
+#endif
         }
 
         #endregion
