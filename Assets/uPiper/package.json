@@ -29,5 +29,17 @@
     "url": "https://github.com/ayutaz"
   },
   "type": "library",
-  "hideInEditor": false
+  "hideInEditor": false,
+  "samples": [
+    {
+      "displayName": "Basic TTS Demo",
+      "description": "A simple demo scene showing how to use uPiper for text-to-speech synthesis with Japanese text.",
+      "path": "Samples~/BasicTTSDemo"
+    },
+    {
+      "displayName": "Advanced Integration",
+      "description": "Advanced examples showing streaming, multiple voices, and custom phonemizer usage.",
+      "path": "Samples~/AdvancedIntegration"
+    }
+  ]
 }

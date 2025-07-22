@@ -83,7 +83,7 @@ namespace uPiper.Core.AudioGeneration
 
             // BOS/EOSトークンを追加するかどうかのフラグ（デバッグ用）
             bool addSpecialTokens = false; // 一旦falseにして、後で必要に応じて有効化
-            
+
             if (addSpecialTokens)
             {
                 // BOSトークンを追加
@@ -122,7 +122,7 @@ namespace uPiper.Core.AudioGeneration
             {
                 ids.Add(GetEosId());
             }
-            
+
             // 空の結果になった場合は、無音を表すPADトークンを1つ追加
             if (ids.Count == 0)
             {

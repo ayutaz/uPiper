@@ -21,7 +21,7 @@ namespace uPiper.Editor
         private PhonemeResult _lastResult;
         private Vector2 _scrollPosition;
 
-        [MenuItem("uPiper/Demo/OpenJTalk Phonemizer Test")]
+        [MenuItem("uPiper/Tools/OpenJTalk Phonemizer Test")]
         public static void ShowWindow()
         {
             var window = GetWindow<OpenJTalkPhonemizerDemo>("OpenJTalk Phonemizer");

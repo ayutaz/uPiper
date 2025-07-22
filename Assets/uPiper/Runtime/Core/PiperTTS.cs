@@ -543,7 +543,7 @@ namespace uPiper.Core
                     try
                     {
                         PiperLogger.LogInfo("Using InferenceAudioGenerator for audio synthesis");
-                        
+
                         // Encode phonemes to IDs
                         var phonemeIds = _phonemeEncoder.Encode(phonemeResult.Phonemes);
                         PiperLogger.LogInfo($"Encoded {phonemeIds.Length} phoneme IDs");

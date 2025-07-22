@@ -185,13 +185,13 @@ namespace uPiper.Core.Phonemizers
         public static string[] ConvertToPiperPhonemes(string[] openJTalkPhonemes)
         {
             var result = new List<string>();
-            
+
             for (int i = 0; i < openJTalkPhonemes.Length; i++)
             {
                 var phoneme = openJTalkPhonemes[i];
                 if (string.IsNullOrEmpty(phoneme))
                     continue;
-                
+
                 // Check if this is a multi-character phoneme that needs PUA conversion
                 // This should be checked BEFORE the simple mapping to ensure "ky" -> PUA, not "ky" -> "k"
                 if (PhonemeToPUA.ContainsKey(phoneme.ToLower()))
@@ -199,34 +199,34 @@ namespace uPiper.Core.Phonemizers
                     result.Add(PhonemeToPUA[phoneme.ToLower()]);
                     continue;
                 }
-                
+
                 // Special handling for "t i" sequence -> "ch i" (for ち)
                 if (phoneme.ToLower() == "t" && i + 1 < openJTalkPhonemes.Length && openJTalkPhonemes[i + 1].ToLower() == "i")
                 {
                     // Check if this is actually "ち" sound
                     // Look at the previous phoneme to determine context
                     bool isChiSound = true;
-                    
+
                     // If preceded by "t" (like in "tti"), it's not "chi"
                     if (i > 0 && openJTalkPhonemes[i - 1].ToLower() == "t")
                     {
                         isChiSound = false;
                     }
-                    
+
                     if (isChiSound)
                     {
                         result.Add("\ue00e"); // PUA for "ch"
                         continue;
                     }
                 }
-                
+
                 // Handle pause/silence
                 if (phoneme.ToLower() == "pau")
                 {
                     result.Add("_");
                     continue;
                 }
-                
+
                 // Try to map the phoneme
                 if (OpenJTalkToPiperPhoneme.TryGetValue(phoneme.ToLower(), out var piperPhoneme))
                 {
@@ -246,7 +246,7 @@ namespace uPiper.Core.Phonemizers
                     }
                 }
             }
-            
+
             return result.ToArray();
         }
 
@@ -270,7 +270,7 @@ namespace uPiper.Core.Phonemizers
         {
             var piperPhonemes = ConvertToPiperPhonemes(openJTalkPhonemes);
             var result = new List<int>();
-            
+
             foreach (var phoneme in piperPhonemes)
             {
                 if (phonemeIdMap.TryGetValue(phoneme, out var id))
@@ -283,7 +283,7 @@ namespace uPiper.Core.Phonemizers
                     result.Add(0);
                 }
             }
-            
+
             return result.ToArray();
         }
     }

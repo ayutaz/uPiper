@@ -52,6 +52,25 @@ public class TTSExample : MonoBehaviour
 }
 ```
 
+## サンプル
+
+### 開発プロジェクトでの使用方法
+
+1. `Assets/uPiper/Samples~/BasicTTSDemo` を `Assets/Samples/uPiper/BasicTTSDemo` にコピー
+2. メニューから `uPiper > Samples > Create Basic TTS Demo Scene` を選択
+3. シーンを保存して実行
+
+### パッケージとしてインストールした場合
+
+1. Unity Package Manager で uPiper を選択
+2. "Samples" タブを開く
+3. "Basic TTS Demo" の "Import" をクリック
+
+### Basic TTS Demo
+- 日本語テキストの音声合成デモ
+- シンプルな UI で TTS を体験
+- OpenJTalk による高精度な日本語処理
+
 ## アーキテクチャ
 
 ```

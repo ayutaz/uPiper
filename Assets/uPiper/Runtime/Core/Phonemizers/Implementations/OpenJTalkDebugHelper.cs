@@ -16,14 +16,14 @@ namespace uPiper.Core.Phonemizers.Implementations
         public static void DebugLibraryLoading()
         {
             Debug.Log("[OpenJTalkDebug] Starting library loading debug...");
-            
+
             // Log environment info
             Debug.Log($"[OpenJTalkDebug] Platform: {Application.platform}");
             Debug.Log($"[OpenJTalkDebug] Unity version: {Application.unityVersion}");
             Debug.Log($"[OpenJTalkDebug] Is Editor: {Application.isEditor}");
             Debug.Log($"[OpenJTalkDebug] Data path: {Application.dataPath}");
             Debug.Log($"[OpenJTalkDebug] Persistent data path: {Application.persistentDataPath}");
-            
+
             // Check Plugins directory
 #if !UNITY_EDITOR
             string pluginsPath;
@@ -46,7 +46,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             {
                 pluginsPath = Path.Combine(Application.dataPath, "Plugins");
             }
-            
+
             if (Directory.Exists(pluginsPath))
             {
                 Debug.Log($"[OpenJTalkDebug] Plugins directory exists: {pluginsPath}");
@@ -61,7 +61,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 Debug.LogError($"[OpenJTalkDebug] Plugins directory not found: {pluginsPath}");
             }
 #endif
-            
+
             // Try to load the library
             try
             {
