@@ -101,14 +101,13 @@ jobs:
           - targetPlatform: StandaloneLinux64
             os: ubuntu-latest
             scriptingBackend: IL2CPP
-          # Android builds (IL2CPP only - Android doesn't support Mono)
-          - targetPlatform: Android
-            os: ubuntu-latest
-            scriptingBackend: IL2CPP
-          # WebGL builds (IL2CPP only - WebGL doesn't support Mono)
-          - targetPlatform: WebGL
-            os: ubuntu-latest
-            scriptingBackend: IL2CPP
+          # Mobile/Web platforms excluded per user request
+          # - targetPlatform: Android
+          #   os: ubuntu-latest
+          #   scriptingBackend: IL2CPP
+          # - targetPlatform: WebGL
+          #   os: ubuntu-latest
+          #   scriptingBackend: IL2CPP
     
     steps:
     - uses: actions/checkout@v4
@@ -208,8 +207,8 @@ jobs:
         echo "| Windows 64-bit | ✅ | ✅ | Both backends supported |" >> build-summary.md
         echo "| macOS | ✅ | ✅ | Both backends supported |" >> build-summary.md
         echo "| Linux 64-bit | ✅ | ✅ | Both backends supported |" >> build-summary.md
-        echo "| Android | N/A | ✅ | IL2CPP only platform |" >> build-summary.md
-        echo "| WebGL | N/A | ✅ | IL2CPP only platform |" >> build-summary.md
+        echo "| Android | N/A | - | Mobile support not implemented |" >> build-summary.md
+        echo "| WebGL | N/A | - | WebGL support not implemented |" >> build-summary.md
         echo "" >> build-summary.md
         echo "## Build Configuration" >> build-summary.md
         echo "" >> build-summary.md

@@ -102,13 +102,13 @@ jobs:
             backend: IL2CPP
             priority: standard
             
-          # IL2CPP-only platforms
-          - platform: Android
-            backend: IL2CPP
-            priority: mobile
-          - platform: WebGL
-            backend: IL2CPP
-            priority: web
+          # IL2CPP-only platforms (mobile excluded per user request)
+          # - platform: Android
+          #   backend: IL2CPP
+          #   priority: mobile
+          # - platform: WebGL
+          #   backend: IL2CPP
+          #   priority: web
             
     steps:
     - uses: actions/checkout@v4
@@ -200,8 +200,8 @@ jobs:
           echo "| Windows 64 | ✅ | ✅ |" >> summary.md
           echo "| macOS | ✅ | ✅ |" >> summary.md
           echo "| Linux 64 | ✅ | ✅ |" >> summary.md
-          echo "| Android | N/A | ✅ |" >> summary.md
-          echo "| WebGL | N/A | ✅ |" >> summary.md
+          echo "| Android | N/A | - |" >> summary.md
+          echo "| WebGL | N/A | - |" >> summary.md
         fi
         
         echo "" >> summary.md
