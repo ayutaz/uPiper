@@ -1,6 +1,8 @@
 using UnityEditor;
 using UnityEngine;
 using System.Text;
+using System;
+using UnityEditor.Build;
 
 namespace uPiper.Editor.Build
 {
@@ -23,8 +25,9 @@ namespace uPiper.Editor.Build
             Debug.Log($"Android Target API Level: {PlayerSettings.Android.targetSdkVersion}");
             
             // Configuration
-            Debug.Log($"Script Backend: {PlayerSettings.GetScriptingBackend(BuildTargetGroup.Android)}");
-            Debug.Log($"Api Compatibility Level: {PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.Android)}");
+            var namedBuildTarget = NamedBuildTarget.Android;
+            Debug.Log($"Script Backend: {PlayerSettings.GetScriptingBackend(namedBuildTarget)}");
+            Debug.Log($"Api Compatibility Level: {PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget)}");
             
             // Text encoding test
             Debug.Log("\n=== Text Encoding Test ===");
@@ -72,12 +75,10 @@ namespace uPiper.Editor.Build
                         Debug.Log($"[uPiper] Found Japanese text in: {path}");
                         
                         // Force reimport with UTF-8 encoding
-                        var importer = AssetImporter.GetAtPath(path) as TextScriptImporter;
-                        if (importer != null)
-                        {
-                            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-                            fixedCount++;
-                        }
+                        // Note: TextScriptImporter is not directly accessible
+                        // Just force reimport which should use UTF-8 by default
+                        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+                        fixedCount++;
                     }
                 }
             }
