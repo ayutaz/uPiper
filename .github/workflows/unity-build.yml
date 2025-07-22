@@ -24,6 +24,11 @@ on:
         required: false
         default: 'true'
         type: boolean
+      useIL2CPP:
+        description: 'Use IL2CPP backend'
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   build:
@@ -61,8 +66,10 @@ jobs:
       with:
         unityVersion: 6000.0.35f1
         targetPlatform: ${{ matrix.targetPlatform }}
-        buildName: uPiper
+        buildName: uPiper${{ github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
         buildsPath: build
+        buildMethod: ${{ github.event.inputs.useIL2CPP == 'true' && 'UnityBuilderAction.BuildScript.Build' || '' }}
+        customParameters: ${{ github.event.inputs.useIL2CPP == 'true' && '-scriptingBackend IL2CPP' || '' }}
         
     # ビルド成果物をアップロード
     - name: Upload build artifacts
