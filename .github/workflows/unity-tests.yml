@@ -137,6 +137,23 @@ jobs:
         find . -name "*openjtalk_wrapper*" -type f -o -type l | head -20
       shell: bash
     
+    # Create Unity cache directory for Windows
+    - name: Create Unity Cache Directory (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: powershell
+      run: |
+        $cachePaths = @(
+          "$env:USERPROFILE\AppData\Local\Unity\Caches",
+          "$env:USERPROFILE\AppData\Local\Unity\Caches\bee",
+          "$env:USERPROFILE\AppData\Local\Unity"
+        )
+        foreach ($path in $cachePaths) {
+          if (!(Test-Path $path)) {
+            New-Item -ItemType Directory -Force -Path $path | Out-Null
+            Write-Host "Created directory: $path"
+          }
+        }
+
     # Unity 6対応 - game-ci/unity-test-runnerを使用
     - name: Run Unity Tests
       uses: game-ci/unity-test-runner@v4
