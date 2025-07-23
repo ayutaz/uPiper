@@ -8,18 +8,7 @@
 #define strdup _strdup
 #endif
 
-// Android NDK might not have strdup
-#ifdef ANDROID
-static char* strdup(const char* s) {
-    if (!s) return NULL;
-    size_t len = strlen(s) + 1;
-    char* dup = (char*)malloc(len);
-    if (dup) {
-        memcpy(dup, s, len);
-    }
-    return dup;
-}
-#endif
+// Android already has strdup in string.h, no need to define it
 #include <jpcommon.h>
 #include <mecab.h>
 #include <njd.h>
