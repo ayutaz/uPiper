@@ -7,6 +7,19 @@
 #ifdef _WIN32
 #define strdup _strdup
 #endif
+
+// Android NDK might not have strdup
+#ifdef ANDROID
+static char* strdup(const char* s) {
+    if (!s) return NULL;
+    size_t len = strlen(s) + 1;
+    char* dup = (char*)malloc(len);
+    if (dup) {
+        memcpy(dup, s, len);
+    }
+    return dup;
+}
+#endif
 #include <jpcommon.h>
 #include <mecab.h>
 #include <njd.h>
@@ -525,11 +538,16 @@ void* openjtalk_initialize_utf8(const unsigned char* dict_path_utf8, int path_le
     memcpy(dict_path, dict_path_utf8, path_length);
     dict_path[path_length] = '\0';
     
-    // Call regular initialize
-    void* handle = openjtalk_initialize(dict_path);
+    // Call regular create function
+    void* handle = openjtalk_create(dict_path);
     
     free(dict_path);
     return handle;
+}
+
+// Alias for compatibility
+void* openjtalk_initialize(const char* dict_path) {
+    return openjtalk_create(dict_path);
 }
 
 // Analyze with UTF-8 byte array (avoids string marshalling overhead)
@@ -549,10 +567,32 @@ char* openjtalk_analyze_utf8(void* handle, const unsigned char* text_utf8, int t
     memcpy(text, text_utf8, text_length);
     text[text_length] = '\0';
     
-    // Call regular analyze
-    char* result = openjtalk_analyze(handle, text);
-    
+    // Call phonemize and convert to string format
+    PhonemeResult* phoneme_result = openjtalk_phonemize(handle, text);
     free(text);
+    
+    if (!phoneme_result) {
+        return NULL;
+    }
+    
+    // Convert PhonemeResult to string format for compatibility
+    // Format: "phoneme1 phoneme2 phoneme3..."
+    char* result = strdup(phoneme_result->phonemes);
+    openjtalk_free_result(phoneme_result);
+    
+    return result;
+}
+
+// Simple analyze function for compatibility
+char* openjtalk_analyze(void* handle, const char* text) {
+    PhonemeResult* phoneme_result = openjtalk_phonemize(handle, text);
+    if (!phoneme_result) {
+        return NULL;
+    }
+    
+    char* result = strdup(phoneme_result->phonemes);
+    openjtalk_free_result(phoneme_result);
+    
     return result;
 }
 
@@ -561,4 +601,9 @@ void openjtalk_free_string(char* result) {
     if (result) {
         free(result);
     }
+}
+
+// Finalize (alias for destroy)
+void openjtalk_finalize(void* handle) {
+    openjtalk_destroy(handle);
 }
