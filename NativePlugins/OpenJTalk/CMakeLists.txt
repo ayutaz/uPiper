@@ -168,10 +168,13 @@ if(ANDROID)
     # Link-time optimizations
     target_link_options(openjtalk_wrapper PRIVATE
         -Wl,--gc-sections          # Remove unused sections
-        -Wl,--strip-all            # Strip all symbols
+        -Wl,--strip-debug          # Strip debug symbols only (not all symbols)
         -Wl,--exclude-libs,ALL     # Hide symbols from static libs
         -fuse-ld=lld               # Use lld instead of gold
     )
+    
+    # Ensure our API symbols are exported
+    target_compile_definitions(openjtalk_wrapper PRIVATE OPENJTALK_EXPORTS)
 endif()
 
 # Link libraries based on platform

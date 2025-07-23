@@ -16,7 +16,7 @@ extern "C" {
 
 #include <stddef.h>
 
-// Export/Import macros for Windows DLL
+// Export/Import macros
 #ifdef _WIN32
     #ifdef OPENJTALK_EXPORTS
         #define OPENJTALK_API __declspec(dllexport)
@@ -24,7 +24,12 @@ extern "C" {
         #define OPENJTALK_API __declspec(dllimport)
     #endif
 #else
-    #define OPENJTALK_API
+    // For Linux/Android, use visibility attribute
+    #ifdef OPENJTALK_EXPORTS
+        #define OPENJTALK_API __attribute__((visibility("default")))
+    #else
+        #define OPENJTALK_API
+    #endif
 #endif
 
 /**
