@@ -15,7 +15,7 @@ namespace uPiper.Core.Phonemizers.Implementations
     /// 最適化されたOpenJTalk音素化実装
     /// メモリ効率とパフォーマンスを改善
     /// </summary>
-    public class OptimizedOpenJTalkPhonemizer : BasePhonemizerWithCache
+    public class OptimizedOpenJTalkPhonemizer : BasePhonemizer
     {
         // P/Invoke宣言（UTF-8バイト配列を直接渡す最適化版）
         [DllImport("openjtalk_wrapper")]
@@ -44,72 +44,84 @@ namespace uPiper.Core.Phonemizers.Implementations
         private const int MAX_POOL_SIZE = 10;
         private const int BUFFER_SIZE = 1024;
 
+        public override string Name => "OptimizedOpenJTalk";
+        public override string Version => "3.0.0";
+        public override string[] SupportedLanguages => new[] { "ja" };
+
         public OptimizedOpenJTalkPhonemizer() : base(cacheSize: 500) // キャッシュサイズを最適化
         {
         }
 
-        protected override string[] PhonemizeInternal(string text, string language)
+        protected override async Task<PhonemeResult> PhonemizeInternalAsync(string normalizedText, string language, CancellationToken cancellationToken)
         {
             if (!_isInitialized)
             {
-                throw new InvalidOperationException("OpenJTalk is not initialized");
+                await InitializeAsync();
             }
 
-            using (_profiler.BeginProfile("Phonemize"))
+            return await Task.Run(() =>
             {
-                byte[] buffer = null;
-                try
+                using (_profiler.BeginProfile("Phonemize"))
                 {
-                    // バッファプールから取得
-                    buffer = GetBuffer();
-                    
-                    // UTF-8エンコード（最適化: 事前確保されたバッファを使用）
-                    var byteCount = Encoding.UTF8.GetByteCount(text);
-                    if (byteCount > buffer.Length)
-                    {
-                        // バッファが小さすぎる場合は新しく作成
-                        ReturnBuffer(buffer);
-                        buffer = new byte[byteCount];
-                    }
-                    
-                    var actualBytes = Encoding.UTF8.GetBytes(text, 0, text.Length, buffer, 0);
-                    
-                    // ネイティブ呼び出し
-                    IntPtr resultPtr;
-                    using (_profiler.BeginProfile("Native Analyze"))
-                    {
-                        resultPtr = openjtalk_analyze_utf8(_handle, buffer, actualBytes);
-                    }
-                    
-                    if (resultPtr == IntPtr.Zero)
-                    {
-                        PiperLogger.LogWarning($"[OptimizedOpenJTalk] Failed to analyze text: {text}");
-                        return new string[] { };
-                    }
-
+                    byte[] buffer = null;
                     try
                     {
-                        // 結果を解析
-                        var resultJson = Marshal.PtrToStringAnsi(resultPtr);
-                        var phonemes = ParsePhonemeResult(resultJson);
-                        return phonemes;
+                        // バッファプールから取得
+                        buffer = GetBuffer();
+                        
+                        // UTF-8エンコード（最適化: 事前確保されたバッファを使用）
+                        var byteCount = Encoding.UTF8.GetByteCount(normalizedText);
+                        if (byteCount > buffer.Length)
+                        {
+                            // バッファが小さすぎる場合は新しく作成
+                            ReturnBuffer(buffer);
+                            buffer = new byte[byteCount];
+                        }
+                        
+                        var actualBytes = Encoding.UTF8.GetBytes(normalizedText, 0, normalizedText.Length, buffer, 0);
+                        
+                        // ネイティブ呼び出し
+                        IntPtr resultPtr;
+                        using (_profiler.BeginProfile("Native Analyze"))
+                        {
+                            resultPtr = openjtalk_analyze_utf8(_handle, buffer, actualBytes);
+                        }
+                        
+                        if (resultPtr == IntPtr.Zero)
+                        {
+                            PiperLogger.LogWarning($"[OptimizedOpenJTalk] Failed to analyze text: {normalizedText}");
+                            return new PhonemeResult
+                            {
+                                Phonemes = new string[] { },
+                                PhonemeIds = new int[] { },
+                                Durations = new float[] { },
+                                Pitches = new float[] { }
+                            };
+                        }
+
+                        try
+                        {
+                            // 結果を解析
+                            var resultStr = Marshal.PtrToStringAnsi(resultPtr);
+                            return ParsePhonemeResult(resultStr);
+                        }
+                        finally
+                        {
+                            openjtalk_free_result(resultPtr);
+                        }
                     }
                     finally
                     {
-                        openjtalk_free_result(resultPtr);
+                        if (buffer != null)
+                        {
+                            ReturnBuffer(buffer);
+                        }
                     }
                 }
-                finally
-                {
-                    if (buffer != null)
-                    {
-                        ReturnBuffer(buffer);
-                    }
-                }
-            }
+            }, cancellationToken);
         }
 
-        public override async Task InitializeAsync(Dictionary<string, object> options = null)
+        public async Task InitializeAsync(Dictionary<string, object> options = null)
         {
             await _initLock.WaitAsync();
             try
@@ -167,55 +179,43 @@ namespace uPiper.Core.Phonemizers.Implementations
             }
         }
 
-        protected override string[] GetDefaultPhonemes()
-        {
-            return new[] { "N" }; // 日本語の撥音
-        }
 
-        protected override string GetCacheKey(string text, string language)
-        {
-            // より効率的なキャッシュキー生成
-            return $"optja_{GetHashCode(text)}";
-        }
-        
-        private int GetHashCode(string text)
-        {
-            unchecked
-            {
-                int hash = 17;
-                foreach (char c in text)
-                {
-                    hash = hash * 31 + c;
-                }
-                return hash;
-            }
-        }
-
-        private string[] ParsePhonemeResult(string json)
+        private PhonemeResult ParsePhonemeResult(string resultStr)
         {
             try
             {
-                var phonemes = new List<string>();
-                var lines = json.Split('\n');
+                // スペース区切りの音素文字列を解析
+                var phonemes = resultStr.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                var phonemeIds = new int[phonemes.Length];
+                var durations = new float[phonemes.Length];
+                var pitches = new float[phonemes.Length];
                 
-                foreach (var line in lines)
+                // デフォルト値を設定
+                for (int i = 0; i < phonemes.Length; i++)
                 {
-                    if (string.IsNullOrWhiteSpace(line))
-                        continue;
-                    
-                    var parts = line.Split('\t');
-                    if (parts.Length >= 2)
-                    {
-                        phonemes.Add(parts[1]); // 音素を追加
-                    }
+                    phonemeIds[i] = 1; // デフォルトID
+                    durations[i] = 0.05f; // 50ms
+                    pitches[i] = 0.0f; // デフォルトピッチ
                 }
                 
-                return phonemes.ToArray();
+                return new PhonemeResult
+                {
+                    Phonemes = phonemes,
+                    PhonemeIds = phonemeIds,
+                    Durations = durations,
+                    Pitches = pitches
+                };
             }
             catch (Exception e)
             {
                 PiperLogger.LogError($"[OptimizedOpenJTalk] Failed to parse result: {e.Message}");
-                return new string[] { };
+                return new PhonemeResult
+                {
+                    Phonemes = new string[] { },
+                    PhonemeIds = new int[] { },
+                    Durations = new float[] { },
+                    Pitches = new float[] { }
+                };
             }
         }
         
@@ -246,28 +246,28 @@ namespace uPiper.Core.Phonemizers.Implementations
             }
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            if (_handle != IntPtr.Zero)
+            if (disposing)
             {
-                openjtalk_finalize(_handle);
-                _handle = IntPtr.Zero;
-                _isInitialized = false;
+                if (_handle != IntPtr.Zero)
+                {
+                    openjtalk_finalize(_handle);
+                    _handle = IntPtr.Zero;
+                    _isInitialized = false;
+                }
+                
+                lock (_poolLock)
+                {
+                    _bufferPool.Clear();
+                }
+                
+                _initLock?.Dispose();
             }
             
-            lock (_poolLock)
-            {
-                _bufferPool.Clear();
-            }
-            
-            _initLock?.Dispose();
-            base.Dispose();
+            base.Dispose(disposing);
         }
 
-        public override string[] GetSupportedLanguages()
-        {
-            return new[] { "ja" };
-        }
 
         public static bool IsAvailable()
         {
