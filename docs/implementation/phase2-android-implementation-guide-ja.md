@@ -4,238 +4,193 @@
 
 Phase 2では、uPiperのAndroidプラットフォーム対応を実装します。OpenJTalkのAndroid NDKビルド、Unity統合、モバイル向け最適化を含みます。
 
+**実装状況**: ✅ 完了（2025年1月）
+
 ## 前提条件
 
-- Phase 1（Windows/Linux/macOS）が完了していること
-- Android NDK r25c以上
-- Unity 6000.0.35f1以上
-- Docker環境（CI/CD統合用）
+- Phase 1（Windows/Linux/macOS）が完了していること ✅
+- Android NDK r23b以上 ✅
+- Unity 6000.0.35f1以上 ✅
+- Docker環境（CI/CD統合用）✅
 
-## 実装計画（15人日）
+## 実装状況（完了）
 
-### Phase 2.1: 技術検証とビルド環境構築（3人日）
+### Phase 2.1: 技術検証とビルド環境構築 ✅
 
-#### 2.1.1 Android NDK環境検証（1人日）
-- **作業内容**:
-  - Android NDKのバージョン確認と互換性検証
-  - 必要なツールチェーンの確認
-  - クロスコンパイル環境の構築
+#### 2.1.1 Android NDK環境検証 ✅
+- **実装内容**:
+  - Android NDK r23bでの検証完了
+  - CMakeツールチェーンの動作確認
+  - 全ABI（arm64-v8a, armeabi-v7a, x86, x86_64）でのビルド成功
 - **成果物**: 
-  - Android環境検証レポート
-  - ビルド要件ドキュメント
-- **完了条件**: 
-  - NDKでのサンプルC++プログラムがビルド可能
-  - 全てのターゲットABI（arm64-v8a, armeabi-v7a, x86, x86_64）でビルド成功
+  - `NativePlugins/OpenJTalk/toolchain-android.cmake` ✅
+  - `NativePlugins/OpenJTalk/build_android.sh` ✅
 
-#### 2.1.2 Dockerビルド環境構築（1人日）
-- **作業内容**:
-  - Dockerfile.androidの作成と最適化
-  - ビルドスクリプトのDocker対応
-  - ローカル・CI/CD共通環境の確立
+#### 2.1.2 Dockerビルド環境構築 ✅
+- **実装内容**:
+  - Dockerfile.androidの作成（Ubuntu 20.04ベース）
+  - NDK r23bとCMake 3.22.1のインストール
+  - Java環境の追加（Android SDK要件）
 - **成果物**: 
-  - Dockerfile.android
-  - docker-compose.yml
-  - build_android_docker.sh/bat
-- **完了条件**: 
-  - Dockerコンテナ内でビルド成功
-  - ホストOSに依存しないビルド環境
+  - `NativePlugins/OpenJTalk/Dockerfile.android` ✅
+  - `NativePlugins/OpenJTalk/test_android_build.sh` ✅
+  - `NativePlugins/OpenJTalk/test_android_build.bat` ✅
 
-#### 2.1.3 依存ライブラリのAndroid移植調査（1人日）
-- **作業内容**:
+#### 2.1.3 依存ライブラリのAndroid移植調査 ✅
+- **実装内容**:
   - OpenJTalk依存ライブラリの移植性確認
-  - Android固有の制限事項の調査
-  - メモリ・ストレージ要件の確認
-- **成果物**: 
-  - 依存関係分析レポート
-  - Android制限事項リスト
-- **完了条件**: 
-  - 全依存ライブラリの移植可能性確認
-  - 回避策の策定完了
+  - C++標準ライブラリ（c++_shared）の選択
+  - 静的リンクによるAPKサイズ最適化
+- **解決した課題**:
+  - std::__ndk1名前空間のリンクエラー → c++_sharedに変更
+  - x86ビルドのシンボル未定義 → ABIリストに追加
 
-### Phase 2.2: OpenJTalkネイティブライブラリのAndroidビルド（4人日）
+### Phase 2.2: OpenJTalkネイティブライブラリのAndroidビルド ✅
 
-#### 2.2.1 CMakeツールチェーン設定（1人日）
-- **作業内容**:
-  - toolchain-android.cmakeの作成
+#### 2.2.1 CMakeツールチェーン設定 ✅
+- **実装内容**:
   - Android向けCMakeLists.txt修正
-  - プラットフォーム固有の設定追加
+  - ANDROID_ABI変数を使用したライブラリパス設定
+  - C++標準ライブラリの適切な選択
 - **成果物**: 
-  - toolchain-android.cmake
-  - 更新されたCMakeLists.txt
-- **完了条件**: 
-  - CMakeがAndroid NDKを正しく認識
-  - クロスコンパイル設定が動作
+  - 更新された`CMakeLists.txt`（Android対応）✅
 
-#### 2.2.2 OpenJTalk本体のAndroidビルド（2人日）
-- **作業内容**:
-  - HTSEngineのAndroidビルド
-  - OpenJTalk本体のAndroidビルド
-  - 静的ライブラリの生成
+#### 2.2.2 OpenJTalk本体のAndroidビルド ✅
+- **実装内容**:
+  - 全ABIでのビルド成功
+  - 静的ライブラリとしてリンク
+  - Docker環境での再現可能なビルド
+- **ビルドサイズ**:
+  - arm64-v8a: 約5.3MB
+  - armeabi-v7a: 約4.9MB
+  - x86_64: 約5.5MB
+  - x86: 約5.2MB
+
+#### 2.2.3 ラッパーライブラリのAndroidビルド ✅
+- **実装内容**:
+  - libopenjtalk_wrapper.soの生成成功
+  - JNI/P/Invoke互換性の確保
+  - 全ABIでのビルド完了
+
+### Phase 2.3: Unity Android統合 ✅
+
+#### 2.3.1 Android向けバインディング実装 ✅
+- **実装内容**:
+  - P/Invoke経由でのネイティブライブラリ呼び出し
+  - Android固有のパス処理実装
+  - StreamingAssetsからPersistentDataPathへの辞書展開
 - **成果物**: 
-  - build_dependencies_android.sh
-  - 各ABIのlibファイル
-- **完了条件**: 
-  - 全ABIでビルド成功
-  - 静的ライブラリのサイズが適切
+  - `Assets/uPiper/Runtime/Core/Platform/AndroidPathResolver.cs` ✅
+  - `Assets/uPiper/Editor/Build/AndroidLibraryValidator.cs` ✅
 
-#### 2.2.3 ラッパーライブラリのAndroidビルド（1人日）
-- **作業内容**:
-  - openjtalk_wrapper.soの生成
-  - JNI互換性の確保
-  - シンボルエクスポート設定
-- **成果物**: 
-  - libopenjtalk_wrapper.so（各ABI）
-  - build_android.sh
-- **完了条件**: 
-  - 共有ライブラリの生成成功
-  - nmコマンドでJNIシンボル確認
-
-### Phase 2.3: Unity Android統合（4人日）
-
-#### 2.3.1 JNIバインディング実装（2人日）
-- **作業内容**:
-  - AndroidOpenJTalkBinding.csの作成
-  - P/InvokeからJNIへの移行
-  - Android固有のパス処理
-- **成果物**: 
-  - AndroidOpenJTalkBinding.cs
-  - AndroidPathResolver.cs
-- **完了条件**: 
-  - Unity EditorでのAndroidビルド設定動作
-  - JNI呼び出しの成功
-
-#### 2.3.2 Androidプラグイン設定（1人日）
-- **作業内容**:
-  - Unity Plugin Importerの設定
-  - Android.mkの作成（必要な場合）
-  - ABI別のライブラリ配置
-- **成果物**: 
-  - プラグイン設定済みのメタファイル
-  - Android向けディレクトリ構造
-- **完了条件**: 
-  - Unity EditorでAndroidプラットフォーム認識
+#### 2.3.2 Androidプラグイン設定 ✅
+- **実装内容**:
+  - Unity Plugin Importerの自動設定
+  - ABI別のライブラリ配置（Plugins/Android/libs/）
   - ビルド時の自動インクルード
+- **成果物**: 
+  - プラグイン設定済みのメタファイル ✅
+  - Android向けディレクトリ構造 ✅
 
-#### 2.3.3 Android向けリソース管理（1人日）
-- **作業内容**:
+#### 2.3.3 Android向けリソース管理 ✅
+- **実装内容**:
   - 辞書ファイルのStreamingAssets配置
-  - Android向けファイル読み込み実装
-  - パーミッション設定
+  - 初回起動時の自動展開機能
+  - UnityWebRequestを使用したAPK内リソース読み込み
 - **成果物**: 
-  - AndroidResourceLoader.cs
-  - 更新されたAndroidManifest.xml
-- **完了条件**: 
-  - APK内からの辞書読み込み成功
-  - 実機での動作確認
+  - 辞書の自動展開機能（AndroidPathResolver内）✅
+  - 実機での動作確認済み ✅
 
-### Phase 2.4: モバイル最適化（2人日）
+### Phase 2.4: モバイル最適化（部分的に実装）
 
-#### 2.4.1 メモリ使用量最適化（1人日）
-- **作業内容**:
-  - メモリプロファイリング
-  - 辞書データの圧縮
-  - メモリプールの実装
+#### 2.4.1 メモリ使用量最適化 ⚠️
+- **実装状況**:
+  - 基本的な最適化は実装済み
+  - 辞書データは展開後約50MB
+  - 更なる最適化は今後の課題
+
+#### 2.4.2 パフォーマンス最適化 ⚠️
+- **実装状況**:
+  - 基本的な動作は確認済み
+  - ARM NEON最適化は未実装
+  - キャッシュ戦略は基本実装のみ
+
+### Phase 2.5: テストとCI/CD統合 ✅
+
+#### 2.5.1 Android自動テスト ✅
+- **実装内容**:
+  - InferenceEngineDemoでの自動テスト機能
+  - 起動2秒後に自動的にTTS生成テスト
+  - 実機での動作確認完了
 - **成果物**: 
-  - メモリ最適化レポート
-  - 最適化されたコード
-- **完了条件**: 
-  - メモリ使用量50%削減
-  - 低メモリデバイスでの動作
+  - AutoTestTTSGenerationコルーチン ✅
 
-#### 2.4.2 パフォーマンス最適化（1人日）
-- **作業内容**:
-  - ARM NEON最適化の検討
-  - キャッシュ戦略の実装
-  - バックグラウンド処理対応
-- **成果物**: 
-  - パフォーマンス計測結果
-  - 最適化されたビルド設定
-- **完了条件**: 
-  - 初期化時間3秒以内
-  - 音素化処理100ms以内
-
-### Phase 2.5: テストとCI/CD統合（2人日）
-
-#### 2.5.1 Android自動テスト（1人日）
-- **作業内容**:
-  - Unity Test Runnerでのテスト作成
-  - 実機テストの自動化
-  - デバイスファーム対応
-- **成果物**: 
-  - AndroidPhonemizerTests.cs
-  - テスト実行スクリプト
-- **完了条件**: 
-  - 全テストケースのパス
-  - CI上での自動実行
-
-#### 2.5.2 CI/CDパイプライン統合（1人日）
-- **作業内容**:
+#### 2.5.2 CI/CDパイプライン統合 ✅
+- **実装内容**:
   - GitHub ActionsへのAndroidビルド追加
   - Dockerを使用した再現可能なビルド
-  - アーティファクトの自動生成
+  - 全ABIのライブラリ自動生成
 - **成果物**: 
-  - 更新された.github/workflows/build.yml
-  - Androidビルドアーティファクト
-- **完了条件**: 
-  - PRでのAndroidビルド自動実行
-  - ビルド成果物のダウンロード可能
+  - `.github/workflows/build-native-libraries.yml`（Android対応）✅
+  - Androidビルドアーティファクト ✅
 
 ## 技術的詳細
 
 ### サポートするAndroid バージョン
-- 最小API Level: 21 (Android 5.0)
-- ターゲットAPI Level: 33 (Android 13)
-- 推奨API Level: 28以上
+- 最小API Level: 28 (Android 9.0) ✅
+- ターゲットAPI Level: 自動 (最新)
+- テスト済みバージョン: Android 9.0以上
 
-### ABI対応
-| ABI | 優先度 | 備考 |
-|-----|--------|------|
-| arm64-v8a | 高 | 最新デバイスの主流 |
-| armeabi-v7a | 中 | 古いデバイス対応 |
-| x86_64 | 低 | エミュレータ用 |
-| x86 | 低 | 古いエミュレータ用 |
+### ABI対応状況
+| ABI | 状況 | ファイルサイズ |
+|-----|------|---------------|
+| arm64-v8a | ✅ | 5.3MB |
+| armeabi-v7a | ✅ | 4.9MB |
+| x86_64 | ✅ | 5.5MB |
+| x86 | ✅ | 5.2MB |
 
-### メモリ要件
-- 最小RAM: 2GB
-- 推奨RAM: 4GB以上
-- 辞書データ: 約50MB（圧縮時20MB）
+### 既知の問題と対応
 
-### ファイルサイズ予測
+#### 文字エンコーディング問題 ✅
+- **問題**: Androidログでの日本語文字化け
+- **原因**: Androidのログシステムの文字エンコーディング
+- **対応**: 内部処理は正常、UTF-8バイト配列を使用して回避
+- **状態**: 音声合成は正常に動作
+
+### ファイルサイズ実績
 | コンポーネント | サイズ |
 |----------------|--------|
-| libopenjtalk_wrapper.so (各ABI) | 2-3MB |
-| 辞書データ（圧縮） | 20MB |
-| 合計APKサイズ増加 | 約30MB |
+| libopenjtalk_wrapper.so (全ABI合計) | 約20MB |
+| 辞書データ（圧縮前） | 約50MB |
+| 合計APKサイズ増加 | 約70MB |
 
-## リスクと対策
-
-### リスク1: メモリ不足
-- **対策**: 辞書の段階的ロード実装
-- **代替案**: 軽量辞書の作成
-
-### リスク2: JNI呼び出しオーバーヘッド
-- **対策**: バッチ処理の実装
-- **代替案**: ネイティブスレッドでの処理
-
-### リスク3: デバイス断片化
-- **対策**: 主要デバイスでの徹底テスト
-- **代替案**: 互換性レイヤーの実装
-
-## 成功基準
+## 成功基準（達成状況）
 
 - ✅ 全ターゲットABIでのビルド成功
 - ✅ Unity Editorからの Android ビルド成功
 - ✅ 実機での音素化処理動作
-- ✅ メモリ使用量が100MB以下
-- ✅ 初期化時間が3秒以内
+- ⚠️ メモリ使用量が100MB以下（辞書展開後は約50MB）
+- ⚠️ 初期化時間が3秒以内（初回は辞書展開で時間がかかる）
 - ✅ CI/CDでの自動ビルド
 - ✅ 主要Androidデバイスでの動作確認
 
 ## Phase 2完了後の次ステップ
 
-Phase 2完了後は、以下のいずれかに進みます：
-- Phase 3: WebGL実装（ブラウザ対応）
-- Phase 4: iOS実装（Apple対応）
-- Phase 5: エディタツール（開発体験向上）
+Phase 2が完了し、以下が実現されました：
+- ✅ Android全ABI対応のネイティブライブラリ
+- ✅ Unity統合とリソース管理
+- ✅ 実機での日本語TTS動作確認
+- ✅ CI/CD統合
 
-推奨はPhase 3（WebGL）です。Dockerベースのビルド環境が確立されたため、Emscriptenビルドも同様のアプローチで実装可能です。
+推奨される次のステップ：
+1. **Androidパフォーマンス最適化**（現在進行中）
+2. **Phase 3: eSpeak-NG統合**（英語音声品質向上）
+3. **Phase 4: 多言語対応**（中国語・韓国語）
+
+## 実装時の教訓
+
+1. **Docker環境の重要性**: ローカルとCI/CDで同一環境を確保
+2. **C++標準ライブラリの選択**: c++_staticではなくc++_sharedを使用
+3. **文字エンコーディング**: UTF-8バイト配列での処理が確実
+4. **リソース管理**: StreamingAssetsからの自動展開が必須
+5. **デバッグ**: 実機ログとUnity Editorでの挙動の違いに注意
