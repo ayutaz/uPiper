@@ -220,8 +220,19 @@ jobs:
             # Build only for this ABI
             export TARGET_ABI=${{ matrix.abi }}
             # Modified build script to build only one ABI
-            sed -i 's/ABIS=.*/ABIS=(\"${{ matrix.abi }}\")/' build_dependencies_android.sh
-            ./build_dependencies_android.sh
+            # First check if we have pre-built libraries
+            if [ -d output/android/${{ matrix.abi }} ]; then
+              echo "Pre-built libraries found for ${{ matrix.abi }}"
+            else
+            # Use build_android.sh instead
+            if [ -f build_android.sh ]; then
+              sed -i 's/ABIS=.*/ABIS=(\"${{ matrix.abi }}\")/' build_android.sh
+              ./build_android.sh
+            else
+              echo "ERROR: build_android.sh not found"
+              exit 1
+            fi
+            fi
           fi
           
           # Build wrapper library
