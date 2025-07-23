@@ -62,6 +62,14 @@ namespace uPiper.Demo
         [SerializeField] private TMP_Dropdown _modelDropdown;
         [SerializeField] private TMP_Dropdown _phraseDropdown;
         [SerializeField] private TextMeshProUGUI _phonemeDetailsText;
+        [SerializeField] private TextMeshProUGUI _backendInfoText;
+
+        [Header("GPU Inference UI")]
+        [SerializeField] private TMP_Dropdown _backendDropdown;
+        [SerializeField] private Toggle _cpuFallbackToggle;
+        [SerializeField] private Toggle _useFloat16Toggle;
+        [SerializeField] private Slider _batchSizeSlider;
+        [SerializeField] private TextMeshProUGUI _batchSizeText;
 
         [Header("Settings")]
         [SerializeField] private string _defaultJapaneseText = "こんにちは";
@@ -72,6 +80,8 @@ namespace uPiper.Demo
         private AudioClipBuilder _audioBuilder;
         private PiperVoiceConfig _currentConfig;
         private bool _isGenerating;
+        private InferenceBackend _selectedBackend = InferenceBackend.Auto;
+        private GPUInferenceSettings _gpuSettings;
 #if !UNITY_WEBGL
         private ITextPhonemizer _phonemizer;
 #endif
@@ -115,6 +125,9 @@ namespace uPiper.Demo
         {
             _generator = new InferenceAudioGenerator();
             _audioBuilder = new AudioClipBuilder();
+
+            // Initialize GPU settings
+            _gpuSettings = new GPUInferenceSettings();
 
             // Debug OpenJTalk library loading on non-WebGL platforms in builds
 #if !UNITY_WEBGL && !UNITY_EDITOR
@@ -179,6 +192,41 @@ namespace uPiper.Demo
                 _phraseDropdown.onValueChanged.AddListener(OnPhraseChanged);
             }
 
+            // GPU推論バックエンドドロップダウンの設定
+            if (_backendDropdown != null)
+            {
+                _backendDropdown.ClearOptions();
+                var options = new List<string> { "Auto", "CPU", "GPU Compute", "GPU Pixel" };
+                _backendDropdown.AddOptions(options);
+                _backendDropdown.value = 0; // Auto
+                _backendDropdown.onValueChanged.AddListener(OnBackendChanged);
+            }
+
+            // CPUフォールバックトグルの設定
+            if (_cpuFallbackToggle != null)
+            {
+                _cpuFallbackToggle.isOn = true;
+                _cpuFallbackToggle.onValueChanged.AddListener(OnCPUFallbackChanged);
+            }
+
+            // Float16トグルの設定
+            if (_useFloat16Toggle != null)
+            {
+                _useFloat16Toggle.isOn = false;
+                _useFloat16Toggle.onValueChanged.AddListener(OnFloat16Changed);
+            }
+
+            // バッチサイズスライダーの設定
+            if (_batchSizeSlider != null)
+            {
+                _batchSizeSlider.minValue = 1;
+                _batchSizeSlider.maxValue = 16;
+                _batchSizeSlider.wholeNumbers = true;
+                _batchSizeSlider.value = 1;
+                _batchSizeSlider.onValueChanged.AddListener(OnBatchSizeChanged);
+                UpdateBatchSizeText(1);
+            }
+
             // 生成ボタンの設定
             if (_generateButton != null)
             {
@@ -235,6 +283,45 @@ namespace uPiper.Demo
                     _inputField.text = isJapanese ? _defaultJapaneseText : _defaultEnglishText;
                 }
                 _inputField.Select(); // フォーカスを設定
+            }
+        }
+
+        private void OnBackendChanged(int index)
+        {
+            _selectedBackend = index switch
+            {
+                0 => InferenceBackend.Auto,
+                1 => InferenceBackend.CPU,
+                2 => InferenceBackend.GPUCompute,
+                3 => InferenceBackend.GPUPixel,
+                _ => InferenceBackend.Auto
+            };
+            PiperLogger.LogDebug($"Backend changed to: {_selectedBackend}");
+        }
+
+        private void OnCPUFallbackChanged(bool value)
+        {
+            PiperLogger.LogDebug($"CPU Fallback changed to: {value}");
+        }
+
+        private void OnFloat16Changed(bool value)
+        {
+            _gpuSettings.UseFloat16 = value;
+            PiperLogger.LogDebug($"Float16 changed to: {value}");
+        }
+
+        private void OnBatchSizeChanged(float value)
+        {
+            _gpuSettings.MaxBatchSize = (int)value;
+            UpdateBatchSizeText((int)value);
+            PiperLogger.LogDebug($"Batch size changed to: {(int)value}");
+        }
+
+        private void UpdateBatchSizeText(int value)
+        {
+            if (_batchSizeText != null)
+            {
+                _batchSizeText.text = $"Batch Size: {value}";
             }
         }
 
@@ -308,7 +395,31 @@ namespace uPiper.Demo
                 // ジェネレーターを初期化
                 SetStatus("ジェネレーターを初期化中...");
                 PiperLogger.LogDebug("Initializing InferenceAudioGenerator...");
-                await _generator.InitializeAsync(modelAsset, config);
+                
+                // Create PiperConfig with GPU settings from UI
+                var piperConfig = new PiperConfig
+                {
+                    Backend = _selectedBackend,
+                    AllowFallbackToCPU = _cpuFallbackToggle?.isOn ?? true,
+                    GPUSettings = _gpuSettings
+                };
+                
+                // Use the overload that accepts PiperConfig
+                if (_generator is InferenceAudioGenerator inferenceGen)
+                {
+                    await inferenceGen.InitializeAsync(modelAsset, config, piperConfig);
+                    
+                    // Update backend info text
+                    if (_backendInfoText != null)
+                    {
+                        _backendInfoText.text = $"Backend: {inferenceGen.ActualBackendType}";
+                    }
+                }
+                else
+                {
+                    await _generator.InitializeAsync(modelAsset, config);
+                }
+                
                 PiperLogger.LogDebug("Generator initialized successfully");
 
                 // 音素に変換
@@ -518,6 +629,14 @@ namespace uPiper.Demo
                     }
                     _phonemeDetailsText.text += $"\nSynthesis: {timings["Synthesis"]}ms";
                     _phonemeDetailsText.text += $"\nRequirement: {(meetsRequirement ? "✓ PASSED" : "✗ FAILED")}";
+                    
+                    // Add GPU info
+                    if (_generator is InferenceAudioGenerator infGen)
+                    {
+                        _phonemeDetailsText.text += $"\n\n[GPU Info]\nBackend: {infGen.ActualBackendType}";
+                        _phonemeDetailsText.text += $"\nFloat16: {(_gpuSettings.UseFloat16 ? "Enabled" : "Disabled")}";
+                        _phonemeDetailsText.text += $"\nBatch Size: {_gpuSettings.MaxBatchSize}";
+                    }
                 }
             }
             catch (Exception ex)
