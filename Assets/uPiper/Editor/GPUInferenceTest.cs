@@ -169,8 +169,7 @@ namespace uPiper.Editor
 
         private string GetActualBackendType(InferenceAudioGenerator generator)
         {
-            // BackendType is internal, so we just return a placeholder
-            return "Backend (see logs)";
+            return generator.ActualBackendType.ToString();
         }
     }
 }
