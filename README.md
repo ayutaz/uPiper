@@ -13,6 +13,8 @@
 - 🚀 Unity AI Inference Engineによる高速推論
 - 📱 マルチプラットフォーム対応
 - 🔧 OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux）
+- ⚡ GPU推論サポート（GPUCompute/GPUPixel）
+- 🎭 高度なサンプル（ストリーミング、複数音声、リアルタイム）
 
 ## Requirements
 * Unity 6000.0.35f1
@@ -31,8 +33,12 @@
 ### サンプルのインポート
 1. Package Managerで uPiper を選択
 2. `Samples` タブを開く
-3. `Basic TTS Demo` の `Import` をクリック
-4. インポートされたサンプルシーンを開いて実行
+3. 利用可能なサンプル：
+   - `Basic TTS Demo` - 基本的な音声生成
+   - `Streaming TTS Demo` - リアルタイムストリーミング音声生成
+   - `Multi-Voice Demo` - 複数音声の同時処理
+   - `Realtime TTS Demo` - 低レイテンシ音声生成
+4. インポートしたいサンプルの `Import` をクリック
 
 ## サポートプラットフォーム
 
@@ -83,13 +89,34 @@ uPiperは、ニューラルネットワークベースの音声合成（VITS）�
 
 詳細な技術情報は[ドキュメント](docs/)を参照してください。
 
+## GPU推論の使用
+
+uPiperはGPU推論をサポートしており、より高速な音声生成が可能です：
+
+```csharp
+var config = new PiperConfig
+{
+    Backend = InferenceBackend.Auto,  // 自動選択
+    AllowFallbackToCPU = true,        // GPU失敗時にCPUフォールバック
+    GPUSettings = new GPUInferenceSettings
+    {
+        MaxBatchSize = 4,
+        UseFloat16 = true,
+        MaxMemoryMB = 512
+    }
+};
+```
+
+詳細は[GPU推論ガイド](docs/technical/GPU-INFERENCE-GUIDE.md)を参照してください。
+
 ## 実装進捗
 
 ### Phase 1: 基盤実装
 - ✅ 1.1-1.9: Core API、音素化システム、OpenJTalkライブラリ実装
 - ✅ 1.10: OpenJTalk統合による日本語発音改善（2025年1月完了）
 - ✅ 1.11: Unity基本統合 - Package Manager対応、デモシーン作成（2025年1月完了）
-- 🚧 1.12: IL2CPPサポート（次の実装予定）
+- ✅ 1.12: IL2CPPサポート - Mono/IL2CPP両対応、CI/CD統合（2025年1月完了）
+- ✅ 1.13: GPU推論サポートと高度なサンプル実装（2025年1月完了）
 
 詳細な進捗は[ロードマップ](docs/ROADMAP.md)を参照してください。
 

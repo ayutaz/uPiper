@@ -1,6 +1,6 @@
 # Phase 1: Windows/Linux 基盤実装 - 進捗詳細
 
-最終更新: 2025年1月22日
+最終更新: 2025年1月23日
 
 ## 進捗サマリー
 
@@ -16,6 +16,7 @@
 - **Phase 1.10**: OpenJTalk統合による日本語発音改善 ✅ 完了（2025年1月21日）
 - **Phase 1.11**: Unity基本統合 ✅ 完了（2025年1月21日、PR #27）
 - **Phase 1.12**: IL2CPPサポート ✅ 完了（2025年1月22日、PR #28）
+- **Phase 1.13**: GPU推論サポートと高度なサンプル実装 ✅ 完了（2025年1月23日）
 - **テストカバレッジ**: 完全なカバレッジを達成（250+テスト全て成功）
 - **CI/CD**: MonoとIL2CPP両方のビルドサポート、全プラットフォーム対応
 
@@ -619,3 +620,57 @@ Phase 1の全タスクが完了し、当初の目標を大幅に超える成果�
 - ジェネリック型エラーの修正
 - MockPhonemizerによるプラットフォーム固有問題の解決
 - Docker環境でのIL2CPP制限への対応
+
+### Phase 1.13: GPU推論サポートと高度なサンプル実装（3人日）✅ 完了（2025年1月23日）
+
+#### 1.13.1 GPU推論サポート実装（1人日）✅
+- **成果物**:
+  - `Assets/uPiper/Runtime/Core/GPUInferenceSettings.cs` - GPU固有設定
+  - `Assets/uPiper/Runtime/Core/AudioGeneration/InferenceAudioGenerator.cs` - 改修版
+  - `docs/technical/GPU-INFERENCE-GUIDE.md` - GPU推論ガイド
+- **実装内容**:
+  - InferenceBackend列挙型（Auto, CPU, GPUCompute, GPUPixel）
+  - プラットフォーム自動検出とフォールバック機構
+  - Metal問題の自動回避（macOSでCPU使用）
+  - ActualBackendTypeプロパティで実際の使用バックエンド確認
+
+#### 1.13.2 高度なサンプル実装（1.5人日）✅
+- **成果物**:
+  - `Assets/uPiper/Samples~/StreamingTTS/` - ストリーミング音声生成サンプル
+  - `Assets/uPiper/Samples~/MultiVoiceTTS/` - 複数音声同時処理サンプル
+  - `Assets/uPiper/Samples~/RealtimeTTS/` - リアルタイム音声生成サンプル
+- **実装内容**:
+  - 文節単位のストリーミング生成とクロスフェード
+  - 最大4音声の同時生成・再生
+  - 100ms以下の低レイテンシ音声生成
+  - 優先度付きキューとプリロード機能
+
+#### 1.13.3 テストとツール（0.5人日）✅
+- **成果物**:
+  - `Assets/uPiper/Editor/GPUInferenceTest.cs` - GPU推論テストツール
+  - `Assets/uPiper/Tests/Runtime/Core/GPUInferenceSettingsTest.cs` - ユニットテスト
+  - `Assets/uPiper/Tests/Runtime/Core/AudioGeneration/InferenceBackendTest.cs` - バックエンドテスト
+- **実装内容**:
+  - 各バックエンドのテスト実行とパフォーマンス計測
+  - 設定値の検証テスト
+  - システム情報表示とエラー診断
+
+## Phase 1 完了のまとめ
+
+Phase 1の全タスクが完了し、以下の成果を達成しました：
+
+### 主要成果
+1. **完全な日本語TTS実装**: OpenJTalk統合による高精度な音素化
+2. **マルチプラットフォーム対応**: Windows/Linux/macOS完全サポート
+3. **高性能推論**: GPU推論サポートとIL2CPP最適化
+4. **実用的なサンプル**: ストリーミング、マルチボイス、リアルタイム
+5. **堅牢なCI/CD**: 自動テスト、ビルド、リリースパイプライン
+
+### 技術的特徴
+- Unity.InferenceEngine (旧Sentis) によるONNX推論
+- pyopenjtalk互換の完全なOpenJTalk実装
+- 250以上のテストによる品質保証
+- GPU/CPU自動選択とフォールバック機構
+
+### 次のフェーズへ
+Phase 2では、モバイル対応、追加言語サポート、高度な音声制御機能の実装を予定しています。
