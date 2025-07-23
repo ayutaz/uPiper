@@ -63,9 +63,6 @@ namespace uPiper.Core.Phonemizers.Implementations
         private IntPtr _handle = IntPtr.Zero;
         private readonly SemaphoreSlim _initLock = new SemaphoreSlim(1, 1);
         private bool _isInitialized = false;
-        #if UNITY_ANDROID && !UNITY_EDITOR
-        private bool _useUtf8Functions = false;
-        #endif
         private readonly AndroidPerformanceProfiler _profiler = new AndroidPerformanceProfiler();
         
         // バイト配列バッファのプール（GCを減らすため）
@@ -127,34 +124,26 @@ namespace uPiper.Core.Phonemizers.Implementations
                             try
                             {
                                 #if UNITY_ANDROID && !UNITY_EDITOR
-                                // Androidの場合のみUTF-8関数を使用
-                                if (_useUtf8Functions)
+                                // Androidの場合はUTF-8関数を試す
+                                try
                                 {
                                     var analyzeResultPtr = openjtalk_analyze_utf8(_handle, buffer, actualBytes);
-                                    if (analyzeResultPtr == IntPtr.Zero)
+                                    if (analyzeResultPtr != IntPtr.Zero)
                                     {
-                                        return new PhonemeResult
-                                        {
-                                            Phonemes = new string[] { },
-                                            PhonemeIds = new int[] { },
-                                            Durations = new float[] { },
-                                            Pitches = new float[] { }
-                                        };
+                                        // UTF-8版は文字列を返す
+                                        var resultStr = Marshal.PtrToStringAnsi(analyzeResultPtr);
+                                        openjtalk_free_string(analyzeResultPtr);
+                                        return ParsePhonemeResult(resultStr);
                                     }
-                                    
-                                    // UTF-8版は文字列を返す
-                                    var resultStr = Marshal.PtrToStringAnsi(analyzeResultPtr);
-                                    openjtalk_free_string(analyzeResultPtr);
-                                    return ParsePhonemeResult(resultStr);
                                 }
-                                else
+                                catch (EntryPointNotFoundException)
                                 {
-                                    resultPtr = openjtalk_phonemize(_handle, normalizedText);
+                                    // UTF-8関数がない場合は通常版にフォールバック
                                 }
-                                #else
-                                // それ以外の場合は通常版を使用
-                                resultPtr = openjtalk_phonemize(_handle, normalizedText);
                                 #endif
+                                
+                                // 通常版を使用
+                                resultPtr = openjtalk_phonemize(_handle, normalizedText);
                             }
                             catch (EntryPointNotFoundException)
                             {
@@ -233,19 +222,16 @@ namespace uPiper.Core.Phonemizers.Implementations
                         {
                             // Androidの場合はUTF-8最適化版を使用
                             _handle = openjtalk_initialize_utf8(dictPathBytes, dictPathBytes.Length);
-                            _useUtf8Functions = true;
                         }
                         catch (EntryPointNotFoundException)
                         {
                             // フォールバック
                             PiperLogger.LogWarning("[OptimizedOpenJTalk] UTF-8 functions not found, falling back to standard version");
                             _handle = openjtalk_create(dictPath);
-                            _useUtf8Functions = false;
                         }
                         #else
                         // Android以外は通常版を使用
                         _handle = openjtalk_create(dictPath);
-                        _useUtf8Functions = false;
                         #endif
                     }
                     
