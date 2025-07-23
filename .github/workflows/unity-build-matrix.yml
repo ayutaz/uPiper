@@ -187,7 +187,7 @@ jobs:
           echo "| Linux 64 | ✅ | ✅ |" >> summary.md
           echo "" >> summary.md
           echo "**Note**: IL2CPP builds are enabled for Linux only." >> summary.md
-          echo "Windows/macOS IL2CPP require native runners (see unity-il2cpp-native.yml)." >> summary.md
+          echo "Windows/macOS IL2CPP require Unity Cloud Build or self-hosted runners." >> summary.md
         fi
         
         echo "" >> summary.md

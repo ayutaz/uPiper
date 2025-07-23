@@ -100,7 +100,7 @@ Unity BuilderのDockerベースのアプローチでは、以下の制限があ�
 
 ## 実装状況
 
-- ✅ Linux IL2CPP（Docker）
-- ✅ 全プラットフォームMono
-- 🔧 Windows/macOS IL2CPP（ネイティブランナー設定済み、手動実行）
-- 📝 Unity Cloud Build（ドキュメント化済み）
+- ✅ Linux IL2CPP（Docker）- CIで自動実行
+- ✅ 全プラットフォームMono - CIで自動実行
+- ❌ Windows/macOS IL2CPP - Dockerでは実行不可
+- 📝 代替案: Unity Cloud Build、セルフホストランナー（ドキュメント化済み）

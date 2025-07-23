@@ -605,11 +605,10 @@ Phase 1の全タスクが完了し、当初の目標を大幅に超える成果�
 - **成果物**:
   - `.github/workflows/unity-il2cpp-build.yml` - IL2CPP専用ビルド
   - `.github/workflows/unity-build-matrix.yml` - PR品質チェック
-  - `.github/workflows/unity-il2cpp-native.yml` - ネイティブランナー用ワークフロー
   - `docs/ci-cd/IL2CPP-CI-SOLUTIONS.md` - CI/CDソリューションガイド
 - **実装内容**:
   - Linux IL2CPP: Dockerで完全サポート（CIで自動実行）
-  - Windows/macOS IL2CPP: ネイティブランナー用ワークフロー作成
+  - Windows/macOS IL2CPP: 代替ソリューションの文書化
   - Monoビルド: 全プラットフォーム対応
   - ビルド品質ゲートの実装
 

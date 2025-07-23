@@ -170,7 +170,7 @@ jobs:
         echo "" >> build-summary.md
         echo "**CI/CD Configuration**:" >> build-summary.md
         echo "- Linux IL2CPP is fully supported and tested in CI" >> build-summary.md
-        echo "- Windows/macOS IL2CPP available via manual workflow (unity-il2cpp-native.yml)" >> build-summary.md
+        echo "- Windows/macOS IL2CPP require Unity Cloud Build or self-hosted runners" >> build-summary.md
         echo "" >> build-summary.md
         echo "## Build Configuration" >> build-summary.md
         echo "" >> build-summary.md
