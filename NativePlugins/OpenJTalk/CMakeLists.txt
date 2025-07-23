@@ -16,11 +16,10 @@ elseif(ANDROID)
     add_definitions(-DANDROID)
     # Android-specific optimizations
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -ffunction-sections -fdata-sections -flto")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -ffunction-sections -fdata-sections -flto")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--strip-all -flto")
-        # Enable Link Time Optimization
-        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -ffunction-sections -fdata-sections")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -ffunction-sections -fdata-sections")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--strip-all")
+        # Note: LTO disabled due to gold linker compatibility issues in NDK
     endif()
 elseif(UNIX AND NOT APPLE)
     set(PLATFORM_NAME "linux")
@@ -169,8 +168,9 @@ if(ANDROID)
     # Link-time optimizations
     target_link_options(openjtalk_wrapper PRIVATE
         -Wl,--gc-sections          # Remove unused sections
-        -Wl,--strip-debug          # Strip debug info
+        -Wl,--strip-all            # Strip all symbols
         -Wl,--exclude-libs,ALL     # Hide symbols from static libs
+        -fuse-ld=lld               # Use lld instead of gold
     )
 endif()
 
