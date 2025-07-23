@@ -149,7 +149,6 @@ EOF
     
     chmod +x build_dependencies_android.sh
     ./build_dependencies_android.sh
-fi
 
 # Clean previous builds
 rm -rf build_android_*
