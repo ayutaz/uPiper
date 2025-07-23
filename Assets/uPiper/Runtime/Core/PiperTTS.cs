@@ -340,7 +340,9 @@ namespace uPiper.Core
                 }
 
                 // Initialize the audio generator with the model and config
-                await _inferenceGenerator.InitializeAsync(modelAsset, voice, _config, cancellationToken);
+                // Note: IInferenceAudioGenerator interface only supports 3 parameters
+                // The implementation will use default PiperConfig internally
+                await _inferenceGenerator.InitializeAsync(modelAsset, voice, cancellationToken);
                 PiperLogger.LogInfo("Audio generator initialized for voice: {0}", voice.VoiceId);
 
                 // Initialize phoneme encoder

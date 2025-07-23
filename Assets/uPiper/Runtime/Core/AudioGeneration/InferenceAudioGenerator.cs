@@ -55,8 +55,11 @@ namespace uPiper.Core.AudioGeneration
             if (modelAsset == null)
                 throw new ArgumentNullException(nameof(modelAsset));
 
-            if (config == null)
-                throw new ArgumentNullException(nameof(config));
+            if (voiceConfig == null)
+                throw new ArgumentNullException(nameof(voiceConfig));
+
+            if (piperConfig == null)
+                throw new ArgumentNullException(nameof(piperConfig));
 
             PiperLogger.LogDebug("[InferenceAudioGenerator] Dispatching to main thread...");
 
