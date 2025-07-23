@@ -139,6 +139,23 @@ jobs:
         restore-keys: |
           Library-${{ matrix.os }}-${{ matrix.locale }}-
           Library-${{ matrix.os }}-
+    
+    # Create Unity cache directory for Windows
+    - name: Create Unity Cache Directory (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: powershell
+      run: |
+        $cachePaths = @(
+          "$env:USERPROFILE\AppData\Local\Unity\Caches",
+          "$env:USERPROFILE\AppData\Local\Unity\Caches\bee",
+          "$env:USERPROFILE\AppData\Local\Unity"
+        )
+        foreach ($path in $cachePaths) {
+          if (!(Test-Path $path)) {
+            New-Item -ItemType Directory -Force -Path $path | Out-Null
+            Write-Host "Created directory: $path"
+          }
+        }
           
     - name: Run Unity Tests (with Locale)
       uses: game-ci/unity-test-runner@v4
