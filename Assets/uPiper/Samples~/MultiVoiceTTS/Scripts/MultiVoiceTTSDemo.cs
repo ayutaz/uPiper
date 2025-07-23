@@ -7,8 +7,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using uPiper.Core;
-using uPiper.Core.AudioGeneration;
-using Unity.InferenceEngine;
 
 namespace uPiper.Samples.MultiVoiceTTS
 {
@@ -32,7 +30,6 @@ namespace uPiper.Samples.MultiVoiceTTS
 
             [Header("Voice Settings")]
             public string voiceId = "ja_JP-test-medium";
-            public ModelAsset modelAsset;
             public float lengthScale = 1.0f;
             public float noiseScale = 0.667f;
 
@@ -120,22 +117,14 @@ namespace uPiper.Samples.MultiVoiceTTS
                     await channel.tts.InitializeAsync(channelConfig);
 
                     // 音声モデルをロード
-                    if (channel.modelAsset != null)
+                    var voiceConfig = new PiperVoiceConfig
                     {
-                        var voiceConfig = new PiperVoiceConfig
-                        {
-                            VoiceId = channel.voiceId,
-                            Language = DetectLanguageFromVoiceId(channel.voiceId),
-                            SampleRate = 22050
-                        };
+                        VoiceId = channel.voiceId,
+                        Language = DetectLanguageFromVoiceId(channel.voiceId),
+                        SampleRate = 22050
+                    };
 
-                        // カスタムInferenceAudioGeneratorを使用
-                        var generator = new InferenceAudioGenerator();
-                        await generator.InitializeAsync(channel.modelAsset, voiceConfig, channelConfig);
-
-                        // TODO: PiperTTSにカスタムgeneratorを設定する方法が必要
-                        await channel.tts.LoadVoiceAsync(voiceConfig);
-                    }
+                    await channel.tts.LoadVoiceAsync(voiceConfig);
 
                     channel.statusText.text = "準備完了";
                     channel.statusIndicator.color = _idleColor;
@@ -311,7 +300,7 @@ namespace uPiper.Samples.MultiVoiceTTS
             {
                 if (channel.tts != null && channel.tts.IsInitialized)
                 {
-                    // TODO: バックエンド情報を取得する方法を追加
+                    // 設定されたバックエンド情報を表示
                     backendInfo = "\nBackend: " + _globalConfig.Backend;
                     break;
                 }
