@@ -4,7 +4,7 @@
 [![Unity Build](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml)
 [![codecov](https://codecov.io/github/ayutaz/uPiper/graph/badge.svg?token=348eb741-4320-4368-89fa-3eee5188bd3f)](https://codecov.io/github/ayutaz/uPiper)
 
-[piper-plus]()のUnityプラグイン
+[Piper TTS](https://github.com/rhasspy/piper)のUnityプラグイン - 高品質なニューラル音声合成エンジン
 
 ## 機能
 
@@ -111,16 +111,18 @@ var config = new PiperConfig
 
 ## 実装進捗
 
-### Phase 1: 基盤実装 ✅ 完了（2025年1月23日）
-- ✅ 1.1-1.9: Core API、音素化システム、OpenJTalkライブラリ実装
-- ✅ 1.10: OpenJTalk統合による日本語発音改善
-- ✅ 1.11: Unity基本統合 - Package Manager対応、デモシーン作成
-- ✅ 1.12: IL2CPPサポート - Mono/IL2CPP両対応、CI/CD統合
-- ✅ 1.13: GPU推論サポートと高度なサンプル実装
+### リリース状況
 
-**Phase 1は全タスク完了しました！**
+**v1.0.0-alpha.1** - Phase 1 完了（2025年1月23日）
+- ✅ Core API実装とテスト（250+テスト）
+- ✅ OpenJTalk統合による高精度日本語音素化
+- ✅ Unity.InferenceEngineによるONNX推論
+- ✅ IL2CPPサポート（Mono/IL2CPP両対応）
+- ✅ GPU推論サポート（Auto/CPU/GPUCompute/GPUPixel）
+- ✅ マルチプラットフォーム対応（Windows/macOS/Linux）
+- ✅ 高度なサンプル実装（ストリーミング、マルチボイス、リアルタイム）
 
-詳細な進捗は[ロードマップ](docs/ROADMAP.md)を参照してください。
+詳細は[CHANGELOG](CHANGELOG.md)および[ロードマップ](docs/ROADMAP.md)を参照してください。
 
 ## ライセンス
 
