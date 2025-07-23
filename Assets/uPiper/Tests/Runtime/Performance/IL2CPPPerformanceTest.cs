@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -129,7 +130,7 @@ namespace uPiper.Tests.Runtime.Performance
         }
 
         [UnityTest]
-        public IEnumerator<object> AsyncPerformance_TaskCreation()
+        public IEnumerator AsyncPerformance_TaskCreation()
         {
             const int taskCount = 100;
             var tasks = new List<Task>();
