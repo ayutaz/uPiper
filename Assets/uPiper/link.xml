@@ -1,0 +1,40 @@
+<linker>
+    <!-- Unity.AI.InferenceEngine types preservation -->
+    <assembly fullname="Unity.AI.InferenceEngine" preserve="all"/>
+    <assembly fullname="Unity.AI.InferenceEngine.Common" preserve="all"/>
+    
+    <!-- uPiper runtime assembly preservation -->
+    <assembly fullname="uPiper.Runtime" preserve="all"/>
+    
+    <!-- System types used by uPiper -->
+    <assembly fullname="System.Core">
+        <type fullname="System.Linq.Enumerable" preserve="all"/>
+        <type fullname="System.Linq.IGrouping`2" preserve="all"/>
+    </assembly>
+    
+    <!-- Async support -->
+    <assembly fullname="System.Threading.Tasks">
+        <type fullname="System.Threading.Tasks.Task" preserve="all"/>
+        <type fullname="System.Threading.Tasks.Task`1" preserve="all"/>
+        <type fullname="System.Threading.Tasks.TaskCompletionSource`1" preserve="all"/>
+    </assembly>
+    
+    <!-- Collections -->
+    <assembly fullname="System.Collections">
+        <type fullname="System.Collections.Generic.Dictionary`2" preserve="all"/>
+        <type fullname="System.Collections.Generic.List`1" preserve="all"/>
+        <type fullname="System.Collections.Generic.Queue`1" preserve="all"/>
+        <type fullname="System.Collections.Generic.LinkedList`1" preserve="all"/>
+    </assembly>
+    
+    <!-- P/Invoke support -->
+    <assembly fullname="mscorlib">
+        <type fullname="System.Runtime.InteropServices.Marshal" preserve="all"/>
+        <type fullname="System.IntPtr" preserve="all"/>
+    </assembly>
+    
+    <!-- Native structs -->
+    <assembly fullname="uPiper.Runtime">
+        <type fullname="uPiper.Core.Phonemizers.Implementations.OpenJTalkPhonemizer/NativePhonemeResult" preserve="all"/>
+    </assembly>
+</linker>
