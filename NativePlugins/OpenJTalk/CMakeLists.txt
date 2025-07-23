@@ -16,8 +16,11 @@ elseif(ANDROID)
     add_definitions(-DANDROID)
     # Android-specific optimizations
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -ffunction-sections -fdata-sections -flto")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -ffunction-sections -fdata-sections -flto")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--strip-all -flto")
+        # Enable Link Time Optimization
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
 elseif(UNIX AND NOT APPLE)
     set(PLATFORM_NAME "linux")

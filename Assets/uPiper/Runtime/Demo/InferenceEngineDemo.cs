@@ -133,6 +133,8 @@ namespace uPiper.Demo
             // Additional Android debugging
             #if UNITY_ANDROID
             DebugAndroidSetup();
+            // Preload dictionary asynchronously for better performance
+            uPiper.Core.Platform.OptimizedAndroidPathResolver.PreloadDictionaryAsync();
             // Auto-test TTS generation after 2 seconds
             StartCoroutine(AutoTestTTSGeneration());
             #endif

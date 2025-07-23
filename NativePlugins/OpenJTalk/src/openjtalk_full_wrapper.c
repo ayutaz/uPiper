@@ -503,3 +503,55 @@ const char* openjtalk_get_option(void* handle, const char* key) {
     // Unknown option
     return NULL;
 }
+
+// ============================================================================
+// UTF-8 Optimized Functions for Android Performance
+// ============================================================================
+
+// Initialize with UTF-8 byte array (avoids string marshalling overhead)
+void* openjtalk_initialize_utf8(const unsigned char* dict_path_utf8, int path_length) {
+    if (!dict_path_utf8 || path_length <= 0) {
+        DEBUG_LOG("Invalid UTF-8 dictionary path");
+        return NULL;
+    }
+    
+    // Create null-terminated string from UTF-8 bytes
+    char* dict_path = (char*)malloc(path_length + 1);
+    if (!dict_path) {
+        DEBUG_LOG("Failed to allocate memory for path");
+        return NULL;
+    }
+    
+    memcpy(dict_path, dict_path_utf8, path_length);
+    dict_path[path_length] = '\0';
+    
+    // Call regular initialize
+    void* handle = openjtalk_initialize(dict_path);
+    
+    free(dict_path);
+    return handle;
+}
+
+// Analyze with UTF-8 byte array (avoids string marshalling overhead)
+char* openjtalk_analyze_utf8(void* handle, const unsigned char* text_utf8, int text_length) {
+    if (!handle || !text_utf8 || text_length <= 0) {
+        DEBUG_LOG("Invalid parameters for UTF-8 analyze");
+        return NULL;
+    }
+    
+    // Create null-terminated string from UTF-8 bytes
+    char* text = (char*)malloc(text_length + 1);
+    if (!text) {
+        DEBUG_LOG("Failed to allocate memory for text");
+        return NULL;
+    }
+    
+    memcpy(text, text_utf8, text_length);
+    text[text_length] = '\0';
+    
+    // Call regular analyze
+    char* result = openjtalk_analyze(handle, text);
+    
+    free(text);
+    return result;
+}
