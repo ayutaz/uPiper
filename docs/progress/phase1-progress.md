@@ -1,12 +1,12 @@
 # Phase 1: Windows/Linux 基盤実装 - 進捗詳細
 
-最終更新: 2025年1月21日
+最終更新: 2025年1月22日
 
 ## 進捗サマリー
 
 - **Phase 1.1**: Core API インターフェース設計 ✅ 完了
-- **Phase 1.2**: Core API 実装 ✅ 完了（PR #13でマージ）
-- **Phase 1.3**: Core API テスト ✅ 完了（108テスト全て成功）
+- **Phase 1.2**: Core API 実装 ✅ 完了（実装済み、ドキュメント更新: 2025年1月22日）
+- **Phase 1.3**: Core API テスト ✅ 完了（108テスト全て成功、1.3.2-1.3.3含む）
 - **Phase 1.4**: Phonemizer システム基盤 ✅ 完了
 - **Phase 1.5**: キャッシュとテキスト処理 ✅ 完了
 - **Phase 1.6**: テスト実装 ✅ 完了（PR #14で実装）
@@ -14,8 +14,10 @@
 - **Phase 1.8**: P/Invoke バインディング実装 ✅ 完了（2025年1月18日）
 - **Phase 1.9**: Unity.InferenceEngine 統合 ✅ 完了（2025年1月19日、PR #24）
 - **Phase 1.10**: OpenJTalk統合による日本語発音改善 ✅ 完了（2025年1月21日）
+- **Phase 1.11**: Unity基本統合 ✅ 完了（2025年1月21日、PR #27）
+- **Phase 1.12**: IL2CPPサポート ✅ 完了（2025年1月22日、PR #28）
 - **テストカバレッジ**: 完全なカバレッジを達成（250+テスト全て成功）
-- **CI/CD**: 全プラットフォームビルド成功（Windows/Linux/macOS）
+- **CI/CD**: MonoとIL2CPP両方のビルドサポート、全プラットフォーム対応
 
 ## 完了したタスク
 
@@ -54,8 +56,9 @@
   - ヒット率、使用率の計算
   - 統計情報のロギング機能
 
-### 1.3 Core API - テスト（2人日）✅
+### 1.3 Core API - テスト（2人日）✅ 完了
 
+#### 1.3.1 ユニットテスト実装（1人日）✅
 #### 実装済みテスト（108テスト - 全て成功）
 - **PiperConfigTest.cs**: 
   - デフォルト設定、検証ロジック
@@ -76,16 +79,26 @@
 - **PiperExceptionTest.cs**: 
   - 各種例外クラス、エラーコード
   - メッセージフォーマット
-- **PiperTTSFunctionTest.cs**（新規）:
+
+#### 1.3.2 PiperTTS初期化テスト（0.5人日）✅
+- **PiperTTSFunctionTest.cs**:
   - 音声ロード、アンロード機能
   - キャッシュ操作（クリア、個別削除）
   - 音声リスト取得、存在確認
   - 状態管理、イベント発火
-- **PiperTTSSimpleTest.cs**（新規）:
+
+#### 1.3.3 PiperTTS音声生成テスト（0.5人日）✅
+- **PiperTTSSimpleTest.cs**:
   - 基本的な初期化、破棄
   - 音声生成（同期/非同期）
   - ストリーミング生成
   - エラーハンドリング
+- **InferenceAudioGeneratorTests.cs**:
+  - Unity.InferenceEngine統合テスト
+  - ONNX推論の動作確認
+- **PhonemeEncoderTests.cs**:
+  - 音素エンコーディングテスト
+  - PUA文字マッピング検証
 
 #### Editorツール
 - **TestCoreAPI.cs**: Core APIの手動テスト用メニュー
@@ -218,7 +231,7 @@
 
 ## 進行中のタスク
 
-なし（Phase 1.6 完了）
+なし（Phase 1 全タスク完了）
 
 ## 成果物一覧
 
@@ -542,4 +555,67 @@ Phase 1の全タスクが完了し、当初の目標を大幅に超える成果�
 5. ~~ONNX モデル統合（Phase 1.9）~~ ✅ 完了
 6. ~~OpenJTalk統合による日本語発音改善（Phase 1.10）~~ ✅ 完了
 7. ~~Unity基本統合（Phase 1.11）~~ ✅ 完了
-8. Phase 1.12: IL2CPPサポート（次の実装予定）
+8. ~~IL2CPPサポート（Phase 1.12）~~ ✅ 完了
+
+### Phase 1.12: IL2CPPサポート（5人日）✅ 完了（2025年1月22日）
+
+#### 1.12.1 IL2CPP互換性検証（1人日）✅
+- **成果物**: `docs/technical/IL2CPP-COMPATIBILITY.md`
+- **実装内容**:
+  - P/Invoke宣言の検証完了
+  - マーシャリング属性の確認完了
+  - AOT制約の調査（IAsyncEnumerable要確認）
+  - Unity.InferenceEngineのIL2CPP対応確認
+
+#### 1.12.2 IL2CPPビルド設定（1人日）✅
+- **成果物**:
+  - `Assets/uPiper/link.xml` - 型保持設定
+  - `Assets/uPiper/Editor/IL2CPPBuildSettings.cs` - 自動設定ツール
+  - `docs/technical/IL2CPP-BUILD-SETTINGS.md` - 設定ガイド
+- **実装内容**:
+  - Unity.AI.InferenceEngineの完全保持
+  - プラットフォーム別の最適化設定
+  - ネイティブライブラリ配置の検証
+  - Unity 6000.0.35f1の新APIに対応
+
+#### 1.12.3 IL2CPP固有の対応（2人日）✅
+- **成果物**:
+  - `Assets/uPiper/Runtime/Core/IL2CPP/IL2CPPCompatibility.cs`
+  - `Assets/uPiper/Runtime/Core/IL2CPP/AsyncEnumerableCompat.cs`
+  - `Assets/uPiper/Editor/UnityBuilderAction.cs` - カスタムビルドスクリプト
+- **実装内容**:
+  - [Preserve]属性による型保持
+  - ジェネリック型の明示的インスタンス化
+  - IAsyncEnumerable互換レイヤー
+  - プラットフォーム別の推奨設定（スレッド数、キャッシュサイズ）
+
+#### 1.12.4 IL2CPPパフォーマンステスト（1人日）✅
+- **成果物**:
+  - `Assets/uPiper/Tests/Runtime/Performance/IL2CPPPerformanceTest.cs`
+  - `docs/technical/IL2CPP-PERFORMANCE-REPORT.md`
+  - `Assets/uPiper/Editor/IL2CPPBenchmarkRunner.cs`
+- **実装内容**:
+  - マーシャリング性能測定
+  - コレクション操作ベンチマーク
+  - 非同期処理パフォーマンステスト
+  - メモリ使用パターン分析
+  - ベンチマーク実行支援ツール
+
+#### CI/CDパイプライン強化 ✅
+- **成果物**:
+  - `.github/workflows/unity-il2cpp-build.yml` - IL2CPP専用ビルド
+  - `.github/workflows/unity-build-matrix.yml` - PR品質チェック
+  - `docs/ci-cd/IL2CPP-CI-SOLUTIONS.md` - CI/CDソリューションガイド
+- **実装内容**:
+  - Linux IL2CPP: Dockerで完全サポート（CIで自動実行）
+  - Windows/macOS IL2CPP: 代替ソリューションの文書化
+  - Monoビルド: 全プラットフォーム対応
+  - ビルド品質ゲートの実装
+
+#### 技術的課題の解決 ✅
+- Unity API廃止対応（BuildTargetGroup → NamedBuildTarget）
+- AndroidApiLevel21 → AndroidApiLevel23への更新
+- .gitignore問題の解決（link.xmlの強制追加）
+- ジェネリック型エラーの修正
+- MockPhonemizerによるプラットフォーム固有問題の解決
+- Docker環境でのIL2CPP制限への対応
