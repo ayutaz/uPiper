@@ -165,7 +165,7 @@ namespace uPiper.Demo
         {
             // Unsubscribe from audio configuration changes
             AudioSettings.OnAudioConfigurationChanged -= OnAudioConfigurationChanged;
-            
+
             _generator?.Dispose();
 #if !UNITY_WEBGL
             if (_phonemizer is TextPhonemizerAdapter adapter)
@@ -401,7 +401,7 @@ namespace uPiper.Demo
                 // ジェネレーターを初期化
                 SetStatus("ジェネレーターを初期化中...");
                 PiperLogger.LogDebug("Initializing InferenceAudioGenerator...");
-                
+
                 // Create PiperConfig with GPU settings from UI
                 var piperConfig = new PiperConfig
                 {
@@ -409,12 +409,12 @@ namespace uPiper.Demo
                     AllowFallbackToCPU = _cpuFallbackToggle?.isOn ?? true,
                     GPUSettings = _gpuSettings
                 };
-                
+
                 // Use the overload that accepts PiperConfig
                 if (_generator is InferenceAudioGenerator inferenceGen)
                 {
                     await inferenceGen.InitializeAsync(modelAsset, config, piperConfig);
-                    
+
                     // Update backend info text
                     if (_backendInfoText != null)
                     {
@@ -425,7 +425,7 @@ namespace uPiper.Demo
                 {
                     await _generator.InitializeAsync(modelAsset, config);
                 }
-                
+
                 PiperLogger.LogDebug("Generator initialized successfully");
 
                 // 音素に変換
@@ -635,7 +635,7 @@ namespace uPiper.Demo
                     }
                     _phonemeDetailsText.text += $"\nSynthesis: {timings["Synthesis"]}ms";
                     _phonemeDetailsText.text += $"\nRequirement: {(meetsRequirement ? "✓ PASSED" : "✗ FAILED")}";
-                    
+
                     // Add GPU info
                     if (_generator is InferenceAudioGenerator infGen)
                     {
@@ -666,16 +666,16 @@ namespace uPiper.Demo
             if (deviceWasChanged)
             {
                 PiperLogger.LogWarning("[InferenceEngineDemo] Audio device was changed. Resetting audio configuration...");
-                
+
                 // Get current audio configuration
                 var config = AudioSettings.GetConfiguration();
-                
+
                 // Log current configuration
                 PiperLogger.LogInfo($"[InferenceEngineDemo] Audio config - Sample Rate: {config.sampleRate}, Buffer Size: {config.dspBufferSize}, Speaker Mode: {config.speakerMode}");
-                
+
                 // Reset audio system with current configuration
                 AudioSettings.Reset(config);
-                
+
                 // Recreate AudioSource if needed
                 if (_audioSource == null || !_audioSource.enabled)
                 {

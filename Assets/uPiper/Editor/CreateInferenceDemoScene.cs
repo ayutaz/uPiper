@@ -340,7 +340,7 @@ namespace uPiper.Editor
             cpuFallbackBgRect.anchorMax = Vector2.one;
             cpuFallbackBgRect.sizeDelta = new Vector2(20, 20);
             cpuFallbackBgRect.anchoredPosition = new Vector2(-60, 0);
-            
+
             var cpuFallbackCheckGO = new GameObject("Checkmark");
             cpuFallbackCheckGO.transform.SetParent(cpuFallbackGO.transform, false);
             var cpuFallbackCheckImage = cpuFallbackCheckGO.AddComponent<Image>();
@@ -350,17 +350,17 @@ namespace uPiper.Editor
             cpuFallbackCheckRect.anchorMax = new Vector2(0, 0.5f);
             cpuFallbackCheckRect.sizeDelta = new Vector2(16, 16);
             cpuFallbackCheckRect.anchoredPosition = new Vector2(-60, 0);
-            
+
             cpuFallbackToggle.targetGraphic = cpuFallbackBgImage;
             cpuFallbackToggle.graphic = cpuFallbackCheckImage;
             cpuFallbackToggle.isOn = true;
-            
+
             var cpuFallbackRect = cpuFallbackGO.GetComponent<RectTransform>();
             cpuFallbackRect.anchorMin = new Vector2(0.5f, 0.42f);
             cpuFallbackRect.anchorMax = new Vector2(0.7f, 0.46f);
             cpuFallbackRect.offsetMin = Vector2.zero;
             cpuFallbackRect.offsetMax = Vector2.zero;
-            
+
             var cpuFallbackLabelGO = new GameObject("Label");
             cpuFallbackLabelGO.transform.SetParent(cpuFallbackGO.transform, false);
             var cpuFallbackLabel = cpuFallbackLabelGO.AddComponent<TextMeshProUGUI>();
@@ -386,7 +386,7 @@ namespace uPiper.Editor
             float16BgRect.anchorMax = Vector2.one;
             float16BgRect.sizeDelta = new Vector2(20, 20);
             float16BgRect.anchoredPosition = new Vector2(-60, 0);
-            
+
             var float16CheckGO = new GameObject("Checkmark");
             float16CheckGO.transform.SetParent(float16GO.transform, false);
             var float16CheckImage = float16CheckGO.AddComponent<Image>();
@@ -396,17 +396,17 @@ namespace uPiper.Editor
             float16CheckRect.anchorMax = new Vector2(0, 0.5f);
             float16CheckRect.sizeDelta = new Vector2(16, 16);
             float16CheckRect.anchoredPosition = new Vector2(-60, 0);
-            
+
             float16Toggle.targetGraphic = float16BgImage;
             float16Toggle.graphic = float16CheckImage;
             float16Toggle.isOn = false;
-            
+
             var float16Rect = float16GO.GetComponent<RectTransform>();
             float16Rect.anchorMin = new Vector2(0.72f, 0.42f);
             float16Rect.anchorMax = new Vector2(0.9f, 0.46f);
             float16Rect.offsetMin = Vector2.zero;
             float16Rect.offsetMax = Vector2.zero;
-            
+
             var float16LabelGO = new GameObject("Label");
             float16LabelGO.transform.SetParent(float16GO.transform, false);
             var float16Label = float16LabelGO.AddComponent<TextMeshProUGUI>();
@@ -444,7 +444,7 @@ namespace uPiper.Editor
             sliderBgRect.anchorMax = new Vector2(1, 0.75f);
             sliderBgRect.offsetMin = Vector2.zero;
             sliderBgRect.offsetMax = Vector2.zero;
-            
+
             var sliderFillAreaGO = new GameObject("Fill Area", typeof(RectTransform));
             sliderFillAreaGO.transform.SetParent(batchSizeSliderGO.transform, false);
             var sliderFillAreaRect = sliderFillAreaGO.GetComponent<RectTransform>();
@@ -452,7 +452,7 @@ namespace uPiper.Editor
             sliderFillAreaRect.anchorMax = new Vector2(1, 0.75f);
             sliderFillAreaRect.offsetMin = new Vector2(5, 0);
             sliderFillAreaRect.offsetMax = new Vector2(-15, 0);
-            
+
             var sliderFillGO = new GameObject("Fill", typeof(RectTransform));
             sliderFillGO.transform.SetParent(sliderFillAreaGO.transform, false);
             var sliderFillImage = sliderFillGO.AddComponent<Image>();
@@ -462,7 +462,7 @@ namespace uPiper.Editor
             sliderFillRect.anchorMax = Vector2.one;
             sliderFillRect.offsetMin = Vector2.zero;
             sliderFillRect.offsetMax = Vector2.zero;
-            
+
             var sliderHandleAreaGO = new GameObject("Handle Slide Area", typeof(RectTransform));
             sliderHandleAreaGO.transform.SetParent(batchSizeSliderGO.transform, false);
             var sliderHandleAreaRect = sliderHandleAreaGO.GetComponent<RectTransform>();
@@ -470,14 +470,14 @@ namespace uPiper.Editor
             sliderHandleAreaRect.anchorMax = new Vector2(1, 1);
             sliderHandleAreaRect.offsetMin = new Vector2(10, 0);
             sliderHandleAreaRect.offsetMax = new Vector2(-10, 0);
-            
+
             var sliderHandleGO = new GameObject("Handle", typeof(RectTransform));
             sliderHandleGO.transform.SetParent(sliderHandleAreaGO.transform, false);
             var sliderHandleImage = sliderHandleGO.AddComponent<Image>();
             sliderHandleImage.color = Color.white;
             var sliderHandleRect = sliderHandleGO.GetComponent<RectTransform>();
             sliderHandleRect.sizeDelta = new Vector2(20, 0);
-            
+
             batchSizeSlider.fillRect = sliderFillRect;
             batchSizeSlider.handleRect = sliderHandleRect;
             batchSizeSlider.targetGraphic = sliderHandleImage;
@@ -485,7 +485,7 @@ namespace uPiper.Editor
             batchSizeSlider.maxValue = 16;
             batchSizeSlider.wholeNumbers = true;
             batchSizeSlider.value = 1;
-            
+
             var batchSizeSliderRect = batchSizeSliderGO.GetComponent<RectTransform>();
             batchSizeSliderRect.anchorMin = new Vector2(0.25f, 0.36f);
             batchSizeSliderRect.anchorMax = new Vector2(0.65f, 0.40f);
