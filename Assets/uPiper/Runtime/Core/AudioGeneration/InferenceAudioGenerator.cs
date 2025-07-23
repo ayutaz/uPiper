@@ -362,6 +362,17 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         private BackendType DetermineBackendType(PiperConfig config)
         {
+            // Check for Metal first - it has known issues with GPU backends
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Metal)
+            {
+                if (config.Backend == InferenceBackend.GPUCompute || config.Backend == InferenceBackend.GPUPixel)
+                {
+                    PiperLogger.LogWarning($"[InferenceAudioGenerator] {config.Backend} requested on Metal, but Metal has known issues with GPU inference. Using CPU backend instead.");
+                    PiperLogger.LogWarning("[InferenceAudioGenerator] This is a known issue with Unity.InferenceEngine on macOS. GPU inference may produce corrupted audio.");
+                    return BackendType.CPU;
+                }
+            }
+
             if (config.Backend == InferenceBackend.CPU)
             {
                 return BackendType.CPU;

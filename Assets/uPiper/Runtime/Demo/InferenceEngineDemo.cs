@@ -129,6 +129,9 @@ namespace uPiper.Demo
             // Initialize GPU settings
             _gpuSettings = new GPUInferenceSettings();
 
+            // Set up audio configuration change handler
+            AudioSettings.OnAudioConfigurationChanged += OnAudioConfigurationChanged;
+
             // Debug OpenJTalk library loading on non-WebGL platforms in builds
 #if !UNITY_WEBGL && !UNITY_EDITOR
             PiperLogger.LogInfo("[InferenceEngineDemo] Running OpenJTalk debug helper...");
@@ -160,6 +163,9 @@ namespace uPiper.Demo
 
         private void OnDestroy()
         {
+            // Unsubscribe from audio configuration changes
+            AudioSettings.OnAudioConfigurationChanged -= OnAudioConfigurationChanged;
+            
             _generator?.Dispose();
 #if !UNITY_WEBGL
             if (_phonemizer is TextPhonemizerAdapter adapter)
@@ -652,6 +658,35 @@ namespace uPiper.Demo
                     _generateButton.interactable = true;
                 }
                 PiperLogger.LogDebug("Audio generation process completed");
+            }
+        }
+
+        private void OnAudioConfigurationChanged(bool deviceWasChanged)
+        {
+            if (deviceWasChanged)
+            {
+                PiperLogger.LogWarning("[InferenceEngineDemo] Audio device was changed. Resetting audio configuration...");
+                
+                // Get current audio configuration
+                var config = AudioSettings.GetConfiguration();
+                
+                // Log current configuration
+                PiperLogger.LogInfo($"[InferenceEngineDemo] Audio config - Sample Rate: {config.sampleRate}, Buffer Size: {config.dspBufferSize}, Speaker Mode: {config.speakerMode}");
+                
+                // Reset audio system with current configuration
+                AudioSettings.Reset(config);
+                
+                // Recreate AudioSource if needed
+                if (_audioSource == null || !_audioSource.enabled)
+                {
+                    PiperLogger.LogWarning("[InferenceEngineDemo] AudioSource was lost. Attempting to recreate...");
+                    _audioSource = gameObject.GetComponent<AudioSource>();
+                    if (_audioSource == null)
+                    {
+                        _audioSource = gameObject.AddComponent<AudioSource>();
+                        PiperLogger.LogInfo("[InferenceEngineDemo] AudioSource recreated.");
+                    }
+                }
             }
         }
 
