@@ -87,10 +87,10 @@ namespace uPiper.Core.AudioGeneration
                         }
 
                         PiperLogger.LogDebug("[InferenceAudioGenerator] Model loaded, creating worker...");
-                        
+
                         // Select backend based on configuration
                         _actualBackendType = DetermineBackendType(_piperConfig);
-                        
+
                         try
                         {
                             _worker = new Worker(_model, _actualBackendType);
@@ -100,7 +100,7 @@ namespace uPiper.Core.AudioGeneration
                         catch (Exception gpuEx)
                         {
                             PiperLogger.LogWarning($"[InferenceAudioGenerator] Failed to initialize with {_actualBackendType}: {gpuEx.Message}");
-                            
+
                             if (_piperConfig.AllowFallbackToCPU && _actualBackendType != BackendType.CPU)
                             {
                                 PiperLogger.LogInfo("[InferenceAudioGenerator] Falling back to CPU backend...");
@@ -363,17 +363,17 @@ namespace uPiper.Core.AudioGeneration
             {
                 return BackendType.CPU;
             }
-            
+
             if (config.Backend == InferenceBackend.GPUCompute)
             {
                 return BackendType.GPUCompute;
             }
-            
+
             if (config.Backend == InferenceBackend.GPUPixel)
             {
                 return BackendType.GPUPixel;
             }
-            
+
             // Auto selection based on platform
             if (config.Backend == InferenceBackend.Auto)
             {
@@ -413,7 +413,7 @@ namespace uPiper.Core.AudioGeneration
                 }
 #endif
             }
-            
+
             // Default to CPU if unknown
             return BackendType.CPU;
         }

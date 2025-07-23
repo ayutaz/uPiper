@@ -29,13 +29,13 @@ namespace uPiper.Samples.MultiVoiceTTS
             public TextMeshProUGUI statusText;
             public AudioSource audioSource;
             public Image statusIndicator;
-            
+
             [Header("Voice Settings")]
             public string voiceId = "ja_JP-test-medium";
             public ModelAsset modelAsset;
             public float lengthScale = 1.0f;
             public float noiseScale = 0.667f;
-            
+
             [HideInInspector]
             public PiperTTS tts;
             [HideInInspector]
@@ -83,7 +83,7 @@ namespace uPiper.Samples.MultiVoiceTTS
                 ch.generateButton.onClick.AddListener(() => OnGenerateChannel(ch));
                 ch.volumeSlider.onValueChanged.AddListener(value => ch.audioSource.volume = value);
                 ch.pitchSlider.onValueChanged.AddListener(value => ch.audioSource.pitch = value);
-                
+
                 ch.statusIndicator.color = _idleColor;
                 ch.statusText.text = "待機中";
             }
@@ -114,7 +114,7 @@ namespace uPiper.Samples.MultiVoiceTTS
                 try
                 {
                     channel.tts = new PiperTTS();
-                    
+
                     // チャンネル毎に異なる設定を適用可能
                     var channelConfig = ScriptableObject.Instantiate(_globalConfig);
                     await channel.tts.InitializeAsync(channelConfig);
@@ -132,7 +132,7 @@ namespace uPiper.Samples.MultiVoiceTTS
                         // カスタムInferenceAudioGeneratorを使用
                         var generator = new InferenceAudioGenerator();
                         await generator.InitializeAsync(channel.modelAsset, voiceConfig, channelConfig);
-                        
+
                         // TODO: PiperTTSにカスタムgeneratorを設定する方法が必要
                         await channel.tts.LoadVoiceAsync(voiceConfig);
                     }
@@ -140,7 +140,7 @@ namespace uPiper.Samples.MultiVoiceTTS
                     channel.statusText.text = "準備完了";
                     channel.statusIndicator.color = _idleColor;
                     Interlocked.Increment(ref initializedCount);
-                    
+
                     _globalStatusText.text = $"初期化中... ({initializedCount}/{_channels.Count} チャンネル)";
                 }
                 catch (Exception ex)
@@ -195,7 +195,7 @@ namespace uPiper.Samples.MultiVoiceTTS
             {
                 channel.cancellationTokenSource = new CancellationTokenSource();
                 await GenerateAudioForChannel(channel, channel.cancellationTokenSource.Token);
-                
+
                 Interlocked.Increment(ref completedCount);
                 _globalStatusText.text = $"一括生成中... ({completedCount}/{channelsToGenerate.Count})";
             }).ToArray();
@@ -213,7 +213,7 @@ namespace uPiper.Samples.MultiVoiceTTS
                 channel.cancellationTokenSource?.Cancel();
                 channel.audioSource.Stop();
             }
-            
+
             _globalStatusText.text = "全チャンネル停止";
         }
 
@@ -223,7 +223,7 @@ namespace uPiper.Samples.MultiVoiceTTS
             channel.generateButton.interactable = false;
             channel.statusIndicator.color = _generatingColor;
             channel.statusText.text = "生成中...";
-            
+
             Interlocked.Increment(ref _activeGenerations);
             var startTime = Time.realtimeSinceStartup;
 
@@ -231,7 +231,7 @@ namespace uPiper.Samples.MultiVoiceTTS
             {
                 // 音声生成
                 var audioClip = await channel.tts.GenerateAudioAsync(
-                    channel.inputField.text, 
+                    channel.inputField.text,
                     cancellationToken
                 );
 
@@ -259,7 +259,7 @@ namespace uPiper.Samples.MultiVoiceTTS
             {
                 channel.isGenerating = false;
                 channel.generateButton.interactable = true;
-                
+
                 Interlocked.Decrement(ref _activeGenerations);
                 var generationTime = Time.realtimeSinceStartup - startTime;
                 _totalGenerationTime += generationTime;
@@ -294,8 +294,8 @@ namespace uPiper.Samples.MultiVoiceTTS
         private void UpdatePerformanceStats()
         {
             var activeChannels = _channels.Count(ch => ch.audioSource.isPlaying);
-            var avgGenerationTime = _completedGenerations > 0 
-                ? _totalGenerationTime / _completedGenerations 
+            var avgGenerationTime = _completedGenerations > 0
+                ? _totalGenerationTime / _completedGenerations
                 : 0;
 
             _performanceText.text = $"Performance Stats:\n" +
@@ -316,7 +316,7 @@ namespace uPiper.Samples.MultiVoiceTTS
                     break;
                 }
             }
-            
+
             _performanceText.text += backendInfo;
         }
 

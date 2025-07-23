@@ -48,7 +48,7 @@ namespace uPiper.Samples.StreamingTTS
         {
             InitializeUI();
             InitializeAudioPool();
-            
+
             try
             {
                 await InitializeTTS();
@@ -67,11 +67,11 @@ namespace uPiper.Samples.StreamingTTS
             _generateButton.onClick.AddListener(OnGenerateClicked);
             _stopButton.onClick.AddListener(OnStopClicked);
             _overlapSlider.onValueChanged.AddListener(OnOverlapChanged);
-            
+
             _stopButton.gameObject.SetActive(false);
             _progressSlider.value = 0;
             _chunkText.text = "";
-            
+
             OnOverlapChanged(_overlapSlider.value);
         }
 
@@ -91,13 +91,13 @@ namespace uPiper.Samples.StreamingTTS
         private async Task InitializeTTS()
         {
             _tts = new PiperTTS();
-            
+
             // GPU推論設定を適用
             if (_piperConfig == null)
             {
                 _piperConfig = PiperConfig.CreateDefault();
             }
-            
+
             await _tts.InitializeAsync(_piperConfig);
 
             // 音声モデルをロード
@@ -171,7 +171,7 @@ namespace uPiper.Samples.StreamingTTS
 
             // 並列で音声生成を開始
             var generationTask = GenerateAudioChunksAsync(chunks, cancellationToken);
-            
+
             // 自動再生が有効な場合は再生を開始
             if (_autoPlayToggle.isOn)
             {
@@ -179,7 +179,7 @@ namespace uPiper.Samples.StreamingTTS
             }
 
             await generationTask;
-            
+
             _statusText.text = _cancellationTokenSource.IsCancellationRequested ? "キャンセルされました" : "生成完了";
         }
 
@@ -188,7 +188,7 @@ namespace uPiper.Samples.StreamingTTS
             // 簡易的な文節分割（実際のアプリケーションではより高度な分割が必要）
             var chunks = new List<string>();
             var sentences = text.Split(new[] { '。', '！', '？', '、' }, StringSplitOptions.RemoveEmptyEntries);
-            
+
             foreach (var sentence in sentences)
             {
                 if (!string.IsNullOrWhiteSpace(sentence))
@@ -212,14 +212,14 @@ namespace uPiper.Samples.StreamingTTS
 
                 int chunkIndex = i;
                 var chunk = chunks[i];
-                
+
                 var task = Task.Run(async () =>
                 {
                     await semaphore.WaitAsync(cancellationToken);
                     try
                     {
                         _chunkText.text = $"生成中: \"{chunk}\"";
-                        
+
                         // ストリーミング生成
                         await foreach (var audioChunk in _tts.StreamAudioAsync(chunk, cancellationToken))
                         {
@@ -276,7 +276,7 @@ namespace uPiper.Samples.StreamingTTS
         {
             var audioSource = GetNextAudioSource();
             var audioClip = chunk.ToAudioClip();
-            
+
             audioSource.clip = audioClip;
             audioSource.volume = 0;
             audioSource.Play();
@@ -286,19 +286,19 @@ namespace uPiper.Samples.StreamingTTS
             while (fadeTime < _crossfadeDuration)
             {
                 audioSource.volume = Mathf.Lerp(0, 1, fadeTime / _crossfadeDuration);
-                
+
                 // 前の音源をフェードアウト
                 if (_currentAudioSource != null && _currentAudioSource != audioSource)
                 {
                     _currentAudioSource.volume = Mathf.Lerp(1, 0, fadeTime / _crossfadeDuration);
                 }
-                
+
                 fadeTime += Time.deltaTime;
                 yield return null;
             }
 
             audioSource.volume = 1;
-            
+
             // 前の音源を停止
             if (_currentAudioSource != null && _currentAudioSource != audioSource)
             {
@@ -318,7 +318,7 @@ namespace uPiper.Samples.StreamingTTS
             {
                 return _audioSourcePool.Dequeue();
             }
-            
+
             // プールが空の場合は新しく作成
             var audioSource = gameObject.AddComponent<AudioSource>();
             audioSource.playOnAwake = false;
@@ -335,7 +335,7 @@ namespace uPiper.Samples.StreamingTTS
                     _audioSourcePool.Enqueue(audioSource);
                 }
             }
-            
+
             _currentAudioSource = null;
         }
 

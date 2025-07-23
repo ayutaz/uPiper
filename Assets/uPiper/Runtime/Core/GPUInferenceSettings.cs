@@ -54,7 +54,7 @@ namespace uPiper.Core
         {
             MaxBatchSize = Mathf.Clamp(MaxBatchSize, 1, 16);
             MaxMemoryMB = Mathf.Clamp(MaxMemoryMB, 128, 2048);
-            
+
             if (PreferredDeviceIndex < -1)
             {
                 PreferredDeviceIndex = -1;
