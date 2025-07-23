@@ -26,7 +26,12 @@
 
 // Debug logging
 #ifdef ENABLE_DEBUG_LOG
+#ifdef ANDROID
+#include <android/log.h>
+#define DEBUG_LOG(fmt, ...) __android_log_print(ANDROID_LOG_INFO, "OpenJTalk", fmt, ##__VA_ARGS__)
+#else
 #define DEBUG_LOG(fmt, ...) fprintf(stderr, "[OpenJTalk] " fmt "\n", ##__VA_ARGS__)
+#endif
 #else
 #define DEBUG_LOG(fmt, ...)
 #endif
@@ -52,12 +57,16 @@ const char* openjtalk_get_version(void) {
 
 // Create phonemizer instance
 void* openjtalk_create(const char* dict_path) {
+    DEBUG_LOG("openjtalk_create called with dict_path: %s", dict_path ? dict_path : "NULL");
+    
     if (!dict_path) {
+        DEBUG_LOG("ERROR: dict_path is NULL");
         return NULL;
     }
     
     OpenJTalkContext* ctx = (OpenJTalkContext*)calloc(1, sizeof(OpenJTalkContext));
     if (!ctx) {
+        DEBUG_LOG("ERROR: Failed to allocate OpenJTalkContext");
         return NULL;
     }
     
@@ -69,32 +78,40 @@ void* openjtalk_create(const char* dict_path) {
     // Store dictionary path
     ctx->dict_path = strdup(dict_path);
     if (!ctx->dict_path) {
+        DEBUG_LOG("ERROR: Failed to duplicate dict_path");
         free(ctx);
         return NULL;
     }
+    DEBUG_LOG("Dictionary path set to: %s", ctx->dict_path);
     
     // Initialize Mecab
     ctx->mecab = (Mecab*)calloc(1, sizeof(Mecab));
     if (!ctx->mecab) {
+        DEBUG_LOG("ERROR: Failed to allocate Mecab");
         free(ctx->dict_path);
         free(ctx);
         return NULL;
     }
     
+    DEBUG_LOG("Initializing Mecab...");
     if (Mecab_initialize(ctx->mecab) != TRUE) {
+        DEBUG_LOG("ERROR: Mecab_initialize failed");
         free(ctx->mecab);
         free(ctx->dict_path);
         free(ctx);
         return NULL;
     }
     
+    DEBUG_LOG("Loading Mecab dictionary from: %s", ctx->dict_path);
     if (Mecab_load(ctx->mecab, ctx->dict_path) != TRUE) {
+        DEBUG_LOG("ERROR: Mecab_load failed with path: %s", ctx->dict_path);
         Mecab_clear(ctx->mecab);
         free(ctx->mecab);
         free(ctx->dict_path);
         free(ctx);
         return NULL;
     }
+    DEBUG_LOG("Mecab loaded successfully");
     
     // Initialize NJD
     ctx->njd = (NJD*)calloc(1, sizeof(NJD));

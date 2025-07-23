@@ -257,6 +257,10 @@ else()
     else()
         target_compile_options(openjtalk_wrapper PRIVATE -Wall -O3)
     endif()
+    # Enable debug logging for Android builds to diagnose issues
+    if(ANDROID)
+        target_compile_definitions(openjtalk_wrapper PRIVATE ENABLE_DEBUG_LOG)
+    endif()
 endif()
 
 # Print build configuration

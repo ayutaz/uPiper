@@ -786,6 +786,14 @@ namespace uPiper.Demo
             
             PiperLogger.LogInfo("[uPiper] Starting auto TTS test...");
             
+            // Set Japanese text from UTF-8 bytes to avoid encoding issues
+            if (_inputField != null)
+            {
+                byte[] konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+                _inputField.text = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
+                PiperLogger.LogInfo($"[uPiper] Set input text: {_inputField.text}");
+            }
+            
             // Try to generate TTS
             if (_generateButton != null && _generateButton.isActiveAndEnabled)
             {
