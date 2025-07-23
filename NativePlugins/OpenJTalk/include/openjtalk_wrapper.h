@@ -103,7 +103,7 @@ OPENJTALK_API char* openjtalk_analyze_utf8(void* handle, const unsigned char* te
 OPENJTALK_API void* openjtalk_initialize(const char* dict_path);
 OPENJTALK_API char* openjtalk_analyze(void* handle, const char* text);
 OPENJTALK_API void openjtalk_finalize(void* handle);
-OPENJTALK_API void openjtalk_free_result(char* result);
+OPENJTALK_API void openjtalk_free_string(char* result);
 
 #ifdef __cplusplus
 }

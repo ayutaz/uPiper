@@ -555,3 +555,10 @@ char* openjtalk_analyze_utf8(void* handle, const unsigned char* text_utf8, int t
     free(text);
     return result;
 }
+
+// Free string result (for legacy analyze function)
+void openjtalk_free_string(char* result) {
+    if (result) {
+        free(result);
+    }
+}
