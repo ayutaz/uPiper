@@ -19,20 +19,27 @@ namespace uPiper.Core.Phonemizers.Implementations
     public class OptimizedOpenJTalkPhonemizer : BasePhonemizer
     {
         // P/Invoke宣言（UTF-8バイト配列を直接渡す最適化版）
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", EntryPoint = "openjtalk_initialize_utf8")]
         private static extern IntPtr openjtalk_initialize_utf8(byte[] dictPath, int dictPathLength);
 
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", EntryPoint = "openjtalk_analyze_utf8")]
         private static extern IntPtr openjtalk_analyze_utf8(IntPtr handle, byte[] text, int textLength);
 
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", EntryPoint = "openjtalk_free_string")]
         private static extern void openjtalk_free_result(IntPtr result);
 
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", EntryPoint = "openjtalk_finalize")]
         private static extern void openjtalk_finalize(IntPtr handle);
 
-        [DllImport("openjtalk_wrapper")]
+        [DllImport("openjtalk_wrapper", EntryPoint = "openjtalk_get_version")]
         private static extern IntPtr openjtalk_get_version();
+        
+        // 互換性のための通常関数
+        [DllImport("openjtalk_wrapper", EntryPoint = "openjtalk_initialize")]
+        private static extern IntPtr openjtalk_initialize(string dictPath);
+        
+        [DllImport("openjtalk_wrapper", EntryPoint = "openjtalk_analyze")]
+        private static extern IntPtr openjtalk_analyze(IntPtr handle, string text);
 
         private IntPtr _handle = IntPtr.Zero;
         private readonly SemaphoreSlim _initLock = new SemaphoreSlim(1, 1);
@@ -57,7 +64,17 @@ namespace uPiper.Core.Phonemizers.Implementations
         {
             if (!_isInitialized)
             {
-                await InitializeAsync();
+                var initialized = await InitializeAsync();
+                if (!initialized)
+                {
+                    return new PhonemeResult
+                    {
+                        Phonemes = new string[] { },
+                        PhonemeIds = new int[] { },
+                        Durations = new float[] { },
+                        Pitches = new float[] { }
+                    };
+                }
             }
 
             return await Task.Run(() =>
@@ -85,7 +102,15 @@ namespace uPiper.Core.Phonemizers.Implementations
                         IntPtr resultPtr;
                         using (_profiler.BeginProfile("Native Analyze"))
                         {
-                            resultPtr = openjtalk_analyze_utf8(_handle, buffer, actualBytes);
+                            try
+                            {
+                                resultPtr = openjtalk_analyze_utf8(_handle, buffer, actualBytes);
+                            }
+                            catch (EntryPointNotFoundException)
+                            {
+                                // UTF-8版がない場合は通常版にフォールバック
+                                resultPtr = openjtalk_analyze(_handle, normalizedText);
+                            }
                         }
                         
                         if (resultPtr == IntPtr.Zero)
@@ -122,13 +147,13 @@ namespace uPiper.Core.Phonemizers.Implementations
             }, cancellationToken);
         }
 
-        public async Task InitializeAsync(Dictionary<string, object> options = null)
+        public async Task<bool> InitializeAsync(Dictionary<string, object> options = null)
         {
             await _initLock.WaitAsync();
             try
             {
                 if (_isInitialized)
-                    return;
+                    return true;
 
                 using (_profiler.BeginProfile("Initialize"))
                 {
@@ -145,7 +170,8 @@ namespace uPiper.Core.Phonemizers.Implementations
                     
                     if (!System.IO.Directory.Exists(dictPath))
                     {
-                        throw new System.IO.DirectoryNotFoundException($"Dictionary not found at: {dictPath}");
+                        PiperLogger.LogError($"Dictionary not found at: {dictPath}");
+                        return false;
                     }
 
                     // UTF-8バイトで直接渡す
@@ -153,12 +179,23 @@ namespace uPiper.Core.Phonemizers.Implementations
                     
                     using (_profiler.BeginProfile("Native Initialize"))
                     {
-                        _handle = openjtalk_initialize_utf8(dictPathBytes, dictPathBytes.Length);
+                        try
+                        {
+                            // UTF-8最適化版を試す
+                            _handle = openjtalk_initialize_utf8(dictPathBytes, dictPathBytes.Length);
+                        }
+                        catch (EntryPointNotFoundException)
+                        {
+                            // UTF-8版がない場合は通常版にフォールバック
+                            PiperLogger.LogWarning("[OptimizedOpenJTalk] UTF-8 functions not found, falling back to standard version");
+                            _handle = openjtalk_initialize(dictPath);
+                        }
                     }
                     
                     if (_handle == IntPtr.Zero)
                     {
-                        throw new Exception("Failed to initialize OpenJTalk");
+                        PiperLogger.LogError("Failed to initialize OpenJTalk");
+                        return false;
                     }
 
                     // バージョン確認
@@ -173,7 +210,14 @@ namespace uPiper.Core.Phonemizers.Implementations
                     {
                         _bufferPool.Enqueue(new byte[BUFFER_SIZE]);
                     }
+                    
+                    return true;
                 }
+            }
+            catch (Exception e)
+            {
+                PiperLogger.LogError($"[OptimizedOpenJTalk] Initialization failed: {e.Message}");
+                return false;
             }
             finally
             {
