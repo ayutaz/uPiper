@@ -42,9 +42,9 @@ if [ ! -d "external/open_jtalk-1.11" ]; then
     ./fetch_dependencies.sh
 fi
 
-# Function to build dependencies for Android
-build_android_dependencies() {
-    echo "Building dependencies for Android..."
+# Check if Android dependencies are built
+if [ ! -d "external/openjtalk_build/android_arm64-v8a" ]; then
+    echo "Android dependencies not found. Building dependencies..."
     
     # Create build script inline
     cat > build_dependencies_android.sh << 'EOF'
@@ -149,6 +149,7 @@ EOF
     
     chmod +x build_dependencies_android.sh
     ./build_dependencies_android.sh
+fi
 
 # Clean previous builds
 rm -rf build_android_*
