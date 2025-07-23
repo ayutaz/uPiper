@@ -106,11 +106,9 @@ namespace uPiper.Tests.Runtime.Performance
             // Benchmark regular version
             using (_profiler.BeginProfile("Regular Phonemizer Init"))
             {
+                // OpenJTalkPhonemizerは同期初期化のみサポート
                 _regularPhonemizer = new OpenJTalkPhonemizer();
-                var initTask = _regularPhonemizer.InitializeAsync();
-                yield return new WaitUntil(() => initTask.IsCompleted);
-                
-                Assert.IsTrue(initTask.IsCompletedSuccessfully);
+                // コンストラクタで初期化されるため、追加の初期化は不要
             }
         }
 
