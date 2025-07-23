@@ -20,7 +20,6 @@
 - `phase1-10-completion-report.md` - OpenJTalk統合による日本語発音改善
 - `phase1-11-completion-report.md` - Unity基本統合
 - `phase1-12-completion-report.md` - IL2CPPサポート
-- `phase1-13-completion-report.md` - GPU推論サポートと高度なサンプル
 
 ## Phase 1 成果サマリー
 

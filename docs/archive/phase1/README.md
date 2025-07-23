@@ -11,7 +11,6 @@
 ### implementation/
 - `phase1-implementation-guide-ja.md` - Phase 1実装ガイド
 - `phase1-kickoff.md` - Phase 1キックオフドキュメント
-- `phase-1.13-gpu-inference-plan.md` - GPU推論実装計画
 
 ## 注意
 

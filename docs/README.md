@@ -12,8 +12,6 @@
   - `PHASE1-FINAL-COMPLETION.md` - **Phase 1最終完了報告書** 🎉
   - `phase1-progress.md` - Phase 1の詳細進捗
   - `phase1-12-completion-report.md` - IL2CPPサポート完了報告
-  - `phase1-13-completion-report.md` - GPU推論サポート完了報告
-  - `unity-task-checklist.md` - タスクチェックリスト
 
 ### 🏗️ アーキテクチャ
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - システムアーキテクチャ設計
