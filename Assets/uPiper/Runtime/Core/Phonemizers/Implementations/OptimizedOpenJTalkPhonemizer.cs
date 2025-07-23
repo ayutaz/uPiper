@@ -138,7 +138,8 @@ namespace uPiper.Core.Phonemizers.Implementations
                     #if UNITY_ANDROID && !UNITY_EDITOR
                     dictPath = await OptimizedAndroidPathResolver.GetDictionaryPathAsync();
                     #else
-                    dictPath = AndroidPathResolver.GetOpenJTalkDictionaryPath();
+                    // 非Android環境ではStreamingAssetsからパスを取得
+                    dictPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
                     #endif
                     
                     if (!System.IO.Directory.Exists(dictPath))

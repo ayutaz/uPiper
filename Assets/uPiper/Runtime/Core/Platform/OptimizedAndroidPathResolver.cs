@@ -70,7 +70,8 @@ namespace uPiper.Core.Platform
             
             return dictPath;
             #else
-            return AndroidPathResolver.GetOpenJTalkDictionaryPath();
+            // 非Android環境ではStreamingAssetsから直接パスを返す
+            return Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
             #endif
         }
         
