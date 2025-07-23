@@ -118,7 +118,7 @@ var config = new PiperConfig
 - ✅ 1.12: IL2CPPサポート - Mono/IL2CPP両対応、CI/CD統合
 - ✅ 1.13: GPU推論サポートと高度なサンプル実装
 
-**Phase 1は全タスク完了しました！** 詳細は[完了報告書](docs/progress/PHASE1-FINAL-COMPLETION.md)を参照してください。
+**Phase 1は全タスク完了しました！**
 
 詳細な進捗は[ロードマップ](docs/ROADMAP.md)を参照してください。
 

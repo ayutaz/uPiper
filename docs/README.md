@@ -9,9 +9,6 @@
 ### 📋 プロジェクト管理
 - [ROADMAP.md](./ROADMAP.md) - 実装ロードマップとフェーズ管理
 - [progress/](./progress/) - 進捗管理ドキュメント
-  - `PHASE1-FINAL-COMPLETION.md` - **Phase 1最終完了報告書** 🎉
-  - `phase1-progress.md` - Phase 1の詳細進捗
-  - `phase1-12-completion-report.md` - IL2CPPサポート完了報告
 
 ### 🏗️ アーキテクチャ
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - システムアーキテクチャ設計
@@ -28,8 +25,7 @@
   - `IL2CPP-CI-SOLUTIONS.md` - IL2CPP CI/CDソリューション
 
 ### 📝 実装ガイド
-- [implementation/](./implementation/) - 実装関連ドキュメント（Phase 2以降）
-- [archive/phase1/](./archive/phase1/) - Phase 1開発ドキュメント（アーカイブ）
+- [implementation/](./implementation/) - 実装関連ドキュメント
 
 ### 🎮 サンプルドキュメント
 - **Streaming TTS**: リアルタイムストリーミング音声生成
