@@ -33,7 +33,7 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// Get the actual backend type being used
         /// </summary>
-        public BackendType ActualBackendType => _actualBackendType;
+        internal BackendType ActualBackendType => _actualBackendType;
 
         /// <inheritdoc/>
         public async Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config, CancellationToken cancellationToken = default)

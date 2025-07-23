@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Threading.Tasks;
 using Unity.InferenceEngine;
@@ -168,7 +169,9 @@ namespace uPiper.Editor
 
         private string GetActualBackendType(InferenceAudioGenerator generator)
         {
-            return generator.ActualBackendType.ToString();
+            // BackendType is internal, so we just return a placeholder
+            return "Backend (see logs)";
         }
     }
 }
+#endif

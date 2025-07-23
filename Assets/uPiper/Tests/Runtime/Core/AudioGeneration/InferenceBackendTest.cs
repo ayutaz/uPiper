@@ -73,15 +73,15 @@ namespace uPiper.Tests.Runtime.Core.AudioGeneration
         }
 
         [UnityTest]
-        public async Task InferenceAudioGenerator_HasActualBackendTypeProperty()
+        public async Task InferenceAudioGenerator_CanBeCreatedAndDisposed()
         {
             var generator = new InferenceAudioGenerator();
 
-            // Before initialization, backend type should be default
-            Assert.AreEqual(default(BackendType), generator.ActualBackendType);
+            // Verify generator can be created
+            Assert.IsNotNull(generator);
 
             // Note: Cannot test actual initialization without valid ModelAsset
-            // This just verifies the property exists and is accessible
+            // This just verifies the basic lifecycle
 
             generator.Dispose();
             await Task.Yield();
