@@ -40,6 +40,21 @@
       "displayName": "Advanced Integration",
       "description": "Advanced examples showing streaming, multiple voices, and custom phonemizer usage.",
       "path": "Samples~/AdvancedIntegration"
+    },
+    {
+      "displayName": "Streaming TTS Demo",
+      "description": "Real-time streaming audio generation with chunk-based processing and crossfading.",
+      "path": "Samples~/StreamingTTS"
+    },
+    {
+      "displayName": "Multi-Voice Demo",
+      "description": "Simultaneous generation of multiple voices with GPU acceleration.",
+      "path": "Samples~/MultiVoiceTTS"
+    },
+    {
+      "displayName": "Realtime TTS Demo",
+      "description": "Low-latency text-to-speech for interactive applications and games.",
+      "path": "Samples~/RealtimeTTS"
     }
   ]
 }

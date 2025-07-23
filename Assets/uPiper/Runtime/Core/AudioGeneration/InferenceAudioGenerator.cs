@@ -17,19 +17,35 @@ namespace uPiper.Core.AudioGeneration
         private Worker _worker;
         private Model _model;
         private ModelAsset _modelAsset;
-        private PiperVoiceConfig _config;
+        private PiperVoiceConfig _voiceConfig;
+        private PiperConfig _piperConfig;
         private bool _isInitialized;
         private readonly object _lockObject = new object();
         private bool _disposed;
+        private BackendType _actualBackendType;
 
         /// <inheritdoc/>
         public bool IsInitialized => _isInitialized;
 
         /// <inheritdoc/>
-        public int SampleRate => _config?.SampleRate ?? 22050;
+        public int SampleRate => _voiceConfig?.SampleRate ?? 22050;
+
+        /// <summary>
+        /// Get the actual backend type being used
+        /// </summary>
+        public BackendType ActualBackendType => _actualBackendType;
 
         /// <inheritdoc/>
         public async Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config, CancellationToken cancellationToken = default)
+        {
+            // Use default PiperConfig for backward compatibility
+            await InitializeAsync(modelAsset, config, PiperConfig.CreateDefault(), cancellationToken);
+        }
+
+        /// <summary>
+        /// Initialize with PiperConfig for backend selection
+        /// </summary>
+        public async Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig voiceConfig, PiperConfig piperConfig, CancellationToken cancellationToken = default)
         {
             PiperLogger.LogDebug("[InferenceAudioGenerator] InitializeAsync started");
 
@@ -55,7 +71,8 @@ namespace uPiper.Core.AudioGeneration
                     DisposeWorker();
 
                     _modelAsset = modelAsset;
-                    _config = config;
+                    _voiceConfig = voiceConfig;
+                    _piperConfig = piperConfig ?? PiperConfig.CreateDefault();
 
                     try
                     {
@@ -70,10 +87,33 @@ namespace uPiper.Core.AudioGeneration
                         }
 
                         PiperLogger.LogDebug("[InferenceAudioGenerator] Model loaded, creating worker...");
-                        // TODO: Make backend configurable. Currently using CPU due to Metal shader compilation errors on GPU.
-                        // Error: "Compilation failure: program_source:2:10: fatal error: 'metal_stdlib' file not found"
-                        _worker = new Worker(_model, BackendType.CPU);
-                        _isInitialized = true;
+                        
+                        // Select backend based on configuration
+                        _actualBackendType = DetermineBackendType(_piperConfig);
+                        
+                        try
+                        {
+                            _worker = new Worker(_model, _actualBackendType);
+                            _isInitialized = true;
+                            PiperLogger.LogInfo($"[InferenceAudioGenerator] Successfully initialized with backend: {_actualBackendType}");
+                        }
+                        catch (Exception gpuEx)
+                        {
+                            PiperLogger.LogWarning($"[InferenceAudioGenerator] Failed to initialize with {_actualBackendType}: {gpuEx.Message}");
+                            
+                            if (_piperConfig.AllowFallbackToCPU && _actualBackendType != BackendType.CPU)
+                            {
+                                PiperLogger.LogInfo("[InferenceAudioGenerator] Falling back to CPU backend...");
+                                _actualBackendType = BackendType.CPU;
+                                _worker = new Worker(_model, BackendType.CPU);
+                                _isInitialized = true;
+                                PiperLogger.LogInfo("[InferenceAudioGenerator] Successfully initialized with CPU backend (fallback)");
+                            }
+                            else
+                            {
+                                throw;
+                            }
+                        }
 
                         // モデルの入力/出力情報をログ出力（デバッグ用）
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Successfully initialized with model: {_modelAsset.name}");
@@ -295,7 +335,8 @@ namespace uPiper.Core.AudioGeneration
                         DisposeWorker();
                         _model = null;
                         _modelAsset = null;
-                        _config = null;
+                        _voiceConfig = null;
+                        _piperConfig = null;
                     }
                 }
                 _disposed = true;
@@ -311,6 +352,70 @@ namespace uPiper.Core.AudioGeneration
                 _isInitialized = false;
                 PiperLogger.LogDebug("InferenceAudioGenerator worker disposed");
             }
+        }
+
+        /// <summary>
+        /// Determine the best backend type based on configuration and platform
+        /// </summary>
+        private BackendType DetermineBackendType(PiperConfig config)
+        {
+            if (config.Backend == InferenceBackend.CPU)
+            {
+                return BackendType.CPU;
+            }
+            
+            if (config.Backend == InferenceBackend.GPUCompute)
+            {
+                return BackendType.GPUCompute;
+            }
+            
+            if (config.Backend == InferenceBackend.GPUPixel)
+            {
+                return BackendType.GPUPixel;
+            }
+            
+            // Auto selection based on platform
+            if (config.Backend == InferenceBackend.Auto)
+            {
+#if UNITY_WEBGL
+                // WebGL typically works better with GPUPixel
+                PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUPixel backend for WebGL");
+                return BackendType.GPUPixel;
+#elif UNITY_IOS || UNITY_ANDROID
+                // Mobile platforms often have GPU support but may have compatibility issues
+                if (SystemInfo.supportsComputeShaders)
+                {
+                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUCompute backend for mobile");
+                    return BackendType.GPUCompute;
+                }
+                else
+                {
+                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting CPU backend for mobile (no compute shader support)");
+                    return BackendType.CPU;
+                }
+#else
+                // Desktop platforms
+                if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Metal)
+                {
+                    // Metal currently has issues with shader compilation
+                    PiperLogger.LogWarning("[InferenceAudioGenerator] Metal detected - using CPU backend due to known shader compilation issues");
+                    return BackendType.CPU;
+                }
+                else if (SystemInfo.supportsComputeShaders && SystemInfo.graphicsMemorySize >= config.GPUSettings.MaxMemoryMB)
+                {
+                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUCompute backend for desktop");
+                    return BackendType.GPUCompute;
+                }
+                else
+                {
+                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting CPU backend for desktop");
+                    return BackendType.CPU;
+                }
+#endif
+            }
+            
+            // Default to CPU if unknown
+            return BackendType.CPU;
         }
     }
 }
