@@ -30,11 +30,8 @@
   - `IL2CPP-CI-SOLUTIONS.md` - IL2CPP CI/CDソリューション
 
 ### 📝 実装ガイド
-- [implementation/](./implementation/) - 実装関連ドキュメント
-  - `phase1-implementation-guide-ja.md` - Phase 1実装ガイド
-  - `phase1-kickoff.md` - Phase 1キックオフ
-  - `phase-1.13-gpu-inference-plan.md` - GPU推論実装計画
-  - `completion-reports/` - 各フェーズの完了報告書
+- [implementation/](./implementation/) - 実装関連ドキュメント（Phase 2以降）
+- [archive/phase1/](./archive/phase1/) - Phase 1開発ドキュメント（アーカイブ）
 
 ### 🎮 サンプルドキュメント
 - **Streaming TTS**: リアルタイムストリーミング音声生成
@@ -43,8 +40,6 @@
 
 各サンプルのREADMEは`Assets/uPiper/Samples~/`以下の各ディレクトリに配置されています。
 
-### 📊 計画
-- [planning/](./planning/) - 計画ドキュメント
 
 ## 関連リポジトリ
 
