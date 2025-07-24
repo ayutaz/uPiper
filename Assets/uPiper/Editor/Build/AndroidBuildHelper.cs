@@ -84,18 +84,18 @@ namespace uPiper.Editor.Build
         private static void SetAndroidPluginSettings(string libraryPath, string abi)
         {
             string assetPath = "Assets" + libraryPath.Substring(Application.dataPath.Length).Replace('\\', '/');
-            
+
             AssetDatabase.ImportAsset(assetPath);
             PluginImporter importer = AssetImporter.GetAtPath(assetPath) as PluginImporter;
-            
+
             if (importer != null)
             {
                 importer.SetCompatibleWithAnyPlatform(false);
                 importer.SetCompatibleWithPlatform(BuildTarget.Android, true);
-                
+
                 // Set CPU architecture
                 importer.SetPlatformData(BuildTarget.Android, "CPU", GetCPUFromABI(abi));
-                
+
                 importer.SaveAndReimport();
             }
         }

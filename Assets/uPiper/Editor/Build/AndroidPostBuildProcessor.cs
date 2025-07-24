@@ -102,7 +102,7 @@ namespace uPiper.Editor.Build
                 foreach (var file in report.GetFiles())
                 {
                     totalSize += (long)file.size;
-                    
+
                     if (file.path.Contains("libopenjtalk_wrapper.so"))
                     {
                         nativeLibSize += (long)file.size;

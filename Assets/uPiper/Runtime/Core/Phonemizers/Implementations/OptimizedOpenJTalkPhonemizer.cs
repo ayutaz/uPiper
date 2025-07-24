@@ -20,9 +20,9 @@ namespace uPiper.Core.Phonemizers.Implementations
     {
         // P/Invoke宣言
         private const string LIBRARY_NAME = "openjtalk_wrapper";
-        
+
         // UTF-8最適化版（Android用）
-        #if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_initialize_utf8(byte[] dictPath, int dictPathLength);
 
@@ -31,24 +31,24 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern void openjtalk_free_string(IntPtr result);
-        #endif
-        
+#endif
+
         // 標準版（Windows/Mac/Linux用）
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr openjtalk_create([MarshalAs(UnmanagedType.LPStr)] string dict_path);
-        
+
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern void openjtalk_destroy(IntPtr handle);
-        
+
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr openjtalk_phonemize(IntPtr handle, [MarshalAs(UnmanagedType.LPStr)] string text);
-        
+
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_get_version();
-        
+
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern void openjtalk_free_result(IntPtr result);
-        
+
         // PhonemeResult構造体
         [StructLayout(LayoutKind.Sequential)]
         private struct NativePhonemeResult
@@ -64,7 +64,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         private readonly SemaphoreSlim _initLock = new SemaphoreSlim(1, 1);
         private bool _isInitialized = false;
         private readonly AndroidPerformanceProfiler _profiler = new AndroidPerformanceProfiler();
-        
+
         // バイト配列バッファのプール（GCを減らすため）
         private readonly Queue<byte[]> _bufferPool = new Queue<byte[]>();
         private readonly object _poolLock = new object();
@@ -105,7 +105,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     {
                         // バッファプールから取得
                         buffer = GetBuffer();
-                        
+
                         // UTF-8エンコード（最適化: 事前確保されたバッファを使用）
                         var byteCount = Encoding.UTF8.GetByteCount(normalizedText);
                         if (byteCount > buffer.Length)
@@ -114,16 +114,16 @@ namespace uPiper.Core.Phonemizers.Implementations
                             ReturnBuffer(buffer);
                             buffer = new byte[byteCount];
                         }
-                        
+
                         var actualBytes = Encoding.UTF8.GetBytes(normalizedText, 0, normalizedText.Length, buffer, 0);
-                        
+
                         // ネイティブ呼び出し
                         IntPtr resultPtr;
                         using (_profiler.BeginProfile("Native Analyze"))
                         {
                             try
                             {
-                                #if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR
                                 // Androidの場合はUTF-8関数を試す
                                 try
                                 {
@@ -140,8 +140,8 @@ namespace uPiper.Core.Phonemizers.Implementations
                                 {
                                     // UTF-8関数がない場合は通常版にフォールバック
                                 }
-                                #endif
-                                
+#endif
+
                                 // 通常版を使用
                                 resultPtr = openjtalk_phonemize(_handle, normalizedText);
                             }
@@ -151,7 +151,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                                 resultPtr = openjtalk_phonemize(_handle, normalizedText);
                             }
                         }
-                        
+
                         if (resultPtr == IntPtr.Zero)
                         {
                             PiperLogger.LogWarning($"[OptimizedOpenJTalk] Failed to analyze text: {normalizedText}");
@@ -196,16 +196,16 @@ namespace uPiper.Core.Phonemizers.Implementations
                 using (_profiler.BeginProfile("Initialize"))
                 {
                     PiperLogger.LogInfo("[OptimizedOpenJTalk] Initializing...");
-                    
+
                     // Android向け最適化: 非同期で辞書パスを取得
                     string dictPath;
-                    #if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR
                     dictPath = await OptimizedAndroidPathResolver.GetDictionaryPathAsync();
-                    #else
+#else
                     // 非Android環境ではStreamingAssetsからパスを取得
                     dictPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
-                    #endif
-                    
+#endif
+
                     if (!System.IO.Directory.Exists(dictPath))
                     {
                         PiperLogger.LogError($"Dictionary not found at: {dictPath}");
@@ -214,10 +214,10 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                     // UTF-8バイトで直接渡す
                     var dictPathBytes = Encoding.UTF8.GetBytes(dictPath);
-                    
+
                     using (_profiler.BeginProfile("Native Initialize"))
                     {
-                        #if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR
                         try
                         {
                             // Androidの場合はUTF-8最適化版を使用
@@ -229,12 +229,12 @@ namespace uPiper.Core.Phonemizers.Implementations
                             PiperLogger.LogWarning("[OptimizedOpenJTalk] UTF-8 functions not found, falling back to standard version");
                             _handle = openjtalk_create(dictPath);
                         }
-                        #else
+#else
                         // Android以外は通常版を使用
                         _handle = openjtalk_create(dictPath);
-                        #endif
+#endif
                     }
-                    
+
                     if (_handle == IntPtr.Zero)
                     {
                         PiperLogger.LogError("Failed to initialize OpenJTalk");
@@ -245,15 +245,15 @@ namespace uPiper.Core.Phonemizers.Implementations
                     var versionPtr = openjtalk_get_version();
                     var version = Marshal.PtrToStringAnsi(versionPtr);
                     PiperLogger.LogInfo($"[OptimizedOpenJTalk] Initialized with version: {version}");
-                    
+
                     _isInitialized = true;
-                    
+
                     // 初期バッファをプールに追加
                     for (int i = 0; i < 5; i++)
                     {
                         _bufferPool.Enqueue(new byte[BUFFER_SIZE]);
                     }
-                    
+
                     return true;
                 }
             }
@@ -267,15 +267,15 @@ namespace uPiper.Core.Phonemizers.Implementations
                 _initLock.Release();
             }
         }
-        
+
         private void FreeNativePhonemeResult(IntPtr resultPtr)
         {
             if (resultPtr == IntPtr.Zero) return;
-            
+
             // Just use the native free function - it will handle all internal pointers
             openjtalk_free_result(resultPtr);
         }
-        
+
         private PhonemeResult ParseNativePhonemeResult(IntPtr resultPtr)
         {
             if (resultPtr == IntPtr.Zero)
@@ -288,28 +288,28 @@ namespace uPiper.Core.Phonemizers.Implementations
                     Pitches = new float[] { }
                 };
             }
-            
+
             var nativeResult = Marshal.PtrToStructure<NativePhonemeResult>(resultPtr);
-            
+
             // Parse phonemes string
             var phonemeStr = Marshal.PtrToStringAnsi(nativeResult.phonemes);
             var phonemes = phonemeStr?.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
-            
+
             // Copy arrays
             var phonemeIds = new int[nativeResult.phoneme_count];
             var durations = new float[nativeResult.phoneme_count];
             var pitches = new float[nativeResult.phoneme_count];
-            
+
             if (nativeResult.phoneme_ids != IntPtr.Zero)
                 Marshal.Copy(nativeResult.phoneme_ids, phonemeIds, 0, nativeResult.phoneme_count);
-            
+
             if (nativeResult.durations != IntPtr.Zero)
                 Marshal.Copy(nativeResult.durations, durations, 0, nativeResult.phoneme_count);
-            
+
             // Set default pitches
             for (int i = 0; i < pitches.Length; i++)
                 pitches[i] = 0.0f;
-            
+
             return new PhonemeResult
             {
                 Phonemes = phonemes,
@@ -329,7 +329,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 var phonemeIds = new int[phonemes.Length];
                 var durations = new float[phonemes.Length];
                 var pitches = new float[phonemes.Length];
-                
+
                 // デフォルト値を設定
                 for (int i = 0; i < phonemes.Length; i++)
                 {
@@ -337,7 +337,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     durations[i] = 0.05f; // 50ms
                     pitches[i] = 0.0f; // デフォルトピッチ
                 }
-                
+
                 return new PhonemeResult
                 {
                     Phonemes = phonemes,
@@ -358,7 +358,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 };
             }
         }
-        
+
         private byte[] GetBuffer()
         {
             lock (_poolLock)
@@ -370,12 +370,12 @@ namespace uPiper.Core.Phonemizers.Implementations
             }
             return new byte[BUFFER_SIZE];
         }
-        
+
         private void ReturnBuffer(byte[] buffer)
         {
             if (buffer.Length != BUFFER_SIZE)
                 return; // 標準サイズ以外は返却しない
-            
+
             lock (_poolLock)
             {
                 if (_bufferPool.Count < MAX_POOL_SIZE)
@@ -396,15 +396,15 @@ namespace uPiper.Core.Phonemizers.Implementations
                     _handle = IntPtr.Zero;
                     _isInitialized = false;
                 }
-                
+
                 lock (_poolLock)
                 {
                     _bufferPool.Clear();
                 }
-                
+
                 _initLock?.Dispose();
             }
-            
+
             base.Dispose(disposing);
         }
 
@@ -421,7 +421,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 return false;
             }
         }
-        
+
         /// <summary>
         /// パフォーマンスレポートを生成
         /// </summary>

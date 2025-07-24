@@ -115,7 +115,7 @@ namespace uPiper.Demo
             // Set default Japanese text from UTF-8 bytes to avoid encoding issues
             byte[] konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
             _defaultJapaneseText = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
-            
+
             // Initialize Japanese test phrases from UTF-8 bytes
             _japaneseTestPhrases = new List<string>
             {
@@ -131,7 +131,7 @@ namespace uPiper.Demo
                 System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x8A, 0xE3, 0x81, 0xAF, 0xE3, 0x82, 0x88, 0xE3, 0x81, 0x86, 0xE3, 0x81, 0x94, 0xE3, 0x81, 0x96, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99, 0xE3, 0x80, 0x81, 0xE4, 0xBB, 0x8A, 0xE6, 0x97, 0xA5, 0xE3, 0x82, 0x82, 0xE4, 0xB8, 0x80, 0xE6, 0x97, 0xA5, 0xE9, 0xA0, 0x91, 0xE5, 0xBC, 0xB5, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x97, 0xE3, 0x82, 0x87, 0xE3, 0x81, 0x86 }), // おはようございます、今日も一日頑張りましょう
                 System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x99, 0xE3, 0x81, 0xBF, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x9B, 0xE3, 0x82, 0x93, 0xE3, 0x80, 0x81, 0xE3, 0x81, 0xA1, 0xE3, 0x82, 0x87, 0xE3, 0x81, 0xA3, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x8A, 0xE8, 0x81, 0x9E, 0xE3, 0x81, 0x8D, 0xE3, 0x81, 0x97, 0xE3, 0x81, 0x9F, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0x93, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x8C, 0xE3, 0x81, 0x82, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99 }) // すみません、ちょっとお聞きしたいことがあります
             };
-            
+
             _generator = new InferenceAudioGenerator();
             _audioBuilder = new AudioClipBuilder();
 
@@ -145,15 +145,15 @@ namespace uPiper.Demo
 #if !UNITY_WEBGL && !UNITY_EDITOR
             PiperLogger.LogInfo("[InferenceEngineDemo] Running OpenJTalk debug helper...");
             OpenJTalkDebugHelper.DebugLibraryLoading();
-            
+
             // Additional Android debugging
-            #if UNITY_ANDROID
+#if UNITY_ANDROID
             DebugAndroidSetup();
             // Preload dictionary asynchronously for better performance
             uPiper.Core.Platform.OptimizedAndroidPathResolver.PreloadDictionaryAsync();
             // Auto-test TTS generation after 2 seconds
             StartCoroutine(AutoTestTTSGeneration());
-            #endif
+#endif
 #endif
 
 #if !UNITY_WEBGL
@@ -365,12 +365,12 @@ namespace uPiper.Demo
 
             _isGenerating = true;
             SetStatus("処理中...");
-            
+
             // Debug text encoding
             string inputText = _inputField.text;
             PiperLogger.LogInfo($"Starting audio generation for text: {inputText}");
-            
-            #if UNITY_ANDROID
+
+#if UNITY_ANDROID
             // Additional encoding debug on Android
             byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(inputText);
             PiperLogger.LogInfo($"[Android] Text length: {inputText.Length} chars, UTF-8 bytes: {utf8Bytes.Length}");
@@ -388,7 +388,7 @@ namespace uPiper.Demo
                 PiperLogger.LogWarning("[Android] Detected mojibake (文字化け) - text encoding issue!");
                 PiperLogger.LogWarning("[Android] The text field may be corrupted. Please use the dropdown to select a test phrase.");
             }
-            #endif
+#endif
 
             // Start overall timing
             var totalStopwatch = Stopwatch.StartNew();
@@ -474,7 +474,7 @@ namespace uPiper.Demo
                 var phonemeStopwatch = Stopwatch.StartNew();
                 string[] phonemes;
                 var language = _modelLanguages[modelName];
-                
+
                 // Define konnichiwa string from UTF-8 bytes for special debugging
                 byte[] konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
                 string konnichiwa = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
@@ -526,15 +526,15 @@ namespace uPiper.Demo
                                   "1. Navigate to NativePlugins/OpenJTalk/\n" +
                                   "2. Run ./build.sh (macOS/Linux) or build.bat (Windows)\n" +
                                   "3. Restart Unity Editor";
-                    
-                    #if UNITY_ANDROID && !UNITY_EDITOR
+
+#if UNITY_ANDROID && !UNITY_EDITOR
                     // Add Android-specific error info
                     errorMsg += "\n\nOn Android:\n" +
                                 "- Check if libopenjtalk_wrapper.so is in Plugins/Android/libs/{ABI}/\n" +
                                 "- Check if dictionary files are in StreamingAssets\n" +
                                 "- Dictionary will be extracted to persistent data path on first run";
-                    #endif
-                    
+#endif
+
                     throw new Exception(errorMsg);
                 }
                 else

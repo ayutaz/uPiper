@@ -34,7 +34,7 @@ namespace uPiper.Editor.Build
                 {
                     // Check if asset exists in Unity's database
                     var importer = AssetImporter.GetAtPath(libPath) as PluginImporter;
-                    
+
                     if (importer == null)
                     {
                         Debug.LogWarning($"[uPiper] Library not imported: {libPath}");
@@ -57,7 +57,7 @@ namespace uPiper.Editor.Build
                         // Set CPU architecture
                         string expectedCPU = GetExpectedCPU(abi);
                         string currentCPU = importer.GetPlatformData(BuildTarget.Android, "CPU");
-                        
+
                         if (currentCPU != expectedCPU)
                         {
                             importer.SetPlatformData(BuildTarget.Android, "CPU", expectedCPU);

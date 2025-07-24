@@ -16,7 +16,7 @@ namespace uPiper.Core.Performance
     {
         private readonly Dictionary<string, ProfileData> _profileData = new Dictionary<string, ProfileData>();
         private readonly Stopwatch _stopwatch = new Stopwatch();
-        
+
         public class ProfileData
         {
             public long TotalTime { get; set; }
@@ -25,41 +25,41 @@ namespace uPiper.Core.Performance
             public long MaxTime { get; set; }
             public long MemoryBefore { get; set; }
             public long MemoryAfter { get; set; }
-            
+
             public double AverageTime => CallCount > 0 ? (double)TotalTime / CallCount : 0;
             public long MemoryDelta => MemoryAfter - MemoryBefore;
         }
-        
+
         public class ProfileScope : IDisposable
         {
             private readonly AndroidPerformanceProfiler _profiler;
             private readonly string _name;
             private readonly long _startTime;
             private readonly long _startMemory;
-            
+
             public ProfileScope(AndroidPerformanceProfiler profiler, string name)
             {
                 _profiler = profiler;
                 _name = name;
                 _startTime = Stopwatch.GetTimestamp();
                 _startMemory = GC.GetTotalMemory(false);
-                
+
                 // Unity Profilerにも記録
                 Profiler.BeginSample($"[uPiper] {name}");
             }
-            
+
             public void Dispose()
             {
                 Profiler.EndSample();
-                
+
                 var endTime = Stopwatch.GetTimestamp();
                 var endMemory = GC.GetTotalMemory(false);
                 var elapsedMs = (endTime - _startTime) * 1000 / Stopwatch.Frequency;
-                
+
                 _profiler.RecordProfile(_name, elapsedMs, _startMemory, endMemory);
             }
         }
-        
+
         /// <summary>
         /// プロファイリングスコープを開始
         /// </summary>
@@ -67,7 +67,7 @@ namespace uPiper.Core.Performance
         {
             return new ProfileScope(this, name);
         }
-        
+
         /// <summary>
         /// プロファイルデータを記録
         /// </summary>
@@ -78,7 +78,7 @@ namespace uPiper.Core.Performance
                 data = new ProfileData();
                 _profileData[name] = data;
             }
-            
+
             data.TotalTime += elapsedMs;
             data.CallCount++;
             data.MinTime = Math.Min(data.MinTime, elapsedMs);
@@ -86,7 +86,7 @@ namespace uPiper.Core.Performance
             data.MemoryBefore = memoryBefore;
             data.MemoryAfter = memoryAfter;
         }
-        
+
         /// <summary>
         /// システム情報を取得
         /// </summary>
@@ -101,8 +101,8 @@ namespace uPiper.Core.Performance
             sb.AppendLine($"CPU Frequency: {SystemInfo.processorFrequency} MHz");
             sb.AppendLine($"System Memory: {SystemInfo.systemMemorySize} MB");
             sb.AppendLine($"Graphics Memory: {SystemInfo.graphicsMemorySize} MB");
-            
-            #if UNITY_ANDROID && !UNITY_EDITOR
+
+#if UNITY_ANDROID && !UNITY_EDITOR
             // Android固有の情報
             using (var activityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
             using (var activity = activityClass.GetStatic<AndroidJavaObject>("currentActivity"))
@@ -119,11 +119,11 @@ namespace uPiper.Core.Performance
                 sb.AppendLine($"JVM Used Memory: {usedMemory / 1024 / 1024} MB");
                 sb.AppendLine($"JVM Free Memory: {freeMemory / 1024 / 1024} MB");
             }
-            #endif
-            
+#endif
+
             return sb.ToString();
         }
-        
+
         /// <summary>
         /// プロファイル結果をレポート
         /// </summary>
@@ -133,7 +133,7 @@ namespace uPiper.Core.Performance
             sb.AppendLine("=== Performance Profile Report ===");
             sb.AppendLine($"Generated at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
             sb.AppendLine();
-            
+
             foreach (var kvp in _profileData)
             {
                 var data = kvp.Value;
@@ -146,10 +146,10 @@ namespace uPiper.Core.Performance
                 sb.AppendLine($"  Memory Delta: {data.MemoryDelta / 1024:N0} KB");
                 sb.AppendLine();
             }
-            
+
             return sb.ToString();
         }
-        
+
         /// <summary>
         /// プロファイルデータをクリア
         /// </summary>
@@ -157,7 +157,7 @@ namespace uPiper.Core.Performance
         {
             _profileData.Clear();
         }
-        
+
         /// <summary>
         /// メモリ使用量を測定
         /// </summary>
@@ -165,8 +165,8 @@ namespace uPiper.Core.Performance
         {
             long gcMemory = GC.GetTotalMemory(false);
             PiperLogger.LogInfo($"[Memory {tag}] GC: {gcMemory / 1024 / 1024:F2} MB");
-            
-            #if UNITY_ANDROID && !UNITY_EDITOR
+
+#if UNITY_ANDROID && !UNITY_EDITOR
             using (var runtimeClass = new AndroidJavaClass("java.lang.Runtime"))
             using (var runtime = runtimeClass.CallStatic<AndroidJavaObject>("getRuntime"))
             {
@@ -176,7 +176,7 @@ namespace uPiper.Core.Performance
                 
                 PiperLogger.LogInfo($"[Memory {tag}] JVM Used: {usedMemory / 1024 / 1024:F2} MB, Free: {freeMemory / 1024 / 1024:F2} MB");
             }
-            #endif
+#endif
         }
     }
 }
