@@ -40,7 +40,7 @@ jobs:
     - name: Get changed files
       if: github.event_name == 'pull_request' && github.event.inputs.check_all != 'true'
       id: changed-files
-      uses: tj-actions/changed-files@v44
+      uses: tj-actions/changed-files@v46
       with:
         files: |
           **/*.cs
