@@ -225,16 +225,20 @@ jobs:
             exit 0
           fi
           
-          # Build using build_android.sh
-          if [ -f build_android.sh ]; then
+          # Build using simplified script for CI/CD
+          if [ -f build_android_simple.sh ]; then
+            echo \"Using simplified Android build script for CI/CD\"
+            export TARGET_ABI=${{ matrix.abi }}
+            ./build_android_simple.sh
+          elif [ -f build_android.sh ]; then
             echo \"Found build_android.sh, modifying for single ABI\"
             # Modify to build only this ABI
             sed -i 's/ABIS=.*/ABIS=(\"${{ matrix.abi }}\")/' build_android.sh
             ./build_android.sh
           else
-            echo \"ERROR: build_android.sh not found in:\"
+            echo \"ERROR: No Android build script found in:\"
             pwd
-            ls -la
+            ls -la *.sh
             exit 1
           fi
         "
