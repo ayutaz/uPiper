@@ -113,8 +113,8 @@ jobs:
         androidKeystorePass: ''
         androidKeyaliasName: ''
         androidKeyaliasPass: ''
-        # buildMethod: UnityBuilderAction.BuildScript.Build  # Removed - causing licensing issues
-        # customParameters: ${{ github.event.inputs.useIL2CPP == 'true' && '-scriptingBackend IL2CPP' || '-scriptingBackend Mono2x' }}  # Removed - causing licensing issues
+        buildMethod: UnityBuilderAction.BuildScript.Build
+        customParameters: ${{ github.event.inputs.useIL2CPP == 'true' && '-scriptingBackend IL2CPP' || '-scriptingBackend Mono2x' }}
         
     # Unity Builder を使用してビルド (Non-Android)
     - name: Build Unity project (Non-Android)
@@ -129,8 +129,8 @@ jobs:
         targetPlatform: ${{ matrix.targetPlatform }}
         buildName: uPiper${{ github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
         buildsPath: build
-        # buildMethod: UnityBuilderAction.BuildScript.Build  # Removed - causing licensing issues
-        # customParameters: ${{ github.event.inputs.useIL2CPP == 'true' && '-scriptingBackend IL2CPP' || '-scriptingBackend Mono2x' }}  # Removed - causing licensing issues
+        buildMethod: UnityBuilderAction.BuildScript.Build
+        customParameters: ${{ github.event.inputs.useIL2CPP == 'true' && '-scriptingBackend IL2CPP' || '-scriptingBackend Mono2x' }}
         
     # ビルド成果物をアップロード
     - name: Upload build artifacts
