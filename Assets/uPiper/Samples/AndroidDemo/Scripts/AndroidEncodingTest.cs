@@ -36,7 +36,7 @@ namespace uPiper.Samples.AndroidDemo
             if (displayText == null) return;
 
             string testText = inputField != null ? inputField.text : "こんにちは";
-            
+
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"Original text: {testText}");
             sb.AppendLine($"Length: {testText.Length}");
@@ -77,7 +77,7 @@ namespace uPiper.Samples.AndroidDemo
             sb.AppendLine($"  System language: {Application.systemLanguage}");
 
             displayText.text = sb.ToString();
-            
+
             // Also log to console
             Debug.Log($"[AndroidEncodingTest]\n{sb}");
         }

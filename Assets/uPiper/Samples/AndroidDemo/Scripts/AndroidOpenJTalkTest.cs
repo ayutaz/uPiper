@@ -43,7 +43,7 @@ namespace uPiper.Samples.AndroidDemo
 
             // Test 2: Try to create OpenJTalkPhonemizer
             OpenJTalkPhonemizer phonemizer = null;
-            
+
             try
             {
                 UpdateStatus("Creating OpenJTalkPhonemizer...");
@@ -55,18 +55,18 @@ namespace uPiper.Samples.AndroidDemo
                 UpdateStatus($"✗ Error creating phonemizer: {e.Message}");
                 Debug.LogError($"[AndroidOpenJTalkTest] Creation error: {e}");
             }
-            
+
             if (phonemizer != null)
             {
                 yield return new WaitForSeconds(0.5f);
-                
+
                 // Test 3: Try to phonemize simple text
                 try
                 {
                     UpdateStatus("Testing phonemization...");
                     string testText = "こんにちは";
                     UpdateStatus($"Input text: {testText}");
-                    
+
                     var result = phonemizer.Phonemize(testText);
                     if (result != null)
                     {
@@ -82,22 +82,22 @@ namespace uPiper.Samples.AndroidDemo
                 {
                     UpdateStatus($"✗ Phonemization error: {e.Message}");
                     UpdateStatus("Checking library availability...");
-                    
+
                     // Additional debug info
-                    #if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR
                     UpdateStatus("Dictionary path: " + uPiper.Core.Platform.AndroidPathResolver.GetOpenJTalkDictionaryPath());
-                    #endif
+#endif
                 }
-                
+
                 phonemizer.Dispose();
             }
 
             // Test 5: Test PiperTTS
             yield return new WaitForSeconds(1f);
             UpdateStatus("\nTesting PiperTTS...");
-            
+
             PiperTTS piperTTS = null;
-            
+
             try
             {
                 var config = new PiperConfig();
@@ -109,34 +109,34 @@ namespace uPiper.Samples.AndroidDemo
                 UpdateStatus($"✗ PiperTTS creation error: {e.Message}");
                 Debug.LogError($"[AndroidOpenJTalkTest] PiperTTS creation error: {e}");
             }
-            
+
             if (piperTTS != null)
             {
                 UpdateStatus("Waiting for PiperTTS initialization...");
                 float timeout = 5f;
                 float elapsed = 0f;
-                
+
                 while (!piperTTS.IsInitialized && elapsed < timeout)
                 {
                     yield return new WaitForSeconds(0.1f);
                     elapsed += 0.1f;
                 }
-                
+
                 if (piperTTS.IsInitialized)
                 {
                     UpdateStatus("✓ PiperTTS initialized");
-                    
+
                     // Try to generate audio
                     try
                     {
                         string testText = "テスト";
                         UpdateStatus($"Generating audio for: {testText}");
-                        
+
                         var audioClip = piperTTS.GenerateAudio(testText);
                         if (audioClip != null)
                         {
                             UpdateStatus($"✓ Audio generated: {audioClip.length}s");
-                            
+
                             if (audioSource != null)
                             {
                                 audioSource.clip = audioClip;
@@ -158,7 +158,7 @@ namespace uPiper.Samples.AndroidDemo
                 {
                     UpdateStatus("✗ PiperTTS initialization timeout");
                 }
-                
+
                 piperTTS.Dispose();
             }
 

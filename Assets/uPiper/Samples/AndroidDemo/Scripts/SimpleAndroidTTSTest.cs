@@ -28,12 +28,12 @@ namespace uPiper.Samples.AndroidDemo
             AddLog("=== Simple Android TTS Test ===");
             AddLog($"Platform: {Application.platform}");
             AddLog($"System Language: {Application.systemLanguage}");
-            
+
             // Test basic text
             string testText = "こんにちは";
             AddLog($"Test text: {testText}");
             AddLog($"Text length: {testText.Length}");
-            
+
             // Check if text contains expected characters
             bool hasHiragana = false;
             foreach (char c in testText)
@@ -55,10 +55,10 @@ namespace uPiper.Samples.AndroidDemo
         private IEnumerator TestCoroutine()
         {
             AddLog("\n--- Starting Test ---");
-            
+
             // Step 1: Test dictionary path
             AddLog("\n1. Testing dictionary path...");
-            
+
 #if UNITY_ANDROID && !UNITY_EDITOR
             try
             {
@@ -99,20 +99,20 @@ namespace uPiper.Samples.AndroidDemo
 #endif
 
             yield return new WaitForSeconds(1f);
-            
+
             // Step 2: Test OpenJTalk initialization
             AddLog("\n2. Testing OpenJTalk...");
-            
+
             OpenJTalkPhonemizer phonemizer = null;
             try
             {
                 phonemizer = new OpenJTalkPhonemizer();
                 AddLog("✓ OpenJTalkPhonemizer created");
-                
+
                 // Test phonemization
                 string testText = "テスト";
                 AddLog($"Testing phonemization of: {testText}");
-                
+
                 var result = phonemizer.Phonemize(testText);
                 if (result != null && result.Phonemes != null)
                 {
@@ -134,15 +134,15 @@ namespace uPiper.Samples.AndroidDemo
                     phonemizer.Dispose();
                 }
             }
-            
+
             yield return new WaitForSeconds(1f);
-            
+
             // Step 3: Test PiperTTS
             AddLog("\n3. Testing PiperTTS...");
-            
+
             PiperTTS piperTTS = null;
             bool initSuccess = false;
-            
+
             try
             {
                 var config = new PiperConfig();
@@ -155,7 +155,7 @@ namespace uPiper.Samples.AndroidDemo
                 AddLog($"✗ PiperTTS creation error: {e.Message}");
                 AddLog($"Stack trace: {e.StackTrace}");
             }
-            
+
             if (initSuccess && piperTTS != null)
             {
                 // Wait for initialization
@@ -166,22 +166,22 @@ namespace uPiper.Samples.AndroidDemo
                     yield return new WaitForSeconds(0.1f);
                     elapsed += 0.1f;
                 }
-                
+
                 try
                 {
                     if (piperTTS.IsInitialized)
                     {
                         AddLog("✓ PiperTTS initialized");
-                        
+
                         // Generate audio
                         string testText = "こんにちは";
                         AddLog($"Generating audio for: {testText}");
-                        
+
                         var audioClip = piperTTS.GenerateAudio(testText);
                         if (audioClip != null)
                         {
                             AddLog($"✓ Audio generated: {audioClip.length:F2}s, {audioClip.samples} samples");
-                            
+
                             if (audioSource != null)
                             {
                                 audioSource.clip = audioClip;
@@ -212,7 +212,7 @@ namespace uPiper.Samples.AndroidDemo
                     }
                 }
             }
-            
+
             AddLog("\n--- Test Complete ---");
         }
 
@@ -220,7 +220,7 @@ namespace uPiper.Samples.AndroidDemo
         {
             logContent += message + "\n";
             Debug.Log($"[SimpleAndroidTTSTest] {message}");
-            
+
             if (logText != null)
             {
                 logText.text = logContent;

@@ -33,7 +33,8 @@ namespace uPiper.Samples.AndroidDemo
         [SerializeField] private AudioSource audioSource;
 
         [Header("Test Sentences")]
-        [SerializeField] private string[] testSentences = new string[]
+        [SerializeField]
+        private string[] testSentences = new string[]
         {
             "こんにちは、Androidでのテストです。",
             "本日は晴天なり。",
@@ -48,7 +49,7 @@ namespace uPiper.Samples.AndroidDemo
         private void Start()
         {
             StartCoroutine(InitializeAsync());
-            
+
             // Setup UI
             if (speakButton != null)
             {
@@ -110,7 +111,7 @@ namespace uPiper.Samples.AndroidDemo
             {
                 isInitialized = true;
                 UpdateStatus("Ready to speak!");
-                
+
                 if (speakButton != null)
                     speakButton.interactable = true;
 
@@ -143,7 +144,7 @@ namespace uPiper.Samples.AndroidDemo
         {
             isSpeaking = true;
             UpdateStatus("Generating speech...");
-            
+
             if (speakButton != null)
                 speakButton.interactable = false;
 
