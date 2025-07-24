@@ -73,7 +73,7 @@ namespace uPiper.Tests.Runtime.Core.AudioGeneration
         }
 
         [UnityTest]
-        public async Task InferenceAudioGenerator_HasActualBackendTypeProperty()
+        public System.Collections.IEnumerator InferenceAudioGenerator_HasActualBackendTypeProperty()
         {
             var generator = new InferenceAudioGenerator();
 
@@ -84,7 +84,7 @@ namespace uPiper.Tests.Runtime.Core.AudioGeneration
             // This just verifies the property exists and is accessible
 
             generator.Dispose();
-            await Task.Yield();
+            yield return null;
         }
     }
 }
