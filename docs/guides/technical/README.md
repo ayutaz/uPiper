@@ -4,7 +4,7 @@
 
 ## ドキュメント一覧
 
-### 1. [IL2CPP.md](IL2CPP.md)
+### 1. [il2cpp.md](il2cpp.md)
 **IL2CPPサポート総合ガイド**
 - IL2CPPの概要と利点・制約
 - ビルド設定（自動/手動）
@@ -14,7 +14,7 @@
 - 最適化のヒント
 - パフォーマンス期待値
 
-### 2. [IL2CPP-COMPATIBILITY.md](IL2CPP-COMPATIBILITY.md)
+### 2. [il2cpp-compatibility.md](il2cpp-compatibility.md)
 **IL2CPP互換性レポート**
 - P/Invoke実装の検証結果
 - マーシャリング属性の分析
@@ -23,15 +23,7 @@
 - CI/CD環境での制限事項
 - 実際のコード分析結果
 
-### 3. [CI-CD-SETUP.md](CI-CD-SETUP.md)
-**CI/CD設定ガイド**
-- GitHub Actionsワークフロー設定
-- ブランチ保護ルール
-- 自動テストの構成
-- ビルドの最適化戦略
-- リリース自動化
-
-### 4. [GPU-INFERENCE-GUIDE.md](GPU-INFERENCE-GUIDE.md)
+### 3. [gpu-inference.md](gpu-inference.md)
 **GPU推論ガイド**
 - バックエンドタイプの選択
 - プラットフォーム別のGPU設定
@@ -41,26 +33,21 @@
 ## ドキュメントの使い方
 
 ### 新規開発者向け
-1. まず[IL2CPP.md](IL2CPP.md)でIL2CPPの基本を理解
-2. [CI-CD-SETUP.md](CI-CD-SETUP.md)で開発環境のセットアップ
-3. [GPU-INFERENCE-GUIDE.md](GPU-INFERENCE-GUIDE.md)でパフォーマンス最適化
+1. まず[il2cpp.md](il2cpp.md)でIL2CPPの基本を理解
+2. [gpu-inference.md](gpu-inference.md)でパフォーマンス最適化
+3. CI/CD設定については[CI/CDガイド](../ci-cd/)を参照
 
 ### IL2CPP対応作業
-1. [IL2CPP.md](IL2CPP.md)で設定方法を確認
-2. [IL2CPP-COMPATIBILITY.md](IL2CPP-COMPATIBILITY.md)で既知の問題を確認
-3. ビルド設定は[IL2CPP.md](IL2CPP.md)の「ビルド手順」セクションを参照
-
-### CI/CD設定
-1. [CI-CD-SETUP.md](CI-CD-SETUP.md)でワークフローの全体像を把握
-2. IL2CPP特有のCI制限は[IL2CPP-COMPATIBILITY.md](IL2CPP-COMPATIBILITY.md)を参照
+1. [il2cpp.md](il2cpp.md)で設定方法を確認
+2. [il2cpp-compatibility.md](il2cpp-compatibility.md)で既知の問題を確認
+3. ビルド設定は[il2cpp.md](il2cpp.md)の「ビルド手順」セクションを参照
 
 ## メンテナンス指針
 
 ### 更新頻度
-- **IL2CPP.md**: Unity/uPiperの大きなアップデート時
-- **IL2CPP-COMPATIBILITY.md**: 新しいプラットフォームテスト時、Unity更新時
-- **CI-CD-SETUP.md**: ワークフロー変更時
-- **GPU-INFERENCE-GUIDE.md**: Unity AI Inference Engine更新時
+- **il2cpp.md**: Unity/uPiperの大きなアップデート時
+- **il2cpp-compatibility.md**: 新しいプラットフォームテスト時、Unity更新時
+- **gpu-inference.md**: Unity AI Inference Engine更新時
 
 ### ドキュメント作成ルール
 1. 実装前に設計ドキュメントを作成しない（コードが正）

@@ -8,28 +8,31 @@
 
 ### 📋 プロジェクト管理
 - [ROADMAP.md](./ROADMAP.md) - 実装ロードマップとフェーズ管理
-- [progress/](./progress/) - 進捗管理ドキュメント
-
-### 🏗️ アーキテクチャ
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - システムアーキテクチャ設計
-- [technical/](./technical/) - 技術仕様書
-  - `GPU-INFERENCE-GUIDE.md` - GPU推論ガイド
-  - `IL2CPP-COMPATIBILITY.md` - IL2CPP互換性ガイド
-  - `IL2CPP-BUILD-SETTINGS.md` - IL2CPPビルド設定
-  - `IL2CPP-PERFORMANCE-REPORT.md` - IL2CPPパフォーマンスレポート
 
-### 🔧 インフラ・運用
-- [CI-CD.md](./CI-CD.md) - GitHub Actionsワークフローとビルドプロセス
-- [ci-cd/](./ci-cd/) - CI/CD詳細ドキュメント
-  - `CI-CD-SETUP.md` - CI/CDセットアップガイド
-  - `IL2CPP-CI-SOLUTIONS.md` - IL2CPP CI/CDソリューション
+### 📚 ガイド
+- [guides/](./guides/) - 開発者向けガイド集
+  - [ci-cd/](./guides/ci-cd/) - CI/CD設定とワークフロー
+    - `README.md` - CI/CD総合ガイド
+    - `il2cpp-solutions.md` - IL2CPP特有のCI/CDソリューション
+  - [technical/](./guides/technical/) - 技術仕様
+    - `README.md` - 技術ドキュメントの概要
+    - `il2cpp.md` - IL2CPPサポート総合ガイド
+    - `il2cpp-compatibility.md` - IL2CPP互換性レポート
+    - `gpu-inference.md` - GPU推論ガイド
+  - [implementation/](./guides/implementation/) - 実装ガイド
+    - [android/](./guides/implementation/android/) - Android固有の実装
+      - `implementation-guide.md` - Android実装ガイド
+      - `build-settings.md` - Androidビルド設定
+      - `technical-report.md` - Android技術調査報告
+      - `performance-optimization.md` - Androidパフォーマンス最適化
+    - [phase-completion-reports/](./guides/implementation/phase-completion-reports/) - フェーズ完了報告
+      - `phase2-1-completion.md` - Phase 2.1完了報告
+      - `phase2-2-android-native-build-completion.md` - Phase 2.2完了報告
 
-### 📝 実装ガイド
-- [implementation/](./implementation/) - 実装関連ドキュメント
-  - `phase2-android-implementation-guide-ja.md` - Phase 2 Android実装ガイド
-  - `phase2-android-technical-report.md` - Phase 2 Android技術調査報告
-  - `phase2-android-build-settings.md` - Android ビルド設定ガイド
-  - `completion-reports/` - 各フェーズの完了報告書
+### 📦 アーカイブ
+- [archives/](./archives/) - 過去のドキュメント（参考用）
+  - `phase2-progress.md` - Phase 2進捗管理（完了済み）
 
 ### 🎮 サンプルドキュメント
 - **Streaming TTS**: リアルタイムストリーミング音声生成
@@ -38,6 +41,21 @@
 
 各サンプルのREADMEは`Assets/uPiper/Samples~/`以下の各ディレクトリに配置されています。
 
+## クイックスタート
+
+### 新規開発者向け
+1. [ARCHITECTURE.md](./ARCHITECTURE.md)でシステム全体像を把握
+2. [guides/technical/](./guides/technical/)で技術仕様を確認
+3. [guides/ci-cd/](./guides/ci-cd/)でCI/CD環境をセットアップ
+
+### IL2CPP対応作業
+1. [guides/technical/il2cpp.md](./guides/technical/il2cpp.md)で設定方法を確認
+2. [guides/technical/il2cpp-compatibility.md](./guides/technical/il2cpp-compatibility.md)で既知の問題を確認
+3. [guides/ci-cd/il2cpp-solutions.md](./guides/ci-cd/il2cpp-solutions.md)でCI/CD特有の対応を確認
+
+### Android開発
+1. [guides/implementation/android/](./guides/implementation/android/)のドキュメントを順に確認
+2. ビルド設定、実装ガイド、最適化の順に進める
 
 ## 関連リポジトリ
 
@@ -48,12 +66,13 @@
 
 1. **uPiper固有の情報**はこのディレクトリで管理
 2. **一般的なUnity統合情報**はpiperリポジトリで管理
-3. **進捗・タスク管理**はuPiperで一元管理
-4. **技術仕様・実装詳細**はuPiperで管理
+3. **技術仕様・実装詳細**はuPiperで管理
+4. **ドキュメントは実装後に作成**（コードが正）
 
 ## 貢献方法
 
 ドキュメントの改善や追加は歓迎します。PRを作成する際は：
 1. 適切なディレクトリに配置
-2. README.mdのインデックスを更新
+2. 関連するREADME.mdのインデックスを更新
 3. Markdownフォーマットに従う
+4. 実装に基づいた正確な情報を記載
