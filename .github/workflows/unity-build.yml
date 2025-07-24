@@ -69,20 +69,70 @@ jobs:
       with:
         workflow: build-openjtalk-native.yml
         workflow_conclusion: success
-        name: |
-          openjtalk-android-arm64-v8a
-          openjtalk-android-armeabi-v7a
-          openjtalk-android-x86
-          openjtalk-android-x86_64
-        path: native-android-libs
+        name: openjtalk-android-arm64-v8a
+        path: native-android-libs/arm64-v8a
+        
+    - name: Download Android Native Libraries (armeabi-v7a)
+      if: matrix.targetPlatform == 'Android'
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        workflow: build-openjtalk-native.yml
+        workflow_conclusion: success
+        name: openjtalk-android-armeabi-v7a
+        path: native-android-libs/armeabi-v7a
+        
+    - name: Download Android Native Libraries (x86)
+      if: matrix.targetPlatform == 'Android'
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        workflow: build-openjtalk-native.yml
+        workflow_conclusion: success
+        name: openjtalk-android-x86
+        path: native-android-libs/x86
+        
+    - name: Download Android Native Libraries (x86_64)
+      if: matrix.targetPlatform == 'Android'
+      uses: dawidd6/action-download-artifact@v3
+      with:
+        workflow: build-openjtalk-native.yml
+        workflow_conclusion: success
+        name: openjtalk-android-x86_64
+        path: native-android-libs/x86_64
         
     # Place Android native libraries in correct location
     - name: Setup Android Native Libraries
       if: matrix.targetPlatform == 'Android'
       run: |
-        mkdir -p Assets/uPiper/Plugins/Android/libs
-        cp -r native-android-libs/*/android/* Assets/uPiper/Plugins/Android/libs/ || true
+        mkdir -p Assets/uPiper/Plugins/Android/libs/arm64-v8a
+        mkdir -p Assets/uPiper/Plugins/Android/libs/armeabi-v7a
+        mkdir -p Assets/uPiper/Plugins/Android/libs/x86
+        mkdir -p Assets/uPiper/Plugins/Android/libs/x86_64
+        
+        # Debug: Show downloaded files
+        echo "=== Downloaded artifacts structure ==="
+        find native-android-libs -type f -name "*.so" || echo "No .so files found"
+        
+        # Copy libraries from each ABI directory
+        if [ -d "native-android-libs/arm64-v8a/android/arm64-v8a" ]; then
+          cp -v native-android-libs/arm64-v8a/android/arm64-v8a/*.so Assets/uPiper/Plugins/Android/libs/arm64-v8a/
+        fi
+        
+        if [ -d "native-android-libs/armeabi-v7a/android/armeabi-v7a" ]; then
+          cp -v native-android-libs/armeabi-v7a/android/armeabi-v7a/*.so Assets/uPiper/Plugins/Android/libs/armeabi-v7a/
+        fi
+        
+        if [ -d "native-android-libs/x86/android/x86" ]; then
+          cp -v native-android-libs/x86/android/x86/*.so Assets/uPiper/Plugins/Android/libs/x86/
+        fi
+        
+        if [ -d "native-android-libs/x86_64/android/x86_64" ]; then
+          cp -v native-android-libs/x86_64/android/x86_64/*.so Assets/uPiper/Plugins/Android/libs/x86_64/
+        fi
+        
+        # Show final structure
+        echo "=== Final library structure ==="
         ls -la Assets/uPiper/Plugins/Android/libs/
+        find Assets/uPiper/Plugins/Android/libs -name "*.so" -exec ls -la {} \;
         
     # Unity Builder を使用してビルド (Android)
     - name: Build Unity project (Android)
