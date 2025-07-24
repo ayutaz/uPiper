@@ -51,8 +51,14 @@ jobs:
           
           # Build only this ABI
           export TARGET_ABI=${{ matrix.abi }}
-          sed -i 's/ABIS=.*/ABIS=(\"${{ matrix.abi }}\")/' build_dependencies_android.sh
-          ./build_dependencies_android.sh
+          # Use build_android.sh instead
+          if [ -f build_android.sh ]; then
+            sed -i 's/ABIS=.*/ABIS=(\"${{ matrix.abi }}\")/' build_android.sh
+            ./build_android.sh
+          else
+            echo "ERROR: build_android.sh not found"
+            exit 1
+          fi
           
           # Build wrapper
           mkdir -p build_android_${{ matrix.abi }}
