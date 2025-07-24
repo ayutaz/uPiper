@@ -106,7 +106,7 @@ jobs:
       with:
         unityVersion: 6000.0.35f1
         targetPlatform: ${{ matrix.targetPlatform }}
-        buildName: uPiper${{ github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
+        buildName: uPiper${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
         buildsPath: build
         androidAppBundle: false
         androidKeystoreName: ''
@@ -114,7 +114,7 @@ jobs:
         androidKeyaliasName: ''
         androidKeyaliasPass: ''
         buildMethod: UnityBuilderAction.BuildScript.Build
-        customParameters: ${{ github.event.inputs.useIL2CPP == 'true' && '-scriptingBackend IL2CPP' || '-scriptingBackend Mono2x' }}
+        customParameters: -scriptingBackend ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && 'IL2CPP' || 'Mono2x' }}
         
     # Unity Builder を使用してビルド (Non-Android)
     - name: Build Unity project (Non-Android)
@@ -127,10 +127,10 @@ jobs:
       with:
         unityVersion: 6000.0.35f1
         targetPlatform: ${{ matrix.targetPlatform }}
-        buildName: uPiper${{ github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
+        buildName: uPiper${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
         buildsPath: build
         buildMethod: UnityBuilderAction.BuildScript.Build
-        customParameters: ${{ github.event.inputs.useIL2CPP == 'true' && '-scriptingBackend IL2CPP' || '-scriptingBackend Mono2x' }}
+        customParameters: -scriptingBackend ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && 'IL2CPP' || 'Mono2x' }}
         
     # ビルド成果物をアップロード
     - name: Upload build artifacts
