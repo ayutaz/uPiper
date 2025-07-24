@@ -19,7 +19,6 @@ namespace uPiper.Core.Platform
         private static readonly string DICT_ZIP_NAME = "naist_jdic.zip";
         private static readonly string DICT_EXTRACTED_MARKER = ".extracted";
 
-        private static Task<bool> _extractionTask;
         private static readonly object _lock = new object();
 
         /// <summary>
@@ -28,13 +27,7 @@ namespace uPiper.Core.Platform
         public static void PreloadDictionaryAsync()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
-            lock (_lock)
-            {
-                if (_extractionTask == null)
-                {
-                    _extractionTask = Task.Run(async () => await ExtractDictionaryIfNeededAsync());
-                }
-            }
+            Task.Run(async () => await ExtractDictionaryIfNeededAsync());
 #endif
         }
 
@@ -57,21 +50,13 @@ namespace uPiper.Core.Platform
                 }
             }
             
-            // 展開タスクが実行中なら完了を待つ
-            if (_extractionTask != null)
-            {
-                await _extractionTask;
-            }
-            else
-            {
-                // まだ開始していない場合は同期的に展開
-                await ExtractDictionaryIfNeededAsync();
-            }
+            // まだ展開されていない場合は展開
+            await ExtractDictionaryIfNeededAsync();
             
             return dictPath;
 #else
             // 非Android環境ではStreamingAssetsから直接パスを返す
-            return Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
+            return await Task.FromResult(Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11"));
 #endif
         }
 
@@ -230,11 +215,6 @@ namespace uPiper.Core.Platform
                 }
             }
 
-            // 展開タスクをリセット
-            lock (_lock)
-            {
-                _extractionTask = null;
-            }
         }
     }
 }
