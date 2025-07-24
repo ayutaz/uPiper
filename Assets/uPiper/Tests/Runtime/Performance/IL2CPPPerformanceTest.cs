@@ -130,7 +130,7 @@ namespace uPiper.Tests.Runtime.Performance
             var insertThreshold = Application.isBatchMode ? 200 : 100;
             var lookupThreshold = Application.isBatchMode ? 100 : 50;
             var removeThreshold = Application.isBatchMode ? 100 : 50;
-            
+
             Assert.Less(insertTime, insertThreshold, $"Dictionary insertion should complete within {insertThreshold}ms (actual: {insertTime}ms)");
             Assert.Less(lookupTime, lookupThreshold, $"Dictionary lookup should complete within {lookupThreshold}ms (actual: {lookupTime}ms)");
             Assert.Less(removeTime, removeThreshold, $"Dictionary removal should complete within {removeThreshold}ms (actual: {removeTime}ms)");
