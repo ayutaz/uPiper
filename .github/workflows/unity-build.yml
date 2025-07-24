@@ -46,7 +46,7 @@ jobs:
           - StandaloneWindows64
           - StandaloneOSX
           - StandaloneLinux64
-          - Android
+          # - Android  # Temporarily disabled due to Unity licensing issues
     
     steps:
     - uses: actions/checkout@v4
