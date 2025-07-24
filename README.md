@@ -113,7 +113,7 @@ var config = new PiperConfig
 
 ### リリース状況
 
-**v1.0.0-alpha.1** - Phase 1 完了（2025年1月23日）
+**v0.1.0** - Phase 1 完了（2025年1月23日）
 - ✅ Core API実装とテスト（250+テスト）
 - ✅ OpenJTalk統合による高精度日本語音素化
 - ✅ Unity.InferenceEngineによるONNX推論
