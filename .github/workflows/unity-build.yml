@@ -62,9 +62,33 @@ jobs:
           Library-${{ matrix.targetPlatform }}-
           Library-
           
-    # Download native libraries for Android build
-    - name: Download Android Native Libraries
+    # Check if Android native libraries exist locally
+    - name: Check Android Native Libraries
       if: matrix.targetPlatform == 'Android'
+      run: |
+        echo "=== Checking for existing Android native libraries ==="
+        LIBS_EXIST=true
+        for abi in arm64-v8a armeabi-v7a x86 x86_64; do
+          if [ ! -f "Assets/uPiper/Plugins/Android/libs/$abi/libopenjtalk_wrapper.so" ]; then
+            echo "Missing library for $abi"
+            LIBS_EXIST=false
+          else
+            echo "Found library for $abi"
+          fi
+        done
+        
+        if [ "$LIBS_EXIST" = "true" ]; then
+          echo "All Android native libraries found locally"
+          echo "SKIP_ANDROID_DOWNLOAD=true" >> $GITHUB_ENV
+        else
+          echo "Some Android native libraries missing, will attempt download"
+          echo "SKIP_ANDROID_DOWNLOAD=false" >> $GITHUB_ENV
+        fi
+        
+    # Download native libraries for Android build (if needed)
+    - name: Download Android Native Libraries
+      if: matrix.targetPlatform == 'Android' && env.SKIP_ANDROID_DOWNLOAD == 'false'
+      continue-on-error: true
       uses: dawidd6/action-download-artifact@v3
       with:
         workflow: build-openjtalk-native.yml
@@ -75,7 +99,8 @@ jobs:
         if_no_artifact_found: warn
         
     - name: Download Android Native Libraries (armeabi-v7a)
-      if: matrix.targetPlatform == 'Android'
+      if: matrix.targetPlatform == 'Android' && env.SKIP_ANDROID_DOWNLOAD == 'false'
+      continue-on-error: true
       uses: dawidd6/action-download-artifact@v3
       with:
         workflow: build-openjtalk-native.yml
@@ -86,7 +111,8 @@ jobs:
         if_no_artifact_found: warn
         
     - name: Download Android Native Libraries (x86)
-      if: matrix.targetPlatform == 'Android'
+      if: matrix.targetPlatform == 'Android' && env.SKIP_ANDROID_DOWNLOAD == 'false'
+      continue-on-error: true
       uses: dawidd6/action-download-artifact@v3
       with:
         workflow: build-openjtalk-native.yml
@@ -97,7 +123,8 @@ jobs:
         if_no_artifact_found: warn
         
     - name: Download Android Native Libraries (x86_64)
-      if: matrix.targetPlatform == 'Android'
+      if: matrix.targetPlatform == 'Android' && env.SKIP_ANDROID_DOWNLOAD == 'false'
+      continue-on-error: true
       uses: dawidd6/action-download-artifact@v3
       with:
         workflow: build-openjtalk-native.yml
@@ -107,9 +134,9 @@ jobs:
         path: native-android-libs/x86_64
         if_no_artifact_found: warn
         
-    # Place Android native libraries in correct location
+    # Place Android native libraries in correct location (if downloaded)
     - name: Setup Android Native Libraries
-      if: matrix.targetPlatform == 'Android'
+      if: matrix.targetPlatform == 'Android' && env.SKIP_ANDROID_DOWNLOAD == 'false'
       run: |
         mkdir -p Assets/uPiper/Plugins/Android/libs/arm64-v8a
         mkdir -p Assets/uPiper/Plugins/Android/libs/armeabi-v7a
@@ -118,29 +145,46 @@ jobs:
         
         # Debug: Show downloaded files
         echo "=== Downloaded artifacts structure ==="
-        find native-android-libs -type f -name "*.so" || echo "No .so files found"
+        find native-android-libs -type f -name "*.so" 2>/dev/null || echo "No .so files found in downloads"
         
         # Copy libraries from each ABI directory
         if [ -d "native-android-libs/arm64-v8a/android/arm64-v8a" ]; then
-          cp -v native-android-libs/arm64-v8a/android/arm64-v8a/*.so Assets/uPiper/Plugins/Android/libs/arm64-v8a/
+          cp -v native-android-libs/arm64-v8a/android/arm64-v8a/*.so Assets/uPiper/Plugins/Android/libs/arm64-v8a/ || true
         fi
         
         if [ -d "native-android-libs/armeabi-v7a/android/armeabi-v7a" ]; then
-          cp -v native-android-libs/armeabi-v7a/android/armeabi-v7a/*.so Assets/uPiper/Plugins/Android/libs/armeabi-v7a/
+          cp -v native-android-libs/armeabi-v7a/android/armeabi-v7a/*.so Assets/uPiper/Plugins/Android/libs/armeabi-v7a/ || true
         fi
         
         if [ -d "native-android-libs/x86/android/x86" ]; then
-          cp -v native-android-libs/x86/android/x86/*.so Assets/uPiper/Plugins/Android/libs/x86/
+          cp -v native-android-libs/x86/android/x86/*.so Assets/uPiper/Plugins/Android/libs/x86/ || true
         fi
         
         if [ -d "native-android-libs/x86_64/android/x86_64" ]; then
-          cp -v native-android-libs/x86_64/android/x86_64/*.so Assets/uPiper/Plugins/Android/libs/x86_64/
+          cp -v native-android-libs/x86_64/android/x86_64/*.so Assets/uPiper/Plugins/Android/libs/x86_64/ || true
         fi
         
-        # Show final structure
+    # Verify Android libraries before build
+    - name: Verify Android Libraries
+      if: matrix.targetPlatform == 'Android'
+      run: |
         echo "=== Final library structure ==="
         ls -la Assets/uPiper/Plugins/Android/libs/
         find Assets/uPiper/Plugins/Android/libs -name "*.so" -exec ls -la {} \;
+        
+        # Check if all required libraries exist
+        MISSING_LIBS=false
+        for abi in arm64-v8a armeabi-v7a x86 x86_64; do
+          if [ ! -f "Assets/uPiper/Plugins/Android/libs/$abi/libopenjtalk_wrapper.so" ]; then
+            echo "ERROR: Missing library for $abi"
+            MISSING_LIBS=true
+          fi
+        done
+        
+        if [ "$MISSING_LIBS" = "true" ]; then
+          echo "WARNING: Some Android native libraries are missing"
+          echo "The build may fail or produce incomplete APK"
+        fi
         
     # Unity Builder を使用してビルド (Android)
     - name: Build Unity project (Android)
