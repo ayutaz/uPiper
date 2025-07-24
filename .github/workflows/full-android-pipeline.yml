@@ -51,12 +51,14 @@ jobs:
           
           # Build only this ABI
           export TARGET_ABI=${{ matrix.abi }}
-          # Use build_android.sh instead
-          if [ -f build_android.sh ]; then
+          # Use simplified script for CI/CD
+          if [ -f build_android_simple.sh ]; then
+            ./build_android_simple.sh
+          elif [ -f build_android.sh ]; then
             sed -i 's/ABIS=.*/ABIS=(\"${{ matrix.abi }}\")/' build_android.sh
             ./build_android.sh
           else
-            echo "ERROR: build_android.sh not found"
+            echo "ERROR: No Android build script found"
             exit 1
           fi
           
