@@ -210,44 +210,33 @@ jobs:
           chmod +x *.sh
           dos2unix *.sh
           
+          # Debug: List files
+          echo '=== Files in workspace ==='
+          ls -la *.sh
+          
           # Fetch dependencies if needed
           if [ ! -d external/open_jtalk-1.11 ]; then
             ./fetch_dependencies.sh
           fi
           
-          # Build dependencies
-          if [ ! -d external/openjtalk_build/android_${{ matrix.abi }} ]; then
-            # Build only for this ABI
-            export TARGET_ABI=${{ matrix.abi }}
-            # Modified build script to build only one ABI
-            # First check if we have pre-built libraries
-            if [ -d output/android/${{ matrix.abi }} ]; then
-              echo "Pre-built libraries found for ${{ matrix.abi }}"
-            else
-            # Use build_android.sh instead
-            if [ -f build_android.sh ]; then
-              sed -i 's/ABIS=.*/ABIS=(\"${{ matrix.abi }}\")/' build_android.sh
-              ./build_android.sh
-            else
-              echo "ERROR: build_android.sh not found"
-              exit 1
-            fi
-            fi
+          # Check if output directory already has the library
+          if [ -f output/android/${{ matrix.abi }}/libopenjtalk_wrapper.so ]; then
+            echo \"Library already exists for ${{ matrix.abi }}\"
+            exit 0
           fi
           
-          # Build wrapper library
-          mkdir -p build_android_${{ matrix.abi }}
-          cd build_android_${{ matrix.abi }}
-          cmake -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake \
-                -DANDROID_ABI=${{ matrix.abi }} \
-                -DANDROID_PLATFORM=android-21 \
-                -DANDROID_STL=c++_shared \
-                -DCMAKE_BUILD_TYPE=Release ..
-          make -j\$(nproc)
-          
-          # Copy output
-          mkdir -p ../output/android/${{ matrix.abi }}
-          cp lib/libopenjtalk_wrapper.so ../output/android/${{ matrix.abi }}/
+          # Build using build_android.sh
+          if [ -f build_android.sh ]; then
+            echo \"Found build_android.sh, modifying for single ABI\"
+            # Modify to build only this ABI
+            sed -i 's/ABIS=.*/ABIS=(\"${{ matrix.abi }}\")/' build_android.sh
+            ./build_android.sh
+          else
+            echo \"ERROR: build_android.sh not found in:\"
+            pwd
+            ls -la
+            exit 1
+          fi
         "
     
     - name: Verify Android Library
