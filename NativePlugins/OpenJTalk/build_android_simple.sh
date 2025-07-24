@@ -41,16 +41,30 @@ if [ ! -d "external/open_jtalk-1.11" ]; then
     fi
 fi
 
-# Check if we need to build dependencies
-if [ ! -d "external/openjtalk_build" ]; then
-    echo "Building OpenJTalk dependencies..."
-    if [ -f build_dependencies_android.sh ]; then
-        ./build_dependencies_android.sh
-    elif [ -f build_dependencies.sh ]; then
-        # Try generic build script
-        ./build_dependencies.sh
-    else
-        echo "WARNING: No dependency build script found, attempting to build anyway..."
+# Check if we need to build dependencies for the target ABI
+if [ ! -z "$TARGET_ABI" ]; then
+    # Check if dependencies exist for this specific ABI
+    if [ ! -d "external/openjtalk_build/android_$TARGET_ABI" ]; then
+        echo "Building OpenJTalk dependencies for $TARGET_ABI..."
+        if [ -f build_dependencies_android.sh ]; then
+            # Build only for the target ABI
+            export ABIS=("$TARGET_ABI")
+            ./build_dependencies_android.sh
+        else
+            echo "ERROR: build_dependencies_android.sh not found"
+            exit 1
+        fi
+    fi
+else
+    # Build all ABIs if no specific target
+    if [ ! -d "external/openjtalk_build" ]; then
+        echo "Building OpenJTalk dependencies for all ABIs..."
+        if [ -f build_dependencies_android.sh ]; then
+            ./build_dependencies_android.sh
+        else
+            echo "ERROR: build_dependencies_android.sh not found"
+            exit 1
+        fi
     fi
 fi
 

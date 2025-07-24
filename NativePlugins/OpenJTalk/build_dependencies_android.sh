@@ -25,7 +25,9 @@ fi
 echo "Using Android NDK at: $ANDROID_NDK_HOME"
 
 # Android ABIs to build for
-ABIS=("arm64-v8a" "armeabi-v7a" "x86" "x86_64")
+if [ -z "$ABIS" ]; then
+    ABIS=("arm64-v8a" "armeabi-v7a" "x86" "x86_64")
+fi
 
 # Ensure dependencies are fetched
 if [ ! -d "external/open_jtalk-1.11" ]; then

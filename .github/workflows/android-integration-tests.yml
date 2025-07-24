@@ -59,7 +59,17 @@ jobs:
         mkdir -p app/src/androidTest/java/com/upiper/test
         
         # Copy native library
-        cp ../native-libs/android/x86_64/libopenjtalk_wrapper.so app/src/main/jniLibs/x86_64/
+        ls -la ../native-libs/ || echo "native-libs directory not found"
+        find ../native-libs -name "*.so" -type f || echo "No .so files found"
+        # Try different possible paths
+        if [ -f ../native-libs/android/x86_64/libopenjtalk_wrapper.so ]; then
+            cp ../native-libs/android/x86_64/libopenjtalk_wrapper.so app/src/main/jniLibs/x86_64/
+        elif [ -f ../native-libs/libopenjtalk_wrapper.so ]; then
+            cp ../native-libs/libopenjtalk_wrapper.so app/src/main/jniLibs/x86_64/
+        else
+            echo "ERROR: Could not find libopenjtalk_wrapper.so"
+            exit 1
+        fi
         
         # Create build.gradle (root)
         cat > build.gradle << 'EOF'
