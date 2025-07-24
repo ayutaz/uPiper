@@ -294,11 +294,17 @@ namespace uPiper.Samples.RealtimeTTS
                         _audioCache[request.text] = audioClip;
 
                         // キャッシュサイズ制限
-                        if (_audioCache.Count > 100)
+                        if (_audioCache.Count > 100 && _audioCache.Count > 0)
                         {
-                            var oldestKey = _audioCache.Keys.First();
-                            Destroy(_audioCache[oldestKey]);
-                            _audioCache.Remove(oldestKey);
+                            var oldestKey = _audioCache.Keys.FirstOrDefault();
+                            if (oldestKey != null)
+                            {
+                                if (_audioCache.TryGetValue(oldestKey, out var clipToRemove))
+                                {
+                                    Destroy(clipToRemove);
+                                }
+                                _audioCache.Remove(oldestKey);
+                            }
                         }
                     }
                 }
@@ -384,7 +390,7 @@ namespace uPiper.Samples.RealtimeTTS
             _speakButton.gameObject.SetActive(true);
         }
 
-        private IEnumerator<WaitForEndOfFrame> FadeOutAndStop(AudioSource audioSource, float fadeTime)
+        private IEnumerator FadeOutAndStop(AudioSource audioSource, float fadeTime)
         {
             float startVolume = audioSource.volume;
             float elapsed = 0;
@@ -400,7 +406,7 @@ namespace uPiper.Samples.RealtimeTTS
             audioSource.volume = 1f;
         }
 
-        private IEnumerator<WaitForEndOfFrame> WaitForPlaybackComplete(AudioSource audioSource)
+        private IEnumerator WaitForPlaybackComplete(AudioSource audioSource)
         {
             while (audioSource.isPlaying)
             {

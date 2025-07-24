@@ -221,12 +221,25 @@ namespace uPiper.Samples.StreamingTTS
                         _chunkText.text = $"生成中: \"{chunk}\"";
 
                         // ストリーミング生成
-                        await foreach (var audioChunk in _tts.StreamAudioAsync(chunk, cancellationToken))
+                        try
                         {
-                            lock (_pendingChunks)
+                            await foreach (var audioChunk in _tts.StreamAudioAsync(chunk, cancellationToken))
                             {
-                                _pendingChunks.Add(audioChunk);
+                                lock (_pendingChunks)
+                                {
+                                    _pendingChunks.Add(audioChunk);
+                                }
                             }
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            // Expected when cancellation is requested
+                            PiperLogger.LogDebug($"[StreamingTTSDemo] Streaming cancelled for chunk: {chunk}");
+                        }
+                        catch (Exception ex)
+                        {
+                            PiperLogger.LogError($"[StreamingTTSDemo] Error during audio streaming: {ex}");
+                            SetStatus($"Streaming error: {ex.Message}", true);
                         }
 
                         Interlocked.Increment(ref _processedChunks);
