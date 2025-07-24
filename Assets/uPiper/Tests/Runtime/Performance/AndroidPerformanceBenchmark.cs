@@ -15,6 +15,7 @@ namespace uPiper.Tests.Runtime.Performance
     /// Androidパフォーマンスベンチマークテスト
     /// 最適化前後のパフォーマンスを比較
     /// </summary>
+#if UNITY_ANDROID
     public class AndroidPerformanceBenchmark
     {
         private OptimizedOpenJTalkPhonemizer _optimizedPhonemizer;
@@ -253,4 +254,5 @@ namespace uPiper.Tests.Runtime.Performance
             UnityEngine.Debug.Log("See performance report for actual values");
         }
     }
+#endif // UNITY_ANDROID
 }
