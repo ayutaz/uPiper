@@ -120,6 +120,18 @@ namespace uPiper.Core
         public int InferenceBatchSize = 1;
 
         /// <summary>
+        /// GPU-specific settings
+        /// </summary>
+        [Tooltip("Settings specific to GPU inference")]
+        public GPUInferenceSettings GPUSettings = new GPUInferenceSettings();
+
+        /// <summary>
+        /// Allow fallback to CPU if GPU fails
+        /// </summary>
+        [Tooltip("Automatically fallback to CPU if GPU initialization fails")]
+        public bool AllowFallbackToCPU = true;
+
+        /// <summary>
         /// Create default configuration
         /// </summary>
         public static PiperConfig CreateDefault()
@@ -228,6 +240,12 @@ namespace uPiper.Core
                     PiperLogger.LogWarning("TargetRMSLevel ({0}dB) is too low, setting to {1}dB", TargetRMSLevel, MinRMSLevel);
                     TargetRMSLevel = MinRMSLevel;
                 }
+            }
+
+            // GPU settings validation
+            if (GPUSettings != null)
+            {
+                GPUSettings.Validate();
             }
 
             PiperLogger.LogInfo("PiperConfig validated successfully");
