@@ -62,23 +62,16 @@ jobs:
             exit 1
           fi
           
-          # Build wrapper
-          mkdir -p build_android_${{ matrix.abi }}
-          cd build_android_${{ matrix.abi }}
-          cmake -DCMAKE_TOOLCHAIN_FILE=/opt/android-ndk/build/cmake/android.toolchain.cmake \
-                -DANDROID_ABI=${{ matrix.abi }} \
-                -DANDROID_PLATFORM=android-21 \
-                -DANDROID_STL=c++_shared \
-                -DCMAKE_BUILD_TYPE=Release ..
-          make -j\$(nproc)
-          
-          # Copy output
-          mkdir -p ../output/android/${{ matrix.abi }}
-          cp lib/libopenjtalk_wrapper.so ../output/android/${{ matrix.abi }}/
+          # The build script already creates the library in output/android/${{ matrix.abi }}
+          # Just verify it exists
+          if [ ! -f output/android/${{ matrix.abi }}/libopenjtalk_wrapper.so ]; then
+            echo "ERROR: Build failed, library not found"
+            exit 1
+          fi
           
           # Optimize size
           /opt/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip \
-            --strip-unneeded ../output/android/${{ matrix.abi }}/libopenjtalk_wrapper.so
+            --strip-unneeded output/android/${{ matrix.abi }}/libopenjtalk_wrapper.so
         "
     
     - name: Verify Library
