@@ -32,8 +32,26 @@ fi
 
 # Ensure dependencies are fetched
 if [ ! -d "external/open_jtalk-1.11" ]; then
-    echo "Dependencies not found. Please run fetch_dependencies.sh first"
-    exit 1
+    echo "Dependencies not found. Running fetch_dependencies.sh..."
+    if [ -f fetch_dependencies.sh ]; then
+        ./fetch_dependencies.sh
+    else
+        echo "ERROR: fetch_dependencies.sh not found"
+        exit 1
+    fi
+fi
+
+# Check if we need to build dependencies
+if [ ! -d "external/openjtalk_build" ]; then
+    echo "Building OpenJTalk dependencies..."
+    if [ -f build_dependencies_android.sh ]; then
+        ./build_dependencies_android.sh
+    elif [ -f build_dependencies.sh ]; then
+        # Try generic build script
+        ./build_dependencies.sh
+    else
+        echo "WARNING: No dependency build script found, attempting to build anyway..."
+    fi
 fi
 
 # Build for each ABI
