@@ -69,8 +69,10 @@ jobs:
       with:
         workflow: build-openjtalk-native.yml
         workflow_conclusion: success
+        branch: ${{ github.head_ref || github.ref_name }}
         name: openjtalk-android-arm64-v8a
         path: native-android-libs/arm64-v8a
+        if_no_artifact_found: warn
         
     - name: Download Android Native Libraries (armeabi-v7a)
       if: matrix.targetPlatform == 'Android'
@@ -78,8 +80,10 @@ jobs:
       with:
         workflow: build-openjtalk-native.yml
         workflow_conclusion: success
+        branch: ${{ github.head_ref || github.ref_name }}
         name: openjtalk-android-armeabi-v7a
         path: native-android-libs/armeabi-v7a
+        if_no_artifact_found: warn
         
     - name: Download Android Native Libraries (x86)
       if: matrix.targetPlatform == 'Android'
@@ -87,8 +91,10 @@ jobs:
       with:
         workflow: build-openjtalk-native.yml
         workflow_conclusion: success
+        branch: ${{ github.head_ref || github.ref_name }}
         name: openjtalk-android-x86
         path: native-android-libs/x86
+        if_no_artifact_found: warn
         
     - name: Download Android Native Libraries (x86_64)
       if: matrix.targetPlatform == 'Android'
@@ -96,8 +102,10 @@ jobs:
       with:
         workflow: build-openjtalk-native.yml
         workflow_conclusion: success
+        branch: ${{ github.head_ref || github.ref_name }}
         name: openjtalk-android-x86_64
         path: native-android-libs/x86_64
+        if_no_artifact_found: warn
         
     # Place Android native libraries in correct location
     - name: Setup Android Native Libraries
