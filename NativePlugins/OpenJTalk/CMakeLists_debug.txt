@@ -1,0 +1,23 @@
+# Alternative CMake settings if symbols are still missing:
+
+# Option 1: Remove strip entirely for testing
+target_link_options(openjtalk_wrapper PRIVATE
+    -Wl,--gc-sections          # Remove unused sections
+    # -Wl,--strip-debug        # COMMENTED OUT FOR TESTING
+    -Wl,--exclude-libs,ALL     # Hide symbols from static libs
+    -fuse-ld=lld               # Use lld instead of gold
+)
+
+# Option 2: Use version script to explicitly export symbols
+# Create a file named "openjtalk.version" with:
+# {
+#   global:
+#     openjtalk_*;
+#     Java_*;
+#   local:
+#     *;
+# };
+# Then add:
+# target_link_options(openjtalk_wrapper PRIVATE
+#     -Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/openjtalk.version
+# )

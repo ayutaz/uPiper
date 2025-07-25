@@ -7,6 +7,8 @@
 #ifdef _WIN32
 #define strdup _strdup
 #endif
+
+// Android already has strdup in string.h, no need to define it
 #include <jpcommon.h>
 #include <mecab.h>
 #include <njd.h>
@@ -24,7 +26,12 @@
 
 // Debug logging
 #ifdef ENABLE_DEBUG_LOG
+#ifdef ANDROID
+#include <android/log.h>
+#define DEBUG_LOG(fmt, ...) __android_log_print(ANDROID_LOG_INFO, "OpenJTalk", fmt, ##__VA_ARGS__)
+#else
 #define DEBUG_LOG(fmt, ...) fprintf(stderr, "[OpenJTalk] " fmt "\n", ##__VA_ARGS__)
+#endif
 #else
 #define DEBUG_LOG(fmt, ...)
 #endif
@@ -50,12 +57,16 @@ const char* openjtalk_get_version(void) {
 
 // Create phonemizer instance
 void* openjtalk_create(const char* dict_path) {
+    DEBUG_LOG("openjtalk_create called with dict_path: %s", dict_path ? dict_path : "NULL");
+    
     if (!dict_path) {
+        DEBUG_LOG("ERROR: dict_path is NULL");
         return NULL;
     }
     
     OpenJTalkContext* ctx = (OpenJTalkContext*)calloc(1, sizeof(OpenJTalkContext));
     if (!ctx) {
+        DEBUG_LOG("ERROR: Failed to allocate OpenJTalkContext");
         return NULL;
     }
     
@@ -67,32 +78,40 @@ void* openjtalk_create(const char* dict_path) {
     // Store dictionary path
     ctx->dict_path = strdup(dict_path);
     if (!ctx->dict_path) {
+        DEBUG_LOG("ERROR: Failed to duplicate dict_path");
         free(ctx);
         return NULL;
     }
+    DEBUG_LOG("Dictionary path set to: %s", ctx->dict_path);
     
     // Initialize Mecab
     ctx->mecab = (Mecab*)calloc(1, sizeof(Mecab));
     if (!ctx->mecab) {
+        DEBUG_LOG("ERROR: Failed to allocate Mecab");
         free(ctx->dict_path);
         free(ctx);
         return NULL;
     }
     
+    DEBUG_LOG("Initializing Mecab...");
     if (Mecab_initialize(ctx->mecab) != TRUE) {
+        DEBUG_LOG("ERROR: Mecab_initialize failed");
         free(ctx->mecab);
         free(ctx->dict_path);
         free(ctx);
         return NULL;
     }
     
+    DEBUG_LOG("Loading Mecab dictionary from: %s", ctx->dict_path);
     if (Mecab_load(ctx->mecab, ctx->dict_path) != TRUE) {
+        DEBUG_LOG("ERROR: Mecab_load failed with path: %s", ctx->dict_path);
         Mecab_clear(ctx->mecab);
         free(ctx->mecab);
         free(ctx->dict_path);
         free(ctx);
         return NULL;
     }
+    DEBUG_LOG("Mecab loaded successfully");
     
     // Initialize NJD
     ctx->njd = (NJD*)calloc(1, sizeof(NJD));
@@ -502,4 +521,95 @@ const char* openjtalk_get_option(void* handle, const char* key) {
     
     // Unknown option
     return NULL;
+}
+
+// ============================================================================
+// UTF-8 Optimized Functions for Android Performance
+// ============================================================================
+
+// Initialize with UTF-8 byte array (avoids string marshalling overhead)
+void* openjtalk_initialize_utf8(const unsigned char* dict_path_utf8, int path_length) {
+    if (!dict_path_utf8 || path_length <= 0) {
+        DEBUG_LOG("Invalid UTF-8 dictionary path");
+        return NULL;
+    }
+    
+    // Create null-terminated string from UTF-8 bytes
+    char* dict_path = (char*)malloc(path_length + 1);
+    if (!dict_path) {
+        DEBUG_LOG("Failed to allocate memory for path");
+        return NULL;
+    }
+    
+    memcpy(dict_path, dict_path_utf8, path_length);
+    dict_path[path_length] = '\0';
+    
+    // Call regular create function
+    void* handle = openjtalk_create(dict_path);
+    
+    free(dict_path);
+    return handle;
+}
+
+// Alias for compatibility
+void* openjtalk_initialize(const char* dict_path) {
+    return openjtalk_create(dict_path);
+}
+
+// Analyze with UTF-8 byte array (avoids string marshalling overhead)
+char* openjtalk_analyze_utf8(void* handle, const unsigned char* text_utf8, int text_length) {
+    if (!handle || !text_utf8 || text_length <= 0) {
+        DEBUG_LOG("Invalid parameters for UTF-8 analyze");
+        return NULL;
+    }
+    
+    // Create null-terminated string from UTF-8 bytes
+    char* text = (char*)malloc(text_length + 1);
+    if (!text) {
+        DEBUG_LOG("Failed to allocate memory for text");
+        return NULL;
+    }
+    
+    memcpy(text, text_utf8, text_length);
+    text[text_length] = '\0';
+    
+    // Call phonemize and convert to string format
+    PhonemeResult* phoneme_result = openjtalk_phonemize(handle, text);
+    free(text);
+    
+    if (!phoneme_result) {
+        return NULL;
+    }
+    
+    // Convert PhonemeResult to string format for compatibility
+    // Format: "phoneme1 phoneme2 phoneme3..."
+    char* result = strdup(phoneme_result->phonemes);
+    openjtalk_free_result(phoneme_result);
+    
+    return result;
+}
+
+// Simple analyze function for compatibility
+char* openjtalk_analyze(void* handle, const char* text) {
+    PhonemeResult* phoneme_result = openjtalk_phonemize(handle, text);
+    if (!phoneme_result) {
+        return NULL;
+    }
+    
+    char* result = strdup(phoneme_result->phonemes);
+    openjtalk_free_result(phoneme_result);
+    
+    return result;
+}
+
+// Free string result (for legacy analyze function)
+void openjtalk_free_string(char* result) {
+    if (result) {
+        free(result);
+    }
+}
+
+// Finalize (alias for destroy)
+void openjtalk_finalize(void* handle) {
+    openjtalk_destroy(handle);
 }

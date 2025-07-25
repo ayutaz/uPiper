@@ -1,0 +1,80 @@
+# Dockerfile for building OpenJTalk for Android
+# This image is used for both local development and CI/CD
+FROM ubuntu:22.04
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install base dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    ninja-build \
+    wget \
+    curl \
+    unzip \
+    git \
+    python3 \
+    python3-pip \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
+    openjdk-11-jdk \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set JAVA_HOME
+ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+ENV PATH=${PATH}:${JAVA_HOME}/bin
+
+# Install Android SDK Command Line Tools
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV PATH=${PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools
+
+RUN mkdir -p ${ANDROID_HOME}/cmdline-tools && \
+    cd ${ANDROID_HOME}/cmdline-tools && \
+    wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip && \
+    unzip -q commandlinetools-linux-9477386_latest.zip && \
+    mv cmdline-tools latest && \
+    rm commandlinetools-linux-9477386_latest.zip
+
+# Accept Android SDK licenses and install build tools
+RUN yes | sdkmanager --licenses && \
+    sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+
+# Install Android NDK
+ENV ANDROID_NDK_VERSION=r25c
+ENV ANDROID_NDK_HOME=/opt/android-ndk
+ENV ANDROID_NDK_ROOT=/opt/android-ndk
+ENV PATH=${PATH}:${ANDROID_NDK_HOME}
+
+RUN sdkmanager "ndk;25.2.9519653" && \
+    ln -s ${ANDROID_HOME}/ndk/25.2.9519653 ${ANDROID_NDK_HOME}
+
+# Create working directory
+WORKDIR /workspace
+
+# Copy scripts for dependency management
+COPY scripts/ /workspace/scripts/
+COPY fetch_dependencies.sh /workspace/
+COPY build_dependencies.sh /workspace/
+COPY *.sh /workspace/
+RUN chmod +x /workspace/*.sh /workspace/scripts/*.sh || true
+
+# Note: Dependencies will be downloaded when the container runs
+# This allows for better caching and flexibility
+
+# Create a non-root user for builds (optional, for security)
+RUN useradd -m -s /bin/bash builder && \
+    chown -R builder:builder /workspace
+
+# Set up environment
+ENV ANDROID_HOME=/opt/android-sdk
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV ANDROID_NDK_HOME=/opt/android-ndk
+ENV ANDROID_NDK_ROOT=/opt/android-ndk
+ENV PATH=${PATH}:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_NDK_HOME}
+
+# Default command
+CMD ["/bin/bash"]
