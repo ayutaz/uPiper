@@ -54,6 +54,26 @@ namespace uPiper.Core.Phonemizers
         public string Metadata { get; set; }
 
         /// <summary>
+        /// Gets or sets whether the phonemization was successful.
+        /// </summary>
+        public bool Success { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the error message if phonemization failed.
+        /// </summary>
+        public string ErrorMessage { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the backend that produced this result.
+        /// </summary>
+        public string Backend { get; set; }
+
+        /// <summary>
+        /// Gets or sets the processing time in milliseconds.
+        /// </summary>
+        public double ProcessingTimeMs { get; set; }
+
+        /// <summary>
         /// Creates a new instance of PhonemeResult.
         /// </summary>
         public PhonemeResult()
