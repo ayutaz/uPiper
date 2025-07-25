@@ -1,7 +1,7 @@
 #if !UNITY_WEBGL
 
 // Define a constant to control P/Invoke usage
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_EDITOR_LINUX || UNITY_STANDALONE_LINUX
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_EDITOR_LINUX || UNITY_STANDALONE_LINUX || UNITY_ANDROID
 #define ENABLE_PINVOKE
 #endif
 
@@ -439,6 +439,10 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         private static string GetDefaultDictionaryPath()
         {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            // On Android, use the persistent data path where we extract the dictionary
+            return AndroidPathResolver.GetOpenJTalkDictionaryPath();
+#else
             // Look for dictionary in various locations
             var possiblePaths = new[]
             {
@@ -480,6 +484,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             Debug.LogWarning($"[OpenJTalkPhonemizer] Dictionary not found in any of the expected locations");
             // Return first path as default (will fail later if not found)
             return possiblePaths[0];
+#endif
         }
 
         #endregion
@@ -625,6 +630,8 @@ namespace uPiper.Core.Phonemizers.Implementations
             else if (PlatformHelper.IsMacOS)
                 return "libopenjtalk_wrapper.dylib";
             else if (PlatformHelper.IsLinux)
+                return "libopenjtalk_wrapper.so";
+            else if (PlatformHelper.IsAndroid)
                 return "libopenjtalk_wrapper.so";
 #endif
 

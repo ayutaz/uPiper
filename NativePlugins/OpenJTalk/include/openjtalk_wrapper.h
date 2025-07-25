@@ -16,7 +16,7 @@ extern "C" {
 
 #include <stddef.h>
 
-// Export/Import macros for Windows DLL
+// Export/Import macros
 #ifdef _WIN32
     #ifdef OPENJTALK_EXPORTS
         #define OPENJTALK_API __declspec(dllexport)
@@ -24,7 +24,12 @@ extern "C" {
         #define OPENJTALK_API __declspec(dllimport)
     #endif
 #else
-    #define OPENJTALK_API
+    // For Linux/Android, use visibility attribute
+    #ifdef OPENJTALK_EXPORTS
+        #define OPENJTALK_API __attribute__((visibility("default")))
+    #else
+        #define OPENJTALK_API
+    #endif
 #endif
 
 /**
@@ -94,6 +99,16 @@ OPENJTALK_API const char* openjtalk_get_error_string(int error_code);
 // Configuration
 OPENJTALK_API int openjtalk_set_option(void* handle, const char* key, const char* value);
 OPENJTALK_API const char* openjtalk_get_option(void* handle, const char* key);
+
+// Performance optimized functions for Android
+OPENJTALK_API void* openjtalk_initialize_utf8(const unsigned char* dict_path_utf8, int path_length);
+OPENJTALK_API char* openjtalk_analyze_utf8(void* handle, const unsigned char* text_utf8, int text_length);
+
+// Legacy full version functions (for internal use)
+OPENJTALK_API void* openjtalk_initialize(const char* dict_path);
+OPENJTALK_API char* openjtalk_analyze(void* handle, const char* text);
+OPENJTALK_API void openjtalk_finalize(void* handle);
+OPENJTALK_API void openjtalk_free_string(char* result);
 
 #ifdef __cplusplus
 }

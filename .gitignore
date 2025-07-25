@@ -249,3 +249,6 @@ TestMeCabOutput.cs.meta
 !/NativePlugins/OpenJTalk/test/*.c
 !/NativePlugins/OpenJTalk/CMakeLists.txt
 !/NativePlugins/OpenJTalk/README.md
+
+# Unity Temporary files
+.utmp/

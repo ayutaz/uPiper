@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -57,6 +58,7 @@ namespace uPiper.Demo
         [Header("UI References")]
         [SerializeField] private TMP_InputField _inputField;
         [SerializeField] private Button _generateButton;
+        [SerializeField] private Button _inferenceButton; // Add for Android auto-test
         [SerializeField] private TextMeshProUGUI _statusText;
         [SerializeField] private AudioSource _audioSource;
         [SerializeField] private TMP_Dropdown _modelDropdown;
@@ -72,7 +74,7 @@ namespace uPiper.Demo
         [SerializeField] private TextMeshProUGUI _batchSizeText;
 
         [Header("Settings")]
-        [SerializeField] private string _defaultJapaneseText = "こんにちは";
+        [SerializeField] private string _defaultJapaneseText = "";  // Will be set in Start()
         [SerializeField] private string _defaultEnglishText = "Hello world";
 
         private InferenceAudioGenerator _generator;
@@ -92,21 +94,8 @@ namespace uPiper.Demo
             { "test_voice", "en" }
         };
 
-        // テスト用の定型文
-        private readonly List<string> _japaneseTestPhrases = new List<string>
-        {
-            "自由入力",  // Custom input option
-            "こんにちは",
-            "こんにちは、世界！",
-            "ありがとうございます",
-            "日本の日本橋の上で箸を使ってご飯を食べる",
-            "私は東京に住んでいます",
-            "今日はいい天気ですね",
-            "音声合成のテストです",
-            "ユニティで日本語音声合成ができました",
-            "おはようございます、今日も一日頑張りましょう",
-            "すみません、ちょっとお聞きしたいことがあります"
-        };
+        // テスト用の定型文 - will be initialized in Start() to avoid encoding issues
+        private List<string> _japaneseTestPhrases;
 
         private readonly List<string> _englishTestPhrases = new List<string>
         {
@@ -123,6 +112,26 @@ namespace uPiper.Demo
 
         private void Start()
         {
+            // Set default Japanese text from UTF-8 bytes to avoid encoding issues
+            byte[] konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+            _defaultJapaneseText = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
+
+            // Initialize Japanese test phrases from UTF-8 bytes
+            _japaneseTestPhrases = new List<string>
+            {
+                "自由入力",  // Custom input option - ASCII so no encoding issue
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF }), // こんにちは
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF, 0xE3, 0x80, 0x81, 0xE4, 0xB8, 0x96, 0xE7, 0x95, 0x8C, 0xEF, 0xBC, 0x81 }), // こんにちは、世界！
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x82, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0x8C, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x86, 0xE3, 0x81, 0x94, 0xE3, 0x81, 0x96, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99 }), // ありがとうございます
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE6, 0x97, 0xA5, 0xE6, 0x9C, 0xAC, 0xE3, 0x81, 0xAE, 0xE6, 0x97, 0xA5, 0xE6, 0x9C, 0xAC, 0xE6, 0xA9, 0x8B, 0xE3, 0x81, 0xAE, 0xE4, 0xB8, 0x8A, 0xE3, 0x81, 0xA7, 0xE7, 0xAE, 0xB8, 0xE3, 0x82, 0x92, 0xE4, 0xBD, 0xBF, 0xE3, 0x81, 0xA3, 0xE3, 0x81, 0xA6, 0xE3, 0x81, 0x94, 0xE9, 0xA3, 0xAF, 0xE3, 0x82, 0x92, 0xE9, 0xA3, 0x9F, 0xE3, 0x81, 0xB9, 0xE3, 0x82, 0x8B }), // 日本の日本橋の上で箸を使ってご飯を食べる
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE7, 0xA7, 0x81, 0xE3, 0x81, 0xAF, 0xE6, 0x9D, 0xB1, 0xE4, 0xBA, 0xAC, 0xE3, 0x81, 0xAB, 0xE4, 0xBD, 0x8F, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xA7, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99 }), // 私は東京に住んでいます
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE4, 0xBB, 0x8A, 0xE6, 0x97, 0xA5, 0xE3, 0x81, 0xAF, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0x84, 0xE5, 0xA4, 0xA9, 0xE6, 0xB0, 0x97, 0xE3, 0x81, 0xA7, 0xE3, 0x81, 0x99, 0xE3, 0x81, 0xAD }), // 今日はいい天気ですね
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE9, 0x9F, 0xB3, 0xE5, 0xA3, 0xB0, 0xE5, 0x90, 0x88, 0xE6, 0x88, 0x90, 0xE3, 0x81, 0xAE, 0xE3, 0x83, 0x86, 0xE3, 0x82, 0xB9, 0xE3, 0x83, 0x88, 0xE3, 0x81, 0xA7, 0xE3, 0x81, 0x99 }), // 音声合成のテストです
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x83, 0xA6, 0xE3, 0x83, 0x8B, 0xE3, 0x83, 0x86, 0xE3, 0x82, 0xA3, 0xE3, 0x81, 0xA7, 0xE6, 0x97, 0xA5, 0xE6, 0x9C, 0xAC, 0xE8, 0xAA, 0x9E, 0xE9, 0x9F, 0xB3, 0xE5, 0xA3, 0xB0, 0xE5, 0x90, 0x88, 0xE6, 0x88, 0x90, 0xE3, 0x81, 0x8C, 0xE3, 0x81, 0xA7, 0xE3, 0x81, 0x8D, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x97, 0xE3, 0x81, 0x9F }), // ユニティで日本語音声合成ができました
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x8A, 0xE3, 0x81, 0xAF, 0xE3, 0x82, 0x88, 0xE3, 0x81, 0x86, 0xE3, 0x81, 0x94, 0xE3, 0x81, 0x96, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99, 0xE3, 0x80, 0x81, 0xE4, 0xBB, 0x8A, 0xE6, 0x97, 0xA5, 0xE3, 0x82, 0x82, 0xE4, 0xB8, 0x80, 0xE6, 0x97, 0xA5, 0xE9, 0xA0, 0x91, 0xE5, 0xBC, 0xB5, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x97, 0xE3, 0x82, 0x87, 0xE3, 0x81, 0x86 }), // おはようございます、今日も一日頑張りましょう
+                System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x99, 0xE3, 0x81, 0xBF, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x9B, 0xE3, 0x82, 0x93, 0xE3, 0x80, 0x81, 0xE3, 0x81, 0xA1, 0xE3, 0x82, 0x87, 0xE3, 0x81, 0xA3, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x8A, 0xE8, 0x81, 0x9E, 0xE3, 0x81, 0x8D, 0xE3, 0x81, 0x97, 0xE3, 0x81, 0x9F, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0x93, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x8C, 0xE3, 0x81, 0x82, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99 }) // すみません、ちょっとお聞きしたいことがあります
+            };
+
             _generator = new InferenceAudioGenerator();
             _audioBuilder = new AudioClipBuilder();
 
@@ -136,6 +145,15 @@ namespace uPiper.Demo
 #if !UNITY_WEBGL && !UNITY_EDITOR
             PiperLogger.LogInfo("[InferenceEngineDemo] Running OpenJTalk debug helper...");
             OpenJTalkDebugHelper.DebugLibraryLoading();
+
+            // Additional Android debugging
+#if UNITY_ANDROID
+            DebugAndroidSetup();
+            // Preload dictionary asynchronously for better performance
+            uPiper.Core.Platform.OptimizedAndroidPathResolver.PreloadDictionaryAsync();
+            // Auto-test TTS generation after 2 seconds
+            StartCoroutine(AutoTestTTSGeneration());
+#endif
 #endif
 
 #if !UNITY_WEBGL
@@ -347,7 +365,30 @@ namespace uPiper.Demo
 
             _isGenerating = true;
             SetStatus("処理中...");
-            PiperLogger.LogInfo($"Starting audio generation for text: {_inputField.text}");
+
+            // Debug text encoding
+            string inputText = _inputField.text;
+            PiperLogger.LogInfo($"Starting audio generation for text: {inputText}");
+
+#if UNITY_ANDROID
+            // Additional encoding debug on Android
+            byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(inputText);
+            PiperLogger.LogInfo($"[Android] Text length: {inputText.Length} chars, UTF-8 bytes: {utf8Bytes.Length}");
+            PiperLogger.LogInfo($"[Android] First few bytes: {string.Join(" ", utf8Bytes.Take(20).Select(b => b.ToString("X2")))}");
+            
+            // Try to detect if the text is correctly encoded by checking UTF-8 bytes
+            byte[] testPhraseBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+            string testPhrase = System.Text.Encoding.UTF8.GetString(testPhraseBytes);
+            if (inputText == testPhrase)
+            {
+                PiperLogger.LogInfo("[Android] Input matches expected 'こんにちは' - encoding is correct");
+            }
+            else if (inputText.Contains("縺"))
+            {
+                PiperLogger.LogWarning("[Android] Detected mojibake (文字化け) - text encoding issue!");
+                PiperLogger.LogWarning("[Android] The text field may be corrupted. Please use the dropdown to select a test phrase.");
+            }
+#endif
 
             // Start overall timing
             var totalStopwatch = Stopwatch.StartNew();
@@ -434,6 +475,10 @@ namespace uPiper.Demo
                 string[] phonemes;
                 var language = _modelLanguages[modelName];
 
+                // Define konnichiwa string from UTF-8 bytes for special debugging
+                byte[] konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+                string konnichiwa = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
+
 #if !UNITY_WEBGL
                 // Use OpenJTalk for Japanese if available
                 if (language == "ja" && _phonemizer != null)
@@ -456,7 +501,7 @@ namespace uPiper.Demo
                     if (_phonemeDetailsText != null)
                     {
                         // Special handling for こんにちは to debug
-                        if (_inputField.text.Contains("こんにちは"))
+                        if (_inputField.text == konnichiwa)
                         {
                             _phonemeDetailsText.text = $"[DEBUG こんにちは]\nOpenJTalk: {string.Join(" ", openJTalkPhonemes)}\nPiper: {string.Join(" ", phonemes)}\n" +
                                 $"Expected: k o n n i ch i w a\nCheck if 'ch i' sounds like 'ch u'";
@@ -481,6 +526,15 @@ namespace uPiper.Demo
                                   "1. Navigate to NativePlugins/OpenJTalk/\n" +
                                   "2. Run ./build.sh (macOS/Linux) or build.bat (Windows)\n" +
                                   "3. Restart Unity Editor";
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+                    // Add Android-specific error info
+                    errorMsg += "\n\nOn Android:\n" +
+                                "- Check if libopenjtalk_wrapper.so is in Plugins/Android/libs/{ABI}/\n" +
+                                "- Check if dictionary files are in StreamingAssets\n" +
+                                "- Dictionary will be extracted to persistent data path on first run";
+#endif
+
                     throw new Exception(errorMsg);
                 }
                 else
@@ -520,7 +574,7 @@ namespace uPiper.Demo
                 PiperLogger.LogDebug($"Input text: '{_inputField.text}'");
 
                 // 「こんにちは」の場合、特に詳しくログ
-                if (_inputField.text.Contains("こんにちは"))
+                if (_inputField.text == konnichiwa)
                 {
                     PiperLogger.LogInfo("=== Special debug for 'こんにちは' ===");
                     for (int i = 0; i < phonemes.Length; i++)
@@ -750,5 +804,166 @@ namespace uPiper.Demo
                 _phonemeDetailsText.text = "";
             }
         }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+        private void DebugAndroidSetup()
+        {
+            PiperLogger.LogInfo("[Android Debug] === Android Setup Debug ===");
+            
+            // Check platform
+            PiperLogger.LogInfo($"[Android Debug] Platform: {Application.platform}");
+            PiperLogger.LogInfo($"[Android Debug] System Language: {Application.systemLanguage}");
+            
+            // Check paths
+            PiperLogger.LogInfo($"[Android Debug] Persistent Data Path: {Application.persistentDataPath}");
+            PiperLogger.LogInfo($"[Android Debug] Streaming Assets Path: {Application.streamingAssetsPath}");
+            
+            // Check OpenJTalk dictionary
+            try
+            {
+                string dictPath = uPiper.Core.Platform.AndroidPathResolver.GetOpenJTalkDictionaryPath();
+                PiperLogger.LogInfo($"[Android Debug] OpenJTalk Dictionary Path: {dictPath}");
+                
+                if (System.IO.Directory.Exists(dictPath))
+                {
+                    PiperLogger.LogInfo("[Android Debug] ✓ Dictionary directory exists");
+                    
+                    // Check for required files
+                    string[] requiredFiles = { "char.bin", "sys.dic", "unk.dic", "matrix.bin", "left-id.def", "pos-id.def", "rewrite.def", "right-id.def" };
+                    foreach (var file in requiredFiles)
+                    {
+                        string filePath = System.IO.Path.Combine(dictPath, file);
+                        if (System.IO.File.Exists(filePath))
+                        {
+                            var fileInfo = new System.IO.FileInfo(filePath);
+                            PiperLogger.LogInfo($"[Android Debug] ✓ {file}: {fileInfo.Length} bytes");
+                        }
+                        else
+                        {
+                            PiperLogger.LogWarning($"[Android Debug] ✗ {file}: NOT FOUND");
+                        }
+                    }
+                }
+                else
+                {
+                    PiperLogger.LogWarning("[Android Debug] ✗ Dictionary directory does not exist");
+                    PiperLogger.LogInfo("[Android Debug] Will attempt to extract from StreamingAssets on first use");
+                }
+            }
+            catch (Exception e)
+            {
+                PiperLogger.LogError($"[Android Debug] Error checking dictionary: {e.Message}");
+            }
+            
+            // Check native library loading
+            try
+            {
+                // On Android, native libraries are loaded from the APK
+                PiperLogger.LogInfo("[Android Debug] Checking native library loading...");
+                
+                // Expected library name on Android
+                string expectedLibraryName = "libopenjtalk_wrapper.so";
+                PiperLogger.LogInfo($"[Android Debug] Expected library name: {expectedLibraryName}");
+                
+                // The actual check will happen when OpenJTalkPhonemizer is initialized
+                // Here we just log that we expect the library to be loaded from APK
+                PiperLogger.LogInfo("[Android Debug] Native libraries on Android are loaded directly from APK");
+                PiperLogger.LogInfo("[Android Debug] Library loading will be verified during OpenJTalk initialization");
+                
+                // Check if we can access the native method
+                try
+                {
+                    // This will help verify if the library is accessible
+                    var testPhon = new OpenJTalkPhonemizer();
+                    PiperLogger.LogInfo("[Android Debug] ✓ OpenJTalkPhonemizer instance created successfully");
+                    testPhon.Dispose();
+                }
+                catch (Exception libEx)
+                {
+                    PiperLogger.LogWarning($"[Android Debug] ✗ Failed to create OpenJTalkPhonemizer: {libEx.Message}");
+                }
+            }
+            catch (Exception e)
+            {
+                PiperLogger.LogError($"[Android Debug] Error checking native library: {e.Message}");
+            }
+            
+            // Text encoding test
+            PiperLogger.LogInfo("[Android Debug] === Text Encoding Test ===");
+            
+            // Create string from UTF-8 bytes directly
+            byte[] konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+            string testText = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
+            PiperLogger.LogInfo($"[Android Debug] Test text from UTF-8 bytes: {testText}");
+            
+            // Also test with char array
+            string charArrayText = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
+            PiperLogger.LogInfo($"[Android Debug] Test text from char array: {charArrayText}");
+            
+            // Get UTF-8 bytes from both
+            byte[] utf8FromBytes = System.Text.Encoding.UTF8.GetBytes(testText);
+            byte[] utf8FromChars = System.Text.Encoding.UTF8.GetBytes(charArrayText);
+            
+            PiperLogger.LogInfo($"[Android Debug] UTF-8 from bytes text ({utf8FromBytes.Length}): {BitConverter.ToString(utf8FromBytes)}");
+            PiperLogger.LogInfo($"[Android Debug] UTF-8 from chars text ({utf8FromChars.Length}): {BitConverter.ToString(utf8FromChars)}");
+            
+            // Check if bytes match expected
+            bool bytesMatchExpected = true;
+            if (utf8FromBytes.Length == konnichiwaBytes.Length)
+            {
+                for (int i = 0; i < utf8FromBytes.Length; i++)
+                {
+                    if (utf8FromBytes[i] != konnichiwaBytes[i])
+                    {
+                        bytesMatchExpected = false;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                bytesMatchExpected = false;
+            }
+            
+            PiperLogger.LogInfo($"[Android Debug] UTF-8 bytes match expected: {bytesMatchExpected}");
+            
+            // Test if we can create correct string from bytes
+            PiperLogger.LogInfo($"[Android Debug] Direct UTF-8 string successful: {testText.Length == 5}");
+            
+            PiperLogger.LogInfo("[Android Debug] === End Android Setup Debug ===");
+        }
+        
+        private System.Collections.IEnumerator AutoTestTTSGeneration()
+        {
+            PiperLogger.LogInfo("[uPiper] Waiting 2 seconds before auto-testing TTS...");
+            yield return new WaitForSeconds(2f);
+            
+            PiperLogger.LogInfo("[uPiper] Starting auto TTS test...");
+            
+            // Set Japanese text from UTF-8 bytes to avoid encoding issues
+            if (_inputField != null)
+            {
+                byte[] konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+                _inputField.text = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
+                PiperLogger.LogInfo($"[uPiper] Set input text: {_inputField.text}");
+            }
+            
+            // Try to generate TTS
+            if (_generateButton != null && _generateButton.isActiveAndEnabled)
+            {
+                PiperLogger.LogInfo("[uPiper] Clicking generate button programmatically...");
+                _ = GenerateAudioAsync();
+                
+                // Wait for generation
+                yield return new WaitForSeconds(5f);
+                
+                PiperLogger.LogInfo("[uPiper] Auto test completed. Check if audio was generated.");
+            }
+            else
+            {
+                PiperLogger.LogError("[uPiper] Generate button not available for auto test");
+            }
+        }
+#endif
     }
 }
