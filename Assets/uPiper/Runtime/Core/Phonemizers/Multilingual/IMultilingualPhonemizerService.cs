@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using uPiper.Phonemizers.Backend;
+using uPiper.Core.Phonemizers.Backend;
 
-namespace uPiper.Phonemizers.Multilingual
+namespace uPiper.Core.Phonemizers.Multilingual
 {
     /// <summary>
     /// Interface for multilingual phonemization services
@@ -14,41 +14,47 @@ namespace uPiper.Phonemizers.Multilingual
         /// <summary>
         /// Get supported languages with their capabilities
         /// </summary>
-        IReadOnlyDictionary<string, LanguageCapabilities> GetSupportedLanguages();
+        Dictionary<string, LanguageCapabilities> GetSupportedLanguages();
 
         /// <summary>
-        /// Check if a language is supported
+        /// Get the preferred backend for a language
         /// </summary>
-        bool IsLanguageSupported(string languageCode);
+        IPhonemizerBackend GetPreferredBackend(string language);
 
         /// <summary>
-        /// Get the best available backend for a language
+        /// Phonemize text with fallback support
         /// </summary>
-        IPhonemizerBackend GetBackendForLanguage(string languageCode);
-
-        /// <summary>
-        /// Phonemize text with automatic language detection
-        /// </summary>
-        Task<MultilingualPhonemeResult> PhonemizeAutoDetectAsync(
+        Task<PhonemeResult> PhonemizeWithFallbackAsync(
             string text, 
+            string language, 
             CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Register a phonemizer backend for a language
+        /// </summary>
+        void RegisterBackend(string language, IPhonemizerBackend backend);
+
+        /// <summary>
+        /// Set language fallback chain
+        /// </summary>
+        void SetLanguageFallback(string language, string[] fallbackLanguages);
+
+        /// <summary>
+        /// Get all registered backends
+        /// </summary>
+        Dictionary<string, List<IPhonemizerBackend>> GetAllBackends();
 
         /// <summary>
         /// Phonemize text in multiple languages
         /// </summary>
-        Task<Dictionary<string, PhonemeResult>> PhonemizeMultilingualAsync(
-            Dictionary<string, string> textByLanguage,
+        Task<Dictionary<string, PhonemeResult>> PhonemizeBatchAsync(
+            Dictionary<string, string> textsByLanguage,
             CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Set fallback chain for a language
+        /// Dispose all backends
         /// </summary>
-        void SetLanguageFallbackChain(string languageCode, params string[] fallbackLanguages);
-
-        /// <summary>
-        /// Get quality score for a language/backend combination
-        /// </summary>
-        float GetQualityScore(string languageCode, string backendName);
+        void Dispose();
     }
 
     /// <summary>
@@ -56,12 +62,17 @@ namespace uPiper.Phonemizers.Multilingual
     /// </summary>
     public class LanguageCapabilities
     {
+        public string Language { get; set; }
         public string LanguageCode { get; set; }
         public string DisplayName { get; set; }
         public string NativeName { get; set; }
+        public List<string> SupportedBackends { get; set; } = new List<string>();
         public List<string> AvailableBackends { get; set; } = new List<string>();
         public string PreferredBackend { get; set; }
+        public bool SupportsIPA { get; set; }
         public bool SupportsStress { get; set; }
+        public bool SupportsSyllables { get; set; }
+        public bool SupportsTones { get; set; }
         public bool SupportsTone { get; set; }
         public bool SupportsG2P { get; set; }
         public bool RequiresNormalization { get; set; }

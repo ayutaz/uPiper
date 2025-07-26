@@ -6,14 +6,15 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core.Phonemizers.Backend;
 
-namespace uPiper.Phonemizers.Backend.Flite
+namespace uPiper.Core.Phonemizers.Backend.Flite
 {
     /// <summary>
     /// Flite-based phonemizer backend (MIT/BSD licensed)
     /// Provides lightweight phonemization for English and other languages
     /// </summary>
-    public class FlitePhonemizerBackend : PhonemizerBackendBase
+    public class FlitePhonemizerBackend : uPiper.Core.Phonemizers.Backend.PhonemizerBackendBase
     {
         private readonly FliteLexicon lexicon;
         private readonly FliteLetterToSound lts;
