@@ -7,12 +7,12 @@ using UnityEngine;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Backend;
 
-namespace uPiper.Core.Phonemizers.Backend.Proxy
+namespace uPiper.Core.Phonemizers.Backend
 {
     /// <summary>
-    /// Proxy class for Spanish phonemizer to avoid namespace resolution issues
+    /// Spanish phonemizer implementation
     /// </summary>
-    public class SpanishPhonemizerProxy : Backend.PhonemizerBackendBase
+    public class SpanishPhonemizer : PhonemizerBackendBase
     {
         private Dictionary<string, string[]> spanishDict;
         private readonly object dictLock = new object();

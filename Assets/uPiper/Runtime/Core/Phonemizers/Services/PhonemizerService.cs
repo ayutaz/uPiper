@@ -184,15 +184,15 @@ namespace uPiper.Core.Phonemizers.Services
             backendFactory.RegisterBackend(ruleBasedBackend);
 
             // Register Spanish backend (MIT licensed)
-            var spanishBackend = new Backend.Proxy.SpanishPhonemizerProxy();
+            var spanishBackend = new Backend.SpanishPhonemizer();
             backendFactory.RegisterBackend(spanishBackend);
 
             // Register Chinese backend (MIT licensed)
-            var chineseBackend = new Backend.Proxy.ChinesePhonemizerProxy();
+            var chineseBackend = new Backend.ChinesePhonemizer();
             backendFactory.RegisterBackend(chineseBackend);
 
             // Register Korean backend (MIT licensed)
-            var koreanBackend = new Backend.Proxy.KoreanPhonemizerProxy();
+            var koreanBackend = new Backend.KoreanPhonemizer();
             backendFactory.RegisterBackend(koreanBackend);
 
             // Register fallback backend

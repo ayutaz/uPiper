@@ -7,12 +7,12 @@ using UnityEngine;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Backend;
 
-namespace uPiper.Core.Phonemizers.Backend.Proxy
+namespace uPiper.Core.Phonemizers.Backend
 {
     /// <summary>
-    /// Proxy class for Chinese phonemizer to avoid namespace resolution issues
+    /// Chinese phonemizer implementation
     /// </summary>
-    public class ChinesePhonemizerProxy : Backend.PhonemizerBackendBase
+    public class ChinesePhonemizer : PhonemizerBackendBase
     {
         private Dictionary<char, string[]> pinyinDict;
         private readonly object dictLock = new object();

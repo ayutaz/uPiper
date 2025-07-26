@@ -7,12 +7,12 @@ using UnityEngine;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Backend;
 
-namespace uPiper.Core.Phonemizers.Backend.Proxy
+namespace uPiper.Core.Phonemizers.Backend
 {
     /// <summary>
-    /// Proxy class for Korean phonemizer to avoid namespace resolution issues
+    /// Korean phonemizer implementation
     /// </summary>
-    public class KoreanPhonemizerProxy : Backend.PhonemizerBackendBase
+    public class KoreanPhonemizer : PhonemizerBackendBase
     {
         private Dictionary<string, string[]> exceptionDict;
         private readonly object dictLock = new object();
