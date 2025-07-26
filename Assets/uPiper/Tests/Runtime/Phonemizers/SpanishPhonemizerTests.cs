@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
-using uPiper.Core.Phonemizers.Backend.Spanish;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Tests.Phonemizers
 {
@@ -15,18 +15,20 @@ namespace uPiper.Tests.Phonemizers
     [TestFixture]
     public class SpanishPhonemizerTests
     {
-        private SpanishPhonemizer phonemizer;
-        private SpanishG2P g2pEngine;
-        private SpanishTextNormalizer normalizer;
+        private SpanishPhonemizerProxy phonemizer;
+        // Note: Component classes are now internal to the proxy
+        // private SpanishG2P g2pEngine;
+        // private SpanishTextNormalizer normalizer;
         
         [SetUp]
         public async Task SetUp()
         {
-            phonemizer = new SpanishPhonemizer();
+            phonemizer = new SpanishPhonemizerProxy();
             await phonemizer.InitializeAsync(null);
             
-            g2pEngine = new SpanishG2P();
-            normalizer = new SpanishTextNormalizer();
+            // Component classes are now internal to the proxy
+            // g2pEngine = new SpanishG2P();
+            // normalizer = new SpanishTextNormalizer();
         }
         
         [TearDown]

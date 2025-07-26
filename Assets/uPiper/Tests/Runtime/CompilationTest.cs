@@ -1,11 +1,8 @@
 using System;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
-using uPiper.Core.Phonemizers.Backend.Chinese;
-using uPiper.Core.Phonemizers.Backend.Korean;
-using uPiper.Core.Phonemizers.Backend.Spanish;
 using uPiper.Core.Phonemizers.Backend.RuleBased;
-using uPiper.Core.Phonemizers.Backend.Fallback;
+using uPiper.Core.Phonemizers.ErrorHandling;
 
 namespace uPiper.Tests.Runtime
 {
@@ -19,13 +16,13 @@ namespace uPiper.Tests.Runtime
             // Test instantiation of all phonemizers
             try
             {
-                var chinese = new ChinesePhonemizer();
+                var chinese = new ChinesePhonemizerProxy();
                 Debug.Log($"Chinese phonemizer created: {chinese.Name}");
                 
-                var korean = new KoreanPhonemizer();
+                var korean = new KoreanPhonemizerProxy();
                 Debug.Log($"Korean phonemizer created: {korean.Name}");
                 
-                var spanish = new SpanishPhonemizer();
+                var spanish = new SpanishPhonemizerProxy();
                 Debug.Log($"Spanish phonemizer created: {spanish.Name}");
                 
                 var ruleBased = new RuleBasedPhonemizer();

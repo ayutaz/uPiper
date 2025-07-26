@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
-using uPiper.Core.Phonemizers.Backend.Korean;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Tests.Phonemizers
 {
@@ -15,20 +15,22 @@ namespace uPiper.Tests.Phonemizers
     [TestFixture]
     public class KoreanPhonemizerTests
     {
-        private KoreanPhonemizer phonemizer;
-        private HangulProcessor hangulProcessor;
-        private KoreanG2P g2pEngine;
-        private KoreanTextNormalizer normalizer;
+        private KoreanPhonemizerProxy phonemizer;
+        // Note: Component classes are now internal to the proxy
+        // private HangulProcessor hangulProcessor;
+        // private KoreanG2P g2pEngine;
+        // private KoreanTextNormalizer normalizer;
         
         [SetUp]
         public async Task SetUp()
         {
-            phonemizer = new KoreanPhonemizer();
+            phonemizer = new KoreanPhonemizerProxy();
             await phonemizer.InitializeAsync(null);
             
-            hangulProcessor = new HangulProcessor();
-            g2pEngine = new KoreanG2P();
-            normalizer = new KoreanTextNormalizer();
+            // Component classes are now internal to the proxy
+            // hangulProcessor = new HangulProcessor();
+            // g2pEngine = new KoreanG2P();
+            // normalizer = new KoreanTextNormalizer();
         }
         
         [TearDown]
