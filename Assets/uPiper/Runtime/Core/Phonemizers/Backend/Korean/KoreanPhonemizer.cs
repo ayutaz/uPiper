@@ -212,7 +212,7 @@ namespace uPiper.Core.Phonemizers.Backend.Korean
 
             // Default path in StreamingAssets
             return Path.Combine(Application.streamingAssetsPath, 
-                "uPiper", "Languages", "Korean", "korean_exceptions.txt");
+                "uPiper", "Languages", "Korean", "korean_exceptions_sample.txt");
         }
 
         /// <inheritdoc/>
