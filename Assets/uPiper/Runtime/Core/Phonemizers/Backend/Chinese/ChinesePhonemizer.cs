@@ -16,7 +16,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
     /// Chinese (Mandarin) phonemizer implementation using pinyin-based approach.
     /// Supports Simplified and Traditional Chinese.
     /// </summary>
-    public class ChinesePhonemizer : PhonemizerBackendBase
+    public class ChinesePhonemizer : uPiper.Core.Phonemizers.Backend.PhonemizerBackendBase
     {
         private Dictionary<char, string[]> pinyinDict;
         private PinyinToPhonemeMapper phonemeMapper;
