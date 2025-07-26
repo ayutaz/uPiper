@@ -7,11 +7,11 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers.Backend.Korean
 {
-    using uPiper.Core.Phonemizers;
-    using uPiper.Core.Phonemizers.Backend;
     /// <summary>
     /// Korean phonemizer implementation using Hangul decomposition and rule-based G2P.
     /// No external dependencies required - uses algorithmic approach.

@@ -7,11 +7,11 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers.Backend.Chinese
 {
-    using uPiper.Core.Phonemizers;
-    using uPiper.Core.Phonemizers.Backend;
     /// <summary>
     /// Chinese (Mandarin) phonemizer implementation using pinyin-based approach.
     /// Supports Simplified and Traditional Chinese.

@@ -6,11 +6,11 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers.Backend.Spanish
 {
-    using uPiper.Core.Phonemizers;
-    using uPiper.Core.Phonemizers.Backend;
     /// <summary>
     /// Spanish phonemizer implementation using dictionary lookup and G2P rules.
     /// Supports Spain Spanish (es-ES) and Latin American variants.
