@@ -6,9 +6,6 @@ using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Backend.RuleBased;
-using uPiper.Core.Phonemizers.Backend.Spanish;
-using uPiper.Core.Phonemizers.Backend.Chinese;
-using uPiper.Core.Phonemizers.Backend.Korean;
 using uPiper.Core.Phonemizers.ErrorHandling;
 using uPiper.Phonemizers.Data;
 
@@ -187,15 +184,15 @@ namespace uPiper.Core.Phonemizers.Services
             backendFactory.RegisterBackend(ruleBasedBackend);
 
             // Register Spanish backend (MIT licensed)
-            var spanishBackend = new SpanishPhonemizer();
+            var spanishBackend = new Backend.Spanish.SpanishPhonemizer();
             backendFactory.RegisterBackend(spanishBackend);
 
             // Register Chinese backend (MIT licensed)
-            var chineseBackend = new ChinesePhonemizer();
+            var chineseBackend = new Backend.Chinese.ChinesePhonemizer();
             backendFactory.RegisterBackend(chineseBackend);
 
             // Register Korean backend (MIT licensed)
-            var koreanBackend = new KoreanPhonemizer();
+            var koreanBackend = new Backend.Korean.KoreanPhonemizer();
             backendFactory.RegisterBackend(koreanBackend);
 
             // Register fallback backend
