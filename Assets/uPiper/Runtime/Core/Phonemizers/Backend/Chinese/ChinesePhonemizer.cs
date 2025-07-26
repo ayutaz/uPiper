@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers.Backend.Chinese
 {
@@ -82,7 +83,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             if (string.IsNullOrEmpty(text))
             {
-                return new PhonemeResult { Phonemes = new List<string>() };
+                return new PhonemeResult { Phonemes = new string[0] };
             }
 
             try
@@ -170,8 +171,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
 
                 return new PhonemeResult 
                 { 
-                    Phonemes = phonemes,
-                    TimingInfo = timings,
+                    Phonemes = phonemes.ToArray(),
                     Language = language,
                     Success = true
                 };

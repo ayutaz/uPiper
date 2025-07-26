@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers.Backend.Korean
 {
@@ -76,7 +77,7 @@ namespace uPiper.Core.Phonemizers.Backend.Korean
         {
             if (string.IsNullOrEmpty(text))
             {
-                return new PhonemeResult { Phonemes = new List<string>() };
+                return new PhonemeResult { Phonemes = new string[0] };
             }
 
             try
@@ -86,8 +87,6 @@ namespace uPiper.Core.Phonemizers.Backend.Korean
                 
                 // 2. Process text character by character
                 var phonemes = new List<string>();
-                var timings = new List<PhonemeInfo>();
-                double currentTime = 0;
 
                 for (int i = 0; i < normalized.Length; i++)
                 {
@@ -107,13 +106,6 @@ namespace uPiper.Core.Phonemizers.Backend.Korean
                                 foreach (var phoneme in exceptionPhonemes)
                                 {
                                     phonemes.Add(phoneme);
-                                    timings.Add(new PhonemeInfo 
-                                    { 
-                                        Phoneme = phoneme, 
-                                        StartTime = currentTime, 
-                                        Duration = 0.05 
-                                    });
-                                    currentTime += 0.05;
                                 }
                                 
                                 // Skip the word
@@ -138,13 +130,6 @@ namespace uPiper.Core.Phonemizers.Backend.Korean
                             if (!string.IsNullOrEmpty(phoneme))
                             {
                                 phonemes.Add(phoneme);
-                                timings.Add(new PhonemeInfo 
-                                { 
-                                    Phoneme = phoneme, 
-                                    StartTime = currentTime, 
-                                    Duration = 0.05 
-                                });
-                                currentTime += 0.05;
                             }
                         }
                     }
@@ -152,32 +137,17 @@ namespace uPiper.Core.Phonemizers.Backend.Korean
                     {
                         // English letter
                         phonemes.Add(ch.ToString().ToLower());
-                        timings.Add(new PhonemeInfo 
-                        { 
-                            Phoneme = ch.ToString().ToLower(), 
-                            StartTime = currentTime, 
-                            Duration = 0.05 
-                        });
-                        currentTime += 0.05;
                     }
                     else if (char.IsWhiteSpace(ch) || char.IsPunctuation(ch))
                     {
                         // Add pause
                         phonemes.Add("_");
-                        timings.Add(new PhonemeInfo 
-                        { 
-                            Phoneme = "_", 
-                            StartTime = currentTime, 
-                            Duration = char.IsPunctuation(ch) ? 0.2 : 0.1 
-                        });
-                        currentTime += char.IsPunctuation(ch) ? 0.2 : 0.1;
                     }
                 }
 
                 return new PhonemeResult 
                 { 
-                    Phonemes = phonemes,
-                    TimingInfo = timings,
+                    Phonemes = phonemes.ToArray(),
                     Language = language,
                     Success = true
                 };

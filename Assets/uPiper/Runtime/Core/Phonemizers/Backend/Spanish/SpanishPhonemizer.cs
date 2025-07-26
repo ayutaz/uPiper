@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers.Backend.Spanish
 {
@@ -77,7 +78,7 @@ namespace uPiper.Core.Phonemizers.Backend.Spanish
         {
             if (string.IsNullOrEmpty(text))
             {
-                return new PhonemeResult { Phonemes = new List<string>() };
+                return new PhonemeResult { Phonemes = new string[0] };
             }
 
             try
@@ -90,8 +91,6 @@ namespace uPiper.Core.Phonemizers.Backend.Spanish
                 
                 // 3. Look up or generate phonemes
                 var phonemes = new List<string>();
-                var timings = new List<PhonemeInfo>();
-                double currentTime = 0;
 
                 foreach (var word in words)
                 {
@@ -99,13 +98,6 @@ namespace uPiper.Core.Phonemizers.Backend.Spanish
                     {
                         // Add pause for punctuation/spaces
                         phonemes.Add("_");
-                        timings.Add(new PhonemeInfo 
-                        { 
-                            Phoneme = "_", 
-                            StartTime = currentTime, 
-                            Duration = 0.1 
-                        });
-                        currentTime += 0.1;
                         continue;
                     }
 
@@ -126,24 +118,18 @@ namespace uPiper.Core.Phonemizers.Backend.Spanish
                         wordPhonemes = g2pEngine.Grapheme2Phoneme(word);
                     }
 
-                    // Add phonemes with timing
+                    // Add phonemes
                     foreach (var phoneme in wordPhonemes)
                     {
                         phonemes.Add(phoneme);
-                        timings.Add(new PhonemeInfo 
-                        { 
-                            Phoneme = phoneme, 
-                            StartTime = currentTime, 
-                            Duration = 0.05 
-                        });
-                        currentTime += 0.05;
                     }
                 }
 
                 return new PhonemeResult 
                 { 
-                    Phonemes = phonemes,
-                    TimingInfo = timings
+                    Phonemes = phonemes.ToArray(),
+                    Language = language,
+                    Success = true
                 };
             }
             catch (Exception ex)
