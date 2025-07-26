@@ -478,9 +478,37 @@ namespace uPiper.Core.Phonemizers.Backend
         {
             // Simple phoneme generation for Spanish
             var phonemes = new List<string>();
-            foreach (char ch in word.ToLower())
+            var lowerWord = word.ToLower();
+            
+            for (int i = 0; i < lowerWord.Length; i++)
             {
-                // Basic Spanish G2P rules
+                char ch = lowerWord[i];
+                
+                // Check for digraphs first
+                if (i < lowerWord.Length - 1)
+                {
+                    string digraph = lowerWord.Substring(i, 2);
+                    if (digraph == "ll")
+                    {
+                        phonemes.Add("ʎ");
+                        i++; // Skip next character
+                        continue;
+                    }
+                    else if (digraph == "rr")
+                    {
+                        phonemes.Add("r");
+                        i++; // Skip next character
+                        continue;
+                    }
+                    else if (digraph == "ch")
+                    {
+                        phonemes.Add("tʃ");
+                        i++; // Skip next character
+                        continue;
+                    }
+                }
+                
+                // Basic Spanish G2P rules for single characters
                 switch (ch)
                 {
                     case 'a': phonemes.Add("a"); break;
@@ -493,7 +521,22 @@ namespace uPiper.Core.Phonemizers.Backend
                     case 'r': phonemes.Add("ɾ"); break;
                     case 'v': phonemes.Add("b"); break;
                     case 'b': phonemes.Add("b"); break;
-                    case 'll': phonemes.Add("ʎ"); break;
+                    case 'l': phonemes.Add("l"); break;
+                    case 'c': phonemes.Add("k"); break;
+                    case 's': phonemes.Add("s"); break;
+                    case 'n': phonemes.Add("n"); break;
+                    case 'm': phonemes.Add("m"); break;
+                    case 'p': phonemes.Add("p"); break;
+                    case 't': phonemes.Add("t"); break;
+                    case 'd': phonemes.Add("d"); break;
+                    case 'f': phonemes.Add("f"); break;
+                    case 'g': phonemes.Add("g"); break;
+                    case 'h': break; // Silent in Spanish
+                    case 'k': phonemes.Add("k"); break;
+                    case 'w': phonemes.Add("w"); break;
+                    case 'x': phonemes.Add("ks"); break;
+                    case 'y': phonemes.Add("j"); break;
+                    case 'z': phonemes.Add("θ"); break; // Spain Spanish
                     default:
                         if (char.IsLetter(ch))
                             phonemes.Add(ch.ToString());
