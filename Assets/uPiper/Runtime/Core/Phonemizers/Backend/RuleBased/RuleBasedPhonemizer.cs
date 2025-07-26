@@ -300,8 +300,8 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         private string GetDefaultDictionaryPath()
         {
             // Path to CMU dictionary in StreamingAssets
-            // Use sample dictionary for now, replace with full cmudict-0.7b.txt when downloaded
-            return System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Phonemizers", "cmudict-sample.txt");
+            // Using full CMU dictionary (134,000+ words)
+            return System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Phonemizers", "cmudict-0.7b.txt");
         }
 
         // Mapping tables (simplified - should be loaded from config)
