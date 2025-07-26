@@ -7,6 +7,7 @@ using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Backend.RuleBased;
 using uPiper.Core.Phonemizers.ErrorHandling;
+using uPiper.Phonemizers.Data;
 
 namespace uPiper.Core.Phonemizers.Services
 {
@@ -20,6 +21,7 @@ namespace uPiper.Core.Phonemizers.Services
         private readonly LRUCache<string, PhonemeResult> cache;
         private readonly SemaphoreSlim semaphore;
         private readonly PhonemizerServiceOptions options;
+        private readonly PhonemizerDataManager dataManager;
 
         /// <summary>
         /// Gets the singleton instance.
@@ -37,6 +39,10 @@ namespace uPiper.Core.Phonemizers.Services
             this.safeBackends = new Dictionary<string, SafePhonemizerWrapper>();
             this.cache = new LRUCache<string, PhonemeResult>(this.options.CacheSize);
             this.semaphore = new SemaphoreSlim(this.options.MaxConcurrency);
+            
+            // Initialize data manager
+            string dataPath = Application.persistentDataPath + "/uPiper/PhonemizerData";
+            this.dataManager = new PhonemizerDataManager(dataPath);
 
             // Register default backends
             RegisterDefaultBackends();
@@ -125,7 +131,7 @@ namespace uPiper.Core.Phonemizers.Services
         }
 
         /// <inheritdoc/>
-        public IDataManager DataManager => throw new NotImplementedException("Data manager not yet implemented");
+        public IDataManager DataManager => dataManager;
 
         /// <inheritdoc/>
         public CacheStatistics GetCacheStatistics()

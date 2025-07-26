@@ -372,9 +372,46 @@ namespace uPiper.Core.Phonemizers.Data
 
         private async Task<bool> VerifyChecksum(string filePath, string expectedChecksum)
         {
-            // Simple implementation - in production, use proper hash
-            await Task.Yield();
-            return true; // TODO: Implement actual checksum verification
+            if (string.IsNullOrEmpty(expectedChecksum))
+                return true; // No checksum to verify
+                
+            try
+            {
+                // Read file and compute MD5 hash
+                using (var md5 = System.Security.Cryptography.MD5.Create())
+                using (var stream = File.OpenRead(filePath))
+                {
+                    // Compute hash asynchronously in chunks
+                    byte[] buffer = new byte[8192];
+                    int bytesRead;
+                    
+                    while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    {
+                        md5.TransformBlock(buffer, 0, bytesRead, buffer, 0);
+                    }
+                    
+                    md5.TransformFinalBlock(new byte[0], 0, 0);
+                    var hash = md5.Hash;
+                    
+                    // Convert to hex string
+                    var hashString = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+                    
+                    // Compare with expected
+                    bool isValid = hashString.Equals(expectedChecksum, StringComparison.OrdinalIgnoreCase);
+                    
+                    if (!isValid)
+                    {
+                        Debug.LogWarning($"Checksum mismatch: expected {expectedChecksum}, got {hashString}");
+                    }
+                    
+                    return isValid;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error verifying checksum: {ex.Message}");
+                return false;
+            }
         }
 
         private async Task ExtractPackage(string zipPath, string extractPath)
