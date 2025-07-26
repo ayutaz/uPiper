@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers;
-using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers.Backend
 {
