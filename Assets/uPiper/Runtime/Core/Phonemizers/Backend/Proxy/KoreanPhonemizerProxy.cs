@@ -12,7 +12,7 @@ namespace uPiper.Core.Phonemizers.Backend.Proxy
     /// <summary>
     /// Proxy class for Korean phonemizer to avoid namespace resolution issues
     /// </summary>
-    public class KoreanPhonemizerProxy : PhonemizerBackendBase
+    public class KoreanPhonemizerProxy : Backend.PhonemizerBackendBase
     {
         private Dictionary<string, string[]> exceptionDict;
         private readonly object dictLock = new object();

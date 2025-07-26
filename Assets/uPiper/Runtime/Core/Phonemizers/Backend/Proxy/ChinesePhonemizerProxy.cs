@@ -12,7 +12,7 @@ namespace uPiper.Core.Phonemizers.Backend.Proxy
     /// <summary>
     /// Proxy class for Chinese phonemizer to avoid namespace resolution issues
     /// </summary>
-    public class ChinesePhonemizerProxy : PhonemizerBackendBase
+    public class ChinesePhonemizerProxy : Backend.PhonemizerBackendBase
     {
         private Dictionary<char, string[]> pinyinDict;
         private readonly object dictLock = new object();
