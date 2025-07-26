@@ -176,4 +176,280 @@ namespace uPiper.Core.Phonemizers.Backend
             normalizer = null;
         }
     }
+    
+    /// <summary>
+    /// Proxy class for Korean phonemizer to avoid namespace resolution issues
+    /// </summary>
+    public class KoreanPhonemizerProxy : PhonemizerBackendBase
+    {
+        private Korean.HangulProcessor hangulProcessor;
+        private Korean.KoreanG2P g2pEngine;
+        private Korean.KoreanTextNormalizer normalizer;
+        private Dictionary<string, string[]> exceptionDict;
+        private readonly object dictLock = new object();
+        
+        public override string Name => "Korean";
+        public override string Version => "1.0.0";
+        public override string License => "MIT";
+        public override string[] SupportedLanguages => new[] { "ko", "ko-KR" };
+        
+        protected override async Task<bool> InitializeInternalAsync(
+            PhonemizerBackendOptions options,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                hangulProcessor = new Korean.HangulProcessor();
+                g2pEngine = new Korean.KoreanG2P();
+                normalizer = new Korean.KoreanTextNormalizer();
+                exceptionDict = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to initialize Korean phonemizer: {ex.Message}");
+                return false;
+            }
+        }
+        
+        public override async Task<PhonemeResult> PhonemizeAsync(
+            string text, 
+            string language, 
+            PhonemeOptions options = null, 
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return new PhonemeResult { Phonemes = new string[0] };
+            }
+
+            try
+            {
+                var normalized = normalizer.Normalize(text);
+                var phonemes = new List<string>();
+                var words = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (var word in words)
+                {
+                    if (phonemes.Count > 0)
+                        phonemes.Add("_");
+
+                    string[] wordPhonemes = null;
+                    
+                    lock (dictLock)
+                    {
+                        if (exceptionDict.TryGetValue(word, out var dictPhonemes))
+                        {
+                            wordPhonemes = dictPhonemes;
+                        }
+                    }
+                    
+                    if (wordPhonemes == null)
+                    {
+                        var decomposed = hangulProcessor.DecomposeWord(word);
+                        wordPhonemes = g2pEngine.ConvertToPhonemes(decomposed);
+                    }
+
+                    phonemes.AddRange(wordPhonemes);
+                }
+
+                return new PhonemeResult 
+                { 
+                    Phonemes = phonemes.ToArray(),
+                    Language = language,
+                    Success = true
+                };
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error in Korean phonemization: {ex.Message}");
+                throw;
+            }
+        }
+        
+        public override long GetMemoryUsage()
+        {
+            return exceptionDict?.Count * 60 ?? 0;
+        }
+        
+        public override BackendCapabilities GetCapabilities()
+        {
+            return new BackendCapabilities
+            {
+                SupportsIPA = true,
+                SupportsStress = false,
+                SupportsSyllables = true,
+                SupportsTones = false,
+                SupportsDuration = false,
+                SupportsBatchProcessing = false,
+                IsThreadSafe = true,
+                RequiresNetwork = false
+            };
+        }
+        
+        protected override void DisposeInternal()
+        {
+            exceptionDict?.Clear();
+            hangulProcessor = null;
+            g2pEngine = null;
+            normalizer = null;
+        }
+    }
+    
+    /// <summary>
+    /// Proxy class for Spanish phonemizer to avoid namespace resolution issues
+    /// </summary>
+    public class SpanishPhonemizerProxy : PhonemizerBackendBase
+    {
+        private Dictionary<string, string[]> spanishDict;
+        private Spanish.SpanishG2P g2pEngine;
+        private Spanish.SpanishTextNormalizer normalizer;
+        private readonly object dictLock = new object();
+        
+        public override string Name => "Spanish";
+        public override string Version => "1.0.0";
+        public override string License => "MIT";
+        public override string[] SupportedLanguages => new[] 
+        { 
+            "es", "es-ES", "es-MX", "es-AR", "es-CO", "es-CL", "es-PE", "es-VE", "es-EC", "es-BO", "es-UY", "es-PY"
+        };
+        
+        protected override async Task<bool> InitializeInternalAsync(
+            PhonemizerBackendOptions options,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                normalizer = new Spanish.SpanishTextNormalizer();
+                g2pEngine = new Spanish.SpanishG2P();
+                spanishDict = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to initialize Spanish phonemizer: {ex.Message}");
+                return false;
+            }
+        }
+        
+        public override async Task<PhonemeResult> PhonemizeAsync(
+            string text, 
+            string language, 
+            PhonemeOptions options = null, 
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return new PhonemeResult { Phonemes = new string[0] };
+            }
+
+            try
+            {
+                var normalized = normalizer.Normalize(text);
+                var words = TokenizeSpanish(normalized);
+                var phonemes = new List<string>();
+
+                foreach (var word in words)
+                {
+                    if (string.IsNullOrWhiteSpace(word))
+                    {
+                        phonemes.Add("_");
+                        continue;
+                    }
+
+                    string[] wordPhonemes = null;
+                    
+                    lock (dictLock)
+                    {
+                        if (spanishDict.TryGetValue(word.ToUpper(), out var dictPhonemes))
+                        {
+                            wordPhonemes = dictPhonemes;
+                        }
+                    }
+                    
+                    if (wordPhonemes == null)
+                    {
+                        wordPhonemes = g2pEngine.Grapheme2Phoneme(word);
+                    }
+
+                    phonemes.AddRange(wordPhonemes);
+                }
+
+                return new PhonemeResult 
+                { 
+                    Phonemes = phonemes.ToArray(),
+                    Language = language,
+                    Success = true
+                };
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error in Spanish phonemization: {ex.Message}");
+                throw;
+            }
+        }
+        
+        private List<string> TokenizeSpanish(string text)
+        {
+            var words = new List<string>();
+            var currentWord = "";
+
+            foreach (char c in text)
+            {
+                if (char.IsLetter(c) || c == '\'' || c == '-' || c == 'ñ' || c == 'Ñ')
+                {
+                    currentWord += c;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(currentWord))
+                    {
+                        words.Add(currentWord);
+                        currentWord = "";
+                    }
+                    
+                    if (char.IsPunctuation(c) && c != '\'' && c != '-')
+                    {
+                        words.Add(c.ToString());
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(currentWord))
+            {
+                words.Add(currentWord);
+            }
+
+            return words;
+        }
+        
+        public override long GetMemoryUsage()
+        {
+            return spanishDict?.Count * 80 ?? 0;
+        }
+        
+        public override BackendCapabilities GetCapabilities()
+        {
+            return new BackendCapabilities
+            {
+                SupportsIPA = true,
+                SupportsStress = true,
+                SupportsSyllables = true,
+                SupportsTones = false,
+                SupportsDuration = false,
+                SupportsBatchProcessing = false,
+                IsThreadSafe = true,
+                RequiresNetwork = false
+            };
+        }
+        
+        protected override void DisposeInternal()
+        {
+            spanishDict?.Clear();
+            g2pEngine = null;
+            normalizer = null;
+        }
+    }
 }
