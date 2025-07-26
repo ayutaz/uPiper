@@ -5,8 +5,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend;
 
-namespace uPiper.Core.Phonemizers.Backend
+namespace uPiper.Core.Phonemizers.Backend.Proxy
 {
     /// <summary>
     /// Proxy class for Chinese phonemizer to avoid namespace resolution issues
