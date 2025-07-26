@@ -268,14 +268,50 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         }
 
         /// <inheritdoc/>
+        public override long GetMemoryUsage()
+        {
+            long size = 0;
+            
+            if (pinyinDict != null)
+            {
+                // Estimate dictionary memory usage
+                size += pinyinDict.Count * (sizeof(char) + 50); // Rough estimate per entry
+            }
+            
+            return size;
+        }
+
+        /// <inheritdoc/>
+        public override BackendCapabilities GetCapabilities()
+        {
+            return new BackendCapabilities
+            {
+                SupportsIPA = true,
+                SupportsStress = false,
+                SupportsSyllables = true,
+                SupportsTones = true,
+                SupportsDuration = false,
+                SupportsBatchProcessing = false,
+                IsThreadSafe = true,
+                RequiresNetwork = false
+            };
+        }
+
+        /// <inheritdoc/>
+        protected override void DisposeInternal()
+        {
+            pinyinDict?.Clear();
+            segmenter = null;
+            phonemeMapper = null;
+            normalizer = null;
+        }
+
+        /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                pinyinDict?.Clear();
-                segmenter = null;
-                phonemeMapper = null;
-                normalizer = null;
+                DisposeInternal();
             }
             base.Dispose(disposing);
         }

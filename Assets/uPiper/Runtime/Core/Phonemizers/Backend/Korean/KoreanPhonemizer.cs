@@ -216,14 +216,50 @@ namespace uPiper.Core.Phonemizers.Backend.Korean
         }
 
         /// <inheritdoc/>
+        public override long GetMemoryUsage()
+        {
+            long size = 0;
+            
+            if (exceptionDict != null)
+            {
+                // Estimate dictionary memory usage
+                size += exceptionDict.Count * 60; // Rough estimate per entry
+            }
+            
+            return size;
+        }
+
+        /// <inheritdoc/>
+        public override BackendCapabilities GetCapabilities()
+        {
+            return new BackendCapabilities
+            {
+                SupportsIPA = true,
+                SupportsStress = false,
+                SupportsSyllables = true,
+                SupportsTones = false,
+                SupportsDuration = false,
+                SupportsBatchProcessing = false,
+                IsThreadSafe = true,
+                RequiresNetwork = false
+            };
+        }
+
+        /// <inheritdoc/>
+        protected override void DisposeInternal()
+        {
+            exceptionDict?.Clear();
+            hangulProcessor = null;
+            g2pEngine = null;
+            normalizer = null;
+        }
+
+        /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                exceptionDict?.Clear();
-                hangulProcessor = null;
-                g2pEngine = null;
-                normalizer = null;
+                DisposeInternal();
             }
             base.Dispose(disposing);
         }
