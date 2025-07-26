@@ -8,14 +8,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers;
-using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers.Backend
 {
     /// <summary>
     /// Proxy class for Chinese phonemizer to avoid namespace resolution issues
     /// </summary>
-    public class ChinesePhonemizerProxy : PhonemizerBackendBase
+    public class ChinesePhonemizerProxy : uPiper.Core.Phonemizers.Backend.PhonemizerBackendBase
     {
         private Dictionary<char, string[]> pinyinDict;
         private readonly object dictLock = new object();
@@ -199,7 +198,7 @@ namespace uPiper.Core.Phonemizers.Backend
     /// <summary>
     /// Proxy class for Korean phonemizer to avoid namespace resolution issues
     /// </summary>
-    public class KoreanPhonemizerProxy : PhonemizerBackendBase
+    public class KoreanPhonemizerProxy : uPiper.Core.Phonemizers.Backend.PhonemizerBackendBase
     {
         private Dictionary<string, string[]> exceptionDict;
         private readonly object dictLock = new object();
@@ -333,7 +332,7 @@ namespace uPiper.Core.Phonemizers.Backend
     /// <summary>
     /// Proxy class for Spanish phonemizer to avoid namespace resolution issues
     /// </summary>
-    public class SpanishPhonemizerProxy : PhonemizerBackendBase
+    public class SpanishPhonemizerProxy : uPiper.Core.Phonemizers.Backend.PhonemizerBackendBase
     {
         private Dictionary<string, string[]> spanishDict;
         private readonly object dictLock = new object();
