@@ -125,7 +125,7 @@ namespace uPiper.Core.Phonemizers.Unity
             Debug.LogWarning("Critical memory state detected");
             
             // Aggressive memory cleanup
-            phonemizerService.ClearCache();
+            // phonemizerService.ClearCache();
             Resources.UnloadUnusedAssets();
             System.GC.Collect();
             
