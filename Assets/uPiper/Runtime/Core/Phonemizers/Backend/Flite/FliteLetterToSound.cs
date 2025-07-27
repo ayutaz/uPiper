@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace uPiper.Phonemizers.Backend.Flite
+namespace uPiper.Core.Phonemizers.Backend.Flite
 {
     /// <summary>
     /// Flite Letter-to-Sound (LTS) rules implementation

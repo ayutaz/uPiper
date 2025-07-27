@@ -261,24 +261,23 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             base.Dispose(disposing);
         }
 
-        public override Task<bool> InitializeAsync(string dataPath, CancellationToken cancellationToken = default)
+        protected override Task<bool> InitializeInternalAsync(PhonemizerBackendOptions options, CancellationToken cancellationToken)
         {
             // Flite is self-contained and doesn't require external data files
             return Task.FromResult(true);
         }
 
-        public override async Task<bool> ValidateAsync(CancellationToken cancellationToken = default)
+        // ValidateAsync is not an abstract method in the base class
+        
+        protected override void DisposeInternal()
         {
-            try
+            lexicon?.Dispose();
+            lts?.Dispose();
+            foreach (var voice in voices.Values)
             {
-                // Test basic functionality
-                var testResult = await PhonemizeAsync("test", "en-US", null, cancellationToken);
-                return testResult != null && testResult.Phonemes.Count > 0;
+                voice.Dispose();
             }
-            catch
-            {
-                return false;
-            }
+            voices.Clear();
         }
     }
 

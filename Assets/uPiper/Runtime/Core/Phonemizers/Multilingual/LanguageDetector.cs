@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-namespace uPiper.Phonemizers.Multilingual
+namespace uPiper.Core.Phonemizers.Multilingual
 {
     /// <summary>
     /// Language detection system for automatic language identification
@@ -479,5 +479,28 @@ namespace uPiper.Phonemizers.Multilingual
             public string Language { get; set; }
             public Dictionary<string, float> NGrams { get; set; } = new Dictionary<string, float>();
         }
+    }
+
+    /// <summary>
+    /// Result of language detection
+    /// </summary>
+    public class LanguageDetectionResult
+    {
+        public string DetectedLanguage { get; set; }
+        public float Confidence { get; set; }
+        public bool IsReliable { get; set; }
+        public Dictionary<string, float> LanguageScores { get; set; } = new Dictionary<string, float>();
+        public string Script { get; set; }
+    }
+
+    /// <summary>
+    /// Text segment with language information
+    /// </summary>
+    public class TextSegment
+    {
+        public string Text { get; set; }
+        public string Language { get; set; }
+        public int StartIndex { get; set; }
+        public int EndIndex { get; set; }
     }
 }

@@ -2,16 +2,16 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Profiling;
-using uPiper.Phonemizers.Configuration;
+using uPiper.Core.Phonemizers.Unity;
 
-namespace uPiper.Phonemizers.Unity
+namespace uPiper.Core.Phonemizers.Unity
 {
     /// <summary>
     /// Manages mobile-specific optimizations for phonemization
     /// </summary>
     public class MobileOptimizationManager : MonoBehaviour
     {
-        private PhonemizerSettings settings;
+        // private PhonemizerSettings settings;
         private UnityPhonemizerService phonemizerService;
         
         [Header("Memory Management")]

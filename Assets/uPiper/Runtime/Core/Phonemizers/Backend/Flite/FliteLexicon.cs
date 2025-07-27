@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 
-namespace uPiper.Phonemizers.Backend.Flite
+namespace uPiper.Core.Phonemizers.Backend.Flite
 {
     /// <summary>
     /// Flite lexicon implementation

@@ -98,4 +98,35 @@ namespace uPiper.Core.Phonemizers.Backend
         /// </summary>
         Native
     }
+
+    /// <summary>
+    /// Result of phonemization.
+    /// </summary>
+    public class PhonemeResult
+    {
+        /// <summary>
+        /// The phonemes extracted from the text.
+        /// </summary>
+        public string[] Phonemes { get; set; }
+
+        /// <summary>
+        /// The language used for phonemization.
+        /// </summary>
+        public string Language { get; set; }
+
+        /// <summary>
+        /// Whether the phonemization was successful.
+        /// </summary>
+        public bool Success { get; set; }
+
+        /// <summary>
+        /// Error message if phonemization failed.
+        /// </summary>
+        public string Error { get; set; }
+
+        /// <summary>
+        /// Additional metadata about the phonemization.
+        /// </summary>
+        public Dictionary<string, object> Metadata { get; set; }
+    }
 }
