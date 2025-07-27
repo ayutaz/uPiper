@@ -28,16 +28,19 @@ namespace uPiper.Core.Phonemizers.Backend
             PhonemizerBackendOptions options,
             CancellationToken cancellationToken)
         {
-            try
+            return await Task.Run(() =>
             {
-                spanishDict = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Failed to initialize Spanish phonemizer: {ex.Message}");
-                return false;
-            }
+                try
+                {
+                    spanishDict = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Failed to initialize Spanish phonemizer: {ex.Message}");
+                    return false;
+                }
+            }, cancellationToken);
         }
         
         public override async Task<PhonemeResult> PhonemizeAsync(
@@ -46,8 +49,10 @@ namespace uPiper.Core.Phonemizers.Backend
             PhonemeOptions options = null, 
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(text))
+            return await Task.Run(() =>
             {
+                if (string.IsNullOrEmpty(text))
+                {
                 return new PhonemeResult { Phonemes = new string[0] };
             }
 
@@ -95,6 +100,7 @@ namespace uPiper.Core.Phonemizers.Backend
                 Debug.LogError($"Error in Spanish phonemization: {ex.Message}");
                 throw;
             }
+            }, cancellationToken);
         }
         
         private string NormalizeText(string text)

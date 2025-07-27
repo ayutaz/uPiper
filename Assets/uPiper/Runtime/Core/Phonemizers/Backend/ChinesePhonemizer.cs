@@ -25,21 +25,24 @@ namespace uPiper.Core.Phonemizers.Backend
             PhonemizerBackendOptions options,
             CancellationToken cancellationToken)
         {
-            try
+            return await Task.Run(() =>
             {
-                // Initialize components
-                pinyinDict = new Dictionary<char, string[]>();
+                try
+                {
+                    // Initialize components
+                    pinyinDict = new Dictionary<char, string[]>();
 
-                // Initialize with basic mappings
-                InitializeBasicPinyinMappings();
-                
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Failed to initialize Chinese phonemizer: {ex.Message}");
-                return false;
-            }
+                    // Initialize with basic mappings
+                    InitializeBasicPinyinMappings();
+                    
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Failed to initialize Chinese phonemizer: {ex.Message}");
+                    return false;
+                }
+            }, cancellationToken);
         }
         
         public override async Task<PhonemeResult> PhonemizeAsync(
@@ -48,10 +51,12 @@ namespace uPiper.Core.Phonemizers.Backend
             PhonemeOptions options = null, 
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(text))
+            return await Task.Run(() =>
             {
-                return new PhonemeResult { Phonemes = new string[0] };
-            }
+                if (string.IsNullOrEmpty(text))
+                {
+                    return new PhonemeResult { Phonemes = new string[0] };
+                }
 
             try
             {
@@ -102,6 +107,7 @@ namespace uPiper.Core.Phonemizers.Backend
                 Debug.LogError($"Error in Chinese phonemization: {ex.Message}");
                 throw;
             }
+            }, cancellationToken);
         }
         
         private void InitializeBasicPinyinMappings()

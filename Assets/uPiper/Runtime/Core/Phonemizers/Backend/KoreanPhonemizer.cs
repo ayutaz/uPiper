@@ -25,16 +25,19 @@ namespace uPiper.Core.Phonemizers.Backend
             PhonemizerBackendOptions options,
             CancellationToken cancellationToken)
         {
-            try
+            return await Task.Run(() =>
             {
-                exceptionDict = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Failed to initialize Korean phonemizer: {ex.Message}");
-                return false;
-            }
+                try
+                {
+                    exceptionDict = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Failed to initialize Korean phonemizer: {ex.Message}");
+                    return false;
+                }
+            }, cancellationToken);
         }
         
         public override async Task<PhonemeResult> PhonemizeAsync(
@@ -43,10 +46,12 @@ namespace uPiper.Core.Phonemizers.Backend
             PhonemeOptions options = null, 
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrEmpty(text))
+            return await Task.Run(() =>
             {
-                return new PhonemeResult { Phonemes = new string[0] };
-            }
+                if (string.IsNullOrEmpty(text))
+                {
+                    return new PhonemeResult { Phonemes = new string[0] };
+                }
 
             try
             {
@@ -89,6 +94,7 @@ namespace uPiper.Core.Phonemizers.Backend
                 Debug.LogError($"Error in Korean phonemization: {ex.Message}");
                 throw;
             }
+            }, cancellationToken);
         }
         
         private string NormalizeKoreanText(string text)

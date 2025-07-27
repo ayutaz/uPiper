@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace uPiper.Core.Phonemizers.ErrorHandling
 {
@@ -100,7 +100,7 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
                             else
                             {
                                 // Unknown character, skip
-                                Debug.LogWarning($"Fallback: Unknown character '{c}'");
+                                UnityEngine.Debug.LogWarning($"Fallback: Unknown character '{c}'");
                             }
                         }
                         else if (char.IsPunctuation(c))
