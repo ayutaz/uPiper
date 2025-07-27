@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -124,7 +125,11 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
                     ProcessingTime = stopwatch.Elapsed,
                     Phonemes = phonemes.ToArray(),
                     PhonemeIds = ConvertToPhonemeIds(phonemes),
-                    Metadata = "Fallback phonemization - quality may be limited"
+                    Metadata = new Dictionary<string, object> 
+                    { 
+                        { "Type", "Fallback" }, 
+                        { "Note", "Quality may be limited" } 
+                    }
                 };
 
                 return Task.FromResult(result);

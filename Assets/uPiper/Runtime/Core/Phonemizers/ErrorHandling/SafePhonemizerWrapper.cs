@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -184,7 +185,11 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
                         text, language, options, cancellationToken);
                     
                     // Mark that fallback was used
-                    result.Metadata = (result.Metadata ?? "") + " [Fallback]";
+                    if (result.Metadata == null)
+                    {
+                        result.Metadata = new Dictionary<string, object>();
+                    }
+                    result.Metadata["FallbackUsed"] = true;
                     return result;
                 }
                 catch (Exception ex)
