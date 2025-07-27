@@ -481,26 +481,5 @@ namespace uPiper.Core.Phonemizers.Multilingual
         }
     }
 
-    /// <summary>
-    /// Result of language detection
-    /// </summary>
-    public class LanguageDetectionResult
-    {
-        public string DetectedLanguage { get; set; }
-        public float Confidence { get; set; }
-        public bool IsReliable { get; set; }
-        public Dictionary<string, float> LanguageScores { get; set; } = new Dictionary<string, float>();
-        public string Script { get; set; }
-    }
-
-    /// <summary>
-    /// Text segment with language information
-    /// </summary>
-    public class TextSegment
-    {
-        public string Text { get; set; }
-        public string Language { get; set; }
-        public int StartIndex { get; set; }
-        public int EndIndex { get; set; }
-    }
+    // LanguageDetectionResult and TextSegment are defined in IMultilingualPhonemizerService.cs
 }

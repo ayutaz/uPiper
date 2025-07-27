@@ -22,6 +22,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         private readonly object syncLock = new object();
 
         public override string Name => "Flite";
+        public override string Version => "1.0.0";
         public override string License => "MIT/BSD";
         public override string[] SupportedLanguages => new[] { "en-US", "en-GB", "en-IN" };
 
@@ -278,6 +279,27 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                 voice.Dispose();
             }
             voices.Clear();
+        }
+
+        public override long GetMemoryUsage()
+        {
+            // Estimate memory usage
+            return 1024 * 1024; // 1MB estimate
+        }
+
+        public override BackendCapabilities GetCapabilities()
+        {
+            return new BackendCapabilities
+            {
+                SupportsIPA = true,
+                SupportsStress = true,
+                SupportsSyllables = false,
+                SupportsTones = false,
+                SupportsDuration = false,
+                SupportsBatchProcessing = false,
+                IsThreadSafe = true,
+                RequiresNetwork = false
+            };
         }
     }
 
