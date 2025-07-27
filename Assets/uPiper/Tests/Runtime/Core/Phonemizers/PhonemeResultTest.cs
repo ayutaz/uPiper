@@ -1,6 +1,7 @@
 using System;
 using NUnit.Framework;
 using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Tests.Runtime.Core.Phonemizers
 {
@@ -33,8 +34,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Pitches = new[] { 1.0f, 1.1f, 0.9f, 1.0f },
                 Language = "en",
                 ProcessingTime = TimeSpan.FromMilliseconds(50),
+                ProcessingTimeMs = 50,
                 FromCache = true,
-                Metadata = "test metadata"
+                Metadata = new System.Collections.Generic.Dictionary<string, object> { { "test", "metadata" } }
             };
 
             Assert.AreEqual("test text", result.OriginalText);
@@ -45,7 +47,8 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.AreEqual("en", result.Language);
             Assert.AreEqual(TimeSpan.FromMilliseconds(50), result.ProcessingTime);
             Assert.IsTrue(result.FromCache);
-            Assert.AreEqual("test metadata", result.Metadata);
+            Assert.IsNotNull(result.Metadata);
+            Assert.AreEqual("metadata", result.Metadata["test"]);
         }
 
         [Test]
@@ -60,8 +63,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Pitches = new[] { 1.0f, 1.1f, 1.2f },
                 Language = "ja",
                 ProcessingTime = TimeSpan.FromMilliseconds(100),
+                ProcessingTimeMs = 100,
                 FromCache = true,
-                Metadata = "metadata"
+                Metadata = new System.Collections.Generic.Dictionary<string, object> { { "key", "metadata" } }
             };
 
             var clone = original.Clone();
@@ -75,7 +79,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.AreEqual(original.Language, clone.Language);
             Assert.AreEqual(original.ProcessingTime, clone.ProcessingTime);
             Assert.AreEqual(original.FromCache, clone.FromCache);
-            Assert.AreEqual(original.Metadata, clone.Metadata);
+            // Metadata is copied but reference may be different
+            Assert.IsNotNull(clone.Metadata);
+            Assert.AreEqual(original.Metadata["key"], clone.Metadata["key"]);
 
             // Check arrays are different instances (deep copy)
             Assert.AreNotSame(original.Phonemes, clone.Phonemes);

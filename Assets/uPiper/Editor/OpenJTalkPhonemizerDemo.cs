@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Editor
@@ -97,17 +98,16 @@ namespace uPiper.Editor
                     EditorGUILayout.LabelField($"Phoneme Count: {(_lastResult.Phonemes?.Length ?? 0)}");
                     // Total duration can be extracted from metadata if available
                     var totalDuration = 0f;
-                    if (!string.IsNullOrEmpty(_lastResult.Metadata) && _lastResult.Metadata.Contains("TotalDuration:"))
+                    if (_lastResult.Metadata != null && _lastResult.Metadata.ContainsKey("TotalDuration"))
                     {
-                        var parts = _lastResult.Metadata.Split(':');
-                        if (parts.Length > 1 && float.TryParse(parts[1], out var duration))
+                        if (_lastResult.Metadata["TotalDuration"] is float duration)
                         {
                             totalDuration = duration;
                         }
                     }
                     EditorGUILayout.LabelField($"Total Duration: {totalDuration:F3} seconds");
                     EditorGUILayout.LabelField($"Language: {_lastResult.Language}");
-                    EditorGUILayout.LabelField($"Processing Time: {_lastResult.ProcessingTime:F3} seconds");
+                    EditorGUILayout.LabelField($"Processing Time: {_lastResult.ProcessingTimeMs:F3} ms");
                     EditorGUILayout.LabelField($"From Cache: {_lastResult.FromCache}");
 
                     EditorGUILayout.Space();

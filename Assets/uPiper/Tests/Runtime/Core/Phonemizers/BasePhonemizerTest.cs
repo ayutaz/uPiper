@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using uPiper.Core;
 using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Tests.Runtime.Core.Phonemizers

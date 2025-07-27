@@ -2,7 +2,6 @@ using System;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Backend.RuleBased;
-using uPiper.Core.Phonemizers.ErrorHandling;
 
 namespace uPiper.Tests.Runtime
 {
@@ -15,15 +14,15 @@ namespace uPiper.Tests.Runtime
         {
             try
             {
-                // Test proxy classes
-                var chinese = new ChinesePhonemizerProxy();
-                Debug.Log($"Chinese proxy phonemizer created: {chinese.Name}");
+                // Test phonemizer implementations
+                var chinese = new ChinesePhonemizer();
+                Debug.Log($"Chinese phonemizer created: {chinese.Name}");
                 
-                var korean = new KoreanPhonemizerProxy();
-                Debug.Log($"Korean proxy phonemizer created: {korean.Name}");
+                var korean = new KoreanPhonemizer();
+                Debug.Log($"Korean phonemizer created: {korean.Name}");
                 
-                var spanish = new SpanishPhonemizerProxy();
-                Debug.Log($"Spanish proxy phonemizer created: {spanish.Name}");
+                var spanish = new SpanishPhonemizer();
+                Debug.Log($"Spanish phonemizer created: {spanish.Name}");
                 
                 // Test other phonemizers
                 var ruleBased = new RuleBasedPhonemizer();
@@ -32,15 +31,11 @@ namespace uPiper.Tests.Runtime
                 var fallback = new FallbackPhonemizer();
                 Debug.Log($"Fallback phonemizer created: {fallback.Name}");
                 
-                // Test namespace access to component classes
-                var chineseNormalizer = new uPiper.Core.Phonemizers.Backend.Chinese.ChineseTextNormalizer();
-                Debug.Log("Chinese text normalizer created successfully");
-                
-                var koreanProcessor = new uPiper.Core.Phonemizers.Backend.Korean.HangulProcessor();
-                Debug.Log("Korean Hangul processor created successfully");
-                
-                var spanishG2P = new uPiper.Core.Phonemizers.Backend.Spanish.SpanishG2P();
-                Debug.Log("Spanish G2P engine created successfully");
+                // Test that we can access PhonemeResult
+                var result = new PhonemeResult();
+                result.OriginalText = "test";
+                result.Phonemes = new string[] { "t", "e", "s", "t" };
+                Debug.Log($"PhonemeResult created with text: {result.OriginalText}");
                 
                 Debug.Log("All phonemizers compiled and instantiated successfully!");
             }

@@ -10,15 +10,15 @@ namespace uPiper.Tests.Runtime
             var baseType = typeof(uPiper.Core.Phonemizers.Backend.PhonemizerBackendBase);
             Debug.Log($"PhonemizerBackendBase type found: {baseType.FullName}");
             
-            // Test Chinese components
-            var chineseNormalizer = typeof(uPiper.Core.Phonemizers.Backend.Chinese.ChineseTextNormalizer);
-            Debug.Log($"ChineseTextNormalizer type found: {chineseNormalizer.FullName}");
+            // Test phonemizer implementations
+            var chinesePhonemizer = typeof(uPiper.Core.Phonemizers.Backend.ChinesePhonemizer);
+            Debug.Log($"ChinesePhonemizer type found: {chinesePhonemizer.FullName}");
             
-            var chineseSegmenter = typeof(uPiper.Core.Phonemizers.Backend.Chinese.ChineseTextSegmenter);
-            Debug.Log($"ChineseTextSegmenter type found: {chineseSegmenter.FullName}");
+            var koreanPhonemizer = typeof(uPiper.Core.Phonemizers.Backend.KoreanPhonemizer);
+            Debug.Log($"KoreanPhonemizer type found: {koreanPhonemizer.FullName}");
             
-            var pinyinMapper = typeof(uPiper.Core.Phonemizers.Backend.Chinese.PinyinToPhonemeMapper);
-            Debug.Log($"PinyinToPhonemeMapper type found: {pinyinMapper.FullName}");
+            var spanishPhonemizer = typeof(uPiper.Core.Phonemizers.Backend.SpanishPhonemizer);
+            Debug.Log($"SpanishPhonemizer type found: {spanishPhonemizer.FullName}");
         }
     }
 }
