@@ -47,13 +47,16 @@ namespace uPiper.Core.Phonemizers.Unity
 
         private void LoadSettings()
         {
-            // Try to load settings from Resources
+            // Settings loading is disabled for now
+            // TODO: Implement PhonemizerSettings class
+            /*
             settings = Resources.Load<PhonemizerSettings>("PhonemizerSettings");
             if (settings == null)
             {
                 Debug.LogWarning("PhonemizerSettings not found in Resources. Using default settings.");
                 settings = PhonemizerSettings.CreateDefault();
             }
+            */
         }
 
         private void StartMobileOptimizations()
@@ -109,7 +112,7 @@ namespace uPiper.Core.Phonemizers.Unity
                 // Reduce cache size
                 // if (settings.ReduceCacheOnLowMemory)
                 {
-                    phonemizerService.ClearCache();
+                    // phonemizerService.ClearCache();
                 }
                 
                 // Reduce concurrent operations

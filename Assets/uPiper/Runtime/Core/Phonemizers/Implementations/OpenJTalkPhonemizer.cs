@@ -430,7 +430,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                 Pitches = pitches,
                 Language = "ja",
                 ProcessingTime = TimeSpan.Zero, // Will be set by BasePhonemizer
-                Metadata = $"TotalDuration:{nativeResult.total_duration:F3}"
+                Metadata = new Dictionary<string, object> 
+                {
+                    ["TotalDuration"] = nativeResult.total_duration
+                }
             };
         }
 

@@ -56,7 +56,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             {
                 try
                 {
-                    var ruleBasedBackend = new Backend.RuleBased.RuleBasedPhonemizer();
+                    var ruleBasedBackend = new uPiper.Core.Phonemizers.Backend.RuleBased.RuleBasedPhonemizer();
                     await ruleBasedBackend.InitializeAsync(new PhonemizerBackendOptions());
                     foreach (var lang in ruleBasedBackend.SupportedLanguages)
                     {

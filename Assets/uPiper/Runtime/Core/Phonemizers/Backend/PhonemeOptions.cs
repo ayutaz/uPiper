@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace uPiper.Core.Phonemizers.Backend
@@ -115,9 +116,19 @@ namespace uPiper.Core.Phonemizers.Backend
     public class PhonemeResult
     {
         /// <summary>
+        /// The original input text.
+        /// </summary>
+        public string OriginalText { get; set; }
+
+        /// <summary>
         /// The phonemes extracted from the text.
         /// </summary>
         public string[] Phonemes { get; set; }
+
+        /// <summary>
+        /// The phoneme IDs for model input.
+        /// </summary>
+        public int[] PhonemeIds { get; set; }
 
         /// <summary>
         /// The language used for phonemization.
@@ -150,6 +161,11 @@ namespace uPiper.Core.Phonemizers.Backend
         public float[] Durations { get; set; }
 
         /// <summary>
+        /// Pitch values for each phoneme.
+        /// </summary>
+        public float[] Pitches { get; set; }
+
+        /// <summary>
         /// Word boundary indices.
         /// </summary>
         public int[] WordBoundaries { get; set; }
@@ -160,13 +176,48 @@ namespace uPiper.Core.Phonemizers.Backend
         public string Backend { get; set; }
 
         /// <summary>
+        /// Processing time.
+        /// </summary>
+        public TimeSpan ProcessingTime { get; set; }
+
+        /// <summary>
         /// Processing time in milliseconds.
         /// </summary>
         public float ProcessingTimeMs { get; set; }
 
         /// <summary>
+        /// Whether this result was retrieved from cache.
+        /// </summary>
+        public bool FromCache { get; set; }
+
+        /// <summary>
         /// Additional metadata about the phonemization.
         /// </summary>
         public Dictionary<string, object> Metadata { get; set; }
+
+        /// <summary>
+        /// Creates a copy of this PhonemeResult.
+        /// </summary>
+        public PhonemeResult Clone()
+        {
+            return new PhonemeResult
+            {
+                OriginalText = OriginalText,
+                Phonemes = (string[])Phonemes?.Clone(),
+                PhonemeIds = (int[])PhonemeIds?.Clone(),
+                Language = Language,
+                Success = Success,
+                Error = Error,
+                Stresses = (int[])Stresses?.Clone(),
+                Durations = (float[])Durations?.Clone(),
+                Pitches = (float[])Pitches?.Clone(),
+                WordBoundaries = (int[])WordBoundaries?.Clone(),
+                Backend = Backend,
+                ProcessingTime = ProcessingTime,
+                ProcessingTimeMs = ProcessingTimeMs,
+                FromCache = FromCache,
+                Metadata = Metadata != null ? new Dictionary<string, object>(Metadata) : null
+            };
+        }
     }
 }

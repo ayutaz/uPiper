@@ -116,7 +116,7 @@ namespace uPiper.Core.Phonemizers.Services
         private void RegisterDefaultBackends()
         {
             // Register rule-based backend for English
-            var ruleBasedBackend = new Backend.RuleBased.RuleBasedPhonemizer();
+            var ruleBasedBackend = new uPiper.Core.Phonemizers.Backend.RuleBased.RuleBasedPhonemizer();
             Task.Run(async () => 
             {
                 try
