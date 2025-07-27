@@ -9,6 +9,7 @@ using UnityEngine;
 using uPiper.Core.Logging;
 using uPiper.Core.Performance;
 using uPiper.Core.Platform;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers.Implementations
 {

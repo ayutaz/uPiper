@@ -13,8 +13,8 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
     /// </summary>
     public class TextNormalizer
     {
-        private readonly Dictionary<string, string> abbreviations;
-        private readonly Dictionary<string, string> contractions;
+        private Dictionary<string, string> abbreviations;
+        private Dictionary<string, string> contractions;
         private readonly NumberToWords numberConverter;
 
         public TextNormalizer()

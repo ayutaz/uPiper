@@ -8,6 +8,7 @@ using UnityEngine;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Core

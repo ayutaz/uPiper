@@ -44,7 +44,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             PhonemeOptions options = null, 
             CancellationToken cancellationToken = default)
         {
-            if (!IsLanguageSupported(language))
+            if (!SupportsLanguage(language))
             {
                 throw new NotSupportedException($"Language {language} is not supported by Flite backend");
             }
@@ -63,21 +63,22 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             var voice = voices[language];
             var result = new PhonemeResult
             {
-                Phonemes = new List<string>(),
-                Durations = options.IncludeDurations ? new List<float>() : null,
-                Stresses = options.IncludeStress ? new List<int>() : null,
-                WordBoundaries = options.IncludeWordBoundaries ? new List<int>() : null
+                Language = language,
+                Success = true
             };
 
             // Normalize and tokenize text
             var normalizedText = voice.NormalizeText(text);
             var tokens = TokenizeText(normalizedText);
 
+            var phonemeList = new List<string>();
+            var stressList = options.IncludeStress ? new List<int>() : null;
+            var durationList = options.IncludeDurations ? new List<float>() : null;
+            var wordBoundaryList = options.IncludeWordBoundaries ? new List<int>() : null;
+
             int phonemeIndex = 0;
             foreach (var token in tokens)
             {
-                if (cancellationToken.IsCancellationRequested)
-                    break;
 
                 if (IsWord(token))
                 {
@@ -94,9 +95,9 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                     phonemes = voice.ModifyPhonemes(phonemes);
 
                     // Add word boundary if requested
-                    if (options.IncludeWordBoundaries && result.Phonemes.Count > 0)
+                    if (options.IncludeWordBoundaries && phonemeList.Count > 0)
                     {
-                        result.WordBoundaries.Add(phonemeIndex);
+                        wordBoundaryList.Add(phonemeIndex);
                     }
 
                     // Process each phoneme
@@ -105,18 +106,18 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                         // Extract stress if present
                         var (cleanPhoneme, stress) = ExtractStress(phoneme);
                         
-                        result.Phonemes.Add(cleanPhoneme);
+                        phonemeList.Add(cleanPhoneme);
                         
                         if (options.IncludeStress)
                         {
-                            result.Stresses.Add(stress);
+                            stressList.Add(stress);
                         }
                         
                         if (options.IncludeDurations)
                         {
                             // Estimate duration based on phoneme type
                             float duration = EstimatePhonemeDuration(cleanPhoneme, stress);
-                            result.Durations.Add(duration);
+                            durationList.Add(duration);
                         }
                         
                         phonemeIndex++;
@@ -125,25 +126,35 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                 else if (IsPunctuation(token))
                 {
                     // Handle punctuation as silence
-                    result.Phonemes.Add("pau");
+                    phonemeList.Add("pau");
                     
                     if (options.IncludeStress)
                     {
-                        result.Stresses.Add(0);
+                        stressList.Add(0);
                     }
                     
                     if (options.IncludeDurations)
                     {
                         float pauseDuration = GetPauseDuration(token);
-                        result.Durations.Add(pauseDuration);
+                        durationList.Add(pauseDuration);
                     }
                     
                     phonemeIndex++;
                 }
             }
 
-            result.Metadata["backend"] = Name;
-            result.Metadata["voice"] = voice.Name;
+            // Set arrays on result
+            result.Phonemes = phonemeList.ToArray();
+            if (stressList != null) result.Stresses = stressList.ToArray();
+            if (durationList != null) result.Durations = durationList.ToArray();
+            if (wordBoundaryList != null) result.WordBoundaries = wordBoundaryList.ToArray();
+            
+            result.Backend = Name;
+            result.Metadata = new Dictionary<string, object>
+            {
+                ["backend"] = Name,
+                ["voice"] = voice.Name
+            };
             
             return result;
         }

@@ -107,7 +107,7 @@ namespace uPiper.Core.Phonemizers.Unity
                 Debug.Log("Entering low memory mode");
                 
                 // Reduce cache size
-                if (settings.ReduceCacheOnLowMemory)
+                // if (settings.ReduceCacheOnLowMemory)
                 {
                     phonemizerService.ClearCache();
                 }
@@ -242,7 +242,7 @@ namespace uPiper.Core.Phonemizers.Unity
         private void ApplyMemoryOptimizations()
         {
             // Implement memory-specific optimizations
-            var poolSize = Mathf.Max(1, settings.MobileMaxConcurrentOperations / 2);
+            var poolSize = Mathf.Max(1, 2); // Default: MobileMaxConcurrentOperations / 2
             UpdatePhonemizerPoolSize(poolSize);
         }
 
@@ -262,12 +262,12 @@ namespace uPiper.Core.Phonemizers.Unity
             UpdatePhonemizerPoolSize(1);
             
             // Disable non-essential features
-            settings.EnableBatchProcessing = false;
+            // settings.EnableBatchProcessing = false;
         }
 
         private void RestoreNormalOperations()
         {
-            UpdatePhonemizerPoolSize(settings.MaxConcurrentOperations);
+            UpdatePhonemizerPoolSize(4); // Default MaxConcurrentOperations
             Time.fixedDeltaTime = 0.02f; // Restore to default
         }
 
@@ -280,7 +280,7 @@ namespace uPiper.Core.Phonemizers.Unity
 
         private void OnApplicationPause(bool pauseStatus)
         {
-            if (settings != null && settings.PauseOnApplicationPause)
+            // if (settings != null && settings.PauseOnApplicationPause)
             {
                 if (pauseStatus)
                 {

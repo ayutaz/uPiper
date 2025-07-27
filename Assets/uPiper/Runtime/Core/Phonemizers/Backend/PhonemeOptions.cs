@@ -38,6 +38,16 @@ namespace uPiper.Core.Phonemizers.Backend
         public bool UseG2PFallback { get; set; } = true;
 
         /// <summary>
+        /// Include duration information.
+        /// </summary>
+        public bool IncludeDurations { get; set; } = false;
+
+        /// <summary>
+        /// Include word boundaries.
+        /// </summary>
+        public bool IncludeWordBoundaries { get; set; } = false;
+
+        /// <summary>
         /// Custom parameters for specific backends.
         /// </summary>
         public Dictionary<string, object> CustomParams { get; set; }
@@ -123,6 +133,36 @@ namespace uPiper.Core.Phonemizers.Backend
         /// Error message if phonemization failed.
         /// </summary>
         public string Error { get; set; }
+
+        /// <summary>
+        /// Error message (alias for Error).
+        /// </summary>
+        public string ErrorMessage { get => Error; set => Error = value; }
+
+        /// <summary>
+        /// Stress markers for each phoneme.
+        /// </summary>
+        public int[] Stresses { get; set; }
+
+        /// <summary>
+        /// Duration in milliseconds for each phoneme.
+        /// </summary>
+        public float[] Durations { get; set; }
+
+        /// <summary>
+        /// Word boundary indices.
+        /// </summary>
+        public int[] WordBoundaries { get; set; }
+
+        /// <summary>
+        /// Backend used for phonemization.
+        /// </summary>
+        public string Backend { get; set; }
+
+        /// <summary>
+        /// Processing time in milliseconds.
+        /// </summary>
+        public float ProcessingTimeMs { get; set; }
 
         /// <summary>
         /// Additional metadata about the phonemization.

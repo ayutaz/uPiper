@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using uPiper.Core;
 using uPiper.Core.Logging;
+using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Cache;
 using uPiper.Core.Phonemizers.Text;
 
