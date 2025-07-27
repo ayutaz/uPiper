@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Backend.RuleBased;
+using uPiper.Core.Phonemizers.ErrorHandling;
 
 namespace uPiper.Tests.Runtime
 {
