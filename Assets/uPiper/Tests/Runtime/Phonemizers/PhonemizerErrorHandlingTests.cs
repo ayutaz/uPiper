@@ -146,8 +146,7 @@ namespace uPiper.Tests.Phonemizers
 
         #endregion
 
-        #region Safe Wrapper Tests        [Ignore("Temporarily disabled - interface changes")]
-
+        #region Safe Wrapper Tests
 
         [Test]
         [Ignore("Temporarily disabled - interface changes")]
@@ -238,8 +237,7 @@ namespace uPiper.Tests.Phonemizers
 
         #endregion
 
-        #region Error Recovery Tests        [Ignore("Temporarily disabled - interface changes")]
-
+        #region Error Recovery Tests
 
         [Test]
         [Ignore("Temporarily disabled - interface changes")]
@@ -271,17 +269,18 @@ namespace uPiper.Tests.Phonemizers
             // Debug.Log($"Success rate: {results.Count}/10 ({results.Count * 10}%)");
         }
 
-        // Backend that fails intermittently
+        // Backend that fails intermittently - commented out due to interface changes
+        /*
         private class IntermittentFailureBackend : IPhonemizerBackend
         {
             private int callCount = 0;
 
             public string Name => "IntermittentBackend";
+            public string Version => "1.0.0";
             public string License => "Test";
             public string[] SupportedLanguages => new[] { "en-US" };
-            public bool SupportsStress => false;
-            public bool SupportsTone => false;
-            public bool SupportsG2P => false;
+            public int Priority => 50;
+            public bool IsAvailable => true;
 
             public Task<PhonemeResult> PhonemizeAsync(string text, string language, 
                 PhonemeOptions options = null, CancellationToken cancellationToken = default)
@@ -300,25 +299,37 @@ namespace uPiper.Tests.Phonemizers
                 });
             }
 
-            public Task<bool> InitializeAsync(string dataPath, CancellationToken cancellationToken = default)
+            public Task<bool> InitializeAsync(PhonemizerBackendOptions options = null, CancellationToken cancellationToken = default)
             {
                 return Task.FromResult(true);
             }
 
-            public Task<bool> ValidateAsync(CancellationToken cancellationToken = default)
-            {
-                return Task.FromResult(true);
-            }
+            public bool SupportsLanguage(string language) => language == "en-US";
 
-            public bool IsLanguageSupported(string language) => language == "en-US";
+            public long GetMemoryUsage() => 0;
+
+            public BackendCapabilities GetCapabilities()
+            {
+                return new BackendCapabilities
+                {
+                    SupportsIPA = false,
+                    SupportsStress = false,
+                    SupportsSyllables = false,
+                    SupportsTones = false,
+                    SupportsDuration = false,
+                    SupportsBatchProcessing = true,
+                    IsThreadSafe = true,
+                    RequiresNetwork = false
+                };
+            }
 
             public void Dispose() { }
         }
+        */
 
         #endregion
 
-        #region Timeout and Cancellation Tests        [Ignore("Temporarily disabled - interface changes")]
-
+        #region Timeout and Cancellation Tests
 
         [Test]
         [Ignore("Temporarily disabled - interface changes")]
@@ -374,15 +385,16 @@ namespace uPiper.Tests.Phonemizers
             }
         }
 
-        // Backend that simulates slow operations
+        // Backend that simulates slow operations - commented out due to interface changes
+        /*
         private class SlowPhonemizerBackend : IPhonemizerBackend
         {
             public string Name => "SlowBackend";
+            public string Version => "1.0.0";
             public string License => "Test";
             public string[] SupportedLanguages => new[] { "en-US" };
-            public bool SupportsStress => false;
-            public bool SupportsTone => false;
-            public bool SupportsG2P => false;
+            public int Priority => 50;
+            public bool IsAvailable => true;
 
             public async Task<PhonemeResult> PhonemizeAsync(string text, string language, 
                 PhonemeOptions options = null, CancellationToken cancellationToken = default)
@@ -396,20 +408,33 @@ namespace uPiper.Tests.Phonemizers
                 };
             }
 
-            public Task<bool> InitializeAsync(string dataPath, CancellationToken cancellationToken = default)
+            public Task<bool> InitializeAsync(PhonemizerBackendOptions options = null, CancellationToken cancellationToken = default)
             {
                 return Task.FromResult(true);
             }
 
-            public Task<bool> ValidateAsync(CancellationToken cancellationToken = default)
-            {
-                return Task.FromResult(true);
-            }
+            public bool SupportsLanguage(string language) => language == "en-US";
 
-            public bool IsLanguageSupported(string language) => language == "en-US";
+            public long GetMemoryUsage() => 0;
+
+            public BackendCapabilities GetCapabilities()
+            {
+                return new BackendCapabilities
+                {
+                    SupportsIPA = false,
+                    SupportsStress = false,
+                    SupportsSyllables = false,
+                    SupportsTones = false,
+                    SupportsDuration = false,
+                    SupportsBatchProcessing = true,
+                    IsThreadSafe = true,
+                    RequiresNetwork = false
+                };
+            }
 
             public void Dispose() { }
         }
+        */
 
         #endregion
 
@@ -490,8 +515,7 @@ namespace uPiper.Tests.Phonemizers
 
         #endregion
 
-        #region Resource Cleanup Tests        [Ignore("Temporarily disabled - interface changes")]
-
+        #region Resource Cleanup Tests
 
         [Test]
         [Ignore("Temporarily disabled - interface changes")]
@@ -518,18 +542,19 @@ namespace uPiper.Tests.Phonemizers
             //     "All resources should be cleaned up");
         }
 
-        // Backend that tracks resource allocation
+        // Backend that tracks resource allocation - commented out due to interface changes
+        /*
         private class ResourceTrackingBackend : IPhonemizerBackend
         {
             public static int ActiveResources = 0;
             private bool resourceAcquired = false;
 
             public string Name => "ResourceTracker";
+            public string Version => "1.0.0";
             public string License => "Test";
             public string[] SupportedLanguages => new[] { "en-US" };
-            public bool SupportsStress => false;
-            public bool SupportsTone => false;
-            public bool SupportsG2P => false;
+            public int Priority => 50;
+            public bool IsAvailable => true;
 
             public Task<PhonemeResult> PhonemizeAsync(string text, string language, 
                 PhonemeOptions options = null, CancellationToken cancellationToken = default)
@@ -549,17 +574,29 @@ namespace uPiper.Tests.Phonemizers
                 });
             }
 
-            public Task<bool> InitializeAsync(string dataPath, CancellationToken cancellationToken = default)
+            public Task<bool> InitializeAsync(PhonemizerBackendOptions options = null, CancellationToken cancellationToken = default)
             {
                 return Task.FromResult(true);
             }
 
-            public Task<bool> ValidateAsync(CancellationToken cancellationToken = default)
-            {
-                return Task.FromResult(true);
-            }
+            public bool SupportsLanguage(string language) => language == "en-US";
 
-            public bool IsLanguageSupported(string language) => language == "en-US";
+            public long GetMemoryUsage() => 0;
+
+            public BackendCapabilities GetCapabilities()
+            {
+                return new BackendCapabilities
+                {
+                    SupportsIPA = false,
+                    SupportsStress = false,
+                    SupportsSyllables = false,
+                    SupportsTones = false,
+                    SupportsDuration = false,
+                    SupportsBatchProcessing = true,
+                    IsThreadSafe = true,
+                    RequiresNetwork = false
+                };
+            }
 
             public void Dispose()
             {
@@ -570,11 +607,11 @@ namespace uPiper.Tests.Phonemizers
                 }
             }
         }
+        */
 
         #endregion
 
-        #region Unity-Specific Error Handling        [Ignore("Temporarily disabled - interface changes")]
-
+        #region Unity-Specific Error Handling
 
         [UnityTest]
         [Ignore("Temporarily disabled - interface changes")]
