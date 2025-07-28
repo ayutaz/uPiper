@@ -41,7 +41,12 @@ namespace uPiper.Core.Phonemizers
             try
             {
                 // Initialize Japanese backend (OpenJTalk)
-                var jaBackend = new Backend.OpenJTalkBackendAdapter();
+                IPhonemizerBackend jaBackend = CreateOpenJTalkBackend();
+                if (jaBackend == null)
+                {
+                    Debug.LogError("Failed to create Japanese backend");
+                    return false;
+                }
                 var jaResult = await jaBackend.InitializeAsync(options, cancellationToken);
                 if (!jaResult)
                 {
@@ -54,8 +59,8 @@ namespace uPiper.Core.Phonemizers
                 IPhonemizerBackend enBackend = null;
                 
                 // Try SimpleLTS first
-                var simpleLts = new Backend.SimpleLTSPhonemizer();
-                if (await simpleLts.InitializeAsync(options, cancellationToken))
+                var simpleLts = CreateSimpleLTSBackend();
+                if (simpleLts != null && await simpleLts.InitializeAsync(options, cancellationToken))
                 {
                     enBackend = simpleLts;
                     Debug.Log("Using SimpleLTS for English phonemization");
@@ -323,6 +328,50 @@ namespace uPiper.Core.Phonemizers
                 }
                 backends.Clear();
                 isInitialized = false;
+            }
+        }
+
+        /// <summary>
+        /// Creates an OpenJTalk backend using reflection to avoid compile-time dependency.
+        /// </summary>
+        private IPhonemizerBackend CreateOpenJTalkBackend()
+        {
+            try
+            {
+                var type = System.Type.GetType("uPiper.Core.Phonemizers.Backend.OpenJTalkBackendAdapter, uPiper.Runtime");
+                if (type != null)
+                {
+                    return Activator.CreateInstance(type) as IPhonemizerBackend;
+                }
+                Debug.LogError("OpenJTalkBackendAdapter type not found");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to create OpenJTalkBackendAdapter: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Creates a SimpleLTS backend using reflection to avoid compile-time dependency.
+        /// </summary>
+        private IPhonemizerBackend CreateSimpleLTSBackend()
+        {
+            try
+            {
+                var type = System.Type.GetType("uPiper.Core.Phonemizers.Backend.SimpleLTSPhonemizer, uPiper.Runtime");
+                if (type != null)
+                {
+                    return Activator.CreateInstance(type) as IPhonemizerBackend;
+                }
+                Debug.LogError("SimpleLTSPhonemizer type not found");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to create SimpleLTSPhonemizer: {ex.Message}");
+                return null;
             }
         }
 

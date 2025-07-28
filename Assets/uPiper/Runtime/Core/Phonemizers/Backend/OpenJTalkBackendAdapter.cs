@@ -11,7 +11,7 @@ namespace uPiper.Core.Phonemizers.Backend
     /// </summary>
     public class OpenJTalkBackendAdapter : IPhonemizerBackend
     {
-        private readonly OpenJTalkPhonemizer openJTalk;
+        private OpenJTalkPhonemizer openJTalk;
         private bool isInitialized;
         private bool isDisposed;
 

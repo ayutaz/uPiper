@@ -57,10 +57,10 @@ namespace uPiper.Core.Phonemizers
                 var tasks = new List<Task<(string language, IPhonemizerBackend backend, bool success)>>();
 
                 // Initialize Japanese backends
-                tasks.Add(InitializeBackendAsync("ja", () => new Backend.OpenJTalkBackendAdapter(), options, cancellationToken));
+                tasks.Add(InitializeBackendAsync("ja", () => CreateOpenJTalkBackend(), options, cancellationToken));
 
                 // Initialize English backends
-                tasks.Add(InitializeBackendAsync("en", () => new Backend.SimpleLTSPhonemizer(), options, cancellationToken));
+                tasks.Add(InitializeBackendAsync("en", () => CreateSimpleLTSBackend(), options, cancellationToken));
                 tasks.Add(InitializeBackendAsync("en", () => new Backend.RuleBased.RuleBasedPhonemizer(), options, cancellationToken));
 
                 // Wait for all initializations
@@ -382,6 +382,50 @@ namespace uPiper.Core.Phonemizers
                 
                 mixedLanguagePhonemizer?.Dispose();
                 isInitialized = false;
+            }
+        }
+
+        /// <summary>
+        /// Creates an OpenJTalk backend using reflection to avoid compile-time dependency.
+        /// </summary>
+        private IPhonemizerBackend CreateOpenJTalkBackend()
+        {
+            try
+            {
+                var type = System.Type.GetType("uPiper.Core.Phonemizers.Backend.OpenJTalkBackendAdapter, uPiper.Runtime");
+                if (type != null)
+                {
+                    return Activator.CreateInstance(type) as IPhonemizerBackend;
+                }
+                Debug.LogError("OpenJTalkBackendAdapter type not found");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to create OpenJTalkBackendAdapter: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Creates a SimpleLTS backend using reflection to avoid compile-time dependency.
+        /// </summary>
+        private IPhonemizerBackend CreateSimpleLTSBackend()
+        {
+            try
+            {
+                var type = System.Type.GetType("uPiper.Core.Phonemizers.Backend.SimpleLTSPhonemizer, uPiper.Runtime");
+                if (type != null)
+                {
+                    return Activator.CreateInstance(type) as IPhonemizerBackend;
+                }
+                Debug.LogError("SimpleLTSPhonemizer type not found");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to create SimpleLTSPhonemizer: {ex.Message}");
+                return null;
             }
         }
 
