@@ -138,6 +138,7 @@ namespace uPiper.Tests.Phonemizers
             // Using simplified API
             var task = Task.Run(async () =>
             {
+                await Task.CompletedTask;
                 try
                 {
                     result = await Task.FromResult(new PhonemeResult
@@ -231,6 +232,7 @@ namespace uPiper.Tests.Phonemizers
             // Using simplified batch API
             var task = Task.Run(async () =>
             {
+                await Task.CompletedTask; // Placeholder for async operation
                 results = new List<PhonemeResult>();
                 foreach (var text in texts)
                 {
@@ -394,6 +396,7 @@ namespace uPiper.Tests.Phonemizers
             {
                 try
                 {
+                    await Task.CompletedTask;
                     // Simulate handling invalid language
                     error = "Invalid language";
                     completed = true;

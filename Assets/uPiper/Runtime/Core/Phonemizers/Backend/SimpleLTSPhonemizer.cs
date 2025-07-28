@@ -53,7 +53,10 @@ namespace uPiper.Core.Phonemizers.Backend
             PhonemeOptions options = null,
             CancellationToken cancellationToken = default)
         {
-            var stopwatch = Stopwatch.StartNew();
+            // Run synchronous code on a background thread to avoid blocking
+            return await Task.Run(() =>
+            {
+                var stopwatch = Stopwatch.StartNew();
 
             try
             {
@@ -113,6 +116,7 @@ namespace uPiper.Core.Phonemizers.Backend
             {
                 return CreateErrorResult($"Phonemization failed: {ex.Message}", language);
             }
+            }, cancellationToken);
         }
 
         private string[] ApplyLTSRules(string word)

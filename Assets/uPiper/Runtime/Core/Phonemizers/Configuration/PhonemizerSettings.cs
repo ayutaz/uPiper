@@ -37,8 +37,8 @@ namespace uPiper.Phonemizers.Configuration
         [SerializeField] private int maxRetries = 3;
         [SerializeField] private float retryDelay = 1f;
         [SerializeField] private bool enableFallbackPhonemeizer = true;
-        [SerializeField] private float circuitBreakerThreshold = 0.5f;
-        [SerializeField] private float circuitBreakerResetTime = 30f;
+        // [SerializeField] private float circuitBreakerThreshold = 0.5f;
+        // [SerializeField] private float circuitBreakerResetTime = 30f;
 
         [Header("Debug Settings")]
         [SerializeField] private bool enableDebugLogging = false;
@@ -74,8 +74,8 @@ namespace uPiper.Phonemizers.Configuration
         public int MaxRetries => maxRetries;
         public float RetryDelay => retryDelay;
         public bool EnableFallbackPhonemeizer => enableFallbackPhonemeizer;
-        public float CircuitBreakerThreshold => circuitBreakerThreshold;
-        public float CircuitBreakerResetTime => circuitBreakerResetTime;
+        // public float CircuitBreakerThreshold => circuitBreakerThreshold;
+        // public float CircuitBreakerResetTime => circuitBreakerResetTime;
 
         public bool EnableDebugLogging => enableDebugLogging;
         public bool LogPhonemeOutput => logPhonemeOutput;
@@ -120,8 +120,8 @@ namespace uPiper.Phonemizers.Configuration
             batchSize = Mathf.Max(1, batchSize);
             maxRetries = Mathf.Max(0, maxRetries);
             retryDelay = Mathf.Max(0f, retryDelay);
-            circuitBreakerThreshold = Mathf.Clamp01(circuitBreakerThreshold);
-            circuitBreakerResetTime = Mathf.Max(1f, circuitBreakerResetTime);
+            // circuitBreakerThreshold = Mathf.Clamp01(circuitBreakerThreshold);
+            // circuitBreakerResetTime = Mathf.Max(1f, circuitBreakerResetTime);
         }
 
         /// <summary>

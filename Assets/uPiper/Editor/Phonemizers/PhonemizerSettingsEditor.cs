@@ -185,8 +185,8 @@ namespace uPiper.Editor.Phonemizers
             EditorGUILayout.PropertyField(serializedObject.FindProperty("maxRetries"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("retryDelay"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enableFallbackPhonemeizer"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("circuitBreakerThreshold"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("circuitBreakerResetTime"));
+            // EditorGUILayout.PropertyField(serializedObject.FindProperty("circuitBreakerThreshold"));
+            // EditorGUILayout.PropertyField(serializedObject.FindProperty("circuitBreakerResetTime"));
         }
 
         private void DrawDebugSettings()

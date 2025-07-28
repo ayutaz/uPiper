@@ -14,9 +14,7 @@ namespace uPiper.Core.Phonemizers.Data
     /// </summary>
     public class PhonemizerDataManager : IDataManager
     {
-        private readonly string dataRoot;
-        private readonly string manifestUrl;
-        private readonly Dictionary<string, DataPackageInfo> packages;
+        private readonly string dataRoot;        private readonly Dictionary<string, DataPackageInfo> packages;
         private readonly SemaphoreSlim downloadSemaphore;
         private DataManifest manifest;
 
@@ -38,7 +36,6 @@ namespace uPiper.Core.Phonemizers.Data
         public PhonemizerDataManager()
         {
             dataRoot = Path.Combine(Application.persistentDataPath, "uPiper", "PhonemizerData");
-            manifestUrl = "https://your-cdn.com/upiper/manifest.json"; // Replace with actual CDN
             packages = new Dictionary<string, DataPackageInfo>();
             downloadSemaphore = new SemaphoreSlim(1, 1);
 
@@ -298,6 +295,7 @@ namespace uPiper.Core.Phonemizers.Data
 
         private async Task LoadRemoteManifest()
         {
+            await Task.CompletedTask; // Placeholder for future remote loading
             // For now, use hardcoded manifest
             // In production, this would download from CDN
             manifest = CreateDefaultManifest();
