@@ -782,10 +782,10 @@ namespace uPiper.Core.Phonemizers.Backend
         {
             // Basic text normalization
             return text.Trim()
-                .Replace("'", "'")  // Smart quotes
-                .Replace("'", "'")
-                .Replace(""", "\"")
-                .Replace(""", "\"");
+                .Replace("\u2018", "'")  // Left single smart quote
+                .Replace("\u2019", "'")  // Right single smart quote
+                .Replace("\u201C", "\"") // Left double smart quote
+                .Replace("\u201D", "\""); // Right double smart quote
         }
 
         private void HandlePunctuation(string token, List<string> phonemes, List<float> durations)
