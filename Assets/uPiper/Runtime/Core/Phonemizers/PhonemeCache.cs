@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers
 {

@@ -24,7 +24,10 @@ namespace uPiper.Core.Phonemizers
 
         public string Name => "MixedLanguage";
         public string Version => "1.0.0";
+        public string License => "MIT";
         public string[] SupportedLanguages => new[] { "ja", "en", "mixed", "auto" };
+        public int Priority => 100;
+        public bool IsAvailable => isInitialized;
         public bool IsInitialized => isInitialized;
 
         public MixedLanguagePhonemizer()

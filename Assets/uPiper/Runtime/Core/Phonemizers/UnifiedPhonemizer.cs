@@ -22,6 +22,9 @@ namespace uPiper.Core.Phonemizers
 
         public string Name => "UnifiedPhonemizer";
         public string Version => "1.0.0";
+        public string License => "MIT";
+        public int Priority => 200;
+        public bool IsAvailable => isInitialized;
         public bool IsInitialized => isInitialized;
 
         public string[] SupportedLanguages
@@ -380,6 +383,18 @@ namespace uPiper.Core.Phonemizers
                 mixedLanguagePhonemizer?.Dispose();
                 isInitialized = false;
             }
+        }
+
+        public PhonemeOptions GetDefaultOptions()
+        {
+            return new PhonemeOptions
+            {
+                Format = PhonemeFormat.IPA,
+                IncludeStress = true,
+                IncludeTones = false,
+                NormalizeText = true,
+                UseG2PFallback = true
+            };
         }
 
         /// <summary>
