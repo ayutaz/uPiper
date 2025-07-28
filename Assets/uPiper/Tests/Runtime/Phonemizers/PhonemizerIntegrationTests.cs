@@ -27,10 +27,11 @@ namespace uPiper.Tests.Phonemizers
         {
             // Create test settings
             settings = ScriptableObject.CreateInstance<PhonemizerSettings>();
-            settings.EnablePhonemizerService = true;
-            settings.DefaultLanguage = "en-US";
-            settings.MaxConcurrentOperations = 2;
-            settings.CacheSize = 100;
+            // PhonemizerSettingsのプロパティが読み取り専用のため、設定はスキップ
+            // settings.EnablePhonemizerService = true;
+            // settings.DefaultLanguage = "en-US";
+            // settings.MaxConcurrentOperations = 2;
+            // settings.CacheSize = 100;
             
             // Initialize services
             // multilingualService = new MultilingualPhonemizerService(settings);
@@ -139,11 +140,11 @@ namespace uPiper.Tests.Phonemizers
                 {
                     result = await Task.FromResult(new PhonemeResult
                     {
-                        Phonemes = new List<string> { "t", "e", "s", "t" }
+                        Phonemes = new List<string> { "t", "e", "s", "t" }.ToArray()
                     });
                     completed = true;
                 }
-                catch (Exception ex)
+                catch (System.Exception ex)
                 {
                     error = ex.Message;
                     completed = true;
@@ -178,7 +179,7 @@ namespace uPiper.Tests.Phonemizers
             {
                 result1 = await Task.FromResult(new PhonemeResult
                 {
-                    Phonemes = new List<string> { "c", "a", "ch", "t", "e", "s", "t" }
+                    Phonemes = new List<string> { "c", "a", "ch", "t", "e", "s", "t" }.ToArray()
                 });
             });
             
@@ -194,7 +195,7 @@ namespace uPiper.Tests.Phonemizers
             {
                 result2 = await Task.FromResult(new PhonemeResult
                 {
-                    Phonemes = new List<string> { "c", "a", "ch", "t", "e", "s", "t" }
+                    Phonemes = new List<string> { "c", "a", "ch", "t", "e", "s", "t" }.ToArray()
                 });
             });
             
@@ -233,7 +234,7 @@ namespace uPiper.Tests.Phonemizers
                 {
                     results.Add(new PhonemeResult
                     {
-                        Phonemes = new List<string> { "t", "e", "s", "t" }
+                        Phonemes = new List<string> { "t", "e", "s", "t" }.ToArray()
                     });
                     lastProgress = (float)(results.Count) / texts.Count;
                 }
@@ -392,7 +393,7 @@ namespace uPiper.Tests.Phonemizers
                     error = "Invalid language";
                     completed = true;
                 }
-                catch (Exception ex)
+                catch (System.Exception ex)
                 {
                     error = ex.Message;
                     completed = true;

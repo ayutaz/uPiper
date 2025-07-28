@@ -14,6 +14,14 @@ using uPiper.Phonemizers.Configuration;
 
 namespace uPiper.Tests.Phonemizers
 {
+    // 簡易的なCircuitBreakerSettings定義
+    public class CircuitBreakerSettings
+    {
+        public int FailureThreshold { get; set; } = 3;
+        public TimeSpan ResetTimeout { get; set; } = TimeSpan.FromSeconds(5);
+        public int HalfOpenTestCount { get; set; } = 1;
+    }
+
     /// <summary>
     /// Tests for error handling and resilience
     /// </summary>

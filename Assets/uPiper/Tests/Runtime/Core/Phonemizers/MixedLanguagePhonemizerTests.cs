@@ -133,7 +133,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsTrue(stats.ContainsKey("language_segments"));
             Assert.IsTrue(stats.ContainsKey("primary_language"));
             
-            Debug.Log($"Text analysis: {System.Text.Json.JsonSerializer.Serialize(stats)}");
+            Debug.Log($"Text analysis: segment_count={stats["segment_count"]}, primary_language={stats["primary_language"]}");
         }
 
         [UnityTest]

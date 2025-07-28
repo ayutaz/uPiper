@@ -16,6 +16,10 @@ CLAUDE.md
 # VS Code settings
 .vscode/settings.json
 
+# Windows special files
+nul
+nul.meta
+
 # User-specific stuff
 .idea/**/workspace.xml
 .idea/**/tasks.xml
