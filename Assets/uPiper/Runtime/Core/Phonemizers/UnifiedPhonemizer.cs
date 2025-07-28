@@ -385,18 +385,6 @@ namespace uPiper.Core.Phonemizers
             }
         }
 
-        public PhonemeOptions GetDefaultOptions()
-        {
-            return new PhonemeOptions
-            {
-                Format = PhonemeFormat.IPA,
-                IncludeStress = true,
-                IncludeTones = false,
-                NormalizeText = true,
-                UseG2PFallback = true
-            };
-        }
-
         /// <summary>
         /// Gets information about all available backends.
         /// </summary>
