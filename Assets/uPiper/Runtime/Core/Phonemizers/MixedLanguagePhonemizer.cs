@@ -41,7 +41,7 @@ namespace uPiper.Core.Phonemizers
             try
             {
                 // Initialize Japanese backend (OpenJTalk)
-                var jaBackend = new OpenJTalkBackendAdapter();
+                var jaBackend = new Backend.OpenJTalkBackendAdapter();
                 var jaResult = await jaBackend.InitializeAsync(options, cancellationToken);
                 if (!jaResult)
                 {
@@ -54,7 +54,7 @@ namespace uPiper.Core.Phonemizers
                 IPhonemizerBackend enBackend = null;
                 
                 // Try SimpleLTS first
-                var simpleLts = new SimpleLTSPhonemizer();
+                var simpleLts = new Backend.SimpleLTSPhonemizer();
                 if (await simpleLts.InitializeAsync(options, cancellationToken))
                 {
                     enBackend = simpleLts;

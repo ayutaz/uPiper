@@ -57,10 +57,10 @@ namespace uPiper.Core.Phonemizers
                 var tasks = new List<Task<(string language, IPhonemizerBackend backend, bool success)>>();
 
                 // Initialize Japanese backends
-                tasks.Add(InitializeBackendAsync("ja", () => new OpenJTalkBackendAdapter(), options, cancellationToken));
+                tasks.Add(InitializeBackendAsync("ja", () => new Backend.OpenJTalkBackendAdapter(), options, cancellationToken));
 
                 // Initialize English backends
-                tasks.Add(InitializeBackendAsync("en", () => new SimpleLTSPhonemizer(), options, cancellationToken));
+                tasks.Add(InitializeBackendAsync("en", () => new Backend.SimpleLTSPhonemizer(), options, cancellationToken));
                 tasks.Add(InitializeBackendAsync("en", () => new Backend.RuleBased.RuleBasedPhonemizer(), options, cancellationToken));
 
                 // Wait for all initializations
