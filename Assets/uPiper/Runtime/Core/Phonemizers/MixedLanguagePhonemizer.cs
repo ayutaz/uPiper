@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
+using uPiper.Core.Phonemizers.Implementations;
 using Debug = UnityEngine.Debug;
 
 namespace uPiper.Core.Phonemizers
