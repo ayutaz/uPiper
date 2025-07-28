@@ -72,7 +72,6 @@ namespace uPiper.Tests.Phonemizers
             //     Assert.IsNotEmpty(capabilities.PreferredBackend, $"Language {lang} should have preferred backend");
             //     Assert.Greater(capabilities.OverallQuality, 0f, $"Language {lang} should have quality score");
             // }
-            await Task.CompletedTask;
             Assert.Pass("Test temporarily disabled");
         }
 
@@ -269,7 +268,6 @@ namespace uPiper.Tests.Phonemizers
             //     $"Should detect English, but detected {result.DetectedLanguage}");
             // Assert.Greater(result.Confidence, 0.5f, "Should have reasonable confidence");
             // Assert.IsTrue(result.IsReliable, "Detection should be reliable");
-            await Task.CompletedTask;
             Assert.Pass("Test temporarily disabled");
         }
 
@@ -287,7 +285,6 @@ namespace uPiper.Tests.Phonemizers
             // // Verify different languages detected
             // var languages = segments.Select(s => s.Language).Distinct().ToList();
             // Assert.Greater(languages.Count, 1, "Should detect multiple languages");
-            await Task.CompletedTask;
             Assert.Pass("Test temporarily disabled");
         }
 
@@ -347,7 +344,6 @@ namespace uPiper.Tests.Phonemizers
             
             // Assert.IsNotNull(backend, "Should find backend through fallback");
             // Assert.Contains("en-GB", backend.SupportedLanguages.Concat(new[] { "en-US" }));
-            await Task.CompletedTask;
             Assert.Pass("Test temporarily disabled");
         }
 
@@ -384,7 +380,6 @@ namespace uPiper.Tests.Phonemizers
             //     Assert.IsNotEmpty(backend.SupportedLanguages, 
             //         "If backend returned, it should support some language");
             // }
-            await Task.CompletedTask;
             Assert.Pass("Test temporarily disabled");
         }
 
