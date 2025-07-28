@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
-using uPiper.Core.Phonemizers.Implementations;
 using Debug = UnityEngine.Debug;
 
 namespace uPiper.Core.Phonemizers
@@ -42,7 +41,7 @@ namespace uPiper.Core.Phonemizers
             try
             {
                 // Initialize Japanese backend (OpenJTalk)
-                var jaBackend = new OpenJTalkPhonemizer();
+                var jaBackend = new OpenJTalkBackendAdapter();
                 var jaResult = await jaBackend.InitializeAsync(options, cancellationToken);
                 if (!jaResult)
                 {

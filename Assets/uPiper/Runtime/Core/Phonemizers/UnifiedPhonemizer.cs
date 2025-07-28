@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
-using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Core.Phonemizers
 {
@@ -58,7 +57,7 @@ namespace uPiper.Core.Phonemizers
                 var tasks = new List<Task<(string language, IPhonemizerBackend backend, bool success)>>();
 
                 // Initialize Japanese backends
-                tasks.Add(InitializeBackendAsync("ja", () => new OpenJTalkPhonemizer(), options, cancellationToken));
+                tasks.Add(InitializeBackendAsync("ja", () => new OpenJTalkBackendAdapter(), options, cancellationToken));
 
                 // Initialize English backends
                 tasks.Add(InitializeBackendAsync("en", () => new SimpleLTSPhonemizer(), options, cancellationToken));
