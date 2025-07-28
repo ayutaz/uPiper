@@ -7,6 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend.RuleBased;
+using uPiper.Core.Phonemizers.Backend.G2P;
+using uPiper.Core.Phonemizers.Backend.Disambiguation;
 using Debug = UnityEngine.Debug;
 
 namespace uPiper.Core.Phonemizers.Backend
@@ -18,6 +20,8 @@ namespace uPiper.Core.Phonemizers.Backend
     public class EnhancedEnglishPhonemizer : PhonemizerBackendBase
     {
         private CMUDictionary cmuDictionary;
+        private StatisticalG2PModel g2pModel;
+        private HomographResolver homographResolver;
         private readonly Dictionary<string, string[]> customDictionary = new();
         private readonly Dictionary<string, string[]> contractionsDict;
         private readonly object lockObject = new object();
@@ -67,6 +71,13 @@ namespace uPiper.Core.Phonemizers.Backend
                 var dictPath = options?.DataPath ?? GetDefaultDictionaryPath();
                 await cmuDictionary.LoadAsync(dictPath, cancellationToken);
 
+                // Initialize and train G2P model
+                g2pModel = new StatisticalG2PModel();
+                await TrainG2PModel(cancellationToken);
+
+                // Initialize homograph resolver
+                homographResolver = new HomographResolver();
+
                 // Load custom dictionary if provided
                 var customDictPath = options?.CustomDictionaryPath;
                 if (!string.IsNullOrEmpty(customDictPath))
@@ -75,7 +86,7 @@ namespace uPiper.Core.Phonemizers.Backend
                 }
 
                 Priority = 150; // Higher priority than SimpleLTS
-                Debug.Log($"EnhancedEnglishPhonemizer initialized with {cmuDictionary.WordCount} words");
+                Debug.Log($"EnhancedEnglishPhonemizer initialized with {cmuDictionary.WordCount} words and G2P model");
                 return true;
             }
             catch (Exception ex)
@@ -133,14 +144,22 @@ namespace uPiper.Core.Phonemizers.Backend
                         continue;
                     }
 
-                    // 3. Check CMU dictionary
+                    // 3. Check homograph resolver (context-aware)
+                    if (homographResolver != null && 
+                        homographResolver.TryResolve(token, text, out phonemes))
+                    {
+                        AddPhonemes(phonemes, allPhonemes, allDurations);
+                        continue;
+                    }
+
+                    // 4. Check CMU dictionary
                     if (cmuDictionary.TryGetPronunciation(token, out phonemes))
                     {
                         AddPhonemes(phonemes, allPhonemes, allDurations);
                         continue;
                     }
 
-                    // 4. Check compound words
+                    // 5. Check compound words
                     phonemes = TryCompoundWord(token);
                     if (phonemes != null)
                     {
@@ -148,7 +167,7 @@ namespace uPiper.Core.Phonemizers.Backend
                         continue;
                     }
 
-                    // 5. Apply morphological analysis
+                    // 6. Apply morphological analysis
                     phonemes = TryMorphologicalAnalysis(token);
                     if (phonemes != null)
                     {
@@ -156,7 +175,18 @@ namespace uPiper.Core.Phonemizers.Backend
                         continue;
                     }
 
-                    // 6. Fall back to enhanced LTS rules
+                    // 7. Try G2P model for unknown words
+                    if (g2pModel != null && g2pModel.IsInitialized)
+                    {
+                        phonemes = g2pModel.PredictPhonemes(token);
+                        if (phonemes != null && phonemes.Length > 0)
+                        {
+                            AddPhonemes(phonemes, allPhonemes, allDurations);
+                            continue;
+                        }
+                    }
+
+                    // 8. Fall back to enhanced LTS rules
                     phonemes = ApplyEnhancedLTSRules(token);
                     AddPhonemes(phonemes, allPhonemes, allDurations);
                 }
@@ -639,6 +669,43 @@ namespace uPiper.Core.Phonemizers.Backend
             );
         }
 
+        private async Task TrainG2PModel(CancellationToken cancellationToken)
+        {
+            try
+            {
+                // Extract dictionary data for training
+                var trainingData = new Dictionary<string, string[]>();
+                
+                // Use reflection to access CMU dictionary data
+                var dictField = cmuDictionary.GetType()
+                    .GetField("pronunciations", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                if (dictField != null)
+                {
+                    var dictData = dictField.GetValue(cmuDictionary) as Dictionary<string, string[]>;
+                    if (dictData != null)
+                    {
+                        trainingData = new Dictionary<string, string[]>(dictData);
+                    }
+                }
+
+                if (trainingData.Count > 0)
+                {
+                    await g2pModel.TrainFromDictionary(trainingData, cancellationToken);
+                    Debug.Log($"G2P model trained with {trainingData.Count} words");
+                }
+                else
+                {
+                    Debug.LogWarning("Could not extract CMU dictionary data for G2P training");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Failed to train G2P model: {ex.Message}");
+                // G2P is optional enhancement, so we continue without it
+            }
+        }
+
         public override long GetMemoryUsage()
         {
             long total = 0;
@@ -651,6 +718,12 @@ namespace uPiper.Core.Phonemizers.Backend
                 total += kvp.Key.Length * 2;
                 total += kvp.Value.Sum(p => p.Length * 2);
                 total += 24;
+            }
+            
+            // G2P model memory (rough estimate)
+            if (g2pModel != null && g2pModel.IsInitialized)
+            {
+                total += 2 * 1024 * 1024; // ~2MB for n-gram models
             }
             
             return total;
