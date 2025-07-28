@@ -38,7 +38,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             {
                 try
                 {
-                    var fliteBackend = new FlitePhonemizerBackend();
+                    var fliteBackend = new Backend.Flite.FlitePhonemizerBackend();
                     await fliteBackend.InitializeAsync(new PhonemizerBackendOptions());
                     foreach (var lang in fliteBackend.SupportedLanguages)
                     {
