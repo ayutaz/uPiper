@@ -10,7 +10,7 @@ using uPiper.Core.Phonemizers.Backend.RuleBased;
 using uPiper.Core.Phonemizers.Backend.Flite;
 using uPiper.Core.Phonemizers.Multilingual;
 using uPiper.Core.Phonemizers.Unity;
-using uPiper.Core.Phonemizers.Configuration;
+using uPiper.Phonemizers.Configuration;
 
 namespace uPiper.Tests.Phonemizers
 {

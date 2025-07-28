@@ -316,18 +316,15 @@ namespace uPiper.Editor.Phonemizers
             if (service != null)
             {
                 result = "Processing...";
-                service.PhonemizeAsync(testText, selectedLanguage, 
+                service.Phonemize(testText, selectedLanguage, 
                     (phonemeResult) =>
                     {
-                        result = string.Join(" ", phonemeResult.Phonemes);
+                        if (phonemeResult != null && phonemeResult.Phonemes != null)
+                            result = string.Join(" ", phonemeResult.Phonemes);
+                        else
+                            result = "Error: Failed to phonemize";
                         Repaint();
-                    },
-                    (error) =>
-                    {
-                        result = $"Error: {error.Message}";
-                        Repaint();
-                    }
-                );
+                    });
             }
             else
             {
