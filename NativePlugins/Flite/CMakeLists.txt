@@ -82,14 +82,14 @@ set(FLITE_CORE_SRCS
     ${FLITE_DIR}/src/synth/flite.c
     
     # US English voice (for LTS rules)
-    ${FLITE_DIR}/lang/usenglish/us_text.c
+    # Skip us_text.c due to encoding issues - we'll implement minimal version
+    src/us_text_stub.c
     ${FLITE_DIR}/lang/usenglish/us_expand.c
     ${FLITE_DIR}/lang/usenglish/us_nums_cart.c
     ${FLITE_DIR}/lang/usenglish/us_phoneset.c
     ${FLITE_DIR}/lang/usenglish/us_ffeatures.c
     ${FLITE_DIR}/lang/usenglish/us_phrasing_cart.c
     ${FLITE_DIR}/lang/usenglish/us_pos_cart.c
-    ${FLITE_DIR}/lang/usenglish/us_text.c
     ${FLITE_DIR}/lang/usenglish/usenglish.c
     
     # CMU lexicon and LTS

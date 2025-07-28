@@ -1,7 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// Include individual headers for Flite v2.2
 #include "flite.h"
+#include "cst_voice.h"
+#include "cst_lexicon.h"
+#include "cst_lts.h"
+#include "cst_utterance.h"
+#include "cst_synth.h"
+#include "cst_item.h"
+#include "cst_relation.h"
 
 #ifdef _WIN32
     #ifdef FLITE_UNITY_EXPORTS
@@ -13,9 +22,13 @@
     #define EXPORT __attribute__((visibility("default")))
 #endif
 
-// Forward declarations
-cst_voice *register_cmu_us_kal(const char *voxdir);
-void unregister_cmu_us_kal(cst_voice *v);
+// Forward declarations for voice registration
+extern cst_voice *register_cmu_us_kal(const char *voxdir);
+extern void unregister_cmu_us_kal(cst_voice *v);
+
+// Forward declarations for language functions  
+extern cst_lexicon *cmu_lex_init(void);
+extern void usenglish_init(cst_voice *v);
 
 // Flite context for Unity
 typedef struct {
@@ -56,7 +69,7 @@ EXPORT char* flite_unity_text_to_phones(flite_unity_context* ctx, const char* te
     utt_set_input_text(utt, text);
     
     // Apply text analysis (tokenization, POS tagging, etc.)
-    utt = flite_do_synth(utt, ctx->voice, utt_text);
+    utt = flite_do_synth(utt, ctx->voice, utt_synth_phones);
     
     // Extract phonemes from segment relation
     cst_item *s;
@@ -121,7 +134,7 @@ EXPORT int flite_unity_word_in_lexicon(flite_unity_context* ctx, const char* wor
     cst_lexicon *lex = val_lexicon(feat_val(ctx->voice->features, "lexicon"));
     if (!lex) return 0;
     
-    cst_val *phones = lex_lookup(lex, word, NULL);
+    cst_val *phones = lex_lookup(lex, word, NULL, NULL);
     int found = (phones != NULL);
     if (phones) delete_val(phones);
     
