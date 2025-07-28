@@ -350,7 +350,7 @@ namespace uPiper.Tests.Phonemizers
         [UnityTest]
         public IEnumerator Scalability_BatchProcessingEfficiency()
         {
-            const int batchSizes[] = { 1, 5, 10, 20, 50 };
+            int[] batchSizes = { 1, 5, 10, 20, 50 };
             var efficiencies = new Dictionary<int, float>();
 
             foreach (int batchSize in batchSizes)

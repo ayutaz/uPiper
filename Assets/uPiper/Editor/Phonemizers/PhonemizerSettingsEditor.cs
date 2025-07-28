@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using uPiper.Phonemizers.Configuration;
-using uPiper.Phonemizers.Unity;
+using uPiper.Core.Phonemizers.Unity;
 using System.Linq;
 
 namespace uPiper.Editor.Phonemizers
