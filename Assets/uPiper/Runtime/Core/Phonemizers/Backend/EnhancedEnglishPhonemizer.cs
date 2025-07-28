@@ -30,6 +30,8 @@ namespace uPiper.Core.Phonemizers.Backend
         public override string Version => "2.0.0";
         public override string License => "MIT";
         public override string[] SupportedLanguages => new[] { "en", "en-US", "en-GB" };
+        
+        protected bool IsInitialized => isInitialized;
 
         // Common English contractions with their phonetic expansions
         public EnhancedEnglishPhonemizer()
@@ -78,11 +80,11 @@ namespace uPiper.Core.Phonemizers.Backend
                 // Initialize homograph resolver
                 homographResolver = new HomographResolver();
 
-                // Load custom dictionary if provided
-                var customDictPath = options?.CustomDictionaryPath;
-                if (!string.IsNullOrEmpty(customDictPath))
+                // Load custom dictionary if provided in DataPath
+                // Note: CustomDictionaryPath is not part of base options
+                if (options?.DataPath != null && options.DataPath.EndsWith(".custom.txt"))
                 {
-                    await LoadCustomDictionary(customDictPath, cancellationToken);
+                    await LoadCustomDictionary(options.DataPath, cancellationToken);
                 }
 
                 Priority = 150; // Higher priority than SimpleLTS
@@ -96,7 +98,7 @@ namespace uPiper.Core.Phonemizers.Backend
             }
         }
 
-        public override async Task<PhonemeResult> PhonemizeAsync(
+        public override Task<PhonemeResult> PhonemizeAsync(
             string text,
             string language,
             PhonemeOptions options = null,
@@ -104,13 +106,13 @@ namespace uPiper.Core.Phonemizers.Backend
         {
             if (!IsInitialized)
             {
-                return new PhonemeResult
+                return Task.FromResult(new PhonemeResult
                 {
                     Success = false,
                     ErrorMessage = "Phonemizer not initialized",
                     Phonemes = new string[0],
                     PhonemeIds = new int[0]
-                };
+                });
             }
 
             try
@@ -200,7 +202,7 @@ namespace uPiper.Core.Phonemizers.Backend
                 // Convert ARPABET to IDs
                 var phonemeIds = ConvertToPhonemeIds(allPhonemes);
 
-                return new PhonemeResult
+                return Task.FromResult(new PhonemeResult
                 {
                     Success = true,
                     Phonemes = allPhonemes.ToArray(),
@@ -209,11 +211,11 @@ namespace uPiper.Core.Phonemizers.Backend
                     OriginalText = text,
                     Language = language,
                     Backend = Name
-                };
+                });
             }
             catch (Exception ex)
             {
-                return new PhonemeResult
+                return Task.FromResult(new PhonemeResult
                 {
                     Success = false,
                     ErrorMessage = $"Phonemization failed: {ex.Message}",
@@ -222,7 +224,7 @@ namespace uPiper.Core.Phonemizers.Backend
                     OriginalText = text,
                     Language = language,
                     Backend = Name
-                };
+                });
             }
         }
 
@@ -302,7 +304,7 @@ namespace uPiper.Core.Phonemizers.Backend
                     if (stem.Length >= 3 && cmuDictionary.TryGetPronunciation(stem, out var stemPhonemes))
                     {
                         var combined = new List<string>(stemPhonemes);
-                        combined.AddRange(rule.Value.suffix);
+                        combined.AddRange(rule.Value.phonemes);
                         return combined.ToArray();
                     }
                 }
