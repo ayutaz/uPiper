@@ -166,8 +166,7 @@ namespace uPiper.Tests.Phonemizers
             // Assert.AreEqual("true", result.Metadata["fallback_used"]);
 
             fallbackBackend.Dispose();
-        }        [Ignore("Temporarily disabled - interface changes")]
-
+        }
 
         [Test]
         [Ignore("Temporarily disabled - interface changes")]
@@ -351,8 +350,7 @@ namespace uPiper.Tests.Phonemizers
                 // Expected
                 Assert.Pass("Correctly cancelled operation");
             }
-        }        [Ignore("Temporarily disabled - interface changes")]
-
+        }
 
         [UnityTest]
         [Ignore("Temporarily disabled - interface changes")]
