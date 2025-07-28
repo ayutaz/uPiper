@@ -15,7 +15,7 @@ namespace uPiper.Tests.Phonemizers
     [TestFixture]
     public class SpanishPhonemizerTests
     {
-        private SpanishPhonemizerProxy phonemizer;
+        private SpanishPhonemizer phonemizer;
         // Note: Component classes are now internal to the proxy
         // private SpanishG2P g2pEngine;
         // private SpanishTextNormalizer normalizer;
@@ -23,7 +23,7 @@ namespace uPiper.Tests.Phonemizers
         [SetUp]
         public async Task SetUp()
         {
-            phonemizer = new SpanishPhonemizerProxy();
+            phonemizer = new SpanishPhonemizer();
             await phonemizer.InitializeAsync(null);
             
             // Component classes are now internal to the proxy

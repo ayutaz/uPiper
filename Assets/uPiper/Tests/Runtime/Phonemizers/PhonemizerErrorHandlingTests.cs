@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
-using uPiper.Phonemizers.Backend;
-using uPiper.Phonemizers.Backend.RuleBased;
-using uPiper.Phonemizers.ErrorHandling;
-using uPiper.Phonemizers.Unity;
-using uPiper.Phonemizers.Configuration;
+using uPiper.Core.Phonemizers.Backend;
+using uPiper.Core.Phonemizers.Backend.RuleBased;
+using uPiper.Core.Phonemizers.ErrorHandling;
+using uPiper.Core.Phonemizers.Unity;
+using uPiper.Core.Phonemizers.Configuration;
 
 namespace uPiper.Tests.Phonemizers
 {

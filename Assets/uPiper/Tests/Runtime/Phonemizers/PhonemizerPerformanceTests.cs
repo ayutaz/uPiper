@@ -7,11 +7,11 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using UnityEngine.Profiling;
-using uPiper.Phonemizers.Backend;
-using uPiper.Phonemizers.Backend.RuleBased;
-using uPiper.Phonemizers.Backend.Flite;
-using uPiper.Phonemizers.Threading;
-using uPiper.Phonemizers.Caching;
+using uPiper.Core.Phonemizers.Backend;
+using uPiper.Core.Phonemizers.Backend.RuleBased;
+using uPiper.Core.Phonemizers.Backend.Flite;
+using uPiper.Core.Phonemizers.Threading;
+using uPiper.Core.Phonemizers.Caching;
 using Debug = UnityEngine.Debug;
 
 namespace uPiper.Tests.Phonemizers

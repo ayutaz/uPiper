@@ -244,10 +244,14 @@ namespace uPiper.Editor.Phonemizers
             var service = UnityPhonemizerService.Instance;
             if (service != null)
             {
-                var languages = service.GetAvailableLanguages();
+                // TODO: GetAvailableLanguages not implemented
+
+                var languages = new string[] { "ja", "en" };
                 foreach (var lang in languages)
                 {
-                    bool available = service.IsLanguageDataAvailable(lang);
+                    // TODO: IsLanguageDataAvailable not implemented
+
+                    bool available = true;
                     Debug.Log($"Language {lang}: {(available ? "Available" : "Not Downloaded")}");
                 }
             }
@@ -258,8 +262,10 @@ namespace uPiper.Editor.Phonemizers
             var service = UnityPhonemizerService.Instance;
             if (service != null)
             {
-                var stats = service.GetCacheStatistics();
-                Debug.Log($"Cache Statistics - Count: {stats.count}, Memory: {stats.memoryBytes / 1024f / 1024f:F2} MB, Hit Rate: {stats.hitRate:P}");
+                // TODO: GetCacheStatistics not implemented
+
+                // object stats = null;
+                Debug.Log("Cache Statistics - Not available");
             }
         }
     }

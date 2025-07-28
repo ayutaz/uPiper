@@ -15,7 +15,7 @@ namespace uPiper.Tests.Phonemizers
     [TestFixture]
     public class KoreanPhonemizerTests
     {
-        private KoreanPhonemizerProxy phonemizer;
+        private KoreanPhonemizer phonemizer;
         // Note: Component classes are now internal to the proxy
         // private HangulProcessor hangulProcessor;
         // private KoreanG2P g2pEngine;
@@ -24,7 +24,7 @@ namespace uPiper.Tests.Phonemizers
         [SetUp]
         public async Task SetUp()
         {
-            phonemizer = new KoreanPhonemizerProxy();
+            phonemizer = new KoreanPhonemizer();
             await phonemizer.InitializeAsync(null);
             
             // Component classes are now internal to the proxy

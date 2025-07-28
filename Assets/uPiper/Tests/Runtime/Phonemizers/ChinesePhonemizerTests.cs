@@ -15,7 +15,7 @@ namespace uPiper.Tests.Phonemizers
     [TestFixture]
     public class ChinesePhonemizerTests
     {
-        private ChinesePhonemizerProxy phonemizer;
+        private ChinesePhonemizer phonemizer;
         // Note: Component classes are now internal to the proxy
         // private PinyinToPhonemeMapper pinyinMapper;
         // private ChineseTextSegmenter segmenter;
@@ -24,7 +24,7 @@ namespace uPiper.Tests.Phonemizers
         [SetUp]
         public async Task SetUp()
         {
-            phonemizer = new ChinesePhonemizerProxy();
+            phonemizer = new ChinesePhonemizer();
             await phonemizer.InitializeAsync(null);
             
             // Component classes are now internal to the proxy

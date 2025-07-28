@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using uPiper.Core.Phonemizers.Backend.RuleBased;
 using uPiper.Core.Phonemizers.Services;
-using uPiper.Phonemizers.Multilingual;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Phonemizers
 {
