@@ -99,12 +99,18 @@ namespace uPiper.Core.Phonemizers.Backend
         public override async Task<PhonemeResult> PhonemizeAsync(
             string text,
             string language,
-            PhonemizerOptions options = null,
+            PhonemeOptions options = null,
             CancellationToken cancellationToken = default)
         {
             if (!IsInitialized)
             {
-                return PhonemeResult.Failure("Phonemizer not initialized");
+                return new PhonemeResult
+                {
+                    Success = false,
+                    ErrorMessage = "Phonemizer not initialized",
+                    Phonemes = new string[0],
+                    PhonemeIds = new int[0]
+                };
             }
 
             try
@@ -194,15 +200,29 @@ namespace uPiper.Core.Phonemizers.Backend
                 // Convert ARPABET to IDs
                 var phonemeIds = ConvertToPhonemeIds(allPhonemes);
 
-                return PhonemeResult.Success(
-                    phonemes: allPhonemes.ToArray(),
-                    phonemeIds: phonemeIds,
-                    durations: allDurations.ToArray()
-                );
+                return new PhonemeResult
+                {
+                    Success = true,
+                    Phonemes = allPhonemes.ToArray(),
+                    PhonemeIds = phonemeIds,
+                    Durations = allDurations.ToArray(),
+                    OriginalText = text,
+                    Language = language,
+                    Backend = Name
+                };
             }
             catch (Exception ex)
             {
-                return PhonemeResult.Failure($"Phonemization failed: {ex.Message}");
+                return new PhonemeResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Phonemization failed: {ex.Message}",
+                    Phonemes = new string[0],
+                    PhonemeIds = new int[0],
+                    OriginalText = text,
+                    Language = language,
+                    Backend = Name
+                };
             }
         }
 
@@ -727,6 +747,88 @@ namespace uPiper.Core.Phonemizers.Backend
             }
             
             return total;
+        }
+
+        public override BackendCapabilities GetCapabilities()
+        {
+            return new BackendCapabilities
+            {
+                SupportsIPA = true,
+                SupportsStress = true,
+                SupportsSyllables = false,
+                SupportsTones = false,
+                SupportsDuration = true,
+                SupportsBatchProcessing = true,
+                IsThreadSafe = true,
+                RequiresNetwork = false
+            };
+        }
+
+        protected override void DisposeInternal()
+        {
+            lock (lockObject)
+            {
+                cmuDictionary?.Dispose();
+                cmuDictionary = null;
+                
+                g2pModel = null;
+                homographResolver = null;
+                customDictionary.Clear();
+                contractionsDict.Clear();
+            }
+        }
+
+        private string NormalizeText(string text)
+        {
+            // Basic text normalization
+            return text.Trim()
+                .Replace("'", "'")  // Smart quotes
+                .Replace("'", "'")
+                .Replace(""", "\"")
+                .Replace(""", "\"");
+        }
+
+        private void HandlePunctuation(string token, List<string> phonemes, List<float> durations)
+        {
+            // Add pause for punctuation
+            switch (token)
+            {
+                case ".":
+                case "!":
+                case "?":
+                    phonemes.Add("_");  // Long pause
+                    durations.Add(0.3f);
+                    break;
+                case ",":
+                case ";":
+                case ":":
+                    phonemes.Add("_");  // Short pause
+                    durations.Add(0.15f);
+                    break;
+            }
+        }
+
+        private bool IsPunctuation(string token)
+        {
+            return token.Length == 1 && char.IsPunctuation(token[0]);
+        }
+
+        private int[] ConvertToPhonemeIds(List<string> phonemes)
+        {
+            var ids = new int[phonemes.Count];
+            for (int i = 0; i < phonemes.Count; i++)
+            {
+                // Simple ID mapping - should match your model's vocabulary
+                ids[i] = GetPhonemeId(phonemes[i]);
+            }
+            return ids;
+        }
+
+        private int GetPhonemeId(string phoneme)
+        {
+            // This should match your VITS model's phoneme vocabulary
+            // For now, return a simple hash-based ID
+            return Math.Abs(phoneme.GetHashCode()) % 1000;
         }
 
         private class LetterContext
