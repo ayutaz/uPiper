@@ -1,130 +1,150 @@
-# uPiper Implementation Roadmap
+# uPiper Development Roadmap
 
-## 概要
+## Project Vision
 
-このドキュメントは、uPiper（Unity Piper TTS Plugin）の実装ロードマップです。
-Phase 1の実装進捗と今後の計画を管理します。
+uPiperは、Unityで動作する高品質な多言語対応Text-to-Speech (TTS)プラグインを目指しています。Piper TTSの技術をベースに、商用利用可能なライセンスで提供します。
 
-## Phase 1: Windows/Linux/macOS 基盤実装（計27人日）✅ 完了
+## Development Phases
 
-### 最終実績
+### ✅ Phase 1: Core Implementation (完了)
+
+#### 最終実績
 - **Phase 1基本実装**: 22/22人日（100%）✅ 完了
 - **Phase 1.12 IL2CPPサポート**: 2/2人日（100%）✅ 完了
 - **Phase 1.13 GPU推論とサンプル**: 3/3人日（100%）✅ 完了
-- **Phase 1全体**: 27/27人日（100%）✅ 2025年1月23日完全完了！
+- **Phase 1全体**: 27/27人日（100%）✅ 2025年1月23日完全完了
 
+#### 主な成果
+- Core API: 完全なインターフェースと実装
+- 音素化システム: OpenJTalk統合による高精度日本語処理
+- 音声合成: Unity.InferenceEngineによるONNX推論
+- プラットフォーム対応: Windows/Linux/macOS完全サポート
+- IL2CPP対応: Mono/IL2CPP両対応で最適なパフォーマンス
+- GPU推論: 自動検出とフォールバック機構
 
-### 完了タスク
-- ✅ 1.1 Core API - インターフェース設計（1人日）
-- ✅ 1.2 Core API - 実装（3人日）- 2025年1月22日確認
-  - 1.2.1 PiperConfig バリデーション実装（0.5人日）✅
-  - 1.2.2 PiperTTS 基本構造実装（1人日）✅
-  - 1.2.3 PiperTTS 非同期初期化実装（1人日）✅
-  - 1.2.4 PiperTTS 音声生成実装（0.5人日）✅
-- ✅ 1.3 Core API - テスト（2人日）
-  - 1.3.1 Core API ユニットテスト（1人日）✅
-  - 1.3.2 PiperTTS 初期化テスト（0.5人日）✅
-  - 1.3.3 PiperTTS 音声生成テスト（0.5人日）✅
-- ✅ 1.4 音素化システム - インターフェース（1.5人日）
-- ✅ 1.5 音素化システム - キャッシュ実装（2人日）
-- ✅ 1.6 音素化システム - テスト（1.5人日）
-- ✅ 1.7 OpenJTalk ネイティブライブラリ（4人日）
-- ✅ 1.8 P/Invoke バインディング（2人日）
-- ✅ 1.9 Unity.InferenceEngine 音声合成（3人日）
-- ✅ 1.10 OpenJTalk統合による日本語発音改善（2人日）
-- ✅ 1.11 Unity基本統合（1人日）- 2025年1月21日完了
-- ✅ 1.12 IL2CPPサポート（2人日）- 2025年1月22日完了
-- ✅ 1.13 GPU推論サポートと高度なサンプル（3人日）- 2025年1月23日完了
+### ✅ Phase 2: Android Support (完了)
 
-### Phase 1 完了サマリー
-
-Phase 1が完全に完了しました！以下が達成された主な成果です：
-
-- **Core API**: 完全なインターフェースと実装
-- **音素化システム**: OpenJTalk統合による高精度日本語処理
-- **音声合成**: Unity.InferenceEngineによるONNX推論
-- **プラットフォーム対応**: Windows/Linux/macOS完全サポート
-- **IL2CPP対応**: Mono/IL2CPP両対応で最適なパフォーマンス
-- **GPU推論**: 自動検出とフォールバック機構
-- **高度なサンプル**: ストリーミング、マルチボイス、リアルタイム
-- **テストカバレッジ**: 250+テストによる品質保証
-
-## Phase 2: Android実装（15人日）
-
-### 現在の進捗
-- **完了**: 15/15人日（100%） ✅
+#### 実績
+- **完了**: 15/15人日（100%）✅
 - **完了日**: 2025年1月23日
 
-### 完了タスク
-- ✅ 2.1 技術検証とビルド環境構築（3人日）
-  - Docker環境によるAndroid NDKビルド
-  - 全Android ABI対応（arm64-v8a, armeabi-v7a, x86, x86_64）
-  
-- ✅ 2.2 OpenJTalkネイティブライブラリのAndroidビルド（4人日）
-  - CMakeツールチェーン設定
-  - 全ABIでのビルド成功
-  - CI/CD統合（GitHub Actions）
+#### 主な成果
+- 全Android ABI対応（arm64-v8a, armeabi-v7a, x86, x86_64）
+- OpenJTalkネイティブライブラリのAndroidビルド成功
+- Unity Android統合完了
+- CI/CD統合（GitHub Actions）
+- 実機での日本語TTS動作確認
 
-- ✅ 2.3 Unity Android統合（4人日）
-  - P/Invoke経由でのネイティブライブラリ呼び出し
-  - StreamingAssetsからPersistentDataPathへの辞書展開
-  - Android固有のパス処理実装
-  - 実機での音声合成動作確認
+### 🚧 Phase 3: Multi-language Support (進行中)
 
-- ✅ 2.4 モバイル最適化（2人日）- 部分的に実装
-  - 基本的な最適化実装
-  - 更なる最適化は今後の課題として残存
+**現在の進捗**: 基盤実装完了、商用ライセンス方針確立
 
-- ✅ 2.5 テストとCI/CD統合（2人日）
-  - Android自動テスト機能実装
-  - GitHub ActionsでのAndroidビルド統合
-  - 実機での動作確認完了
+#### Phase 3.1: 基盤構築 (完了)
+- ✅ GPLライセンス問題の調査と方針決定
+  - eSpeak-NG（GPL v3）の使用を回避
+  - MIT/Apache 2.0/BSD系ライセンスのみ採用
+- ✅ PhonemizerBackendBase実装
+- ✅ ライセンス管理システム構築
+- ✅ 基本的な多言語実装（5言語）
+  - 日本語（OpenJTalk）✅
+  - 英語（CMU辞書）✅
+  - スペイン語（基本G2P）✅
+  - 中国語（簡易ピンイン）✅
+  - 韓国語（基本ハングル）✅
 
-### 実装時の主な成果
-- libopenjtalk_wrapper.so（全ABI合計約20MB）
-- 日本語TTS実機動作確認
-- 文字エンコーディング問題の解決（UTF-8対応）
-- CI/CDパイプライン統合完了
+#### Phase 3.2: 商用ライブラリ統合 (計画中)
+- 🔲 OpenPhonemizer統合（BSD-3-Clause Clear）
+  - スペイン語、ポルトガル語、ドイツ語、フランス語、イタリア語
+- 🔲 Flite統合（MIT-CMU）- 英語強化
+- 🔲 pypinyin完全移植（MIT）- 中国語
+- 🔲 IndicXlit統合（MIT）- ヒンディー語
 
-## 今後のフェーズ
+#### Phase 3.3: 追加言語実装 (計画中)
+- 🔲 ベンガル語（bnbphoneticparser - MIT）
+- 🔲 ロシア語（調査中）
+- 🔲 韓国語改善（g2pK - ライセンス確認中）
 
-### Phase 3: eSpeak-NG統合（10人日）
-- eSpeak-NGのクロスプラットフォームビルド
-- 英語音素化の品質向上
-- 多言語音素化基盤の構築
-
-### Phase 4: 多言語サポート（15人日）
-- 中国語（Mandarin）対応
-- 韓国語対応
-- 言語自動検出システム
-- 混合言語テキスト対応
-
-### Phase 5: WebGL実装（10人日）
-- Emscriptenビルド
-- WebAssembly最適化
-- ブラウザ互換性対応
-
-### Phase 6: iOS実装（10人日）
+### 📅 Phase 4: iOS Support (計画中)
 - Xcodeプロジェクト設定
 - Objective-C++ブリッジ
 - App Store要件対応
 
-### Phase 7: エディタツール（10人日）
+### 📅 Phase 5: WebGL Support (計画中)
+- Emscriptenビルド
+- WebAssembly最適化
+- ブラウザ互換性対応
+
+### 📅 Phase 6: Advanced Features (計画中)
+- 音声品質向上（高品質モデル）
+- 感情表現対応
+- 話者切り替え機能
+- リアルタイムストリーミング
+
+### 📅 Phase 7: Editor Tools (計画中)
 - カスタムインスペクター
 - 音声プレビュー機能
 - デバッグツール
 - VoiceBankマネージャー
 
-### Phase 8: 最適化と品質保証（10人日）
+### 📅 Phase 8: Optimization & QA (計画中)
 - パフォーマンス最適化
-  - Androidメモリ使用量削減
-  - 初期化時間短縮
-  - ARM NEON最適化
+- メモリ使用量削減
 - 自動テスト拡充
 - ドキュメント完成
 
-## 現在のステータス
+## Timeline
 
-- **Phase 1**: 86.4%完了（基本機能実装済み）
-- **Phase 2**: 100%完了（Android対応完了）✅
-- **次の優先事項**: Androidパフォーマンス最適化、その後Phase 3（eSpeak-NG統合）
+| Phase | 期間 | 状態 | 進捗 |
+|-------|------|------|------|
+| Phase 1 | 2023 Q4 | ✅ 完了 | 100% |
+| Phase 2 | 2024 Q1 | ✅ 完了 | 100% |
+| Phase 3 | 2024 Q1-Q2 | 🚧 進行中 | 30% |
+| Phase 4 | 2024 Q2 | 📅 計画中 | 0% |
+| Phase 5 | 2024 Q3 | 📅 計画中 | 0% |
+| Phase 6 | 2024 Q3-Q4 | 📅 計画中 | 0% |
+| Phase 7 | 2024 Q4 | 📅 計画中 | 0% |
+| Phase 8 | 2025 Q1 | 📅 計画中 | 0% |
+
+## 技術スタック
+
+### コア技術
+- **Unity**: 6000.0.35f1
+- **Unity AI Inference Engine**: 2.2.x
+- **ONNX Runtime**: モデル推論
+- **Piper TTS**: 音声合成エンジン
+
+### 音素化ライブラリ（商用利用可能）
+- **OpenJTalk**: 日本語（修正BSD）✅ 実装済み
+- **CMU Dictionary**: 英語（BSD系）✅ 基本実装
+- **OpenPhonemizer**: 多言語（BSD-3-Clause Clear）🔲 計画中
+- **Flite**: 英語（MIT-CMU）🔲 計画中
+- **pypinyin**: 中国語（MIT）🔲 完全実装予定
+- **IndicXlit**: インド系言語（MIT）🔲 計画中
+
+## 最近の更新
+
+### 2024-01-28
+- Phase 3の方針を大幅変更
+  - GPL v3ライセンス問題によりeSpeak-NG統合を中止
+  - 商用利用可能なライブラリのみを使用する方針に転換
+- 基本的な多言語実装（5言語）完了
+- ライセンス管理システム構築
+- コンパイルエラーをすべて解決
+
+### 2024-01-23
+- Phase 2（Android対応）完全完了
+- Phase 1（Core実装）完全完了
+
+## 次のマイルストーン
+
+1. **OpenPhonemizer統合** - 5言語以上を一度にサポート
+2. **Flite統合** - 英語音素化の品質向上
+3. **pypinyin完全移植** - 中国語の本格対応
+
+## コントリビューション
+
+プロジェクトへの貢献を歓迎します。詳細は[CONTRIBUTING.md](CONTRIBUTING.md)を参照してください。
+
+## ライセンス
+
+uPiperは商用利用可能なライセンスで提供されます。サードパーティライブラリのライセンスについては[THIRD-PARTY-NOTICES.txt](../Assets/uPiper/Licenses/THIRD-PARTY-NOTICES.txt)を参照してください。
