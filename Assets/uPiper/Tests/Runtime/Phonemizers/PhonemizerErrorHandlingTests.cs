@@ -28,20 +28,17 @@ namespace uPiper.Tests.Phonemizers
     [TestFixture]
     public class PhonemizerErrorHandlingTests
     {
-        // private CircuitBreaker circuitBreaker;
+        private CircuitBreaker circuitBreaker;
         private SafePhonemizerWrapper safeWrapper;
 
         [SetUp]
         public void SetUp()
         {
-            // CircuitBreakerとSafePhonemizerWrapperは未実装のため一時的に無効化
-            // var settings = new CircuitBreakerSettings
-            // {
-            //     FailureThreshold = 3,
-            //     ResetTimeout = TimeSpan.FromSeconds(5),
-            //     HalfOpenTestCount = 1
-            // };
-            // circuitBreaker = new CircuitBreaker(settings);
+            // CircuitBreakerの初期化
+            circuitBreaker = new CircuitBreaker(
+                failureThreshold: 3,
+                timeout: TimeSpan.FromSeconds(5)
+            );
         }
 
         [TearDown]
@@ -53,97 +50,93 @@ namespace uPiper.Tests.Phonemizers
         #region Circuit Breaker Tests
 
         [Test]
-        [Ignore("CircuitBreaker not implemented")]
         public void CircuitBreaker_ShouldOpenAfterThresholdFailures()
         {
-            // CircuitBreaker test implementation pending
-            // // Initially closed
-            // Assert.IsTrue(circuitBreaker.CanExecute(), "Circuit should start closed");
-            // Assert.AreEqual(CircuitState.Closed, circuitBreaker.State);
+            // Initially closed
+            Assert.IsTrue(circuitBreaker.CanExecute(), "Circuit should start closed");
+            Assert.AreEqual(CircuitState.Closed, circuitBreaker.State);
 
-            // // Simulate failures
-            // for (int i = 0; i < 3; i++)
-            // {
-            //     Assert.IsTrue(circuitBreaker.CanExecute(), $"Should allow execution {i + 1}");
-            //     circuitBreaker.OnFailure(new Exception($"Test failure {i + 1}"));
-            // }
+            // Simulate failures
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.IsTrue(circuitBreaker.CanExecute(), $"Should allow execution {i + 1}");
+                circuitBreaker.OnFailure(new Exception($"Test failure {i + 1}"));
+            }
 
-            // // Should now be open
-            // Assert.IsFalse(circuitBreaker.CanExecute(), "Circuit should be open after threshold");
-            // Assert.AreEqual(CircuitState.Open, circuitBreaker.State);
+            // Should now be open
+            Assert.IsFalse(circuitBreaker.CanExecute(), "Circuit should be open after threshold");
+            Assert.AreEqual(CircuitState.Open, circuitBreaker.State);
         }
 
         [Test]
-        [Ignore("CircuitBreaker not implemented")]
         public void CircuitBreaker_ShouldResetOnSuccess()
         {
-            // CircuitBreaker implementation pending
-            // // Get to half-open state
-            // circuitBreaker.OnFailure(new Exception("Failure 1"));
-            // circuitBreaker.OnFailure(new Exception("Failure 2"));
-            // circuitBreaker.OnFailure(new Exception("Failure 3"));
-            // 
-            // Assert.AreEqual(CircuitState.Open, circuitBreaker.State);
+            // Get to open state
+            circuitBreaker.OnFailure(new Exception("Failure 1"));
+            circuitBreaker.OnFailure(new Exception("Failure 2"));
+            circuitBreaker.OnFailure(new Exception("Failure 3"));
+            
+            Assert.AreEqual(CircuitState.Open, circuitBreaker.State);
 
-            // // Wait for reset timeout (simulated by forcing state)
-            // // In real implementation, this would be time-based
-            // circuitBreaker.OnSuccess(); // This might not work if truly open
-
-            // After timeout, should allow test
             // For testing, we'll create a new circuit breaker with shorter timeout
-            var quickSettings = new CircuitBreakerSettings
-            {
-                FailureThreshold = 3,
-                ResetTimeout = TimeSpan.FromMilliseconds(100),
-                HalfOpenTestCount = 1
-            };
-            // var quickBreaker = new CircuitBreaker(quickSettings);
+            var quickBreaker = new CircuitBreaker(
+                failureThreshold: 3,
+                timeout: TimeSpan.FromMilliseconds(100)
+            );
 
             // Fail it
             for (int i = 0; i < 3; i++)
             {
-                // quickBreaker.OnFailure(new Exception());
+                quickBreaker.OnFailure(new Exception());
             }
 
             // Wait for timeout
             System.Threading.Thread.Sleep(150);
 
             // Should now allow a test (half-open)
-            // Assert.IsTrue(quickBreaker.CanExecute(), "Should allow test after timeout");
-            // 
-            // // Success should close it
-            // quickBreaker.OnSuccess();
-            // Assert.AreEqual(CircuitState.Closed, quickBreaker.State);
+            Assert.IsTrue(quickBreaker.CanExecute(), "Should allow test after timeout");
+            
+            // Success should close it
+            quickBreaker.OnSuccess();
+            Assert.AreEqual(CircuitState.Closed, quickBreaker.State);
         }
 
         [Test]
-
-
-        [Ignore("CircuitBreaker not implemented")]
         public void CircuitBreaker_ShouldHandleConcurrentAccess()
         {
             var tasks = new List<Task>();
             var exceptions = new List<Exception>();
+            var successCount = 0;
 
-            // Concurrent failures
+            // Concurrent operations
             for (int i = 0; i < 10; i++)
             {
+                int index = i; // Capture loop variable
                 tasks.Add(Task.Run(() =>
                 {
                     try
                     {
-                        // if (circuitBreaker.CanExecute())
-                        // {
-                        //     // Simulate some failures
-                        //     if (i % 2 == 0)
-                        //     {
-                        //         throw new Exception($"Concurrent failure {i}");
-                        //     }
-                        // }
+                        if (circuitBreaker.CanExecute())
+                        {
+                            // Simulate some failures
+                            if (index % 2 == 0)
+                            {
+                                var ex = new Exception($"Concurrent failure {index}");
+                                circuitBreaker.OnFailure(ex);
+                                lock (exceptions)
+                                {
+                                    exceptions.Add(ex);
+                                }
+                            }
+                            else
+                            {
+                                circuitBreaker.OnSuccess();
+                                Interlocked.Increment(ref successCount);
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
-                        // circuitBreaker.OnFailure(ex);
                         lock (exceptions)
                         {
                             exceptions.Add(ex);
@@ -152,12 +145,12 @@ namespace uPiper.Tests.Phonemizers
                 }));
             }
 
-            // Task.WaitAll(tasks.ToArray());
+            Task.WaitAll(tasks.ToArray());
 
-            // // Circuit should be in a consistent state
-            // Assert.IsNotNull(circuitBreaker.State);
-            // Debug.Log($"Circuit state after concurrent access: {circuitBreaker.State}");
-            // Debug.Log($"Recorded {exceptions.Count} failures");
+            // Circuit should be in a consistent state
+            Assert.IsNotNull(circuitBreaker.State);
+            Debug.Log($"Circuit state after concurrent access: {circuitBreaker.State}");
+            Debug.Log($"Recorded {exceptions.Count} failures, {successCount} successes");
         }
 
         #endregion

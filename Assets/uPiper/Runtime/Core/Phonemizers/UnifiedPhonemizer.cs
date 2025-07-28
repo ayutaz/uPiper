@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
+using uPiper.Core.Phonemizers.ErrorHandling;
+using uPiper.Phonemizers.Configuration;
 
 namespace uPiper.Core.Phonemizers
 {
@@ -17,6 +19,8 @@ namespace uPiper.Core.Phonemizers
         private readonly Dictionary<string, List<IPhonemizerBackend>> backendsByLanguage;
         private readonly MixedLanguagePhonemizer mixedLanguagePhonemizer;
         private readonly LanguageDetector languageDetector;
+        private readonly Dictionary<string, ICircuitBreaker> circuitBreakers;
+        private readonly PhonemizerSettings settings;
         private bool isInitialized;
         private readonly object lockObject = new object();
 
@@ -43,11 +47,13 @@ namespace uPiper.Core.Phonemizers
             }
         }
 
-        public UnifiedPhonemizer()
+        public UnifiedPhonemizer(PhonemizerSettings settings = null)
         {
             backendsByLanguage = new Dictionary<string, List<IPhonemizerBackend>>();
             mixedLanguagePhonemizer = new MixedLanguagePhonemizer();
             languageDetector = new LanguageDetector();
+            circuitBreakers = new Dictionary<string, ICircuitBreaker>();
+            this.settings = settings;
         }
 
         public async Task<bool> InitializeAsync(PhonemizerBackendOptions options = null, CancellationToken cancellationToken = default)
@@ -204,15 +210,42 @@ namespace uPiper.Core.Phonemizers
                     language = "en";
                 }
 
-                // Phonemize with selected backend
-                var result = await backend.PhonemizeAsync(text, language, options, cancellationToken);
-                
-                // Add backend info to metadata
-                if (result.Metadata == null)
-                    result.Metadata = new Dictionary<string, object>();
-                result.Metadata["backend_used"] = backend.Name;
+                // Check circuit breaker
+                var circuitBreaker = GetOrCreateCircuitBreaker(language);
+                if (!circuitBreaker.CanExecute())
+                {
+                    Debug.LogWarning($"Circuit breaker is open for language {language}, using fallback");
+                    return await FallbackPhonemize(text, language, options, cancellationToken);
+                }
 
-                return result;
+                try
+                {
+                    // Phonemize with selected backend
+                    var result = await backend.PhonemizeAsync(text, language, options, cancellationToken);
+                    
+                    // Update circuit breaker based on result
+                    if (result.Success)
+                    {
+                        circuitBreaker.OnSuccess();
+                    }
+                    else
+                    {
+                        circuitBreaker.OnFailure(new Exception(result.Error));
+                    }
+                    
+                    // Add backend info to metadata
+                    if (result.Metadata == null)
+                        result.Metadata = new Dictionary<string, object>();
+                    result.Metadata["backend_used"] = backend.Name;
+                    result.Metadata["circuit_breaker_state"] = circuitBreaker.GetStatistics().State.ToString();
+
+                    return result;
+                }
+                catch (Exception ex)
+                {
+                    circuitBreaker.OnFailure(ex);
+                    throw;
+                }
             }
             catch (Exception ex)
             {
@@ -344,6 +377,49 @@ namespace uPiper.Core.Phonemizers
                 NormalizeText = true,
                 UseG2PFallback = true
             };
+        }
+
+        private ICircuitBreaker GetOrCreateCircuitBreaker(string language)
+        {
+            lock (lockObject)
+            {
+                if (!circuitBreakers.ContainsKey(language))
+                {
+                    var failureThreshold = settings?.MaxRetries ?? 3;
+                    var resetTime = TimeSpan.FromSeconds(settings?.CircuitBreakerResetTime ?? 30f);
+                    circuitBreakers[language] = new CircuitBreaker(failureThreshold, resetTime);
+                }
+                return circuitBreakers[language];
+            }
+        }
+
+        private async Task<PhonemeResult> FallbackPhonemize(string text, string language, PhonemeOptions options, CancellationToken cancellationToken)
+        {
+            // Try with a simple rule-based approach
+            try
+            {
+                var fallbackBackend = new Backend.RuleBased.RuleBasedPhonemizer();
+                await fallbackBackend.InitializeAsync();
+                var result = await fallbackBackend.PhonemizeAsync(text, language, options, cancellationToken);
+                
+                if (result.Metadata == null)
+                    result.Metadata = new Dictionary<string, object>();
+                result.Metadata["fallback_used"] = true;
+                result.Metadata["backend_used"] = fallbackBackend.Name;
+                
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return new PhonemeResult
+                {
+                    Success = false,
+                    OriginalText = text,
+                    Language = language,
+                    Error = $"Fallback phonemization failed: {ex.Message}",
+                    Backend = "Fallback"
+                };
+            }
         }
 
         public long GetMemoryUsage()
