@@ -490,17 +490,25 @@ namespace uPiper.Core.Phonemizers
         {
             try
             {
+                // Try EnhancedEnglishPhonemizer first (higher priority)
+                var enhancedType = System.Type.GetType("uPiper.Core.Phonemizers.Backend.EnhancedEnglishPhonemizer, uPiper.Runtime");
+                if (enhancedType != null)
+                {
+                    return Activator.CreateInstance(enhancedType) as IPhonemizerBackend;
+                }
+                
+                // Fall back to SimpleLTSPhonemizer
                 var type = System.Type.GetType("uPiper.Core.Phonemizers.Backend.SimpleLTSPhonemizer, uPiper.Runtime");
                 if (type != null)
                 {
                     return Activator.CreateInstance(type) as IPhonemizerBackend;
                 }
-                Debug.LogError("SimpleLTSPhonemizer type not found");
+                Debug.LogError("No English phonemizer type found");
                 return null;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Failed to create SimpleLTSPhonemizer: {ex.Message}");
+                Debug.LogError($"Failed to create English phonemizer: {ex.Message}");
                 return null;
             }
         }
