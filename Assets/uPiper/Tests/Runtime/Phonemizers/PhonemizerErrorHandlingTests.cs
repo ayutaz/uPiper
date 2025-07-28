@@ -77,16 +77,17 @@ namespace uPiper.Tests.Phonemizers
         [Ignore("CircuitBreaker not implemented")]
         public void CircuitBreaker_ShouldResetOnSuccess()
         {
-            // Get to half-open state
-            circuitBreaker.OnFailure(new Exception("Failure 1"));
-            circuitBreaker.OnFailure(new Exception("Failure 2"));
-            circuitBreaker.OnFailure(new Exception("Failure 3"));
-            
-            Assert.AreEqual(CircuitState.Open, circuitBreaker.State);
+            // CircuitBreaker implementation pending
+            // // Get to half-open state
+            // circuitBreaker.OnFailure(new Exception("Failure 1"));
+            // circuitBreaker.OnFailure(new Exception("Failure 2"));
+            // circuitBreaker.OnFailure(new Exception("Failure 3"));
+            // 
+            // Assert.AreEqual(CircuitState.Open, circuitBreaker.State);
 
-            // Wait for reset timeout (simulated by forcing state)
-            // In real implementation, this would be time-based
-            circuitBreaker.OnSuccess(); // This might not work if truly open
+            // // Wait for reset timeout (simulated by forcing state)
+            // // In real implementation, this would be time-based
+            // circuitBreaker.OnSuccess(); // This might not work if truly open
 
             // After timeout, should allow test
             // For testing, we'll create a new circuit breaker with shorter timeout
@@ -96,23 +97,23 @@ namespace uPiper.Tests.Phonemizers
                 ResetTimeout = TimeSpan.FromMilliseconds(100),
                 HalfOpenTestCount = 1
             };
-            var quickBreaker = new CircuitBreaker(quickSettings);
+            // var quickBreaker = new CircuitBreaker(quickSettings);
 
             // Fail it
             for (int i = 0; i < 3; i++)
             {
-                quickBreaker.OnFailure(new Exception());
+                // quickBreaker.OnFailure(new Exception());
             }
 
             // Wait for timeout
             System.Threading.Thread.Sleep(150);
 
             // Should now allow a test (half-open)
-            Assert.IsTrue(quickBreaker.CanExecute(), "Should allow test after timeout");
-            
-            // Success should close it
-            quickBreaker.OnSuccess();
-            Assert.AreEqual(CircuitState.Closed, quickBreaker.State);
+            // Assert.IsTrue(quickBreaker.CanExecute(), "Should allow test after timeout");
+            // 
+            // // Success should close it
+            // quickBreaker.OnSuccess();
+            // Assert.AreEqual(CircuitState.Closed, quickBreaker.State);
         }
 
         [Test]
@@ -278,6 +279,7 @@ namespace uPiper.Tests.Phonemizers
             // Assert.AreEqual(10, results.Count + errors.Count, "All attempts should be accounted for");
 
             // Debug.Log($"Success rate: {results.Count}/10 ({results.Count * 10}%)");
+            await Task.CompletedTask;
         }
 
         // Backend that fails intermittently - commented out due to interface changes
@@ -362,6 +364,7 @@ namespace uPiper.Tests.Phonemizers
                 // Expected
                 Assert.Pass("Correctly cancelled operation");
             }
+            await Task.CompletedTask;
         }
 
         [UnityTest]
@@ -454,7 +457,7 @@ namespace uPiper.Tests.Phonemizers
         public async Task InputValidation_ShouldHandleInvalidInputs()
         {
             var backend = new RuleBasedPhonemizer();
-            await backend.InitializeAsync(Application.temporaryCachePath);
+            await backend.InitializeAsync();
 
             var invalidInputs = new[]
             {
@@ -550,6 +553,7 @@ namespace uPiper.Tests.Phonemizers
 
             // Assert.AreEqual(0, ResourceTrackingBackend.ActiveResources, 
             //     "All resources should be cleaned up");
+            await Task.CompletedTask;
         }
 
         // Backend that tracks resource allocation - commented out due to interface changes
