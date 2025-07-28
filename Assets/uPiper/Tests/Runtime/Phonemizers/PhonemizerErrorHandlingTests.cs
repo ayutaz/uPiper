@@ -28,19 +28,20 @@ namespace uPiper.Tests.Phonemizers
     [TestFixture]
     public class PhonemizerErrorHandlingTests
     {
-        private CircuitBreaker circuitBreaker;
+        // private CircuitBreaker circuitBreaker;
         private SafePhonemizerWrapper safeWrapper;
 
         [SetUp]
         public void SetUp()
         {
-            var settings = new CircuitBreakerSettings
-            {
-                FailureThreshold = 3,
-                ResetTimeout = TimeSpan.FromSeconds(5),
-                HalfOpenTestCount = 1
-            };
-            circuitBreaker = new CircuitBreaker(settings);
+            // CircuitBreakerとSafePhonemizerWrapperは未実装のため一時的に無効化
+            // var settings = new CircuitBreakerSettings
+            // {
+            //     FailureThreshold = 3,
+            //     ResetTimeout = TimeSpan.FromSeconds(5),
+            //     HalfOpenTestCount = 1
+            // };
+            // circuitBreaker = new CircuitBreaker(settings);
         }
 
         [TearDown]
@@ -162,7 +163,7 @@ namespace uPiper.Tests.Phonemizers
         {
             // var failingBackend = new FailingPhonemizerBackend();
             var fallbackBackend = new RuleBasedPhonemizer();
-            await fallbackBackend.InitializeAsync(Application.temporaryCachePath);
+            await fallbackBackend.InitializeAsync();
 
             // safeWrapper = new SafePhonemizerWrapper(failingBackend, fallbackBackend);
 
@@ -182,7 +183,7 @@ namespace uPiper.Tests.Phonemizers
         {
             // var failingBackend = new FailingPhonemizerBackend();
             var fallbackBackend = new RuleBasedPhonemizer();
-            await fallbackBackend.InitializeAsync(Application.temporaryCachePath);
+            await fallbackBackend.InitializeAsync();
 
             var settings = new CircuitBreakerSettings
             {
@@ -623,8 +624,8 @@ namespace uPiper.Tests.Phonemizers
         [Ignore("Temporarily disabled - interface changes")]
         public IEnumerator Unity_ShouldHandleMainThreadExceptions()
         {
-            bool errorHandled = false;
-            string errorMessage = null;
+            // bool errorHandled = false;
+            // string errorMessage = null;
 
             // Create a backend that throws on a background thread
             // var asyncErrorBackend = new AsyncErrorBackend();
