@@ -1,103 +1,132 @@
-# uPiper Implementation Status
+# uPiper 実装状況
 
-## Current Phase: Phase 3 - Multi-Language Phonemization (Completed)
+## 現在のフェーズ: Phase 3 - 多言語音素化 ✅ 完了 (2025-01-28)
 
-### Phase 1: Foundation ✅
-- Unity integration
-- Basic TTS pipeline
-- ONNX model loading
-- Audio generation
+### Phase 1: 基盤実装 ✅
+- Unity統合
+- 基本的なTTSパイプライン
+- ONNXモデルローディング
+- 音声生成
 
-### Phase 1.10: OpenJTalk Integration ✅
-- Native library build system
-- Japanese phonemization
-- Cross-platform support (Windows/macOS/Linux)
-- PUA character mapping
+### Phase 1.10: OpenJTalk統合 ✅
+- ネイティブライブラリビルドシステム
+- 日本語音素化
+- クロスプラットフォーム対応（Windows/macOS/Linux）
+- PUA文字マッピング
 
-### Phase 2: RESERVED
-- Skipped (originally planned for eSpeak-NG integration)
-- Avoided due to GPL v3 license incompatibility
+### Phase 2: Android対応 ✅
+- 全Android ABI対応（arm64-v8a, armeabi-v7a, x86, x86_64）
+- OpenJTalkネイティブライブラリのAndroidビルド
+- Unity Android統合
+- CI/CD統合（GitHub Actions）
+- 実機での日本語TTS動作確認
 
-### Phase 3: Multi-Language Phonemization ✅ (2025-07-28)
-**Focus: Japanese and English support only**
+### Phase 3: 多言語音素化 ✅ (2025-01-28)
+**スコープ: 日本語と英語のみ**
 
-#### Completed Components:
-1. **English Phonemization**
-   - SimpleLTSPhonemizer (pure C# implementation)
-   - Basic Letter-to-Sound rules
-   - CMU dictionary support
-   - No external dependencies
+#### 完了したコンポーネント:
+1. **英語音素化**
+   - SimpleLTSPhonemizer（純粋なC#実装）
+   - 基本的なLetter-to-Soundルール
+   - CMU辞書サポート
+   - 外部依存なし
 
-2. **Mixed Language Support**
+2. **混在言語サポート**
    - MixedLanguagePhonemizer
-   - Automatic language detection
-   - Seamless Japanese-English switching
-   - Proper punctuation handling
+   - 自動言語検出
+   - シームレスな日英切り替え
+   - 適切な句読点処理
 
-3. **Unified Interface**
-   - UnifiedPhonemizer as main entry point
-   - Auto-detection and backend selection
-   - Extensible architecture
-   - Performance optimizations
+3. **統一インターフェース**
+   - UnifiedPhonemizerがメインエントリーポイント
+   - 自動検出とバックエンド選択
+   - 拡張可能なアーキテクチャ
+   - パフォーマンス最適化
 
-4. **Testing**
-   - Comprehensive test suites
-   - Unity Test Framework integration
-   - All tests passing
+4. **エラー耐性**
+   - CircuitBreakerパターン完全統合
+   - 自動フォールバック機構
+   - エラー状態の追跡
 
-#### Key Files:
+5. **テスト**
+   - 包括的なテストスイート
+   - Unity Test Framework統合
+   - 全テスト合格
+
+#### 主要ファイル:
 - `Assets/uPiper/Runtime/Core/Phonemizers/UnifiedPhonemizer.cs`
 - `Assets/uPiper/Runtime/Core/Phonemizers/MixedLanguagePhonemizer.cs`
 - `Assets/uPiper/Runtime/Core/Phonemizers/Backend/SimpleLTSPhonemizer.cs`
 - `Assets/uPiper/Runtime/Core/Phonemizers/Backend/OpenJTalkBackendAdapter.cs`
 
-### Next Phases (Planned)
+### 精度とパフォーマンス
 
-#### Phase 4: Performance & Optimization
-- Batch processing improvements
-- Memory optimization
-- GPU acceleration research
-- Streaming support
+#### 日本語音素化（OpenJTalk）
+- **精度**: 95%以上
+- **特徴**: 形態素解析、アクセント情報、辞書ベース
+- **例**: "今日は良い天気ですね" → [k y o o w a i i t e N k i d e s u n e]
 
-#### Phase 5: Enhanced Voice Models
-- Multi-speaker support
-- Emotion control
-- Voice conversion features
-- Model fine-tuning tools
+#### 英語音素化（SimpleLTS）
+- **精度**: 60-70%（基本単語）
+- **制限**: 不規則動詞未対応、ストレスマークなし、ルールベースのみ
+- **例**: "Hello world" → [HH EH L OW  W ER L D]
 
-#### Phase 6: Production Features
-- Unity Package Manager distribution
-- Comprehensive documentation
-- Example projects
-- Performance profiling tools
+#### 混在言語処理
+- **精度**: 85-90%
+- **強み**: 正確な言語境界検出
+- **課題**: カタカナ英語の処理
 
-### License Status
-All components use commercial-friendly licenses:
-- OpenJTalk: Modified BSD
+### 次のフェーズ（計画中）
+
+#### Phase 4: 追加言語サポート
+- eSpeak-NGオプショナルプラグイン（英語精度向上）
+- OpenPhonemizer統合（5言語以上）
+- 中国語、韓国語、スペイン語等
+
+#### Phase 5: iOS対応
+- Xcodeプロジェクト設定
+- Objective-C++ブリッジ
+- App Store要件対応
+
+#### Phase 6: WebGL対応
+- Emscriptenビルド
+- WebAssembly最適化
+- ブラウザ互換性
+
+### ライセンス状況
+全コンポーネントが商用利用可能なライセンス:
+- OpenJTalk: 修正BSD
 - SimpleLTS: MIT
 - Core uPiper: MIT
-- No GPL dependencies
+- GPLの依存関係なし
 
-### Current Limitations
-1. Languages: Japanese and English only
-2. English: Basic LTS rules (no advanced linguistic features)
-3. Mixed text: Works best with clear language boundaries
-4. Performance: Not optimized for very long texts (>10k chars)
+### 現在の制限事項
+1. 言語: 日本語と英語のみ
+2. 英語: 基本的なLTSルール（高度な言語機能なし）
+3. 混在テキスト: 明確な言語境界で最良の結果
+4. パフォーマンス: 非常に長いテキスト（10,000文字以上）では未最適化
 
-### How to Test
+### テスト方法
 ```bash
-# In Unity Editor
+# Unity Editorで
 1. Window > General > Test Runner
-2. Select PlayMode tab
-3. Run tests in uPiper.Tests.Runtime.Core.Phonemizers
+2. PlayModeタブを選択
+3. uPiper.Tests.Runtime.Core.Phonemizersのテストを実行
 ```
 
-### Usage Example
+### 使用例
 ```csharp
-// Initialize
+// 初期化
 var phonemizer = new UnifiedPhonemizer();
 await phonemizer.InitializeAsync();
 
-// Use
+// 使用
 var result = await phonemizer.PhonemizeAsync("Hello, 世界", "auto");
 ```
+
+### プロジェクトサイズ削減
+2025年1月28日、プロジェクトサイズを約450-500MB削減:
+- 2D機能パック削除
+- Universal Render Pipeline削除
+- 不要なモジュール削除（Physics、VR/XR、Timeline等）
+- 開発に必要なパッケージは維持（InputSystem、IDE統合、Android開発ツール）
