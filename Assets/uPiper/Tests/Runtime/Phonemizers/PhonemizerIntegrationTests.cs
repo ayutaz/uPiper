@@ -17,7 +17,7 @@ namespace uPiper.Tests.Phonemizers
     /// </summary>
     [TestFixture]
     [Timeout(30000)] // 30 second timeout for the entire test class
-    // [Ignore("Temporarily disabled - phonemizer system not fully implemented")] // Re-enabled with proper timeout handling
+    [RequiresPlayMode] // Unity service requires play mode
     public class PhonemizerIntegrationTests
     {
         // private MultilingualPhonemizerService multilingualService;

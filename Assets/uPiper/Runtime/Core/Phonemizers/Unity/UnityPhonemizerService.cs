@@ -23,7 +23,10 @@ namespace uPiper.Core.Phonemizers.Unity
                 {
                     var go = new GameObject("[UnityPhonemizerService]");
                     instance = go.AddComponent<UnityPhonemizerService>();
-                    DontDestroyOnLoad(go);
+                    if (Application.isPlaying)
+                    {
+                        DontDestroyOnLoad(go);
+                    }
                 }
                 return instance;
             }
