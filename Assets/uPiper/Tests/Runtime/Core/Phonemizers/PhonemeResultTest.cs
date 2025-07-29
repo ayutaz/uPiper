@@ -137,7 +137,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.AreEqual(original.OriginalText, clone.OriginalText);
             CollectionAssert.AreEqual(original.Phonemes, clone.Phonemes);
             CollectionAssert.AreEqual(original.PhonemeIds, clone.PhonemeIds);
-            
+
             // Check arrays are same instances (shallow copy)
             Assert.AreSame(original.Phonemes, clone.Phonemes);
             Assert.AreSame(original.PhonemeIds, clone.PhonemeIds);
