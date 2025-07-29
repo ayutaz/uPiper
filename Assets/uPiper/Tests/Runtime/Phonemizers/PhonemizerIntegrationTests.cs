@@ -17,44 +17,22 @@ namespace uPiper.Tests.Phonemizers
     /// </summary>
     [TestFixture]
     [Timeout(30000)] // 30 second timeout for the entire test class
-    [Ignore("Temporarily disabled - requires PlayMode execution")] // Unity service requires play mode
     public class PhonemizerIntegrationTests
     {
-        // private MultilingualPhonemizerService multilingualService;
-        private UnityPhonemizerService unityService;
-        private PhonemizerSettings settings;
+        private UnifiedPhonemizer unifiedPhonemizer;
 
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
+        [SetUp]
+        public async Task SetUp()
         {
-            // Create test settings
-            settings = ScriptableObject.CreateInstance<PhonemizerSettings>();
-            // PhonemizerSettingsのプロパティが読み取り専用のため、設定はスキップ
-            // settings.EnablePhonemizerService = true;
-            // settings.DefaultLanguage = "en-US";
-            // settings.MaxConcurrentOperations = 2;
-            // settings.CacheSize = 100;
-            
-            // Initialize services
-            // multilingualService = new MultilingualPhonemizerService(settings);
+            // Initialize UnifiedPhonemizer for testing
+            unifiedPhonemizer = new UnifiedPhonemizer();
+            await unifiedPhonemizer.InitializeAsync();
         }
 
-        [OneTimeTearDown]
-        public void OneTimeTearDown()
+        [TearDown]
+        public void TearDown()
         {
-            if (settings != null)
-            {
-                Object.DestroyImmediate(settings);
-            }
-        }
-
-        [UnitySetUp]
-        public IEnumerator SetUp()
-        {
-            // Ensure Unity service is available
-            unityService = UnityPhonemizerService.Instance;
-            Assert.IsNotNull(unityService, "UnityPhonemizerService should be available");
-            yield return null;
+            unifiedPhonemizer?.Dispose();
         }
 
         #region Basic Functionality Tests
@@ -130,94 +108,44 @@ namespace uPiper.Tests.Phonemizers
 
         #region Unity Integration Tests
 
-        [UnityTest]
-        public IEnumerator UnityService_ShouldPhonemizeWithCoroutine()
+        [Test]
+        public async Task UnityService_ShouldPhonemizeWithCoroutine()
         {
-            bool completed = false;
-            PhonemeResult result = null;
-            string error = null;
+            // Test basic phonemization using UnifiedPhonemizer
+            var result = await unifiedPhonemizer.PhonemizeAsync("test", "en-US");
             
-            // Using simplified API
-            var task = Task.Run(async () =>
-            {
-                await Task.CompletedTask;
-                try
-                {
-                    result = await Task.FromResult(new PhonemeResult
-                    {
-                        Phonemes = new List<string> { "t", "e", "s", "t" }.ToArray()
-                    });
-                    completed = true;
-                }
-                catch (System.Exception ex)
-                {
-                    error = ex.Message;
-                    completed = true;
-                }
-            });
-            
-            // Wait for completion with timeout
-            float timeout = 5f;
-            float elapsed = 0f;
-            while (!completed && elapsed < timeout)
-            {
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
-            
-            Assert.IsTrue(completed, "Phonemization should complete within timeout");
-            Assert.IsNull(error, $"Should not have error: {error}");
+            Assert.IsTrue(result.Success, "Phonemization should succeed");
             Assert.IsNotNull(result, "Should have result");
             Assert.IsNotEmpty(result.Phonemes);
+            Assert.IsTrue(result.Phonemes.Length >= 3, "Should have reasonable number of phonemes for 'test'");
         }
 
-        [UnityTest]
-        public IEnumerator UnityService_ShouldCacheResults()
+        [Test]
+        public async Task UnityService_ShouldCacheResults()
         {
-            // const string testText = "cache test";
-            // const string language = "en-US";
+            const string testText = "cache test";
+            const string language = "en-US";
             
             // First call - should not be cached
-            PhonemeResult result1 = null;
-            // Using simplified API for first call
-            var task1 = Task.Run(async () =>
+            var result1 = await unifiedPhonemizer.PhonemizeAsync(testText, language);
+            Assert.IsTrue(result1.Success, "First call should succeed");
+            
+            // Second call - might use cache if available
+            var result2 = await unifiedPhonemizer.PhonemizeAsync(testText, language);
+            Assert.IsTrue(result2.Success, "Second call should succeed");
+            
+            // Verify results are consistent
+            CollectionAssert.AreEqual(result1.Phonemes, result2.Phonemes, "Results should be consistent");
+            
+            // Check processing time - cached results should be faster
+            if (result1.ProcessingTime.TotalMilliseconds > 0 && result2.ProcessingTime.TotalMilliseconds > 0)
             {
-                result1 = await Task.FromResult(new PhonemeResult
-                {
-                    Phonemes = new List<string> { "c", "a", "ch", "t", "e", "s", "t" }.ToArray()
-                });
-            });
-            
-            yield return new WaitUntil(() => result1 != null);
-            
-            // Get cache stats before second call
-            // var statsBefore = unityService.GetCacheStatistics();
-            
-            // Second call - should be cached
-            PhonemeResult result2 = null;
-            // Using simplified API for second call
-            var task2 = Task.Run(async () =>
-            {
-                result2 = await Task.FromResult(new PhonemeResult
-                {
-                    Phonemes = new List<string> { "c", "a", "ch", "t", "e", "s", "t" }.ToArray()
-                });
-            });
-            
-            yield return new WaitUntil(() => result2 != null);
-            
-            // Get cache stats after second call
-            // var statsAfter = unityService.GetCacheStatistics();
-            
-            // Verify results are the same
-            CollectionAssert.AreEqual(result1.Phonemes, result2.Phonemes);
-            
-            // Verify cache was used
-            // Assert.Greater(statsAfter.hitRate, statsBefore.hitRate, "Cache hit rate should increase");
+                Debug.Log($"First call: {result1.ProcessingTime.TotalMilliseconds:F2}ms, Second call: {result2.ProcessingTime.TotalMilliseconds:F2}ms");
+            }
         }
 
-        [UnityTest]
-        public IEnumerator UnityService_ShouldHandleBatchProcessing()
+        [Test]
+        public async Task UnityService_ShouldHandleBatchProcessing()
         {
             var texts = new List<string>
             {
@@ -228,31 +156,20 @@ namespace uPiper.Tests.Phonemizers
                 "Fifth text"
             };
             
-            List<PhonemeResult> results = null;
-            float lastProgress = 0f;
+            var results = new List<PhonemeResult>();
             
-            // Using simplified batch API
-            var task = Task.Run(async () =>
+            // Process batch of texts
+            foreach (var text in texts)
             {
-                await Task.CompletedTask; // Placeholder for async operation
-                results = new List<PhonemeResult>();
-                foreach (var text in texts)
-                {
-                    results.Add(new PhonemeResult
-                    {
-                        Phonemes = new List<string> { "t", "e", "s", "t" }.ToArray()
-                    });
-                    lastProgress = (float)(results.Count) / texts.Count;
-                }
-            });
-            
-            yield return new WaitUntil(() => results != null);
+                var result = await unifiedPhonemizer.PhonemizeAsync(text, "en-US");
+                results.Add(result);
+            }
             
             Assert.AreEqual(texts.Count, results.Count, "Should have result for each text");
-            Assert.AreEqual(1f, lastProgress, 0.01f, "Progress should reach 100%");
             
             for (int i = 0; i < results.Count; i++)
             {
+                Assert.IsTrue(results[i].Success, $"Result {i} should be successful");
                 Assert.IsNotEmpty(results[i].Phonemes, $"Result {i} should have phonemes");
             }
         }
@@ -387,33 +304,25 @@ namespace uPiper.Tests.Phonemizers
             Assert.Pass("Test temporarily disabled");
         }
 
-        [UnityTest]
-        public IEnumerator UnityService_ShouldHandleInvalidLanguage()
+        [Test]
+        public async Task UnityService_ShouldHandleInvalidLanguage()
         {
-            bool completed = false;
-            string error = null;
+            // Test with invalid language code
+            var result = await unifiedPhonemizer.PhonemizeAsync("test", "xx-XX");
             
-            // Using simplified API
-            var task = Task.Run(async () =>
+            // Should either succeed with fallback or fail gracefully
+            if (result.Success)
             {
-                try
-                {
-                    await Task.CompletedTask;
-                    // Simulate handling invalid language
-                    error = "Invalid language";
-                    completed = true;
-                }
-                catch (System.Exception ex)
-                {
-                    error = ex.Message;
-                    completed = true;
-                }
-            });
-            
-            yield return new WaitUntil(() => completed);
-            
-            // Should either succeed with fallback or report error
-            Assert.IsTrue(completed, "Should complete even with invalid language");
+                // If succeeded, should have used fallback
+                Assert.IsNotEmpty(result.Phonemes, "Should have phonemes if fallback was used");
+            }
+            else
+            {
+                // If failed, should have error message
+                Assert.IsNotNull(result.ErrorMessage, "Should have error message");
+                Assert.IsTrue(result.ErrorMessage.Contains("language") || result.ErrorMessage.Contains("supported"),
+                    "Error message should mention language support");
+            }
         }
 
         #endregion

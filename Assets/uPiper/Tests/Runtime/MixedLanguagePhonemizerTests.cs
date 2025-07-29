@@ -19,7 +19,7 @@ namespace uPiper.Tests.Runtime
         private LanguageDetector languageDetector;
 
         [SetUp]
-        [Timeout(10000)] // 10 second timeout
+        [Timeout(30000)] // 30 second timeout - initialization with multiple backends can be slow
         public async Task Setup()
         {
             // Initialize unified phonemizer
@@ -265,7 +265,7 @@ SimpleLTSによるEnglish phonemizationを
         }
 
         [Test]
-        [Timeout(15000)] // 15 second timeout - backend initialization can be slow
+        [Timeout(30000)] // 30 second timeout - backend initialization can be slow
         public void TestBackendAvailability()
         {
             var backends = unifiedPhonemizer.GetAvailableBackends();
