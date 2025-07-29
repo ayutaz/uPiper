@@ -122,13 +122,12 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                         pronunciations = dict;
                         isLoaded = true;
                     }
+                    Debug.Log($"Loaded CMU dictionary with {pronunciations.Count} words from {filePath}");
                 }
                 else
                 {
                     throw new TimeoutException("Dictionary loading timed out after 10 seconds");
                 }
-
-                Debug.Log($"Loaded CMU dictionary with {dict.Count} words from {filePath}");
             }
             catch (OperationCanceledException)
             {
