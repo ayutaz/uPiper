@@ -29,7 +29,7 @@ namespace uPiper.Tests.Phonemizers
     public class PhonemizerErrorHandlingTests
     {
         private CircuitBreaker circuitBreaker;
-        private SafePhonemizerWrapper safeWrapper;
+        private readonly SafePhonemizerWrapper safeWrapper;
 
         [SetUp]
         public void SetUp()
@@ -57,7 +57,7 @@ namespace uPiper.Tests.Phonemizers
             Assert.AreEqual(CircuitState.Closed, circuitBreaker.State);
 
             // Simulate failures
-            for (int i = 0; i < 3; i++)
+            for (var i = 0; i < 3; i++)
             {
                 Assert.IsTrue(circuitBreaker.CanExecute(), $"Should allow execution {i + 1}");
                 circuitBreaker.OnFailure(new Exception($"Test failure {i + 1}"));
@@ -75,7 +75,7 @@ namespace uPiper.Tests.Phonemizers
             circuitBreaker.OnFailure(new Exception("Failure 1"));
             circuitBreaker.OnFailure(new Exception("Failure 2"));
             circuitBreaker.OnFailure(new Exception("Failure 3"));
-            
+
             Assert.AreEqual(CircuitState.Open, circuitBreaker.State);
 
             // For testing, we'll create a new circuit breaker with shorter timeout
@@ -85,7 +85,7 @@ namespace uPiper.Tests.Phonemizers
             );
 
             // Fail it
-            for (int i = 0; i < 3; i++)
+            for (var i = 0; i < 3; i++)
             {
                 quickBreaker.OnFailure(new Exception());
             }
@@ -95,7 +95,7 @@ namespace uPiper.Tests.Phonemizers
 
             // Should now allow a test (half-open)
             Assert.IsTrue(quickBreaker.CanExecute(), "Should allow test after timeout");
-            
+
             // Success should close it
             quickBreaker.OnSuccess();
             Assert.AreEqual(CircuitState.Closed, quickBreaker.State);
@@ -109,9 +109,9 @@ namespace uPiper.Tests.Phonemizers
             var successCount = 0;
 
             // Concurrent operations
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
-                int index = i; // Capture loop variable
+                var index = i; // Capture loop variable
                 tasks.Add(Task.Run(() =>
                 {
                     try
@@ -182,8 +182,7 @@ namespace uPiper.Tests.Phonemizers
             // var failingBackend = new FailingPhonemizerBackend();
             var fallbackBackend = new RuleBasedPhonemizer();
             await fallbackBackend.InitializeAsync();
-
-            var settings = new CircuitBreakerSettings
+            _ = new CircuitBreakerSettings
             {
                 FailureThreshold = 2,
                 ResetTimeout = TimeSpan.FromSeconds(5)
@@ -192,7 +191,7 @@ namespace uPiper.Tests.Phonemizers
             // safeWrapper = new SafePhonemizerWrapper(failingBackend, fallbackBackend, settings);
 
             // First two calls should try primary and fail over
-            for (int i = 0; i < 2; i++)
+            for (var i = 0; i < 2; i++)
             {
                 var result = await fallbackBackend.PhonemizeAsync($"test {i}", "en-US");
                 Assert.IsNotNull(result);
@@ -204,7 +203,7 @@ namespace uPiper.Tests.Phonemizers
             var elapsed = DateTime.Now - startTime;
 
             Assert.IsNotNull(finalResult);
-            Assert.Less(elapsed.TotalMilliseconds, 100, 
+            Assert.Less(elapsed.TotalMilliseconds, 100,
                 "Should not try failing backend when circuit is open");
 
             fallbackBackend.Dispose();
@@ -249,11 +248,11 @@ namespace uPiper.Tests.Phonemizers
         public async Task ErrorRecovery_ShouldHandlePartialFailures()
         {
             // var intermittentBackend = new IntermittentFailureBackend();
-            var results = new List<PhonemeResult>();
+            _ = new List<PhonemeResult>();
             var errors = new List<Exception>();
 
             // Try multiple times
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
                 try
                 {
@@ -349,8 +348,8 @@ namespace uPiper.Tests.Phonemizers
         public IEnumerator UnityTimeout_ShouldHandleSlowOperations()
         {
             // var slowBackend = new SlowPhonemizerBackend();
-            bool completed = false;
-            bool timedOut = false;
+            var completed = false;
+            var timedOut = false;
             Exception error = null;
 
             // Start slow operation
@@ -358,7 +357,7 @@ namespace uPiper.Tests.Phonemizers
             // var task = slowBackend.PhonemizeAsync("test", "en-US");
 
             // Wait with timeout
-            float timeout = 0.5f; // 500ms timeout
+            var timeout = 0.5f; // 500ms timeout
             while (Time.realtimeSinceStartup - startTime < timeout)
             {
                 yield return null;
@@ -435,7 +434,7 @@ namespace uPiper.Tests.Phonemizers
         public async Task InputValidation_ShouldHandleInvalidInputs()
         {
             var backend = new RuleBasedPhonemizer();
-            
+
             // Use timeout for initialization
             using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2)))
             {
@@ -462,29 +461,27 @@ namespace uPiper.Tests.Phonemizers
 
             foreach (var (text, language) in invalidInputs)
             {
-                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1)))
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                try
                 {
-                    try
-                    {
-                        var result = await backend.PhonemizeAsync(text, language, null, cts.Token);
-                        
-                        // Some invalid inputs might still produce results (like empty text)
-                        Assert.IsNotNull(result, $"Should handle input: text='{text}', lang='{language}'");
-                    }
-                    catch (ArgumentException)
-                    {
-                        // Expected for some invalid inputs
-                        continue; // Don't use Assert.Pass in a loop
-                    }
-                    catch (NotSupportedException)
-                    {
-                        // Expected for unsupported languages
-                        continue;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        Assert.Fail($"Operation timed out for input: text='{text}', lang='{language}'");
-                    }
+                    var result = await backend.PhonemizeAsync(text, language, null, cts.Token);
+
+                    // Some invalid inputs might still produce results (like empty text)
+                    Assert.IsNotNull(result, $"Should handle input: text='{text}', lang='{language}'");
+                }
+                catch (ArgumentException)
+                {
+                    // Expected for some invalid inputs
+                    continue; // Don't use Assert.Pass in a loop
+                }
+                catch (NotSupportedException)
+                {
+                    // Expected for unsupported languages
+                    continue;
+                }
+                catch (OperationCanceledException)
+                {
+                    Assert.Fail($"Operation timed out for input: text='{text}', lang='{language}'");
                 }
             }
 
@@ -518,7 +515,7 @@ namespace uPiper.Tests.Phonemizers
                         .Replace("\r", " ")
                         .Replace("\n", " ")
                         .Replace("\t", " ");
-                    
+
                     Debug.Log($"Sanitized: '{input}' -> '{sanitized}'");
                 });
             }
@@ -532,7 +529,7 @@ namespace uPiper.Tests.Phonemizers
         public async Task ResourceCleanup_ShouldDisposeProperlyOnError()
         {
             // var resourceTracker = new ResourceTrackingBackend();
-            
+
             // Assert.AreEqual(0, ResourceTrackingBackend.ActiveResources, 
             //     "Should start with no active resources");
 
@@ -667,4 +664,3 @@ namespace uPiper.Tests.Phonemizers
         #endregion
     }
 }
-

@@ -36,10 +36,10 @@ namespace uPiper.Core.Phonemizers.Threading
         public ThreadSafePhonemizerPool(int maxConcurrency = 4)
         {
             this.maxConcurrency = maxConcurrency;
-            this.globalSemaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
-            this.pools = new ConcurrentDictionary<string, BackendPool>();
-            this.backendFactory = PhonemizerBackendFactory.Instance;
-            this.Statistics = new PoolStatistics();
+            globalSemaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
+            pools = new ConcurrentDictionary<string, BackendPool>();
+            backendFactory = PhonemizerBackendFactory.Instance;
+            Statistics = new PoolStatistics();
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace uPiper.Core.Phonemizers.Threading
             CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
-            
+
             // Get or create pool for language
             var pool = GetOrCreatePool(language);
             if (pool == null)
@@ -78,11 +78,11 @@ namespace uPiper.Core.Phonemizers.Threading
                 {
                     var startTime = DateTime.UtcNow;
                     var result = await backend.PhonemizeAsync(text, language, options, cancellationToken);
-                    
+
                     // Update statistics
                     var duration = DateTime.UtcNow - startTime;
                     Statistics.RecordRequest(duration, result.Success);
-                    
+
                     return result;
                 }
                 finally
@@ -112,19 +112,17 @@ namespace uPiper.Core.Phonemizers.Threading
                 return Array.Empty<PhonemeResult>();
 
             maxParallelism = maxParallelism > 0 ? Math.Min(maxParallelism, maxConcurrency) : maxConcurrency;
-            
-            using (var semaphore = new SemaphoreSlim(maxParallelism))
-            {
-                var tasks = new Task<PhonemeResult>[texts.Length];
-                
-                for (int i = 0; i < texts.Length; i++)
-                {
-                    var text = texts[i];
-                    tasks[i] = ProcessBatchItem(text, language, options, semaphore, cancellationToken);
-                }
 
-                return await Task.WhenAll(tasks);
+            using var semaphore = new SemaphoreSlim(maxParallelism);
+            var tasks = new Task<PhonemeResult>[texts.Length];
+
+            for (var i = 0; i < texts.Length; i++)
+            {
+                var text = texts[i];
+                tasks[i] = ProcessBatchItem(text, language, options, semaphore, cancellationToken);
             }
+
+            return await Task.WhenAll(tasks);
         }
 
         /// <summary>
@@ -145,7 +143,7 @@ namespace uPiper.Core.Phonemizers.Threading
         public PoolInfo[] GetPoolInfo()
         {
             var infos = new System.Collections.Generic.List<PoolInfo>();
-            
+
             foreach (var kvp in pools)
             {
                 infos.Add(new PoolInfo
@@ -238,10 +236,10 @@ namespace uPiper.Core.Phonemizers.Threading
 
             public BackendPool(IPhonemizerBackend backend, int maxSize)
             {
-                this.templateBackend = backend;
-                this.availableBackends = new ConcurrentBag<IPhonemizerBackend>();
-                this.semaphore = new SemaphoreSlim(maxSize, maxSize);
-                
+                templateBackend = backend;
+                availableBackends = new ConcurrentBag<IPhonemizerBackend>();
+                semaphore = new SemaphoreSlim(maxSize, maxSize);
+
                 // Add the initial backend
                 availableBackends.Add(backend);
                 totalCount = 1;
@@ -250,7 +248,7 @@ namespace uPiper.Core.Phonemizers.Threading
             public async Task<IPhonemizerBackend> RentAsync(CancellationToken cancellationToken)
             {
                 await semaphore.WaitAsync(cancellationToken);
-                
+
                 if (availableBackends.TryTake(out var backend))
                 {
                     return backend;
@@ -304,7 +302,7 @@ namespace uPiper.Core.Phonemizers.Threading
         private long successCount;
         private long failureCount;
         private double totalDurationMs;
-        private readonly object lockObject = new object();
+        private readonly object lockObject = new();
 
         public long TotalRequests { get; set; }
         public long SuccessCount => successCount;
@@ -320,7 +318,7 @@ namespace uPiper.Core.Phonemizers.Threading
                     successCount++;
                 else
                     failureCount++;
-                
+
                 totalDurationMs += duration.TotalMilliseconds;
             }
         }

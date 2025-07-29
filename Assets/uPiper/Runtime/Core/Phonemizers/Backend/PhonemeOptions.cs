@@ -56,12 +56,12 @@ namespace uPiper.Core.Phonemizers.Backend
         /// <summary>
         /// Creates default options.
         /// </summary>
-        public static PhonemeOptions Default => new PhonemeOptions();
+        public static PhonemeOptions Default => new();
 
         /// <summary>
         /// Creates options for detailed phonetic analysis.
         /// </summary>
-        public static PhonemeOptions Detailed => new PhonemeOptions
+        public static PhonemeOptions Detailed => new()
         {
             IncludeStress = true,
             IncludeSyllables = true,
@@ -71,7 +71,7 @@ namespace uPiper.Core.Phonemizers.Backend
         /// <summary>
         /// Creates options for simple TTS usage.
         /// </summary>
-        public static PhonemeOptions SimpleTTS => new PhonemeOptions
+        public static PhonemeOptions SimpleTTS => new()
         {
             Format = PhonemeFormat.Piper,
             IncludeStress = false,
@@ -273,12 +273,12 @@ namespace uPiper.Core.Phonemizers.Backend
         /// </summary>
         public override string ToString()
         {
-            var phonemeStr = Phonemes == null ? "[null]" : 
-                            Phonemes.Length == 0 ? "[]" : 
+            var phonemeStr = Phonemes == null ? "[null]" :
+                            Phonemes.Length == 0 ? "[]" :
                             $"[{string.Join(" ", Phonemes)}]";
-            
+
             var cacheStr = FromCache ? ", cached" : "";
-            
+
             return $"PhonemeResult: \"{OriginalText}\" -> {phonemeStr} ({Language}, {ProcessingTime.TotalMilliseconds:F1}ms{cacheStr})";
         }
     }

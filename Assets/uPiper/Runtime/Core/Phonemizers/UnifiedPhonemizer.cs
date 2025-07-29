@@ -22,7 +22,7 @@ namespace uPiper.Core.Phonemizers
         private readonly Dictionary<string, ICircuitBreaker> circuitBreakers;
         private readonly PhonemizerSettings settings;
         private bool isInitialized;
-        private readonly object lockObject = new object();
+        private readonly object lockObject = new();
 
         public string Name => "UnifiedPhonemizer";
         public string Version => "1.0.0";
@@ -60,14 +60,15 @@ namespace uPiper.Core.Phonemizers
         {
             try
             {
-                var tasks = new List<Task<(string language, IPhonemizerBackend backend, bool success)>>();
+                var tasks = new List<Task<(string language, IPhonemizerBackend backend, bool success)>>
+                {
+                    // Initialize Japanese backends
+                    InitializeBackendAsync("ja", () => CreateOpenJTalkBackend(), options, cancellationToken),
 
-                // Initialize Japanese backends
-                tasks.Add(InitializeBackendAsync("ja", () => CreateOpenJTalkBackend(), options, cancellationToken));
-
-                // Initialize English backends
-                tasks.Add(InitializeBackendAsync("en", () => CreateSimpleLTSBackend(), options, cancellationToken));
-                tasks.Add(InitializeBackendAsync("en", () => new Backend.RuleBased.RuleBasedPhonemizer(), options, cancellationToken));
+                    // Initialize English backends
+                    InitializeBackendAsync("en", () => CreateSimpleLTSBackend(), options, cancellationToken),
+                    InitializeBackendAsync("en", () => new Backend.RuleBased.RuleBasedPhonemizer(), options, cancellationToken)
+                };
 
                 // Wait for all initializations
                 var results = await Task.WhenAll(tasks);
@@ -81,7 +82,7 @@ namespace uPiper.Core.Phonemizers
                         {
                             if (!backendsByLanguage.ContainsKey(language))
                                 backendsByLanguage[language] = new List<IPhonemizerBackend>();
-                            
+
                             backendsByLanguage[language].Add(backend);
                         }
                         Debug.Log($"Initialized {backend.Name} for {language}");
@@ -108,7 +109,7 @@ namespace uPiper.Core.Phonemizers
                 }
 
                 isInitialized = backendsByLanguage.Count > 0;
-                
+
                 if (isInitialized)
                 {
                     Debug.Log($"UnifiedPhonemizer initialized with backends for: {string.Join(", ", backendsByLanguage.Keys)}");
@@ -222,7 +223,7 @@ namespace uPiper.Core.Phonemizers
                 {
                     // Phonemize with selected backend
                     var result = await backend.PhonemizeAsync(text, language, options, cancellationToken);
-                    
+
                     // Update circuit breaker based on result
                     if (result.Success)
                     {
@@ -232,10 +233,9 @@ namespace uPiper.Core.Phonemizers
                     {
                         circuitBreaker.OnFailure(new Exception(result.Error));
                     }
-                    
+
                     // Add backend info to metadata
-                    if (result.Metadata == null)
-                        result.Metadata = new Dictionary<string, object>();
+                    result.Metadata ??= new Dictionary<string, object>();
                     result.Metadata["backend_used"] = backend.Name;
                     result.Metadata["circuit_breaker_state"] = circuitBreaker.GetStatistics().State.ToString();
 
@@ -262,7 +262,7 @@ namespace uPiper.Core.Phonemizers
         private string DetectLanguage(string text)
         {
             var segments = languageDetector.DetectSegments(text);
-            
+
             // If mixed segments, return "mixed"
             var languages = segments
                 .Where(s => !s.IsPunctuation && s.Language != "neutral")
@@ -272,7 +272,7 @@ namespace uPiper.Core.Phonemizers
 
             if (languages.Count > 1)
                 return "mixed";
-            
+
             if (languages.Count == 1)
                 return languages[0];
 
@@ -401,12 +401,11 @@ namespace uPiper.Core.Phonemizers
                 var fallbackBackend = new Backend.RuleBased.RuleBasedPhonemizer();
                 await fallbackBackend.InitializeAsync();
                 var result = await fallbackBackend.PhonemizeAsync(text, language, options, cancellationToken);
-                
-                if (result.Metadata == null)
-                    result.Metadata = new Dictionary<string, object>();
+
+                result.Metadata ??= new Dictionary<string, object>();
                 result.Metadata["fallback_used"] = true;
                 result.Metadata["backend_used"] = fallbackBackend.Name;
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -455,7 +454,7 @@ namespace uPiper.Core.Phonemizers
                     }
                 }
                 backendsByLanguage.Clear();
-                
+
                 mixedLanguagePhonemizer?.Dispose();
                 isInitialized = false;
             }
@@ -506,7 +505,7 @@ namespace uPiper.Core.Phonemizers
                 {
                     return Activator.CreateInstance(enhancedType) as IPhonemizerBackend;
                 }
-                
+
                 // Fall back to SimpleLTSPhonemizer
                 var type = System.Type.GetType("uPiper.Core.Phonemizers.Backend.SimpleLTSPhonemizer, uPiper.Runtime");
                 if (type != null)
@@ -531,7 +530,7 @@ namespace uPiper.Core.Phonemizers
             lock (lockObject)
             {
                 var result = new Dictionary<string, List<string>>();
-                
+
                 foreach (var (language, backends) in backendsByLanguage)
                 {
                     result[language] = backends.Select(b => b.Name).ToList();
