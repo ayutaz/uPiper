@@ -73,6 +73,16 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             }
             return -1;
         }
+        
+        /// <summary>
+        /// Get phoneme by index
+        /// </summary>
+        public static string GetPhoneByIndex(int index)
+        {
+            if (index >= 0 && index < PhoneTable.Length)
+                return PhoneTable[index];
+            return null;
+        }
 
         /// <summary>
         /// Get letter index (0-based) for a character

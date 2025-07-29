@@ -83,7 +83,9 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             var letter = paddedWord[position];
             
             // Get rule offset for this letter
-            var offset = FliteLTSData.GetRuleOffset(letter);
+            var offset = ruleSet.UseExtendedRules 
+                ? FliteLTSExtendedRules.GetLetterRuleOffset(letter)
+                : FliteLTSRuleData.GetLetterRuleOffset(letter);
             if (offset < 0)
                 return null;
             
@@ -127,17 +129,57 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         
         private string[] ApplyRulesAtOffset(int offset, LTSContext context)
         {
-            // This is a simplified version of Flite's rule application
-            // In the full implementation, this would traverse the WFST
-            
             var phonemes = new List<string>();
+            var rules = ruleSet.UseExtendedRules ? FliteLTSExtendedRules.Rules : FliteLTSRuleData.SimplifiedRules;
             
-            // For now, return a simple mapping based on the letter
-            var letter = context.Word[context.Position];
-            var defaultPhonemes = GetDefaultPhonemesForLetter(letter);
+            // Start at the given offset
+            int currentRule = offset;
+            int iterations = 0;
+            const int maxIterations = 100; // Prevent infinite loops
             
-            if (defaultPhonemes != null)
-                phonemes.AddRange(defaultPhonemes);
+            while (currentRule < rules.Length && iterations < maxIterations)
+            {
+                iterations++;
+                var rule = rules[currentRule];
+                
+                // Check if this is a terminal rule
+                if (rule.Feature == 255) // Terminal marker
+                {
+                    if (rule.Value != 0) // 0 = epsilon (no phoneme)
+                    {
+                        var phoneme = FliteLTSData.GetPhoneByIndex(rule.Value);
+                        if (!string.IsNullOrEmpty(phoneme))
+                            phonemes.Add(phoneme);
+                    }
+                    break;
+                }
+                
+                // Evaluate feature
+                bool matches = EvaluateFeature(rule.Feature, rule.Value, context);
+                
+                // Follow the appropriate branch
+                if (matches)
+                {
+                    currentRule = rule.NextIfTrue;
+                }
+                else
+                {
+                    currentRule = rule.NextIfFalse;
+                }
+                
+                // Safety check to prevent infinite loops
+                if (currentRule == FliteLTSConstants.CST_LTS_EOR || currentRule >= rules.Length)
+                    break;
+            }
+            
+            // Fallback if no rules matched
+            if (phonemes.Count == 0)
+            {
+                var letter = context.Word[context.Position];
+                var defaultPhonemes = GetDefaultPhonemesForLetter(letter);
+                if (defaultPhonemes != null)
+                    phonemes.AddRange(defaultPhonemes);
+            }
             
             return phonemes.ToArray();
         }
@@ -231,6 +273,41 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             public char[] LeftContext { get; set; }
             public char[] RightContext { get; set; }
         }
+        
+        /// <summary>
+        /// Evaluate a feature against the context
+        /// </summary>
+        private bool EvaluateFeature(byte feature, byte value, LTSContext context)
+        {
+            char targetChar = (char)value;
+            
+            switch (feature)
+            {
+                case FliteLTSConstants.FEAT_CURRENT:
+                    return context.Word[context.Position] == targetChar;
+                    
+                case FliteLTSConstants.FEAT_L1:
+                    return context.LeftContext[0] == targetChar;
+                case FliteLTSConstants.FEAT_L2:
+                    return context.LeftContext[1] == targetChar;
+                case FliteLTSConstants.FEAT_L3:
+                    return context.LeftContext[2] == targetChar;
+                case FliteLTSConstants.FEAT_L4:
+                    return context.LeftContext[3] == targetChar;
+                    
+                case FliteLTSConstants.FEAT_R1:
+                    return context.RightContext[0] == targetChar;
+                case FliteLTSConstants.FEAT_R2:
+                    return context.RightContext[1] == targetChar;
+                case FliteLTSConstants.FEAT_R3:
+                    return context.RightContext[2] == targetChar;
+                case FliteLTSConstants.FEAT_R4:
+                    return context.RightContext[3] == targetChar;
+                    
+                default:
+                    return false;
+            }
+        }
     }
     
     /// <summary>
@@ -244,6 +321,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         public string[] PhoneTable { get; set; }
         public string[] LetterTable { get; set; }
         public int ContextWindowSize { get; set; } = 4;
+        public bool UseExtendedRules { get; set; } = true;
         
         /// <summary>
         /// Create default rule set from Flite data
@@ -256,7 +334,8 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                 LetterIndex = FliteLTSData.LetterIndex,
                 PhoneTable = FliteLTSData.PhoneTable,
                 LetterTable = FliteLTSData.LetterTable,
-                ContextWindowSize = 4
+                ContextWindowSize = 4,
+                UseExtendedRules = true
             };
         }
     }
