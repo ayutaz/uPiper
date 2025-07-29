@@ -7,50 +7,14 @@ namespace uPiper.Editor.Build
     /// <summary>
     /// Validates Android native libraries and their import settings
     /// </summary>
-    [InitializeOnLoad]
     public static class AndroidLibraryValidator
     {
-        private const string ValidationKey = "uPiper.AndroidLibraryValidator.LastValidation";
-        private const float ValidationIntervalDays = 7.0f; // 週に1回のみ自動検証
-
-        static AndroidLibraryValidator()
-        {
-            // 最後の検証から一定期間経過している場合のみ実行
-            var lastValidation = EditorPrefs.GetString(ValidationKey, string.Empty);
-            if (string.IsNullOrEmpty(lastValidation) || ShouldValidate(lastValidation))
-            {
-                EditorApplication.delayCall += RunValidationOnce;
-            }
-        }
-
-        private static bool ShouldValidate(string lastValidationDate)
-        {
-            if (System.DateTime.TryParse(lastValidationDate, out var lastDate))
-            {
-                var daysSinceLastValidation = (System.DateTime.Now - lastDate).TotalDays;
-                return daysSinceLastValidation >= ValidationIntervalDays;
-            }
-            return true;
-        }
-
-        private static void RunValidationOnce()
-        {
-            ValidateAndroidLibrariesInternal(false); // verbose=falseで静かに実行
-            EditorPrefs.SetString(ValidationKey, System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-        }
+        // 自動実行を完全に削除 - 必要な時に手動で実行
 
         [MenuItem("uPiper/Android/Validate Native Libraries")]
         public static void ValidateAndroidLibraries()
         {
-            ValidateAndroidLibrariesInternal(true);
-        }
-
-        private static void ValidateAndroidLibrariesInternal(bool verbose)
-        {
-            if (verbose)
-            {
-                Debug.Log("[uPiper] Validating Android native libraries...");
-            }
+            Debug.Log("[uPiper] Validating Android native libraries...");
 
             string[] abis = { "arm64-v8a", "armeabi-v7a", "x86", "x86_64" };
             var baseLibPath = "Assets/uPiper/Plugins/Android/libs";
@@ -100,7 +64,7 @@ namespace uPiper.Editor.Build
                             importer.SaveAndReimport();
                             Debug.Log($"[uPiper] Fixed settings for: {abi}");
                         }
-                        else if (verbose)
+                        else
                         {
                             var fileInfo = new FileInfo(fullPath);
                             Debug.Log($"[uPiper] ✓ {abi}: {fileInfo.Length / 1024}KB - Settings OK");
@@ -116,10 +80,7 @@ namespace uPiper.Editor.Build
 
             if (!hasIssues)
             {
-                if (verbose)
-                {
-                    Debug.Log("[uPiper] All Android native libraries validated successfully!");
-                }
+                Debug.Log("[uPiper] All Android native libraries validated successfully!");
             }
             else
             {
@@ -144,13 +105,6 @@ namespace uPiper.Editor.Build
         {
             AssetDatabase.Refresh();
             ValidateAndroidLibraries();
-        }
-
-        [MenuItem("uPiper/Android/Reset Validation Timer")]
-        public static void ResetValidationTimer()
-        {
-            EditorPrefs.DeleteKey(ValidationKey);
-            Debug.Log("[uPiper] Android library validation timer reset. Validation will run on next editor load.");
         }
     }
 }
