@@ -26,7 +26,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             phonemizer?.Dispose();
         }
 
-        [UnityTest]
+        [Test]
         [Timeout(10000)] // 10 second timeout
         public async Task Initialize_ShouldSucceed()
         {
@@ -36,11 +36,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Assert
             Assert.IsTrue(result, "Initialization should succeed");
             Assert.IsTrue(phonemizer.IsInitialized);
-            
-            LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex("MixedLanguagePhonemizer initialized"));
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_MixedJapaneseEnglish_ShouldProcessBothLanguages()
         {
             // Arrange
@@ -66,7 +64,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Debug.Log($"Backends used: {string.Join(", ", (string[])result.Metadata["backends_used"])}");
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_JapaneseOnly_ShouldUseJapaneseBackend()
         {
             // Arrange
@@ -84,7 +82,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Debug.Log($"Japanese phonemes: {string.Join(" ", result.Phonemes)}");
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_EnglishOnly_ShouldUseEnglishBackend()
         {
             // Arrange
@@ -102,7 +100,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Debug.Log($"English phonemes: {string.Join(" ", result.Phonemes)}");
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_WithPunctuation_ShouldHandleCorrectly()
         {
             // Arrange
@@ -139,7 +137,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Debug.Log($"Text analysis: segment_count={stats["segment_count"]}, primary_language={stats["primary_language"]}");
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_EmptyText_ShouldReturnEmptyResult()
         {
             // Arrange

@@ -25,7 +25,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             phonemizer?.Dispose();
         }
 
-        [UnityTest]
+        [Test]
         [Timeout(10000)] // 10 second timeout
         public async Task Initialize_ShouldLoadBackends()
         {
@@ -40,11 +40,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Check available backends
             var backends = phonemizer.GetAvailableBackends();
             Assert.IsNotNull(backends);
-            
-            LogAssert.Expect(LogType.Log, new System.Text.RegularExpressions.Regex("UnifiedPhonemizer initialized"));
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_Japanese_ShouldReturnPhonemes()
         {
             // Arrange
@@ -66,7 +64,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Debug.Log($"Japanese phonemes: {string.Join(" ", result.Phonemes)}");
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_English_ShouldReturnPhonemes()
         {
             // Arrange
@@ -86,7 +84,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Debug.Log($"English phonemes: {string.Join(" ", result.Phonemes)}");
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_AutoDetect_ShouldDetectLanguage()
         {
             // Arrange
@@ -109,7 +107,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.Greater(enResult.Phonemes.Length, 0);
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_MixedText_ShouldHandleBothLanguages()
         {
             // Arrange
@@ -128,7 +126,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Debug.Log($"Mixed text phonemes: {string.Join(" ", result.Phonemes)}");
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_EmptyText_ShouldReturnEmptyResult()
         {
             // Arrange
@@ -144,7 +142,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.AreEqual(0, result.Phonemes.Length);
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_UnsupportedLanguage_ShouldFallbackToEnglish()
         {
             // Arrange

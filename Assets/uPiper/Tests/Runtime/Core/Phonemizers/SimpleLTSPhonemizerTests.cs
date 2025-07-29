@@ -25,7 +25,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             phonemizer?.Dispose();
         }
 
-        [UnityTest]
+        [Test]
         [Timeout(10000)] // 10 second timeout
         public async Task Initialize_ShouldSucceed()
         {
@@ -37,7 +37,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsTrue(phonemizer.IsAvailable);
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_SimpleWords_ShouldReturnCorrectPhonemes()
         {
             // Arrange
@@ -78,7 +78,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             }
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_ComplexWords_ShouldHandleCorrectly()
         {
             // Arrange
@@ -99,7 +99,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             }
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_Sentences_ShouldProcessCorrectly()
         {
             // Arrange
@@ -120,7 +120,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Debug.Log($"Sentence phonemes: {string.Join(" ", result.Phonemes)}");
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_WithIPAFormat_ShouldReturnIPAPhonemes()
         {
             // Arrange
@@ -164,7 +164,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsFalse(phonemizer.SupportsLanguage("ja"));
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_EmptyText_ShouldReturnEmptyResult()
         {
             // Arrange
@@ -179,7 +179,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.AreEqual(0, result.Phonemes.Length);
         }
 
-        [UnityTest]
+        [Test]
         public async Task PhonemizeAsync_UnsupportedLanguage_ShouldReturnError()
         {
             // Arrange
