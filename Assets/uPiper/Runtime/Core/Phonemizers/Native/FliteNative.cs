@@ -10,16 +10,17 @@ namespace uPiper.Core.Phonemizers.Native
     /// </summary>
     public static class FliteNative
     {
+
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
         private const string LIBRARY_NAME = "flite_unity";
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-            private const string LIBRARY_NAME = "flite_unity";
+        private const string LIBRARY_NAME = "flite_unity";
 #elif UNITY_ANDROID
-            private const string LIBRARY_NAME = "flite_unity";
+        private const string LIBRARY_NAME = "flite_unity";
 #elif UNITY_EDITOR_LINUX || UNITY_STANDALONE_LINUX
-            private const string LIBRARY_NAME = "flite_unity";
+        private const string LIBRARY_NAME = "flite_unity";
 #else
-            private const string LIBRARY_NAME = "flite_unity";
+        private const string LIBRARY_NAME = "flite_unity";
 #endif
 
         /// <summary>
