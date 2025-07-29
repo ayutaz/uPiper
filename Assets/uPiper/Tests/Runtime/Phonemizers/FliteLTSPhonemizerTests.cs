@@ -14,7 +14,7 @@ namespace uPiper.Tests.Runtime.Phonemizers
     /// </summary>
     [TestFixture]
     [Timeout(30000)] // 30 second timeout for all tests in this fixture
-    [Ignore("Temporarily disabled - FliteLTS initialization causing hangs")]
+    // [Ignore("Temporarily disabled - FliteLTS initialization causing hangs")] // Re-enabled with proper timeout handling
     public class FliteLTSPhonemizerTests
     {
         private FliteLTSPhonemizer phonemizer;
@@ -201,7 +201,7 @@ namespace uPiper.Tests.Runtime.Phonemizers
         
         [UnityTest]
         [Timeout(10000)] // 10 second timeout
-        [Ignore("Temporarily disabled - causing test runner to hang")]
+        // [Ignore("Temporarily disabled - causing test runner to hang")] // Re-enabled with proper timeout handling
         public IEnumerator TestCapabilities()
         {
             var options = new PhonemizerBackendOptions { DataPath = null };

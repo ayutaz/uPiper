@@ -10,7 +10,7 @@ namespace uPiper.Tests.Runtime
 {
     [TestFixture]
     [Timeout(30000)] // 30 second timeout for all tests
-    [Ignore("Temporarily disabled - RuleBasedPhonemizer initialization hangs")]
+    // [Ignore("Temporarily disabled - RuleBasedPhonemizer initialization hangs")] // Re-enabled with proper timeout handling
     public class EnglishPhonemizerTests
     {
         private RuleBasedPhonemizer ruleBasedPhonemizer;
@@ -234,7 +234,7 @@ namespace uPiper.Tests.Runtime
 
         [Test]
         [Timeout(5000)] // 5 second timeout
-        [Ignore("Temporarily disabled - initialization hangs")]
+        // [Ignore("Temporarily disabled - initialization hangs")] // Re-enabled with proper timeout handling
         public void TestBackendCapabilities()
         {
             var ruleBasedCaps = ruleBasedPhonemizer.GetCapabilities();

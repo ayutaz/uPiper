@@ -9,7 +9,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
 {
     [TestFixture]
     [Timeout(30000)] // 30 second timeout for the entire test class
-    [Ignore("Temporarily disabled due to CMUDictionary loading issues")]
+    // [Ignore("Temporarily disabled due to CMUDictionary loading issues")] // Re-enabled with proper timeout handling
     public class MixedLanguagePhonemizerTests
     {
         private MixedLanguagePhonemizer phonemizer;
