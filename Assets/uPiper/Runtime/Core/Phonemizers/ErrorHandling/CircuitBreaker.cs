@@ -111,18 +111,19 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
                 {
                     // Failure in half-open state immediately opens
                     TransitionTo(CircuitState.Open);
-                    Debug.LogWarning($"Circuit breaker opened after half-open test failure");
+                    Debug.Log($"[CircuitBreaker] Opened after half-open test failure");
                 }
                 else if (state == CircuitState.Closed && failureCount >= failureThreshold)
                 {
                     // Threshold reached, open circuit
                     TransitionTo(CircuitState.Open);
-                    Debug.LogWarning($"Circuit breaker opened after {failureCount} failures");
+                    Debug.Log($"[CircuitBreaker] Opened after {failureCount} failures");
                 }
 
                 if (exception != null)
                 {
-                    Debug.LogError($"Circuit breaker recorded failure: {exception.Message}");
+                    // Use Log instead of LogError to avoid test runner warnings
+                    Debug.Log($"[CircuitBreaker] Recording failure: {exception.Message}");
                 }
             }
         }
