@@ -38,6 +38,33 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             {
                 var dict = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 
+                // Debug path information
+                Debug.Log($"[CMUDictionary] Attempting to load from: {filePath}");
+                Debug.Log($"[CMUDictionary] File exists: {File.Exists(filePath)}");
+                Debug.Log($"[CMUDictionary] Directory exists: {Directory.Exists(Path.GetDirectoryName(filePath))}");
+                
+                // Check if file exists
+                if (!File.Exists(filePath))
+                {
+                    Debug.LogWarning($"CMU dictionary file not found at: {filePath}. Using minimal built-in dictionary.");
+                    
+                    // Try to list files in the directory for debugging
+                    var dir = Path.GetDirectoryName(filePath);
+                    if (Directory.Exists(dir))
+                    {
+                        var files = Directory.GetFiles(dir, "*.txt");
+                        var fileNames = new List<string>();
+                        foreach (var file in files)
+                        {
+                            fileNames.Add(Path.GetFileName(file));
+                        }
+                        Debug.Log($"[CMUDictionary] Files in {dir}: {string.Join(", ", fileNames)}");
+                    }
+                    
+                    LoadMinimalDictionary();
+                    return;
+                }
+
                 // Check if we need to extract from StreamingAssets
                 string actualPath = filePath;
                 if (filePath.Contains("StreamingAssets") && Application.platform == RuntimePlatform.Android)
@@ -46,13 +73,15 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                     actualPath = await CopyFromStreamingAssets(filePath, cancellationToken);
                 }
 
-                // Read the dictionary file
-                using (var reader = new StreamReader(actualPath))
+                // Read the dictionary file with timeout
+                var readTask = Task.Run(async () =>
                 {
-                    string line;
-                    while ((line = await reader.ReadLineAsync()) != null)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
+                    using (var reader = new StreamReader(actualPath))
+                {
+                        string line;
+                        while ((line = await reader.ReadLineAsync()) != null)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
 
                         // Skip comments and empty lines
                         if (string.IsNullOrWhiteSpace(line) || line.StartsWith(";;;"))
@@ -78,22 +107,52 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                                 // Could be extended to support multiple pronunciations
                             }
                         }
+                        }
+                    }
+                    return dict;
+                }, cancellationToken);
+                
+                // Wait with timeout
+                if (await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromSeconds(10), cancellationToken)) == readTask)
+                {
+                    dict = await readTask;
+                    lock (lockObject)
+                    {
+                        pronunciations = dict;
+                        isLoaded = true;
                     }
                 }
-
-                lock (lockObject)
+                else
                 {
-                    pronunciations = dict;
-                    isLoaded = true;
+                    throw new TimeoutException("Dictionary loading timed out after 10 seconds");
                 }
 
-                Debug.Log($"Loaded CMU dictionary with {dict.Count} words");
+                Debug.Log($"Loaded CMU dictionary with {dict.Count} words from {filePath}");
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.LogWarning("CMU dictionary loading was cancelled. Using minimal dictionary.");
+                LoadMinimalDictionary();
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Failed to load CMU dictionary: {ex.Message}");
-                throw;
+                Debug.LogError($"Failed to load CMU dictionary: {ex.Message}. Using minimal dictionary.");
+                LoadMinimalDictionary();
             }
+        }
+        
+        /// <summary>
+        /// Load a minimal built-in dictionary for basic functionality
+        /// </summary>
+        private void LoadMinimalDictionary()
+        {
+            var minimal = CreateMinimal();
+            lock (lockObject)
+            {
+                pronunciations = minimal.pronunciations;
+                isLoaded = true;
+            }
+            Debug.Log($"Loaded minimal dictionary with {pronunciations.Count} words");
         }
 
         /// <summary>
