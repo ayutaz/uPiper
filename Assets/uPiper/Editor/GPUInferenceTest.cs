@@ -22,7 +22,7 @@ namespace uPiper.Editor
         private bool _isTesting = false;
         private ModelAsset _testModel;
 
-        [MenuItem("Window/uPiper/GPU Inference Test")]
+        [MenuItem("uPiper/Tools/GPU Inference Test")]
         public static void ShowWindow()
         {
             GetWindow<GPUInferenceTest>("GPU Inference Test");
