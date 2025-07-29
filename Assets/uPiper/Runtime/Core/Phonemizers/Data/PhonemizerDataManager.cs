@@ -14,7 +14,7 @@ namespace uPiper.Core.Phonemizers.Data
     /// </summary>
     public class PhonemizerDataManager : IDataManager
     {
-        private readonly string dataRoot;        private readonly Dictionary<string, DataPackageInfo> packages;
+        private readonly string dataRoot; private readonly Dictionary<string, DataPackageInfo> packages;
         private readonly SemaphoreSlim downloadSemaphore;
         private DataManifest manifest;
 
@@ -97,7 +97,7 @@ namespace uPiper.Core.Phonemizers.Data
                 try
                 {
                     File.Delete(localPath);
-                    
+
                     // Also delete extracted files if any
                     var extractPath = Path.Combine(dataRoot, language);
                     if (Directory.Exists(extractPath))
@@ -163,7 +163,7 @@ namespace uPiper.Core.Phonemizers.Data
         public async Task<bool> DownloadEssentialData(IProgress<float> progress = null)
         {
             await EnsureManifestLoaded();
-            
+
             var essentialPackages = packages.Values
                 .Where(p => p.Priority == PackagePriority.Essential)
                 .ToArray();
@@ -204,60 +204,58 @@ namespace uPiper.Core.Phonemizers.Data
 
             try
             {
-                using (var www = UnityWebRequest.Get(packageInfo.Url))
+                using var www = UnityWebRequest.Get(packageInfo.Url);
+                // Set up progress tracking
+                var downloadHandler = new DownloadHandlerBuffer();
+                www.downloadHandler = downloadHandler;
+
+                // Start download
+                var operation = www.SendWebRequest();
+
+                // Track progress
+                while (!operation.isDone)
                 {
-                    // Set up progress tracking
-                    var downloadHandler = new DownloadHandlerBuffer();
-                    www.downloadHandler = downloadHandler;
-
-                    // Start download
-                    var operation = www.SendWebRequest();
-
-                    // Track progress
-                    while (!operation.isDone)
-                    {
-                        var downloadProgress = operation.progress;
-                        progress?.Report(downloadProgress);
-                        DownloadProgress?.Invoke(packageInfo.Language, downloadProgress);
-                        await Task.Yield();
-                    }
-
-                    if (www.result != UnityWebRequest.Result.Success)
-                    {
-                        Debug.LogError($"Download failed: {www.error}");
-                        PackageDownloaded?.Invoke(packageInfo.Language, false);
-                        return false;
-                    }
-
-                    // Save to file
-                    var data = www.downloadHandler.data;
-                    var tempPath = localPath + ".tmp";
-                    File.WriteAllBytes(tempPath, data);
-
-                    // Verify checksum
-                    if (!await VerifyChecksum(tempPath, packageInfo.Checksum))
-                    {
-                        Debug.LogError($"Checksum verification failed for: {packageInfo.Name}");
-                        File.Delete(tempPath);
-                        PackageDownloaded?.Invoke(packageInfo.Language, false);
-                        return false;
-                    }
-
-                    // Move to final location
-                    if (File.Exists(localPath))
-                        File.Delete(localPath);
-                    File.Move(tempPath, localPath);
-
-                    // Extract if needed
-                    if (packageInfo.IsCompressed)
-                    {
-                        await ExtractPackage(localPath, Path.Combine(dataRoot, packageInfo.Language));
-                    }
-
-                    Debug.Log($"Successfully downloaded: {packageInfo.Name}");
-                    PackageDownloaded?.Invoke(packageInfo.Language, true);
-                    return true;
+                    var downloadProgress = operation.progress;
+                    progress?.Report(downloadProgress);
+                    DownloadProgress?.Invoke(packageInfo.Language, downloadProgress);
+                    await Task.Yield();
                 }
+
+                if (www.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.LogError($"Download failed: {www.error}");
+                    PackageDownloaded?.Invoke(packageInfo.Language, false);
+                    return false;
+                }
+
+                // Save to file
+                var data = www.downloadHandler.data;
+                var tempPath = localPath + ".tmp";
+                File.WriteAllBytes(tempPath, data);
+
+                // Verify checksum
+                if (!await VerifyChecksum(tempPath, packageInfo.Checksum))
+                {
+                    Debug.LogError($"Checksum verification failed for: {packageInfo.Name}");
+                    File.Delete(tempPath);
+                    PackageDownloaded?.Invoke(packageInfo.Language, false);
+                    return false;
+                }
+
+                // Move to final location
+                if (File.Exists(localPath))
+                    File.Delete(localPath);
+                File.Move(tempPath, localPath);
+
+                // Extract if needed
+                if (packageInfo.IsCompressed)
+                {
+                    await ExtractPackage(localPath, Path.Combine(dataRoot, packageInfo.Language));
+                }
+
+                Debug.Log($"Successfully downloaded: {packageInfo.Name}");
+                PackageDownloaded?.Invoke(packageInfo.Language, true);
+                return true;
             }
             catch (Exception ex)
             {
@@ -372,38 +370,36 @@ namespace uPiper.Core.Phonemizers.Data
         {
             if (string.IsNullOrEmpty(expectedChecksum))
                 return true; // No checksum to verify
-                
+
             try
             {
                 // Read file and compute MD5 hash
-                using (var md5 = System.Security.Cryptography.MD5.Create())
-                using (var stream = File.OpenRead(filePath))
+                using var md5 = System.Security.Cryptography.MD5.Create();
+                using var stream = File.OpenRead(filePath);
+                // Compute hash asynchronously in chunks
+                var buffer = new byte[8192];
+                int bytesRead;
+
+                while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                 {
-                    // Compute hash asynchronously in chunks
-                    byte[] buffer = new byte[8192];
-                    int bytesRead;
-                    
-                    while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                    {
-                        md5.TransformBlock(buffer, 0, bytesRead, buffer, 0);
-                    }
-                    
-                    md5.TransformFinalBlock(new byte[0], 0, 0);
-                    var hash = md5.Hash;
-                    
-                    // Convert to hex string
-                    var hashString = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-                    
-                    // Compare with expected
-                    bool isValid = hashString.Equals(expectedChecksum, StringComparison.OrdinalIgnoreCase);
-                    
-                    if (!isValid)
-                    {
-                        Debug.LogWarning($"Checksum mismatch: expected {expectedChecksum}, got {hashString}");
-                    }
-                    
-                    return isValid;
+                    md5.TransformBlock(buffer, 0, bytesRead, buffer, 0);
                 }
+
+                md5.TransformFinalBlock(new byte[0], 0, 0);
+                var hash = md5.Hash;
+
+                // Convert to hex string
+                var hashString = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+
+                // Compare with expected
+                var isValid = hashString.Equals(expectedChecksum, StringComparison.OrdinalIgnoreCase);
+
+                if (!isValid)
+                {
+                    Debug.LogWarning($"Checksum mismatch: expected {expectedChecksum}, got {hashString}");
+                }
+
+                return isValid;
             }
             catch (Exception ex)
             {
@@ -424,7 +420,7 @@ namespace uPiper.Core.Phonemizers.Data
         {
             string[] sizes = { "B", "KB", "MB", "GB" };
             double size = bytes;
-            int order = 0;
+            var order = 0;
             while (size >= 1024 && order < sizes.Length - 1)
             {
                 order++;
@@ -439,10 +435,10 @@ namespace uPiper.Core.Phonemizers.Data
     /// </summary>
     public interface IDataManager
     {
-        Task<bool> IsDataAvailable(string language);
-        Task<bool> DownloadDataAsync(string language, IProgress<float> progress = null);
-        long GetDataSize(string language);
-        Task<bool> DeleteDataAsync(string language);
+        public Task<bool> IsDataAvailable(string language);
+        public Task<bool> DownloadDataAsync(string language, IProgress<float> progress = null);
+        public long GetDataSize(string language);
+        public Task<bool> DeleteDataAsync(string language);
     }
 
     /// <summary>

@@ -13,22 +13,22 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         /// Feature to test (index into feature array)
         /// </summary>
         public byte Feature;
-        
+
         /// <summary>
         /// Value to compare against
         /// </summary>
         public byte Value;
-        
+
         /// <summary>
         /// Next rule offset if test is true
         /// </summary>
         public ushort NextIfTrue;
-        
+
         /// <summary>
         /// Next rule offset if test is false
         /// </summary>
         public ushort NextIfFalse;
-        
+
         /// <summary>
         /// Create a new WFST rule
         /// </summary>
@@ -39,18 +39,18 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             NextIfTrue = nextIfTrue;
             NextIfFalse = nextIfFalse;
         }
-        
+
         /// <summary>
         /// Check if this is a terminal rule (produces phoneme)
         /// </summary>
-        public bool IsTerminal => NextIfTrue == FliteLTSConstants.CST_LTS_EOR;
-        
+        public readonly bool IsTerminal => NextIfTrue == FliteLTSConstants.CST_LTS_EOR;
+
         /// <summary>
         /// Get the phoneme index if this is a terminal rule
         /// </summary>
         public int PhonemeIndex => IsTerminal ? Value : -1;
     }
-    
+
     /// <summary>
     /// Constants used in Flite LTS system
     /// </summary>
@@ -60,12 +60,12 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         /// End of rule marker
         /// </summary>
         public const ushort CST_LTS_EOR = 255;
-        
+
         /// <summary>
         /// Feature index for current letter
         /// </summary>
         public const byte FEAT_CURRENT = 0;
-        
+
         /// <summary>
         /// Feature indices for context letters (left)
         /// </summary>
@@ -73,7 +73,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         public const byte FEAT_L2 = 2;
         public const byte FEAT_L3 = 3;
         public const byte FEAT_L4 = 4;
-        
+
         /// <summary>
         /// Feature indices for context letters (right)
         /// </summary>
@@ -81,7 +81,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         public const byte FEAT_R2 = 6;
         public const byte FEAT_R3 = 7;
         public const byte FEAT_R4 = 8;
-        
+
         /// <summary>
         /// Total number of base features
         /// </summary>

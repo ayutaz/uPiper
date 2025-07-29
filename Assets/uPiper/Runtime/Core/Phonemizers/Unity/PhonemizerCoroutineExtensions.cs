@@ -106,16 +106,16 @@ namespace uPiper.Phonemizers.Unity
             Action<float> onProgress = null)
         {
             var itemList = new System.Collections.Generic.List<T>(items);
-            int totalItems = itemList.Count;
-            int processedItems = 0;
+            var totalItems = itemList.Count;
+            var processedItems = 0;
 
-            for (int i = 0; i < itemList.Count; i += itemsPerFrame)
+            for (var i = 0; i < itemList.Count; i += itemsPerFrame)
             {
-                int batchSize = Math.Min(itemsPerFrame, itemList.Count - i);
+                var batchSize = Math.Min(itemsPerFrame, itemList.Count - i);
                 var tasks = new Task[batchSize];
 
                 // Start batch tasks
-                for (int j = 0; j < batchSize; j++)
+                for (var j = 0; j < batchSize; j++)
                 {
                     tasks[j] = processor(itemList[i + j]);
                 }
@@ -156,7 +156,7 @@ namespace uPiper.Phonemizers.Unity
         {
             isCompleted = false;
             error = null;
-            result = default(T);
+            result = default;
 
             var task = taskFactory();
 

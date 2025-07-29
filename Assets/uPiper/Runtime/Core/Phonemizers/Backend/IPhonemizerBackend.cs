@@ -13,32 +13,32 @@ namespace uPiper.Core.Phonemizers.Backend
         /// <summary>
         /// Gets the name of this phonemizer backend.
         /// </summary>
-        string Name { get; }
+        public string Name { get; }
 
         /// <summary>
         /// Gets the version of this backend.
         /// </summary>
-        string Version { get; }
+        public string Version { get; }
 
         /// <summary>
         /// Gets the license type of this backend (e.g., "MIT", "GPL v3").
         /// </summary>
-        string License { get; }
+        public string License { get; }
 
         /// <summary>
         /// Gets the list of supported language codes (ISO 639-1).
         /// </summary>
-        string[] SupportedLanguages { get; }
+        public string[] SupportedLanguages { get; }
 
         /// <summary>
         /// Gets the priority of this backend (higher values are preferred).
         /// </summary>
-        int Priority { get; }
+        public int Priority { get; }
 
         /// <summary>
         /// Checks if this backend is currently available and initialized.
         /// </summary>
-        bool IsAvailable { get; }
+        public bool IsAvailable { get; }
 
         /// <summary>
         /// Initializes the backend asynchronously.
@@ -46,7 +46,7 @@ namespace uPiper.Core.Phonemizers.Backend
         /// <param name="options">Initialization options.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>True if initialization succeeded.</returns>
-        Task<bool> InitializeAsync(
+        public Task<bool> InitializeAsync(
             PhonemizerBackendOptions options = null,
             CancellationToken cancellationToken = default);
 
@@ -58,7 +58,7 @@ namespace uPiper.Core.Phonemizers.Backend
         /// <param name="options">Phonemization options.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>The phonemization result.</returns>
-        Task<PhonemeResult> PhonemizeAsync(
+        public Task<PhonemeResult> PhonemizeAsync(
             string text,
             string language,
             PhonemeOptions options = null,
@@ -69,18 +69,18 @@ namespace uPiper.Core.Phonemizers.Backend
         /// </summary>
         /// <param name="language">The language code to check.</param>
         /// <returns>True if the language is supported.</returns>
-        bool SupportsLanguage(string language);
+        public bool SupportsLanguage(string language);
 
         /// <summary>
         /// Gets the estimated memory usage of this backend in bytes.
         /// </summary>
         /// <returns>Estimated memory usage.</returns>
-        long GetMemoryUsage();
+        public long GetMemoryUsage();
 
         /// <summary>
         /// Gets backend-specific capabilities.
         /// </summary>
-        BackendCapabilities GetCapabilities();
+        public BackendCapabilities GetCapabilities();
     }
 
     /// <summary>

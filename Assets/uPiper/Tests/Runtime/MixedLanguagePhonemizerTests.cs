@@ -60,7 +60,7 @@ namespace uPiper.Tests.Runtime
             {
                 var detected = languageDetector.DetectPrimaryLanguage(text);
                 Debug.Log($"Text: '{text}' - Expected: {expected}, Detected: {detected}");
-                
+
                 if (expected == "mixed")
                 {
                     var segments = languageDetector.DetectSegments(text);
@@ -103,13 +103,13 @@ namespace uPiper.Tests.Runtime
             foreach (var text in testCases)
             {
                 var result = await mixedPhonemizer.PhonemizeAsync(text);
-                
+
                 Assert.IsTrue(result.Success, $"Failed to phonemize: {text}");
                 Assert.IsNotEmpty(result.Phonemes, $"Empty phonemes for: {text}");
-                
+
                 Debug.Log($"\nMixed text: '{text}'");
                 Debug.Log($"Phonemes ({result.Phonemes.Length}): {string.Join(" ", result.Phonemes)}");
-                
+
                 if (result.Metadata != null && result.Metadata.ContainsKey("backends_used"))
                 {
                     var backends = result.Metadata["backends_used"] as string[];
@@ -133,11 +133,11 @@ namespace uPiper.Tests.Runtime
                 // Test with auto detection
                 var autoResult = await unifiedPhonemizer.PhonemizeAsync(text, "auto");
                 Assert.IsTrue(autoResult.Success, $"Failed with auto detection: {text}");
-                
+
                 // Test with explicit language
                 var explicitResult = await unifiedPhonemizer.PhonemizeAsync(text, expectedType);
                 Assert.IsTrue(explicitResult.Success, $"Failed with explicit language: {text}");
-                
+
                 Debug.Log($"\nText: '{text}'");
                 Debug.Log($"Auto phonemes: {string.Join(" ", autoResult.Phonemes)}");
                 Debug.Log($"Language: {autoResult.Language}");
@@ -159,11 +159,11 @@ namespace uPiper.Tests.Runtime
             {
                 var result = await unifiedPhonemizer.PhonemizeAsync(text, "auto");
                 Assert.IsTrue(result.Success);
-                
+
                 // Check for silence markers at punctuation
                 var silenceCount = result.Phonemes.Count(p => p == "_");
                 Assert.Greater(silenceCount, 0, $"Should have silence markers for: {text}");
-                
+
                 Debug.Log($"Text: '{text}' - Silences: {silenceCount}");
             }
         }
@@ -179,12 +179,12 @@ SimpleLTSによるEnglish phonemizationを
 サポートしています。";
 
             var result = await unifiedPhonemizer.PhonemizeAsync(complexText, "auto");
-            
+
             Assert.IsTrue(result.Success);
             Assert.IsNotEmpty(result.Phonemes);
-            
+
             Debug.Log($"Complex text phoneme count: {result.Phonemes.Length}");
-            
+
             // Analyze the text
             var stats = mixedPhonemizer.AnalyzeText(complexText);
             Debug.Log($"Text analysis: {string.Join(", ", stats.Select(kvp => $"{kvp.Key}={kvp.Value}"))}");
@@ -196,12 +196,12 @@ SimpleLTSによるEnglish phonemizationを
             const string jaText = "これは日本語のテストテキストです。音素化の性能を測定しています。";
             const string enText = "This is an English test text. We are measuring phonemization performance.";
             const string mixedText = "これはmixed language textです。Performance測定中。";
-            
+
             const int iterations = 10;
 
             // Japanese performance
             var jaWatch = Stopwatch.StartNew();
-            for (int i = 0; i < iterations; i++)
+            for (var i = 0; i < iterations; i++)
             {
                 await unifiedPhonemizer.PhonemizeAsync(jaText, "ja");
             }
@@ -210,7 +210,7 @@ SimpleLTSによるEnglish phonemizationを
 
             // English performance
             var enWatch = Stopwatch.StartNew();
-            for (int i = 0; i < iterations; i++)
+            for (var i = 0; i < iterations; i++)
             {
                 await unifiedPhonemizer.PhonemizeAsync(enText, "en");
             }
@@ -219,7 +219,7 @@ SimpleLTSによるEnglish phonemizationを
 
             // Mixed performance
             var mixedWatch = Stopwatch.StartNew();
-            for (int i = 0; i < iterations; i++)
+            for (var i = 0; i < iterations; i++)
             {
                 await unifiedPhonemizer.PhonemizeAsync(mixedText, "mixed");
             }
@@ -255,11 +255,11 @@ SimpleLTSによるEnglish phonemizationを
             foreach (var text in edgeCases)
             {
                 var result = await unifiedPhonemizer.PhonemizeAsync(text, "auto");
-                Assert.IsTrue(result.Success, $"Should handle edge case: '{text.Substring(0, System.Math.Min(20, text.Length))}'...");
-                
+                Assert.IsTrue(result.Success, $"Should handle edge case: '{text[..System.Math.Min(20, text.Length)]}'...");
+
                 if (!string.IsNullOrWhiteSpace(text))
                 {
-                    Debug.Log($"Edge case handled: '{text.Substring(0, System.Math.Min(20, text.Length))}'... -> {result.Phonemes?.Length ?? 0} phonemes");
+                    Debug.Log($"Edge case handled: '{text[..System.Math.Min(20, text.Length)]}'... -> {result.Phonemes?.Length ?? 0} phonemes");
                 }
             }
         }
@@ -269,10 +269,10 @@ SimpleLTSによるEnglish phonemizationを
         public void TestBackendAvailability()
         {
             var backends = unifiedPhonemizer.GetAvailableBackends();
-            
+
             Assert.IsTrue(backends.ContainsKey("ja"), "Should have Japanese backend");
             Assert.IsTrue(backends.ContainsKey("en"), "Should have English backend");
-            
+
             Debug.Log("Available backends:");
             foreach (var (language, backendList) in backends)
             {

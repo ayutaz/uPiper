@@ -56,31 +56,31 @@ namespace uPiper.Demo
     public class InferenceEngineDemo : MonoBehaviour
     {
         [Header("UI References")]
-        [SerializeField] private TMP_InputField _inputField;
-        [SerializeField] private Button _generateButton;
-        [SerializeField] private Button _inferenceButton; // Add for Android auto-test
-        [SerializeField] private TextMeshProUGUI _statusText;
+        [SerializeField] private readonly TMP_InputField _inputField;
+        [SerializeField] private readonly Button _generateButton;
+        [SerializeField] private readonly Button _inferenceButton; // Add for Android auto-test
+        [SerializeField] private readonly TextMeshProUGUI _statusText;
         [SerializeField] private AudioSource _audioSource;
-        [SerializeField] private TMP_Dropdown _modelDropdown;
-        [SerializeField] private TMP_Dropdown _phraseDropdown;
-        [SerializeField] private TextMeshProUGUI _phonemeDetailsText;
-        [SerializeField] private TextMeshProUGUI _backendInfoText;
+        [SerializeField] private readonly TMP_Dropdown _modelDropdown;
+        [SerializeField] private readonly TMP_Dropdown _phraseDropdown;
+        [SerializeField] private readonly TextMeshProUGUI _phonemeDetailsText;
+        [SerializeField] private readonly TextMeshProUGUI _backendInfoText;
 
         [Header("GPU Inference UI")]
-        [SerializeField] private TMP_Dropdown _backendDropdown;
-        [SerializeField] private Toggle _cpuFallbackToggle;
-        [SerializeField] private Toggle _useFloat16Toggle;
-        [SerializeField] private Slider _batchSizeSlider;
-        [SerializeField] private TextMeshProUGUI _batchSizeText;
+        [SerializeField] private readonly TMP_Dropdown _backendDropdown;
+        [SerializeField] private readonly Toggle _cpuFallbackToggle;
+        [SerializeField] private readonly Toggle _useFloat16Toggle;
+        [SerializeField] private readonly Slider _batchSizeSlider;
+        [SerializeField] private readonly TextMeshProUGUI _batchSizeText;
 
         [Header("Settings")]
         [SerializeField] private string _defaultJapaneseText = "";  // Will be set in Start()
-        [SerializeField] private string _defaultEnglishText = "Hello world";
+        [SerializeField] private readonly string _defaultEnglishText = "Hello world";
 
         private InferenceAudioGenerator _generator;
         private PhonemeEncoder _encoder;
         private AudioClipBuilder _audioBuilder;
-        private PiperVoiceConfig _currentConfig;
+        private readonly PiperVoiceConfig _currentConfig;
         private bool _isGenerating;
         private InferenceBackend _selectedBackend = InferenceBackend.Auto;
         private GPUInferenceSettings _gpuSettings;
@@ -88,7 +88,7 @@ namespace uPiper.Demo
         private ITextPhonemizer _phonemizer;
 #endif
 
-        private readonly Dictionary<string, string> _modelLanguages = new Dictionary<string, string>
+        private readonly Dictionary<string, string> _modelLanguages = new()
         {
             { "ja_JP-test-medium", "ja" },
             { "test_voice", "en" }
@@ -97,7 +97,7 @@ namespace uPiper.Demo
         // テスト用の定型文 - will be initialized in Start() to avoid encoding issues
         private List<string> _japaneseTestPhrases;
 
-        private readonly List<string> _englishTestPhrases = new List<string>
+        private readonly List<string> _englishTestPhrases = new()
         {
             "Custom Input",  // Custom input option
             "Hello world",
@@ -113,7 +113,7 @@ namespace uPiper.Demo
         private void Start()
         {
             // Set default Japanese text from UTF-8 bytes to avoid encoding issues
-            byte[] konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+            var konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
             _defaultJapaneseText = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
 
             // Initialize Japanese test phrases from UTF-8 bytes
@@ -252,10 +252,7 @@ namespace uPiper.Demo
             }
 
             // 生成ボタンの設定
-            if (_generateButton != null)
-            {
-                _generateButton.onClick.AddListener(() => _ = GenerateAudioAsync());
-            }
+            _generateButton?.onClick.AddListener(() => _ = GenerateAudioAsync());
 
             // 初期テキストの設定
             if (_inputField != null)
@@ -367,18 +364,18 @@ namespace uPiper.Demo
             SetStatus("処理中...");
 
             // Debug text encoding
-            string inputText = _inputField.text;
+            var inputText = _inputField.text;
             PiperLogger.LogInfo($"Starting audio generation for text: {inputText}");
 
 #if UNITY_ANDROID
             // Additional encoding debug on Android
-            byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(inputText);
+            var utf8Bytes = System.Text.Encoding.UTF8.GetBytes(inputText);
             PiperLogger.LogInfo($"[Android] Text length: {inputText.Length} chars, UTF-8 bytes: {utf8Bytes.Length}");
             PiperLogger.LogInfo($"[Android] First few bytes: {string.Join(" ", utf8Bytes.Take(20).Select(b => b.ToString("X2")))}");
-            
+
             // Try to detect if the text is correctly encoded by checking UTF-8 bytes
-            byte[] testPhraseBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
-            string testPhrase = System.Text.Encoding.UTF8.GetString(testPhraseBytes);
+            var testPhraseBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+            var testPhrase = System.Text.Encoding.UTF8.GetString(testPhraseBytes);
             if (inputText == testPhrase)
             {
                 PiperLogger.LogInfo("[Android] Input matches expected 'こんにちは' - encoding is correct");
@@ -404,21 +401,13 @@ namespace uPiper.Demo
                 SetStatus("モデルをロード中...");
                 var loadStopwatch = Stopwatch.StartNew();
                 PiperLogger.LogDebug($"Loading model asset: Models/{modelName}");
-                var modelAsset = Resources.Load<ModelAsset>($"Models/{modelName}");
-                if (modelAsset == null)
-                {
-                    throw new Exception($"モデルが見つかりません: {modelName}");
-                }
+                var modelAsset = Resources.Load<ModelAsset>($"Models/{modelName}") ?? throw new Exception($"モデルが見つかりません: {modelName}");
                 PiperLogger.LogDebug($"Model asset loaded successfully");
                 timings["ModelLoad"] = loadStopwatch.ElapsedMilliseconds;
 
                 // JSONコンフィグをロード
                 PiperLogger.LogDebug($"Loading config: Models/{modelName}.onnx");
-                var jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx");
-                if (jsonAsset == null)
-                {
-                    throw new Exception($"設定ファイルが見つかりません: {modelName}.onnx.json");
-                }
+                var jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx") ?? throw new Exception($"設定ファイルが見つかりません: {modelName}.onnx.json");
                 PiperLogger.LogDebug($"Config loaded, parsing JSON ({jsonAsset.text.Length} chars)");
 
                 var config = ParseConfig(jsonAsset.text, modelName);
@@ -476,8 +465,8 @@ namespace uPiper.Demo
                 var language = _modelLanguages[modelName];
 
                 // Define konnichiwa string from UTF-8 bytes for special debugging
-                byte[] konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
-                string konnichiwa = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
+                var konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+                var konnichiwa = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
 
 #if !UNITY_WEBGL
                 // Use OpenJTalk for Japanese if available
@@ -577,7 +566,7 @@ namespace uPiper.Demo
                 if (_inputField.text == konnichiwa)
                 {
                     PiperLogger.LogInfo("=== Special debug for 'こんにちは' ===");
-                    for (int i = 0; i < phonemes.Length; i++)
+                    for (var i = 0; i < phonemes.Length; i++)
                     {
                         PiperLogger.LogInfo($"  Phoneme[{i}]: '{phonemes[i]}' (length: {phonemes[i].Length})");
                         if (phonemes[i] == "ch" || phonemes[i] == "t" || phonemes[i] == "ty" || phonemes[i] == "i")
@@ -597,7 +586,7 @@ namespace uPiper.Demo
 
                 // Log phoneme to ID mapping for debugging
                 var phonemeIdPairs = new List<string>();
-                for (int i = 0; i < Math.Min(phonemes.Length, phonemeIds.Length); i++)
+                for (var i = 0; i < Math.Min(phonemes.Length, phonemeIds.Length); i++)
                 {
                     phonemeIdPairs.Add($"'{phonemes[i]}'={phonemeIds[i]}");
                 }
@@ -622,7 +611,7 @@ namespace uPiper.Demo
                     // 音声が小さすぎる場合は増幅
                     SetStatus("音声データを増幅中...");
                     PiperLogger.LogDebug($"Amplifying audio data (max: {maxVal:F4} is too small)");
-                    float amplificationFactor = 0.5f / maxVal; // 最大値を0.5にする
+                    var amplificationFactor = 0.5f / maxVal; // 最大値を0.5にする
                     processedAudio = audioData.Select(x => x * amplificationFactor).ToArray();
                     PiperLogger.LogInfo($"Amplified audio by factor {amplificationFactor:F2}");
                 }
@@ -761,15 +750,13 @@ namespace uPiper.Demo
             PiperLogger.LogDebug($"[ParseConfig] Language: {config.Language}, SampleRate: {config.SampleRate}");
 
             // phoneme_id_mapをパース
-            var phonemeIdMap = jsonObj["phoneme_id_map"] as JObject;
-            if (phonemeIdMap != null)
+            if (jsonObj["phoneme_id_map"] is JObject phonemeIdMap)
             {
                 PiperLogger.LogDebug($"[ParseConfig] Found phoneme_id_map with {phonemeIdMap.Count} entries");
 
                 foreach (var kvp in phonemeIdMap)
                 {
-                    var idArray = kvp.Value as JArray;
-                    if (idArray != null && idArray.Count > 0)
+                    if (kvp.Value is JArray idArray && idArray.Count > 0)
                     {
                         config.PhonemeIdMap[kvp.Key] = idArray[0].ToObject<int>();
                     }

@@ -77,8 +77,8 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 var matches = regex.Matches(text);
                 if (matches.Count > 0)
                 {
-                    float coverage = (float)matches.Cast<Match>().Sum(m => m.Length) / text.Length;
-                    
+                    var coverage = (float)matches.Cast<Match>().Sum(m => m.Length) / text.Length;
+
                     // Map script to languages
                     var languages = GetLanguagesForScript(script);
                     foreach (var lang in languages)
@@ -92,7 +92,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 return null;
 
             var topLanguage = scores.OrderByDescending(kvp => kvp.Value).First();
-            
+
             return new LanguageDetectionResult
             {
                 DetectedLanguage = topLanguage.Key,
@@ -115,7 +115,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
             foreach (var (language, profile) in languageProfiles)
             {
-                float score = CalculateSimilarity(textNGrams, profile.NGrams);
+                var score = CalculateSimilarity(textNGrams, profile.NGrams);
                 scores[language] = score;
             }
 
@@ -124,13 +124,13 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 return null;
 
             var topLanguage = topLanguages[0];
-            float confidence = topLanguage.Value;
+            var confidence = topLanguage.Value;
 
             // Adjust confidence based on score distribution
             if (topLanguages.Count > 1)
             {
-                float secondBest = topLanguages[1].Value;
-                float margin = confidence - secondBest;
+                var secondBest = topLanguages[1].Value;
+                var margin = confidence - secondBest;
                 confidence = Math.Min(confidence, margin * 2); // Reduce confidence if close scores
             }
 
@@ -149,18 +149,18 @@ namespace uPiper.Core.Phonemizers.Multilingual
         private Dictionary<string, float> ExtractNGrams(string text, int n)
         {
             var ngrams = new Dictionary<string, int>();
-            
+
             // Add word boundary markers
             text = " " + text + " ";
-            
-            for (int i = 0; i <= text.Length - n; i++)
+
+            for (var i = 0; i <= text.Length - n; i++)
             {
-                string ngram = text.Substring(i, n);
-                
+                var ngram = text.Substring(i, n);
+
                 // Skip n-grams with only spaces
                 if (string.IsNullOrWhiteSpace(ngram))
                     continue;
-                
+
                 if (ngrams.ContainsKey(ngram))
                     ngrams[ngram]++;
                 else
@@ -168,9 +168,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
             }
 
             // Normalize to frequencies
-            int total = ngrams.Values.Sum();
+            var total = ngrams.Values.Sum();
             var frequencies = new Dictionary<string, float>();
-            
+
             foreach (var (ngram, count) in ngrams)
             {
                 frequencies[ngram] = (float)count / total;
@@ -187,23 +187,23 @@ namespace uPiper.Core.Phonemizers.Multilingual
             var allNGrams = new HashSet<string>(profile1.Keys);
             allNGrams.UnionWith(profile2.Keys);
 
-            float similarity = 0f;
-            
+            var similarity = 0f;
+
             foreach (var ngram in allNGrams)
             {
-                float freq1 = profile1.TryGetValue(ngram, out float f1) ? f1 : 0f;
-                float freq2 = profile2.TryGetValue(ngram, out float f2) ? f2 : 0f;
-                
+                var freq1 = profile1.TryGetValue(ngram, out var f1) ? f1 : 0f;
+                var freq2 = profile2.TryGetValue(ngram, out var f2) ? f2 : 0f;
+
                 // Use cosine similarity
                 similarity += freq1 * freq2;
             }
 
             // Normalize
-            float norm1 = (float)Math.Sqrt(profile1.Values.Sum(f => f * f));
-            float norm2 = (float)Math.Sqrt(profile2.Values.Sum(f => f * f));
-            
+            var norm1 = (float)Math.Sqrt(profile1.Values.Sum(f => f * f));
+            var norm2 = (float)Math.Sqrt(profile2.Values.Sum(f => f * f));
+
             if (norm1 > 0 && norm2 > 0)
-                similarity = similarity / (norm1 * norm2);
+                similarity /= (norm1 * norm2);
 
             return similarity;
         }
@@ -212,14 +212,14 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// Combine script-based and n-gram based results
         /// </summary>
         private LanguageDetectionResult CombineResults(
-            LanguageDetectionResult scriptResult, 
+            LanguageDetectionResult scriptResult,
             LanguageDetectionResult ngramResult)
         {
             var combinedScores = new Dictionary<string, float>();
-            
+
             // Weight: 60% n-gram, 40% script (script is more definitive but less precise)
-            float ngramWeight = 0.6f;
-            float scriptWeight = 0.4f;
+            var ngramWeight = 0.6f;
+            var scriptWeight = 0.4f;
 
             // Add n-gram scores
             foreach (var (lang, score) in ngramResult.LanguageScores)
@@ -259,14 +259,29 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 NGrams = new Dictionary<string, float>
                 {
                     // Common English trigrams
-                    [" th"] = 0.05f, ["the"] = 0.04f, ["he "] = 0.03f,
-                    ["ing"] = 0.025f, ["and"] = 0.02f, ["nd "] = 0.018f,
-                    ["ion"] = 0.017f, ["tio"] = 0.016f, ["ent"] = 0.015f,
-                    ["ati"] = 0.014f, ["for"] = 0.013f, ["her"] = 0.012f,
-                    ["ter"] = 0.011f, ["hat"] = 0.01f, ["tha"] = 0.009f,
-                    ["ere"] = 0.008f, ["ate"] = 0.007f, ["his"] = 0.006f,
-                    ["con"] = 0.005f, ["res"] = 0.004f, ["ver"] = 0.003f,
-                    ["all"] = 0.002f, ["ons"] = 0.001f
+                    [" th"] = 0.05f,
+                    ["the"] = 0.04f,
+                    ["he "] = 0.03f,
+                    ["ing"] = 0.025f,
+                    ["and"] = 0.02f,
+                    ["nd "] = 0.018f,
+                    ["ion"] = 0.017f,
+                    ["tio"] = 0.016f,
+                    ["ent"] = 0.015f,
+                    ["ati"] = 0.014f,
+                    ["for"] = 0.013f,
+                    ["her"] = 0.012f,
+                    ["ter"] = 0.011f,
+                    ["hat"] = 0.01f,
+                    ["tha"] = 0.009f,
+                    ["ere"] = 0.008f,
+                    ["ate"] = 0.007f,
+                    ["his"] = 0.006f,
+                    ["con"] = 0.005f,
+                    ["res"] = 0.004f,
+                    ["ver"] = 0.003f,
+                    ["all"] = 0.002f,
+                    ["ons"] = 0.001f
                 }
             };
             languageProfiles["en-US"] = englishProfile;
@@ -279,12 +294,24 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 Language = "ja-JP",
                 NGrams = new Dictionary<string, float>
                 {
-                    ["no "] = 0.04f, ["shi"] = 0.035f, ["ka "] = 0.03f,
-                    ["ni "] = 0.028f, ["de "] = 0.025f, ["wa "] = 0.023f,
-                    ["to "] = 0.02f, ["ga "] = 0.018f, ["tte"] = 0.015f,
-                    ["iru"] = 0.013f, ["koto"] = 0.011f, ["oto"] = 0.01f,
-                    ["aru"] = 0.009f, ["ita"] = 0.008f, ["desu"] = 0.007f,
-                    ["masu"] = 0.006f, ["suru"] = 0.005f, ["kara"] = 0.004f
+                    ["no "] = 0.04f,
+                    ["shi"] = 0.035f,
+                    ["ka "] = 0.03f,
+                    ["ni "] = 0.028f,
+                    ["de "] = 0.025f,
+                    ["wa "] = 0.023f,
+                    ["to "] = 0.02f,
+                    ["ga "] = 0.018f,
+                    ["tte"] = 0.015f,
+                    ["iru"] = 0.013f,
+                    ["koto"] = 0.011f,
+                    ["oto"] = 0.01f,
+                    ["aru"] = 0.009f,
+                    ["ita"] = 0.008f,
+                    ["desu"] = 0.007f,
+                    ["masu"] = 0.006f,
+                    ["suru"] = 0.005f,
+                    ["kara"] = 0.004f
                 }
             };
             languageProfiles["ja-JP"] = japaneseProfile;
@@ -295,12 +322,24 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 Language = "es-ES",
                 NGrams = new Dictionary<string, float>
                 {
-                    [" de"] = 0.05f, ["de "] = 0.04f, [" la"] = 0.035f,
-                    ["la "] = 0.03f, ["que"] = 0.028f, ["ue "] = 0.025f,
-                    ["ion"] = 0.02f, ["cion"] = 0.018f, [" el"] = 0.015f,
-                    ["el "] = 0.013f, ["ent"] = 0.011f, ["nte"] = 0.01f,
-                    ["con"] = 0.009f, ["est"] = 0.008f, ["los"] = 0.007f,
-                    ["las"] = 0.006f, ["par"] = 0.005f, ["ara"] = 0.004f
+                    [" de"] = 0.05f,
+                    ["de "] = 0.04f,
+                    [" la"] = 0.035f,
+                    ["la "] = 0.03f,
+                    ["que"] = 0.028f,
+                    ["ue "] = 0.025f,
+                    ["ion"] = 0.02f,
+                    ["cion"] = 0.018f,
+                    [" el"] = 0.015f,
+                    ["el "] = 0.013f,
+                    ["ent"] = 0.011f,
+                    ["nte"] = 0.01f,
+                    ["con"] = 0.009f,
+                    ["est"] = 0.008f,
+                    ["los"] = 0.007f,
+                    ["las"] = 0.006f,
+                    ["par"] = 0.005f,
+                    ["ara"] = 0.004f
                 }
             };
             languageProfiles["es-ES"] = spanishProfile;
@@ -311,12 +350,24 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 Language = "de-DE",
                 NGrams = new Dictionary<string, float>
                 {
-                    ["der"] = 0.04f, ["die"] = 0.035f, ["und"] = 0.03f,
-                    ["den"] = 0.025f, ["das"] = 0.022f, ["ist"] = 0.02f,
-                    ["ein"] = 0.018f, ["ich"] = 0.016f, ["cht"] = 0.014f,
-                    ["sch"] = 0.012f, ["che"] = 0.01f, ["gen"] = 0.009f,
-                    ["ung"] = 0.008f, ["ver"] = 0.007f, ["ter"] = 0.006f,
-                    ["eit"] = 0.005f, ["ber"] = 0.004f, ["mit"] = 0.003f
+                    ["der"] = 0.04f,
+                    ["die"] = 0.035f,
+                    ["und"] = 0.03f,
+                    ["den"] = 0.025f,
+                    ["das"] = 0.022f,
+                    ["ist"] = 0.02f,
+                    ["ein"] = 0.018f,
+                    ["ich"] = 0.016f,
+                    ["cht"] = 0.014f,
+                    ["sch"] = 0.012f,
+                    ["che"] = 0.01f,
+                    ["gen"] = 0.009f,
+                    ["ung"] = 0.008f,
+                    ["ver"] = 0.007f,
+                    ["ter"] = 0.006f,
+                    ["eit"] = 0.005f,
+                    ["ber"] = 0.004f,
+                    ["mit"] = 0.003f
                 }
             };
             languageProfiles["de-DE"] = germanProfile;
@@ -327,12 +378,24 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 Language = "fr-FR",
                 NGrams = new Dictionary<string, float>
                 {
-                    [" de"] = 0.04f, ["de "] = 0.035f, [" le"] = 0.03f,
-                    ["le "] = 0.025f, ["ent"] = 0.022f, ["que"] = 0.02f,
-                    ["les"] = 0.018f, [" la"] = 0.016f, ["la "] = 0.014f,
-                    ["tion"] = 0.012f, ["ment"] = 0.01f, ["pour"] = 0.009f,
-                    ["dans"] = 0.008f, ["des"] = 0.007f, ["est"] = 0.006f,
-                    ["vous"] = 0.005f, ["avec"] = 0.004f, ["plus"] = 0.003f
+                    [" de"] = 0.04f,
+                    ["de "] = 0.035f,
+                    [" le"] = 0.03f,
+                    ["le "] = 0.025f,
+                    ["ent"] = 0.022f,
+                    ["que"] = 0.02f,
+                    ["les"] = 0.018f,
+                    [" la"] = 0.016f,
+                    ["la "] = 0.014f,
+                    ["tion"] = 0.012f,
+                    ["ment"] = 0.01f,
+                    ["pour"] = 0.009f,
+                    ["dans"] = 0.008f,
+                    ["des"] = 0.007f,
+                    ["est"] = 0.006f,
+                    ["vous"] = 0.005f,
+                    ["avec"] = 0.004f,
+                    ["plus"] = 0.003f
                 }
             };
             languageProfiles["fr-FR"] = frenchProfile;
@@ -345,24 +408,24 @@ namespace uPiper.Core.Phonemizers.Multilingual
         {
             // Latin script
             scriptDetectors["Latin"] = new Regex(@"[a-zA-Z]", RegexOptions.Compiled);
-            
+
             // Japanese scripts
             scriptDetectors["Hiragana"] = new Regex(@"[\u3040-\u309F]", RegexOptions.Compiled);
             scriptDetectors["Katakana"] = new Regex(@"[\u30A0-\u30FF]", RegexOptions.Compiled);
             scriptDetectors["Kanji"] = new Regex(@"[\u4E00-\u9FAF]", RegexOptions.Compiled);
-            
+
             // Chinese script (simplified range)
             scriptDetectors["Chinese"] = new Regex(@"[\u4E00-\u9FFF]", RegexOptions.Compiled);
-            
+
             // Korean script
             scriptDetectors["Hangul"] = new Regex(@"[\uAC00-\uD7AF]", RegexOptions.Compiled);
-            
+
             // Cyrillic script
             scriptDetectors["Cyrillic"] = new Regex(@"[\u0400-\u04FF]", RegexOptions.Compiled);
-            
+
             // Arabic script
             scriptDetectors["Arabic"] = new Regex(@"[\u0600-\u06FF]", RegexOptions.Compiled);
-            
+
             // Devanagari script (Hindi, etc.)
             scriptDetectors["Devanagari"] = new Regex(@"[\u0900-\u097F]", RegexOptions.Compiled);
         }
@@ -393,12 +456,12 @@ namespace uPiper.Core.Phonemizers.Multilingual
             var segments = new List<TextSegment>();
             var currentSegment = new System.Text.StringBuilder();
             string currentLanguage = null;
-            int segmentStart = 0;
+            var segmentStart = 0;
 
-            for (int i = 0; i < text.Length; i++)
+            for (var i = 0; i < text.Length; i++)
             {
-                char c = text[i];
-                string charLanguage = DetectCharacterLanguage(c);
+                var c = text[i];
+                var charLanguage = DetectCharacterLanguage(c);
 
                 if (currentLanguage == null)
                 {
@@ -413,7 +476,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     {
                         var segmentText = currentSegment.ToString();
                         var detectionResult = DetectLanguage(segmentText);
-                        
+
                         segments.Add(new TextSegment
                         {
                             Text = segmentText,
@@ -437,7 +500,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             {
                 var segmentText = currentSegment.ToString();
                 var detectionResult = DetectLanguage(segmentText);
-                
+
                 segments.Add(new TextSegment
                 {
                     Text = segmentText,

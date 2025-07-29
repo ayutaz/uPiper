@@ -28,7 +28,7 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
         public override string License => primaryBackend?.License ?? "MIT";
 
         /// <inheritdoc/>
-        public override string[] SupportedLanguages => 
+        public override string[] SupportedLanguages =>
             primaryBackend?.SupportedLanguages ?? new[] { "en" };
 
         /// <summary>
@@ -58,8 +58,8 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
             PhonemizerBackendOptions options,
             CancellationToken cancellationToken)
         {
-            bool primaryInit = false;
-            bool fallbackInit = false;
+            var primaryInit = false;
+            var fallbackInit = false;
 
             // Initialize primary backend
             try
@@ -103,7 +103,7 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
 
             // Try primary backend with retries
             Exception lastException = null;
-            for (int attempt = 0; attempt < maxRetries; attempt++)
+            for (var attempt = 0; attempt < maxRetries; attempt++)
             {
                 if (attempt > 0)
                 {
@@ -114,7 +114,7 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
                 {
                     var result = await primaryBackend.PhonemizeAsync(
                         text, language, options, cancellationToken);
-                    
+
                     circuitBreaker.OnSuccess();
                     return result;
                 }
@@ -127,7 +127,7 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
                 {
                     lastException = ex;
                     Debug.LogWarning($"Attempt {attempt + 1} failed: {ex.Message}");
-                    
+
                     if (attempt == maxRetries - 1)
                     {
                         circuitBreaker.OnFailure(ex);
@@ -144,13 +144,13 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
         public override long GetMemoryUsage()
         {
             long total = 0;
-            
+
             if (primaryBackend != null)
                 total += primaryBackend.GetMemoryUsage();
-            
+
             if (fallbackBackend != null)
                 total += fallbackBackend.GetMemoryUsage();
-            
+
             return total;
         }
 
@@ -158,8 +158,8 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
         public override BackendCapabilities GetCapabilities()
         {
             // Return primary capabilities, or fallback if primary not available
-            return primaryBackend?.GetCapabilities() ?? 
-                   fallbackBackend?.GetCapabilities() ?? 
+            return primaryBackend?.GetCapabilities() ??
+                   fallbackBackend?.GetCapabilities() ??
                    new BackendCapabilities();
         }
 
@@ -183,12 +183,9 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
                 {
                     var result = await fallbackBackend.PhonemizeAsync(
                         text, language, options, cancellationToken);
-                    
+
                     // Mark that fallback was used
-                    if (result.Metadata == null)
-                    {
-                        result.Metadata = new Dictionary<string, object>();
-                    }
+                    result.Metadata ??= new Dictionary<string, object>();
                     result.Metadata["FallbackUsed"] = true;
                     return result;
                 }

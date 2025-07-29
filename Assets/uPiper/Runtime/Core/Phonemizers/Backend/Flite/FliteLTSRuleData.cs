@@ -17,66 +17,66 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         {
             // Rules for letter 'a' at offset 0
             // Check right context for 'r'
-            new WFSTRule(FliteLTSConstants.FEAT_R1, (byte)'r', 2, 1),
+            new(FliteLTSConstants.FEAT_R1, (byte)'r', 2, 1),
             // Terminal: produce 'ae1' 
-            new WFSTRule(255, 10, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 10, FliteLTSConstants.CST_LTS_EOR, 0),
             // Check for 'ar' pattern -> 'aa1 r'
-            new WFSTRule(255, 2, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 2, FliteLTSConstants.CST_LTS_EOR, 0),
             
             // Rules for letter 'b' at offset 3
             // Simple 'b' -> 'b'
-            new WFSTRule(255, 25, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 25, FliteLTSConstants.CST_LTS_EOR, 0),
             
             // Rules for letter 'c' at offset 4  
             // Check for 'ch'
-            new WFSTRule(FliteLTSConstants.FEAT_R1, (byte)'h', 6, 5),
+            new(FliteLTSConstants.FEAT_R1, (byte)'h', 6, 5),
             // 'c' -> 'k'
-            new WFSTRule(255, 27, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 27, FliteLTSConstants.CST_LTS_EOR, 0),
             // 'ch' -> 'ch'
-            new WFSTRule(255, 26, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 26, FliteLTSConstants.CST_LTS_EOR, 0),
             
             // Rules for letter 'd' at offset 7
             // Simple 'd' -> 'd'
-            new WFSTRule(255, 31, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 31, FliteLTSConstants.CST_LTS_EOR, 0),
             
             // Rules for letter 'e' at offset 8
             // Check for end of word
-            new WFSTRule(FliteLTSConstants.FEAT_R1, (byte)'#', 10, 9),
+            new(FliteLTSConstants.FEAT_R1, (byte)'#', 10, 9),
             // 'e' -> 'eh1'
-            new WFSTRule(255, 1, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 1, FliteLTSConstants.CST_LTS_EOR, 0),
             // Final 'e' is often silent
-            new WFSTRule(255, 0, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 0, FliteLTSConstants.CST_LTS_EOR, 0),
             
             // Rules for letter 'f' at offset 11
             // Simple 'f' -> 'f'
-            new WFSTRule(255, 42, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 42, FliteLTSConstants.CST_LTS_EOR, 0),
             
             // Rules for letter 'g' at offset 12
             // Simple 'g' -> 'g'
-            new WFSTRule(255, 43, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 43, FliteLTSConstants.CST_LTS_EOR, 0),
             
             // Rules for letter 'h' at offset 13
             // Simple 'h' -> 'hh'
-            new WFSTRule(255, 45, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 45, FliteLTSConstants.CST_LTS_EOR, 0),
             
             // Rules for letter 'i' at offset 14
             // Check for 'ing'
-            new WFSTRule(FliteLTSConstants.FEAT_R1, (byte)'n', 16, 15),
+            new(FliteLTSConstants.FEAT_R1, (byte)'n', 16, 15),
             // 'i' -> 'ih1'
-            new WFSTRule(255, 11, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 11, FliteLTSConstants.CST_LTS_EOR, 0),
             // Check for 'g' after 'n'
-            new WFSTRule(FliteLTSConstants.FEAT_R2, (byte)'g', 17, 15),
+            new(FliteLTSConstants.FEAT_R2, (byte)'g', 17, 15),
             // 'ing' -> 'ih0 ng'
-            new WFSTRule(255, 17, FliteLTSConstants.CST_LTS_EOR, 0),
+            new(255, 17, FliteLTSConstants.CST_LTS_EOR, 0),
             
             // Continue with more rules...
         };
-        
+
         /// <summary>
         /// Letter to rule offset mapping
         /// Maps each letter to its starting rule index
         /// </summary>
-        public static readonly Dictionary<char, int> LetterOffsets = new Dictionary<char, int>
+        public static readonly Dictionary<char, int> LetterOffsets = new()
         {
             { 'a', 0 },
             { 'b', 3 },
@@ -105,7 +105,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             { 'y', 18 },
             { 'z', 18 }
         };
-        
+
         /// <summary>
         /// Get rule offset for a letter
         /// </summary>

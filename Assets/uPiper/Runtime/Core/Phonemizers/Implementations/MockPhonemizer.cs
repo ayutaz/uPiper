@@ -16,7 +16,7 @@ namespace uPiper.Core.Phonemizers.Implementations
     [Preserve]
     public class MockPhonemizer : BasePhonemizer
     {
-        private static readonly Dictionary<string, string[]> SimplePhonemeMap = new Dictionary<string, string[]>
+        private static readonly Dictionary<string, string[]> SimplePhonemeMap = new()
         {
             // Japanese hiragana
             { "こ", new[] { "k", "o" } },
@@ -92,7 +92,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             else
             {
                 // Fall back to character-based generation
-                foreach (char c in text)
+                foreach (var c in text)
                 {
                     if (char.IsWhiteSpace(c))
                     {
@@ -106,7 +106,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             }
 
             // Generate simple IDs and durations
-            for (int i = 0; i < phonemes.Count; i++)
+            for (var i = 0; i < phonemes.Count; i++)
             {
                 phonemeIds.Add(i + 1); // Simple sequential IDs
                 durations.Add(0.1f); // Fixed duration for simplicity

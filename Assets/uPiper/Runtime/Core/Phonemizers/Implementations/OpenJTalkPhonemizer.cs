@@ -16,8 +16,8 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Scripting;
 using uPiper.Core.Logging;
-using uPiper.Core.Platform;
 using uPiper.Core.Phonemizers.Backend;
+using uPiper.Core.Platform;
 
 namespace uPiper.Core.Phonemizers.Implementations
 {
@@ -86,7 +86,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         #region Fields
 
         private IntPtr _handle = IntPtr.Zero;
-        private readonly object _handleLock = new object();
+        private readonly object _handleLock = new();
         private bool _disposed;
         private readonly string _dictionaryPath;
 
@@ -245,7 +245,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                 // Additional character analysis for Windows debugging
                 PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Character analysis:");
-                for (int i = 0; i < Math.Min(text.Length, 10); i++)
+                for (var i = 0; i < Math.Min(text.Length, 10); i++)
                 {
                     var ch = text[i];
                     var unicode = ((int)ch).ToString("X4", System.Globalization.CultureInfo.InvariantCulture);
@@ -259,7 +259,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     Debug.Log("[OpenJTalkPhonemizer] Note: Debug logs from native library will appear in stderr/console");
                 }
 
-                IntPtr resultPtr = IntPtr.Zero;
+                var resultPtr = IntPtr.Zero;
                 try
                 {
 #if ENABLE_PINVOKE
@@ -269,10 +269,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                     {
                         var errorCode = openjtalk_get_last_error(_handle);
                         var errorMsgPtr = openjtalk_get_error_string(errorCode);
-                        var errorMsg = errorMsgPtr != IntPtr.Zero 
-                            ? Marshal.PtrToStringAnsi(errorMsgPtr) 
+                        var errorMsg = errorMsgPtr != IntPtr.Zero
+                            ? Marshal.PtrToStringAnsi(errorMsgPtr)
                             : "Unknown error";
-                        
+
                         throw new PiperPhonemizationException(text, "ja",
                             $"OpenJTalk phonemization failed: {errorMsg}");
                     }
@@ -333,7 +333,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                 // Calculate checksum for comparison
                 uint checksum = 0;
-                foreach (char c in phonemeString)
+                foreach (var c in phonemeString)
                 {
                     checksum = checksum * 31 + (uint)c;
                 }
@@ -356,7 +356,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     if (parts.Length > 0)
                     {
                         Debug.Log($"[OpenJTalkPhonemizer] First 10 phonemes:");
-                        for (int i = 0; i < Math.Min(10, parts.Length); i++)
+                        for (var i = 0; i < Math.Min(10, parts.Length); i++)
                         {
                             Debug.Log($"  [{i}] '{parts[i]}'");
                         }
@@ -386,7 +386,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     // Debug log the mapping result
                     PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Phoneme mapping: {string.Join(" ", phonemeList)} -> {string.Join(" ", piperPhonemes.Select(p => p.Length == 1 && p[0] >= '\ue000' && p[0] <= '\uf8ff' ? $"PUA(U+{((int)p[0]):X4})" : $"'{p}'"))}");
 
-                    for (int i = 0; i < Math.Min(piperPhonemes.Length, nativeResult.phoneme_count); i++)
+                    for (var i = 0; i < Math.Min(piperPhonemes.Length, nativeResult.phoneme_count); i++)
                     {
                         phonemes[i] = piperPhonemes[i];
                         // PhonemeIds will be set by PhonemeEncoder based on the model's phoneme mapping
@@ -417,7 +417,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
             // Pitches are not provided by the current native implementation
             // Initialize with default values
-            for (int i = 0; i < nativeResult.phoneme_count; i++)
+            for (var i = 0; i < nativeResult.phoneme_count; i++)
             {
                 pitches[i] = 1.0f; // Default pitch
             }
@@ -430,7 +430,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 Pitches = pitches,
                 Language = "ja",
                 ProcessingTime = TimeSpan.Zero, // Will be set by BasePhonemizer
-                Metadata = new Dictionary<string, object> 
+                Metadata = new Dictionary<string, object>
                 {
                     ["TotalDuration"] = nativeResult.total_duration
                 }
@@ -463,7 +463,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 if (Directory.Exists(path))
                 {
                     // Verify it contains required files
-                    bool allFilesExist = true;
+                    var allFilesExist = true;
                     foreach (var file in OpenJTalkConstants.RequiredDictionaryFiles)
                     {
                         if (!File.Exists(Path.Combine(path, file)))
@@ -505,9 +505,9 @@ namespace uPiper.Core.Phonemizers.Implementations
                     Debug.LogError("[OpenJTalkPhonemizer] No library path defined for current platform");
                     return false;
                 }
-                
+
                 // For bundle format on macOS, check if directory exists
-                bool libraryExists = false;
+                var libraryExists = false;
                 if (PlatformHelper.IsMacOS && libraryPath.EndsWith(".bundle"))
                 {
                     libraryExists = Directory.Exists(libraryPath);
@@ -526,13 +526,13 @@ namespace uPiper.Core.Phonemizers.Implementations
                 {
                     libraryExists = File.Exists(libraryPath);
                 }
-                
+
                 if (!libraryExists)
                 {
                     Debug.LogError($"[OpenJTalkPhonemizer] Library not found: {libraryPath}");
                     Debug.LogError($"[OpenJTalkPhonemizer] Current working directory: {Directory.GetCurrentDirectory()}");
                     Debug.LogError($"[OpenJTalkPhonemizer] Application.dataPath: {Application.dataPath}");
-                    
+
                     // List contents of plugin directory for debugging
                     var pluginDir = Path.GetDirectoryName(libraryPath);
                     if (Directory.Exists(pluginDir))
@@ -543,10 +543,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                             Debug.LogError($"  - {Path.GetFileName(item)}");
                         }
                     }
-                    
+
                     return false;
                 }
-                
+
                 Debug.Log($"[OpenJTalkPhonemizer] Native library found at: {libraryPath}");
                 return true;
 #else
@@ -590,12 +590,12 @@ namespace uPiper.Core.Phonemizers.Implementations
 #if UNITY_EDITOR
             // First try uPiper/Plugins path
             var uPiperPluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins");
-            
+
             if (PlatformHelper.IsWindows)
             {
                 var windowsPath = Path.Combine(uPiperPluginsPath, "Windows", "x86_64", "openjtalk_wrapper.dll");
                 if (File.Exists(windowsPath)) return windowsPath;
-                
+
                 // Fallback to old path
                 return Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll");
             }
@@ -604,22 +604,22 @@ namespace uPiper.Core.Phonemizers.Implementations
                 // Check for bundle format first (Unity's preferred format for macOS)
                 var bundlePath = Path.Combine(uPiperPluginsPath, "macOS", "openjtalk_wrapper.bundle");
                 if (Directory.Exists(bundlePath)) return bundlePath;
-                
+
                 // Check for dylib format
                 var dylibPath = Path.Combine(uPiperPluginsPath, "macOS", "libopenjtalk_wrapper.dylib");
                 if (File.Exists(dylibPath)) return dylibPath;
-                
+
                 // Fallback to old paths
                 var oldBundlePath = Path.Combine(Application.dataPath, "Plugins", "macOS", "openjtalk_wrapper.bundle");
                 if (Directory.Exists(oldBundlePath)) return oldBundlePath;
-                
+
                 return Path.Combine(Application.dataPath, "Plugins", "macOS", "libopenjtalk_wrapper.dylib");
             }
             else if (PlatformHelper.IsLinux)
             {
                 var linuxPath = Path.Combine(uPiperPluginsPath, "Linux", "x86_64", "libopenjtalk_wrapper.so");
                 if (File.Exists(linuxPath)) return linuxPath;
-                
+
                 // Fallback to old path
                 return Path.Combine(Application.dataPath, "Plugins", "x86_64", "libopenjtalk_wrapper.so");
             }
@@ -688,13 +688,13 @@ namespace uPiper.Core.Phonemizers.Implementations
             if (phonemes.Length < 6) return false;
 
             // Look for patterns where the same phoneme sequence appears multiple times consecutively
-            for (int i = 0; i < phonemes.Length - 6; i++)
+            for (var i = 0; i < phonemes.Length - 6; i++)
             {
                 // Check for 3+ character sequences that repeat
-                for (int len = 3; len <= Math.Min(6, (phonemes.Length - i) / 2); len++)
+                for (var len = 3; len <= Math.Min(6, (phonemes.Length - i) / 2); len++)
                 {
-                    bool isRepeated = true;
-                    for (int j = 0; j < len && i + len + j < phonemes.Length; j++)
+                    var isRepeated = true;
+                    for (var j = 0; j < len && i + len + j < phonemes.Length; j++)
                     {
                         if (phonemes[i + j] != phonemes[i + len + j])
                         {
@@ -722,17 +722,17 @@ namespace uPiper.Core.Phonemizers.Implementations
             var cleaned = new List<string>();
             var skipUntil = -1;
 
-            for (int i = 0; i < phonemes.Length; i++)
+            for (var i = 0; i < phonemes.Length; i++)
             {
                 if (i <= skipUntil) continue;
 
                 // Look for the start of a repeated pattern
-                for (int len = 3; len <= Math.Min(8, (phonemes.Length - i) / 2); len++)
+                for (var len = 3; len <= Math.Min(8, (phonemes.Length - i) / 2); len++)
                 {
                     if (i + len * 2 > phonemes.Length) break;
 
-                    bool isRepeated = true;
-                    for (int j = 0; j < len; j++)
+                    var isRepeated = true;
+                    for (var j = 0; j < len; j++)
                     {
                         if (phonemes[i + j] != phonemes[i + len + j])
                         {
@@ -744,7 +744,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     if (isRepeated)
                     {
                         // Add only the first occurrence
-                        for (int k = 0; k < len; k++)
+                        for (var k = 0; k < len; k++)
                         {
                             cleaned.Add(phonemes[i + k]);
                         }

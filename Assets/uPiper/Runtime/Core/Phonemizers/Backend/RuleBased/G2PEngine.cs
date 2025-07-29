@@ -52,7 +52,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
 
             word = word.ToUpper();
             var result = new List<string>();
-            
+
             // Apply prefix rules
             var (prefix, remainingWord) = ExtractPrefix(word);
             if (!string.IsNullOrEmpty(prefix))
@@ -69,10 +69,10 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             }
 
             // Process main word body
-            int i = 0;
+            var i = 0;
             while (i < word.Length)
             {
-                bool matched = false;
+                var matched = false;
 
                 // Try context rules first
                 foreach (var rule in contextRules)
@@ -108,7 +108,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                     var phoneme = ChoosePhonemeByContext(letter, word, i, defaultPhonemes);
                     result.Add(phoneme);
                 }
-                
+
                 i++;
             }
 
@@ -145,7 +145,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 ["O"] = new[] { "AA", "OW", "AH" },
                 ["U"] = new[] { "AH", "UW", "YUW" },
                 ["Y"] = new[] { "IY", "AY", "Y" },
-                
+
                 // Consonants
                 ["B"] = new[] { "B" },
                 ["C"] = new[] { "K", "S" },
@@ -183,7 +183,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 ["WH"] = new[] { "W" },
                 ["CK"] = new[] { "K" },
                 ["NG"] = new[] { "NG" },
-                
+
                 // Vowel digraphs
                 ["AI"] = new[] { "EY" },
                 ["AY"] = new[] { "EY" },
@@ -242,19 +242,19 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             contextRules = new List<PhoneticRule>
             {
                 // C before E, I, Y usually sounds like S
-                new PhoneticRule("C", new[] { "S" }, context: (word, pos) => 
+                new("C", new[] { "S" }, context: (word, pos) =>
                     pos < word.Length - 1 && "EIY".Contains(word[pos + 1])),
                 
                 // G before E, I, Y often sounds like J
-                new PhoneticRule("G", new[] { "JH" }, context: (word, pos) => 
+                new("G", new[] { "JH" }, context: (word, pos) =>
                     pos < word.Length - 1 && "EIY".Contains(word[pos + 1])),
                 
                 // Silent E at end of word
-                new PhoneticRule("E", new string[0], context: (word, pos) => 
+                new("E", new string[0], context: (word, pos) =>
                     pos == word.Length - 1 && word.Length > 2),
                 
                 // QU combination
-                new PhoneticRule("QU", new[] { "K", "W" }, graphemeLength: 2)
+                new("QU", new[] { "K", "W" }, graphemeLength: 2)
             };
         }
 
@@ -290,7 +290,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             {
                 if (word.StartsWith(prefix) && word.Length > prefix.Length)
                 {
-                    return (prefix, word.Substring(prefix.Length));
+                    return (prefix, word[prefix.Length..]);
                 }
             }
             return (null, word);
@@ -302,7 +302,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             {
                 if (word.EndsWith(suffix) && word.Length > suffix.Length)
                 {
-                    return (word.Substring(0, word.Length - suffix.Length), suffix);
+                    return (word[..^suffix.Length], suffix);
                 }
             }
             return (word, null);
@@ -311,8 +311,8 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         private void ApplyStressPatterns(List<string> phonemes)
         {
             // Simple stress pattern: stress first vowel
-            bool stressApplied = false;
-            for (int i = 0; i < phonemes.Count; i++)
+            var stressApplied = false;
+            for (var i = 0; i < phonemes.Count; i++)
             {
                 if (IsVowel(phonemes[i]) && !stressApplied)
                 {
@@ -328,9 +328,9 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
 
         private bool IsVowel(string phoneme)
         {
-            var vowelPhonemes = new HashSet<string> 
-            { 
-                "AA", "AE", "AH", "AO", "AW", "AY", "EH", "ER", 
+            var vowelPhonemes = new HashSet<string>
+            {
+                "AA", "AE", "AH", "AO", "AW", "AY", "EH", "ER",
                 "EY", "IH", "IY", "OW", "OY", "UH", "UW"
             };
             return vowelPhonemes.Contains(phoneme);
@@ -356,7 +356,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         public int GraphemeLength { get; }
         public Func<string, int, bool> Context { get; }
 
-        public PhoneticRule(string grapheme, string[] phonemes, 
+        public PhoneticRule(string grapheme, string[] phonemes,
             int graphemeLength = 1, Func<string, int, bool> context = null)
         {
             Grapheme = grapheme;

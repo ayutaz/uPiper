@@ -116,7 +116,7 @@ namespace uPiper.Tests.Runtime
 
                 // Test RuleBased with G2P fallback
                 var ruleResult = await ruleBasedPhonemizer.PhonemizeAsync(
-                    word, "en", 
+                    word, "en",
                     new PhonemeOptions { UseG2PFallback = true }
                 );
                 Assert.IsTrue(ruleResult.Success, $"RuleBased failed for OOV word '{word}'");
@@ -141,7 +141,7 @@ namespace uPiper.Tests.Runtime
                 var result = await simpleLTSPhonemizer.PhonemizeAsync(sentence, "en");
                 Assert.IsTrue(result.Success, $"Failed to phonemize sentence: {sentence}");
                 Assert.IsNotEmpty(result.Phonemes);
-                Assert.Greater(result.Phonemes.Length, sentence.Split(' ').Length, 
+                Assert.Greater(result.Phonemes.Length, sentence.Split(' ').Length,
                     "Should have more phonemes than words");
                 Debug.Log($"Sentence phonemes ({result.Phonemes.Length}): {sentence}");
             }
@@ -158,7 +158,7 @@ namespace uPiper.Tests.Runtime
                 new PhonemeOptions { Format = PhonemeFormat.ARPABET }
             );
             Assert.IsTrue(arpabetResult.Success);
-            Assert.IsTrue(arpabetResult.Phonemes[0].All(char.IsUpper), 
+            Assert.IsTrue(arpabetResult.Phonemes[0].All(char.IsUpper),
                 "ARPABET should be uppercase");
 
             // Test IPA format
@@ -167,7 +167,7 @@ namespace uPiper.Tests.Runtime
                 new PhonemeOptions { Format = PhonemeFormat.IPA }
             );
             Assert.IsTrue(ipaResult.Success);
-            Assert.IsTrue(ipaResult.Phonemes.Any(p => p.Any(c => c > 127)), 
+            Assert.IsTrue(ipaResult.Phonemes.Any(p => p.Any(c => c > 127)),
                 "IPA should contain Unicode characters");
 
             Debug.Log($"ARPABET: {string.Join(" ", arpabetResult.Phonemes)}");
@@ -185,7 +185,7 @@ namespace uPiper.Tests.Runtime
 
             // Measure SimpleLTS
             var ltsWatch = System.Diagnostics.Stopwatch.StartNew();
-            for (int i = 0; i < iterations; i++)
+            for (var i = 0; i < iterations; i++)
             {
                 await simpleLTSPhonemizer.PhonemizeAsync(testText, "en");
             }
@@ -194,7 +194,7 @@ namespace uPiper.Tests.Runtime
 
             // Measure RuleBased
             var ruleWatch = System.Diagnostics.Stopwatch.StartNew();
-            for (int i = 0; i < iterations; i++)
+            for (var i = 0; i < iterations; i++)
             {
                 await ruleBasedPhonemizer.PhonemizeAsync(testText, "en");
             }
@@ -226,7 +226,7 @@ namespace uPiper.Tests.Runtime
                 var result = await simpleLTSPhonemizer.PhonemizeAsync(text, "en");
                 Debug.Log($"{description} - {text}: Success={result.Success}, " +
                          $"Phonemes={string.Join(" ", result.Phonemes ?? new[] { "NULL" })}");
-                
+
                 // We don't require success for all special cases,
                 // but log the behavior for analysis
             }
@@ -252,7 +252,7 @@ namespace uPiper.Tests.Runtime
         public async Task TestCaching()
         {
             const string testWord = "caching";
-            
+
             // First call - should be slower
             var firstWatch = System.Diagnostics.Stopwatch.StartNew();
             var firstResult = await simpleLTSPhonemizer.PhonemizeAsync(testWord, "en");
@@ -260,10 +260,10 @@ namespace uPiper.Tests.Runtime
 
             // Subsequent calls - should be faster due to caching
             var cachedWatch = System.Diagnostics.Stopwatch.StartNew();
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
                 var cachedResult = await simpleLTSPhonemizer.PhonemizeAsync(testWord, "en");
-                Assert.AreEqual(firstResult.Phonemes, cachedResult.Phonemes, 
+                Assert.AreEqual(firstResult.Phonemes, cachedResult.Phonemes,
                     "Cached results should be consistent");
             }
             cachedWatch.Stop();

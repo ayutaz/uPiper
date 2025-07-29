@@ -19,7 +19,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         private FliteLTSEngine ltsEngine;
         private CMUDictionary cmuDictionary;
         private readonly Dictionary<string, string[]> customDictionary = new();
-        private readonly object lockObject = new object();
+        private readonly object lockObject = new();
 
         public override string Name => "FliteLTS";
         public override string Version => "1.0.0";
@@ -218,7 +218,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         private bool IsVowelPhoneme(string phoneme)
         {
             // Check if phoneme is a vowel
-            var vowelPatterns = new[] { "aa", "ae", "ah", "ao", "aw", "ay", "eh", "er", 
+            var vowelPatterns = new[] { "aa", "ae", "ah", "ao", "aw", "ay", "eh", "er",
                                        "ey", "ih", "iy", "ow", "oy", "uh", "uw" };
             return vowelPatterns.Any(v => phoneme.ToLower().StartsWith(v));
         }
@@ -232,7 +232,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         private int[] ConvertToPhonemeIds(List<string> phonemes)
         {
             var ids = new int[phonemes.Count];
-            for (int i = 0; i < phonemes.Count; i++)
+            for (var i = 0; i < phonemes.Count; i++)
             {
                 ids[i] = GetPhonemeId(phonemes[i]);
             }

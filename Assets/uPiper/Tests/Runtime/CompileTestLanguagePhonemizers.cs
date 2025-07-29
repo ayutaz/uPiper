@@ -9,24 +9,24 @@ namespace uPiper.Tests.Runtime
     /// </summary>
     public class CompileTestLanguagePhonemizers : MonoBehaviour
     {
-        void Start()
+        private void Start()
         {
             try
             {
                 // Test that base class is accessible
-                Type baseType = typeof(PhonemizerBackendBase);
+                var baseType = typeof(PhonemizerBackendBase);
                 Debug.Log($"PhonemizerBackendBase found: {baseType.FullName}");
-                
+
                 // Test proxy classes
                 var chinese = new ChinesePhonemizer();
                 Debug.Log($"Chinese proxy created: {chinese.Name}");
-                
+
                 var korean = new KoreanPhonemizer();
                 Debug.Log($"Korean proxy created: {korean.Name}");
-                
+
                 var spanish = new SpanishPhonemizer();
                 Debug.Log($"Spanish proxy created: {spanish.Name}");
-                
+
                 Debug.Log("All language phonemizers compiled successfully!");
             }
             catch (Exception ex)

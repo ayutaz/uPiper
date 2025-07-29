@@ -17,7 +17,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         private CMUDictionary cmuDictionary;
         private G2PEngine g2pEngine;
         private TextNormalizer textNormalizer;
-        
+
         /// <inheritdoc/>
         public override string Name => "RuleBased";
 
@@ -50,7 +50,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 g2pEngine.Initialize();
 
                 Priority = 100; // High priority as default backend
-                
+
                 return true;
             }
             catch (Exception ex)
@@ -68,7 +68,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             CancellationToken cancellationToken = default)
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            
+
             try
             {
                 EnsureInitialized();
@@ -81,8 +81,8 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 options ??= PhonemeOptions.Default;
 
                 // Normalize text
-                var normalizedText = options.NormalizeText 
-                    ? textNormalizer.Normalize(text) 
+                var normalizedText = options.NormalizeText
+                    ? textNormalizer.Normalize(text)
                     : text;
 
                 // Tokenize into words
@@ -149,13 +149,13 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         public override long GetMemoryUsage()
         {
             long total = 0;
-            
+
             if (cmuDictionary != null)
                 total += cmuDictionary.GetMemoryUsage();
-            
+
             if (g2pEngine != null)
                 total += g2pEngine.GetMemoryUsage();
-            
+
             return total;
         }
 
@@ -205,7 +205,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         private PhonemeToken CreateSilenceToken(string punctuation)
         {
             // Map punctuation to silence duration
-            float duration = punctuation switch
+            var duration = punctuation switch
             {
                 "." => 0.3f,
                 "," => 0.15f,
@@ -233,10 +233,10 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 var token = new PhonemeToken { Phoneme = phoneme };
 
                 // Extract stress level from ARPABET (e.g., "AH0", "AH1", "AH2")
-                if (char.IsDigit(phoneme[phoneme.Length - 1]))
+                if (char.IsDigit(phoneme[^1]))
                 {
-                    token.StressLevel = int.Parse(phoneme[phoneme.Length - 1].ToString());
-                    token.Phoneme = phoneme.Substring(0, phoneme.Length - 1);
+                    token.StressLevel = int.Parse(phoneme[^1].ToString());
+                    token.Phoneme = phoneme[..^1];
                 }
 
                 tokens.Add(token);
@@ -261,10 +261,10 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 else
                 {
                     // Convert based on format preference
-                    var phoneme = options.Format == PhonemeFormat.ARPABET 
+                    var phoneme = options.Format == PhonemeFormat.ARPABET
                         ? token.Phoneme + (options.IncludeStress ? token.StressLevel.ToString() : "")
                         : ConvertToPiperFormat(token.Phoneme);
-                    
+
                     phonemes.Add(phoneme);
                     phonemeIds.Add(GetPhonemeId(phoneme));
                 }
@@ -307,16 +307,31 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         // Mapping tables (simplified - should be loaded from config)
         private static readonly Dictionary<string, string> ArpabetToPiperMap = new()
         {
-            ["AA"] = "ɑ", ["AE"] = "æ", ["AH"] = "ʌ", ["AO"] = "ɔ",
-            ["AW"] = "aʊ", ["AY"] = "aɪ", ["EH"] = "ɛ", ["ER"] = "ɝ",
-            ["EY"] = "eɪ", ["IH"] = "ɪ", ["IY"] = "i", ["OW"] = "oʊ",
-            ["OY"] = "ɔɪ", ["UH"] = "ʊ", ["UW"] = "u",
+            ["AA"] = "ɑ",
+            ["AE"] = "æ",
+            ["AH"] = "ʌ",
+            ["AO"] = "ɔ",
+            ["AW"] = "aʊ",
+            ["AY"] = "aɪ",
+            ["EH"] = "ɛ",
+            ["ER"] = "ɝ",
+            ["EY"] = "eɪ",
+            ["IH"] = "ɪ",
+            ["IY"] = "i",
+            ["OW"] = "oʊ",
+            ["OY"] = "ɔɪ",
+            ["UH"] = "ʊ",
+            ["UW"] = "u",
             // Add more mappings as needed
         };
 
         private static readonly Dictionary<string, int> PhonemeToIdMap = new()
         {
-            ["_"] = 0, ["ɑ"] = 1, ["æ"] = 2, ["ʌ"] = 3, ["ɔ"] = 4,
+            ["_"] = 0,
+            ["ɑ"] = 1,
+            ["æ"] = 2,
+            ["ʌ"] = 3,
+            ["ɔ"] = 4,
             // Add complete mapping based on model vocabulary
         };
     }

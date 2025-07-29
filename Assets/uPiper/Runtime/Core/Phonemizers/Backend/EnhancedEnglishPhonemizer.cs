@@ -6,9 +6,9 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using uPiper.Core.Phonemizers.Backend.RuleBased;
-using uPiper.Core.Phonemizers.Backend.G2P;
 using uPiper.Core.Phonemizers.Backend.Disambiguation;
+using uPiper.Core.Phonemizers.Backend.G2P;
+using uPiper.Core.Phonemizers.Backend.RuleBased;
 using Debug = UnityEngine.Debug;
 
 namespace uPiper.Core.Phonemizers.Backend
@@ -24,7 +24,7 @@ namespace uPiper.Core.Phonemizers.Backend
         private HomographResolver homographResolver;
         private readonly Dictionary<string, string[]> customDictionary = new();
         private readonly Dictionary<string, string[]> contractionsDict;
-        private readonly object lockObject = new object();
+        private readonly object lockObject = new();
 
         public override string Name => "EnhancedEnglish";
         public override string Version => "2.0.0";
@@ -117,7 +117,7 @@ namespace uPiper.Core.Phonemizers.Backend
             {
                 // Normalize text
                 text = NormalizeText(text);
-                
+
                 // Tokenize
                 var tokens = TokenizeAdvanced(text);
                 var allPhonemes = new List<string>();
@@ -134,10 +134,9 @@ namespace uPiper.Core.Phonemizers.Backend
                     }
 
                     // Try multiple sources in order
-                    string[] phonemes = null;
-                    
+
                     // 1. Check contractions
-                    if (contractionsDict.TryGetValue(token, out phonemes))
+                    if (contractionsDict.TryGetValue(token, out var phonemes))
                     {
                         AddPhonemes(phonemes, allPhonemes, allDurations);
                         continue;
@@ -151,7 +150,7 @@ namespace uPiper.Core.Phonemizers.Backend
                     }
 
                     // 3. Check homograph resolver (context-aware)
-                    if (homographResolver != null && 
+                    if (homographResolver != null &&
                         homographResolver.TryResolve(token, text, out phonemes))
                     {
                         AddPhonemes(phonemes, allPhonemes, allDurations);
@@ -269,21 +268,21 @@ namespace uPiper.Core.Phonemizers.Backend
                 ["s$"] = ("s", new[] { "S" }),
                 ["es$"] = ("es", new[] { "IH0", "Z" }),
                 ["'s$"] = ("'s", new[] { "S" }),
-                
+
                 // Past tense
                 ["ed$"] = ("ed", new[] { "D" }),
                 ["ied$"] = ("ied", new[] { "IY0", "D" }),
-                
+
                 // Present participle
                 ["ing$"] = ("ing", new[] { "IH0", "NG" }),
-                
+
                 // Comparative/superlative
                 ["er$"] = ("er", new[] { "ER0" }),
                 ["est$"] = ("est", new[] { "IH0", "S", "T" }),
-                
+
                 // Adverbs
                 ["ly$"] = ("ly", new[] { "L", "IY0" }),
-                
+
                 // Common noun suffixes
                 ["tion$"] = ("tion", new[] { "SH", "AH0", "N" }),
                 ["sion$"] = ("sion", new[] { "ZH", "AH0", "N" }),
@@ -315,13 +314,13 @@ namespace uPiper.Core.Phonemizers.Backend
         {
             var phonemes = new List<string>();
             var lowerWord = word.ToLower();
-            
-            for (int i = 0; i < lowerWord.Length; i++)
+
+            for (var i = 0; i < lowerWord.Length; i++)
             {
                 var context = GetContext(lowerWord, i);
                 var letterPhonemes = GetLetterPhonemesInContext(context);
                 phonemes.AddRange(letterPhonemes);
-                
+
                 // Skip processed characters
                 i += context.ProcessedLength - 1;
             }
@@ -343,12 +342,12 @@ namespace uPiper.Core.Phonemizers.Backend
             if (position < word.Length - 1)
             {
                 context.NextLetter = word[position + 1];
-                
+
                 if (position < word.Length - 2)
                 {
                     context.Digraph = word.Substring(position, 2);
                     context.Trigraph = word.Substring(position, 3);
-                    
+
                     if (position < word.Length - 3)
                     {
                         context.Quadgraph = word.Substring(position, 4);
@@ -368,14 +367,14 @@ namespace uPiper.Core.Phonemizers.Backend
         private string[] GetLetterPhonemesInContext(LetterContext ctx)
         {
             // Check for special patterns first
-            
+
             // Common endings
             if (ctx.Quadgraph == "tion" && ctx.Position == ctx.Word.Length - 4)
             {
                 ctx.ProcessedLength = 4;
                 return new[] { "SH", "AH0", "N" };
             }
-            
+
             if (ctx.Quadgraph == "sion" && ctx.Position == ctx.Word.Length - 4)
             {
                 ctx.ProcessedLength = 4;
@@ -522,11 +521,11 @@ namespace uPiper.Core.Phonemizers.Backend
         {
             // Check for CVCe pattern (consonant-vowel-consonant-e)
             if (word.Length > vowelPosition + 2 &&
-                word[word.Length - 1] == 'e' &&
+                word[^1] == 'e' &&
                 IsConsonant(word[vowelPosition + 1]))
             {
                 // Make sure there's only one consonant between vowel and E
-                for (int i = vowelPosition + 2; i < word.Length - 1; i++)
+                for (var i = vowelPosition + 2; i < word.Length - 1; i++)
                 {
                     if (!IsConsonant(word[i]))
                         return false;
@@ -586,18 +585,18 @@ namespace uPiper.Core.Phonemizers.Backend
             // Vowels typically longer than consonants
             if (IsVowelPhoneme(phoneme))
                 return 0.08f;
-            
+
             // Stop consonants shorter
             if (IsStopConsonant(phoneme))
                 return 0.04f;
-            
+
             // Default consonant duration
             return 0.06f;
         }
 
         private bool IsVowelPhoneme(string phoneme)
         {
-            return phoneme.Contains("AA") || phoneme.Contains("AE") || 
+            return phoneme.Contains("AA") || phoneme.Contains("AE") ||
                    phoneme.Contains("AH") || phoneme.Contains("AO") ||
                    phoneme.Contains("AW") || phoneme.Contains("AY") ||
                    phoneme.Contains("EH") || phoneme.Contains("ER") ||
@@ -609,7 +608,7 @@ namespace uPiper.Core.Phonemizers.Backend
 
         private bool IsStopConsonant(string phoneme)
         {
-            return phoneme == "P" || phoneme == "B" || 
+            return phoneme == "P" || phoneme == "B" ||
                    phoneme == "T" || phoneme == "D" ||
                    phoneme == "K" || phoneme == "G";
         }
@@ -619,8 +618,8 @@ namespace uPiper.Core.Phonemizers.Backend
             // Enhanced tokenization that preserves contractions
             var tokens = new List<string>();
             var currentToken = new StringBuilder();
-            
-            foreach (char c in text)
+
+            foreach (var c in text)
             {
                 if (char.IsLetter(c) || c == '\'')
                 {
@@ -633,19 +632,19 @@ namespace uPiper.Core.Phonemizers.Backend
                         tokens.Add(currentToken.ToString());
                         currentToken.Clear();
                     }
-                    
+
                     if (IsPunctuation(c.ToString()))
                     {
                         tokens.Add(c.ToString());
                     }
                 }
             }
-            
+
             if (currentToken.Length > 0)
             {
                 tokens.Add(currentToken.ToString());
             }
-            
+
             return tokens.ToArray();
         }
 
@@ -659,7 +658,7 @@ namespace uPiper.Core.Phonemizers.Backend
                     while ((line = await reader.ReadLineAsync()) != null)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        
+
                         // Format: WORD phoneme1 phoneme2 ...
                         var parts = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
                         if (parts.Length >= 2)
@@ -670,7 +669,7 @@ namespace uPiper.Core.Phonemizers.Backend
                         }
                     }
                 }
-                
+
                 Debug.Log($"Loaded {customDictionary.Count} custom pronunciations");
             }
             catch (Exception ex)
@@ -695,15 +694,14 @@ namespace uPiper.Core.Phonemizers.Backend
             {
                 // Extract dictionary data for training
                 var trainingData = new Dictionary<string, string[]>();
-                
+
                 // Use reflection to access CMU dictionary data
                 var dictField = cmuDictionary.GetType()
                     .GetField("pronunciations", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                
+
                 if (dictField != null)
                 {
-                    var dictData = dictField.GetValue(cmuDictionary) as Dictionary<string, string[]>;
-                    if (dictData != null)
+                    if (dictField.GetValue(cmuDictionary) is Dictionary<string, string[]> dictData)
                     {
                         trainingData = new Dictionary<string, string[]>(dictData);
                     }
@@ -731,7 +729,7 @@ namespace uPiper.Core.Phonemizers.Backend
             long total = 0;
             if (cmuDictionary != null)
                 total += cmuDictionary.GetMemoryUsage();
-            
+
             // Estimate custom dictionary size
             foreach (var kvp in customDictionary)
             {
@@ -739,13 +737,13 @@ namespace uPiper.Core.Phonemizers.Backend
                 total += kvp.Value.Sum(p => p.Length * 2);
                 total += 24;
             }
-            
+
             // G2P model memory (rough estimate)
             if (g2pModel != null && g2pModel.IsInitialized)
             {
                 total += 2 * 1024 * 1024; // ~2MB for n-gram models
             }
-            
+
             return total;
         }
 
@@ -770,7 +768,7 @@ namespace uPiper.Core.Phonemizers.Backend
             {
                 cmuDictionary?.Dispose();
                 cmuDictionary = null;
-                
+
                 g2pModel = null;
                 homographResolver = null;
                 customDictionary.Clear();
@@ -816,7 +814,7 @@ namespace uPiper.Core.Phonemizers.Backend
         private int[] ConvertToPhonemeIds(List<string> phonemes)
         {
             var ids = new int[phonemes.Count];
-            for (int i = 0; i < phonemes.Count; i++)
+            for (var i = 0; i < phonemes.Count; i++)
             {
                 // Simple ID mapping - should match your model's vocabulary
                 ids[i] = GetPhonemeId(phonemes[i]);

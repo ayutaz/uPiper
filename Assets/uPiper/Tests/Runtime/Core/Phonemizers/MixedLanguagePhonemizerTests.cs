@@ -44,7 +44,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Arrange
             await phonemizer.InitializeAsync();
             var text = "これはtest文章です。This is a mixed sentence.";
-            
+
             // Act
             var result = await phonemizer.PhonemizeAsync(text, "mixed");
 
@@ -54,12 +54,12 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsNotNull(result.Phonemes);
             Assert.Greater(result.Phonemes.Length, 0);
             Assert.AreEqual("mixed", result.Language);
-            
+
             // Check metadata
             Assert.IsNotNull(result.Metadata);
             Assert.IsTrue(result.Metadata.ContainsKey("segments"));
             Assert.IsTrue(result.Metadata.ContainsKey("backends_used"));
-            
+
             Debug.Log($"Mixed phonemes: {string.Join(" ", result.Phonemes)}");
             Debug.Log($"Backends used: {string.Join(", ", (string[])result.Metadata["backends_used"])}");
         }
@@ -70,7 +70,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Arrange
             await phonemizer.InitializeAsync();
             var text = "日本語のテキストです";
-            
+
             // Act
             var result = await phonemizer.PhonemizeAsync(text, "ja");
 
@@ -78,7 +78,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Success);
             Assert.Greater(result.Phonemes.Length, 0);
-            
+
             Debug.Log($"Japanese phonemes: {string.Join(" ", result.Phonemes)}");
         }
 
@@ -88,7 +88,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Arrange
             await phonemizer.InitializeAsync();
             var text = "This is English text";
-            
+
             // Act
             var result = await phonemizer.PhonemizeAsync(text, "en");
 
@@ -96,7 +96,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Success);
             Assert.Greater(result.Phonemes.Length, 0);
-            
+
             Debug.Log($"English phonemes: {string.Join(" ", result.Phonemes)}");
         }
 
@@ -106,7 +106,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Arrange
             await phonemizer.InitializeAsync();
             var text = "Hello! こんにちは。How are you? 元気ですか？";
-            
+
             // Act
             var result = await phonemizer.PhonemizeAsync(text);
 
@@ -114,7 +114,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Success);
             Assert.Greater(result.Phonemes.Length, 0);
-            
+
             // Should contain silence markers for punctuation
             Assert.Contains("_", result.Phonemes);
         }
@@ -124,7 +124,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             // Arrange
             var text = "Hello world! これは日本語です。Mixed text example.";
-            
+
             // Act
             var stats = phonemizer.AnalyzeText(text);
 
@@ -133,7 +133,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsTrue(stats.ContainsKey("segment_count"));
             Assert.IsTrue(stats.ContainsKey("language_segments"));
             Assert.IsTrue(stats.ContainsKey("primary_language"));
-            
+
             Debug.Log($"Text analysis: segment_count={stats["segment_count"]}, primary_language={stats["primary_language"]}");
         }
 
@@ -142,7 +142,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             // Arrange
             await phonemizer.InitializeAsync();
-            
+
             // Act
             var result = await phonemizer.PhonemizeAsync("");
 

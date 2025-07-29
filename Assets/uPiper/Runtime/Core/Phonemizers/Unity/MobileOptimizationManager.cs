@@ -13,21 +13,21 @@ namespace uPiper.Core.Phonemizers.Unity
     {
         // private PhonemizerSettings settings;
         private UnityPhonemizerService phonemizerService;
-        
+
         [Header("Memory Management")]
-        [SerializeField] private float memoryCheckInterval = 30f;
-        [SerializeField] private float lowMemoryThresholdMB = 100f;
-        [SerializeField] private float criticalMemoryThresholdMB = 50f;
-        
+        [SerializeField] private readonly float memoryCheckInterval = 30f;
+        [SerializeField] private readonly float lowMemoryThresholdMB = 100f;
+        [SerializeField] private readonly float criticalMemoryThresholdMB = 50f;
+
         [Header("Battery Optimization")]
-        [SerializeField] private bool throttleOnLowBattery = true;
-        [SerializeField] private float lowBatteryThreshold = 0.2f;
-        [SerializeField] private bool pauseOnBatteryLow = false;
-        
+        [SerializeField] private readonly bool throttleOnLowBattery = true;
+        [SerializeField] private readonly float lowBatteryThreshold = 0.2f;
+        [SerializeField] private readonly bool pauseOnBatteryLow = false;
+
         [Header("Thermal Management")]
-        [SerializeField] private bool enableThermalThrottling = true;
-        [SerializeField] private float thermalCheckInterval = 10f;
-        
+        [SerializeField] private readonly bool enableThermalThrottling = true;
+        [SerializeField] private readonly float thermalCheckInterval = 10f;
+
         private Coroutine memoryMonitorCoroutine;
         private Coroutine thermalMonitorCoroutine;
         private bool isLowMemoryMode = false;
@@ -38,7 +38,7 @@ namespace uPiper.Core.Phonemizers.Unity
         {
             phonemizerService = UnityPhonemizerService.Instance;
             LoadSettings();
-            
+
             if (Application.isMobilePlatform)
             {
                 StartMobileOptimizations();
@@ -62,7 +62,7 @@ namespace uPiper.Core.Phonemizers.Unity
         private void StartMobileOptimizations()
         {
             memoryMonitorCoroutine = StartCoroutine(MonitorMemory());
-            
+
             if (enableThermalThrottling)
             {
                 thermalMonitorCoroutine = StartCoroutine(MonitorThermalState());
@@ -77,15 +77,15 @@ namespace uPiper.Core.Phonemizers.Unity
         private IEnumerator MonitorMemory()
         {
             var wait = new WaitForSeconds(memoryCheckInterval);
-            
+
             while (true)
             {
                 yield return wait;
-                
-                long usedMemory = Profiler.GetTotalAllocatedMemoryLong();
-                long totalMemory = SystemInfo.systemMemorySize * 1024L * 1024L;
-                long availableMemory = totalMemory - usedMemory;
-                float availableMemoryMB = availableMemory / (1024f * 1024f);
+
+                var usedMemory = Profiler.GetTotalAllocatedMemoryLong();
+                var totalMemory = SystemInfo.systemMemorySize * 1024L * 1024L;
+                var availableMemory = totalMemory - usedMemory;
+                var availableMemoryMB = availableMemory / (1024f * 1024f);
 
                 if (availableMemoryMB < criticalMemoryThresholdMB)
                 {
@@ -108,13 +108,13 @@ namespace uPiper.Core.Phonemizers.Unity
             {
                 isLowMemoryMode = true;
                 Debug.Log("Entering low memory mode");
-                
+
                 // Reduce cache size
                 // if (settings.ReduceCacheOnLowMemory)
                 {
                     // phonemizerService.ClearCache();
                 }
-                
+
                 // Reduce concurrent operations
                 ApplyMemoryOptimizations();
             }
@@ -123,12 +123,12 @@ namespace uPiper.Core.Phonemizers.Unity
         private void OnCriticalMemory()
         {
             Debug.LogWarning("Critical memory state detected");
-            
+
             // Aggressive memory cleanup
             // phonemizerService.ClearCache();
             Resources.UnloadUnusedAssets();
             System.GC.Collect();
-            
+
             // Pause non-essential operations
             if (pauseOnBatteryLow)
             {
@@ -140,7 +140,7 @@ namespace uPiper.Core.Phonemizers.Unity
         {
             isLowMemoryMode = false;
             Debug.Log("Memory recovered, restoring normal operations");
-            
+
             // Restore normal operations
             RestoreNormalOperations();
         }
@@ -148,14 +148,14 @@ namespace uPiper.Core.Phonemizers.Unity
         private IEnumerator MonitorThermalState()
         {
             var wait = new WaitForSeconds(thermalCheckInterval);
-            
+
             while (true)
             {
                 yield return wait;
-                
+
                 // Unity doesn't have direct thermal API, so we use heuristics
-                float temperature = EstimateDeviceTemperature();
-                
+                var temperature = EstimateDeviceTemperature();
+
                 if (temperature > 0.8f && !isThermalThrottled)
                 {
                     OnThermalThrottling();
@@ -170,10 +170,10 @@ namespace uPiper.Core.Phonemizers.Unity
         private float EstimateDeviceTemperature()
         {
             // Heuristic based on frame rate and CPU usage
-            float targetFPS = Application.targetFrameRate > 0 ? Application.targetFrameRate : 60f;
-            float currentFPS = 1f / Time.smoothDeltaTime;
-            float fpsRatio = currentFPS / targetFPS;
-            
+            var targetFPS = Application.targetFrameRate > 0 ? Application.targetFrameRate : 60f;
+            var currentFPS = 1f / Time.smoothDeltaTime;
+            var fpsRatio = currentFPS / targetFPS;
+
             // If FPS drops significantly, assume thermal throttling
             return 1f - Mathf.Clamp01(fpsRatio);
         }
@@ -182,7 +182,7 @@ namespace uPiper.Core.Phonemizers.Unity
         {
             isThermalThrottled = true;
             Debug.Log("Thermal throttling detected, reducing workload");
-            
+
             // Reduce processing intensity
             ApplyThermalOptimizations();
         }
@@ -191,19 +191,19 @@ namespace uPiper.Core.Phonemizers.Unity
         {
             isThermalThrottled = false;
             Debug.Log("Thermal state recovered");
-            
+
             RestoreNormalOperations();
         }
 
         private IEnumerator MonitorBatteryLevel()
         {
             var wait = new WaitForSeconds(60f); // Check every minute
-            
+
             while (true)
             {
                 yield return wait;
-                
-                float batteryLevel = SystemInfo.batteryLevel;
+
+                var batteryLevel = SystemInfo.batteryLevel;
                 if (batteryLevel >= 0) // Returns -1 if not supported
                 {
                     if (batteryLevel <= lowBatteryThreshold && lastBatteryLevel > lowBatteryThreshold)
@@ -214,7 +214,7 @@ namespace uPiper.Core.Phonemizers.Unity
                     {
                         OnBatteryRecovered();
                     }
-                    
+
                     lastBatteryLevel = batteryLevel;
                 }
             }
@@ -223,7 +223,7 @@ namespace uPiper.Core.Phonemizers.Unity
         private void OnLowBattery()
         {
             Debug.Log("Low battery detected, applying power saving optimizations");
-            
+
             if (pauseOnBatteryLow)
             {
                 phonemizerService.enabled = false;
@@ -237,7 +237,7 @@ namespace uPiper.Core.Phonemizers.Unity
         private void OnBatteryRecovered()
         {
             Debug.Log("Battery level recovered");
-            
+
             phonemizerService.enabled = true;
             RestoreNormalOperations();
         }
@@ -254,7 +254,7 @@ namespace uPiper.Core.Phonemizers.Unity
             // Reduce workload to prevent overheating
             var poolSize = 1;
             UpdatePhonemizerPoolSize(poolSize);
-            
+
             // Add delays between operations
             Time.fixedDeltaTime = 0.033f; // Reduce to 30 FPS
         }
@@ -263,7 +263,7 @@ namespace uPiper.Core.Phonemizers.Unity
         {
             // Minimize battery usage
             UpdatePhonemizerPoolSize(1);
-            
+
             // Disable non-essential features
             // settings.EnableBatchProcessing = false;
         }
@@ -305,7 +305,7 @@ namespace uPiper.Core.Phonemizers.Unity
             {
                 StopCoroutine(memoryMonitorCoroutine);
             }
-            
+
             if (thermalMonitorCoroutine != null)
             {
                 StopCoroutine(thermalMonitorCoroutine);

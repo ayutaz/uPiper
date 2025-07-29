@@ -39,7 +39,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
 
             while (context.Position < normalizedWord.Length)
             {
-                bool ruleApplied = false;
+                var ruleApplied = false;
 
                 // Try to apply rules in order
                 foreach (var rule in rules)
@@ -77,76 +77,77 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         private void InitializeRules()
         {
             // Initialize English LTS rules
-            var englishRules = new List<LTSRule>();
+            var englishRules = new List<LTSRule>
+            {
+                // Consonant clusters
+                new LTSRule("ch", "ch", null, null),
+                new LTSRule("sh", "sh", null, null),
+                new LTSRule("th", "th", null, null), // simplified - should distinguish voiced/unvoiced
+                new LTSRule("ph", "f", null, null),
+                new LTSRule("gh", "", null, null), // often silent
+                new LTSRule("ck", "k", null, null),
+                new LTSRule("qu", "k w", null, null),
+                new LTSRule("wh", "w", null, null),
+                new LTSRule("wr", "r", null, null),
+                new LTSRule("kn", "n", null, null),
+                new LTSRule("gn", "n", null, null),
+                new LTSRule("ps", "s", null, null),
+                new LTSRule("ng", "ng", null, null),
 
-            // Consonant clusters
-            englishRules.Add(new LTSRule("ch", "ch", null, null));
-            englishRules.Add(new LTSRule("sh", "sh", null, null));
-            englishRules.Add(new LTSRule("th", "th", null, null)); // simplified - should distinguish voiced/unvoiced
-            englishRules.Add(new LTSRule("ph", "f", null, null));
-            englishRules.Add(new LTSRule("gh", "", null, null)); // often silent
-            englishRules.Add(new LTSRule("ck", "k", null, null));
-            englishRules.Add(new LTSRule("qu", "k w", null, null));
-            englishRules.Add(new LTSRule("wh", "w", null, null));
-            englishRules.Add(new LTSRule("wr", "r", null, null));
-            englishRules.Add(new LTSRule("kn", "n", null, null));
-            englishRules.Add(new LTSRule("gn", "n", null, null));
-            englishRules.Add(new LTSRule("ps", "s", null, null));
-            englishRules.Add(new LTSRule("ng", "ng", null, null));
+                // Vowel digraphs
+                new LTSRule("ee", "iy", null, null),
+                new LTSRule("ea", "iy", null, null),
+                new LTSRule("ie", "iy", null, null),
+                new LTSRule("ei", "ey", null, null),
+                new LTSRule("ay", "ey", null, null),
+                new LTSRule("ai", "ey", null, null),
+                new LTSRule("oa", "ow", null, null),
+                new LTSRule("ow", "ow", null, null),
+                new LTSRule("ou", "aw", null, null),
+                new LTSRule("oo", "uw", null, null),
+                new LTSRule("oi", "oy", null, null),
+                new LTSRule("oy", "oy", null, null),
+                new LTSRule("au", "ao", null, null),
+                new LTSRule("aw", "ao", null, null),
 
-            // Vowel digraphs
-            englishRules.Add(new LTSRule("ee", "iy", null, null));
-            englishRules.Add(new LTSRule("ea", "iy", null, null));
-            englishRules.Add(new LTSRule("ie", "iy", null, null));
-            englishRules.Add(new LTSRule("ei", "ey", null, null));
-            englishRules.Add(new LTSRule("ay", "ey", null, null));
-            englishRules.Add(new LTSRule("ai", "ey", null, null));
-            englishRules.Add(new LTSRule("oa", "ow", null, null));
-            englishRules.Add(new LTSRule("ow", "ow", null, null));
-            englishRules.Add(new LTSRule("ou", "aw", null, null));
-            englishRules.Add(new LTSRule("oo", "uw", null, null));
-            englishRules.Add(new LTSRule("oi", "oy", null, null));
-            englishRules.Add(new LTSRule("oy", "oy", null, null));
-            englishRules.Add(new LTSRule("au", "ao", null, null));
-            englishRules.Add(new LTSRule("aw", "ao", null, null));
+                // Context-dependent rules
+                new LTSRule("c", "s", null, "e|i|y"),  // c -> s before e, i, y
+                new LTSRule("c", "k", null, null),     // c -> k otherwise
+                new LTSRule("g", "jh", null, "e|i|y"), // g -> j before e, i, y (simplified)
+                new LTSRule("g", "g", null, null),     // g -> g otherwise
+                new LTSRule("x", "k s", null, null),   // x -> ks
+                new LTSRule("y", "ay", "\\b", null),   // y -> ay at word start
+                new LTSRule("y", "iy", null, "\\b"),   // y -> iy at word end
+                new LTSRule("y", "ih", null, null),    // y -> ih otherwise
 
-            // Context-dependent rules
-            englishRules.Add(new LTSRule("c", "s", null, "e|i|y"));  // c -> s before e, i, y
-            englishRules.Add(new LTSRule("c", "k", null, null));     // c -> k otherwise
-            englishRules.Add(new LTSRule("g", "jh", null, "e|i|y")); // g -> j before e, i, y (simplified)
-            englishRules.Add(new LTSRule("g", "g", null, null));     // g -> g otherwise
-            englishRules.Add(new LTSRule("x", "k s", null, null));   // x -> ks
-            englishRules.Add(new LTSRule("y", "ay", "\\b", null));   // y -> ay at word start
-            englishRules.Add(new LTSRule("y", "iy", null, "\\b"));   // y -> iy at word end
-            englishRules.Add(new LTSRule("y", "ih", null, null));    // y -> ih otherwise
+                // Silent e rules
+                new LTSRule("e", "", "[a-z]", "\\b"),  // silent e at end after consonant
 
-            // Silent e rules
-            englishRules.Add(new LTSRule("e", "", "[a-z]", "\\b"));  // silent e at end after consonant
+                // Single consonants
+                new LTSRule("b", "b", null, null),
+                new LTSRule("d", "d", null, null),
+                new LTSRule("f", "f", null, null),
+                new LTSRule("h", "hh", null, null),
+                new LTSRule("j", "jh", null, null),
+                new LTSRule("k", "k", null, null),
+                new LTSRule("l", "l", null, null),
+                new LTSRule("m", "m", null, null),
+                new LTSRule("n", "n", null, null),
+                new LTSRule("p", "p", null, null),
+                new LTSRule("r", "r", null, null),
+                new LTSRule("s", "s", null, null),
+                new LTSRule("t", "t", null, null),
+                new LTSRule("v", "v", null, null),
+                new LTSRule("w", "w", null, null),
+                new LTSRule("z", "z", null, null),
 
-            // Single consonants
-            englishRules.Add(new LTSRule("b", "b", null, null));
-            englishRules.Add(new LTSRule("d", "d", null, null));
-            englishRules.Add(new LTSRule("f", "f", null, null));
-            englishRules.Add(new LTSRule("h", "hh", null, null));
-            englishRules.Add(new LTSRule("j", "jh", null, null));
-            englishRules.Add(new LTSRule("k", "k", null, null));
-            englishRules.Add(new LTSRule("l", "l", null, null));
-            englishRules.Add(new LTSRule("m", "m", null, null));
-            englishRules.Add(new LTSRule("n", "n", null, null));
-            englishRules.Add(new LTSRule("p", "p", null, null));
-            englishRules.Add(new LTSRule("r", "r", null, null));
-            englishRules.Add(new LTSRule("s", "s", null, null));
-            englishRules.Add(new LTSRule("t", "t", null, null));
-            englishRules.Add(new LTSRule("v", "v", null, null));
-            englishRules.Add(new LTSRule("w", "w", null, null));
-            englishRules.Add(new LTSRule("z", "z", null, null));
-
-            // Single vowels (default rules)
-            englishRules.Add(new LTSRule("a", "ae", null, null));
-            englishRules.Add(new LTSRule("e", "eh", null, null));
-            englishRules.Add(new LTSRule("i", "ih", null, null));
-            englishRules.Add(new LTSRule("o", "aa", null, null));
-            englishRules.Add(new LTSRule("u", "ah", null, null));
+                // Single vowels (default rules)
+                new LTSRule("a", "ae", null, null),
+                new LTSRule("e", "eh", null, null),
+                new LTSRule("i", "ih", null, null),
+                new LTSRule("o", "aa", null, null),
+                new LTSRule("u", "ah", null, null)
+            };
 
             // Sort rules by length (longer patterns first)
             englishRules.Sort((a, b) => b.Pattern.Length.CompareTo(a.Pattern.Length));
@@ -166,12 +167,12 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         {
             var englishInventory = new PhonemeInventory
             {
-                Vowels = new HashSet<string> { "aa", "ae", "ah", "ao", "aw", "ax", "ay", 
-                                              "eh", "er", "ey", "ih", "iy", "ow", "oy", 
+                Vowels = new HashSet<string> { "aa", "ae", "ah", "ao", "aw", "ax", "ay",
+                                              "eh", "er", "ey", "ih", "iy", "ow", "oy",
                                               "uh", "uw", "ux" },
-                Consonants = new HashSet<string> { "b", "ch", "d", "dh", "f", "g", "hh", 
-                                                  "jh", "k", "l", "m", "n", "ng", "p", 
-                                                  "r", "s", "sh", "t", "th", "v", "w", 
+                Consonants = new HashSet<string> { "b", "ch", "d", "dh", "f", "g", "hh",
+                                                  "jh", "k", "l", "m", "n", "ng", "p",
+                                                  "r", "s", "sh", "t", "th", "v", "w",
                                                   "y", "z", "zh" },
                 Silence = new HashSet<string> { "pau", "sil" }
             };
@@ -225,7 +226,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         {
             var processed = new List<string>();
 
-            for (int i = 0; i < phonemes.Count; i++)
+            for (var i = 0; i < phonemes.Count; i++)
             {
                 var phoneme = phonemes[i];
 
@@ -355,18 +356,18 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
 
             public string GetLeft(int length)
             {
-                int start = Math.Max(0, Position - length);
-                int len = Position - start;
+                var start = Math.Max(0, Position - length);
+                var len = Position - start;
                 return len > 0 ? word.Substring(start, len) : "\\b";
             }
 
             public string GetRight(int skip, int length)
             {
-                int start = Position + skip;
+                var start = Position + skip;
                 if (start >= word.Length)
                     return "\\b";
 
-                int len = Math.Min(length, word.Length - start);
+                var len = Math.Min(length, word.Length - start);
                 return word.Substring(start, len);
             }
 
@@ -387,8 +388,8 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
 
             public bool IsValid(string phoneme)
             {
-                return Vowels.Contains(phoneme) || 
-                       Consonants.Contains(phoneme) || 
+                return Vowels.Contains(phoneme) ||
+                       Consonants.Contains(phoneme) ||
                        Silence.Contains(phoneme);
             }
         }

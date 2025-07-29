@@ -44,7 +44,7 @@ namespace uPiper.Core.Phonemizers.Backend
                 Debug.Log($"Initializing {Name} backend...");
                 var result = await InitializeInternalAsync(options, cancellationToken);
                 isInitialized = result;
-                
+
                 if (result)
                 {
                     Debug.Log($"{Name} backend initialized successfully.");
@@ -53,7 +53,7 @@ namespace uPiper.Core.Phonemizers.Backend
                 {
                     Debug.LogWarning($"{Name} backend initialization failed.");
                 }
-                
+
                 return result;
             }
             catch (Exception ex)
@@ -90,7 +90,7 @@ namespace uPiper.Core.Phonemizers.Backend
                 if (string.Equals(supported, language, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
-            
+
             return false;
         }
 
@@ -150,7 +150,7 @@ namespace uPiper.Core.Phonemizers.Backend
         {
             if (!isInitialized)
                 throw new InvalidOperationException($"{Name} backend is not initialized");
-            
+
             if (isDisposed)
                 throw new ObjectDisposedException(Name);
         }

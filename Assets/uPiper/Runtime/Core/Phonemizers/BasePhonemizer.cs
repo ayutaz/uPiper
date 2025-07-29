@@ -99,7 +99,7 @@ namespace uPiper.Core.Phonemizers
             if (UseCache && _cache.TryGet(cacheKey, out var cachedResult))
             {
                 _cacheStats.RecordHit();
-                PiperLogger.LogDebug($"Phonemizer cache hit for: \"{text.Substring(0, Math.Min(20, text.Length))}...\"");
+                PiperLogger.LogDebug($"Phonemizer cache hit for: \"{text[..Math.Min(20, text.Length)]}...\"");
 
                 var result = cachedResult.Clone();
                 result.OriginalText = text; // Preserve original text
@@ -128,7 +128,7 @@ namespace uPiper.Core.Phonemizers
                     _cacheStats.UpdateSize(_cache.Count, _cache.Count * 1024); // Estimate
                 }
 
-                PiperLogger.LogDebug($"Phonemized \"{text.Substring(0, Math.Min(20, text.Length))}...\" in {sw.ElapsedMilliseconds}ms");
+                PiperLogger.LogDebug($"Phonemized \"{text[..Math.Min(20, text.Length)]}...\" in {sw.ElapsedMilliseconds}ms");
                 return phonemeResult;
             }
             catch (OperationCanceledException)

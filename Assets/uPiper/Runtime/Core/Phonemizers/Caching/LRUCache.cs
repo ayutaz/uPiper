@@ -26,7 +26,7 @@ namespace uPiper.Core.Phonemizers.Caching
         private readonly int maxSize;
         private readonly long maxMemoryBytes;
         private readonly Func<TValue, long> sizeCalculator;
-        
+
         private long currentMemoryUsage;
         private long hitCount;
         private long missCount;
@@ -67,9 +67,9 @@ namespace uPiper.Core.Phonemizers.Caching
             this.maxSize = maxSize;
             this.maxMemoryBytes = maxMemoryBytes;
             this.sizeCalculator = sizeCalculator;
-            this.cache = new Dictionary<TKey, LinkedListNode<CacheNode>>(maxSize);
-            this.lruList = new LinkedList<CacheNode>();
-            this.lockSlim = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+            cache = new Dictionary<TKey, LinkedListNode<CacheNode>>(maxSize);
+            lruList = new LinkedList<CacheNode>();
+            lockSlim = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
         }
 
         /// <summary>
@@ -254,12 +254,12 @@ namespace uPiper.Core.Phonemizers.Caching
         public void RemoveStale(TimeSpan maxAge)
         {
             var cutoffTime = DateTime.UtcNow - maxAge;
-            
+
             lockSlim.EnterWriteLock();
             try
             {
                 var nodesToRemove = new List<LinkedListNode<CacheNode>>();
-                
+
                 // Start from the end (least recently used)
                 var current = lruList.Last;
                 while (current != null)
@@ -292,7 +292,7 @@ namespace uPiper.Core.Phonemizers.Caching
         private void EvictIfNecessary()
         {
             // Note: Must be called while holding write lock
-            
+
             // Check count limit
             while (cache.Count > maxSize && lruList.Count > 0)
             {
@@ -319,7 +319,7 @@ namespace uPiper.Core.Phonemizers.Caching
                 lruList.RemoveLast();
                 Interlocked.Add(ref currentMemoryUsage, -node.Value.Size);
                 Interlocked.Increment(ref evictionCount);
-                
+
                 Debug.Log($"Evicted cache item: {node.Value.Key}");
             }
         }

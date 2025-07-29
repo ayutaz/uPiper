@@ -38,10 +38,10 @@ namespace uPiper.Core.Phonemizers.Backend
                 // Create OpenJTalkPhonemizer instance
                 var dictPath = options?.DataPath;
                 var openJTalkInstance = new OpenJTalkPhonemizer(1000, dictPath);
-                
+
                 // Test if it's working
                 var testResult = await Task.Run(() => openJTalkInstance.Phonemize("テスト", "ja"), cancellationToken);
-                
+
                 if (testResult != null && testResult.Phonemes != null && testResult.Phonemes.Length > 0)
                 {
                     // Store the instance only if successful
@@ -84,11 +84,11 @@ namespace uPiper.Core.Phonemizers.Backend
             {
                 // Use the async method from BasePhonemizer
                 var result = await openJTalk.PhonemizeAsync(text, language, cancellationToken);
-                
+
                 // Ensure result has all required fields
                 result.Backend = Name;
                 result.Success = result.Phonemes != null && result.Phonemes.Length > 0;
-                
+
                 return result;
             }
             catch (Exception ex)

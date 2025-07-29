@@ -14,16 +14,16 @@ namespace uPiper.Core.Phonemizers.Backend
     public class SpanishPhonemizer : PhonemizerBackendBase
     {
         private Dictionary<string, string[]> spanishDict;
-        private readonly object dictLock = new object();
-        
+        private readonly object dictLock = new();
+
         public override string Name => "Spanish";
         public override string Version => "1.0.0";
         public override string License => "MIT";
-        public override string[] SupportedLanguages => new[] 
-        { 
+        public override string[] SupportedLanguages => new[]
+        {
             "es", "es-ES", "es-MX", "es-AR", "es-CO", "es-CL", "es-PE", "es-VE", "es-EC", "es-BO", "es-UY", "es-PY"
         };
-        
+
         protected override async Task<bool> InitializeInternalAsync(
             PhonemizerBackendOptions options,
             CancellationToken cancellationToken)
@@ -42,78 +42,75 @@ namespace uPiper.Core.Phonemizers.Backend
                 }
             }, cancellationToken);
         }
-        
+
         public override async Task<PhonemeResult> PhonemizeAsync(
-            string text, 
-            string language, 
-            PhonemeOptions options = null, 
+            string text,
+            string language,
+            PhonemeOptions options = null,
             CancellationToken cancellationToken = default)
         {
             return await Task.Run(() =>
             {
                 if (string.IsNullOrEmpty(text))
                 {
-                return new PhonemeResult { Phonemes = new string[0] };
-            }
-
-            try
-            {
-                var normalized = NormalizeText(text);
-                var words = TokenizeSpanish(normalized);
-                var phonemes = new List<string>();
-
-                foreach (var word in words)
-                {
-                    if (string.IsNullOrWhiteSpace(word))
-                    {
-                        phonemes.Add("_");
-                        continue;
-                    }
-
-                    string[] wordPhonemes = null;
-                    
-                    lock (dictLock)
-                    {
-                        if (spanishDict.TryGetValue(word.ToUpper(), out var dictPhonemes))
-                        {
-                            wordPhonemes = dictPhonemes;
-                        }
-                    }
-                    
-                    if (wordPhonemes == null)
-                    {
-                        wordPhonemes = ProcessSpanishWord(word);
-                    }
-
-                    phonemes.AddRange(wordPhonemes);
+                    return new PhonemeResult { Phonemes = new string[0] };
                 }
 
-                return new PhonemeResult 
-                { 
-                    Phonemes = phonemes.ToArray(),
-                    Language = language,
-                    Success = true
-                };
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Error in Spanish phonemization: {ex.Message}");
-                throw;
-            }
+                try
+                {
+                    var normalized = NormalizeText(text);
+                    var words = TokenizeSpanish(normalized);
+                    var phonemes = new List<string>();
+
+                    foreach (var word in words)
+                    {
+                        if (string.IsNullOrWhiteSpace(word))
+                        {
+                            phonemes.Add("_");
+                            continue;
+                        }
+
+                        string[] wordPhonemes = null;
+
+                        lock (dictLock)
+                        {
+                            if (spanishDict.TryGetValue(word.ToUpper(), out var dictPhonemes))
+                            {
+                                wordPhonemes = dictPhonemes;
+                            }
+                        }
+
+                        wordPhonemes ??= ProcessSpanishWord(word);
+
+                        phonemes.AddRange(wordPhonemes);
+                    }
+
+                    return new PhonemeResult
+                    {
+                        Phonemes = phonemes.ToArray(),
+                        Language = language,
+                        Success = true
+                    };
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Error in Spanish phonemization: {ex.Message}");
+                    throw;
+                }
             }, cancellationToken);
         }
-        
+
         private string NormalizeText(string text)
         {
             return text.Trim();
         }
-        
+
         private List<string> TokenizeSpanish(string text)
         {
             var words = new List<string>();
             var currentWord = "";
 
-            foreach (char c in text)
+            foreach (var c in text)
             {
                 if (char.IsLetter(c) || c == '\'' || c == '-' || c == 'ñ' || c == 'Ñ')
                 {
@@ -126,7 +123,7 @@ namespace uPiper.Core.Phonemizers.Backend
                         words.Add(currentWord);
                         currentWord = "";
                     }
-                    
+
                     if (char.IsPunctuation(c) && c != '\'' && c != '-')
                     {
                         words.Add(c.ToString());
@@ -141,21 +138,21 @@ namespace uPiper.Core.Phonemizers.Backend
 
             return words;
         }
-        
+
         private string[] ProcessSpanishWord(string word)
         {
             // Simple phoneme generation for Spanish
             var phonemes = new List<string>();
             var lowerWord = word.ToLower();
-            
-            for (int i = 0; i < lowerWord.Length; i++)
+
+            for (var i = 0; i < lowerWord.Length; i++)
             {
-                char ch = lowerWord[i];
-                
+                var ch = lowerWord[i];
+
                 // Check for digraphs first
                 if (i < lowerWord.Length - 1)
                 {
-                    string digraph = lowerWord.Substring(i, 2);
+                    var digraph = lowerWord.Substring(i, 2);
                     if (digraph == "ll")
                     {
                         phonemes.Add("ʎ");
@@ -175,7 +172,7 @@ namespace uPiper.Core.Phonemizers.Backend
                         continue;
                     }
                 }
-                
+
                 // Basic Spanish G2P rules for single characters
                 switch (ch)
                 {
@@ -213,12 +210,12 @@ namespace uPiper.Core.Phonemizers.Backend
             }
             return phonemes.ToArray();
         }
-        
+
         public override long GetMemoryUsage()
         {
             return spanishDict?.Count * 80 ?? 0;
         }
-        
+
         public override BackendCapabilities GetCapabilities()
         {
             return new BackendCapabilities
@@ -233,7 +230,7 @@ namespace uPiper.Core.Phonemizers.Backend
                 RequiresNetwork = false
             };
         }
-        
+
         protected override void DisposeInternal()
         {
             spanishDict?.Clear();

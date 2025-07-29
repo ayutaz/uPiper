@@ -18,19 +18,19 @@ namespace uPiper.Tests.Runtime.Phonemizers
     public class FliteLTSPhonemizerTests
     {
         private FliteLTSPhonemizer phonemizer;
-        
+
         [SetUp]
         public void Setup()
         {
             phonemizer = new FliteLTSPhonemizer();
         }
-        
+
         [TearDown]
         public void TearDown()
         {
             phonemizer?.Dispose();
         }
-        
+
         [UnityTest]
         [Timeout(10000)] // 10 second timeout
         public IEnumerator TestInitialization()
@@ -39,152 +39,152 @@ namespace uPiper.Tests.Runtime.Phonemizers
             {
                 DataPath = null // Will use default path
             };
-            
+
             var initTask = phonemizer.InitializeAsync(options);
             var timeout = Time.realtimeSinceStartup + 5f; // 5 second timeout
-            
+
             while (!initTask.IsCompleted && Time.realtimeSinceStartup < timeout)
             {
                 yield return null;
             }
-            
+
             if (!initTask.IsCompleted)
             {
                 Assert.Inconclusive("Initialization timed out");
                 yield break;
             }
-            
+
             Assert.IsTrue(initTask.Result, "Phonemizer should initialize successfully");
             Assert.IsTrue(phonemizer.IsAvailable, "Phonemizer should be available");
             Assert.AreEqual("FliteLTS", phonemizer.Name);
             Assert.AreEqual(200, phonemizer.Priority, "FliteLTS should have high priority");
         }
-        
+
         [UnityTest]
         public IEnumerator TestBasicPhonemization()
         {
             var options = new PhonemizerBackendOptions { DataPath = null };
             var initTask = phonemizer.InitializeAsync(options);
             yield return new WaitUntil(() => initTask.IsCompleted);
-            
+
             // Test simple words
             var testWords = new[] { "cat", "dog", "fish", "bird" };
-            
+
             foreach (var word in testWords)
             {
                 var phonemeTask = phonemizer.PhonemizeAsync(word, "en");
                 yield return new WaitUntil(() => phonemeTask.IsCompleted);
-                
+
                 var result = phonemeTask.Result;
                 Assert.IsTrue(result.Success, $"Phonemization should succeed for '{word}'");
                 Assert.IsNotNull(result.Phonemes);
                 Assert.Greater(result.Phonemes.Length, 0, $"Should produce phonemes for '{word}'");
-                
+
                 Debug.Log($"'{word}' -> [{string.Join(" ", result.Phonemes)}]");
             }
         }
-        
+
         [UnityTest]
         public IEnumerator TestComplexWords()
         {
             var options = new PhonemizerBackendOptions { DataPath = null };
             var initTask = phonemizer.InitializeAsync(options);
             yield return new WaitUntil(() => initTask.IsCompleted);
-            
+
             // Test more complex words - just verify they produce reasonable phonemes
             var testWords = new[] { "chair", "thing", "sing", "care" };
-            
+
             foreach (var word in testWords)
             {
                 var phonemeTask = phonemizer.PhonemizeAsync(word, "en");
                 yield return new WaitUntil(() => phonemeTask.IsCompleted);
-                
+
                 var result = phonemeTask.Result;
                 Assert.IsTrue(result.Success, $"Failed to phonemize '{word}'");
                 Assert.IsNotNull(result.Phonemes);
                 Assert.Greater(result.Phonemes.Length, 0, $"No phonemes for '{word}'");
-                
+
                 var phonemeString = string.Join(" ", result.Phonemes);
                 Debug.Log($"'{word}' -> [{phonemeString}]");
-                
+
                 // Basic sanity check - word should produce reasonable number of phonemes
                 Assert.GreaterOrEqual(result.Phonemes.Length, 2, $"Too few phonemes for '{word}'");
                 Assert.LessOrEqual(result.Phonemes.Length, word.Length * 2, $"Too many phonemes for '{word}'");
             }
         }
-        
+
         [UnityTest]
         public IEnumerator TestSentencePhonemization()
         {
             var options = new PhonemizerBackendOptions { DataPath = null };
             var initTask = phonemizer.InitializeAsync(options);
             yield return new WaitUntil(() => initTask.IsCompleted);
-            
+
             var sentence = "Hello world, how are you?";
             var phonemeTask = phonemizer.PhonemizeAsync(sentence, "en");
             yield return new WaitUntil(() => phonemeTask.IsCompleted);
-            
+
             var result = phonemeTask.Result;
             Assert.IsTrue(result.Success);
             Assert.Greater(result.Phonemes.Length, 10, "Sentence should produce multiple phonemes");
             Assert.IsNotNull(result.WordBoundaries);
             Assert.Greater(result.WordBoundaries.Length, 0, "Should have word boundaries");
-            
+
             Debug.Log($"Sentence: '{sentence}'");
             Debug.Log($"Phonemes: [{string.Join(" ", result.Phonemes)}]");
             Debug.Log($"Word boundaries at: [{string.Join(", ", result.WordBoundaries)}]");
         }
-        
+
         [UnityTest]
         public IEnumerator TestPunctuation()
         {
             var options = new PhonemizerBackendOptions { DataPath = null };
             var initTask = phonemizer.InitializeAsync(options);
             yield return new WaitUntil(() => initTask.IsCompleted);
-            
+
             var text = "Hello. How are you? I'm fine!";
             var phonemeTask = phonemizer.PhonemizeAsync(text, "en");
             yield return new WaitUntil(() => initTask.IsCompleted);
-            
+
             var result = phonemeTask.Result;
             Assert.IsTrue(result.Success);
-            
+
             // Count silence phonemes
-            int silenceCount = 0;
-            for (int i = 0; i < result.Phonemes.Length; i++)
+            var silenceCount = 0;
+            for (var i = 0; i < result.Phonemes.Length; i++)
             {
                 if (result.Phonemes[i] == "_")
                     silenceCount++;
             }
-            
+
             Assert.Greater(silenceCount, 0, "Should have silence for punctuation");
             Assert.IsNotNull(result.Durations);
         }
-        
+
         [UnityTest]
         public IEnumerator TestMemoryUsage()
         {
             var options = new PhonemizerBackendOptions { DataPath = null };
             var initTask = phonemizer.InitializeAsync(options);
             yield return new WaitUntil(() => initTask.IsCompleted);
-            
+
             var memoryBefore = phonemizer.GetMemoryUsage();
-            
+
             // Process multiple words to populate cache
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
                 var word = $"test{i}";
                 var task = phonemizer.PhonemizeAsync(word, "en");
                 yield return new WaitUntil(() => task.IsCompleted);
             }
-            
+
             var memoryAfter = phonemizer.GetMemoryUsage();
             // Memory increase might be minimal or zero if cache is disabled/optimized
             Assert.GreaterOrEqual(memoryAfter, memoryBefore, "Memory usage should not decrease");
-            
+
             Debug.Log($"Memory usage: {memoryBefore} -> {memoryAfter} bytes");
         }
-        
+
         [UnityTest]
         [Timeout(10000)] // 10 second timeout
         // [Ignore("Temporarily disabled - causing test runner to hang")] // Re-enabled with proper timeout handling
@@ -192,19 +192,19 @@ namespace uPiper.Tests.Runtime.Phonemizers
         {
             var options = new PhonemizerBackendOptions { DataPath = null };
             var initTask = phonemizer.InitializeAsync(options);
-            
+
             var timeout = Time.realtimeSinceStartup + 5f;
             while (!initTask.IsCompleted && Time.realtimeSinceStartup < timeout)
             {
                 yield return null;
             }
-            
+
             if (!initTask.IsCompleted)
             {
                 Assert.Inconclusive("Initialization timed out");
                 yield break;
             }
-            
+
             var capabilities = phonemizer.GetCapabilities();
             Assert.IsFalse(capabilities.SupportsIPA, "Should use ARPABET, not IPA");
             Assert.IsTrue(capabilities.SupportsStress, "Should support stress markers");
@@ -212,14 +212,14 @@ namespace uPiper.Tests.Runtime.Phonemizers
             Assert.IsTrue(capabilities.IsThreadSafe, "Should be thread-safe");
             Assert.IsFalse(capabilities.RequiresNetwork, "Should work offline");
         }
-        
+
         [UnityTest]
         public IEnumerator TestErrorHandling()
         {
             // Test without initialization
             var task = phonemizer.PhonemizeAsync("test", "en");
             yield return new WaitUntil(() => task.IsCompleted);
-            
+
             var result = task.Result;
             Assert.IsFalse(result.Success);
             Assert.IsNotNull(result.ErrorMessage);

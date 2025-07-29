@@ -6,8 +6,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using uPiper.Core.Phonemizers.Native;
 using uPiper.Core.Phonemizers.Backend.RuleBased;
+using uPiper.Core.Phonemizers.Native;
 using Debug = UnityEngine.Debug;
 
 namespace uPiper.Core.Phonemizers.Backend
@@ -20,7 +20,7 @@ namespace uPiper.Core.Phonemizers.Backend
     {
         private IntPtr fliteContext;
         private CMUDictionary cmuDictionary;
-        private readonly object lockObject = new object();
+        private readonly object lockObject = new();
         private Dictionary<string, string[]> ltsCache;
         private const int MaxCacheSize = 10000;
 
@@ -64,7 +64,7 @@ namespace uPiper.Core.Phonemizers.Backend
                     // Initialize CMU dictionary for fast lookups
                     cmuDictionary = new CMUDictionary();
                     var dictPath = options?.DataPath ?? GetDefaultDictionaryPath();
-                    
+
                     // Load dictionary asynchronously
                     var dictTask = cmuDictionary.LoadAsync(dictPath, cancellationToken);
                     dictTask.Wait(cancellationToken);
@@ -108,7 +108,7 @@ namespace uPiper.Core.Phonemizers.Backend
 
                 // Process text
                 var result = await Task.Run(() => ProcessText(text, language, options, cancellationToken), cancellationToken);
-                
+
                 stopwatch.Stop();
                 result.ProcessingTimeMs = (float)stopwatch.ElapsedMilliseconds;
                 result.ProcessingTime = stopwatch.Elapsed;
@@ -234,17 +234,17 @@ namespace uPiper.Core.Phonemizers.Backend
             foreach (var phoneme in newPhonemes)
             {
                 // Extract stress from ARPABET format (e.g., "AH0", "AH1", "AH2")
-                int stress = 0;
-                string basePhoneme = phoneme;
+                var stress = 0;
+                var basePhoneme = phoneme;
 
-                if (phoneme.Length > 1 && char.IsDigit(phoneme[phoneme.Length - 1]))
+                if (phoneme.Length > 1 && char.IsDigit(phoneme[^1]))
                 {
-                    stress = int.Parse(phoneme[phoneme.Length - 1].ToString());
-                    basePhoneme = phoneme.Substring(0, phoneme.Length - 1);
+                    stress = int.Parse(phoneme[^1].ToString());
+                    basePhoneme = phoneme[..^1];
                 }
 
                 // Convert format if needed
-                string finalPhoneme = options.Format == PhonemeFormat.ARPABET
+                var finalPhoneme = options.Format == PhonemeFormat.ARPABET
                     ? (options.IncludeStress ? phoneme : basePhoneme)
                     : ConvertToPiperFormat(basePhoneme);
 
@@ -282,7 +282,7 @@ namespace uPiper.Core.Phonemizers.Backend
         {
             // Convert phonemes to IDs for model input
             var ids = new int[phonemes.Count];
-            for (int i = 0; i < phonemes.Count; i++)
+            for (var i = 0; i < phonemes.Count; i++)
             {
                 ids[i] = PhonemeToIdMap.TryGetValue(phonemes[i], out var id) ? id : 0;
             }
@@ -292,9 +292,9 @@ namespace uPiper.Core.Phonemizers.Backend
         private string GetDefaultDictionaryPath()
         {
             return System.IO.Path.Combine(
-                Application.streamingAssetsPath, 
-                "uPiper", 
-                "Phonemizers", 
+                Application.streamingAssetsPath,
+                "uPiper",
+                "Phonemizers",
                 "cmudict-0.7b.txt"
             );
         }
@@ -360,34 +360,92 @@ namespace uPiper.Core.Phonemizers.Backend
         private static readonly Dictionary<string, string> ArpabetToIpaMap = new()
         {
             // Vowels
-            ["AA"] = "ɑ", ["AE"] = "æ", ["AH"] = "ʌ", ["AO"] = "ɔ",
-            ["AW"] = "aʊ", ["AY"] = "aɪ", ["EH"] = "ɛ", ["ER"] = "ɝ",
-            ["EY"] = "eɪ", ["IH"] = "ɪ", ["IY"] = "i", ["OW"] = "oʊ",
-            ["OY"] = "ɔɪ", ["UH"] = "ʊ", ["UW"] = "u",
-            
+            ["AA"] = "ɑ",
+            ["AE"] = "æ",
+            ["AH"] = "ʌ",
+            ["AO"] = "ɔ",
+            ["AW"] = "aʊ",
+            ["AY"] = "aɪ",
+            ["EH"] = "ɛ",
+            ["ER"] = "ɝ",
+            ["EY"] = "eɪ",
+            ["IH"] = "ɪ",
+            ["IY"] = "i",
+            ["OW"] = "oʊ",
+            ["OY"] = "ɔɪ",
+            ["UH"] = "ʊ",
+            ["UW"] = "u",
+
             // Consonants
-            ["B"] = "b", ["CH"] = "tʃ", ["D"] = "d", ["DH"] = "ð",
-            ["F"] = "f", ["G"] = "g", ["HH"] = "h", ["JH"] = "dʒ",
-            ["K"] = "k", ["L"] = "l", ["M"] = "m", ["N"] = "n",
-            ["NG"] = "ŋ", ["P"] = "p", ["R"] = "r", ["S"] = "s",
-            ["SH"] = "ʃ", ["T"] = "t", ["TH"] = "θ", ["V"] = "v",
-            ["W"] = "w", ["Y"] = "j", ["Z"] = "z", ["ZH"] = "ʒ"
+            ["B"] = "b",
+            ["CH"] = "tʃ",
+            ["D"] = "d",
+            ["DH"] = "ð",
+            ["F"] = "f",
+            ["G"] = "g",
+            ["HH"] = "h",
+            ["JH"] = "dʒ",
+            ["K"] = "k",
+            ["L"] = "l",
+            ["M"] = "m",
+            ["N"] = "n",
+            ["NG"] = "ŋ",
+            ["P"] = "p",
+            ["R"] = "r",
+            ["S"] = "s",
+            ["SH"] = "ʃ",
+            ["T"] = "t",
+            ["TH"] = "θ",
+            ["V"] = "v",
+            ["W"] = "w",
+            ["Y"] = "j",
+            ["Z"] = "z",
+            ["ZH"] = "ʒ"
         };
 
         // Phoneme to ID mapping (simplified - should match model vocabulary)
         private static readonly Dictionary<string, int> PhonemeToIdMap = new()
         {
             ["_"] = 0, // Silence
-            ["ɑ"] = 1, ["æ"] = 2, ["ʌ"] = 3, ["ɔ"] = 4,
-            ["aʊ"] = 5, ["aɪ"] = 6, ["ɛ"] = 7, ["ɝ"] = 8,
-            ["eɪ"] = 9, ["ɪ"] = 10, ["i"] = 11, ["oʊ"] = 12,
-            ["ɔɪ"] = 13, ["ʊ"] = 14, ["u"] = 15,
-            ["b"] = 16, ["tʃ"] = 17, ["d"] = 18, ["ð"] = 19,
-            ["f"] = 20, ["g"] = 21, ["h"] = 22, ["dʒ"] = 23,
-            ["k"] = 24, ["l"] = 25, ["m"] = 26, ["n"] = 27,
-            ["ŋ"] = 28, ["p"] = 29, ["r"] = 30, ["s"] = 31,
-            ["ʃ"] = 32, ["t"] = 33, ["θ"] = 34, ["v"] = 35,
-            ["w"] = 36, ["j"] = 37, ["z"] = 38, ["ʒ"] = 39
+            ["ɑ"] = 1,
+            ["æ"] = 2,
+            ["ʌ"] = 3,
+            ["ɔ"] = 4,
+            ["aʊ"] = 5,
+            ["aɪ"] = 6,
+            ["ɛ"] = 7,
+            ["ɝ"] = 8,
+            ["eɪ"] = 9,
+            ["ɪ"] = 10,
+            ["i"] = 11,
+            ["oʊ"] = 12,
+            ["ɔɪ"] = 13,
+            ["ʊ"] = 14,
+            ["u"] = 15,
+            ["b"] = 16,
+            ["tʃ"] = 17,
+            ["d"] = 18,
+            ["ð"] = 19,
+            ["f"] = 20,
+            ["g"] = 21,
+            ["h"] = 22,
+            ["dʒ"] = 23,
+            ["k"] = 24,
+            ["l"] = 25,
+            ["m"] = 26,
+            ["n"] = 27,
+            ["ŋ"] = 28,
+            ["p"] = 29,
+            ["r"] = 30,
+            ["s"] = 31,
+            ["ʃ"] = 32,
+            ["t"] = 33,
+            ["θ"] = 34,
+            ["v"] = 35,
+            ["w"] = 36,
+            ["j"] = 37,
+            ["z"] = 38,
+            ["ʒ"] = 39
         };
     }
 }

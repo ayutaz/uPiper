@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace uPiper.Phonemizers.Configuration
 {
@@ -10,52 +10,52 @@ namespace uPiper.Phonemizers.Configuration
     public class PhonemizerSettings : ScriptableObject
     {
         [Header("General Settings")]
-        [SerializeField] private bool enablePhonemizerService = true;
-        [SerializeField] private string defaultLanguage = "en-US";
-        [SerializeField] private List<LanguageSettings> languageSettings = new List<LanguageSettings>();
+        [SerializeField] private readonly bool enablePhonemizerService = true;
+        [SerializeField] private readonly string defaultLanguage = "en-US";
+        [SerializeField] private readonly List<LanguageSettings> languageSettings = new();
 
         [Header("Performance Settings")]
         [SerializeField] private int maxConcurrentOperations = 2;
         [SerializeField] private int cacheSize = 1000;
         [SerializeField] private float cacheMemoryLimitMB = 50f;
-        [SerializeField] private bool enableBatchProcessing = true;
+        [SerializeField] private readonly bool enableBatchProcessing = true;
         [SerializeField] private int batchSize = 10;
 
         [Header("Mobile Optimization")]
-        [SerializeField] private bool enableMobileOptimization = true;
-        [SerializeField] private bool reduceCacheOnLowMemory = true;
-        [SerializeField] private bool pauseOnApplicationPause = true;
+        [SerializeField] private readonly bool enableMobileOptimization = true;
+        [SerializeField] private readonly bool reduceCacheOnLowMemory = true;
+        [SerializeField] private readonly bool pauseOnApplicationPause = true;
         [SerializeField] private int mobileMaxConcurrentOperations = 1;
         [SerializeField] private float mobileCacheMemoryLimitMB = 25f;
 
         [Header("Data Management")]
-        [SerializeField] private string dataPath = "{persistentDataPath}/uPiper/PhonemizerData";
-        [SerializeField] private bool autoDownloadEssentialData = true;
-        [SerializeField] private bool downloadOverCellular = false;
+        [SerializeField] private readonly string dataPath = "{persistentDataPath}/uPiper/PhonemizerData";
+        [SerializeField] private readonly bool autoDownloadEssentialData = true;
+        [SerializeField] private readonly bool downloadOverCellular = false;
 
         [Header("Error Handling")]
         [SerializeField] private int maxRetries = 3;
         [SerializeField] private float retryDelay = 1f;
-        [SerializeField] private bool enableFallbackPhonemeizer = true;
+        [SerializeField] private readonly bool enableFallbackPhonemeizer = true;
         [SerializeField] private float circuitBreakerThreshold = 0.5f;
         [SerializeField] private float circuitBreakerResetTime = 30f;
 
         [Header("Debug Settings")]
-        [SerializeField] private bool enableDebugLogging = false;
-        [SerializeField] private bool logPhonemeOutput = false;
-        [SerializeField] private bool measurePerformance = false;
+        [SerializeField] private readonly bool enableDebugLogging = false;
+        [SerializeField] private readonly bool logPhonemeOutput = false;
+        [SerializeField] private readonly bool measurePerformance = false;
 
         // Properties
         public bool EnablePhonemizerService => enablePhonemizerService;
         public string DefaultLanguage => defaultLanguage;
         public IReadOnlyList<LanguageSettings> LanguageSettings => languageSettings;
 
-        public int MaxConcurrentOperations => Application.isMobilePlatform && enableMobileOptimization 
-            ? mobileMaxConcurrentOperations 
+        public int MaxConcurrentOperations => Application.isMobilePlatform && enableMobileOptimization
+            ? mobileMaxConcurrentOperations
             : maxConcurrentOperations;
 
         public int CacheSize => cacheSize;
-        
+
         public float CacheMemoryLimitMB => Application.isMobilePlatform && enableMobileOptimization
             ? mobileCacheMemoryLimitMB
             : cacheMemoryLimitMB;
@@ -104,9 +104,9 @@ namespace uPiper.Phonemizers.Configuration
                 languageSettings.Add(settings);
             }
 
-            #if UNITY_EDITOR
+#if UNITY_EDITOR
             UnityEditor.EditorUtility.SetDirty(this);
-            #endif
+#endif
         }
 
         private void OnValidate()
@@ -130,7 +130,7 @@ namespace uPiper.Phonemizers.Configuration
         public static PhonemizerSettings CreateDefault()
         {
             var settings = CreateInstance<PhonemizerSettings>();
-            
+
             // Add default language settings
             settings.languageSettings.Add(new LanguageSettings
             {
@@ -162,7 +162,7 @@ namespace uPiper.Phonemizers.Configuration
         public string displayName;
         public bool enabled = true;
         public DataPriority priority = DataPriority.Standard;
-        public List<string> dataFiles = new List<string>();
+        public List<string> dataFiles = new();
         public bool useG2P = true;
         public bool cacheEnabled = true;
         public int cacheSize = 500;

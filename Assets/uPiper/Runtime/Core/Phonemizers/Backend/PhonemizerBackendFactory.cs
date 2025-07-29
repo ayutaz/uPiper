@@ -12,9 +12,9 @@ namespace uPiper.Core.Phonemizers.Backend
     /// </summary>
     public class PhonemizerBackendFactory
     {
-        private readonly List<IPhonemizerBackend> backends = new List<IPhonemizerBackend>();
-        private readonly Dictionary<string, IPhonemizerBackend> backendsByName = new Dictionary<string, IPhonemizerBackend>();
-        private readonly object lockObject = new object();
+        private readonly List<IPhonemizerBackend> backends = new();
+        private readonly Dictionary<string, IPhonemizerBackend> backendsByName = new();
+        private readonly object lockObject = new();
 
         /// <summary>
         /// Singleton instance.
@@ -45,10 +45,10 @@ namespace uPiper.Core.Phonemizers.Backend
 
                 backends.Add(backend);
                 backendsByName[backend.Name] = backend;
-                
+
                 // Sort by priority (descending)
                 backends.Sort((a, b) => b.Priority.CompareTo(a.Priority));
-                
+
                 Debug.Log($"Registered phonemizer backend: {backend.Name} (License: {backend.License}, Priority: {backend.Priority})");
             }
         }
@@ -66,7 +66,7 @@ namespace uPiper.Core.Phonemizers.Backend
                     backends.Remove(backend);
                     backendsByName.Remove(name);
                     backend.Dispose();
-                    
+
                     Debug.Log($"Unregistered phonemizer backend: {name}");
                 }
             }
@@ -84,7 +84,7 @@ namespace uPiper.Core.Phonemizers.Backend
             {
                 return backends
                     .Where(b => b.IsAvailable && b.SupportsLanguage(language))
-                    .Where(b => string.IsNullOrEmpty(requiredLicense) || 
+                    .Where(b => string.IsNullOrEmpty(requiredLicense) ||
                                b.License.Contains(requiredLicense, StringComparison.OrdinalIgnoreCase))
                     .FirstOrDefault();
             }
@@ -143,7 +143,7 @@ namespace uPiper.Core.Phonemizers.Backend
             CancellationToken cancellationToken = default)
         {
             var tasks = new List<Task<bool>>();
-            
+
             lock (lockObject)
             {
                 foreach (var backend in backends)
@@ -202,7 +202,7 @@ namespace uPiper.Core.Phonemizers.Backend
                         Debug.LogError($"Error disposing backend {backend.Name}: {ex.Message}");
                     }
                 }
-                
+
                 backends.Clear();
                 backendsByName.Clear();
             }

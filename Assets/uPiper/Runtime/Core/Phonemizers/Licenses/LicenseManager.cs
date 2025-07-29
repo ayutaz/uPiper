@@ -11,7 +11,7 @@ namespace uPiper.Core.Phonemizers.Licenses
     /// </summary>
     public static class LicenseManager
     {
-        private static readonly Dictionary<string, LicenseInfo> Licenses = new Dictionary<string, LicenseInfo>
+        private static readonly Dictionary<string, LicenseInfo> Licenses = new()
         {
             ["OpenJTalk"] = new LicenseInfo
             {
@@ -97,7 +97,7 @@ namespace uPiper.Core.Phonemizers.Licenses
             notices.AppendLine("This software includes third-party components with the following licenses:");
             notices.AppendLine();
 
-            int index = 1;
+            var index = 1;
             foreach (var license in Licenses)
             {
                 notices.AppendLine("================================================================================");
@@ -106,7 +106,7 @@ namespace uPiper.Core.Phonemizers.Licenses
                 notices.AppendLine($"License: {license.Value.Type}");
                 notices.AppendLine($"Copyright (c) {license.Value.Year} {license.Value.CopyrightHolder}");
                 notices.AppendLine();
-                
+
                 // Add specific license text based on type
                 AppendLicenseText(notices, license.Value);
                 notices.AppendLine();
@@ -115,11 +115,11 @@ namespace uPiper.Core.Phonemizers.Licenses
 
             var outputPath = Path.Combine(Application.dataPath, "uPiper/Licenses/THIRD-PARTY-NOTICES.txt");
             File.WriteAllText(outputPath, notices.ToString());
-            
-            #if UNITY_EDITOR
+
+#if UNITY_EDITOR
             UnityEditor.AssetDatabase.Refresh();
-            #endif
-            
+#endif
+
             Debug.Log($"Generated third-party notices at: {outputPath}");
         }
 
@@ -172,9 +172,9 @@ namespace uPiper.Core.Phonemizers.Licenses
             sb.AppendLine($"{info.Name} - {info.Type} License");
             sb.AppendLine($"Copyright (c) {info.Year} {info.CopyrightHolder}");
             sb.AppendLine();
-            
+
             AppendLicenseText(sb, info);
-            
+
             return sb.ToString();
         }
 
@@ -235,7 +235,7 @@ namespace uPiper.Core.Phonemizers.Licenses
             sb.AppendLine("   this list of conditions and the following disclaimer in the documentation");
             sb.AppendLine("   and/or other materials provided with the distribution.");
             sb.AppendLine();
-            
+
             if (info.ProhibitsEndorsement)
             {
                 sb.AppendLine("3. Neither the name of the copyright holder nor the names of its");
@@ -243,7 +243,7 @@ namespace uPiper.Core.Phonemizers.Licenses
                 sb.AppendLine("   this software without specific prior written permission.");
                 sb.AppendLine();
             }
-            
+
             sb.AppendLine("THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\"");
             sb.AppendLine("AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE");
             sb.AppendLine("IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE");
@@ -259,7 +259,7 @@ namespace uPiper.Core.Phonemizers.Licenses
         private static void AppendBSD3ClearLicense(StringBuilder sb, LicenseInfo info)
         {
             AppendBSD3License(sb, info);
-            
+
             if (info.ClearPatentGrant)
             {
                 sb.AppendLine();

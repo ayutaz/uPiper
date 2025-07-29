@@ -36,7 +36,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsTrue(result, "Initialization should succeed");
             Assert.IsTrue(phonemizer.IsInitialized, "Phonemizer should be initialized");
             Assert.Greater(phonemizer.SupportedLanguages.Length, 0, "Should support at least one language");
-            
+
             // Check available backends
             var backends = phonemizer.GetAvailableBackends();
             Assert.IsNotNull(backends);
@@ -48,7 +48,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Arrange
             await phonemizer.InitializeAsync();
             var text = "こんにちは";
-            
+
             // Act
             var result = await phonemizer.PhonemizeAsync(text, "ja");
 
@@ -60,7 +60,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.Greater(result.Phonemes.Length, 0, "Should return phonemes");
             Assert.IsNotNull(result.Metadata);
             Assert.IsTrue(result.Metadata.ContainsKey("backend_used"));
-            
+
             Debug.Log($"Japanese phonemes: {string.Join(" ", result.Phonemes)}");
         }
 
@@ -70,7 +70,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Arrange
             await phonemizer.InitializeAsync();
             var text = "Hello world";
-            
+
             // Act
             var result = await phonemizer.PhonemizeAsync(text, "en");
 
@@ -80,7 +80,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.AreEqual(text, result.OriginalText);
             Assert.IsNotNull(result.Phonemes);
             Assert.Greater(result.Phonemes.Length, 0, "Should return phonemes");
-            
+
             Debug.Log($"English phonemes: {string.Join(" ", result.Phonemes)}");
         }
 
@@ -89,19 +89,19 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             // Arrange
             await phonemizer.InitializeAsync();
-            
+
             // Test Japanese auto-detection
             var jaText = "日本語のテスト";
             var jaResult = await phonemizer.PhonemizeAsync(jaText, "auto");
-            
+
             Assert.IsNotNull(jaResult);
             Assert.IsTrue(jaResult.Success);
             Assert.Greater(jaResult.Phonemes.Length, 0);
-            
+
             // Test English auto-detection
             var enText = "English test";
             var enResult = await phonemizer.PhonemizeAsync(enText, "auto");
-            
+
             Assert.IsNotNull(enResult);
             Assert.IsTrue(enResult.Success);
             Assert.Greater(enResult.Phonemes.Length, 0);
@@ -113,7 +113,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Arrange
             await phonemizer.InitializeAsync();
             var text = "Hello, これはmixedテキストです。";
-            
+
             // Act
             var result = await phonemizer.PhonemizeAsync(text, "mixed");
 
@@ -122,7 +122,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsTrue(result.Success, $"Phonemization should succeed. Error: {result.Error}");
             Assert.IsNotNull(result.Phonemes);
             Assert.Greater(result.Phonemes.Length, 0, "Should return phonemes");
-            
+
             Debug.Log($"Mixed text phonemes: {string.Join(" ", result.Phonemes)}");
         }
 
@@ -131,7 +131,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             // Arrange
             await phonemizer.InitializeAsync();
-            
+
             // Act
             var result = await phonemizer.PhonemizeAsync("", "en");
 
@@ -148,7 +148,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Arrange
             await phonemizer.InitializeAsync();
             var text = "Test text";
-            
+
             // Act
             var result = await phonemizer.PhonemizeAsync(text, "xyz"); // Unsupported language
 
@@ -179,7 +179,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Assert
             Assert.IsTrue(phonemizer.SupportsLanguage("auto"));
             Assert.IsTrue(phonemizer.SupportsLanguage("mixed"));
-            
+
             // After initialization, should support specific languages
         }
     }

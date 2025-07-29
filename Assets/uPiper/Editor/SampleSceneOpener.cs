@@ -22,18 +22,18 @@ namespace uPiper.Editor
             }
 
             // Tempディレクトリにコピーして開く（差分を避けるため）
-            string tempPath = "Assets/Temp/WebGLDemoScene_Temp.unity";
+            var tempPath = "Assets/Temp/WebGLDemoScene_Temp.unity";
 
             if (File.Exists(WEBGL_DEMO_SCENE_PATH))
             {
                 // Tempディレクトリを作成
-                string tempDir = Path.GetDirectoryName(tempPath);
+                var tempDir = Path.GetDirectoryName(tempPath);
                 if (!Directory.Exists(tempDir))
                 {
                     Directory.CreateDirectory(tempDir);
 
                     // Temp.metaファイルを作成
-                    string metaPath = tempDir + ".meta";
+                    var metaPath = tempDir + ".meta";
                     File.WriteAllText(metaPath,
                         "fileFormatVersion: 2\n" +
                         "guid: " + System.Guid.NewGuid().ToString("N") + "\n" +
@@ -87,10 +87,10 @@ namespace uPiper.Editor
 
         private static void AddToGitIgnore(string path)
         {
-            string gitignorePath = ".gitignore";
+            var gitignorePath = ".gitignore";
             if (File.Exists(gitignorePath))
             {
-                string content = File.ReadAllText(gitignorePath);
+                var content = File.ReadAllText(gitignorePath);
                 if (!content.Contains(path))
                 {
                     File.AppendAllText(gitignorePath, $"\n# Temporary demo scenes\n{path}\n");
@@ -104,7 +104,7 @@ namespace uPiper.Editor
             Debug.Log("[uPiper] Setting up WebGL demo scene UI...");
 
             // Canvas を作成
-            GameObject canvasObj = GameObject.Find("Canvas");
+            var canvasObj = GameObject.Find("Canvas");
             if (canvasObj == null)
             {
                 canvasObj = new GameObject("Canvas");
@@ -117,13 +117,13 @@ namespace uPiper.Editor
             // EventSystem を作成
             if (GameObject.Find("EventSystem") == null)
             {
-                GameObject eventSystem = new GameObject("EventSystem");
+                var eventSystem = new GameObject("EventSystem");
                 eventSystem.AddComponent<UnityEngine.EventSystems.EventSystem>();
                 eventSystem.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
             }
 
             // Demo Info Panel を作成
-            GameObject infoPanel = new GameObject("DemoInfoPanel");
+            var infoPanel = new GameObject("DemoInfoPanel");
             infoPanel.transform.SetParent(canvasObj.transform, false);
 
             var rectTransform = infoPanel.AddComponent<RectTransform>();
@@ -136,7 +136,7 @@ namespace uPiper.Editor
             image.color = new Color(0.2f, 0.2f, 0.2f, 0.9f);
 
             // Info Text (TextMeshProを使用)
-            GameObject textObj = new GameObject("InfoText");
+            var textObj = new GameObject("InfoText");
             textObj.transform.SetParent(infoPanel.transform, false);
 
             // TextMeshProUGUIを動的に作成
@@ -205,7 +205,7 @@ namespace uPiper.Editor
             var scenes = new System.Collections.Generic.List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
 
             // すでに追加されているかチェック
-            bool alreadyAdded = scenes.Exists(s => s.path == scenePath);
+            var alreadyAdded = scenes.Exists(s => s.path == scenePath);
 
             if (!alreadyAdded)
             {
@@ -218,8 +218,8 @@ namespace uPiper.Editor
         [MenuItem("uPiper/Samples/Copy All Samples to Assets")]
         public static void CopySamplesToAssets()
         {
-            string sourcePath = "Assets/uPiper/Samples~";
-            string targetPath = "Assets/Samples/uPiper";
+            var sourcePath = "Assets/uPiper/Samples~";
+            var targetPath = "Assets/Samples/uPiper";
 
             if (!Directory.Exists(sourcePath))
             {
@@ -238,8 +238,8 @@ namespace uPiper.Editor
             }
 
             // WebGLDemoをコピー
-            string sourceDemo = Path.Combine(sourcePath, "WebGLDemo");
-            string targetDemo = Path.Combine(targetPath, "WebGLDemo");
+            var sourceDemo = Path.Combine(sourcePath, "WebGLDemo");
+            var targetDemo = Path.Combine(targetPath, "WebGLDemo");
 
             if (Directory.Exists(sourceDemo))
             {
@@ -256,7 +256,7 @@ namespace uPiper.Editor
                 );
 
                 // コピーしたシーンを開く
-                string copiedScenePath = Path.Combine(targetDemo, "WebGLDemoScene.unity");
+                var copiedScenePath = Path.Combine(targetDemo, "WebGLDemoScene.unity");
                 if (File.Exists(copiedScenePath))
                 {
                     EditorSceneManager.OpenScene(copiedScenePath);
@@ -272,7 +272,7 @@ namespace uPiper.Editor
             );
 
             // すでに追加されているかチェック
-            bool alreadyAdded = false;
+            var alreadyAdded = false;
             foreach (var scene in currentScenes)
             {
                 if (scene.path == WEBGL_DEMO_SCENE_PATH ||
@@ -292,7 +292,7 @@ namespace uPiper.Editor
                 }
 
                 // コピーされたシーンも探す
-                string copiedPath = "Assets/Samples/uPiper/WebGLDemo/WebGLDemoScene.unity";
+                var copiedPath = "Assets/Samples/uPiper/WebGLDemo/WebGLDemoScene.unity";
                 if (File.Exists(copiedPath))
                 {
                     currentScenes.Add(new EditorBuildSettingsScene(copiedPath, true));
@@ -322,22 +322,22 @@ namespace uPiper.Editor
             Directory.CreateDirectory(targetDir);
 
             // ファイルをコピー
-            foreach (string file in Directory.GetFiles(sourceDir))
+            foreach (var file in Directory.GetFiles(sourceDir))
             {
-                string fileName = Path.GetFileName(file);
+                var fileName = Path.GetFileName(file);
                 // .metaファイルはUnityが自動生成するのでスキップ
                 if (!fileName.EndsWith(".meta"))
                 {
-                    string destFile = Path.Combine(targetDir, fileName);
+                    var destFile = Path.Combine(targetDir, fileName);
                     File.Copy(file, destFile, true);
                 }
             }
 
             // サブディレクトリを再帰的にコピー
-            foreach (string subDir in Directory.GetDirectories(sourceDir))
+            foreach (var subDir in Directory.GetDirectories(sourceDir))
             {
-                string dirName = Path.GetFileName(subDir);
-                string destDir = Path.Combine(targetDir, dirName);
+                var dirName = Path.GetFileName(subDir);
+                var destDir = Path.Combine(targetDir, dirName);
                 CopyDirectory(subDir, destDir);
             }
         }

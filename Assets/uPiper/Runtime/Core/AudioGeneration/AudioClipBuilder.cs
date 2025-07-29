@@ -66,10 +66,10 @@ namespace uPiper.Core.AudioGeneration
             targetPeak = Mathf.Clamp01(targetPeak);
 
             // 最大振幅を見つける
-            float maxAmplitude = 0f;
-            for (int i = 0; i < audioData.Length; i++)
+            var maxAmplitude = 0f;
+            for (var i = 0; i < audioData.Length; i++)
             {
-                float absValue = Mathf.Abs(audioData[i]);
+                var absValue = Mathf.Abs(audioData[i]);
                 if (absValue > maxAmplitude)
                 {
                     maxAmplitude = absValue;
@@ -83,11 +83,11 @@ namespace uPiper.Core.AudioGeneration
             }
 
             // スケーリング係数を計算
-            float scale = targetPeak / maxAmplitude;
+            var scale = targetPeak / maxAmplitude;
 
             // 正規化
-            float[] normalizedData = new float[audioData.Length];
-            for (int i = 0; i < audioData.Length; i++)
+            var normalizedData = new float[audioData.Length];
+            for (var i = 0; i < audioData.Length; i++)
             {
                 normalizedData[i] = audioData[i] * scale;
             }
@@ -108,15 +108,15 @@ namespace uPiper.Core.AudioGeneration
             if (audioData == null || audioData.Length == 0)
                 return audioData;
 
-            float[] processedData = (float[])audioData.Clone();
+            var processedData = (float[])audioData.Clone();
 
             // フェードイン
             if (fadeInSamples > 0)
             {
-                int actualFadeIn = Mathf.Min(fadeInSamples, audioData.Length / 2);
-                for (int i = 0; i < actualFadeIn; i++)
+                var actualFadeIn = Mathf.Min(fadeInSamples, audioData.Length / 2);
+                for (var i = 0; i < actualFadeIn; i++)
                 {
-                    float factor = (float)i / actualFadeIn;
+                    var factor = (float)i / actualFadeIn;
                     processedData[i] *= factor;
                 }
             }
@@ -124,11 +124,11 @@ namespace uPiper.Core.AudioGeneration
             // フェードアウト
             if (fadeOutSamples > 0)
             {
-                int actualFadeOut = Mathf.Min(fadeOutSamples, audioData.Length / 2);
-                int startIndex = audioData.Length - actualFadeOut;
-                for (int i = 0; i < actualFadeOut; i++)
+                var actualFadeOut = Mathf.Min(fadeOutSamples, audioData.Length / 2);
+                var startIndex = audioData.Length - actualFadeOut;
+                for (var i = 0; i < actualFadeOut; i++)
                 {
-                    float factor = 1f - ((float)i / actualFadeOut);
+                    var factor = 1f - ((float)i / actualFadeOut);
                     processedData[startIndex + i] *= factor;
                 }
             }
@@ -153,12 +153,12 @@ namespace uPiper.Core.AudioGeneration
                 return Array.Empty<float>();
 
             // 合計サンプル数を計算
-            int totalSamples = validChunks.Sum(chunk => chunk.Length) + (validChunks.Length - 1) * Math.Max(0, gapSamples);
-            float[] concatenated = new float[totalSamples];
+            var totalSamples = validChunks.Sum(chunk => chunk.Length) + (validChunks.Length - 1) * Math.Max(0, gapSamples);
+            var concatenated = new float[totalSamples];
 
             // データをコピー
-            int currentIndex = 0;
-            for (int i = 0; i < validChunks.Length; i++)
+            var currentIndex = 0;
+            for (var i = 0; i < validChunks.Length; i++)
             {
                 Array.Copy(validChunks[i], 0, concatenated, currentIndex, validChunks[i].Length);
                 currentIndex += validChunks[i].Length;

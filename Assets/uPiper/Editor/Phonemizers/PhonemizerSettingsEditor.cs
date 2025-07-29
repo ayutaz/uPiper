@@ -1,8 +1,8 @@
-using UnityEngine;
-using UnityEditor;
-using uPiper.Phonemizers.Configuration;
-using uPiper.Core.Phonemizers.Unity;
 using System.Linq;
+using UnityEditor;
+using UnityEngine;
+using uPiper.Core.Phonemizers.Unity;
+using uPiper.Phonemizers.Configuration;
 
 namespace uPiper.Editor.Phonemizers
 {
@@ -15,7 +15,7 @@ namespace uPiper.Editor.Phonemizers
         private SerializedProperty enablePhonemizerService;
         private SerializedProperty defaultLanguage;
         private SerializedProperty languageSettings;
-        
+
         private bool showPerformanceSettings = true;
         private bool showMobileSettings = true;
         private bool showDataManagement = true;
@@ -40,33 +40,33 @@ namespace uPiper.Editor.Phonemizers
             // General Settings
             EditorGUILayout.PropertyField(enablePhonemizerService);
             EditorGUILayout.PropertyField(defaultLanguage);
-            
+
             EditorGUILayout.Space();
-            
+
             // Language Settings
             EditorGUILayout.LabelField("Language Configuration", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            
-            for (int i = 0; i < languageSettings.arraySize; i++)
+
+            for (var i = 0; i < languageSettings.arraySize; i++)
             {
                 var langProp = languageSettings.GetArrayElementAtIndex(i);
                 var langCode = langProp.FindPropertyRelative("languageCode").stringValue;
                 var displayName = langProp.FindPropertyRelative("displayName").stringValue;
-                
+
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                
+
                 var foldout = EditorGUILayout.Foldout(
-                    langProp.isExpanded, 
-                    $"{displayName} ({langCode})", 
+                    langProp.isExpanded,
+                    $"{displayName} ({langCode})",
                     true
                 );
                 langProp.isExpanded = foldout;
-                
+
                 if (foldout)
                 {
                     EditorGUI.indentLevel++;
                     EditorGUILayout.PropertyField(langProp, GUIContent.none, true);
-                    
+
                     if (GUILayout.Button("Remove Language", GUILayout.Width(120)))
                     {
                         languageSettings.DeleteArrayElementAtIndex(i);
@@ -74,15 +74,15 @@ namespace uPiper.Editor.Phonemizers
                     }
                     EditorGUI.indentLevel--;
                 }
-                
+
                 EditorGUILayout.EndVertical();
             }
-            
+
             if (GUILayout.Button("Add Language", GUILayout.Width(120)))
             {
                 languageSettings.InsertArrayElementAtIndex(languageSettings.arraySize);
             }
-            
+
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
@@ -128,7 +128,7 @@ namespace uPiper.Editor.Phonemizers
             }
 
             serializedObject.ApplyModifiedProperties();
-            
+
             EditorGUILayout.Space();
             DrawActionButtons();
         }
@@ -139,7 +139,7 @@ namespace uPiper.Editor.Phonemizers
             EditorGUILayout.PropertyField(serializedObject.FindProperty("cacheSize"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("cacheMemoryLimitMB"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enableBatchProcessing"));
-            
+
             if (serializedObject.FindProperty("enableBatchProcessing").boolValue)
             {
                 EditorGUI.indentLevel++;
@@ -151,7 +151,7 @@ namespace uPiper.Editor.Phonemizers
         private void DrawMobileSettings()
         {
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enableMobileOptimization"));
-            
+
             if (serializedObject.FindProperty("enableMobileOptimization").boolValue)
             {
                 EditorGUI.indentLevel++;
@@ -168,9 +168,9 @@ namespace uPiper.Editor.Phonemizers
             EditorGUILayout.PropertyField(serializedObject.FindProperty("dataPath"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("autoDownloadEssentialData"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("downloadOverCellular"));
-            
+
             EditorGUILayout.Space();
-            
+
             if (Application.isPlaying)
             {
                 if (GUILayout.Button("Check Data Status"))
@@ -199,38 +199,38 @@ namespace uPiper.Editor.Phonemizers
         private void DrawActionButtons()
         {
             EditorGUILayout.BeginHorizontal();
-            
+
             if (GUILayout.Button("Create Default Settings"))
             {
                 CreateDefaultSettings();
             }
-            
+
             if (Application.isPlaying)
             {
                 if (GUILayout.Button("Test Phonemization"))
                 {
                     TestPhonemizerWindow.ShowWindow();
                 }
-                
+
                 if (GUILayout.Button("View Cache Statistics"))
                 {
                     ShowCacheStatistics();
                 }
             }
-            
+
             EditorGUILayout.EndHorizontal();
         }
 
         private void CreateDefaultSettings()
         {
             var settings = PhonemizerSettings.CreateDefault();
-            string path = EditorUtility.SaveFilePanelInProject(
+            var path = EditorUtility.SaveFilePanelInProject(
                 "Save Phonemizer Settings",
                 "PhonemizerSettings",
                 "asset",
                 "Save phonemizer settings asset"
             );
-            
+
             if (!string.IsNullOrEmpty(path))
             {
                 AssetDatabase.CreateAsset(settings, path);
@@ -251,7 +251,7 @@ namespace uPiper.Editor.Phonemizers
                 {
                     // TODO: IsLanguageDataAvailable not implemented
 
-                    bool available = true;
+                    var available = true;
                     Debug.Log($"Language {lang}: {(available ? "Available" : "Not Downloaded")}");
                 }
             }
@@ -278,7 +278,7 @@ namespace uPiper.Editor.Phonemizers
         private string testText = "Hello, this is a test.";
         private string selectedLanguage = "en-US";
         private string result = "";
-        
+
         public static void ShowWindow()
         {
             var window = GetWindow<TestPhonemizerWindow>("Test Phonemizer");
@@ -289,20 +289,20 @@ namespace uPiper.Editor.Phonemizers
         {
             EditorGUILayout.LabelField("Test Phonemization", EditorStyles.boldLabel);
             EditorGUILayout.Space();
-            
+
             selectedLanguage = EditorGUILayout.TextField("Language", selectedLanguage);
             EditorGUILayout.LabelField("Test Text:");
             testText = EditorGUILayout.TextArea(testText, GUILayout.Height(60));
-            
+
             EditorGUILayout.Space();
-            
+
             if (GUILayout.Button("Test Phonemization"))
             {
                 TestPhonemizerService();
             }
-            
+
             EditorGUILayout.Space();
-            
+
             if (!string.IsNullOrEmpty(result))
             {
                 EditorGUILayout.LabelField("Result:", EditorStyles.boldLabel);
@@ -316,7 +316,7 @@ namespace uPiper.Editor.Phonemizers
             if (service != null)
             {
                 result = "Processing...";
-                service.Phonemize(testText, selectedLanguage, 
+                service.Phonemize(testText, selectedLanguage,
                     (phonemeResult) =>
                     {
                         if (phonemeResult != null && phonemeResult.Phonemes != null)

@@ -14,47 +14,47 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// <summary>
         /// Get supported languages with their capabilities
         /// </summary>
-        Dictionary<string, LanguageCapabilities> GetSupportedLanguages();
+        public Dictionary<string, LanguageCapabilities> GetSupportedLanguages();
 
         /// <summary>
         /// Get the preferred backend for a language
         /// </summary>
-        IPhonemizerBackend GetPreferredBackend(string language);
+        public IPhonemizerBackend GetPreferredBackend(string language);
 
         /// <summary>
         /// Phonemize text with fallback support
         /// </summary>
-        Task<PhonemeResult> PhonemizeWithFallbackAsync(
-            string text, 
-            string language, 
+        public Task<PhonemeResult> PhonemizeWithFallbackAsync(
+            string text,
+            string language,
             CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Register a phonemizer backend for a language
         /// </summary>
-        void RegisterBackend(string language, IPhonemizerBackend backend);
+        public void RegisterBackend(string language, IPhonemizerBackend backend);
 
         /// <summary>
         /// Set language fallback chain
         /// </summary>
-        void SetLanguageFallback(string language, string[] fallbackLanguages);
+        public void SetLanguageFallback(string language, string[] fallbackLanguages);
 
         /// <summary>
         /// Get all registered backends
         /// </summary>
-        Dictionary<string, List<IPhonemizerBackend>> GetAllBackends();
+        public Dictionary<string, List<IPhonemizerBackend>> GetAllBackends();
 
         /// <summary>
         /// Phonemize text in multiple languages
         /// </summary>
-        Task<Dictionary<string, PhonemeResult>> PhonemizeBatchAsync(
+        public Task<Dictionary<string, PhonemeResult>> PhonemizeBatchAsync(
             Dictionary<string, string> textsByLanguage,
             CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Dispose all backends
         /// </summary>
-        void Dispose();
+        public void Dispose();
     }
 
     /// <summary>
@@ -113,17 +113,17 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// <summary>
         /// Map phonemes from one system to another
         /// </summary>
-        string MapPhoneme(string phoneme, string fromSystem, string toSystem);
+        public string MapPhoneme(string phoneme, string fromSystem, string toSystem);
 
         /// <summary>
         /// Check if mapping is available
         /// </summary>
-        bool CanMap(string fromSystem, string toSystem);
+        public bool CanMap(string fromSystem, string toSystem);
 
         /// <summary>
         /// Get available phoneme systems
         /// </summary>
-        string[] GetPhonemeSystems();
+        public string[] GetPhonemeSystems();
     }
 
     /// <summary>
@@ -135,9 +135,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
         public List<string> Languages { get; set; } = new List<string>();
         public string CommonScript { get; set; }
         public bool SharePhonemeSet { get; set; }
-        
+
         // Language similarity matrix (0-1)
-        public Dictionary<(string, string), float> SimilarityScores { get; set; } 
+        public Dictionary<(string, string), float> SimilarityScores { get; set; }
             = new Dictionary<(string, string), float>();
     }
 
@@ -149,17 +149,17 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// <summary>
         /// Preprocess text for a specific language
         /// </summary>
-        string PreprocessText(string text, string languageCode);
+        public string PreprocessText(string text, string languageCode);
 
         /// <summary>
         /// Normalize text across languages
         /// </summary>
-        string NormalizeMultilingualText(string text);
+        public string NormalizeMultilingualText(string text);
 
         /// <summary>
         /// Split mixed-language text into segments
         /// </summary>
-        List<TextSegment> SegmentMixedLanguageText(string text);
+        public List<TextSegment> SegmentMixedLanguageText(string text);
     }
 
     /// <summary>

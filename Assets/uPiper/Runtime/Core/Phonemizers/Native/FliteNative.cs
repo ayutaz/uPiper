@@ -10,17 +10,17 @@ namespace uPiper.Core.Phonemizers.Native
     /// </summary>
     public static class FliteNative
     {
-        #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
+        private const string LIBRARY_NAME = "flite_unity";
+#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
             private const string LIBRARY_NAME = "flite_unity";
-        #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
+#elif UNITY_ANDROID
             private const string LIBRARY_NAME = "flite_unity";
-        #elif UNITY_ANDROID
+#elif UNITY_EDITOR_LINUX || UNITY_STANDALONE_LINUX
             private const string LIBRARY_NAME = "flite_unity";
-        #elif UNITY_EDITOR_LINUX || UNITY_STANDALONE_LINUX
+#else
             private const string LIBRARY_NAME = "flite_unity";
-        #else
-            private const string LIBRARY_NAME = "flite_unity";
-        #endif
+#endif
 
         /// <summary>
         /// Initialize Flite and create a context.
@@ -37,7 +37,7 @@ namespace uPiper.Core.Phonemizers.Native
         /// <returns>Space-separated phoneme string. Must be freed with flite_unity_free_string.</returns>
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr flite_unity_text_to_phones(
-            IntPtr context, 
+            IntPtr context,
             [MarshalAs(UnmanagedType.LPUTF8Str)] string text
         );
 

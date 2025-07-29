@@ -27,9 +27,9 @@ namespace uPiper.Core.Phonemizers.Services
         /// </summary>
         public PhonemizerService()
         {
-            this.backends = new Dictionary<string, IPhonemizerBackend>();
-            this.semaphore = new SemaphoreSlim(1);
-            
+            backends = new Dictionary<string, IPhonemizerBackend>();
+            semaphore = new SemaphoreSlim(1);
+
             // Register default backends
             RegisterDefaultBackends();
         }
@@ -52,14 +52,14 @@ namespace uPiper.Core.Phonemizers.Services
         /// Phonemizes text asynchronously.
         /// </summary>
         public async Task<PhonemeResult> PhonemizeAsync(
-            string text, 
+            string text,
             string language = "en-US",
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(text))
             {
-                return new PhonemeResult 
-                { 
+                return new PhonemeResult
+                {
                     Phonemes = new string[0],
                     Success = true,
                     Language = language
@@ -74,8 +74,8 @@ namespace uPiper.Core.Phonemizers.Services
                 if (backend == null)
                 {
                     Debug.LogWarning($"No phonemizer backend found for language: {language}");
-                    return new PhonemeResult 
-                    { 
+                    return new PhonemeResult
+                    {
                         Phonemes = new string[0],
                         Success = false,
                         Language = language,
@@ -117,7 +117,7 @@ namespace uPiper.Core.Phonemizers.Services
         {
             // Register rule-based backend for English
             var ruleBasedBackend = new uPiper.Core.Phonemizers.Backend.RuleBased.RuleBasedPhonemizer();
-            Task.Run(async () => 
+            Task.Run(async () =>
             {
                 try
                 {

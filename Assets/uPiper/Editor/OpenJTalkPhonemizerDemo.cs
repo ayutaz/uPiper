@@ -117,7 +117,7 @@ namespace uPiper.Editor
 
                     _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition, GUILayout.Height(200));
 
-                    for (int i = 0; i < (_lastResult.Phonemes?.Length ?? 0); i++)
+                    for (var i = 0; i < (_lastResult.Phonemes?.Length ?? 0); i++)
                     {
                         EditorGUILayout.BeginHorizontal();
                         EditorGUILayout.LabelField($"{i + 1}:", GUILayout.Width(40));

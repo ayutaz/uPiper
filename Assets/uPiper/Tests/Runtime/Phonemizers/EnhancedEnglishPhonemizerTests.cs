@@ -32,7 +32,7 @@ namespace uPiper.Tests.Runtime.Phonemizers
         {
             var options = new PhonemizerBackendOptions();
             var result = await phonemizer.InitializeAsync(options);
-            
+
             Assert.IsTrue(result);
             Assert.IsTrue(phonemizer.IsAvailable);
             Assert.AreEqual("EnhancedEnglish", phonemizer.Name);
@@ -49,15 +49,15 @@ namespace uPiper.Tests.Runtime.Phonemizers
             foreach (var word in testWords)
             {
                 var result = await phonemizer.PhonemizeAsync(word, "en");
-                
+
                 Assert.IsTrue(result.Success, $"Failed to phonemize '{word}'");
                 Assert.IsNotNull(result.Phonemes, $"Null phonemes for '{word}'");
                 Assert.Greater(result.Phonemes.Length, 0, $"Empty phonemes for '{word}'");
-                
+
                 // Basic sanity check - should have at least as many phonemes as letters/2
-                Assert.GreaterOrEqual(result.Phonemes.Length, word.Length / 2, 
+                Assert.GreaterOrEqual(result.Phonemes.Length, word.Length / 2,
                     $"Too few phonemes for '{word}'");
-                    
+
                 Debug.Log($"'{word}' -> {string.Join(" ", result.Phonemes)}");
             }
         }
@@ -77,7 +77,7 @@ namespace uPiper.Tests.Runtime.Phonemizers
             foreach (var (word, expectedPhonemes) in testCases)
             {
                 var result = await phonemizer.PhonemizeAsync(word, "en");
-                
+
                 Assert.IsTrue(result.Success);
                 CollectionAssert.AreEqual(expectedPhonemes, result.Phonemes);
             }
@@ -92,10 +92,10 @@ namespace uPiper.Tests.Runtime.Phonemizers
             var result = await phonemizer.PhonemizeAsync("testing", "en");
             Assert.IsTrue(result.Success);
             Assert.IsTrue(result.Phonemes.Length > 0);
-            
+
             // Should recognize "test" + "ing"
             var phonemeStr = string.Join(" ", result.Phonemes);
-            Assert.IsTrue(phonemeStr.Contains("T") && phonemeStr.Contains("EH") && 
+            Assert.IsTrue(phonemeStr.Contains("T") && phonemeStr.Contains("EH") &&
                          phonemeStr.Contains("S") && phonemeStr.Contains("T") &&
                          phonemeStr.Contains("IH") && phonemeStr.Contains("NG"));
         }
@@ -127,9 +127,9 @@ namespace uPiper.Tests.Runtime.Phonemizers
             foreach (var word in testCases)
             {
                 var result = await phonemizer.PhonemizeAsync(word, "en");
-                
+
                 Assert.IsTrue(result.Success);
-                Assert.IsTrue(result.Phonemes.Length > 0, 
+                Assert.IsTrue(result.Phonemes.Length > 0,
                     $"No phonemes generated for '{word}'");
             }
         }
@@ -144,7 +144,7 @@ namespace uPiper.Tests.Runtime.Phonemizers
             var result3 = await phonemizer.PhonemizeAsync("hello", "en");
 
             Assert.IsTrue(result1.Success && result2.Success && result3.Success);
-            
+
             // All should produce the same phonemes
             CollectionAssert.AreEqual(result1.Phonemes, result2.Phonemes);
             CollectionAssert.AreEqual(result1.Phonemes, result3.Phonemes);
@@ -156,15 +156,15 @@ namespace uPiper.Tests.Runtime.Phonemizers
             await phonemizer.InitializeAsync(new PhonemizerBackendOptions());
 
             var result = await phonemizer.PhonemizeAsync("Hello, world!", "en");
-            
+
             Assert.IsTrue(result.Success);
-            
+
             // Should contain pause markers or silence for punctuation
             var phonemeStr = string.Join(" ", result.Phonemes);
             // Different backends may use different pause markers: "pau", "_", or "sil"
             Assert.IsTrue(
-                phonemeStr.Contains("pau") || 
-                phonemeStr.Contains("_") || 
+                phonemeStr.Contains("pau") ||
+                phonemeStr.Contains("_") ||
                 phonemeStr.Contains("sil") ||
                 result.Phonemes.Length > 5, // At minimum, should have more phonemes than just "hello world"
                 $"Expected pause markers in: {phonemeStr}"
@@ -177,11 +177,11 @@ namespace uPiper.Tests.Runtime.Phonemizers
             await phonemizer.InitializeAsync(new PhonemizerBackendOptions());
 
             var memoryUsage = phonemizer.GetMemoryUsage();
-            
+
             // CMU dictionary should use several MB
             Assert.Greater(memoryUsage, 1000000); // > 1MB
             Assert.Less(memoryUsage, 10000000); // < 10MB
-            
+
             Debug.Log($"EnhancedEnglishPhonemizer memory usage: {memoryUsage / 1024 / 1024:F2} MB");
         }
 
@@ -198,7 +198,7 @@ namespace uPiper.Tests.Runtime.Phonemizers
         {
             // Priority is set after initialization
             await phonemizer.InitializeAsync(new PhonemizerBackendOptions());
-            
+
             // EnhancedEnglishPhonemizer should have higher priority than SimpleLTS
             Assert.AreEqual(150, phonemizer.Priority);
         }

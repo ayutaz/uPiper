@@ -72,7 +72,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             Assert.AreEqual(audioData.Length, normalized.Length);
 
             // 最大値を確認
-            float maxValue = 0f;
+            var maxValue = 0f;
             foreach (var sample in normalized)
             {
                 maxValue = Mathf.Max(maxValue, Mathf.Abs(sample));
@@ -85,7 +85,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         {
             // Arrange
             var audioData = new float[100];
-            for (int i = 0; i < audioData.Length; i++)
+            for (var i = 0; i < audioData.Length; i++)
             {
                 audioData[i] = 1.0f;
             }

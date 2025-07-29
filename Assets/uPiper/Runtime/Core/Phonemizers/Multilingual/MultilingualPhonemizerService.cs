@@ -5,8 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
-using uPiper.Core.Phonemizers.Backend.RuleBased;
 using uPiper.Core.Phonemizers.Backend.Flite;
+using uPiper.Core.Phonemizers.Backend.RuleBased;
 
 namespace uPiper.Core.Phonemizers.Multilingual
 {
@@ -17,7 +17,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
     {
         private readonly Dictionary<string, List<IPhonemizerBackend>> backendsByLanguage;
         private readonly Dictionary<string, LanguageCapabilities> languageCapabilities;
-        private readonly object syncLock = new object();
+        private readonly object syncLock = new();
 
         public MultilingualPhonemizerService()
         {
@@ -176,14 +176,14 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
         /// <inheritdoc/>
         public async Task<PhonemeResult> PhonemizeWithFallbackAsync(
-            string text, 
-            string language, 
+            string text,
+            string language,
             CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(text))
             {
-                return new PhonemeResult 
-                { 
+                return new PhonemeResult
+                {
                     Phonemes = new string[0],
                     Success = true,
                     Language = language
@@ -193,8 +193,8 @@ namespace uPiper.Core.Phonemizers.Multilingual
             var backend = GetPreferredBackend(language);
             if (backend == null)
             {
-                return new PhonemeResult 
-                { 
+                return new PhonemeResult
+                {
                     Phonemes = new string[0],
                     Success = false,
                     Language = language,
@@ -209,8 +209,8 @@ namespace uPiper.Core.Phonemizers.Multilingual
             catch (Exception ex)
             {
                 Debug.LogError($"Phonemization failed for {language}: {ex.Message}");
-                return new PhonemeResult 
-                { 
+                return new PhonemeResult
+                {
                     Phonemes = new string[0],
                     Success = false,
                     Language = language,
@@ -251,7 +251,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
         {
             var tasks = textsByLanguage.Select(kvp =>
                 PhonemizeWithFallbackAsync(kvp.Value, kvp.Key, cancellationToken)
-                    .ContinueWith(t => new { Language = kvp.Key, Result = t.Result })
+                    .ContinueWith(t => new { Language = kvp.Key, t.Result })
             ).ToArray();
 
             return Task.WhenAll(tasks).ContinueWith(t =>

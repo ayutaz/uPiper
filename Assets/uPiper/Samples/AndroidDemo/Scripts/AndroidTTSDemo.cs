@@ -17,24 +17,24 @@ namespace uPiper.Samples.AndroidDemo
     {
         [Header("UI References")]
 #if UNITY_2021_2_OR_NEWER
-        [SerializeField] private TMP_InputField inputField;
+        [SerializeField] private readonly TMP_InputField inputField;
 #else
         [SerializeField] private InputField inputField;
 #endif
-        [SerializeField] private Button speakButton;
+        [SerializeField] private readonly Button speakButton;
 #if UNITY_2021_2_OR_NEWER
-        [SerializeField] private TextMeshProUGUI statusText;
-        [SerializeField] private TextMeshProUGUI speedText;
+        [SerializeField] private readonly TextMeshProUGUI statusText;
+        [SerializeField] private readonly TextMeshProUGUI speedText;
 #else
         [SerializeField] private Text statusText;
         [SerializeField] private Text speedText;
 #endif
-        [SerializeField] private Slider speedSlider;
-        [SerializeField] private AudioSource audioSource;
+        [SerializeField] private readonly Slider speedSlider;
+        [SerializeField] private readonly AudioSource audioSource;
 
         [Header("Test Sentences")]
         [SerializeField]
-        private string[] testSentences = new string[]
+        private readonly string[] testSentences = new string[]
         {
             "こんにちは、Androidでのテストです。",
             "本日は晴天なり。",
@@ -98,8 +98,8 @@ namespace uPiper.Samples.AndroidDemo
             }
 
             // Wait for initialization
-            float timeout = 10f;
-            float elapsed = 0f;
+            var timeout = 10f;
+            var elapsed = 0f;
 
             while (!piperTTS.IsInitialized && elapsed < timeout)
             {
@@ -130,7 +130,7 @@ namespace uPiper.Samples.AndroidDemo
             if (!isInitialized || isSpeaking)
                 return;
 
-            string text = inputField != null ? inputField.text : "テストです。";
+            var text = inputField != null ? inputField.text : "テストです。";
             if (string.IsNullOrWhiteSpace(text))
             {
                 UpdateStatus("Please enter text to speak");
@@ -148,7 +148,7 @@ namespace uPiper.Samples.AndroidDemo
             if (speakButton != null)
                 speakButton.interactable = false;
 
-            float startTime = Time.realtimeSinceStartup;
+            var startTime = Time.realtimeSinceStartup;
 
             AudioClip audioClip = null;
             System.Exception error = null;
@@ -170,7 +170,7 @@ namespace uPiper.Samples.AndroidDemo
             }
             else if (audioClip != null)
             {
-                float generationTime = Time.realtimeSinceStartup - startTime;
+                var generationTime = Time.realtimeSinceStartup - startTime;
                 UpdateStatus($"Generated in {generationTime:F2}s");
 
                 // Play audio
@@ -241,15 +241,9 @@ namespace uPiper.Samples.AndroidDemo
 
         private void OnDestroy()
         {
-            if (speakButton != null)
-            {
-                speakButton.onClick.RemoveListener(OnSpeakButtonClicked);
-            }
+            speakButton?.onClick.RemoveListener(OnSpeakButtonClicked);
 
-            if (speedSlider != null)
-            {
-                speedSlider.onValueChanged.RemoveListener(OnSpeedChanged);
-            }
+            speedSlider?.onValueChanged.RemoveListener(OnSpeedChanged);
         }
     }
 }

@@ -46,8 +46,8 @@ namespace uPiper.Core.Phonemizers.Threading
             this.resetAction = resetAction;
             this.destroyAction = destroyAction;
             this.maxSize = maxSize;
-            this.pool = new ConcurrentBag<T>();
-            this.currentSize = 0;
+            pool = new ConcurrentBag<T>();
+            currentSize = 0;
         }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace uPiper.Core.Phonemizers.Threading
         {
             ThrowIfDisposed();
 
-            if (pool.TryTake(out T item))
+            if (pool.TryTake(out var item))
             {
                 return item;
             }
@@ -117,7 +117,7 @@ namespace uPiper.Core.Phonemizers.Threading
         /// </summary>
         public void Clear()
         {
-            while (pool.TryTake(out T item))
+            while (pool.TryTake(out var item))
             {
                 DestroyObject(item);
                 Interlocked.Decrement(ref currentSize);
@@ -133,7 +133,7 @@ namespace uPiper.Core.Phonemizers.Threading
             ThrowIfDisposed();
 
             count = Math.Min(count, maxSize - pool.Count);
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 try
                 {
@@ -231,7 +231,7 @@ namespace uPiper.Core.Phonemizers.Threading
         /// <summary>
         /// Gets the pooled object value.
         /// </summary>
-        public T Value => value;
+        public readonly T Value => value;
 
         public PooledObject(ThreadSafeObjectPool<T> pool, T value)
         {

@@ -1,8 +1,8 @@
+using System;
+using System.Collections;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Text;
-using System.Collections;
-using System;
 
 namespace uPiper.Samples.AndroidDemo
 {
@@ -12,22 +12,16 @@ namespace uPiper.Samples.AndroidDemo
     public class AndroidInputFieldTest : MonoBehaviour
     {
         [Header("UI References")]
-        [SerializeField] private InputField testInputField;
-        [SerializeField] private Text displayText;
-        [SerializeField] private Button setTextButton;
-        [SerializeField] private Button readTextButton;
+        [SerializeField] private readonly InputField testInputField;
+        [SerializeField] private readonly Text displayText;
+        [SerializeField] private readonly Button setTextButton;
+        [SerializeField] private readonly Button readTextButton;
 
         private void Start()
         {
-            if (setTextButton != null)
-            {
-                setTextButton.onClick.AddListener(SetTestText);
-            }
+            setTextButton?.onClick.AddListener(SetTestText);
 
-            if (readTextButton != null)
-            {
-                readTextButton.onClick.AddListener(ReadInputText);
-            }
+            readTextButton?.onClick.AddListener(ReadInputText);
 
             if (testInputField != null)
             {
@@ -49,7 +43,7 @@ namespace uPiper.Samples.AndroidDemo
         {
             if (testInputField == null) return;
 
-            string testText = "こんにちは";
+            var testText = "こんにちは";
             Debug.Log($"[AndroidInputFieldTest] Setting text: {testText}");
 
             testInputField.text = testText;
@@ -61,15 +55,15 @@ namespace uPiper.Samples.AndroidDemo
         {
             if (testInputField == null) return;
 
-            string currentText = testInputField.text;
+            var currentText = testInputField.text;
             Debug.Log($"[AndroidInputFieldTest] Current text: {currentText}");
             Debug.Log($"[AndroidInputFieldTest] Text length: {currentText.Length}");
 
             // Analyze encoding
-            byte[] utf8Bytes = Encoding.UTF8.GetBytes(currentText);
+            var utf8Bytes = Encoding.UTF8.GetBytes(currentText);
             Debug.Log($"[AndroidInputFieldTest] UTF-8 bytes: {BitConverter.ToString(utf8Bytes)}");
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             sb.AppendLine($"Current text: {currentText}");
             sb.AppendLine($"Length: {currentText.Length} chars");
             sb.AppendLine($"UTF-8 bytes: {utf8Bytes.Length}");
@@ -77,9 +71,9 @@ namespace uPiper.Samples.AndroidDemo
 
             // Check each character
             sb.AppendLine("\nCharacter analysis:");
-            for (int i = 0; i < currentText.Length && i < 10; i++)
+            for (var i = 0; i < currentText.Length && i < 10; i++)
             {
-                char c = currentText[i];
+                var c = currentText[i];
                 sb.AppendLine($"[{i}] '{c}' = U+{((int)c):X4}");
             }
 
@@ -107,15 +101,9 @@ namespace uPiper.Samples.AndroidDemo
 
         private void OnDestroy()
         {
-            if (setTextButton != null)
-            {
-                setTextButton.onClick.RemoveListener(SetTestText);
-            }
+            setTextButton?.onClick.RemoveListener(SetTestText);
 
-            if (readTextButton != null)
-            {
-                readTextButton.onClick.RemoveListener(ReadInputText);
-            }
+            readTextButton?.onClick.RemoveListener(ReadInputText);
 
             if (testInputField != null)
             {

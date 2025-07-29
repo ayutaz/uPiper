@@ -60,9 +60,9 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             foreach (var contraction in contractions)
             {
                 // Case-insensitive replacement
-                text = Regex.Replace(text, 
-                    @"\b" + Regex.Escape(contraction.Key) + @"\b", 
-                    contraction.Value, 
+                text = Regex.Replace(text,
+                    @"\b" + Regex.Escape(contraction.Key) + @"\b",
+                    contraction.Value,
                     RegexOptions.IgnoreCase);
             }
             return text;
@@ -75,13 +75,13 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             text = Regex.Replace(text, @"\bMr\.", "Mister", RegexOptions.IgnoreCase);
             text = Regex.Replace(text, @"\bMrs\.", "Missus", RegexOptions.IgnoreCase);
             text = Regex.Replace(text, @"\bMs\.", "Miss", RegexOptions.IgnoreCase);
-            
+
             // Handle other abbreviations
             foreach (var abbr in abbreviations)
             {
-                text = Regex.Replace(text, 
-                    @"\b" + Regex.Escape(abbr.Key) + @"\b", 
-                    abbr.Value, 
+                text = Regex.Replace(text,
+                    @"\b" + Regex.Escape(abbr.Key) + @"\b",
+                    abbr.Value,
                     RegexOptions.IgnoreCase);
             }
 
@@ -106,7 +106,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 text = Regex.Replace(text, pattern, match =>
                 {
                     var number = match.Value;
-                    
+
                     // Handle special cases
                     if (number.StartsWith("$"))
                         return HandleCurrency(number);
@@ -116,7 +116,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                         return HandleTime(number);
                     if (number.Contains("/"))
                         return HandleDate(number);
-                    
+
                     // Regular number
                     return numberConverter.Convert(number);
                 });
@@ -127,9 +127,9 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
 
         private string HandleCurrency(string currency)
         {
-            var amount = currency.Substring(1);
+            var amount = currency[1..];
             var words = numberConverter.Convert(amount);
-            
+
             if (amount.Contains("."))
             {
                 var parts = amount.Split('.');
@@ -138,13 +138,13 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 else
                     return words.Replace(" point ", " dollars and ") + " cents";
             }
-            
+
             return words + (amount == "1" ? " dollar" : " dollars");
         }
 
         private string HandlePercentage(string percentage)
         {
-            var number = percentage.Substring(0, percentage.Length - 1);
+            var number = percentage[..^1];
             return numberConverter.Convert(number) + " percent";
         }
 
@@ -153,16 +153,16 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             var parts = time.Split(':');
             var hours = int.Parse(parts[0]);
             var minutes = int.Parse(parts[1]);
-            
+
             var result = numberConverter.Convert(hours.ToString());
-            
+
             if (minutes == 0)
                 result += " o'clock";
             else if (minutes < 10)
                 result += " oh " + numberConverter.Convert(minutes.ToString());
             else
                 result += " " + numberConverter.Convert(minutes.ToString());
-            
+
             return result;
         }
 
@@ -180,10 +180,10 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             text = text.Replace("=", " equals ");
             text = text.Replace("@", " at ");
             text = text.Replace("#", " number ");
-            
+
             // Remove or replace other special characters
             text = Regex.Replace(text, @"[^\w\s\.\,\!\?\-\']", " ");
-            
+
             return text;
         }
 
@@ -191,10 +191,10 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         {
             // Replace multiple spaces with single space
             text = Regex.Replace(text, @"\s+", " ");
-            
+
             // Trim
             text = text.Trim();
-            
+
             return text;
         }
 
@@ -275,19 +275,19 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
     /// </summary>
     internal class NumberToWords
     {
-        private readonly string[] ones = 
+        private readonly string[] ones =
         {
             "", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
             "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
             "seventeen", "eighteen", "nineteen"
         };
 
-        private readonly string[] tens = 
+        private readonly string[] tens =
         {
             "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"
         };
 
-        private readonly string[] thousands = 
+        private readonly string[] thousands =
         {
             "", "thousand", "million", "billion", "trillion"
         };
@@ -307,7 +307,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             numberStr = numberStr.Replace(",", "");
 
             // Parse as long
-            if (!long.TryParse(numberStr, out long number))
+            if (!long.TryParse(numberStr, out var number))
                 return numberStr; // Return as-is if not a valid number
 
             if (number == 0)
@@ -322,7 +322,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         private string ConvertDecimals(string decimals)
         {
             var result = new List<string>();
-            foreach (char digit in decimals)
+            foreach (var digit in decimals)
             {
                 if (char.IsDigit(digit))
                 {
@@ -341,12 +341,12 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 return tens[number / 10] + (number % 10 > 0 ? " " + ones[number % 10] : "");
 
             if (number < 1000)
-                return ones[number / 100] + " hundred" + 
+                return ones[number / 100] + " hundred" +
                     (number % 100 > 0 ? " " + ConvertNumber(number % 100) : "");
 
             // Handle larger numbers
             var result = new List<string>();
-            int groupIndex = 0;
+            var groupIndex = 0;
 
             while (number > 0)
             {

@@ -21,7 +21,7 @@ namespace uPiper.Core.Phonemizers
 
         private readonly Dictionary<string, CacheEntry> cache;
         private readonly LinkedList<string> lruList;
-        private readonly object lockObject = new object();
+        private readonly object lockObject = new();
         private readonly int maxSize;
         private readonly TimeSpan maxAge;
 
@@ -54,7 +54,7 @@ namespace uPiper.Core.Phonemizers
         public bool TryGet(string text, string language, out PhonemeResult result)
         {
             var key = GetCacheKey(text, language);
-            
+
             lock (lockObject)
             {
                 if (cache.TryGetValue(key, out var entry))
@@ -65,12 +65,12 @@ namespace uPiper.Core.Phonemizers
                         // Update LRU
                         lruList.Remove(key);
                         lruList.AddFirst(key);
-                        
+
                         // Update stats
                         entry.LastAccess = DateTime.UtcNow;
                         entry.AccessCount++;
                         hitCount++;
-                        
+
                         // Clone result to prevent modification
                         result = entry.Result.Clone();
                         result.FromCache = true;
@@ -82,7 +82,7 @@ namespace uPiper.Core.Phonemizers
                         RemoveEntry(key);
                     }
                 }
-                
+
                 missCount++;
                 result = null;
                 return false;
@@ -98,7 +98,7 @@ namespace uPiper.Core.Phonemizers
                 return;
 
             var key = GetCacheKey(text, language);
-            
+
             lock (lockObject)
             {
                 if (cache.ContainsKey(key))
@@ -107,7 +107,7 @@ namespace uPiper.Core.Phonemizers
                     cache[key].Result = result.Clone();
                     cache[key].LastAccess = DateTime.UtcNow;
                     cache[key].AccessCount++;
-                    
+
                     // Move to front of LRU
                     lruList.Remove(key);
                     lruList.AddFirst(key);
@@ -120,14 +120,14 @@ namespace uPiper.Core.Phonemizers
                         // Evict least recently used
                         EvictLRU();
                     }
-                    
+
                     cache[key] = new CacheEntry
                     {
                         Result = result.Clone(),
                         LastAccess = DateTime.UtcNow,
                         AccessCount = 1
                     };
-                    
+
                     lruList.AddFirst(key);
                 }
             }
@@ -177,7 +177,7 @@ namespace uPiper.Core.Phonemizers
             {
                 var now = DateTime.UtcNow;
                 var keysToRemove = new List<string>();
-                
+
                 foreach (var kvp in cache)
                 {
                     if (now - kvp.Value.LastAccess > maxAge)
@@ -185,12 +185,12 @@ namespace uPiper.Core.Phonemizers
                         keysToRemove.Add(kvp.Key);
                     }
                 }
-                
+
                 foreach (var key in keysToRemove)
                 {
                     RemoveEntry(key);
                 }
-                
+
                 if (keysToRemove.Count > 0)
                 {
                     Debug.Log($"Pruned {keysToRemove.Count} expired cache entries");
@@ -209,7 +209,7 @@ namespace uPiper.Core.Phonemizers
         {
             if (lruList.Count == 0)
                 return;
-            
+
             var keyToRemove = lruList.Last.Value;
             RemoveEntry(keyToRemove);
             evictionCount++;
@@ -224,7 +224,7 @@ namespace uPiper.Core.Phonemizers
         private long EstimateMemoryUsage()
         {
             long total = 0;
-            
+
             foreach (var entry in cache.Values)
             {
                 if (entry.Result.Phonemes != null)
@@ -233,7 +233,7 @@ namespace uPiper.Core.Phonemizers
                 }
                 total += 100; // Overhead per entry
             }
-            
+
             return total;
         }
 
@@ -250,7 +250,7 @@ namespace uPiper.Core.Phonemizers
             public float HitRate { get; set; }
             public long MemoryUsage { get; set; }
 
-            public override string ToString()
+            public override readonly string ToString()
             {
                 return $"Cache Stats - Entries: {EntryCount}/{MaxSize}, " +
                        $"Hit Rate: {HitRate:P1}, " +
@@ -286,8 +286,8 @@ namespace uPiper.Core.Phonemizers
                 FromCache = original.FromCache,
                 Error = original.Error,
                 ErrorMessage = original.ErrorMessage,
-                Metadata = original.Metadata != null 
-                    ? new Dictionary<string, object>(original.Metadata) 
+                Metadata = original.Metadata != null
+                    ? new Dictionary<string, object>(original.Metadata)
                     : null
             };
         }
@@ -296,7 +296,7 @@ namespace uPiper.Core.Phonemizers
         {
             if (source == null)
                 return null;
-            
+
             var copy = new T[source.Length];
             Array.Copy(source, copy, source.Length);
             return copy;

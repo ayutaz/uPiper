@@ -19,19 +19,61 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
         private static readonly Dictionary<char, string> BasicLetterToPhoneme = new()
         {
             // Vowels
-            ['a'] = "AH", ['e'] = "EH", ['i'] = "IH", ['o'] = "AA", ['u'] = "UH",
-            ['A'] = "EY", ['E'] = "IY", ['I'] = "AY", ['O'] = "OW", ['U'] = "UW",
-            
+            ['a'] = "AH",
+            ['e'] = "EH",
+            ['i'] = "IH",
+            ['o'] = "AA",
+            ['u'] = "UH",
+            ['A'] = "EY",
+            ['E'] = "IY",
+            ['I'] = "AY",
+            ['O'] = "OW",
+            ['U'] = "UW",
+
             // Consonants
-            ['b'] = "B", ['c'] = "K", ['d'] = "D", ['f'] = "F", ['g'] = "G",
-            ['h'] = "HH", ['j'] = "JH", ['k'] = "K", ['l'] = "L", ['m'] = "M",
-            ['n'] = "N", ['p'] = "P", ['q'] = "K", ['r'] = "R", ['s'] = "S",
-            ['t'] = "T", ['v'] = "V", ['w'] = "W", ['x'] = "K S", ['y'] = "Y", ['z'] = "Z",
-            
-            ['B'] = "B", ['C'] = "K", ['D'] = "D", ['F'] = "F", ['G'] = "G",
-            ['H'] = "HH", ['J'] = "JH", ['K'] = "K", ['L'] = "L", ['M'] = "M",
-            ['N'] = "N", ['P'] = "P", ['Q'] = "K", ['R'] = "R", ['S'] = "S",
-            ['T'] = "T", ['V'] = "V", ['W'] = "W", ['X'] = "K S", ['Y'] = "Y", ['Z'] = "Z"
+            ['b'] = "B",
+            ['c'] = "K",
+            ['d'] = "D",
+            ['f'] = "F",
+            ['g'] = "G",
+            ['h'] = "HH",
+            ['j'] = "JH",
+            ['k'] = "K",
+            ['l'] = "L",
+            ['m'] = "M",
+            ['n'] = "N",
+            ['p'] = "P",
+            ['q'] = "K",
+            ['r'] = "R",
+            ['s'] = "S",
+            ['t'] = "T",
+            ['v'] = "V",
+            ['w'] = "W",
+            ['x'] = "K S",
+            ['y'] = "Y",
+            ['z'] = "Z",
+
+            ['B'] = "B",
+            ['C'] = "K",
+            ['D'] = "D",
+            ['F'] = "F",
+            ['G'] = "G",
+            ['H'] = "HH",
+            ['J'] = "JH",
+            ['K'] = "K",
+            ['L'] = "L",
+            ['M'] = "M",
+            ['N'] = "N",
+            ['P'] = "P",
+            ['Q'] = "K",
+            ['R'] = "R",
+            ['S'] = "S",
+            ['T'] = "T",
+            ['V'] = "V",
+            ['W'] = "W",
+            ['X'] = "K S",
+            ['Y'] = "Y",
+            ['Z'] = "Z"
         };
 
         /// <inheritdoc/>
@@ -87,7 +129,7 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
                     }
 
                     // Convert each character to phoneme
-                    foreach (char c in word)
+                    foreach (var c in word)
                     {
                         if (char.IsLetter(c))
                         {
@@ -125,10 +167,10 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
                     ProcessingTime = stopwatch.Elapsed,
                     Phonemes = phonemes.ToArray(),
                     PhonemeIds = ConvertToPhonemeIds(phonemes),
-                    Metadata = new Dictionary<string, object> 
-                    { 
-                        { "Type", "Fallback" }, 
-                        { "Note", "Quality may be limited" } 
+                    Metadata = new Dictionary<string, object>
+                    {
+                        { "Type", "Fallback" },
+                        { "Note", "Quality may be limited" }
                     }
                 };
 
@@ -178,13 +220,13 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
 
         private void ApplySimpleStress(List<string> phonemes)
         {
-            var vowelPhonemes = new HashSet<string> 
-            { 
-                "AH", "EH", "IH", "AA", "UH", "EY", "IY", "AY", "OW", "UW" 
+            var vowelPhonemes = new HashSet<string>
+            {
+                "AH", "EH", "IH", "AA", "UH", "EY", "IY", "AY", "OW", "UW"
             };
 
-            bool firstVowel = true;
-            for (int i = 0; i < phonemes.Count; i++)
+            var firstVowel = true;
+            for (var i = 0; i < phonemes.Count; i++)
             {
                 if (vowelPhonemes.Contains(phonemes[i]))
                 {
@@ -199,12 +241,12 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
         {
             // Simple mapping - in real implementation, this should match the model's vocabulary
             var ids = new List<int>();
-            
+
             foreach (var phoneme in phonemes)
             {
                 // Remove stress markers for ID mapping
                 var basePhoneme = phoneme.TrimEnd('0', '1', '2');
-                
+
                 // Simple hash-based ID assignment
                 var id = Math.Abs(basePhoneme.GetHashCode()) % 100 + 1;
                 ids.Add(id);

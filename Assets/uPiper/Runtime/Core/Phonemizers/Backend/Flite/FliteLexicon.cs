@@ -13,7 +13,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
     public class FliteLexicon : IDisposable
     {
         private readonly Dictionary<string, Dictionary<string, List<string>>> lexicons;
-        private readonly object syncLock = new object();
+        private readonly object syncLock = new();
 
         public FliteLexicon()
         {
@@ -50,7 +50,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                 {
                     lexicons[language] = new Dictionary<string, List<string>>();
                 }
-                
+
                 lexicons[language][word.ToLower()] = new List<string>(phonemes);
             }
         }
@@ -106,88 +106,89 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         private void InitializeBuiltInLexicons()
         {
             // Initialize US English lexicon with common words
-            var usEnglish = new Dictionary<string, List<string>>();
-            
-            // Common words
-            usEnglish["the"] = new List<string> { "dh", "ax" };
-            usEnglish["a"] = new List<string> { "ax" };
-            usEnglish["an"] = new List<string> { "ax", "n" };
-            usEnglish["and"] = new List<string> { "ae", "n", "d" };
-            usEnglish["of"] = new List<string> { "ax", "v" };
-            usEnglish["to"] = new List<string> { "t", "uw" };
-            usEnglish["in"] = new List<string> { "ih", "n" };
-            usEnglish["is"] = new List<string> { "ih", "z" };
-            usEnglish["it"] = new List<string> { "ih", "t" };
-            usEnglish["that"] = new List<string> { "dh", "ae", "t" };
-            usEnglish["for"] = new List<string> { "f", "ao", "r" };
-            usEnglish["was"] = new List<string> { "w", "aa", "z" };
-            usEnglish["with"] = new List<string> { "w", "ih", "dh" };
-            usEnglish["be"] = new List<string> { "b", "iy" };
-            usEnglish["by"] = new List<string> { "b", "ay" };
-            usEnglish["have"] = new List<string> { "hh", "ae", "v" };
-            usEnglish["from"] = new List<string> { "f", "r", "ah", "m" };
-            usEnglish["or"] = new List<string> { "ao", "r" };
-            usEnglish["as"] = new List<string> { "ae", "z" };
-            usEnglish["what"] = new List<string> { "w", "ah", "t" };
-            usEnglish["all"] = new List<string> { "ao", "l" };
-            usEnglish["would"] = new List<string> { "w", "uh", "d" };
-            usEnglish["there"] = new List<string> { "dh", "eh", "r" };
-            usEnglish["their"] = new List<string> { "dh", "eh", "r" };
-            
-            // Numbers
-            usEnglish["one"] = new List<string> { "w", "ah", "n" };
-            usEnglish["two"] = new List<string> { "t", "uw" };
-            usEnglish["three"] = new List<string> { "th", "r", "iy" };
-            usEnglish["four"] = new List<string> { "f", "ao", "r" };
-            usEnglish["five"] = new List<string> { "f", "ay", "v" };
-            usEnglish["six"] = new List<string> { "s", "ih", "k", "s" };
-            usEnglish["seven"] = new List<string> { "s", "eh", "v", "ax", "n" };
-            usEnglish["eight"] = new List<string> { "ey", "t" };
-            usEnglish["nine"] = new List<string> { "n", "ay", "n" };
-            usEnglish["ten"] = new List<string> { "t", "eh", "n" };
-            
-            // Common verbs
-            usEnglish["go"] = new List<string> { "g", "ow" };
-            usEnglish["get"] = new List<string> { "g", "eh", "t" };
-            usEnglish["make"] = new List<string> { "m", "ey", "k" };
-            usEnglish["know"] = new List<string> { "n", "ow" };
-            usEnglish["think"] = new List<string> { "th", "ih", "ng", "k" };
-            usEnglish["take"] = new List<string> { "t", "ey", "k" };
-            usEnglish["see"] = new List<string> { "s", "iy" };
-            usEnglish["come"] = new List<string> { "k", "ah", "m" };
-            usEnglish["want"] = new List<string> { "w", "aa", "n", "t" };
-            usEnglish["use"] = new List<string> { "y", "uw", "z" };
-            
-            // Common nouns
-            usEnglish["time"] = new List<string> { "t", "ay", "m" };
-            usEnglish["person"] = new List<string> { "p", "er", "s", "ax", "n" };
-            usEnglish["year"] = new List<string> { "y", "ih", "r" };
-            usEnglish["way"] = new List<string> { "w", "ey" };
-            usEnglish["day"] = new List<string> { "d", "ey" };
-            usEnglish["man"] = new List<string> { "m", "ae", "n" };
-            usEnglish["thing"] = new List<string> { "th", "ih", "ng" };
-            usEnglish["woman"] = new List<string> { "w", "uh", "m", "ax", "n" };
-            usEnglish["life"] = new List<string> { "l", "ay", "f" };
-            usEnglish["child"] = new List<string> { "ch", "ay", "l", "d" };
-            usEnglish["world"] = new List<string> { "w", "er", "l", "d" };
-            
-            // Technology terms
-            usEnglish["computer"] = new List<string> { "k", "ax", "m", "p", "y", "uw", "t", "er" };
-            usEnglish["software"] = new List<string> { "s", "ao", "f", "t", "w", "eh", "r" };
-            usEnglish["hardware"] = new List<string> { "hh", "aa", "r", "d", "w", "eh", "r" };
-            usEnglish["internet"] = new List<string> { "ih", "n", "t", "er", "n", "eh", "t" };
-            usEnglish["email"] = new List<string> { "iy", "m", "ey", "l" };
-            usEnglish["website"] = new List<string> { "w", "eh", "b", "s", "ay", "t" };
-            usEnglish["data"] = new List<string> { "d", "ey", "t", "ax" };
-            usEnglish["file"] = new List<string> { "f", "ay", "l" };
-            usEnglish["system"] = new List<string> { "s", "ih", "s", "t", "ax", "m" };
-            
+            var usEnglish = new Dictionary<string, List<string>>
+            {
+                // Common words
+                ["the"] = new List<string> { "dh", "ax" },
+                ["a"] = new List<string> { "ax" },
+                ["an"] = new List<string> { "ax", "n" },
+                ["and"] = new List<string> { "ae", "n", "d" },
+                ["of"] = new List<string> { "ax", "v" },
+                ["to"] = new List<string> { "t", "uw" },
+                ["in"] = new List<string> { "ih", "n" },
+                ["is"] = new List<string> { "ih", "z" },
+                ["it"] = new List<string> { "ih", "t" },
+                ["that"] = new List<string> { "dh", "ae", "t" },
+                ["for"] = new List<string> { "f", "ao", "r" },
+                ["was"] = new List<string> { "w", "aa", "z" },
+                ["with"] = new List<string> { "w", "ih", "dh" },
+                ["be"] = new List<string> { "b", "iy" },
+                ["by"] = new List<string> { "b", "ay" },
+                ["have"] = new List<string> { "hh", "ae", "v" },
+                ["from"] = new List<string> { "f", "r", "ah", "m" },
+                ["or"] = new List<string> { "ao", "r" },
+                ["as"] = new List<string> { "ae", "z" },
+                ["what"] = new List<string> { "w", "ah", "t" },
+                ["all"] = new List<string> { "ao", "l" },
+                ["would"] = new List<string> { "w", "uh", "d" },
+                ["there"] = new List<string> { "dh", "eh", "r" },
+                ["their"] = new List<string> { "dh", "eh", "r" },
+
+                // Numbers
+                ["one"] = new List<string> { "w", "ah", "n" },
+                ["two"] = new List<string> { "t", "uw" },
+                ["three"] = new List<string> { "th", "r", "iy" },
+                ["four"] = new List<string> { "f", "ao", "r" },
+                ["five"] = new List<string> { "f", "ay", "v" },
+                ["six"] = new List<string> { "s", "ih", "k", "s" },
+                ["seven"] = new List<string> { "s", "eh", "v", "ax", "n" },
+                ["eight"] = new List<string> { "ey", "t" },
+                ["nine"] = new List<string> { "n", "ay", "n" },
+                ["ten"] = new List<string> { "t", "eh", "n" },
+
+                // Common verbs
+                ["go"] = new List<string> { "g", "ow" },
+                ["get"] = new List<string> { "g", "eh", "t" },
+                ["make"] = new List<string> { "m", "ey", "k" },
+                ["know"] = new List<string> { "n", "ow" },
+                ["think"] = new List<string> { "th", "ih", "ng", "k" },
+                ["take"] = new List<string> { "t", "ey", "k" },
+                ["see"] = new List<string> { "s", "iy" },
+                ["come"] = new List<string> { "k", "ah", "m" },
+                ["want"] = new List<string> { "w", "aa", "n", "t" },
+                ["use"] = new List<string> { "y", "uw", "z" },
+
+                // Common nouns
+                ["time"] = new List<string> { "t", "ay", "m" },
+                ["person"] = new List<string> { "p", "er", "s", "ax", "n" },
+                ["year"] = new List<string> { "y", "ih", "r" },
+                ["way"] = new List<string> { "w", "ey" },
+                ["day"] = new List<string> { "d", "ey" },
+                ["man"] = new List<string> { "m", "ae", "n" },
+                ["thing"] = new List<string> { "th", "ih", "ng" },
+                ["woman"] = new List<string> { "w", "uh", "m", "ax", "n" },
+                ["life"] = new List<string> { "l", "ay", "f" },
+                ["child"] = new List<string> { "ch", "ay", "l", "d" },
+                ["world"] = new List<string> { "w", "er", "l", "d" },
+
+                // Technology terms
+                ["computer"] = new List<string> { "k", "ax", "m", "p", "y", "uw", "t", "er" },
+                ["software"] = new List<string> { "s", "ao", "f", "t", "w", "eh", "r" },
+                ["hardware"] = new List<string> { "hh", "aa", "r", "d", "w", "eh", "r" },
+                ["internet"] = new List<string> { "ih", "n", "t", "er", "n", "eh", "t" },
+                ["email"] = new List<string> { "iy", "m", "ey", "l" },
+                ["website"] = new List<string> { "w", "eh", "b", "s", "ay", "t" },
+                ["data"] = new List<string> { "d", "ey", "t", "ax" },
+                ["file"] = new List<string> { "f", "ay", "l" },
+                ["system"] = new List<string> { "s", "ih", "s", "t", "ax", "m" }
+            };
+
             lexicons["en-US"] = usEnglish;
-            
+
             // Copy US English to other English variants with modifications
             lexicons["en-GB"] = new Dictionary<string, List<string>>(usEnglish);
             lexicons["en-IN"] = new Dictionary<string, List<string>>(usEnglish);
-            
+
             // Add some British English specific pronunciations
             lexicons["en-GB"]["schedule"] = new List<string> { "sh", "eh", "d", "y", "uw", "l" };
             lexicons["en-GB"]["privacy"] = new List<string> { "p", "r", "ih", "v", "ax", "s", "iy" };
@@ -212,7 +213,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         {
             lock (syncLock)
             {
-                return lexicons.TryGetValue(language, out var lexicon) && 
+                return lexicons.TryGetValue(language, out var lexicon) &&
                        lexicon.ContainsKey(word.ToLower());
             }
         }

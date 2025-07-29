@@ -96,7 +96,7 @@ namespace uPiper.Core.Platform
         /// </summary>
         public static string GetNativeLibraryDirectory()
         {
-            string basePath = Application.dataPath;
+            var basePath = Application.dataPath;
 
             // In editor
             if (Application.isEditor)
@@ -105,7 +105,7 @@ namespace uPiper.Core.Platform
             }
 
             // In builds
-            string dataPath = Application.dataPath;
+            var dataPath = Application.dataPath;
             if (IsWindows)
             {
                 // Windows: Data/Plugins

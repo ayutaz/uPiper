@@ -12,31 +12,28 @@ namespace uPiper.Samples.AndroidDemo
     public class SimpleAndroidTTSTest : MonoBehaviour
     {
         [Header("UI References")]
-        [SerializeField] private Button testButton;
-        [SerializeField] private Text logText;
-        [SerializeField] private AudioSource audioSource;
+        [SerializeField] private readonly Button testButton;
+        [SerializeField] private readonly Text logText;
+        [SerializeField] private readonly AudioSource audioSource;
 
         private string logContent = "";
 
         private void Start()
         {
-            if (testButton != null)
-            {
-                testButton.onClick.AddListener(RunSimpleTest);
-            }
+            testButton?.onClick.AddListener(RunSimpleTest);
 
             AddLog("=== Simple Android TTS Test ===");
             AddLog($"Platform: {Application.platform}");
             AddLog($"System Language: {Application.systemLanguage}");
 
             // Test basic text
-            string testText = "こんにちは";
+            var testText = "こんにちは";
             AddLog($"Test text: {testText}");
             AddLog($"Text length: {testText.Length}");
 
             // Check if text contains expected characters
-            bool hasHiragana = false;
-            foreach (char c in testText)
+            var hasHiragana = false;
+            foreach (var c in testText)
             {
                 if (c >= '\u3040' && c <= '\u309F')
                 {
@@ -110,7 +107,7 @@ namespace uPiper.Samples.AndroidDemo
                 AddLog("✓ OpenJTalkPhonemizer created");
 
                 // Test phonemization
-                string testText = "テスト";
+                var testText = "テスト";
                 AddLog($"Testing phonemization of: {testText}");
 
                 var result = phonemizer.Phonemize(testText);
@@ -129,10 +126,7 @@ namespace uPiper.Samples.AndroidDemo
             }
             finally
             {
-                if (phonemizer != null)
-                {
-                    phonemizer.Dispose();
-                }
+                phonemizer?.Dispose();
             }
 
             yield return new WaitForSeconds(1f);
@@ -141,7 +135,7 @@ namespace uPiper.Samples.AndroidDemo
             AddLog("\n3. Testing PiperTTS...");
 
             PiperTTS piperTTS = null;
-            bool initSuccess = false;
+            var initSuccess = false;
 
             try
             {
@@ -159,8 +153,8 @@ namespace uPiper.Samples.AndroidDemo
             if (initSuccess && piperTTS != null)
             {
                 // Wait for initialization
-                float timeout = 5f;
-                float elapsed = 0f;
+                var timeout = 5f;
+                var elapsed = 0f;
                 while (!piperTTS.IsInitialized && elapsed < timeout)
                 {
                     yield return new WaitForSeconds(0.1f);
@@ -174,7 +168,7 @@ namespace uPiper.Samples.AndroidDemo
                         AddLog("✓ PiperTTS initialized");
 
                         // Generate audio
-                        string testText = "こんにちは";
+                        var testText = "こんにちは";
                         AddLog($"Generating audio for: {testText}");
 
                         var audioClip = piperTTS.GenerateAudio(testText);
@@ -206,10 +200,7 @@ namespace uPiper.Samples.AndroidDemo
                 }
                 finally
                 {
-                    if (piperTTS != null)
-                    {
-                        piperTTS.Dispose();
-                    }
+                    piperTTS?.Dispose();
                 }
             }
 
@@ -229,10 +220,7 @@ namespace uPiper.Samples.AndroidDemo
 
         private void OnDestroy()
         {
-            if (testButton != null)
-            {
-                testButton.onClick.RemoveListener(RunSimpleTest);
-            }
+            testButton?.onClick.RemoveListener(RunSimpleTest);
         }
     }
 }

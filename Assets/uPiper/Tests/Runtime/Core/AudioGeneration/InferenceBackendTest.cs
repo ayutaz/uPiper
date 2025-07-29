@@ -1,10 +1,10 @@
 using System.Threading.Tasks;
 using NUnit.Framework;
-using uPiper.Core;
-using uPiper.Core.AudioGeneration;
 using Unity.InferenceEngine;
 using UnityEngine;
 using UnityEngine.TestTools;
+using uPiper.Core;
+using uPiper.Core.AudioGeneration;
 
 namespace uPiper.Tests.Runtime.Core.AudioGeneration
 {

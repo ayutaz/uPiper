@@ -1,7 +1,7 @@
+using System;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
-using System.Reflection;
-using System;
 
 namespace uPiper.Editor.Menu
 {
@@ -13,7 +13,7 @@ namespace uPiper.Editor.Menu
         // Menu paths - Using separator to distinguish from existing menus
         private const string MENU_ROOT = "uPiper/";
         private const string SEPARATOR = "—————————————————";
-        
+
         // Main sections with new structure to avoid conflicts
         private const string SECTION_DEMO = MENU_ROOT + "[Demo & Samples]/";
         private const string SECTION_BUILD = MENU_ROOT + "[Build & Deploy]/";
@@ -33,17 +33,17 @@ namespace uPiper.Editor.Menu
         private const int PRIORITY_HELP = 700;
 
         #region Separator
-        
+
         [MenuItem(MENU_ROOT + SEPARATOR, false, 50)]
-        private static void Separator() 
+        private static void Separator()
         {
             // This is just a visual separator
         }
-        
+
         #endregion
 
         #region Demo & Samples
-        
+
         [MenuItem(SECTION_DEMO + "Open Inference Demo Scene", false, PRIORITY_DEMO)]
         private static void OpenInferenceDemoScene()
         {
@@ -77,7 +77,7 @@ namespace uPiper.Editor.Menu
         #endregion
 
         #region Build
-        
+
         [MenuItem(SECTION_BUILD + "Configure Build Settings", false, PRIORITY_BUILD)]
         private static void ConfigureBuildSettings()
         {
@@ -105,7 +105,7 @@ namespace uPiper.Editor.Menu
         #endregion
 
         #region Tools
-        
+
         [MenuItem(SECTION_TOOLS + "OpenJTalk Phonemizer Test", false, PRIORITY_TOOLS)]
         private static void OpenJTalkPhonemizerTest()
         {
@@ -127,7 +127,7 @@ namespace uPiper.Editor.Menu
         #endregion
 
         #region Debug
-        
+
         [MenuItem(SECTION_DEBUG + "Check Compilation", false, PRIORITY_DEBUG)]
         private static void CheckCompilation()
         {
@@ -188,7 +188,7 @@ namespace uPiper.Editor.Menu
         #endregion
 
         #region Android
-        
+
         [MenuItem(SECTION_ANDROID + "Setup Android Libraries", false, PRIORITY_ANDROID)]
         private static void SetupAndroidLibraries()
         {
@@ -228,7 +228,7 @@ namespace uPiper.Editor.Menu
         #endregion
 
         #region Help
-        
+
         [MenuItem(SECTION_HELP + "Documentation", false, PRIORITY_HELP)]
         private static void OpenDocumentation()
         {

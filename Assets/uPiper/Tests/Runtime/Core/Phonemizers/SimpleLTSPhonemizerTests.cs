@@ -42,7 +42,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             // Arrange
             await phonemizer.InitializeAsync();
-            
+
             var testCases = new[]
             {
                 ("hello", new[] { "HH", "AH", "L", "OW" }),
@@ -63,9 +63,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Assert.IsTrue(result.Success, $"Phonemization of '{word}' should succeed");
                 Assert.IsNotNull(result.Phonemes);
                 Assert.Greater(result.Phonemes.Length, 0);
-                
+
                 Debug.Log($"'{word}' -> {string.Join(" ", result.Phonemes)}");
-                
+
                 // Check if at least some expected phonemes are present
                 foreach (var expectedPhoneme in expectedContains)
                 {
@@ -94,7 +94,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Assert.IsNotNull(result);
                 Assert.IsTrue(result.Success);
                 Assert.Greater(result.Phonemes.Length, 0);
-                
+
                 Debug.Log($"'{word}' -> {string.Join(" ", result.Phonemes)}");
             }
         }
@@ -113,10 +113,10 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Success);
             Assert.Greater(result.Phonemes.Length, 0);
-            
+
             // Should contain silence for punctuation
             Assert.Contains("_", result.Phonemes);
-            
+
             Debug.Log($"Sentence phonemes: {string.Join(" ", result.Phonemes)}");
         }
 
@@ -133,7 +133,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             // Assert
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Success);
-            
+
             // Should contain IPA symbols
             var phonemeString = string.Join("", result.Phonemes);
             Debug.Log($"IPA phonemes: {phonemeString}");

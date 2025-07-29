@@ -62,7 +62,7 @@ namespace uPiper.Tests.Runtime.Performance
 
             // Actual test
             _stopwatch.Restart();
-            for (int i = 0; i < iterations; i++)
+            for (var i = 0; i < iterations; i++)
             {
                 foreach (var str in testStrings)
                 {
@@ -95,7 +95,7 @@ namespace uPiper.Tests.Runtime.Performance
 
             // Test insertion
             _stopwatch.Restart();
-            for (int i = 0; i < itemCount; i++)
+            for (var i = 0; i < itemCount; i++)
             {
                 dictionary[$"key_{i}"] = null; // Using null for AudioClip in test
             }
@@ -104,7 +104,7 @@ namespace uPiper.Tests.Runtime.Performance
 
             // Test lookup
             _stopwatch.Restart();
-            for (int i = 0; i < itemCount; i++)
+            for (var i = 0; i < itemCount; i++)
             {
                 var value = dictionary[$"key_{i}"];
             }
@@ -113,7 +113,7 @@ namespace uPiper.Tests.Runtime.Performance
 
             // Test removal
             _stopwatch.Restart();
-            for (int i = 0; i < itemCount / 2; i++)
+            for (var i = 0; i < itemCount / 2; i++)
             {
                 dictionary.Remove($"key_{i}");
             }
@@ -143,9 +143,9 @@ namespace uPiper.Tests.Runtime.Performance
             var tasks = new List<Task>();
 
             _stopwatch.Restart();
-            for (int i = 0; i < taskCount; i++)
+            for (var i = 0; i < taskCount; i++)
             {
-                int index = i;
+                var index = i;
                 tasks.Add(Task.Run(async () =>
                 {
                     await Task.Delay(1);
@@ -185,10 +185,10 @@ namespace uPiper.Tests.Runtime.Performance
 
             // Allocate various objects
             var lists = new List<List<float>>();
-            for (int i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
                 var list = new List<float>(1000);
-                for (int j = 0; j < 1000; j++)
+                for (var j = 0; j < 1000; j++)
                 {
                     list.Add(j * 0.1f);
                 }
@@ -219,16 +219,16 @@ namespace uPiper.Tests.Runtime.Performance
             const int callCount = 10000;
 
             // Simulate P/Invoke call overhead by measuring delegate invocation
-            Func<int, int> nativeSimulation = (x) => x * 2;
+            static int nativeSimulation(int x) => x * 2;
 
             // Warm-up
-            for (int i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
                 nativeSimulation(i);
             }
 
             _stopwatch.Restart();
-            for (int i = 0; i < callCount; i++)
+            for (var i = 0; i < callCount; i++)
             {
                 var result = nativeSimulation(i);
             }

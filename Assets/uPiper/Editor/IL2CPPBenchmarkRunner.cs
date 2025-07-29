@@ -13,7 +13,7 @@ namespace uPiper.Editor
     public class IL2CPPBenchmarkRunner : EditorWindow
     {
         private bool _isRunning = false;
-        private StringBuilder _results = new StringBuilder();
+        private readonly StringBuilder _results = new();
         private Vector2 _scrollPosition;
 
         [MenuItem("uPiper/IL2CPP Benchmark Runner")]

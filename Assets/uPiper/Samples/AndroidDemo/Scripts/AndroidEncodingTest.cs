@@ -1,7 +1,7 @@
+using System;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Text;
-using System;
 
 namespace uPiper.Samples.AndroidDemo
 {
@@ -11,16 +11,13 @@ namespace uPiper.Samples.AndroidDemo
     public class AndroidEncodingTest : MonoBehaviour
     {
         [Header("UI References")]
-        [SerializeField] private Text displayText;
-        [SerializeField] private InputField inputField;
-        [SerializeField] private Button testButton;
+        [SerializeField] private readonly Text displayText;
+        [SerializeField] private readonly InputField inputField;
+        [SerializeField] private readonly Button testButton;
 
         private void Start()
         {
-            if (testButton != null)
-            {
-                testButton.onClick.AddListener(TestEncoding);
-            }
+            testButton?.onClick.AddListener(TestEncoding);
 
             // Set default test text
             if (inputField != null)
@@ -35,24 +32,24 @@ namespace uPiper.Samples.AndroidDemo
         {
             if (displayText == null) return;
 
-            string testText = inputField != null ? inputField.text : "こんにちは";
+            var testText = inputField != null ? inputField.text : "こんにちは";
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             sb.AppendLine($"Original text: {testText}");
             sb.AppendLine($"Length: {testText.Length}");
             sb.AppendLine();
 
             // Check each character
             sb.AppendLine("Character analysis:");
-            for (int i = 0; i < testText.Length; i++)
+            for (var i = 0; i < testText.Length; i++)
             {
-                char c = testText[i];
+                var c = testText[i];
                 sb.AppendLine($"  [{i}] '{c}' = U+{((int)c):X4}");
             }
             sb.AppendLine();
 
             // UTF-8 bytes
-            byte[] utf8Bytes = Encoding.UTF8.GetBytes(testText);
+            var utf8Bytes = Encoding.UTF8.GetBytes(testText);
             sb.AppendLine($"UTF-8 bytes ({utf8Bytes.Length}):");
             sb.AppendLine($"  {BitConverter.ToString(utf8Bytes)}");
             sb.AppendLine();
@@ -61,7 +58,7 @@ namespace uPiper.Samples.AndroidDemo
             try
             {
                 // Decode UTF-8
-                string utf8Decoded = Encoding.UTF8.GetString(utf8Bytes);
+                var utf8Decoded = Encoding.UTF8.GetString(utf8Bytes);
                 sb.AppendLine($"UTF-8 decoded: {utf8Decoded}");
             }
             catch (System.Exception e)
@@ -84,10 +81,7 @@ namespace uPiper.Samples.AndroidDemo
 
         private void OnDestroy()
         {
-            if (testButton != null)
-            {
-                testButton.onClick.RemoveListener(TestEncoding);
-            }
+            testButton?.onClick.RemoveListener(TestEncoding);
         }
     }
 }

@@ -14,13 +14,13 @@ namespace uPiper.Core.Phonemizers.Backend
     public class KoreanPhonemizer : PhonemizerBackendBase
     {
         private Dictionary<string, string[]> exceptionDict;
-        private readonly object dictLock = new object();
-        
+        private readonly object dictLock = new();
+
         public override string Name => "Korean";
         public override string Version => "1.0.0";
         public override string License => "MIT";
         public override string[] SupportedLanguages => new[] { "ko", "ko-KR" };
-        
+
         protected override async Task<bool> InitializeInternalAsync(
             PhonemizerBackendOptions options,
             CancellationToken cancellationToken)
@@ -39,11 +39,11 @@ namespace uPiper.Core.Phonemizers.Backend
                 }
             }, cancellationToken);
         }
-        
+
         public override async Task<PhonemeResult> PhonemizeAsync(
-            string text, 
-            string language, 
-            PhonemeOptions options = null, 
+            string text,
+            string language,
+            PhonemeOptions options = null,
             CancellationToken cancellationToken = default)
         {
             return await Task.Run(() =>
@@ -53,61 +53,58 @@ namespace uPiper.Core.Phonemizers.Backend
                     return new PhonemeResult { Phonemes = new string[0] };
                 }
 
-            try
-            {
-                var normalized = NormalizeKoreanText(text);
-                var phonemes = new List<string>();
-                var words = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-                foreach (var word in words)
+                try
                 {
-                    if (phonemes.Count > 0)
-                        phonemes.Add("_");
+                    var normalized = NormalizeKoreanText(text);
+                    var phonemes = new List<string>();
+                    var words = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-                    string[] wordPhonemes = null;
-                    
-                    lock (dictLock)
+                    foreach (var word in words)
                     {
-                        if (exceptionDict.TryGetValue(word, out var dictPhonemes))
+                        if (phonemes.Count > 0)
+                            phonemes.Add("_");
+
+                        string[] wordPhonemes = null;
+
+                        lock (dictLock)
                         {
-                            wordPhonemes = dictPhonemes;
+                            if (exceptionDict.TryGetValue(word, out var dictPhonemes))
+                            {
+                                wordPhonemes = dictPhonemes;
+                            }
                         }
+
+                        wordPhonemes ??= ProcessKoreanWord(word);
+
+                        phonemes.AddRange(wordPhonemes);
                     }
-                    
-                    if (wordPhonemes == null)
+
+                    return new PhonemeResult
                     {
-                        wordPhonemes = ProcessKoreanWord(word);
-                    }
-
-                    phonemes.AddRange(wordPhonemes);
+                        Phonemes = phonemes.ToArray(),
+                        Language = language,
+                        Success = true
+                    };
                 }
-
-                return new PhonemeResult 
-                { 
-                    Phonemes = phonemes.ToArray(),
-                    Language = language,
-                    Success = true
-                };
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Error in Korean phonemization: {ex.Message}");
-                throw;
-            }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Error in Korean phonemization: {ex.Message}");
+                    throw;
+                }
             }, cancellationToken);
         }
-        
+
         private string NormalizeKoreanText(string text)
         {
             // Simple normalization for Korean
             return text.Trim();
         }
-        
+
         private string[] ProcessKoreanWord(string word)
         {
             // Simple phoneme generation for Korean
             var phonemes = new List<string>();
-            foreach (char ch in word)
+            foreach (var ch in word)
             {
                 if (ch >= 0xAC00 && ch <= 0xD7A3) // Hangul syllables
                 {
@@ -120,12 +117,12 @@ namespace uPiper.Core.Phonemizers.Backend
             }
             return phonemes.ToArray();
         }
-        
+
         public override long GetMemoryUsage()
         {
             return exceptionDict?.Count * 60 ?? 0;
         }
-        
+
         public override BackendCapabilities GetCapabilities()
         {
             return new BackendCapabilities
@@ -140,7 +137,7 @@ namespace uPiper.Core.Phonemizers.Backend
                 RequiresNetwork = false
             };
         }
-        
+
         protected override void DisposeInternal()
         {
             exceptionDict?.Clear();

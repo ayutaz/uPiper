@@ -9,16 +9,16 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
     /// </summary>
     public class CircuitBreaker : ICircuitBreaker
     {
-        private readonly object lockObject = new object();
+        private readonly object lockObject = new();
         private readonly int failureThreshold;
         private readonly TimeSpan timeout;
         private readonly TimeSpan halfOpenTestInterval;
-        
+
         private CircuitState state = CircuitState.Closed;
         private int failureCount;
         private DateTime lastFailureTime;
         private DateTime lastStateChangeTime;
-        
+
         /// <summary>
         /// Gets the current state of the circuit breaker.
         /// </summary>
@@ -59,14 +59,14 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
         /// <param name="timeout">Time to wait before attempting to close.</param>
         /// <param name="halfOpenTestInterval">Interval for half-open tests.</param>
         public CircuitBreaker(
-            int failureThreshold = 3, 
+            int failureThreshold = 3,
             TimeSpan? timeout = null,
             TimeSpan? halfOpenTestInterval = null)
         {
             this.failureThreshold = failureThreshold;
             this.timeout = timeout ?? TimeSpan.FromSeconds(30);
             this.halfOpenTestInterval = halfOpenTestInterval ?? TimeSpan.FromSeconds(5);
-            this.lastStateChangeTime = DateTime.UtcNow;
+            lastStateChangeTime = DateTime.UtcNow;
         }
 
         /// <inheritdoc/>
@@ -200,27 +200,27 @@ namespace uPiper.Core.Phonemizers.ErrorHandling
         /// <summary>
         /// Checks if an operation can be executed.
         /// </summary>
-        bool CanExecute();
+        public bool CanExecute();
 
         /// <summary>
         /// Records a successful operation.
         /// </summary>
-        void OnSuccess();
+        public void OnSuccess();
 
         /// <summary>
         /// Records a failed operation.
         /// </summary>
-        void OnFailure(Exception exception = null);
+        public void OnFailure(Exception exception = null);
 
         /// <summary>
         /// Manually resets the circuit breaker.
         /// </summary>
-        void Reset();
+        public void Reset();
 
         /// <summary>
         /// Gets circuit breaker statistics.
         /// </summary>
-        CircuitBreakerStatistics GetStatistics();
+        public CircuitBreakerStatistics GetStatistics();
     }
 
     /// <summary>

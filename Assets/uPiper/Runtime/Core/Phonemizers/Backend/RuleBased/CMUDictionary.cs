@@ -16,7 +16,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
     public class CMUDictionary : IDisposable
     {
         private Dictionary<string, string[]> pronunciations;
-        private readonly object lockObject = new object();
+        private readonly object lockObject = new();
         private bool isLoaded;
 
         /// <summary>
@@ -42,12 +42,12 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 Debug.Log($"[CMUDictionary] Attempting to load from: {filePath}");
                 Debug.Log($"[CMUDictionary] File exists: {File.Exists(filePath)}");
                 Debug.Log($"[CMUDictionary] Directory exists: {Directory.Exists(Path.GetDirectoryName(filePath))}");
-                
+
                 // Check if file exists
                 if (!File.Exists(filePath))
                 {
                     Debug.LogWarning($"CMU dictionary file not found at: {filePath}. Using minimal built-in dictionary.");
-                    
+
                     // Try to list files in the directory for debugging
                     var dir = Path.GetDirectoryName(filePath);
                     if (Directory.Exists(dir))
@@ -60,13 +60,13 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                         }
                         Debug.Log($"[CMUDictionary] Files in {dir}: {string.Join(", ", fileNames)}");
                     }
-                    
+
                     LoadMinimalDictionary();
                     return;
                 }
 
                 // Check if we need to extract from StreamingAssets
-                string actualPath = filePath;
+                var actualPath = filePath;
                 if (filePath.Contains("StreamingAssets") && Application.platform == RuntimePlatform.Android)
                 {
                     // On Android, we need to copy from StreamingAssets
@@ -77,42 +77,42 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 var readTask = Task.Run(async () =>
                 {
                     using (var reader = new StreamReader(actualPath))
-                {
+                    {
                         string line;
                         while ((line = await reader.ReadLineAsync()) != null)
                         {
                             cancellationToken.ThrowIfCancellationRequested();
 
-                        // Skip comments and empty lines
-                        if (string.IsNullOrWhiteSpace(line) || line.StartsWith(";;;"))
-                            continue;
+                            // Skip comments and empty lines
+                            if (string.IsNullOrWhiteSpace(line) || line.StartsWith(";;;"))
+                                continue;
 
-                        // Parse the line - find first space as separator
-                        var spaceIndex = line.IndexOf(' ');
-                        if (spaceIndex > 0 && spaceIndex < line.Length - 1)
-                        {
-                            var word = line.Substring(0, spaceIndex).Trim();
-                            var phonemesPart = line.Substring(spaceIndex + 1).Trim();
-                            var phonemes = phonemesPart.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                            // Handle multiple pronunciations (e.g., "WORD(1)", "WORD(2)")
-                            var baseWord = ExtractBaseWord(word);
-                            
-                            lock (lockObject)
+                            // Parse the line - find first space as separator
+                            var spaceIndex = line.IndexOf(' ');
+                            if (spaceIndex > 0 && spaceIndex < line.Length - 1)
                             {
-                                if (!dict.ContainsKey(baseWord))
+                                var word = line[..spaceIndex].Trim();
+                                var phonemesPart = line[(spaceIndex + 1)..].Trim();
+                                var phonemes = phonemesPart.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                                // Handle multiple pronunciations (e.g., "WORD(1)", "WORD(2)")
+                                var baseWord = ExtractBaseWord(word);
+
+                                lock (lockObject)
                                 {
-                                    dict[baseWord] = phonemes;
+                                    if (!dict.ContainsKey(baseWord))
+                                    {
+                                        dict[baseWord] = phonemes;
+                                    }
+                                    // For now, we only keep the first pronunciation
+                                    // Could be extended to support multiple pronunciations
                                 }
-                                // For now, we only keep the first pronunciation
-                                // Could be extended to support multiple pronunciations
                             }
-                        }
                         }
                     }
                     return dict;
                 }, cancellationToken);
-                
+
                 // Wait with timeout
                 if (await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromSeconds(10), cancellationToken)) == readTask)
                 {
@@ -140,7 +140,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 LoadMinimalDictionary();
             }
         }
-        
+
         /// <summary>
         /// Load a minimal built-in dictionary for basic functionality
         /// </summary>
@@ -164,7 +164,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         public bool TryGetPronunciation(string word, out string[] pronunciation)
         {
             pronunciation = null;
-            
+
             if (!isLoaded || string.IsNullOrEmpty(word))
                 return false;
 
@@ -237,15 +237,17 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         /// </summary>
         public static CMUDictionary CreateMinimal()
         {
-            var dict = new CMUDictionary();
-            dict.pronunciations = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+            var dict = new CMUDictionary
             {
-                ["HELLO"] = new[] { "HH", "AH0", "L", "OW1" },
-                ["WORLD"] = new[] { "W", "ER1", "L", "D" },
-                ["TEST"] = new[] { "T", "EH1", "S", "T" },
-                ["UNITY"] = new[] { "Y", "UW1", "N", "AH0", "T", "IY0" }
+                pronunciations = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["HELLO"] = new[] { "HH", "AH0", "L", "OW1" },
+                    ["WORLD"] = new[] { "W", "ER1", "L", "D" },
+                    ["TEST"] = new[] { "T", "EH1", "S", "T" },
+                    ["UNITY"] = new[] { "Y", "UW1", "N", "AH0", "T", "IY0" }
+                },
+                isLoaded = true
             };
-            dict.isLoaded = true;
             return dict;
         }
 
@@ -253,7 +255,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         {
             // Remove pronunciation variant markers like "(1)", "(2)"
             var parenIndex = word.IndexOf('(');
-            return parenIndex > 0 ? word.Substring(0, parenIndex) : word;
+            return parenIndex > 0 ? word[..parenIndex] : word;
         }
 
         private async Task<string> CopyFromStreamingAssets(string streamingPath, CancellationToken cancellationToken)
@@ -276,19 +278,17 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             }
 
             // Copy file (platform-specific implementation needed)
-            using (var www = UnityEngine.Networking.UnityWebRequest.Get(streamingPath))
+            using var www = UnityEngine.Networking.UnityWebRequest.Get(streamingPath);
+            await www.SendWebRequest();
+
+            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
             {
-                await www.SendWebRequest();
-                
-                if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
-                {
-                    File.WriteAllBytes(persistentPath, www.downloadHandler.data);
-                    return persistentPath;
-                }
-                else
-                {
-                    throw new IOException($"Failed to load dictionary from StreamingAssets: {www.error}");
-                }
+                File.WriteAllBytes(persistentPath, www.downloadHandler.data);
+                return persistentPath;
+            }
+            else
+            {
+                throw new IOException($"Failed to load dictionary from StreamingAssets: {www.error}");
             }
         }
 

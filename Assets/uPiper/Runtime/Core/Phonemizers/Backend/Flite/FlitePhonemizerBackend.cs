@@ -19,7 +19,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         private readonly FliteLexicon lexicon;
         private readonly FliteLetterToSound lts;
         private readonly Dictionary<string, IFliteVoice> voices;
-        private readonly object syncLock = new object();
+        private readonly object syncLock = new();
 
         public override string Name => "Flite";
         public override string Version => "1.0.0";
@@ -39,9 +39,9 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         }
 
         public override async Task<PhonemeResult> PhonemizeAsync(
-            string text, 
-            string language, 
-            PhonemeOptions options = null, 
+            string text,
+            string language,
+            PhonemeOptions options = null,
             CancellationToken cancellationToken = default)
         {
             if (!SupportsLanguage(language))
@@ -76,7 +76,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             var durationList = options.IncludeDurations ? new List<float>() : null;
             var wordBoundaryList = options.IncludeWordBoundaries ? new List<int>() : null;
 
-            int phonemeIndex = 0;
+            var phonemeIndex = 0;
             foreach (var token in tokens)
             {
 
@@ -84,7 +84,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                 {
                     // Try lexicon lookup first
                     var phonemes = lexicon.Lookup(token.ToLower(), language);
-                    
+
                     if (phonemes == null || phonemes.Count == 0)
                     {
                         // Fall back to letter-to-sound rules
@@ -105,21 +105,21 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                     {
                         // Extract stress if present
                         var (cleanPhoneme, stress) = ExtractStress(phoneme);
-                        
+
                         phonemeList.Add(cleanPhoneme);
-                        
+
                         if (options.IncludeStress)
                         {
                             stressList.Add(stress);
                         }
-                        
+
                         if (options.IncludeDurations)
                         {
                             // Estimate duration based on phoneme type
-                            float duration = EstimatePhonemeDuration(cleanPhoneme, stress);
+                            var duration = EstimatePhonemeDuration(cleanPhoneme, stress);
                             durationList.Add(duration);
                         }
-                        
+
                         phonemeIndex++;
                     }
                 }
@@ -127,18 +127,18 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                 {
                     // Handle punctuation as silence
                     phonemeList.Add("pau");
-                    
+
                     if (options.IncludeStress)
                     {
                         stressList.Add(0);
                     }
-                    
+
                     if (options.IncludeDurations)
                     {
-                        float pauseDuration = GetPauseDuration(token);
+                        var pauseDuration = GetPauseDuration(token);
                         durationList.Add(pauseDuration);
                     }
-                    
+
                     phonemeIndex++;
                 }
             }
@@ -148,14 +148,14 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             if (stressList != null) result.Stresses = stressList.ToArray();
             if (durationList != null) result.Durations = durationList.ToArray();
             if (wordBoundaryList != null) result.WordBoundaries = wordBoundaryList.ToArray();
-            
+
             result.Backend = Name;
             result.Metadata = new Dictionary<string, object>
             {
                 ["backend"] = Name,
                 ["voice"] = voice.Name
             };
-            
+
             return result;
         }
 
@@ -165,12 +165,12 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             var tokens = new List<string>();
             var pattern = @"(\w+|[^\w\s])";
             var matches = Regex.Matches(text, pattern);
-            
+
             foreach (Match match in matches)
             {
                 tokens.Add(match.Value);
             }
-            
+
             return tokens;
         }
 
@@ -198,8 +198,8 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         private float EstimatePhonemeDuration(string phoneme, int stress)
         {
             // Basic duration estimation in seconds
-            float baseDuration = 0.08f;
-            
+            var baseDuration = 0.08f;
+
             // Vowels are longer
             if (IsVowel(phoneme))
             {
@@ -218,7 +218,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             {
                 baseDuration = 0.1f;
             }
-            
+
             return baseDuration;
         }
 
@@ -238,8 +238,8 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
 
         private bool IsVowel(string phoneme)
         {
-            var vowels = new HashSet<string> { "aa", "ae", "ah", "ao", "aw", "ax", "ay", 
-                                               "eh", "er", "ey", "ih", "iy", "ow", "oy", 
+            var vowels = new HashSet<string> { "aa", "ae", "ah", "ao", "aw", "ax", "ay",
+                                               "eh", "er", "ey", "ih", "iy", "ow", "oy",
                                                "uh", "uw", "ux" };
             return vowels.Contains(phoneme.ToLower());
         }
@@ -262,14 +262,14 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             {
                 lexicon?.Dispose();
                 lts?.Dispose();
-                
+
                 foreach (var voice in voices.Values)
                 {
                     voice?.Dispose();
                 }
                 voices.Clear();
             }
-            
+
             base.Dispose(disposing);
         }
 
@@ -280,7 +280,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         }
 
         // ValidateAsync is not an abstract method in the base class
-        
+
         protected override void DisposeInternal()
         {
             lexicon?.Dispose();
@@ -319,10 +319,10 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
     /// </summary>
     public interface IFliteVoice : IDisposable
     {
-        string Name { get; }
-        string Language { get; }
-        string NormalizeText(string text);
-        List<string> ModifyPhonemes(List<string> phonemes);
+        public string Name { get; }
+        public string Language { get; }
+        public string NormalizeText(string text);
+        public List<string> ModifyPhonemes(List<string> phonemes);
     }
 
     /// <summary>

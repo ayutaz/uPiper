@@ -20,7 +20,7 @@ namespace uPiper.Core.Phonemizers
         private readonly LanguageDetector languageDetector;
         private readonly Dictionary<string, IPhonemizerBackend> backends;
         private bool isInitialized;
-        private readonly object lockObject = new object();
+        private readonly object lockObject = new();
 
         public string Name => "MixedLanguage";
         public string Version => "1.0.0";
@@ -41,7 +41,7 @@ namespace uPiper.Core.Phonemizers
             try
             {
                 // Initialize Japanese backend (OpenJTalk)
-                IPhonemizerBackend jaBackend = CreateOpenJTalkBackend();
+                var jaBackend = CreateOpenJTalkBackend();
                 if (jaBackend == null)
                 {
                     Debug.LogError("Failed to create Japanese backend");
@@ -57,7 +57,7 @@ namespace uPiper.Core.Phonemizers
 
                 // Initialize English backend (SimpleLTS as primary, RuleBased as fallback)
                 IPhonemizerBackend enBackend = null;
-                
+
                 // Try SimpleLTS first
                 var simpleLts = CreateSimpleLTSBackend();
                 if (simpleLts != null && await simpleLts.InitializeAsync(options, cancellationToken))
@@ -84,7 +84,7 @@ namespace uPiper.Core.Phonemizers
 
                 backends["en"] = enBackend;
                 isInitialized = true;
-                
+
                 Debug.Log($"MixedLanguagePhonemizer initialized with {backends.Count} backends");
                 return true;
             }
@@ -96,9 +96,9 @@ namespace uPiper.Core.Phonemizers
         }
 
         public async Task<PhonemeResult> PhonemizeAsync(
-            string text, 
+            string text,
             string language = "auto",
-            PhonemeOptions options = null, 
+            PhonemeOptions options = null,
             CancellationToken cancellationToken = default)
         {
             if (!isInitialized)
@@ -175,19 +175,19 @@ namespace uPiper.Core.Phonemizers
                     {
                         // Phonemize segment
                         var segmentResult = await backend.PhonemizeAsync(
-                            segment.Text, 
-                            backendLang, 
-                            options, 
+                            segment.Text,
+                            backendLang,
+                            options,
                             cancellationToken
                         );
 
                         if (segmentResult.Success && segmentResult.Phonemes != null)
                         {
                             allPhonemes.AddRange(segmentResult.Phonemes);
-                            
+
                             if (segmentResult.PhonemeIds != null)
                                 allPhonemeIds.AddRange(segmentResult.PhonemeIds);
-                            
+
                             if (segmentResult.Durations != null)
                                 allDurations.AddRange(segmentResult.Durations);
                         }
@@ -243,9 +243,9 @@ namespace uPiper.Core.Phonemizers
         private void HandlePunctuation(string punctuation, List<string> phonemes, List<int> phonemeIds, List<float> durations)
         {
             // Map punctuation to silence duration
-            foreach (char ch in punctuation)
+            foreach (var ch in punctuation)
             {
-                float duration = ch switch
+                var duration = ch switch
                 {
                     '。' or '.' => 0.3f,
                     '、' or ',' => 0.15f,

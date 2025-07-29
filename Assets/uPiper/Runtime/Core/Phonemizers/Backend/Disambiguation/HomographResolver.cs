@@ -13,7 +13,7 @@ namespace uPiper.Core.Phonemizers.Backend.Disambiguation
     public class HomographResolver
     {
         private readonly Dictionary<string, HomographEntry> homographs;
-        
+
         public HomographResolver()
         {
             homographs = InitializeHomographs();
@@ -26,13 +26,13 @@ namespace uPiper.Core.Phonemizers.Backend.Disambiguation
         {
             phonemes = null;
             var lowerWord = word.ToLower();
-            
+
             if (!homographs.ContainsKey(lowerWord))
                 return false;
 
             var entry = homographs[lowerWord];
             var pos = EstimatePartOfSpeech(word, sentence);
-            
+
             phonemes = SelectPronunciation(entry, pos, sentence);
             return phonemes != null;
         }
@@ -41,7 +41,7 @@ namespace uPiper.Core.Phonemizers.Backend.Disambiguation
         {
             // Simple heuristic-based POS tagging
             var words = sentence.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var wordIndex = Array.FindIndex(words, w => 
+            var wordIndex = Array.FindIndex(words, w =>
                 w.Equals(word, StringComparison.OrdinalIgnoreCase) ||
                 w.TrimEnd('.', ',', '!', '?').Equals(word, StringComparison.OrdinalIgnoreCase));
 
@@ -52,15 +52,15 @@ namespace uPiper.Core.Phonemizers.Backend.Disambiguation
             if (wordIndex > 0)
             {
                 var prevWord = words[wordIndex - 1].ToLower();
-                
+
                 // Determiners suggest noun
                 if (IsDeTerminer(prevWord))
                     return PartOfSpeech.Noun;
-                
+
                 // Modal/auxiliary verbs suggest verb
                 if (IsAuxiliary(prevWord))
                     return PartOfSpeech.Verb;
-                
+
                 // "to" often precedes verbs
                 if (prevWord == "to")
                     return PartOfSpeech.Verb;
@@ -70,7 +70,7 @@ namespace uPiper.Core.Phonemizers.Backend.Disambiguation
             if (wordIndex < words.Length - 1)
             {
                 var nextWord = words[wordIndex + 1].ToLower();
-                
+
                 // Followed by noun suggests adjective/determiner
                 if (IsLikelyNoun(nextWord))
                     return PartOfSpeech.Adjective;
@@ -80,21 +80,21 @@ namespace uPiper.Core.Phonemizers.Backend.Disambiguation
             var lowerWord = word.ToLower();
             if (lowerWord.EndsWith("ing") || lowerWord.EndsWith("ed"))
                 return PartOfSpeech.Verb;
-            
+
             if (lowerWord.EndsWith("ly"))
                 return PartOfSpeech.Adverb;
-            
+
             // Default based on position
             if (wordIndex == 0)
                 return PartOfSpeech.Noun; // Sentence start often noun/subject
-            
+
             return PartOfSpeech.Unknown;
         }
 
         private bool IsDeTerminer(string word)
         {
-            var determiners = new HashSet<string> 
-            { 
+            var determiners = new HashSet<string>
+            {
                 "the", "a", "an", "this", "that", "these", "those",
                 "my", "your", "his", "her", "its", "our", "their",
                 "some", "many", "few", "all", "no"
@@ -117,7 +117,7 @@ namespace uPiper.Core.Phonemizers.Backend.Disambiguation
         private bool IsLikelyNoun(string word)
         {
             // Simple heuristic - words ending in common noun suffixes
-            return word.EndsWith("tion") || word.EndsWith("ment") || 
+            return word.EndsWith("tion") || word.EndsWith("ment") ||
                    word.EndsWith("ness") || word.EndsWith("ity");
         }
 
@@ -134,19 +134,14 @@ namespace uPiper.Core.Phonemizers.Backend.Disambiguation
             }
 
             // Then check POS-based pronunciations
-            switch (pos)
+            return pos switch
             {
-                case PartOfSpeech.Noun:
-                    return entry.NounPhonemes ?? entry.DefaultPhonemes;
-                case PartOfSpeech.Verb:
-                    return entry.VerbPhonemes ?? entry.DefaultPhonemes;
-                case PartOfSpeech.Adjective:
-                    return entry.AdjectivePhonemes ?? entry.DefaultPhonemes;
-                case PartOfSpeech.Adverb:
-                    return entry.AdverbPhonemes ?? entry.DefaultPhonemes;
-                default:
-                    return entry.DefaultPhonemes;
-            }
+                PartOfSpeech.Noun => entry.NounPhonemes ?? entry.DefaultPhonemes,
+                PartOfSpeech.Verb => entry.VerbPhonemes ?? entry.DefaultPhonemes,
+                PartOfSpeech.Adjective => entry.AdjectivePhonemes ?? entry.DefaultPhonemes,
+                PartOfSpeech.Adverb => entry.AdverbPhonemes ?? entry.DefaultPhonemes,
+                _ => entry.DefaultPhonemes,
+            };
         }
 
         private Dictionary<string, HomographEntry> InitializeHomographs()
@@ -171,49 +166,49 @@ namespace uPiper.Core.Phonemizers.Backend.Disambiguation
                         }
                     }
                 },
-                
+
                 ["lead"] = new HomographEntry
                 {
                     NounPhonemes = new[] { "L", "EH1", "D" }, // metal
                     VerbPhonemes = new[] { "L", "IY1", "D" }, // to guide
                     DefaultPhonemes = new[] { "L", "IY1", "D" }
                 },
-                
+
                 ["tear"] = new HomographEntry
                 {
                     NounPhonemes = new[] { "T", "IH1", "R" }, // drop from eye
                     VerbPhonemes = new[] { "T", "EH1", "R" }, // to rip
                     DefaultPhonemes = new[] { "T", "IH1", "R" }
                 },
-                
+
                 ["bow"] = new HomographEntry
                 {
                     NounPhonemes = new[] { "B", "OW1" }, // weapon/ribbon
                     VerbPhonemes = new[] { "B", "AW1" }, // to bend
                     DefaultPhonemes = new[] { "B", "OW1" }
                 },
-                
+
                 ["live"] = new HomographEntry
                 {
                     VerbPhonemes = new[] { "L", "IH1", "V" }, // to exist
                     AdjectivePhonemes = new[] { "L", "AY1", "V" }, // not dead
                     DefaultPhonemes = new[] { "L", "IH1", "V" }
                 },
-                
+
                 ["wind"] = new HomographEntry
                 {
                     NounPhonemes = new[] { "W", "IH1", "N", "D" }, // air movement
                     VerbPhonemes = new[] { "W", "AY1", "N", "D" }, // to coil
                     DefaultPhonemes = new[] { "W", "IH1", "N", "D" }
                 },
-                
+
                 ["close"] = new HomographEntry
                 {
                     VerbPhonemes = new[] { "K", "L", "OW1", "Z" }, // to shut
                     AdjectivePhonemes = new[] { "K", "L", "OW1", "S" }, // nearby
                     DefaultPhonemes = new[] { "K", "L", "OW1", "Z" }
                 },
-                
+
                 ["present"] = new HomographEntry
                 {
                     NounPhonemes = new[] { "P", "R", "EH1", "Z", "AH0", "N", "T" }, // gift
@@ -221,49 +216,49 @@ namespace uPiper.Core.Phonemizers.Backend.Disambiguation
                     AdjectivePhonemes = new[] { "P", "R", "EH1", "Z", "AH0", "N", "T" }, // current
                     DefaultPhonemes = new[] { "P", "R", "EH1", "Z", "AH0", "N", "T" }
                 },
-                
+
                 ["object"] = new HomographEntry
                 {
                     NounPhonemes = new[] { "AA1", "B", "JH", "EH0", "K", "T" }, // thing
                     VerbPhonemes = new[] { "AH0", "B", "JH", "EH1", "K", "T" }, // to protest
                     DefaultPhonemes = new[] { "AA1", "B", "JH", "EH0", "K", "T" }
                 },
-                
+
                 ["refuse"] = new HomographEntry
                 {
                     NounPhonemes = new[] { "R", "EH1", "F", "Y", "UW2", "S" }, // garbage
                     VerbPhonemes = new[] { "R", "IH0", "F", "Y", "UW1", "Z" }, // to decline
                     DefaultPhonemes = new[] { "R", "IH0", "F", "Y", "UW1", "Z" }
                 },
-                
+
                 ["record"] = new HomographEntry
                 {
                     NounPhonemes = new[] { "R", "EH1", "K", "ER0", "D" }, // album/data
                     VerbPhonemes = new[] { "R", "IH0", "K", "AO1", "R", "D" }, // to capture
                     DefaultPhonemes = new[] { "R", "EH1", "K", "ER0", "D" }
                 },
-                
+
                 ["produce"] = new HomographEntry
                 {
                     NounPhonemes = new[] { "P", "R", "OW1", "D", "UW0", "S" }, // vegetables
                     VerbPhonemes = new[] { "P", "R", "AH0", "D", "UW1", "S" }, // to create
                     DefaultPhonemes = new[] { "P", "R", "AH0", "D", "UW1", "S" }
                 },
-                
+
                 ["minute"] = new HomographEntry
                 {
                     NounPhonemes = new[] { "M", "IH1", "N", "AH0", "T" }, // 60 seconds
                     AdjectivePhonemes = new[] { "M", "AY0", "N", "UW1", "T" }, // tiny
                     DefaultPhonemes = new[] { "M", "IH1", "N", "AH0", "T" }
                 },
-                
+
                 ["content"] = new HomographEntry
                 {
                     NounPhonemes = new[] { "K", "AA1", "N", "T", "EH0", "N", "T" }, // material
                     AdjectivePhonemes = new[] { "K", "AH0", "N", "T", "EH1", "N", "T" }, // satisfied
                     DefaultPhonemes = new[] { "K", "AA1", "N", "T", "EH0", "N", "T" }
                 },
-                
+
                 ["desert"] = new HomographEntry
                 {
                     NounPhonemes = new[] { "D", "EH1", "Z", "ER0", "T" }, // dry land

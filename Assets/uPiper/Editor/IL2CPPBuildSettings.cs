@@ -1,7 +1,7 @@
+using System.IO;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
-using System.IO;
 
 namespace uPiper.Editor
 {

@@ -19,15 +19,15 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
         private Dictionary<string, Dictionary<string, float>> trigramModel;
         private Dictionary<string, Dictionary<string, float>> bigramModel;
         private Dictionary<string, Dictionary<string, float>> unigramModel;
-        
+
         // Letter-to-phoneme alignment data from training
         private Dictionary<string, List<AlignmentExample>> alignmentExamples;
-        
+
         // Phoneme transition probabilities
         private Dictionary<string, Dictionary<string, float>> phonemeTransitions;
-        
+
         private bool isInitialized;
-        private readonly object lockObject = new object();
+        private readonly object lockObject = new();
 
         public bool IsInitialized => isInitialized;
 
@@ -50,25 +50,25 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
                 foreach (var entry in dictionary)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    
+
                     var word = entry.Key.ToLower();
                     var phonemes = entry.Value;
-                    
+
                     var alignment = AlignLettersToPhonemes(word, phonemes);
                     if (alignment != null)
                     {
                         alignments.Add(alignment);
-                        
+
                         // Store alignment examples
-                        for (int i = 0; i < alignment.Letters.Length; i++)
+                        for (var i = 0; i < alignment.Letters.Length; i++)
                         {
                             var letter = alignment.Letters[i];
                             var phoneme = alignment.Phonemes[i];
                             var context = GetAlignmentContext(alignment, i);
-                            
+
                             if (!alignmentExamples.ContainsKey(letter))
                                 alignmentExamples[letter] = new List<AlignmentExample>();
-                            
+
                             alignmentExamples[letter].Add(new AlignmentExample
                             {
                                 Letter = letter,
@@ -82,7 +82,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
 
                 // Step 2: Build n-gram models
                 BuildNGramModels(alignments, cancellationToken);
-                
+
                 // Step 3: Build phoneme transition model
                 BuildPhonemeTransitions(alignments, cancellationToken);
 
@@ -104,10 +104,10 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
                 throw new InvalidOperationException("Model not initialized");
 
             word = word.ToLower();
-            
+
             // Use Viterbi algorithm to find most likely phoneme sequence
             var result = ViterbiDecode(word);
-            
+
             // Post-process to clean up results
             return PostProcessPhonemes(result, word);
         }
@@ -125,8 +125,8 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             var letterGroups = new List<string>();
             var alignedPhonemes = new List<string>();
 
-            int i = 0;
-            int p = 0;
+            var i = 0;
+            var p = 0;
 
             while (i < word.Length && p < phonemes.Length)
             {
@@ -173,7 +173,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
                 // Handle cases where one letter maps to multiple phonemes
                 if (p < phonemes.Length && ShouldConsumeNextPhoneme(letterGroup, matchedPhoneme, phonemes[p]))
                 {
-                    alignedPhonemes[alignedPhonemes.Count - 1] += "+" + phonemes[p];
+                    alignedPhonemes[^1] += "+" + phonemes[p];
                     p++;
                 }
             }
@@ -203,7 +203,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                for (int i = 0; i < alignment.Letters.Length; i++)
+                for (var i = 0; i < alignment.Letters.Length; i++)
                 {
                     var letter = alignment.Letters[i];
                     var phoneme = alignment.Phonemes[i];
@@ -218,10 +218,10 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
                     {
                         var prevLetter = alignment.Letters[i - 1];
                         var bigramKey = $"{prevLetter}|{letter}";
-                        
+
                         if (!bigramCounts.ContainsKey(bigramKey))
                             bigramCounts[bigramKey] = new Dictionary<string, int>();
-                        
+
                         if (!bigramCounts[bigramKey].ContainsKey(phoneme))
                             bigramCounts[bigramKey][phoneme] = 0;
                         bigramCounts[bigramKey][phoneme]++;
@@ -233,10 +233,10 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
                         var prevLetter1 = alignment.Letters[i - 2];
                         var prevLetter2 = alignment.Letters[i - 1];
                         var trigramKey = $"{prevLetter1}|{prevLetter2}|{letter}";
-                        
+
                         if (!trigramCounts.ContainsKey(trigramKey))
                             trigramCounts[trigramKey] = new Dictionary<string, int>();
-                        
+
                         if (!trigramCounts[trigramKey].ContainsKey(phoneme))
                             trigramCounts[trigramKey][phoneme] = 0;
                         trigramCounts[trigramKey][phoneme]++;
@@ -249,7 +249,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             {
                 var total = trigram.Value.Values.Sum();
                 trigramModel[trigram.Key] = new Dictionary<string, float>();
-                
+
                 foreach (var phoneme in trigram.Value)
                 {
                     trigramModel[trigram.Key][phoneme.Key] = (float)phoneme.Value / total;
@@ -260,7 +260,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             {
                 var total = bigram.Value.Values.Sum();
                 bigramModel[bigram.Key] = new Dictionary<string, float>();
-                
+
                 foreach (var phoneme in bigram.Value)
                 {
                     bigramModel[bigram.Key][phoneme.Key] = (float)phoneme.Value / total;
@@ -273,10 +273,10 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
                 var phoneemCounts = letterExamples.Value
                     .GroupBy(e => e.Phoneme)
                     .ToDictionary(g => g.Key, g => g.Count());
-                
+
                 var total = phoneemCounts.Values.Sum();
                 unigramModel[letterExamples.Key] = new Dictionary<string, float>();
-                
+
                 foreach (var phoneme in phoneemCounts)
                 {
                     unigramModel[letterExamples.Key][phoneme.Key] = (float)phoneme.Value / total;
@@ -292,17 +292,17 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                for (int i = 1; i < alignment.Phonemes.Length; i++)
+                for (var i = 1; i < alignment.Phonemes.Length; i++)
                 {
                     var prev = alignment.Phonemes[i - 1];
                     var curr = alignment.Phonemes[i];
 
                     if (!transitionCounts.ContainsKey(prev))
                         transitionCounts[prev] = new Dictionary<string, int>();
-                    
+
                     if (!transitionCounts[prev].ContainsKey(curr))
                         transitionCounts[prev][curr] = 0;
-                    
+
                     transitionCounts[prev][curr]++;
                 }
             }
@@ -312,7 +312,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             {
                 var total = transition.Value.Values.Sum();
                 phonemeTransitions[transition.Key] = new Dictionary<string, float>();
-                
+
                 foreach (var next in transition.Value)
                 {
                     phonemeTransitions[transition.Key][next.Key] = (float)next.Value / total;
@@ -324,7 +324,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
         {
             // Preprocess word into letter groups
             var letterGroups = PreprocessWord(word);
-            
+
             if (letterGroups.Count == 0)
                 return new string[0];
 
@@ -335,7 +335,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             // Initialize first position
             viterbi[0] = new Dictionary<string, ViterbiCell>();
             var firstLetter = letterGroups[0];
-            
+
             foreach (var phoneme in GetPhonemesForLetter(firstLetter))
             {
                 var prob = GetUnigramProbability(firstLetter, phoneme);
@@ -348,11 +348,11 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             }
 
             // Forward pass
-            for (int t = 1; t < letterGroups.Count; t++)
+            for (var t = 1; t < letterGroups.Count; t++)
             {
                 viterbi[t] = new Dictionary<string, ViterbiCell>();
                 var currentLetter = letterGroups[t];
-                
+
                 foreach (var phoneme in GetPhonemesForLetter(currentLetter))
                 {
                     var bestProb = 0.0f;
@@ -363,13 +363,13 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
                     {
                         var prevPhoneme = prevState.Key;
                         var prevProb = prevState.Value.Probability;
-                        
+
                         // Calculate probability
                         var emissionProb = GetEmissionProbability(letterGroups, t, phoneme);
                         var transitionProb = GetTransitionProbability(prevPhoneme, phoneme);
-                        
+
                         var prob = prevProb * emissionProb * transitionProb;
-                        
+
                         if (prob > bestProb)
                         {
                             bestProb = prob;
@@ -391,12 +391,12 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
 
             // Backward pass - find best path
             var result = new List<string>();
-            
+
             // Find best final state
             var lastPosition = letterGroups.Count - 1;
             var bestFinalProb = 0.0f;
             string bestFinalState = null;
-            
+
             foreach (var state in viterbi[lastPosition])
             {
                 if (state.Value.Probability > bestFinalProb)
@@ -410,17 +410,17 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             if (bestFinalState != null)
             {
                 var currentState = bestFinalState;
-                
-                for (int t = lastPosition; t >= 0; t--)
+
+                for (var t = lastPosition; t >= 0; t--)
                 {
                     result.Add(currentState);
-                    
+
                     if (t > 0 && viterbi[t].ContainsKey(currentState))
                     {
                         currentState = viterbi[t][currentState].BackPointer;
                     }
                 }
-                
+
                 result.Reverse();
             }
 
@@ -430,7 +430,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
         private List<string> PreprocessWord(string word)
         {
             var groups = new List<string>();
-            int i = 0;
+            var i = 0;
 
             while (i < word.Length)
             {
@@ -486,12 +486,12 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
         private float GetEmissionProbability(List<string> letterGroups, int position, string phoneme)
         {
             var letter = letterGroups[position];
-            
+
             // Try trigram first
             if (position >= 2)
             {
-                var trigramKey = $"{letterGroups[position-2]}|{letterGroups[position-1]}|{letter}";
-                if (trigramModel.ContainsKey(trigramKey) && 
+                var trigramKey = $"{letterGroups[position - 2]}|{letterGroups[position - 1]}|{letter}";
+                if (trigramModel.ContainsKey(trigramKey) &&
                     trigramModel[trigramKey].ContainsKey(phoneme))
                 {
                     return trigramModel[trigramKey][phoneme];
@@ -501,8 +501,8 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             // Try bigram
             if (position >= 1)
             {
-                var bigramKey = $"{letterGroups[position-1]}|{letter}";
-                if (bigramModel.ContainsKey(bigramKey) && 
+                var bigramKey = $"{letterGroups[position - 1]}|{letter}";
+                if (bigramModel.ContainsKey(bigramKey) &&
                     bigramModel[bigramKey].ContainsKey(phoneme))
                 {
                     return bigramModel[bigramKey][phoneme] * 0.8f; // Slight penalty for less context
@@ -515,12 +515,12 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
 
         private float GetUnigramProbability(string letter, string phoneme)
         {
-            if (unigramModel.ContainsKey(letter) && 
+            if (unigramModel.ContainsKey(letter) &&
                 unigramModel[letter].ContainsKey(phoneme))
             {
                 return unigramModel[letter][phoneme];
             }
-            
+
             // Smoothing for unseen combinations
             return 0.001f;
         }
@@ -532,7 +532,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             {
                 return phonemeTransitions[prevPhoneme][currPhoneme];
             }
-            
+
             // Smoothing
             return 0.01f;
         }
@@ -540,7 +540,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
         private HashSet<string> GetPossiblePhonemes()
         {
             var phonemes = new HashSet<string>();
-            
+
             foreach (var transitions in phonemeTransitions.Values)
             {
                 foreach (var phoneme in transitions.Keys)
@@ -548,7 +548,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
                     phonemes.Add(phoneme);
                 }
             }
-            
+
             return phonemes;
         }
 
@@ -558,7 +558,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             {
                 return unigramModel[letter].Keys.ToList();
             }
-            
+
             // Default phonemes for unknown letters
             return GetDefaultPhonemesForLetter(letter);
         }
@@ -598,15 +598,15 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
 
             if (defaults.ContainsKey(letter.ToLower()))
                 return defaults[letter.ToLower()];
-            
+
             return new List<string> { "_" }; // Silent
         }
 
         private bool IsKnownDigraph(string letters)
         {
-            var digraphs = new HashSet<string> 
-            { 
-                "ch", "sh", "th", "ph", "wh", "gh", "ng", "ck", 
+            var digraphs = new HashSet<string>
+            {
+                "ch", "sh", "th", "ph", "wh", "gh", "ng", "ck",
                 "qu", "gu", "kn", "wr", "gn", "ps", "pn", "mb"
             };
             return digraphs.Contains(letters.ToLower());
@@ -614,8 +614,8 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
 
         private bool IsKnownTrigraph(string letters)
         {
-            var trigraphs = new HashSet<string> 
-            { 
+            var trigraphs = new HashSet<string>
+            {
                 "tch", "dge", "igh", "ght", "shr", "thr", "squ", "str"
             };
             return trigraphs.Contains(letters.ToLower());
@@ -623,8 +623,8 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
 
         private bool IsKnownQuadgraph(string letters)
         {
-            var quadgraphs = new HashSet<string> 
-            { 
+            var quadgraphs = new HashSet<string>
+            {
                 "ough", "augh", "eigh"
             };
             return quadgraphs.Contains(letters.ToLower());
@@ -642,8 +642,8 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
                 ["ck"] = "K"
             };
 
-            return mappings.ContainsKey(digraph.ToLower()) 
-                ? mappings[digraph.ToLower()] 
+            return mappings.ContainsKey(digraph.ToLower())
+                ? mappings[digraph.ToLower()]
                 : defaultPhoneme;
         }
 
@@ -656,8 +656,8 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
                 ["igh"] = "AY1"
             };
 
-            return mappings.ContainsKey(trigraph.ToLower()) 
-                ? mappings[trigraph.ToLower()] 
+            return mappings.ContainsKey(trigraph.ToLower())
+                ? mappings[trigraph.ToLower()]
                 : defaultPhoneme;
         }
 
@@ -666,7 +666,7 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
             // Some letters commonly map to multiple phonemes
             if (letter == "x" && currentPhoneme == "K" && nextPhoneme == "S")
                 return true;
-            
+
             return false;
         }
 
@@ -686,13 +686,13 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
         private string[] PostProcessPhonemes(string[] phonemes, string word)
         {
             var result = new List<string>();
-            
+
             foreach (var phoneme in phonemes)
             {
                 // Skip silent markers
                 if (phoneme == "_")
                     continue;
-                
+
                 // Split compound phonemes
                 if (phoneme.Contains("+"))
                 {

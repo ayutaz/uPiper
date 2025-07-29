@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Logging;
 using uPiper.Core.Performance;
-using uPiper.Core.Platform;
 using uPiper.Core.Phonemizers.Backend;
+using uPiper.Core.Platform;
 
 namespace uPiper.Core.Phonemizers.Implementations
 {
@@ -62,13 +62,13 @@ namespace uPiper.Core.Phonemizers.Implementations
         }
 
         private IntPtr _handle = IntPtr.Zero;
-        private readonly SemaphoreSlim _initLock = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _initLock = new(1, 1);
         private bool _isInitialized = false;
-        private readonly AndroidPerformanceProfiler _profiler = new AndroidPerformanceProfiler();
+        private readonly AndroidPerformanceProfiler _profiler = new();
 
         // バイト配列バッファのプール（GCを減らすため）
-        private readonly Queue<byte[]> _bufferPool = new Queue<byte[]>();
-        private readonly object _poolLock = new object();
+        private readonly Queue<byte[]> _bufferPool = new();
+        private readonly object _poolLock = new();
         private const int MAX_POOL_SIZE = 10;
         private const int BUFFER_SIZE = 1024;
 
@@ -250,7 +250,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     _isInitialized = true;
 
                     // 初期バッファをプールに追加
-                    for (int i = 0; i < 5; i++)
+                    for (var i = 0; i < 5; i++)
                     {
                         _bufferPool.Enqueue(new byte[BUFFER_SIZE]);
                     }
@@ -308,7 +308,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 Marshal.Copy(nativeResult.durations, durations, 0, nativeResult.phoneme_count);
 
             // Set default pitches
-            for (int i = 0; i < pitches.Length; i++)
+            for (var i = 0; i < pitches.Length; i++)
                 pitches[i] = 0.0f;
 
             return new PhonemeResult
@@ -332,7 +332,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 var pitches = new float[phonemes.Length];
 
                 // デフォルト値を設定
-                for (int i = 0; i < phonemes.Length; i++)
+                for (var i = 0; i < phonemes.Length; i++)
                 {
                     phonemeIds[i] = 1; // デフォルトID
                     durations[i] = 0.05f; // 50ms

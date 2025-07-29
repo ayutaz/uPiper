@@ -28,23 +28,23 @@ namespace uPiper.Core.Phonemizers
         }
 
         // Unicode ranges for different scripts
-        private static readonly Regex JapaneseRegex = new Regex(
-            @"[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF]+", 
+        private static readonly Regex JapaneseRegex = new(
+            @"[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF]+",
             RegexOptions.Compiled
         );
 
-        private static readonly Regex EnglishRegex = new Regex(
-            @"[a-zA-Z]+(?:['']?[a-zA-Z]+)*", 
+        private static readonly Regex EnglishRegex = new(
+            @"[a-zA-Z]+(?:['']?[a-zA-Z]+)*",
             RegexOptions.Compiled
         );
 
-        private static readonly Regex NumberRegex = new Regex(
-            @"\d+(?:[.,]\d+)*", 
+        private static readonly Regex NumberRegex = new(
+            @"\d+(?:[.,]\d+)*",
             RegexOptions.Compiled
         );
 
-        private static readonly Regex PunctuationRegex = new Regex(
-            @"[^\w\s\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF]+", 
+        private static readonly Regex PunctuationRegex = new(
+            @"[^\w\s\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF]+",
             RegexOptions.Compiled
         );
 
@@ -110,7 +110,7 @@ namespace uPiper.Core.Phonemizers
             }
 
             // Fourth pass: Handle remaining characters (punctuation, whitespace)
-            for (int i = 0; i < text.Length; i++)
+            for (var i = 0; i < text.Length; i++)
             {
                 if (!processed[i])
                 {
@@ -131,7 +131,7 @@ namespace uPiper.Core.Phonemizers
 
                     var segment = text.Substring(start, i - start + 1);
                     var lang = DetermineSegmentLanguage(segment, start, segments);
-                    
+
                     segments.Add(new LanguageSegment
                     {
                         Text = segment,
@@ -156,10 +156,10 @@ namespace uPiper.Core.Phonemizers
             if (string.IsNullOrEmpty(text))
                 return "en";
 
-            int japaneseChars = 0;
-            int englishChars = 0;
+            var japaneseChars = 0;
+            var englishChars = 0;
 
-            foreach (char ch in text)
+            foreach (var ch in text)
             {
                 if (IsJapaneseChar(ch))
                     japaneseChars++;
@@ -190,7 +190,7 @@ namespace uPiper.Core.Phonemizers
 
         private void MarkProcessed(bool[] processed, int start, int length)
         {
-            for (int i = 0; i < length && start + i < processed.Length; i++)
+            for (var i = 0; i < length && start + i < processed.Length; i++)
             {
                 processed[start + i] = true;
             }
@@ -198,7 +198,7 @@ namespace uPiper.Core.Phonemizers
 
         private bool IsProcessed(bool[] processed, int start, int length)
         {
-            for (int i = 0; i < length && start + i < processed.Length; i++)
+            for (var i = 0; i < length && start + i < processed.Length; i++)
             {
                 if (processed[start + i])
                     return true;
@@ -263,12 +263,12 @@ namespace uPiper.Core.Phonemizers
             var merged = new List<LanguageSegment>();
             var current = segments[0];
 
-            for (int i = 1; i < segments.Count; i++)
+            for (var i = 1; i < segments.Count; i++)
             {
                 var next = segments[i];
 
                 // Check if we should merge
-                bool shouldMerge = current.Language == next.Language &&
+                var shouldMerge = current.Language == next.Language &&
                                   current.EndIndex + 1 >= next.StartIndex &&
                                   !current.IsPunctuation;
 

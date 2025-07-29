@@ -74,7 +74,7 @@ namespace uPiper.Tests.Runtime.Core
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             // Arrange
             PiperLogger.SetMinimumLevel(PiperLogger.LogLevel.Debug);
-            
+
             // Act & Assert
             LogAssert.Expect(LogType.Log, "[uPiper] Debug message");
             PiperLogger.LogDebug("Debug message");

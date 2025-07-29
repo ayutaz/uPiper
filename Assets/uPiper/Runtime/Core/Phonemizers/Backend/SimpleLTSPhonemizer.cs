@@ -19,7 +19,7 @@ namespace uPiper.Core.Phonemizers.Backend
     {
         private CMUDictionary cmuDictionary;
         private readonly Dictionary<string, string[]> ltsCache = new();
-        private readonly object lockObject = new object();
+        private readonly object lockObject = new();
 
         public override string Name => "SimpleLTS";
         public override string Version => "1.0.0";
@@ -58,81 +58,81 @@ namespace uPiper.Core.Phonemizers.Backend
             {
                 var stopwatch = Stopwatch.StartNew();
 
-            try
-            {
-                EnsureInitialized();
-
-                // Handle empty text as a special case - return empty result, not error
-                if (string.IsNullOrEmpty(text))
+                try
                 {
+                    EnsureInitialized();
+
+                    // Handle empty text as a special case - return empty result, not error
+                    if (string.IsNullOrEmpty(text))
+                    {
+                        stopwatch.Stop();
+                        return new PhonemeResult
+                        {
+                            OriginalText = text,
+                            Phonemes = new string[0],
+                            PhonemeIds = new int[0],
+                            Language = language,
+                            Success = true,
+                            Backend = Name,
+                            ProcessingTimeMs = (float)stopwatch.ElapsedMilliseconds,
+                            ProcessingTime = stopwatch.Elapsed
+                        };
+                    }
+
+                    if (!ValidateInput(text, language, out var error))
+                    {
+                        return CreateErrorResult(error, language);
+                    }
+
+                    options ??= PhonemeOptions.Default;
+
+                    var phonemes = new List<string>();
+                    var words = TokenizeText(text);
+
+                    foreach (var word in words)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        if (IsPunctuation(word))
+                        {
+                            phonemes.Add("_"); // Silence
+                            continue;
+                        }
+
+                        var cleanWord = CleanWord(word);
+                        if (string.IsNullOrEmpty(cleanWord))
+                            continue;
+
+                        // Try dictionary first
+                        if (cmuDictionary != null && cmuDictionary.TryGetPronunciation(cleanWord, out var dictPhonemes))
+                        {
+                            phonemes.AddRange(ProcessPhonemes(dictPhonemes, options));
+                        }
+                        else
+                        {
+                            // Apply simple LTS rules
+                            var ltsPhonemes = ApplyLTSRules(cleanWord);
+                            phonemes.AddRange(ProcessPhonemes(ltsPhonemes, options));
+                        }
+                    }
+
                     stopwatch.Stop();
+
                     return new PhonemeResult
                     {
                         OriginalText = text,
-                        Phonemes = new string[0],
-                        PhonemeIds = new int[0],
+                        Phonemes = phonemes.ToArray(),
+                        PhonemeIds = ConvertToPhonemeIds(phonemes),
                         Language = language,
                         Success = true,
                         Backend = Name,
-                        ProcessingTimeMs = (float)stopwatch.ElapsedMilliseconds,
-                        ProcessingTime = stopwatch.Elapsed
+                        ProcessingTimeMs = (float)stopwatch.ElapsedMilliseconds
                     };
                 }
-
-                if (!ValidateInput(text, language, out var error))
+                catch (Exception ex)
                 {
-                    return CreateErrorResult(error, language);
+                    return CreateErrorResult($"Phonemization failed: {ex.Message}", language);
                 }
-
-                options ??= PhonemeOptions.Default;
-
-                var phonemes = new List<string>();
-                var words = TokenizeText(text);
-
-                foreach (var word in words)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    if (IsPunctuation(word))
-                    {
-                        phonemes.Add("_"); // Silence
-                        continue;
-                    }
-
-                    var cleanWord = CleanWord(word);
-                    if (string.IsNullOrEmpty(cleanWord))
-                        continue;
-
-                    // Try dictionary first
-                    if (cmuDictionary != null && cmuDictionary.TryGetPronunciation(cleanWord, out var dictPhonemes))
-                    {
-                        phonemes.AddRange(ProcessPhonemes(dictPhonemes, options));
-                    }
-                    else
-                    {
-                        // Apply simple LTS rules
-                        var ltsPhonemes = ApplyLTSRules(cleanWord);
-                        phonemes.AddRange(ProcessPhonemes(ltsPhonemes, options));
-                    }
-                }
-
-                stopwatch.Stop();
-
-                return new PhonemeResult
-                {
-                    OriginalText = text,
-                    Phonemes = phonemes.ToArray(),
-                    PhonemeIds = ConvertToPhonemeIds(phonemes),
-                    Language = language,
-                    Success = true,
-                    Backend = Name,
-                    ProcessingTimeMs = (float)stopwatch.ElapsedMilliseconds
-                };
-            }
-            catch (Exception ex)
-            {
-                return CreateErrorResult($"Phonemization failed: {ex.Message}", language);
-            }
             }, cancellationToken);
         }
 
@@ -308,7 +308,7 @@ namespace uPiper.Core.Phonemizers.Backend
                     case 'p': phonemes.Add("P"); break;
                     case 'r': phonemes.Add("R"); break;
                     case 's':
-                        if (context.PrevChar != '\0' && IsVowel(context.PrevChar) && 
+                        if (context.PrevChar != '\0' && IsVowel(context.PrevChar) &&
                             context.NextChar != '\0' && IsVowel(context.NextChar))
                             phonemes.Add("Z");
                         else
@@ -406,8 +406,8 @@ namespace uPiper.Core.Phonemizers.Backend
         private bool IsCommonVoicedTH(string word)
         {
             // Common words with voiced TH
-            var voicedWords = new HashSet<string> 
-            { 
+            var voicedWords = new HashSet<string>
+            {
                 "the", "this", "that", "these", "those", "them", "they",
                 "their", "there", "then", "than", "thus", "though"
             };
@@ -427,7 +427,7 @@ namespace uPiper.Core.Phonemizers.Backend
         {
             // Remove stress markers for conversion
             var basePhoneme = Regex.Replace(arpabet, @"\d+$", "");
-            
+
             return ArpabetToIpaMap.TryGetValue(basePhoneme, out var ipa) ? ipa : arpabet.ToLower();
         }
 
@@ -468,7 +468,7 @@ namespace uPiper.Core.Phonemizers.Backend
             long total = 0;
             if (cmuDictionary != null)
                 total += cmuDictionary.GetMemoryUsage();
-            
+
             lock (lockObject)
             {
                 foreach (var kvp in ltsCache)
@@ -504,31 +504,90 @@ namespace uPiper.Core.Phonemizers.Backend
         // ARPABET to IPA mapping
         private static readonly Dictionary<string, string> ArpabetToIpaMap = new()
         {
-            ["AA"] = "ɑ", ["AE"] = "æ", ["AH"] = "ʌ", ["AO"] = "ɔ",
-            ["AW"] = "aʊ", ["AY"] = "aɪ", ["EH"] = "ɛ", ["ER"] = "ɝ",
-            ["EY"] = "eɪ", ["IH"] = "ɪ", ["IY"] = "i", ["OW"] = "oʊ",
-            ["OY"] = "ɔɪ", ["UH"] = "ʊ", ["UW"] = "u",
-            ["B"] = "b", ["CH"] = "tʃ", ["D"] = "d", ["DH"] = "ð",
-            ["F"] = "f", ["G"] = "g", ["HH"] = "h", ["JH"] = "dʒ",
-            ["K"] = "k", ["L"] = "l", ["M"] = "m", ["N"] = "n",
-            ["NG"] = "ŋ", ["P"] = "p", ["R"] = "r", ["S"] = "s",
-            ["SH"] = "ʃ", ["T"] = "t", ["TH"] = "θ", ["V"] = "v",
-            ["W"] = "w", ["Y"] = "j", ["Z"] = "z", ["ZH"] = "ʒ",
+            ["AA"] = "ɑ",
+            ["AE"] = "æ",
+            ["AH"] = "ʌ",
+            ["AO"] = "ɔ",
+            ["AW"] = "aʊ",
+            ["AY"] = "aɪ",
+            ["EH"] = "ɛ",
+            ["ER"] = "ɝ",
+            ["EY"] = "eɪ",
+            ["IH"] = "ɪ",
+            ["IY"] = "i",
+            ["OW"] = "oʊ",
+            ["OY"] = "ɔɪ",
+            ["UH"] = "ʊ",
+            ["UW"] = "u",
+            ["B"] = "b",
+            ["CH"] = "tʃ",
+            ["D"] = "d",
+            ["DH"] = "ð",
+            ["F"] = "f",
+            ["G"] = "g",
+            ["HH"] = "h",
+            ["JH"] = "dʒ",
+            ["K"] = "k",
+            ["L"] = "l",
+            ["M"] = "m",
+            ["N"] = "n",
+            ["NG"] = "ŋ",
+            ["P"] = "p",
+            ["R"] = "r",
+            ["S"] = "s",
+            ["SH"] = "ʃ",
+            ["T"] = "t",
+            ["TH"] = "θ",
+            ["V"] = "v",
+            ["W"] = "w",
+            ["Y"] = "j",
+            ["Z"] = "z",
+            ["ZH"] = "ʒ",
             ["_"] = "_" // Silence
         };
 
         private static readonly Dictionary<string, int> PhonemeToIdMap = new()
         {
-            ["_"] = 0, ["ɑ"] = 1, ["æ"] = 2, ["ʌ"] = 3, ["ɔ"] = 4,
-            ["aʊ"] = 5, ["aɪ"] = 6, ["ɛ"] = 7, ["ɝ"] = 8,
-            ["eɪ"] = 9, ["ɪ"] = 10, ["i"] = 11, ["oʊ"] = 12,
-            ["ɔɪ"] = 13, ["ʊ"] = 14, ["u"] = 15,
-            ["b"] = 16, ["tʃ"] = 17, ["d"] = 18, ["ð"] = 19,
-            ["f"] = 20, ["g"] = 21, ["h"] = 22, ["dʒ"] = 23,
-            ["k"] = 24, ["l"] = 25, ["m"] = 26, ["n"] = 27,
-            ["ŋ"] = 28, ["p"] = 29, ["r"] = 30, ["s"] = 31,
-            ["ʃ"] = 32, ["t"] = 33, ["θ"] = 34, ["v"] = 35,
-            ["w"] = 36, ["j"] = 37, ["z"] = 38, ["ʒ"] = 39
+            ["_"] = 0,
+            ["ɑ"] = 1,
+            ["æ"] = 2,
+            ["ʌ"] = 3,
+            ["ɔ"] = 4,
+            ["aʊ"] = 5,
+            ["aɪ"] = 6,
+            ["ɛ"] = 7,
+            ["ɝ"] = 8,
+            ["eɪ"] = 9,
+            ["ɪ"] = 10,
+            ["i"] = 11,
+            ["oʊ"] = 12,
+            ["ɔɪ"] = 13,
+            ["ʊ"] = 14,
+            ["u"] = 15,
+            ["b"] = 16,
+            ["tʃ"] = 17,
+            ["d"] = 18,
+            ["ð"] = 19,
+            ["f"] = 20,
+            ["g"] = 21,
+            ["h"] = 22,
+            ["dʒ"] = 23,
+            ["k"] = 24,
+            ["l"] = 25,
+            ["m"] = 26,
+            ["n"] = 27,
+            ["ŋ"] = 28,
+            ["p"] = 29,
+            ["r"] = 30,
+            ["s"] = 31,
+            ["ʃ"] = 32,
+            ["t"] = 33,
+            ["θ"] = 34,
+            ["v"] = 35,
+            ["w"] = 36,
+            ["j"] = 37,
+            ["z"] = 38,
+            ["ʒ"] = 39
         };
     }
 }

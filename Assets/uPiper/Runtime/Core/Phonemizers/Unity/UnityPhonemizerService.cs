@@ -34,14 +34,14 @@ namespace uPiper.Core.Phonemizers.Unity
 
         private PhonemizerService phonemizerService;
 
-        void Awake()
+        private void Awake()
         {
             if (instance != null && instance != this)
             {
                 Destroy(gameObject);
                 return;
             }
-            
+
             instance = this;
             phonemizerService = PhonemizerService.Instance;
         }
@@ -81,9 +81,9 @@ namespace uPiper.Core.Phonemizers.Unity
             if (error != null)
             {
                 Debug.LogError($"Phonemization error: {error.Message}");
-                callback?.Invoke(new PhonemeResult 
-                { 
-                    Success = false, 
+                callback?.Invoke(new PhonemeResult
+                {
+                    Success = false,
                     Error = error.Message,
                     Phonemes = new string[0]
                 });
@@ -94,7 +94,7 @@ namespace uPiper.Core.Phonemizers.Unity
             }
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
             if (instance == this)
             {
