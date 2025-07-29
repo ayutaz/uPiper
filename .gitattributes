@@ -1,0 +1,33 @@
+# Set default behavior to automatically normalize line endings
+* text=auto eol=lf
+
+# C# files should use LF
+*.cs text eol=lf
+*.csx text eol=lf
+
+# Solution files should use CRLF
+*.sln text eol=crlf
+*.csproj text eol=crlf
+
+# Unity files
+*.unity binary
+*.prefab binary
+*.asset binary
+*.mat binary
+*.meta text eol=lf
+
+# Windows-specific files
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell scripts should use LF
+*.sh text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Config files
+.editorconfig text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
