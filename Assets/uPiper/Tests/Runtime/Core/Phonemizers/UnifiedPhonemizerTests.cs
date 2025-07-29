@@ -8,6 +8,7 @@ using uPiper.Core.Phonemizers.Backend;
 namespace uPiper.Tests.Runtime.Core.Phonemizers
 {
     [TestFixture]
+    [Timeout(30000)] // 30 second timeout for the entire test class
     public class UnifiedPhonemizerTests
     {
         private UnifiedPhonemizer phonemizer;
@@ -25,6 +26,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         }
 
         [UnityTest]
+        [Timeout(10000)] // 10 second timeout
         public async Task Initialize_ShouldLoadBackends()
         {
             // Act
