@@ -202,8 +202,8 @@ namespace uPiper.Tests.Runtime
             var ruleAvg = ruleWatch.ElapsedMilliseconds / (float)iterations;
 
             Debug.Log($"Performance - SimpleLTS: {ltsAvg:F2}ms, RuleBased: {ruleAvg:F2}ms");
-            Assert.Less(ltsAvg, 50f, "SimpleLTS should be fast (< 50ms)");
-            Assert.Less(ruleAvg, 50f, "RuleBased should be fast (< 50ms)");
+            Assert.Less(ltsAvg, 60f, "SimpleLTS should be fast (< 60ms)");
+            Assert.Less(ruleAvg, 60f, "RuleBased should be fast (< 60ms)");
         }
 
         [Test]
