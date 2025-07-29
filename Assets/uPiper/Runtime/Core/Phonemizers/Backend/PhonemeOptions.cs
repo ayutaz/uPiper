@@ -116,6 +116,20 @@ namespace uPiper.Core.Phonemizers.Backend
     public class PhonemeResult
     {
         /// <summary>
+        /// Default constructor that initializes arrays.
+        /// </summary>
+        public PhonemeResult()
+        {
+            Phonemes = new string[0];
+            PhonemeIds = new int[0];
+            Durations = new float[0];
+            Pitches = new float[0];
+            Stresses = new int[0];
+            WordBoundaries = new int[0];
+            Success = true;
+            Metadata = new Dictionary<string, object>();
+        }
+        /// <summary>
         /// The original input text.
         /// </summary>
         public string OriginalText { get; set; }
@@ -218,6 +232,20 @@ namespace uPiper.Core.Phonemizers.Backend
                 FromCache = FromCache,
                 Metadata = Metadata != null ? new Dictionary<string, object>(Metadata) : null
             };
+        }
+
+        /// <summary>
+        /// Returns a string representation of this PhonemeResult.
+        /// </summary>
+        public override string ToString()
+        {
+            var phonemeStr = Phonemes == null ? "[null]" : 
+                            Phonemes.Length == 0 ? "[]" : 
+                            $"[{string.Join(" ", Phonemes)}]";
+            
+            var cacheStr = FromCache ? ", cached" : "";
+            
+            return $"PhonemeResult: \"{OriginalText}\" -> {phonemeStr} ({Language}, {ProcessingTime.TotalMilliseconds:F1}ms{cacheStr})";
         }
     }
 }
