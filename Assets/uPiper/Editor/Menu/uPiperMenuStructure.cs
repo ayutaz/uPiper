@@ -15,24 +15,8 @@ namespace uPiper.Editor.Menu
         public const int PRIORITY_ANDROID = 500;   // 500-599
         public const int PRIORITY_HELP = 600;      // 600-699
 
-        // Menu separators - Unity requires unique paths for each separator
-        [MenuItem("uPiper/ ", false, 99)]
-        private static void Separator1() { }
-
-        [MenuItem("uPiper/  ", false, 199)]
-        private static void Separator2() { }
-
-        [MenuItem("uPiper/   ", false, 299)]
-        private static void Separator3() { }
-
-        [MenuItem("uPiper/    ", false, 399)]
-        private static void Separator4() { }
-
-        [MenuItem("uPiper/     ", false, 499)]
-        private static void Separator5() { }
-
-        [MenuItem("uPiper/      ", false, 599)]
-        private static void Separator6() { }
+        // Note: Unity menu separators are problematic with caching
+        // Using priority values with gaps instead of visual separators
 
         // Help menu items
         [MenuItem("uPiper/Documentation", false, PRIORITY_HELP)]
