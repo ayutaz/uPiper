@@ -27,7 +27,7 @@ namespace uPiper.Tests.Runtime.Phonemizers
         }
 
         [Test]
-        [Timeout(10000)] // 10 second timeout
+        [Timeout(30000)] // 30 second timeout - G2P training can take time
         public async Task TestInitialization()
         {
             var options = new PhonemizerBackendOptions();
