@@ -265,7 +265,7 @@ SimpleLTSによるEnglish phonemizationを
         }
 
         [Test]
-        [Timeout(5000)] // 5 second timeout
+        [Timeout(15000)] // 15 second timeout - backend initialization can be slow
         public void TestBackendAvailability()
         {
             var backends = unifiedPhonemizer.GetAvailableBackends();

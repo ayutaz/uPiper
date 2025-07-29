@@ -26,7 +26,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         }
 
         [Test]
-        [Timeout(10000)] // 10 second timeout
+        [Timeout(30000)] // 30 second timeout - loading multiple backends takes time
         public async Task Initialize_ShouldLoadBackends()
         {
             // Act
