@@ -10,17 +10,18 @@ namespace uPiper.Editor.Menu
     /// </summary>
     public static class uPiperMenuItems
     {
-        // Menu paths
+        // Menu paths - Using separator to distinguish from existing menus
         private const string MENU_ROOT = "uPiper/";
+        private const string SEPARATOR = "—————————————————";
         
-        // Main sections
-        private const string SECTION_DEMO = MENU_ROOT + "Demo/";
-        private const string SECTION_BUILD = MENU_ROOT + "Build/";
-        private const string SECTION_TOOLS = MENU_ROOT + "Tools/";
-        private const string SECTION_DEBUG = MENU_ROOT + "Debug/";
-        private const string SECTION_ANDROID = MENU_ROOT + "Android/";
-        private const string SECTION_SETTINGS = MENU_ROOT + "Settings/";
-        private const string SECTION_HELP = MENU_ROOT + "Help/";
+        // Main sections with new structure to avoid conflicts
+        private const string SECTION_DEMO = MENU_ROOT + "[Demo & Samples]/";
+        private const string SECTION_BUILD = MENU_ROOT + "[Build & Deploy]/";
+        private const string SECTION_TOOLS = MENU_ROOT + "[Tools]/";
+        private const string SECTION_DEBUG = MENU_ROOT + "[Debug]/";
+        private const string SECTION_ANDROID = MENU_ROOT + "[Android]/";
+        private const string SECTION_SETTINGS = MENU_ROOT + "[Settings]/";
+        private const string SECTION_HELP = MENU_ROOT + "[Help & Support]/";
 
         // Priority groups (menu separators appear between different groups)
         private const int PRIORITY_DEMO = 100;
@@ -30,6 +31,16 @@ namespace uPiper.Editor.Menu
         private const int PRIORITY_ANDROID = 500;
         private const int PRIORITY_SETTINGS = 600;
         private const int PRIORITY_HELP = 700;
+
+        #region Separator
+        
+        [MenuItem(MENU_ROOT + SEPARATOR, false, 50)]
+        private static void Separator() 
+        {
+            // This is just a visual separator
+        }
+        
+        #endregion
 
         #region Demo & Samples
         
