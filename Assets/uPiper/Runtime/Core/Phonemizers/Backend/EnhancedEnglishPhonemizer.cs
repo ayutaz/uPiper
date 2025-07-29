@@ -30,8 +30,6 @@ namespace uPiper.Core.Phonemizers.Backend
         public override string Version => "2.0.0";
         public override string License => "MIT";
         public override string[] SupportedLanguages => new[] { "en", "en-US", "en-GB" };
-        
-        protected bool IsInitialized => isInitialized;
 
         // Common English contractions with their phonetic expansions
         public EnhancedEnglishPhonemizer()
@@ -104,7 +102,7 @@ namespace uPiper.Core.Phonemizers.Backend
             PhonemeOptions options = null,
             CancellationToken cancellationToken = default)
         {
-            if (!IsInitialized)
+            if (!isInitialized)
             {
                 return Task.FromResult(new PhonemeResult
                 {

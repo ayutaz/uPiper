@@ -31,7 +31,7 @@ namespace uPiper.Tests.Runtime.Phonemizers
             var result = await phonemizer.InitializeAsync(options);
             
             Assert.IsTrue(result);
-            Assert.IsTrue(phonemizer.IsInitialized);
+            Assert.IsTrue(phonemizer.IsAvailable);
             Assert.AreEqual("EnhancedEnglish", phonemizer.Name);
         }
 
