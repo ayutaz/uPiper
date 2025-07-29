@@ -12,7 +12,7 @@ namespace uPiper.Editor
     {
         private const string WEBGL_DEMO_SCENE_PATH = "Assets/uPiper/Samples~/WebGLDemo/WebGLDemoScene.unity";
 
-        [MenuItem("uPiper/Samples/Open WebGL Demo Scene")]
+        [MenuItem("uPiper/Demo/Open WebGL Demo Scene", false, 110)]
         public static void OpenWebGLDemoScene()
         {
             // 現在のシーンに変更がある場合は保存を促す
@@ -215,7 +215,7 @@ namespace uPiper.Editor
             }
         }
 
-        [MenuItem("uPiper/Samples/Copy All Samples to Assets")]
+        [MenuItem("uPiper/Demo/Copy All Samples to Assets", false, 120)]
         public static void CopySamplesToAssets()
         {
             var sourcePath = "Assets/uPiper/Samples~";
@@ -264,7 +264,7 @@ namespace uPiper.Editor
             }
         }
 
-        [MenuItem("uPiper/Samples/Add All Scenes to Build Settings")]
+        [MenuItem("uPiper/Demo/Add All Scenes to Build Settings", false, 121)]
         public static void AddWebGLDemoToBuildSettings()
         {
             var currentScenes = new System.Collections.Generic.List<EditorBuildSettingsScene>(

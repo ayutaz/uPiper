@@ -115,7 +115,7 @@ namespace uPiper.Editor.Menu
         [MenuItem(SECTION_TOOLS + "GPU Inference Test", false, PRIORITY_TOOLS + 10)]
         private static void ShowGPUInferenceTest()
         {
-            ExecuteMenuItem("Window/uPiper/GPU Inference Test");
+            ExecuteMenuItem("uPiper/Tools/GPU Inference Test");
         }
 
         [MenuItem(SECTION_TOOLS + "IL2CPP Benchmark Runner", false, PRIORITY_TOOLS + 20)]
