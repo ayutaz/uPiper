@@ -87,12 +87,13 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                         if (string.IsNullOrWhiteSpace(line) || line.StartsWith(";;;"))
                             continue;
 
-                        // Parse the line
-                        var parts = line.Split(new[] { "  " }, StringSplitOptions.RemoveEmptyEntries);
-                        if (parts.Length >= 2)
+                        // Parse the line - find first space as separator
+                        var spaceIndex = line.IndexOf(' ');
+                        if (spaceIndex > 0 && spaceIndex < line.Length - 1)
                         {
-                            var word = parts[0].Trim();
-                            var phonemes = parts[1].Trim().Split(' ');
+                            var word = line.Substring(0, spaceIndex).Trim();
+                            var phonemesPart = line.Substring(spaceIndex + 1).Trim();
+                            var phonemes = phonemesPart.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
                             // Handle multiple pronunciations (e.g., "WORD(1)", "WORD(2)")
                             var baseWord = ExtractBaseWord(word);

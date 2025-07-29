@@ -62,6 +62,23 @@ namespace uPiper.Core.Phonemizers.Backend
             {
                 EnsureInitialized();
 
+                // Handle empty text as a special case - return empty result, not error
+                if (string.IsNullOrEmpty(text))
+                {
+                    stopwatch.Stop();
+                    return new PhonemeResult
+                    {
+                        OriginalText = text,
+                        Phonemes = new string[0],
+                        PhonemeIds = new int[0],
+                        Language = language,
+                        Success = true,
+                        Backend = Name,
+                        ProcessingTimeMs = (float)stopwatch.ElapsedMilliseconds,
+                        ProcessingTime = stopwatch.Elapsed
+                    };
+                }
+
                 if (!ValidateInput(text, language, out var error))
                 {
                     return CreateErrorResult(error, language);
