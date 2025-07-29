@@ -52,7 +52,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         }
 
         [Test]
-        public void Clone_CreatesDeepCopy()
+        public void DeepClone_CreatesDeepCopy()
         {
             var original = new PhonemeResult
             {
@@ -68,7 +68,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 Metadata = new System.Collections.Generic.Dictionary<string, object> { { "key", "metadata" } }
             };
 
-            var clone = original.Clone();
+            var clone = original.DeepClone();
 
             // Check values are copied
             Assert.AreEqual(original.OriginalText, clone.OriginalText);
@@ -118,6 +118,29 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.IsNull(clone.PhonemeIds);
             Assert.IsNull(clone.Durations);
             Assert.IsNull(clone.Pitches);
+        }
+
+        [Test]
+        public void Clone_CreatesShallowCopy()
+        {
+            var original = new PhonemeResult
+            {
+                OriginalText = "original",
+                Phonemes = new[] { "a", "b", "c" },
+                PhonemeIds = new[] { 1, 2, 3 },
+                Language = "ja"
+            };
+
+            var clone = original.Clone();
+
+            // Check values are copied
+            Assert.AreEqual(original.OriginalText, clone.OriginalText);
+            CollectionAssert.AreEqual(original.Phonemes, clone.Phonemes);
+            CollectionAssert.AreEqual(original.PhonemeIds, clone.PhonemeIds);
+            
+            // Check arrays are same instances (shallow copy)
+            Assert.AreSame(original.Phonemes, clone.Phonemes);
+            Assert.AreSame(original.PhonemeIds, clone.PhonemeIds);
         }
 
         [Test]
