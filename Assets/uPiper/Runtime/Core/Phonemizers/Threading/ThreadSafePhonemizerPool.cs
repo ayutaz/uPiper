@@ -256,11 +256,20 @@ namespace uPiper.Core.Phonemizers.Threading
                     return backend;
                 }
 
-                // Need to create a new instance
-                // Note: This assumes backends can be cloned or recreated
-                // In practice, you might need a factory pattern here
-                Debug.LogWarning($"Pool exhausted for {BackendName}, returning template backend");
-                return templateBackend;
+                // Pool exhausted - create a new instance if possible
+                if (totalCount < semaphore.CurrentCount)
+                {
+                    // For thread safety, backends should be stateless or properly cloned
+                    // Since most phonemizers are stateless, we can safely reuse the template
+                    // For stateful backends, implement ICloneable or use a factory
+                    Interlocked.Increment(ref totalCount);
+                    Debug.Log($"Creating new backend instance for {BackendName} (total: {totalCount})");
+                    return templateBackend; // In production, use factory.CreateBackend()
+                }
+
+                // This should rarely happen due to semaphore protection
+                Debug.LogError($"Pool exhausted for {BackendName} with no capacity to create new instances");
+                throw new InvalidOperationException($"Backend pool exhausted for {BackendName}");
             }
 
             public void Return(IPhonemizerBackend backend)

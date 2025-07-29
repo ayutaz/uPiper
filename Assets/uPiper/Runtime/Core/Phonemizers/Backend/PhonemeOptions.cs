@@ -206,13 +206,47 @@ namespace uPiper.Core.Phonemizers.Backend
 
         /// <summary>
         /// Additional metadata about the phonemization.
+        /// 
+        /// Migration note: Changed from Dictionary&lt;string, string&gt; to Dictionary&lt;string, object&gt;
+        /// to support richer metadata types. String values are still supported and will work
+        /// as before. For backward compatibility, cast object values to string when needed:
+        /// string value = result.Metadata["key"]?.ToString();
         /// </summary>
         public Dictionary<string, object> Metadata { get; set; }
 
         /// <summary>
         /// Creates a copy of this PhonemeResult.
+        /// 
+        /// Note: This creates a shallow copy where arrays are shared until modified.
+        /// For a deep copy with independent arrays, use DeepClone().
         /// </summary>
         public PhonemeResult Clone()
+        {
+            return new PhonemeResult
+            {
+                OriginalText = OriginalText,
+                Phonemes = Phonemes, // Shallow copy - arrays are immutable in practice
+                PhonemeIds = PhonemeIds,
+                Language = Language,
+                Success = Success,
+                Error = Error,
+                Stresses = Stresses,
+                Durations = Durations,
+                Pitches = Pitches,
+                WordBoundaries = WordBoundaries,
+                Backend = Backend,
+                ProcessingTime = ProcessingTime,
+                ProcessingTimeMs = ProcessingTimeMs,
+                FromCache = FromCache,
+                Metadata = Metadata != null ? new Dictionary<string, object>(Metadata) : null
+            };
+        }
+
+        /// <summary>
+        /// Creates a deep copy of this PhonemeResult with independent arrays.
+        /// Use this when you need to modify the arrays after cloning.
+        /// </summary>
+        public PhonemeResult DeepClone()
         {
             return new PhonemeResult
             {

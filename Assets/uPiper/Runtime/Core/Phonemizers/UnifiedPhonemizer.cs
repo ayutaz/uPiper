@@ -463,6 +463,11 @@ namespace uPiper.Core.Phonemizers
 
         /// <summary>
         /// Creates an OpenJTalk backend using reflection to avoid compile-time dependency.
+        /// 
+        /// Note: Reflection is used here to maintain loose coupling between core components
+        /// and optional backends. This allows the system to work without all backends present.
+        /// For production use, consider implementing a proper factory pattern with dependency
+        /// injection for better maintainability and compile-time safety.
         /// </summary>
         private IPhonemizerBackend CreateOpenJTalkBackend()
         {
@@ -485,6 +490,11 @@ namespace uPiper.Core.Phonemizers
 
         /// <summary>
         /// Creates a SimpleLTS backend using reflection to avoid compile-time dependency.
+        /// 
+        /// Note: Reflection is used here to maintain loose coupling between core components
+        /// and optional backends. This allows the system to work without all backends present.
+        /// For production use, consider implementing a proper factory pattern with dependency
+        /// injection for better maintainability and compile-time safety.
         /// </summary>
         private IPhonemizerBackend CreateSimpleLTSBackend()
         {
