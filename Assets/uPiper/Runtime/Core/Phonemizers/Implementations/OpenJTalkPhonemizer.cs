@@ -140,7 +140,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                         Debug.LogError($"[OpenJTalkPhonemizer] Expected path: {expectedPath}");
                         Debug.LogError($"[OpenJTalkPhonemizer] Application.dataPath: {Application.dataPath}");
                         Debug.LogError($"[OpenJTalkPhonemizer] Current directory: {Directory.GetCurrentDirectory()}");
-                        
+
                         // Log actual plugin directory contents
                         var pluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins");
                         if (Directory.Exists(pluginsPath))
