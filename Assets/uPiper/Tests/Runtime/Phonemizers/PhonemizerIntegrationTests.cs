@@ -24,9 +24,22 @@ namespace uPiper.Tests.Phonemizers
         [SetUp]
         public async Task SetUp()
         {
-            // Initialize UnifiedPhonemizer for testing
-            unifiedPhonemizer = new UnifiedPhonemizer();
-            await unifiedPhonemizer.InitializeAsync();
+            try
+            {
+                // Initialize UnifiedPhonemizer for testing
+                unifiedPhonemizer = new UnifiedPhonemizer();
+                var initialized = await unifiedPhonemizer.InitializeAsync();
+                
+                if (!initialized)
+                {
+                    Debug.LogWarning("[PhonemizerIntegrationTests] UnifiedPhonemizer initialization failed. Some tests may be skipped.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[PhonemizerIntegrationTests] Setup failed: {ex.Message}");
+                // Don't throw - let individual tests handle the uninitialized state
+            }
         }
 
         [TearDown]

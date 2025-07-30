@@ -137,6 +137,22 @@ jobs:
         find . -name "*openjtalk_wrapper*" -type f -o -type l | head -20
       shell: bash
     
+    # Verify OpenJTalk library placement for Windows
+    - name: Verify OpenJTalk Library (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: |
+        echo "=== Checking OpenJTalk library placement ==="
+        echo "Current directory: $(pwd)"
+        echo "Checking Assets/uPiper/Plugins/Windows/x86_64:"
+        ls -la Assets/uPiper/Plugins/Windows/x86_64/ || true
+        echo ""
+        echo "Checking for openjtalk_wrapper.dll:"
+        find Assets -name "openjtalk_wrapper.dll" -type f 2>/dev/null || echo "DLL not found"
+        echo ""
+        echo "Checking plugin meta files:"
+        find Assets/uPiper/Plugins -name "*.meta" | head -10
+        
     # Create Unity cache directory for Windows
     - name: Create Unity Cache Directory (Windows)
       if: matrix.os == 'windows-latest'
@@ -145,7 +161,10 @@ jobs:
         $cachePaths = @(
           "$env:USERPROFILE\AppData\Local\Unity\Caches",
           "$env:USERPROFILE\AppData\Local\Unity\Caches\bee",
-          "$env:USERPROFILE\AppData\Local\Unity"
+          "$env:USERPROFILE\AppData\Local\Unity",
+          "C:\Users\ContainerAdministrator\AppData\Local\Unity\Caches",
+          "C:\Users\ContainerAdministrator\AppData\Local\Unity\Caches\bee",
+          "C:\Users\ContainerAdministrator\AppData\Local\Unity"
         )
         foreach ($path in $cachePaths) {
           if (!(Test-Path $path)) {

@@ -133,6 +133,30 @@ namespace uPiper.Core.Phonemizers.Implementations
                     var expectedPath = GetExpectedLibraryPath();
                     var nativePluginsPath = Path.GetFullPath(Path.Combine(Application.dataPath, "../NativePlugins/OpenJTalk/"));
 
+                    // In CI environment, provide more detailed information
+                    if (Application.isBatchMode || Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null)
+                    {
+                        Debug.LogError($"[OpenJTalkPhonemizer] CI Environment detected. Library search failed.");
+                        Debug.LogError($"[OpenJTalkPhonemizer] Expected path: {expectedPath}");
+                        Debug.LogError($"[OpenJTalkPhonemizer] Application.dataPath: {Application.dataPath}");
+                        Debug.LogError($"[OpenJTalkPhonemizer] Current directory: {Directory.GetCurrentDirectory()}");
+                        
+                        // Log actual plugin directory contents
+                        var pluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins");
+                        if (Directory.Exists(pluginsPath))
+                        {
+                            Debug.LogError($"[OpenJTalkPhonemizer] Plugins directory exists: {pluginsPath}");
+                            foreach (var file in Directory.GetFiles(pluginsPath, "*", SearchOption.AllDirectories))
+                            {
+                                Debug.LogError($"[OpenJTalkPhonemizer]   Found: {file}");
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogError($"[OpenJTalkPhonemizer] Plugins directory not found: {pluginsPath}");
+                        }
+                    }
+
                     throw new PiperInitializationException(
                         $"OpenJTalk native library not found at: {expectedPath}\n\n" +
                         "To install the OpenJTalk native library:\n" +
