@@ -225,11 +225,11 @@ jobs:
           exit 1
         fi
 
-    # Unity 6対応 - game-ci/unity-test-runnerを使用
-    - name: Run Unity Tests
+    # Unity 6対応 - game-ci/unity-test-runnerを使用 (Linux only)
+    - name: Run Unity Tests (Docker)
       uses: game-ci/unity-test-runner@v4
       # Skip on macOS and Windows as Docker is not supported on these runners
-      if: matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: matrix.os == 'ubuntu-latest'
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -249,10 +249,109 @@ jobs:
         dockerCpuLimit: 4
         dockerMemoryLimit: 8192
         
+    # Windows用のUnity直接実行
+    - name: Install Unity Hub (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: powershell
+      run: |
+        Write-Host "Installing Unity Hub..."
+        $hubPath = "$env:TEMP\UnityHubSetup.exe"
+        Invoke-WebRequest -Uri "https://public-cdn.cloud.unity3d.com/hub/prod/UnityHubSetup.exe" -OutFile $hubPath
+        
+        # Silent install
+        Start-Process -FilePath $hubPath -ArgumentList "/S" -Wait
+        
+        # Add Unity Hub to PATH
+        $unityHubPath = "${env:ProgramFiles}\Unity Hub"
+        echo "$unityHubPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        
+    - name: Install Unity Editor (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: powershell
+      run: |
+        # Add Unity Hub to current session PATH
+        $env:PATH = "${env:ProgramFiles}\Unity Hub;$env:PATH"
+        
+        # Install Unity 6000.0.35f1
+        Write-Host "Installing Unity 6000.0.35f1..."
+        & "${env:ProgramFiles}\Unity Hub\Unity Hub.exe" -- --headless install --version 6000.0.35f1 --changeset bb8081de9a21 --module windows-il2cpp
+        
+        # Wait for installation
+        Start-Sleep -Seconds 30
+        
+    - name: Activate Unity License (Windows)
+      if: matrix.os == 'windows-latest'
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      shell: powershell
+      run: |
+        # Find Unity executable
+        $unityPaths = @(
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.35f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe"
+        )
+        
+        $unityExe = $null
+        foreach ($path in $unityPaths) {
+          if (Test-Path $path) {
+            $unityExe = $path
+            break
+          }
+        }
+        
+        if ($null -eq $unityExe) {
+          Write-Host "Unity executable not found!"
+          exit 1
+        }
+        
+        Write-Host "Using Unity at: $unityExe"
+        
+        # Create license file
+        $env:UNITY_LICENSE | Out-File -FilePath "Unity_v6000.x.ulf" -Encoding utf8
+        
+        # Activate license
+        & $unityExe -batchmode -nographics -silent-crashes -logFile - -manualLicenseFile Unity_v6000.x.ulf -quit
+        
+    - name: Run Unity Tests on Windows (Direct CLI)
+      if: matrix.os == 'windows-latest'
+      shell: powershell
+      run: |
+        # Find Unity executable
+        $unityPaths = @(
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.35f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe"
+        )
+        
+        $unityExe = $null
+        foreach ($path in $unityPaths) {
+          if (Test-Path $path) {
+            $unityExe = $path
+            break
+          }
+        }
+        
+        Write-Host "Using Unity at: $unityExe"
+        
+        # Set OpenJTalk DLL path
+        $env:PATH = "$env:GITHUB_WORKSPACE\Assets\uPiper\Plugins\Windows\x86_64;$env:PATH"
+        
+        # Create test results directory
+        New-Item -ItemType Directory -Path "test-results" -Force
+        
+        # Run EditMode tests
+        Write-Host "Running EditMode tests..."
+        & $unityExe -batchmode -nographics -silent-crashes -logFile - -projectPath . -runTests -testPlatform EditMode -testResults test-results/editmode-results.xml -enableCodeCoverage -coverageResultsPath test-results -coverageOptions "generateAdditionalMetrics;generateHtmlReport;assemblyFilters:+uPiper.*,-uPiper.Tests.*"
+        
+        # Run PlayMode tests
+        Write-Host "Running PlayMode tests..."
+        & $unityExe -batchmode -nographics -silent-crashes -logFile - -projectPath . -runTests -testPlatform PlayMode -testResults test-results/playmode-results.xml
+        
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
       uses: actions/upload-artifact@v4
-      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: always() && matrix.os != 'macos-latest'
       with:
         name: Test Results - Unity - ${{ matrix.platform }}
         path: |
@@ -264,7 +363,7 @@ jobs:
         
     # テスト結果のデバッグ情報
     - name: Debug Test Results
-      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: always() && matrix.os != 'macos-latest'
       shell: bash
       run: |
         echo "=== Test Results Directory Contents ==="
@@ -282,7 +381,7 @@ jobs:
     
     # テスト結果のサマリーを作成
     - name: Create Test Summary
-      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: always() && matrix.os != 'macos-latest'
       shell: bash
       run: |
         echo "## Unity Test Results Summary" >> $GITHUB_STEP_SUMMARY
@@ -333,7 +432,7 @@ jobs:
     # カバレッジレポートをアップロード
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
-      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: always() && matrix.os != 'macos-latest'
       with:
         name: Coverage Report - ${{ matrix.platform }}
         path: |
@@ -350,7 +449,7 @@ jobs:
         
     # コードカバレッジチェック
     - name: Check Code Coverage
-      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: always() && matrix.os != 'macos-latest'
       shell: bash
       run: |
         # カバレッジサマリーファイルを探す
@@ -438,7 +537,7 @@ jobs:
     # Codecovにカバレッジをアップロード
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
-      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
+      if: always() && matrix.os == 'ubuntu-latest'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         directory: ./
@@ -448,18 +547,44 @@ jobs:
         fail_ci_if_error: false
         verbose: true
 
-    # Windows-specific summary when Unity tests are skipped
+    # Windows-specific summary
     - name: Create Windows Summary
-      if: matrix.os == 'windows-latest'
-      shell: bash
+      if: matrix.os == 'windows-latest' && always()
+      shell: powershell
       run: |
-        echo "## Windows Build Summary" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ OpenJTalk native library built successfully" >> $GITHUB_STEP_SUMMARY
-        echo "✅ DLL verified at: Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "⚠️ **Note**: Unity tests are skipped on Windows runners due to Docker limitations." >> $GITHUB_STEP_SUMMARY
-        echo "Unity tests run on Ubuntu runner instead." >> $GITHUB_STEP_SUMMARY
+        Write-Host "## Windows Build Summary" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+        Write-Host "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+        Write-Host "✅ OpenJTalk native library built successfully" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+        Write-Host "✅ DLL verified at: Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+        Write-Host "✅ Unity tests run natively on Windows using Unity CLI" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+        Write-Host "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+        
+        # Parse Windows test results if available
+        if (Test-Path "test-results") {
+          $testFiles = Get-ChildItem -Path "test-results" -Filter "*.xml" -Recurse
+          foreach ($file in $testFiles) {
+            Write-Host "### $($file.Name)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+            
+            try {
+              [xml]$xml = Get-Content $file.FullName
+              $testSuite = $xml.SelectSingleNode("//test-suite")
+              
+              if ($testSuite) {
+                $total = $testSuite.GetAttribute("total")
+                $passed = $testSuite.GetAttribute("passed")
+                $failed = $testSuite.GetAttribute("failed")
+                
+                Write-Host "- Total: $total" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+                Write-Host "- Passed: $passed ✅" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+                Write-Host "- Failed: $failed ❌" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+              }
+            } catch {
+              Write-Host "Could not parse test results from $($file.Name)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+            }
+            
+            Write-Host "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          }
+        }
 
   # macOS専用のテスト（Dockerがサポートされていないため）
   macos-unity-test:
