@@ -77,19 +77,19 @@ namespace uPiper.Core.Phonemizers.Implementations
         private static extern IntPtr openjtalk_get_error_string(int error_code);
 #else
         // Throw exceptions for unsupported platforms
-        private static IntPtr openjtalk_create(string dict_path) 
+        private static IntPtr openjtalk_create(string dict_path)
             => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
-        private static void openjtalk_destroy(IntPtr handle) 
+        private static void openjtalk_destroy(IntPtr handle)
             => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
-        private static IntPtr openjtalk_phonemize(IntPtr handle, string text) 
+        private static IntPtr openjtalk_phonemize(IntPtr handle, string text)
             => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
-        private static void openjtalk_free_result(IntPtr result) 
+        private static void openjtalk_free_result(IntPtr result)
             => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
-        private static IntPtr openjtalk_get_version() 
+        private static IntPtr openjtalk_get_version()
             => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
-        private static int openjtalk_get_last_error(IntPtr handle) 
+        private static int openjtalk_get_last_error(IntPtr handle)
             => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
-        private static IntPtr openjtalk_get_error_string(int error_code) 
+        private static IntPtr openjtalk_get_error_string(int error_code)
             => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
 #endif
 
