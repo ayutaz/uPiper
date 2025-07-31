@@ -276,9 +276,38 @@ jobs:
         Write-Host "Installing Unity 6000.0.35f1..."
         & "${env:ProgramFiles}\Unity Hub\Unity Hub.exe" -- --headless install --version 6000.0.35f1 --changeset bb8081de9a21 --module windows-il2cpp
         
-        # Wait for installation (Unity Editor installation takes several minutes)
-        Write-Host "Waiting for Unity installation to complete (this may take 5-10 minutes)..."
-        Start-Sleep -Seconds 300
+        # Wait for installation with progress checking
+        Write-Host "Waiting for Unity installation to complete..."
+        $maxWaitTime = 900  # 15 minutes maximum
+        $checkInterval = 30  # Check every 30 seconds
+        $elapsed = 0
+        
+        $unityPaths = @(
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.35f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe"
+        )
+        
+        $foundUnity = $false
+        while ($elapsed -lt $maxWaitTime -and -not $foundUnity) {
+          Start-Sleep -Seconds $checkInterval
+          $elapsed += $checkInterval
+          
+          Write-Host "Checking for Unity installation... ($elapsed seconds elapsed)"
+          
+          foreach ($path in $unityPaths) {
+            if (Test-Path $path) {
+              Write-Host "Unity found at: $path"
+              $foundUnity = $true
+              break
+            }
+          }
+        }
+        
+        if (-not $foundUnity) {
+          Write-Host "Unity installation failed after $elapsed seconds."
+          exit 1
+        }
         
     - name: Activate Unity License (Windows)
       if: matrix.os == 'windows-latest'
