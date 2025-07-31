@@ -200,6 +200,12 @@ jobs:
           cp "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" "Library/ScriptAssemblies/openjtalk_wrapper.dll"
           echo "Copied DLL to Library/ScriptAssemblies"
           
+          # Copy to system directories that might be in PATH
+          # Unity might look in Windows system directories
+          mkdir -p "temp_dll"
+          cp "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" "temp_dll/openjtalk_wrapper.dll"
+          echo "Copied DLL to temp_dll directory"
+          
           # List files to verify
           echo "=== Files in project root ==="
           ls -la *.dll || true
@@ -209,6 +215,9 @@ jobs:
           
           echo "=== Files in Assets/Plugins/x86_64 ==="
           ls -la Assets/Plugins/x86_64/ || true
+          
+          echo "=== Files in temp_dll ==="
+          ls -la temp_dll/ || true
         else
           echo "ERROR: Source DLL not found!"
           exit 1
@@ -225,6 +234,8 @@ jobs:
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         PROJECT_PATH: .
         LD_LIBRARY_PATH: ${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:${{ env.LD_LIBRARY_PATH }}
+        # Windows-specific: Add current directory and temp_dll to PATH for DLL search
+        PATH: ${{ github.workspace }};${{ github.workspace }}/temp_dll;${{ github.workspace }}/Assets/uPiper/Plugins/Windows/x86_64;${{ github.workspace }}/Library/ScriptAssemblies;${{ env.PATH }}
       with:
         unityVersion: 6000.0.35f1
         testMode: all

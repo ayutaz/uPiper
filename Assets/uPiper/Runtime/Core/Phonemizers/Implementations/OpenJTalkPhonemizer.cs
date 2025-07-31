@@ -48,6 +48,11 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         private const string LIBRARY_NAME = "openjtalk_wrapper";
 
+#if ENABLE_PINVOKE && UNITY_EDITOR_WIN
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool SetDllDirectory(string lpPathName);
+#endif
+
 #if ENABLE_PINVOKE
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr openjtalk_create([MarshalAs(UnmanagedType.LPStr)] string dict_path);
@@ -127,6 +132,37 @@ namespace uPiper.Core.Phonemizers.Implementations
             {
                 if (_handle != IntPtr.Zero)
                     return;
+
+                // Try to set DLL directory on Windows in CI environment
+#if ENABLE_PINVOKE && UNITY_EDITOR_WIN
+                if (Application.isBatchMode || Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null)
+                {
+                    Debug.Log("[OpenJTalkPhonemizer] CI environment detected, setting DLL search paths...");
+                    
+                    // Try multiple DLL directories
+                    var dllPaths = new[]
+                    {
+                        Directory.GetCurrentDirectory(),
+                        Path.Combine(Application.dataPath, "uPiper", "Plugins", "Windows", "x86_64"),
+                        Path.Combine(Application.dataPath, "Plugins", "x86_64"),
+                        Path.Combine(Directory.GetCurrentDirectory(), "Library", "ScriptAssemblies")
+                    };
+                    
+                    foreach (var dllPath in dllPaths)
+                    {
+                        if (Directory.Exists(dllPath))
+                        {
+                            var dllFile = Path.Combine(dllPath, "openjtalk_wrapper.dll");
+                            if (File.Exists(dllFile))
+                            {
+                                Debug.Log($"[OpenJTalkPhonemizer] Found DLL at: {dllFile}, setting DLL directory to: {dllPath}");
+                                SetDllDirectory(dllPath);
+                                break;
+                            }
+                        }
+                    }
+                }
+#endif
 
                 if (!IsNativeLibraryAvailable())
                 {
@@ -640,6 +676,13 @@ namespace uPiper.Core.Phonemizers.Implementations
                         return path;
                     }
                 }
+                
+                // If not found, log all searched paths for debugging
+                Debug.LogError($"[OpenJTalkPhonemizer] DLL not found in CI environment. Searched paths:");
+                foreach (var path in possiblePaths)
+                {
+                    Debug.LogError($"  - {path} (exists: {File.Exists(path)})");
+                }
             }
 
             // In Unity Editor
@@ -653,7 +696,11 @@ namespace uPiper.Core.Phonemizers.Implementations
                 if (File.Exists(windowsPath)) return windowsPath;
 
                 // Fallback to old path
-                return Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll");
+                var fallbackPath = Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll");
+                if (File.Exists(fallbackPath)) return fallbackPath;
+                
+                // Return the expected path even if not found (for error messages)
+                return windowsPath;
             }
             else if (PlatformHelper.IsMacOS)
             {
