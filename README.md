@@ -114,7 +114,7 @@ var config = new PiperConfig
 ## 詳細ドキュメント
 
 - [アーキテクチャ](docs/ja/ARCHITECTURE.md) - 設計と技術的な詳細
-- [開発ログ](DEVELOPMENT_LOG.md) - 開発進捗と変更履歴
+- [開発ログ](docs/DEVELOPMENT_LOG.md) - 開発進捗と変更履歴
 - [技術ドキュメント](docs/ja/guides/technical/) - 詳細な技術情報
 
 ## ライセンス
