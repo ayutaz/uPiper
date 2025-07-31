@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
-using System.Text.Json;
 using System.Linq;
 using System.Diagnostics;
+using Newtonsoft.Json;
 
 namespace uPiper.Editor
 {
@@ -43,7 +43,7 @@ namespace uPiper.Editor
                 AssetDatabase.ExportPackage(
                     assetPaths.ToArray(),
                     exportPath,
-                    ExportPackageOptions.Recurse | ExportPackageOptions.IncludeDependencies
+                    ExportPackageOptions.Recurse
                 );
                 
                 EditorUtility.ClearProgressBar();
@@ -109,7 +109,53 @@ namespace uPiper.Editor
             }
         }
         
-        [MenuItem("uPiper/Package/Export Both Formats", false, Menu.uPiperMenuStructure.PRIORITY_BUILD + 52)]
+        [MenuItem("uPiper/Package/Export Unity Package (No Dependencies)", false, Menu.uPiperMenuStructure.PRIORITY_BUILD + 53)]
+        public static void ExportUnityPackageNoDependencies()
+        {
+            try
+            {
+                var packageInfo = ReadPackageInfo();
+                var version = packageInfo?.Version ?? "0.1.0";
+                
+                var exportPath = EditorUtility.SaveFilePanel(
+                    "Export Unity Package (No Dependencies)",
+                    "",
+                    $"{PACKAGE_NAME}-v{version}-NoDeps.unitypackage",
+                    "unitypackage"
+                );
+                
+                if (string.IsNullOrEmpty(exportPath))
+                    return;
+                
+                var assetPaths = GetAssetPaths();
+                
+                EditorUtility.DisplayProgressBar("Exporting Package", "Collecting assets...", 0.1f);
+                
+                AssetDatabase.ExportPackage(
+                    assetPaths.ToArray(),
+                    exportPath,
+                    ExportPackageOptions.Recurse // No IncludeDependencies
+                );
+                
+                EditorUtility.ClearProgressBar();
+                
+                UnityEngine.Debug.Log($"Unity Package (No Dependencies) exported successfully: {exportPath}");
+                EditorUtility.DisplayDialog("Export Complete", 
+                    $"Unity Package exported to:\n{exportPath}\n\nNote: Package Manager dependencies are not included.", "OK");
+                
+                // Reveal in Explorer/Finder
+                EditorUtility.RevealInFinder(exportPath);
+            }
+            catch (Exception ex)
+            {
+                EditorUtility.ClearProgressBar();
+                UnityEngine.Debug.LogError($"Failed to export Unity Package: {ex.Message}");
+                EditorUtility.DisplayDialog("Export Failed", 
+                    $"Failed to export Unity Package:\n{ex.Message}", "OK");
+            }
+        }
+        
+        [MenuItem("uPiper/Package/Export Both Formats", false, Menu.uPiperMenuStructure.PRIORITY_BUILD + 54)]
         public static void ExportBothFormats()
         {
             try
@@ -134,7 +180,7 @@ namespace uPiper.Editor
                 AssetDatabase.ExportPackage(
                     assetPaths.ToArray(),
                     unityPackagePath,
-                    ExportPackageOptions.Recurse | ExportPackageOptions.IncludeDependencies
+                    ExportPackageOptions.Recurse
                 );
                 
                 EditorUtility.DisplayProgressBar("Exporting Packages", "Exporting UPM Package...", 0.6f);
@@ -164,7 +210,7 @@ namespace uPiper.Editor
             }
         }
         
-        [MenuItem("uPiper/Package/Open Export Directory", false, Menu.uPiperMenuStructure.PRIORITY_BUILD + 60)]
+        [MenuItem("uPiper/Package/Open Export Directory", false, Menu.uPiperMenuStructure.PRIORITY_BUILD + 70)]
         public static void OpenExportDirectory()
         {
             var projectPath = Application.dataPath.Replace("/Assets", "");
@@ -189,11 +235,7 @@ namespace uPiper.Editor
                 }
                 
                 var json = File.ReadAllText(PACKAGE_JSON_PATH);
-                return JsonSerializer.Deserialize<PackageInfo>(json, new JsonSerializerOptions 
-                { 
-                    PropertyNameCaseInsensitive = true,
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                });
+                return JsonConvert.DeserializeObject<PackageInfo>(json);
             }
             catch (Exception ex)
             {
@@ -241,11 +283,7 @@ namespace uPiper.Editor
                 var packageJsonPath = Path.Combine(tempDir, "package.json");
                 if (!File.Exists(packageJsonPath))
                 {
-                    var packageJson = JsonSerializer.Serialize(packageInfo, new JsonSerializerOptions 
-                    { 
-                        WriteIndented = true,
-                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                    });
+                    var packageJson = JsonConvert.SerializeObject(packageInfo, Formatting.Indented);
                     File.WriteAllText(packageJsonPath, packageJson);
                 }
                 
@@ -431,7 +469,7 @@ namespace uPiper.Editor
                 AssetDatabase.ExportPackage(
                     assetPaths.ToArray(),
                     outputPath,
-                    ExportPackageOptions.Recurse | ExportPackageOptions.IncludeDependencies
+                    ExportPackageOptions.Recurse
                 );
                 
                 UnityEngine.Debug.Log($"Unity Package exported successfully: {outputPath}");

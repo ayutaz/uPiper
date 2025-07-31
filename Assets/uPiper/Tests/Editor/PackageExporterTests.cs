@@ -2,8 +2,8 @@ using NUnit.Framework;
 using System.IO;
 using UnityEngine;
 using UnityEditor;
-using uPiper.Editor;
-using System.Text.Json;
+using System.Linq;
+using Newtonsoft.Json;
 
 namespace uPiper.Tests.Editor
 {
@@ -57,8 +57,8 @@ namespace uPiper.Tests.Editor
             var json = File.ReadAllText(originalPackageJsonPath);
             Assert.DoesNotThrow(() => 
             {
-                using var document = JsonDocument.Parse(json);
-                Assert.IsNotNull(document.RootElement);
+                var parsed = JsonConvert.DeserializeObject(json);
+                Assert.IsNotNull(parsed);
             }, "package.json should contain valid JSON");
         }
         
@@ -68,11 +68,7 @@ namespace uPiper.Tests.Editor
             Assert.IsTrue(File.Exists(originalPackageJsonPath));
             
             var json = File.ReadAllText(originalPackageJsonPath);
-            var packageInfo = JsonSerializer.Deserialize<PackageInfo>(json, new JsonSerializerOptions 
-            { 
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            var packageInfo = JsonConvert.DeserializeObject<PackageInfo>(json);
             
             Assert.IsNotNull(packageInfo, "Should be able to deserialize package.json");
             Assert.IsNotEmpty(packageInfo.Name, "Package should have a name");
@@ -88,11 +84,7 @@ namespace uPiper.Tests.Editor
             Assert.IsTrue(File.Exists(originalPackageJsonPath));
             
             var json = File.ReadAllText(originalPackageJsonPath);
-            var packageInfo = JsonSerializer.Deserialize<PackageInfo>(json, new JsonSerializerOptions 
-            { 
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
+            var packageInfo = JsonConvert.DeserializeObject<PackageInfo>(json);
             
             Assert.IsNotNull(packageInfo);
             
@@ -150,7 +142,7 @@ namespace uPiper.Tests.Editor
         {
             // This test verifies that the menu items are properly defined
             // We can't actually invoke them in a unit test, but we can check if the methods exist
-            var exporterType = typeof(PackageExporter);
+            var exporterType = typeof(uPiper.Editor.PackageExporter);
             
             var exportUnityPackageMethod = exporterType.GetMethod("ExportUnityPackage", 
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
@@ -173,7 +165,7 @@ namespace uPiper.Tests.Editor
         public void MenuStructurePrioritiesAreCorrect()
         {
             // Verify that menu priorities are properly spaced
-            var menuStructureType = typeof(Menu.uPiperMenuStructure);
+            var menuStructureType = typeof(uPiper.Editor.Menu.uPiperMenuStructure);
             
             var priorityBuild = (int)menuStructureType.GetField("PRIORITY_BUILD").GetValue(null);
             Assert.AreEqual(200, priorityBuild, "PRIORITY_BUILD should be 200");
