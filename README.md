@@ -4,11 +4,11 @@
 [![Unity Build](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml)
 [![codecov](https://codecov.io/github/ayutaz/uPiper/graph/badge.svg?token=348eb741-4320-4368-89fa-3eee5188bd3f)](https://codecov.io/github/ayutaz/uPiper)
 
-[Piper TTS](https://github.com/ayutaz/piper-plus)のUnityプラグイン - 高品質なニューラル音声合成エンジン
+[piper-plus](https://github.com/ayutaz/piper-plus)のUnityプラグイン - 高品質なニューラル音声合成エンジン
 
 ## 機能
 
-- 🎤 高品質な音声合成（Piper TTSベース）
+- 🎤 高品質な音声合成（piper-plusベース）
 - 🌍 多言語対応（日本語、英語、中国語、韓国語など）
 - 🚀 Unity AI Inference Engineによる高速推論
 - 📱 マルチプラットフォーム対応
