@@ -260,11 +260,15 @@ jobs:
         # Mount the DMG
         hdiutil attach UnityHub.dmg
         
+        # Find the mounted volume
+        MOUNT_POINT=$(diskutil list | grep "Unity Hub" | awk '{print "/Volumes/" substr($0, index($0,$3))}' | head -1)
+        echo "Unity Hub mounted at: $MOUNT_POINT"
+        
         # Copy Unity Hub to Applications
-        sudo cp -R "/Volumes/Unity Hub/Unity Hub.app" /Applications/
+        sudo cp -R "$MOUNT_POINT/Unity Hub.app" /Applications/
         
         # Unmount the DMG
-        hdiutil detach "/Volumes/Unity Hub"
+        hdiutil detach "$MOUNT_POINT"
         
         # Add Unity Hub to PATH
         export PATH="/Applications/Unity Hub.app/Contents/MacOS:$PATH"
@@ -828,11 +832,15 @@ jobs:
         # Mount the DMG
         hdiutil attach UnityHub.dmg
         
+        # Find the mounted volume
+        MOUNT_POINT=$(diskutil list | grep "Unity Hub" | awk '{print "/Volumes/" substr($0, index($0,$3))}' | head -1)
+        echo "Unity Hub mounted at: $MOUNT_POINT"
+        
         # Copy Unity Hub to Applications
-        sudo cp -R "/Volumes/Unity Hub/Unity Hub.app" /Applications/
+        sudo cp -R "$MOUNT_POINT/Unity Hub.app" /Applications/
         
         # Unmount the DMG
-        hdiutil detach "/Volumes/Unity Hub"
+        hdiutil detach "$MOUNT_POINT"
         
         # Add Unity Hub to PATH
         export PATH="/Applications/Unity Hub.app/Contents/MacOS:$PATH"
