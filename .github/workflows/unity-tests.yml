@@ -289,7 +289,8 @@ jobs:
       run: |
         # Install Unity 6000.0.35f1
         echo "Installing Unity 6000.0.35f1..."
-        "/Applications/Unity Hub.app/Contents/MacOS/Unity Hub" -- --headless install --version 6000.0.35f1 --changeset bb8081de9a21 --module mac-il2cpp
+        # Apple Silicon マシンでアーキテクチャを自動選択
+        "/Applications/Unity Hub.app/Contents/MacOS/Unity Hub" -- --headless install --version 6000.0.35f1 --changeset bb8081de9a21 --module mac-il2cpp --architecture arm64
         
         # Wait for installation with progress checking
         echo "Waiting for Unity installation to complete..."
@@ -883,7 +884,8 @@ jobs:
       run: |
         # Install Unity 6000.0.35f1
         echo "Installing Unity 6000.0.35f1..."
-        "/Applications/Unity Hub.app/Contents/MacOS/Unity Hub" -- --headless install --version 6000.0.35f1 --changeset bb8081de9a21 --module mac-il2cpp
+        # Apple Silicon マシンでアーキテクチャを自動選択
+        "/Applications/Unity Hub.app/Contents/MacOS/Unity Hub" -- --headless install --version 6000.0.35f1 --changeset bb8081de9a21 --module mac-il2cpp --architecture arm64
         
         # Wait for installation with progress checking
         echo "Waiting for Unity installation to complete..."
