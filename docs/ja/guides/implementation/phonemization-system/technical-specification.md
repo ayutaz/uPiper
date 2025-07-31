@@ -512,7 +512,7 @@ public class CircuitBreaker : ICircuitBreaker
             if (failureCount >= threshold)
             {
                 state = CircuitState.Open;
-                LogError($"Circuit breaker opened: {ex.Message}");
+                LogError($"サーキットブレーカー開放: {ex.Message}");
             }
         }
     }

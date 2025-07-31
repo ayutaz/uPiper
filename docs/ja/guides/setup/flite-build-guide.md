@@ -1,94 +1,94 @@
-# Flite Native Library Build Guide
+# Fliteネイティブライブラリビルドガイド
 
-## Overview
+## 概要
 
-Flite (Festival-Lite) is a small, fast run-time speech synthesis engine developed at CMU. It's licensed under a BSD-style license, making it suitable for commercial use.
+Flite（Festival-Lite）は、CMUで開発された小型で高速なランタイム音声合成エンジンです。BSDスタイルライセンスでライセンスされており、商用利用に適しています。
 
-## Why Flite?
+## なぜFliteか？
 
-- **License**: BSD-style (commercial-friendly)
-- **Size**: Small footprint (~2-5 MB per platform)
-- **Speed**: Fast synthesis
-- **Quality**: Good quality for its size
-- **Languages**: Primarily English, but extensible
+- **ライセンス**: BSDスタイル（商用利用可能）
+- **サイズ**: 小さなフットプリント（プラットフォームごとに約2-5MB）
+- **速度**: 高速な合成
+- **品質**: サイズに対して良好な品質
+- **言語**: 主に英語だが拡張可能
 
-## Build Instructions by Platform
+## プラットフォーム別ビルド手順
 
-### Prerequisites
+### 前提条件
 
 ```bash
-# Common tools needed
+# 必要な共通ツール
 git clone https://github.com/festvox/flite.git
 cd flite
 ```
 
-### Windows Build
+### Windowsビルド
 
 ```batch
-# Using Visual Studio 2019 or later
+# Visual Studio 2019以降を使用
 
-# 1. Install prerequisites
-# - Visual Studio with C++ development tools
-# - CMake (optional, for easier building)
+# 1. 前提条件のインストール
+# - C++開発ツールを含むVisual Studio
+# - CMake（より簡単なビルドのためオプション）
 
-# 2. Build using provided Windows makefiles
+# 2. 提供されているWindows makefileを使用してビルド
 cd flite/windows
 nmake /f Makefile.msvc
 
-# 3. Output location
-# - flite.dll will be in windows/build/
-# - Copy to: Assets/uPiper/Plugins/Windows/x86_64/flite.dll
+# 3. 出力場所
+# - flite.dllはwindows/build/に作成される
+# - 以下にコピー: Assets/uPiper/Plugins/Windows/x86_64/flite.dll
 ```
 
-### macOS Build
+### macOSビルド
 
 ```bash
-# Universal Binary (Intel + Apple Silicon)
+# ユニバーサルバイナリ（Intel + Apple Silicon）
 
-# 1. Configure for universal build
+# 1. ユニバーサルビルド用に設定
 ./configure --enable-shared \
     CFLAGS="-arch x86_64 -arch arm64" \
     LDFLAGS="-arch x86_64 -arch arm64"
 
-# 2. Build
+# 2. ビルド
 make
 
-# 3. Create universal library
+# 3. ユニバーサルライブラリを作成
 lipo -create \
     build/x86_64/libflite.dylib \
     build/arm64/libflite.dylib \
     -output libflite_unity.dylib
 
-# 4. Copy to Unity
+# 4. Unityにコピー
 cp libflite_unity.dylib Assets/uPiper/Plugins/macOS/
 ```
 
-### Linux Build
+### Linuxビルド
 
 ```bash
-# Standard Linux build
+# 標準的なLinuxビルド
 
-# 1. Configure
+# 1. 設定
 ./configure --enable-shared --prefix=/usr/local
 
-# 2. Build
+# 2. ビルド
 make -j$(nproc)
 
-# 3. Output
-# libflite.so will be in build/lib/
+# 3. 出力
+# libflite.soはbuild/lib/に作成される
 cp build/lib/libflite.so Assets/uPiper/Plugins/Linux/x86_64/
 ```
 
-### Android Build
+### Androidビルド
 
 ```bash
-# Using Android NDK
+# Android NDKを使用
 
-# 1. Set up environment
+# 1. 環境設定
 export ANDROID_NDK_HOME=/path/to/android-ndk
 export PATH=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
 
-# 2. Build for each architecture
+# 2. 各アーキテクチャ用にビルド
 # ARM64-v8a
 ./configure --host=aarch64-linux-android \
     --enable-shared \
@@ -97,10 +97,10 @@ export PATH=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
 
 make clean && make
 
-# Copy output
+# 出力をコピー
 cp libflite.so Assets/uPiper/Plugins/Android/ARM64/
 
-# 3. Repeat for ARMv7
+# 3. ARMv7用にも繰り返す
 ./configure --host=armv7a-linux-androideabi \
     --enable-shared \
     CC=armv7a-linux-androideabi21-clang
@@ -109,12 +109,12 @@ make clean && make
 cp libflite.so Assets/uPiper/Plugins/Android/ARMv7/
 ```
 
-### iOS Build
+### iOSビルド
 
 ```bash
-# Build for iOS (requires macOS)
+# iOS用ビルド（macOSが必要）
 
-# 1. Build for device
+# 1. デバイス用ビルド
 ./configure --host=arm-apple-darwin \
     --enable-static \
     CC="xcrun -sdk iphoneos clang -arch arm64" \
@@ -122,7 +122,7 @@ cp libflite.so Assets/uPiper/Plugins/Android/ARMv7/
 
 make clean && make
 
-# 2. Build for simulator
+# 2. シミュレータ用ビルド
 ./configure --host=x86_64-apple-darwin \
     --enable-static \
     CC="xcrun -sdk iphonesimulator clang -arch x86_64" \
@@ -130,34 +130,34 @@ make clean && make
 
 make clean && make
 
-# 3. Create universal library
+# 3. ユニバーサルライブラリを作成
 lipo -create libflite_arm64.a libflite_x86_64.a -output libflite_unity.a
 ```
 
-## Unity Integration
+## Unity統合
 
-### Plugin Settings
+### プラグイン設定
 
-After copying the libraries, configure in Unity:
+ライブラリをコピーした後、Unityで設定：
 
 1. **Windows (flite.dll)**:
-   - Platform: Windows
+   - プラットフォーム: Windows
    - CPU: x86_64
    - OS: Windows
 
 2. **macOS (libflite_unity.dylib)**:
-   - Platform: macOS
+   - プラットフォーム: macOS
    - CPU: AnyCPU
 
 3. **Linux (libflite.so)**:
-   - Platform: Linux
+   - プラットフォーム: Linux
    - CPU: x86_64
 
 4. **Android (libflite.so)**:
-   - Platform: Android
-   - CPU: ARM64 or ARMv7
+   - プラットフォーム: Android
+   - CPU: ARM64またはARMv7
 
-### C# Wrapper Implementation
+### C#ラッパー実装
 
 ```csharp
 using System;
@@ -191,12 +191,12 @@ namespace uPiper.Phonemizers.Backend.Flite
 }
 ```
 
-## Minimal Flite Implementation
+## 最小限のFlite実装
 
-If you only need phonemization (not full TTS), you can build a minimal version:
+音素化のみ（フルTTSではない）が必要な場合、最小版をビルドできます：
 
 ```c
-// minimal_flite.c - Just phonemization, no audio synthesis
+// minimal_flite.c - 音素化のみ、音声合成なし
 #include "flite.h"
 
 typedef struct {
@@ -214,24 +214,24 @@ flite_phonemizer* flite_phonemizer_init() {
 }
 
 char* flite_phonemizer_process(flite_phonemizer *fp, const char *text) {
-    // Convert text to phonemes using lexicon and LTS rules
-    // Return ARPABET string
+    // 辞書とLTSルールを使用してテキストを音素に変換
+    // ARPABET文字列を返す
 }
 ```
 
-## Size Optimization
+## サイズ最適化
 
-To reduce library size:
+ライブラリサイズを削減するには：
 
-1. **Remove unused voices**: Only include phonemization code
-2. **Strip symbols**: `strip -S libflite.so`
-3. **Disable features**: Configure with minimal options
+1. **未使用の音声を削除**: 音素化コードのみを含める
+2. **シンボルをストリップ**: `strip -S libflite.so`
+3. **機能を無効化**: 最小限のオプションで設定
    ```bash
    ./configure --disable-audio --disable-lang-usenglish \
                --disable-lang-cmulex --enable-lang-cmu_us_kal
    ```
 
-## Testing the Build
+## ビルドのテスト
 
 ```csharp
 [Test]
@@ -242,13 +242,13 @@ public void FliteNative_ShouldLoadSuccessfully()
     try
     {
         flite = FliteNative.flite_init();
-        Assert.AreNotEqual(IntPtr.Zero, flite, "Flite should initialize");
+        Assert.AreNotEqual(IntPtr.Zero, flite, "Fliteは初期化されるべき");
         
         string testPhones = Marshal.PtrToStringAnsi(
             FliteNative.flite_text_to_phones(flite, "hello world", "en-US")
         );
         
-        Assert.IsNotEmpty(testPhones, "Should return phonemes");
+        Assert.IsNotEmpty(testPhones, "音素を返すべき");
     }
     finally
     {
@@ -258,22 +258,22 @@ public void FliteNative_ShouldLoadSuccessfully()
 }
 ```
 
-## Alternative: Flite-Unity Package
+## 代替案: Flite-Unityパッケージ
 
-Consider creating a Unity Package with pre-built binaries:
+事前ビルド済みバイナリを含むUnityパッケージの作成を検討：
 
 ```json
 {
   "name": "com.upiper.flite",
   "version": "1.0.0",
   "displayName": "Flite for uPiper",
-  "description": "Pre-built Flite libraries for all platforms",
+  "description": "全プラットフォーム用の事前ビルド済みFliteライブラリ",
   "unity": "2021.3",
   "dependencies": {},
   "author": {
-    "name": "uPiper Team"
+    "name": "uPiperチーム"
   }
 }
 ```
 
-This allows users to simply import the package without building.
+これによりユーザーはビルドせずに単にパッケージをインポートできます。

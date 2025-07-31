@@ -2,27 +2,27 @@
 
 ## Unity Android ビルド設定
 
-### 1. Build Settings
+### 1. ビルド設定
 
 1. File → Build Settings を開く
 2. Platform: Android を選択
 3. Switch Platform をクリック
 
-### 2. Player Settings
+### 2. プレイヤー設定
 
 Edit → Project Settings → Player → Android settings
 
-#### Other Settings
-- **Configuration**
+#### その他の設定
+- **構成**
   - Scripting Backend: `IL2CPP`
   - Api Compatibility Level: `.NET Standard 2.1`
   - Target Architectures: 
     - ✅ ARMv7
     - ✅ ARM64
-    - ✅ x86 (Chrome OS and the emulator)
+    - ✅ x86 (Chrome OSとエミュレータ用)
 
-#### Publishing Settings
-- **Build**
+#### パブリッシング設定
+- **ビルド**
   - Custom Main Gradle Template: ✅ (必要に応じて)
   - Custom Gradle Properties Template: ✅ (必要に応じて)
 
@@ -103,11 +103,11 @@ public static void BuildAndroid()
     BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
     if (report.summary.result == BuildResult.Succeeded)
     {
-        Debug.Log("Build succeeded: " + report.summary.totalSize + " bytes");
+        Debug.Log("ビルド成功: " + report.summary.totalSize + " バイト");
     }
     else
     {
-        Debug.Log("Build failed");
+        Debug.Log("ビルド失敗");
     }
 }
 ```

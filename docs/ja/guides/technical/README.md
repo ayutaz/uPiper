@@ -1,4 +1,4 @@
-# Technical Documentation
+# 技術ドキュメント
 
 このディレクトリには、uPiperの技術的な詳細に関するドキュメントが含まれています。
 

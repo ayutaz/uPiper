@@ -1,36 +1,38 @@
-# Asian Language Support Implementation Guide
+# アジア言語サポート実装ガイド
 
-## Overview
+[🇯🇵 **日本語**](../../ja/guides/implementation/asian-language-support.md) | [🇬🇧 English](../../en/guides/implementation/asian-language-support.md)
 
-This guide outlines the implementation strategy for Chinese and Korean language support in uPiper without using GPL-licensed components.
+## 概要
 
-## 1. Chinese (Mandarin) Support
+このガイドでは、GPLライセンスのコンポーネントを使用せずに、uPiperで中国語と韓国語のサポートを実装する戦略について説明します。
 
-### Implementation Strategy
+## 1. 中国語（北京語）サポート
 
-**Option 1: Pinyin-based Approach (Recommended)**
-- Use MIT-licensed pinyin libraries
-- Convert Chinese characters → Pinyin → Phonemes
-- Support both Simplified and Traditional Chinese
+### 実装戦略
 
-**Resources:**
-- **pypinyin-dict** (MIT) - Character to pinyin mapping
-- **CC-CEDICT** (Creative Commons) - Chinese-English dictionary with pinyin
-- Custom pinyin-to-phoneme mapping
+**オプション1: ピンインベースのアプローチ（推奨）**
+- MITライセンスのピンインライブラリを使用
+- 中国語文字 → ピンイン → 音素への変換
+- 簡体字と繁体字の両方をサポート
 
-### Data Sources
+**リソース:**
+- **pypinyin-dict** (MIT) - 文字からピンインへのマッピング
+- **CC-CEDICT** (Creative Commons) - ピンイン付き中英辞書
+- カスタムピンイン音素マッピング
+
+### データソース
 
 ```bash
-# 1. pypinyin dictionary data (MIT licensed)
-# Contains 42,000+ Chinese characters with pinyin mappings
+# 1. pypinyin辞書データ (MITライセンス)
+# 42,000以上の中国語文字とピンインマッピングを含む
 https://github.com/mozillazg/pinyin-data
 
 # 2. CC-CEDICT (Creative Commons)
-# 120,000+ entries with pinyin
+# ピンイン付き120,000以上のエントリ
 https://www.mdbg.net/chinese/dictionary?page=cc-cedict
 ```
 
-### Implementation Plan
+### 実装計画
 
 ```csharp
 // ChinesePhonemizer.cs
@@ -47,30 +49,30 @@ public class ChinesePhonemizer : PhonemizerBackendBase
 }
 ```
 
-### Pinyin to IPA Mapping
+### ピンインからIPAへのマッピング
 
 ```
-Example mappings:
-ma1 → ma˥ (high tone)
-ma2 → ma˧˥ (rising tone)
-ma3 → ma˨˩˦ (dipping tone)
-ma4 → ma˥˩ (falling tone)
-ma → ma (neutral tone)
+マッピング例:
+ma1 → ma˥ (第一声：高平調)
+ma2 → ma˧˥ (第二声：上昇調)
+ma3 → ma˨˩˦ (第三声：低降昇調)
+ma4 → ma˥˩ (第四声：下降調)
+ma → ma (軽声)
 
-Initials: b[p], p[pʰ], m[m], f[f], d[t], t[tʰ], n[n], l[l]...
-Finals: a[a], o[o], e[ɤ], i[i], u[u], ü[y]...
+声母: b[p], p[pʰ], m[m], f[f], d[t], t[tʰ], n[n], l[l]...
+韻母: a[a], o[o], e[ɤ], i[i], u[u], ü[y]...
 ```
 
-## 2. Korean Support
+## 2. 韓国語サポート
 
-### Implementation Strategy
+### 実装戦略
 
-**Hangul Decomposition Approach**
-- Decompose Hangul syllables into Jamo (consonants/vowels)
-- Apply rule-based G2P for Korean
-- No external dependencies needed
+**ハングル分解アプローチ**
+- ハングル音節を字母（子音/母音）に分解
+- 韓国語用のルールベースG2Pを適用
+- 外部依存関係不要
 
-### Korean Phoneme Rules
+### 韓国語音素ルール
 
 ```csharp
 // KoreanPhonemizer.cs
@@ -90,7 +92,7 @@ public class KoreanPhonemizer : PhonemizerBackendBase
 }
 ```
 
-### Hangul Decomposition Algorithm
+### ハングル分解アルゴリズム
 
 ```csharp
 public (int initial, int medial, int final) DecomposeHangul(char syllable)
@@ -107,11 +109,11 @@ public (int initial, int medial, int final) DecomposeHangul(char syllable)
 }
 ```
 
-## 3. Common Infrastructure
+## 3. 共通インフラストラクチャ
 
-### Text Segmentation
+### テキスト分割
 
-Chinese requires word segmentation:
+中国語には単語分割が必要です：
 ```csharp
 public interface ITextSegmenter
 {
@@ -125,9 +127,9 @@ public class ChineseSegmenter : ITextSegmenter
 }
 ```
 
-### Tone Handling
+### 声調処理
 
-Both Chinese and Korean (to some extent) are tonal:
+中国語と韓国語（ある程度）は声調言語です：
 ```csharp
 public class ToneInfo
 {
@@ -137,21 +139,21 @@ public class ToneInfo
 }
 ```
 
-## 4. Implementation Priority
+## 4. 実装優先順位
 
-1. **Chinese (Mandarin)** - Higher demand, larger user base
-   - Start with Simplified Chinese (zh-CN)
-   - Add Traditional Chinese (zh-TW) support
-   - Implement tone handling
+1. **中国語（北京語）** - 需要が高く、ユーザーベースが大きい
+   - 簡体字（zh-CN）から開始
+   - 繁体字（zh-TW）サポートを追加
+   - 声調処理を実装
 
-2. **Korean** - Simpler implementation
-   - Hangul decomposition
-   - Rule-based G2P
-   - Handle sound changes
+2. **韓国語** - より簡単な実装
+   - ハングル分解
+   - ルールベースG2P
+   - 音韻変化の処理
 
-## 5. Testing Requirements
+## 5. テスト要件
 
-### Chinese Tests
+### 中国語テスト
 ```csharp
 [Test]
 public void Chinese_ShouldHandleBasicCharacters()
@@ -165,7 +167,7 @@ public void Chinese_ShouldHandleBasicCharacters()
 }
 ```
 
-### Korean Tests
+### 韓国語テスト
 ```csharp
 [Test]
 public void Korean_ShouldDecomposeHangul()
@@ -179,31 +181,31 @@ public void Korean_ShouldDecomposeHangul()
 }
 ```
 
-## 6. Resource Requirements
+## 6. リソース要件
 
-### Chinese
-- Pinyin dictionary: ~2MB
-- Segmentation dictionary: ~5MB
-- Total: ~7-10MB
+### 中国語
+- ピンイン辞書: 約2MB
+- 分割辞書: 約5MB
+- 合計: 約7-10MB
 
-### Korean
-- Rule tables: ~100KB
-- Exception dictionary: ~500KB
-- Total: <1MB
+### 韓国語
+- ルールテーブル: 約100KB
+- 例外辞書: 約500KB
+- 合計: 1MB未満
 
-## 7. Alternative Approaches
+## 7. 代替アプローチ
 
-### For Chinese
-1. **Character-based approach**: Direct character to phoneme mapping
-2. **Bopomofo support**: For Traditional Chinese (Taiwan)
-3. **Cantonese support**: Different phoneme set
+### 中国語向け
+1. **文字ベースアプローチ**: 文字から音素への直接マッピング
+2. **注音符号サポート**: 繁体字中国語（台湾）用
+3. **広東語サポート**: 異なる音素セット
 
-### For Korean
-1. **Romanization-based**: Use Korean romanization systems
-2. **Exception dictionary**: For irregular pronunciations
-3. **Dialect support**: Seoul vs regional pronunciations
+### 韓国語向け
+1. **ローマ字ベース**: 韓国語ローマ字システムを使用
+2. **例外辞書**: 不規則な発音用
+3. **方言サポート**: ソウル語と地方語の発音
 
-## 8. Integration with Existing System
+## 8. 既存システムとの統合
 
 ```csharp
 // In PhonemizerService.cs
@@ -217,20 +219,20 @@ private void RegisterDefaultBackends()
 }
 ```
 
-## 9. Performance Considerations
+## 9. パフォーマンスに関する考慮事項
 
-- Chinese: Word segmentation can be expensive
-  - Use caching for segmented text
-  - Pre-segment common phrases
+- 中国語: 単語分割はコストが高い可能性
+  - 分割済みテキストのキャッシュを使用
+  - 一般的なフレーズを事前分割
   
-- Korean: Hangul decomposition is fast
-  - Direct algorithmic approach
-  - No dictionary lookups needed
+- 韓国語: ハングル分解は高速
+  - 直接的なアルゴリズムアプローチ
+  - 辞書検索不要
 
-## 10. Future Enhancements
+## 10. 将来の拡張
 
-1. **Polyglot support**: Mixed Chinese-English text
-2. **Dialect support**: Cantonese, Taiwanese, other Chinese dialects
-3. **Prosody**: Better tone and intonation modeling
-4. **Name handling**: Special rules for names
-5. **Number/date reading**: Localized number pronunciation
+1. **多言語サポート**: 中英混在テキスト
+2. **方言サポート**: 広東語、台湾語、その他の中国語方言
+3. **韻律**: より良い声調とイントネーションのモデリング
+4. **名前の処理**: 名前用の特別なルール
+5. **数字/日付の読み上げ**: ローカライズされた数字の発音

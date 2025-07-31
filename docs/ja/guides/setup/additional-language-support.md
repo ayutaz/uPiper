@@ -1,70 +1,70 @@
-# Additional Language Support Guide
+# 追加言語サポートガイド
 
-## Overview
+## 概要
 
-This guide explains how to add support for languages beyond English in the uPiper phonemizer system.
+このガイドでは、uPiper音素化システムで英語以外の言語サポートを追加する方法を説明します。
 
-## Language Support Strategy
+## 言語サポート戦略
 
-### 1. Dictionary-Based Approach (Recommended)
+### 1. 辞書ベースアプローチ（推奨）
 
-For each language, you need:
-- Pronunciation dictionary
-- G2P rules or model
-- Text normalization rules
-- Phoneme mapping to IPA
+各言語には以下が必要です：
+- 発音辞書
+- G2Pルールまたはモデル
+- テキスト正規化ルール
+- IPAへの音素マッピング
 
-### 2. Available Resources by Language
+### 2. 言語別の利用可能なリソース
 
-#### Spanish (es-ES)
+#### スペイン語 (es-ES)
 
-**Option 1: Santiago Lexicon**
+**オプション1: Santiago辞書**
 ```bash
-# Download Spanish pronunciation dictionary
+# スペイン語発音辞書のダウンロード
 wget https://raw.githubusercontent.com/santiagopm/e-spk/master/santiago.dic
 
-# Format: WORD PHONEMES (Spanish SAMPA)
-# Example: HOLA O l a
+# 形式: 単語 音素 (スペイン語 SAMPA)
+# 例: HOLA O l a
 ```
 
-**Option 2: Create from eSpeak data (MIT-compatible extraction)**
+**オプション2: eSpeakデータから作成（MIT互換抽出）**
 ```python
 # extract_spanish_dict.py
-# Extract pronunciation data from open sources
+# オープンソースから発音データを抽出
 import requests
 
 def create_spanish_dictionary():
-    # Use publicly available Spanish word lists
-    # Apply Spanish pronunciation rules
+    # 公開されているスペイン語単語リストを使用
+    # スペイン語発音ルールを適用
     pass
 ```
 
-#### French (fr-FR)
+#### フランス語 (fr-FR)
 
-**Lexique.org Database**
+**Lexique.orgデータベース**
 ```bash
-# French pronunciation database (CC-BY-SA)
+# フランス語発音データベース (CC-BY-SA)
 wget http://www.lexique.org/databases/Lexique383/Lexique383.tsv
 
-# Convert to CMU format
+# CMU形式に変換
 python convert_lexique_to_cmu.py Lexique383.tsv french_dict.txt
 ```
 
-#### German (de-DE)
+#### ドイツ語 (de-DE)
 
-**MARY TTS German Dictionary**
+**MARY TTSドイツ語辞書**
 ```bash
-# German pronunciation data (LGPL - be careful)
-# Better: Create from Wiktionary data (CC-BY-SA)
+# ドイツ語発音データ (LGPL - 注意が必要)
+# より良い方法: Wiktionaryデータから作成 (CC-BY-SA)
 python extract_german_from_wiktionary.py
 ```
 
-#### Japanese (ja-JP)
+#### 日本語 (ja-JP)
 
-**MeCab + UniDic Integration**
+**MeCab + UniDic統合**
 ```csharp
-// Already supported via OpenJTalk in uPiper
-// Uses mecab-ipadic dictionary (BSD license)
+// uPiperのOpenJTalk経由で既にサポート済み
+// mecab-ipadic辞書を使用 (BSDライセンス)
 public class JapanesePhonemizer : IPhonemizerBackend
 {
     private OpenJTalkPhonemizer openJTalk;
@@ -73,27 +73,27 @@ public class JapanesePhonemizer : IPhonemizerBackend
         string text, string language, 
         PhonemeOptions options, CancellationToken ct)
     {
-        // Use existing OpenJTalk implementation
+        // 既存のOpenJTalk実装を使用
         return await openJTalk.ProcessAsync(text);
     }
 }
 ```
 
-#### Chinese (zh-CN)
+#### 中国語 (zh-CN)
 
 **pypinyin-dict (MIT)**
 ```python
-# Chinese character to pinyin mapping
-# Convert pinyin to phonemes
+# 中国語文字からピンインへのマッピング
+# ピンインを音素に変換
 pip install pypinyin
 
-# Extract and convert to phoneme format
+# 音素形式に抽出・変換
 python create_chinese_dict.py
 ```
 
-## Implementation Steps
+## 実装手順
 
-### 1. Create Language-Specific Backend
+### 1. 言語固有バックエンドの作成
 
 ```csharp
 // SpanishPhonemizer.cs
@@ -109,14 +109,14 @@ public class SpanishPhonemizer : PhonemizerBackendBase
         PhonemizerBackendOptions options, 
         CancellationToken cancellationToken)
     {
-        // Load Spanish dictionary
+        // スペイン語辞書をロード
         var dictPath = Path.Combine(options.DataPath, "spanish_dict.txt");
         spanishDict = await LoadDictionaryAsync(dictPath);
         
-        // Initialize G2P rules
+        // G2Pルールを初期化
         g2pEngine = new SpanishG2P();
         
-        // Initialize normalizer
+        // ノーマライザーを初期化
         normalizer = new SpanishTextNormalizer();
         
         return true;
@@ -126,13 +126,13 @@ public class SpanishPhonemizer : PhonemizerBackendBase
         string text, string language, 
         PhonemeOptions options, CancellationToken ct)
     {
-        // 1. Normalize Spanish text (handle ñ, accents, etc.)
+        // 1. スペイン語テキストを正規化（ñ、アクセントなどを処理）
         var normalized = normalizer.Normalize(text);
         
-        // 2. Tokenize
+        // 2. トークン化
         var words = TokenizeSpanish(normalized);
         
-        // 3. Look up or generate phonemes
+        // 3. 音素を検索または生成
         var phonemes = new List<string>();
         foreach (var word in words)
         {
@@ -142,7 +142,7 @@ public class SpanishPhonemizer : PhonemizerBackendBase
             }
             else
             {
-                // Use G2P rules
+                // G2Pルールを使用
                 phonemes.AddRange(g2pEngine.Grapheme2Phoneme(word));
             }
         }
@@ -152,74 +152,74 @@ public class SpanishPhonemizer : PhonemizerBackendBase
 }
 ```
 
-### 2. Spanish G2P Rules
+### 2. スペイン語G2Pルール
 
 ```csharp
 public class SpanishG2P
 {
     private readonly Dictionary<string, string> rules = new()
     {
-        // Vowels
+        // 母音
         ["a"] = "a",
         ["e"] = "e",
         ["i"] = "i",
         ["o"] = "o",
         ["u"] = "u",
         
-        // Consonants
+        // 子音
         ["b"] = "b",
-        ["c"] = "k", // before a, o, u
-        ["ce"] = "θ", // Spain Spanish
-        ["ci"] = "θ", // Spain Spanish
+        ["c"] = "k", // a, o, uの前
+        ["ce"] = "θ", // スペインのスペイン語
+        ["ci"] = "θ", // スペインのスペイン語
         ["ch"] = "tʃ",
         ["d"] = "d",
         ["f"] = "f",
-        ["g"] = "g", // before a, o, u
-        ["ge"] = "x", // Spanish j sound
+        ["g"] = "g", // a, o, uの前
+        ["ge"] = "x", // スペイン語のj音
         ["gi"] = "x",
-        ["h"] = "", // silent
+        ["h"] = "", // 無音
         ["j"] = "x",
         ["k"] = "k",
         ["l"] = "l",
-        ["ll"] = "ʎ", // or "j" in some dialects
+        ["ll"] = "ʎ", // 一部の方言では"j"
         ["m"] = "m",
         ["n"] = "n",
         ["ñ"] = "ɲ",
         ["p"] = "p",
         ["qu"] = "k",
-        ["r"] = "ɾ", // single r
-        ["rr"] = "r", // rolled r
+        ["r"] = "ɾ", // 単一のr
+        ["rr"] = "r", // 巻き舌のr
         ["s"] = "s",
         ["t"] = "t",
-        ["v"] = "b", // same as b in Spanish
+        ["v"] = "b", // スペイン語ではbと同じ
         ["w"] = "w",
         ["x"] = "ks",
         ["y"] = "j",
-        ["z"] = "θ" // Spain Spanish
+        ["z"] = "θ" // スペインのスペイン語
     };
     
     public List<string> Grapheme2Phoneme(string word)
     {
-        // Apply rules with context
-        // Handle diphthongs, stress, etc.
+        // 文脈に応じてルールを適用
+        // 二重母音、ストレスなどを処理
     }
 }
 ```
 
-### 3. Text Normalization
+### 3. テキスト正規化
 
 ```csharp
 public class SpanishTextNormalizer
 {
     public string Normalize(string text)
     {
-        // Handle numbers
+        // 数字を処理
         text = NormalizeNumbers(text);
         
-        // Handle abbreviations
+        // 略語を展開
         text = ExpandAbbreviations(text);
         
-        // Handle special punctuation (¿ ¡)
+        // 特殊な句読点を処理 (¿ ¡)
         text = HandleSpanishPunctuation(text);
         
         return text;
@@ -237,17 +237,17 @@ public class SpanishTextNormalizer
 }
 ```
 
-### 4. Register New Language
+### 4. 新しい言語の登録
 
 ```csharp
-// In BackendFactory or service initialization
+// BackendFactoryまたはサービス初期化時
 public void RegisterLanguageBackends()
 {
-    // Existing
-    RegisterBackend(new RuleBasedPhonemizer()); // English
-    RegisterBackend(new OpenJTalkPhonemizer()); // Japanese
+    // 既存
+    RegisterBackend(new RuleBasedPhonemizer()); // 英語
+    RegisterBackend(new OpenJTalkPhonemizer()); // 日本語
     
-    // New languages
+    // 新しい言語
     RegisterBackend(new SpanishPhonemizer());
     RegisterBackend(new FrenchPhonemizer());
     RegisterBackend(new GermanPhonemizer());
@@ -255,7 +255,7 @@ public void RegisterLanguageBackends()
 }
 ```
 
-### 5. Language-Specific Tests
+### 5. 言語固有テスト
 
 ```csharp
 [Test]
@@ -279,23 +279,23 @@ public async Task Spanish_ShouldHandleAccents()
 }
 ```
 
-## Data Format Standardization
+## データ形式の標準化
 
-### Unified Dictionary Format
+### 統一辞書形式
 
 ```
-# Language: es-ES
-# Format: WORD[TAB]PHONEME1 PHONEME2 ...
-# Encoding: UTF-8
+# 言語: es-ES
+# 形式: 単語[TAB]音素1 音素2 ...
+# エンコーディング: UTF-8
 
 HOLA    o l a
 MUNDO   m u n d o
 ESPAÑA  e s p a ɲ a
 ```
 
-### IPA Mapping
+### IPAマッピング
 
-All languages should map to IPA for consistency:
+一貫性のため、すべての言語はIPAにマップする必要があります：
 
 ```csharp
 public static class PhonemeMapper
@@ -310,54 +310,54 @@ public static class PhonemeMapper
 }
 ```
 
-## Resource Requirements
+## リソース要件
 
-### Dictionary Sizes
+### 辞書サイズ
 
-- Spanish: ~80,000 words (~2 MB)
-- French: ~140,000 words (~4 MB)
-- German: ~120,000 words (~3.5 MB)
-- Chinese: ~10,000 characters (~1 MB)
+- スペイン語: 約80,000語（約2MB）
+- フランス語: 約140,000語（約4MB）
+- ドイツ語: 約120,000語（約3.5MB）
+- 中国語: 約10,000文字（約1MB）
 
-### Memory Usage
+### メモリ使用量
 
-Each language adds approximately:
-- Dictionary: 5-10 MB RAM
-- G2P model: 1-5 MB RAM
-- Text normalizer: <1 MB RAM
+各言語は以下を追加で使用します：
+- 辞書: 5-10MB RAM
+- G2Pモデル: 1-5MB RAM
+- テキストノーマライザー: 1MB未満 RAM
 
-## Quick Start Templates
+## クイックスタートテンプレート
 
-### Minimal Spanish Support
+### 最小限のスペイン語サポート
 
-1. Download: [Spanish starter pack](link-to-resource)
-2. Extract to: `Assets/StreamingAssets/uPiper/Languages/Spanish/`
-3. Add backend: 
+1. ダウンロード: [スペイン語スターターパック](link-to-resource)
+2. 展開先: `Assets/StreamingAssets/uPiper/Languages/Spanish/`
+3. バックエンドを追加: 
    ```csharp
    backendFactory.RegisterBackend(new SpanishPhonemizer());
    ```
-4. Test:
+4. テスト:
    ```csharp
    var result = await service.PhonemizeAsync("Hola mundo", "es-ES");
    ```
 
-## Community Contributions
+## コミュニティ貢献
 
-To contribute a new language:
+新しい言語を貢献するには：
 
-1. Create dictionary in standard format
-2. Implement G2P rules
-3. Add text normalizer
-4. Write tests (minimum 50 test cases)
-5. Submit PR with:
-   - Backend implementation
-   - Test suite
-   - Sample dictionary (1000 words minimum)
-   - Documentation
+1. 標準形式で辞書を作成
+2. G2Pルールを実装
+3. テキストノーマライザーを追加
+4. テストを作成（最低50テストケース）
+5. 以下を含むPRを提出：
+   - バックエンド実装
+   - テストスイート
+   - サンプル辞書（最低1000単語）
+   - ドキュメント
 
-## License Considerations
+## ライセンスに関する考慮事項
 
-Always verify dictionary licenses:
-- ✅ Public domain, MIT, BSD, Apache 2.0
-- ⚠️ CC-BY-SA (attribution required)
-- ❌ GPL, LGPL (avoid for commercial use)
+辞書のライセンスを常に確認してください：
+- ✅ パブリックドメイン、MIT、BSD、Apache 2.0
+- ⚠️ CC-BY-SA（帰属表示が必要）
+- ❌ GPL、LGPL（商用利用では避ける）

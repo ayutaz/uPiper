@@ -1,107 +1,107 @@
-# CMU Pronouncing Dictionary Setup Guide
+# CMU発音辞書セットアップガイド
 
-## Overview
+## 概要
 
-The CMU Pronouncing Dictionary is a machine-readable pronunciation dictionary for North American English that contains over 134,000 words and their pronunciations.
+CMU発音辞書は、北米英語の機械可読発音辞書で、134,000以上の単語とその発音を含んでいます。
 
-## Download Instructions
+## ダウンロード手順
 
-### Method 1: Direct Download (Recommended)
+### 方法1: 直接ダウンロード（推奨）
 
-1. Download the dictionary file:
+1. 辞書ファイルをダウンロード:
    ```bash
-   # Download latest version
+   # 最新版をダウンロード
    curl -O https://raw.githubusercontent.com/cmusphinx/cmudict/master/cmudict.dict
    
-   # Or download specific version (0.7b)
+   # または特定バージョン（0.7b）をダウンロード
    curl -O http://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict-0.7b
    ```
 
-2. Place the file in:
+2. ファイルを以下に配置:
    ```
    Assets/StreamingAssets/uPiper/Phonemizers/cmudict-0.7b.txt
    ```
 
-3. Update `RuleBasedPhonemizer.cs` to use the full dictionary:
+3. `RuleBasedPhonemizer.cs`を更新して完全な辞書を使用:
    ```csharp
    private string GetDefaultDictionaryPath()
    {
-       // Change from cmudict-sample.txt to cmudict-0.7b.txt
+       // cmudict-sample.txtからcmudict-0.7b.txtに変更
        return Path.Combine(Application.streamingAssetsPath, 
            "uPiper", "Phonemizers", "cmudict-0.7b.txt");
    }
    ```
 
-### Method 2: Git Clone
+### 方法2: Gitクローン
 
 ```bash
-# Clone the repository
+# リポジトリをクローン
 git clone https://github.com/cmusphinx/cmudict.git
 
-# Copy the dictionary file
+# 辞書ファイルをコピー
 cp cmudict/cmudict.dict Assets/StreamingAssets/uPiper/Phonemizers/cmudict-0.7b.txt
 ```
 
-## File Format
+## ファイル形式
 
-The CMU dictionary uses the following format:
+CMU辞書は以下の形式を使用します：
 ```
 WORD  W ER1 D
 WORD'S  W ER1 D Z
 WORD(1)  W ER1 D
 ```
 
-- First column: Word (uppercase)
-- Following columns: ARPABET phonemes
-- Numbers indicate stress (0=no stress, 1=primary, 2=secondary)
-- (1), (2) etc. indicate alternate pronunciations
+- 最初の列: 単語（大文字）
+- 以降の列: ARPABET音素
+- 数字はストレスを示す（0=ストレスなし、1=第一ストレス、2=第二ストレス）
+- (1)、(2)等は代替発音を示す
 
-## Size Considerations
+## サイズに関する考慮事項
 
-- Full dictionary: ~4 MB uncompressed
-- ~134,000 word entries
-- Loads into ~10-15 MB RAM
+- 完全な辞書: 約4MB（非圧縮）
+- 約134,000の単語エントリ
+- 約10-15MBのRAMにロード
 
-### Mobile Optimization
+### モバイル最適化
 
-For mobile platforms, consider:
+モバイルプラットフォームの場合、以下を検討してください：
 
-1. **Compressed Format**:
+1. **圧縮形式**:
    ```csharp
-   // Create a binary format for faster loading
+   // より高速なロードのためのバイナリ形式を作成
    public class CompressedDictionary
    {
        public void CompressDictionary(string inputPath, string outputPath)
        {
-           // Convert text to binary format
-           // Use string interning for phonemes
-           // Create index for fast lookup
+           // テキストをバイナリ形式に変換
+           // 音素に文字列インターンを使用
+           // 高速検索用のインデックスを作成
        }
    }
    ```
 
-2. **Partial Loading**:
+2. **部分的ロード**:
    ```csharp
-   // Load only common words initially
+   // 最初は一般的な単語のみロード
    public class PartialDictionary
    {
        private const int CommonWordCount = 10000;
        
        public async Task LoadCommonWordsAsync()
        {
-           // Load most frequent words first
+           // 最も頻出する単語を最初にロード
        }
        
        public async Task LoadFullDictionaryAsync()
        {
-           // Load remaining words in background
+           // 残りの単語をバックグラウンドでロード
        }
    }
    ```
 
-## Integration Testing
+## 統合テスト
 
-After adding the full dictionary:
+完全な辞書を追加した後：
 
 ```csharp
 [Test]
@@ -110,7 +110,7 @@ public async Task FullDictionary_ShouldLoadSuccessfully()
     var phonemizer = new RuleBasedPhonemizer();
     await phonemizer.InitializeAsync(null);
     
-    // Test with complex words
+    // 複雑な単語でテスト
     var testWords = new[] 
     {
         "internationalization",
@@ -127,13 +127,13 @@ public async Task FullDictionary_ShouldLoadSuccessfully()
 }
 ```
 
-## Performance Impact
+## パフォーマンスへの影響
 
-With full dictionary:
-- Initial load time: ~100-300ms (desktop), ~500ms-1s (mobile)
-- Memory usage: +10-15 MB
-- Lookup performance: O(1) with hashtable
+完全な辞書を使用した場合：
+- 初期ロード時間: 約100-300ms（デスクトップ）、約500ms-1s（モバイル）
+- メモリ使用量: +10-15MB
+- 検索パフォーマンス: ハッシュテーブルでO(1)
 
-## License
+## ライセンス
 
-The CMU Pronouncing Dictionary is in the **public domain** and can be used freely in commercial projects.
+CMU発音辞書は**パブリックドメイン**であり、商用プロジェクトで自由に使用できます。
