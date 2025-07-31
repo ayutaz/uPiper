@@ -1,62 +1,71 @@
 # Technical Documentation
 
-このディレクトリには、uPiperの技術的な詳細に関するドキュメントが含まれています。
+This directory contains documentation about technical details of uPiper.
 
-## ドキュメント一覧
+## Document List
 
 ### 1. [il2cpp.md](il2cpp.md)
-**IL2CPPサポート総合ガイド**
-- IL2CPPの概要と利点・制約
-- ビルド設定（自動/手動）
-- プラットフォーム別の設定
-- ネイティブライブラリの配置
-- トラブルシューティング
-- 最適化のヒント
-- パフォーマンス期待値
+**IL2CPP Support Comprehensive Guide**
+- IL2CPP overview, benefits and limitations
+- Build configuration (automatic/manual)
+- Platform-specific settings
+- Native library placement
+- Troubleshooting
+- Optimization tips
+- Performance expectations
 
 ### 2. [il2cpp-compatibility.md](il2cpp-compatibility.md)
-**IL2CPP互換性レポート**
-- P/Invoke実装の検証結果
-- マーシャリング属性の分析
-- AOT制約への対応状況
-- Unity AI Inference Engineとの互換性
-- CI/CD環境での制限事項
-- 実際のコード分析結果
+**IL2CPP Compatibility Report**
+- P/Invoke implementation verification results
+- Marshaling attribute analysis
+- AOT constraint compliance status
+- Unity AI Inference Engine compatibility
+- CI/CD environment limitations
+- Actual code analysis results
 
 ### 3. [gpu-inference.md](gpu-inference.md)
-**GPU推論ガイド**
-- バックエンドタイプの選択
-- プラットフォーム別のGPU設定
-- パフォーマンス最適化
-- トラブルシューティング
+**GPU Inference Guide**
+- Backend type selection
+- Platform-specific GPU settings
+- Performance optimization
+- Troubleshooting
 
-## ドキュメントの使い方
+### 4. [webgl-investigation.md](webgl-investigation.md)
+**WebGL Support Technical Investigation Report**
+- Discovery of OpenJTalk WebAssembly implementation
+- Unity WebGL technical advantages
+- Comparison with piper-plus project
+- Implementation approach and recommendations
+- Feasibility of high-precision phonemization with full dictionary
 
-### 新規開発者向け
-1. まず[il2cpp.md](il2cpp.md)でIL2CPPの基本を理解
-2. [gpu-inference.md](gpu-inference.md)でパフォーマンス最適化
-3. CI/CD設定については[CI/CDガイド](../ci-cd/)を参照
+## How to Use Documentation
 
-### IL2CPP対応作業
-1. [il2cpp.md](il2cpp.md)で設定方法を確認
-2. [il2cpp-compatibility.md](il2cpp-compatibility.md)で既知の問題を確認
-3. ビルド設定は[il2cpp.md](il2cpp.md)の「ビルド手順」セクションを参照
+### For New Developers
+1. First understand IL2CPP basics with [il2cpp.md](il2cpp.md)
+2. Performance optimization with [gpu-inference.md](gpu-inference.md)
+3. See [CI/CD Guide](../ci-cd/) for CI/CD configuration
 
-## メンテナンス指針
+### IL2CPP Integration Work
+1. Check configuration methods in [il2cpp.md](il2cpp.md)
+2. Check known issues in [il2cpp-compatibility.md](il2cpp-compatibility.md)
+3. See "Build Procedure" section in [il2cpp.md](il2cpp.md) for build configuration
 
-### 更新頻度
-- **il2cpp.md**: Unity/uPiperの大きなアップデート時
-- **il2cpp-compatibility.md**: 新しいプラットフォームテスト時、Unity更新時
-- **gpu-inference.md**: Unity AI Inference Engine更新時
+## Maintenance Guidelines
 
-### ドキュメント作成ルール
-1. 実装前に設計ドキュメントを作成しない（コードが正）
-2. 実装後に実際の動作を基にドキュメント化
-3. 具体的なコード例を含める
-4. プラットフォーム固有の情報は明確に区別
+### Update Frequency
+- **il2cpp.md**: When Unity/uPiper has major updates
+- **il2cpp-compatibility.md**: When testing new platforms, Unity updates
+- **gpu-inference.md**: When Unity AI Inference Engine updates
+- **webgl-investigation.md**: When WebGL implementation progresses
 
-## 関連リソース
+### Documentation Creation Rules
+1. Don't create design documents before implementation (code is truth)
+2. Document based on actual behavior after implementation
+3. Include specific code examples
+4. Clearly distinguish platform-specific information
 
-- [Unity IL2CPP公式ドキュメント](https://docs.unity3d.com/Manual/IL2CPP.html)
+## Related Resources
+
+- [Unity IL2CPP Official Documentation](https://docs.unity3d.com/Manual/IL2CPP.html)
 - [Unity AI Inference Engine](https://docs.unity3d.com/Packages/com.unity.sentis@latest)
 - [GitHub Actions](https://docs.github.com/en/actions)
