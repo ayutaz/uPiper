@@ -94,7 +94,7 @@ namespace uPiper.Editor.BuildSettings
 
         private void ValidateONNXModels()
         {
-            string resourcesPath = "Assets/uPiper/Resources";
+            var resourcesPath = "Assets/uPiper/Resources";
             if (!Directory.Exists(resourcesPath))
             {
                 PiperLogger.LogWarning("[PiperBuildProcessor] Resources directory not found");
@@ -110,7 +110,7 @@ namespace uPiper.Editor.BuildSettings
                 PiperLogger.LogInfo($"[PiperBuildProcessor] - {fileInfo.Name} ({fileInfo.Length / (1024 * 1024)}MB)");
 
                 // 対応するJSONファイルの確認
-                string jsonPath = file + ".json";
+                var jsonPath = file + ".json";
                 if (!File.Exists(jsonPath))
                 {
                     PiperLogger.LogWarning($"[PiperBuildProcessor] Missing JSON config for {fileInfo.Name}");
@@ -155,7 +155,7 @@ namespace uPiper.Editor.BuildSettings
             if (!EditorUtility.DisplayDialog("uPiper", "全プラットフォームのビルドを開始しますか？", "はい", "いいえ"))
                 return;
 
-            string outputPath = EditorUtility.SaveFolderPanel("ビルド出力先を選択", "", "");
+            var outputPath = EditorUtility.SaveFolderPanel("ビルド出力先を選択", "", "");
             if (string.IsNullOrEmpty(outputPath))
                 return;
 

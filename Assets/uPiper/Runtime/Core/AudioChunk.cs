@@ -60,8 +60,6 @@ namespace uPiper.Core
             string textSegment = null,
             float startTime = 0f)
         {
-            if (samples == null)
-                throw new ArgumentNullException(nameof(samples));
             if (sampleRate <= 0)
                 throw new ArgumentException("Sample rate must be positive", nameof(sampleRate));
             if (channels <= 0)
@@ -69,7 +67,7 @@ namespace uPiper.Core
             if (chunkIndex < 0)
                 throw new ArgumentException("Chunk index must be non-negative", nameof(chunkIndex));
 
-            Samples = samples;
+            Samples = samples ?? throw new ArgumentNullException(nameof(samples));
             SampleRate = sampleRate;
             Channels = channels;
             ChunkIndex = chunkIndex;
@@ -107,7 +105,7 @@ namespace uPiper.Core
 
             // Validate all chunks have same format
             var firstChunk = chunks[0];
-            int totalSamples = 0;
+            var totalSamples = 0;
 
             foreach (var chunk in chunks)
             {
@@ -121,7 +119,7 @@ namespace uPiper.Core
 
             // Combine samples
             var combinedSamples = new float[totalSamples];
-            int currentPosition = 0;
+            var currentPosition = 0;
 
             foreach (var chunk in chunks)
             {

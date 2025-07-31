@@ -1,0 +1,25 @@
+# Korean Exception Dictionary (Sample)
+# Format: WORD[TAB]PHONEME1 PHONEME2 ...
+# For irregular pronunciations that don't follow standard rules
+
+# Common irregular words
+십육	s i m n j u k
+격려	g j ʌ ŋ n j ʌ
+백마	p ɛ ŋ m a
+독립	t o ŋ n i p
+국력	g u ŋ n j ʌ k
+법률	p ʌ m n j u l
+갑자기	k a p̚ tɕ a g i
+맙소사	m a p̚ s o s a
+감사합니다	k a m s a h a m n i d a
+잘못	tɕ a l m o t̚
+없다	ʌ p̚ t a
+좋다	tɕ o t̚ a
+닫다	t a t̚ t a
+많다	m a n t a
+싫다	s i l t a
+읽다	i k̚ t a
+앉다	a n t a
+옳다	o l t a
+낡다	n a k̚ t a
+갈다	k a l d a

@@ -12,7 +12,7 @@ namespace uPiper.Core.AudioGeneration
     /// </summary>
     public static class UnityMainThreadDispatcher
     {
-        private static readonly ConcurrentQueue<Action> _actions = new ConcurrentQueue<Action>();
+        private static readonly ConcurrentQueue<Action> _actions = new();
         private static bool _initialized;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]

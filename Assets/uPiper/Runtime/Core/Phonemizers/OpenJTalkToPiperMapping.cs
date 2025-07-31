@@ -12,7 +12,7 @@ namespace uPiper.Core.Phonemizers
         /// Maps OpenJTalk phonemes to simplified Piper phonemes.
         /// OpenJTalk uses more detailed phoneme representations that need to be mapped to Piper's simpler set.
         /// </summary>
-        private static readonly Dictionary<string, string> OpenJTalkToPiperPhoneme = new Dictionary<string, string>
+        private static readonly Dictionary<string, string> OpenJTalkToPiperPhoneme = new()
         {
             // Silence and pauses
             { "pau", "_" },  // Pause to pad token
@@ -78,7 +78,7 @@ namespace uPiper.Core.Phonemizers
         /// 
         /// If using a custom model, override these values by loading from model JSON.
         /// </summary>
-        private static readonly Dictionary<string, int> DefaultPiperPhonemeToId = new Dictionary<string, int>
+        private static readonly Dictionary<string, int> DefaultPiperPhonemeToId = new()
         {
             // Special tokens
             { "_", 0 },      // Pad token
@@ -155,7 +155,7 @@ namespace uPiper.Core.Phonemizers
         /// 
         /// Reference: This approach is used by pyopenjtalk and Japanese Piper models.
         /// </summary>
-        private static readonly Dictionary<string, string> PhonemeToPUA = new Dictionary<string, string>
+        private static readonly Dictionary<string, string> PhonemeToPUA = new()
         {
             // Palatalized consonants (拗音 - youon)
             { "ky", "\ue006" },  // きゃ、きゅ、きょ
@@ -186,7 +186,7 @@ namespace uPiper.Core.Phonemizers
         {
             var result = new List<string>();
 
-            for (int i = 0; i < openJTalkPhonemes.Length; i++)
+            for (var i = 0; i < openJTalkPhonemes.Length; i++)
             {
                 var phoneme = openJTalkPhonemes[i];
                 if (string.IsNullOrEmpty(phoneme))
@@ -205,7 +205,7 @@ namespace uPiper.Core.Phonemizers
                 {
                     // Check if this is actually "ち" sound
                     // Look at the previous phoneme to determine context
-                    bool isChiSound = true;
+                    var isChiSound = true;
 
                     // If preceded by "t" (like in "tti"), it's not "chi"
                     if (i > 0 && openJTalkPhonemes[i - 1].ToLower() == "t")

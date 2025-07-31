@@ -155,7 +155,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // Assert
             Assert.IsNotNull(decodedPhonemes);
             Assert.AreEqual(originalPhonemes.Length, decodedPhonemes.Length);
-            for (int i = 0; i < originalPhonemes.Length; i++)
+            for (var i = 0; i < originalPhonemes.Length; i++)
             {
                 Assert.AreEqual(originalPhonemes[i], decodedPhonemes[i]);
             }

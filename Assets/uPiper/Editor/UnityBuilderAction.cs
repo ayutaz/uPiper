@@ -123,28 +123,21 @@ namespace UnityBuilderAction
                 buildName = $"{buildName}-{scriptingBackend}";
             }
 
-            switch (target)
+            return target switch
             {
-                case BuildTarget.StandaloneWindows64:
-                    return $"{buildPath}/{buildName}.exe";
-                case BuildTarget.StandaloneOSX:
-                    return $"{buildPath}/{buildName}.app";
-                case BuildTarget.StandaloneLinux64:
-                    return $"{buildPath}/{buildName}";
-                case BuildTarget.Android:
-                    return $"{buildPath}/{buildName}.apk";
-                case BuildTarget.iOS:
-                    return $"{buildPath}/{buildName}";
-                case BuildTarget.WebGL:
-                    return $"{buildPath}/{buildName}";
-                default:
-                    throw new Exception($"Unsupported build target: {target}");
-            }
+                BuildTarget.StandaloneWindows64 => $"{buildPath}/{buildName}.exe",
+                BuildTarget.StandaloneOSX => $"{buildPath}/{buildName}.app",
+                BuildTarget.StandaloneLinux64 => $"{buildPath}/{buildName}",
+                BuildTarget.Android => $"{buildPath}/{buildName}.apk",
+                BuildTarget.iOS => $"{buildPath}/{buildName}",
+                BuildTarget.WebGL => $"{buildPath}/{buildName}",
+                _ => throw new Exception($"Unsupported build target: {target}"),
+            };
         }
 
         private static string GetArgument(string[] args, string name, string defaultValue = "")
         {
-            for (int i = 0; i < args.Length; i++)
+            for (var i = 0; i < args.Length; i++)
             {
                 if (args[i] == name && i + 1 < args.Length)
                 {

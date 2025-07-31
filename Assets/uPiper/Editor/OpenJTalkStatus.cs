@@ -1,9 +1,9 @@
-using UnityEngine;
-using UnityEditor;
-using uPiper.Core.Phonemizers.Implementations;
-using uPiper.Core.Phonemizers;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
+using UnityEngine;
+using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Editor
 {
@@ -47,8 +47,8 @@ namespace uPiper.Editor
             };
 
             Debug.Log("\n=== Test Results ===");
-            int workingCount = 0;
-            int brokenCount = 0;
+            var workingCount = 0;
+            var brokenCount = 0;
 
             foreach (var testCase in testCases)
             {

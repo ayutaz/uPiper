@@ -6,8 +6,8 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using uPiper.Core.Performance;
-using uPiper.Core.Platform;
 using uPiper.Core.Phonemizers.Implementations;
+using uPiper.Core.Platform;
 
 namespace uPiper.Tests.Runtime.Performance
 {
@@ -176,7 +176,7 @@ namespace uPiper.Tests.Runtime.Performance
             }
 
             // Multiple cache hits
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
                 using (_profiler.BeginProfile("Cache Hit (Batch)"))
                 {

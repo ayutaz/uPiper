@@ -31,7 +31,7 @@ namespace uPiper.Editor.Build
 
         private void VerifyNativeLibraries(BuildReport report)
         {
-            bool hasIssues = false;
+            var hasIssues = false;
             string[] requiredLibraries = { "libopenjtalk_wrapper.so" };
             string[] supportedAbis = { "arm64-v8a", "armeabi-v7a", "x86", "x86_64" };
 
@@ -48,17 +48,17 @@ namespace uPiper.Editor.Build
             }
 
             // Check if libraries exist in the project
-            string androidPluginsPath = Path.Combine(Application.dataPath, "uPiper/Plugins/Android/libs");
+            var androidPluginsPath = Path.Combine(Application.dataPath, "uPiper/Plugins/Android/libs");
             if (Directory.Exists(androidPluginsPath))
             {
                 foreach (var abi in supportedAbis)
                 {
-                    string abiPath = Path.Combine(androidPluginsPath, abi);
+                    var abiPath = Path.Combine(androidPluginsPath, abi);
                     if (Directory.Exists(abiPath))
                     {
                         foreach (var lib in requiredLibraries)
                         {
-                            string libPath = Path.Combine(abiPath, lib);
+                            var libPath = Path.Combine(abiPath, lib);
                             if (File.Exists(libPath))
                             {
                                 var fileInfo = new FileInfo(libPath);

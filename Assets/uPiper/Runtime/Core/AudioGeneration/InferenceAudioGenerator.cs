@@ -20,7 +20,7 @@ namespace uPiper.Core.AudioGeneration
         private PiperVoiceConfig _voiceConfig;
         private PiperConfig _piperConfig;
         private bool _isInitialized;
-        private readonly object _lockObject = new object();
+        private readonly object _lockObject = new();
         private bool _disposed;
         private BackendType _actualBackendType;
 
@@ -121,13 +121,13 @@ namespace uPiper.Core.AudioGeneration
                         // モデルの入力/出力情報をログ出力（デバッグ用）
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Successfully initialized with model: {_modelAsset.name}");
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Model inputs: {_model.inputs.Count}");
-                        for (int i = 0; i < _model.inputs.Count; i++)
+                        for (var i = 0; i < _model.inputs.Count; i++)
                         {
                             var input = _model.inputs[i];
                             PiperLogger.LogInfo($"  Input[{i}]: name='{input.name}', shape={string.Join("x", input.shape)}, dataType={input.dataType}");
                         }
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Model outputs: {_model.outputs.Count}");
-                        for (int i = 0; i < _model.outputs.Count; i++)
+                        for (var i = 0; i < _model.outputs.Count; i++)
                         {
                             var output = _model.outputs[i];
                             PiperLogger.LogInfo($"  Output[{i}]: name='{output.name}'");
@@ -192,7 +192,7 @@ namespace uPiper.Core.AudioGeneration
                         {
                             // モデルの入力名を確認
                             PiperLogger.LogInfo($"[InferenceAudioGenerator] Model expects {_model.inputs.Count} inputs:");
-                            for (int i = 0; i < _model.inputs.Count; i++)
+                            for (var i = 0; i < _model.inputs.Count; i++)
                             {
                                 var modelInput = _model.inputs[i];
                                 PiperLogger.LogInfo($"  Input[{i}]: name='{modelInput.name}', shape=({string.Join(", ", modelInput.shape)}), dataType={modelInput.dataType}");
@@ -281,7 +281,7 @@ namespace uPiper.Core.AudioGeneration
                         var audioData = new float[audioLength];
 
                         // テンソルデータをコピー
-                        for (int i = 0; i < audioLength; i++)
+                        for (var i = 0; i < audioLength; i++)
                         {
                             audioData[i] = readableTensor[i];
                         }

@@ -11,7 +11,7 @@ namespace uPiper.Core.Phonemizers.Text
         /// <param name="text">The text to normalize.</param>
         /// <param name="language">The language code for language-specific normalization.</param>
         /// <returns>The normalized text.</returns>
-        string Normalize(string text, string language);
+        public string Normalize(string text, string language);
 
         /// <summary>
         /// Checks if the text needs normalization.
@@ -19,6 +19,6 @@ namespace uPiper.Core.Phonemizers.Text
         /// <param name="text">The text to check.</param>
         /// <param name="language">The language code.</param>
         /// <returns>True if normalization is needed.</returns>
-        bool NeedsNormalization(string text, string language);
+        public bool NeedsNormalization(string text, string language);
     }
 }

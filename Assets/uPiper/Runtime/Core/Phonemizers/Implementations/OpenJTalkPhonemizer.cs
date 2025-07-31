@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Scripting;
 using uPiper.Core.Logging;
+using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Platform;
 
 namespace uPiper.Core.Phonemizers.Implementations
@@ -47,6 +48,11 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         private const string LIBRARY_NAME = "openjtalk_wrapper";
 
+#if ENABLE_PINVOKE && UNITY_EDITOR_WIN
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern bool SetDllDirectory(string lpPathName);
+#endif
+
 #if ENABLE_PINVOKE
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr openjtalk_create([MarshalAs(UnmanagedType.LPStr)] string dict_path);
@@ -70,14 +76,21 @@ namespace uPiper.Core.Phonemizers.Implementations
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_get_error_string(int error_code);
 #else
-        // Stub implementations for when P/Invoke is disabled
-        private static IntPtr openjtalk_create(string dict_path) => IntPtr.Zero;
-        private static void openjtalk_destroy(IntPtr handle) { }
-        private static IntPtr openjtalk_phonemize(IntPtr handle, string text) => IntPtr.Zero;
-        private static void openjtalk_free_result(IntPtr result) { }
-        private static IntPtr openjtalk_get_version() => IntPtr.Zero;
-        private static int openjtalk_get_last_error(IntPtr handle) => -1;
-        private static IntPtr openjtalk_get_error_string(int error_code) => IntPtr.Zero;
+        // Throw exceptions for unsupported platforms
+        private static IntPtr openjtalk_create(string dict_path)
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static void openjtalk_destroy(IntPtr handle)
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static IntPtr openjtalk_phonemize(IntPtr handle, string text)
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static void openjtalk_free_result(IntPtr result)
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static IntPtr openjtalk_get_version()
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static int openjtalk_get_last_error(IntPtr handle)
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static IntPtr openjtalk_get_error_string(int error_code)
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
 #endif
 
         #endregion
@@ -85,7 +98,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         #region Fields
 
         private IntPtr _handle = IntPtr.Zero;
-        private readonly object _handleLock = new object();
+        private readonly object _handleLock = new();
         private bool _disposed;
         private readonly string _dictionaryPath;
 
@@ -127,10 +140,65 @@ namespace uPiper.Core.Phonemizers.Implementations
                 if (_handle != IntPtr.Zero)
                     return;
 
+                // Try to set DLL directory on Windows in CI environment
+#if ENABLE_PINVOKE && UNITY_EDITOR_WIN
+                if (Application.isBatchMode || Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null)
+                {
+                    Debug.Log("[OpenJTalkPhonemizer] CI environment detected, setting DLL search paths...");
+                    
+                    // Try multiple DLL directories
+                    var dllPaths = new[]
+                    {
+                        Directory.GetCurrentDirectory(),
+                        Path.Combine(Application.dataPath, "uPiper", "Plugins", "Windows", "x86_64"),
+                        Path.Combine(Application.dataPath, "Plugins", "x86_64"),
+                        Path.Combine(Directory.GetCurrentDirectory(), "Library", "ScriptAssemblies")
+                    };
+                    
+                    foreach (var dllPath in dllPaths)
+                    {
+                        if (Directory.Exists(dllPath))
+                        {
+                            var dllFile = Path.Combine(dllPath, "openjtalk_wrapper.dll");
+                            if (File.Exists(dllFile))
+                            {
+                                Debug.Log($"[OpenJTalkPhonemizer] Found DLL at: {dllFile}, setting DLL directory to: {dllPath}");
+                                SetDllDirectory(dllPath);
+                                break;
+                            }
+                        }
+                    }
+                }
+#endif
+
                 if (!IsNativeLibraryAvailable())
                 {
                     var expectedPath = GetExpectedLibraryPath();
                     var nativePluginsPath = Path.GetFullPath(Path.Combine(Application.dataPath, "../NativePlugins/OpenJTalk/"));
+
+                    // In CI environment, provide more detailed information
+                    if (Application.isBatchMode || Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null)
+                    {
+                        Debug.LogError($"[OpenJTalkPhonemizer] CI Environment detected. Library search failed.");
+                        Debug.LogError($"[OpenJTalkPhonemizer] Expected path: {expectedPath}");
+                        Debug.LogError($"[OpenJTalkPhonemizer] Application.dataPath: {Application.dataPath}");
+                        Debug.LogError($"[OpenJTalkPhonemizer] Current directory: {Directory.GetCurrentDirectory()}");
+
+                        // Log actual plugin directory contents
+                        var pluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins");
+                        if (Directory.Exists(pluginsPath))
+                        {
+                            Debug.LogError($"[OpenJTalkPhonemizer] Plugins directory exists: {pluginsPath}");
+                            foreach (var file in Directory.GetFiles(pluginsPath, "*", SearchOption.AllDirectories))
+                            {
+                                Debug.LogError($"[OpenJTalkPhonemizer]   Found: {file}");
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogError($"[OpenJTalkPhonemizer] Plugins directory not found: {pluginsPath}");
+                        }
+                    }
 
                     throw new PiperInitializationException(
                         $"OpenJTalk native library not found at: {expectedPath}\n\n" +
@@ -151,6 +219,15 @@ namespace uPiper.Core.Phonemizers.Implementations
                     throw new PiperConfigurationException(
                         $"Dictionary directory not found: {_dictionaryPath}");
                 }
+
+                // Add detailed logging for CI debugging
+                Debug.Log($"[OpenJTalkPhonemizer] Environment info:");
+                Debug.Log($"[OpenJTalkPhonemizer]   UNITY_EDITOR: {UnityEngine.Application.isEditor}");
+                Debug.Log($"[OpenJTalkPhonemizer]   Batch mode: {UnityEngine.Application.isBatchMode}");
+                Debug.Log($"[OpenJTalkPhonemizer]   Platform: {UnityEngine.Application.platform}");
+                Debug.Log($"[OpenJTalkPhonemizer]   Data path: {UnityEngine.Application.dataPath}");
+                Debug.Log($"[OpenJTalkPhonemizer]   Current directory: {System.IO.Directory.GetCurrentDirectory()}");
+                Debug.Log($"[OpenJTalkPhonemizer]   GITHUB_ACTIONS env: {System.Environment.GetEnvironmentVariable("GITHUB_ACTIONS")}");
 
                 try
                 {
@@ -244,7 +321,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                 // Additional character analysis for Windows debugging
                 PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Character analysis:");
-                for (int i = 0; i < Math.Min(text.Length, 10); i++)
+                for (var i = 0; i < Math.Min(text.Length, 10); i++)
                 {
                     var ch = text[i];
                     var unicode = ((int)ch).ToString("X4", System.Globalization.CultureInfo.InvariantCulture);
@@ -258,7 +335,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     Debug.Log("[OpenJTalkPhonemizer] Note: Debug logs from native library will appear in stderr/console");
                 }
 
-                IntPtr resultPtr = IntPtr.Zero;
+                var resultPtr = IntPtr.Zero;
                 try
                 {
 #if ENABLE_PINVOKE
@@ -268,10 +345,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                     {
                         var errorCode = openjtalk_get_last_error(_handle);
                         var errorMsgPtr = openjtalk_get_error_string(errorCode);
-                        var errorMsg = errorMsgPtr != IntPtr.Zero 
-                            ? Marshal.PtrToStringAnsi(errorMsgPtr) 
+                        var errorMsg = errorMsgPtr != IntPtr.Zero
+                            ? Marshal.PtrToStringAnsi(errorMsgPtr)
                             : "Unknown error";
-                        
+
                         throw new PiperPhonemizationException(text, "ja",
                             $"OpenJTalk phonemization failed: {errorMsg}");
                     }
@@ -332,7 +409,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                 // Calculate checksum for comparison
                 uint checksum = 0;
-                foreach (char c in phonemeString)
+                foreach (var c in phonemeString)
                 {
                     checksum = checksum * 31 + (uint)c;
                 }
@@ -355,7 +432,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     if (parts.Length > 0)
                     {
                         Debug.Log($"[OpenJTalkPhonemizer] First 10 phonemes:");
-                        for (int i = 0; i < Math.Min(10, parts.Length); i++)
+                        for (var i = 0; i < Math.Min(10, parts.Length); i++)
                         {
                             Debug.Log($"  [{i}] '{parts[i]}'");
                         }
@@ -385,7 +462,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     // Debug log the mapping result
                     PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Phoneme mapping: {string.Join(" ", phonemeList)} -> {string.Join(" ", piperPhonemes.Select(p => p.Length == 1 && p[0] >= '\ue000' && p[0] <= '\uf8ff' ? $"PUA(U+{((int)p[0]):X4})" : $"'{p}'"))}");
 
-                    for (int i = 0; i < Math.Min(piperPhonemes.Length, nativeResult.phoneme_count); i++)
+                    for (var i = 0; i < Math.Min(piperPhonemes.Length, nativeResult.phoneme_count); i++)
                     {
                         phonemes[i] = piperPhonemes[i];
                         // PhonemeIds will be set by PhonemeEncoder based on the model's phoneme mapping
@@ -416,7 +493,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
             // Pitches are not provided by the current native implementation
             // Initialize with default values
-            for (int i = 0; i < nativeResult.phoneme_count; i++)
+            for (var i = 0; i < nativeResult.phoneme_count; i++)
             {
                 pitches[i] = 1.0f; // Default pitch
             }
@@ -429,7 +506,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                 Pitches = pitches,
                 Language = "ja",
                 ProcessingTime = TimeSpan.Zero, // Will be set by BasePhonemizer
-                Metadata = $"TotalDuration:{nativeResult.total_duration:F3}"
+                Metadata = new Dictionary<string, object>
+                {
+                    ["TotalDuration"] = nativeResult.total_duration
+                }
             };
         }
 
@@ -459,7 +539,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 if (Directory.Exists(path))
                 {
                     // Verify it contains required files
-                    bool allFilesExist = true;
+                    var allFilesExist = true;
                     foreach (var file in OpenJTalkConstants.RequiredDictionaryFiles)
                     {
                         if (!File.Exists(Path.Combine(path, file)))
@@ -493,17 +573,18 @@ namespace uPiper.Core.Phonemizers.Implementations
         {
             try
             {
-#if UNITY_EDITOR
-                // In Editor, check if the library file exists
                 var libraryPath = GetExpectedLibraryPath();
                 if (string.IsNullOrEmpty(libraryPath))
                 {
                     Debug.LogError("[OpenJTalkPhonemizer] No library path defined for current platform");
                     return false;
                 }
-                
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+                // In Editor or standalone builds, check if the library file exists
+
                 // For bundle format on macOS, check if directory exists
-                bool libraryExists = false;
+                var libraryExists = false;
                 if (PlatformHelper.IsMacOS && libraryPath.EndsWith(".bundle"))
                 {
                     libraryExists = Directory.Exists(libraryPath);
@@ -522,13 +603,13 @@ namespace uPiper.Core.Phonemizers.Implementations
                 {
                     libraryExists = File.Exists(libraryPath);
                 }
-                
+
                 if (!libraryExists)
                 {
                     Debug.LogError($"[OpenJTalkPhonemizer] Library not found: {libraryPath}");
                     Debug.LogError($"[OpenJTalkPhonemizer] Current working directory: {Directory.GetCurrentDirectory()}");
                     Debug.LogError($"[OpenJTalkPhonemizer] Application.dataPath: {Application.dataPath}");
-                    
+
                     // List contents of plugin directory for debugging
                     var pluginDir = Path.GetDirectoryName(libraryPath);
                     if (Directory.Exists(pluginDir))
@@ -539,10 +620,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                             Debug.LogError($"  - {Path.GetFileName(item)}");
                         }
                     }
-                    
+
                     return false;
                 }
-                
+
                 Debug.Log($"[OpenJTalkPhonemizer] Native library found at: {libraryPath}");
                 return true;
 #else
@@ -582,40 +663,73 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         private string GetExpectedLibraryPath()
         {
+            // Check for CI/Docker environment first (regardless of UNITY_EDITOR)
+            if (PlatformHelper.IsWindows && (Application.isBatchMode || Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null))
+            {
+                // CI/Docker environment: Check multiple locations
+                var possiblePaths = new[]
+                {
+                    Path.Combine(Directory.GetCurrentDirectory(), "openjtalk_wrapper.dll"),
+                    Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll"),
+                    Path.Combine(Directory.GetCurrentDirectory(), "Library", "ScriptAssemblies", "openjtalk_wrapper.dll"),
+                    Path.Combine(Application.dataPath, "uPiper", "Plugins", "Windows", "x86_64", "openjtalk_wrapper.dll")
+                };
+
+                foreach (var path in possiblePaths)
+                {
+                    if (File.Exists(path))
+                    {
+                        Debug.Log($"[OpenJTalkPhonemizer] Found library in CI environment: {path}");
+                        return path;
+                    }
+                }
+
+                // If not found, log all searched paths for debugging
+                Debug.LogError($"[OpenJTalkPhonemizer] DLL not found in CI environment. Searched paths:");
+                foreach (var path in possiblePaths)
+                {
+                    Debug.LogError($"  - {path} (exists: {File.Exists(path)})");
+                }
+            }
+
             // In Unity Editor
 #if UNITY_EDITOR
             // First try uPiper/Plugins path
             var uPiperPluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins");
-            
+
             if (PlatformHelper.IsWindows)
             {
                 var windowsPath = Path.Combine(uPiperPluginsPath, "Windows", "x86_64", "openjtalk_wrapper.dll");
                 if (File.Exists(windowsPath)) return windowsPath;
-                
+
                 // Fallback to old path
-                return Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll");
+                var fallbackPath = Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll");
+                if (File.Exists(fallbackPath)) return fallbackPath;
+                
+                // Return the expected path even if not found (for error messages)
+                return windowsPath;
             }
             else if (PlatformHelper.IsMacOS)
             {
                 // Check for bundle format first (Unity's preferred format for macOS)
                 var bundlePath = Path.Combine(uPiperPluginsPath, "macOS", "openjtalk_wrapper.bundle");
                 if (Directory.Exists(bundlePath)) return bundlePath;
-                
+
                 // Check for dylib format
                 var dylibPath = Path.Combine(uPiperPluginsPath, "macOS", "libopenjtalk_wrapper.dylib");
                 if (File.Exists(dylibPath)) return dylibPath;
-                
+
                 // Fallback to old paths
                 var oldBundlePath = Path.Combine(Application.dataPath, "Plugins", "macOS", "openjtalk_wrapper.bundle");
                 if (Directory.Exists(oldBundlePath)) return oldBundlePath;
-                
+
                 return Path.Combine(Application.dataPath, "Plugins", "macOS", "libopenjtalk_wrapper.dylib");
             }
             else if (PlatformHelper.IsLinux)
             {
                 var linuxPath = Path.Combine(uPiperPluginsPath, "Linux", "x86_64", "libopenjtalk_wrapper.so");
                 if (File.Exists(linuxPath)) return linuxPath;
-                
+
                 // Fallback to old path
                 return Path.Combine(Application.dataPath, "Plugins", "x86_64", "libopenjtalk_wrapper.so");
             }
@@ -684,13 +798,13 @@ namespace uPiper.Core.Phonemizers.Implementations
             if (phonemes.Length < 6) return false;
 
             // Look for patterns where the same phoneme sequence appears multiple times consecutively
-            for (int i = 0; i < phonemes.Length - 6; i++)
+            for (var i = 0; i < phonemes.Length - 6; i++)
             {
                 // Check for 3+ character sequences that repeat
-                for (int len = 3; len <= Math.Min(6, (phonemes.Length - i) / 2); len++)
+                for (var len = 3; len <= Math.Min(6, (phonemes.Length - i) / 2); len++)
                 {
-                    bool isRepeated = true;
-                    for (int j = 0; j < len && i + len + j < phonemes.Length; j++)
+                    var isRepeated = true;
+                    for (var j = 0; j < len && i + len + j < phonemes.Length; j++)
                     {
                         if (phonemes[i + j] != phonemes[i + len + j])
                         {
@@ -718,17 +832,17 @@ namespace uPiper.Core.Phonemizers.Implementations
             var cleaned = new List<string>();
             var skipUntil = -1;
 
-            for (int i = 0; i < phonemes.Length; i++)
+            for (var i = 0; i < phonemes.Length; i++)
             {
                 if (i <= skipUntil) continue;
 
                 // Look for the start of a repeated pattern
-                for (int len = 3; len <= Math.Min(8, (phonemes.Length - i) / 2); len++)
+                for (var len = 3; len <= Math.Min(8, (phonemes.Length - i) / 2); len++)
                 {
                     if (i + len * 2 > phonemes.Length) break;
 
-                    bool isRepeated = true;
-                    for (int j = 0; j < len; j++)
+                    var isRepeated = true;
+                    for (var j = 0; j < len; j++)
                     {
                         if (phonemes[i + j] != phonemes[i + len + j])
                         {
@@ -740,7 +854,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     if (isRepeated)
                     {
                         // Add only the first occurrence
-                        for (int k = 0; k < len; k++)
+                        for (var k = 0; k < len; k++)
                         {
                             cleaned.Add(phonemes[i + k]);
                         }

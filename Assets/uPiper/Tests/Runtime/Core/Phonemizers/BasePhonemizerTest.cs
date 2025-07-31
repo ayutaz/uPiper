@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using uPiper.Core;
 using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Tests.Runtime.Core.Phonemizers
@@ -197,39 +198,35 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         [Test]
         public void Cancellation_ThrowsOperationCanceledException()
         {
-            using (var cts = new CancellationTokenSource())
-            {
-                cts.Cancel();
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
 
-                // Unity Test Framework doesn't support Assert.ThrowsAsync properly
-                // Test cancellation behavior without async assertions
-                // Phonemize doesn't take CancellationToken, so we can't test cancellation directly
-                // This is a limitation of the synchronous API
-                Assert.Pass("Cancellation test skipped for synchronous API");
-            }
+            // Unity Test Framework doesn't support Assert.ThrowsAsync properly
+            // Test cancellation behavior without async assertions
+            // Phonemize doesn't take CancellationToken, so we can't test cancellation directly
+            // This is a limitation of the synchronous API
+            Assert.Pass("Cancellation test skipped for synchronous API");
         }
 
         [Test]
         public void Cancellation_DoesNotCache()
         {
-            using (var cts = new CancellationTokenSource())
-            {
-                _phonemizer.DelayMilliseconds = 10; // Short delay
+            using var cts = new CancellationTokenSource();
+            _phonemizer.DelayMilliseconds = 10; // Short delay
 
-                // This test needs to be restructured for synchronous execution
-                // Skip the delay-based cancellation test as it's not compatible with sync
-                _phonemizer.DelayMilliseconds = 0;
-                cts.Cancel();
+            // This test needs to be restructured for synchronous execution
+            // Skip the delay-based cancellation test as it's not compatible with sync
+            _phonemizer.DelayMilliseconds = 0;
+            cts.Cancel();
 
-                // Phonemize doesn't take CancellationToken, so we can't test cancellation directly
-                // This is a limitation of the synchronous API
-                Assert.Pass("Cancellation test skipped for synchronous API");
+            // Phonemize doesn't take CancellationToken, so we can't test cancellation directly
+            // This is a limitation of the synchronous API
+            Assert.Pass("Cancellation test skipped for synchronous API");
 
-                // Result should not be cached
-                _phonemizer.DelayMilliseconds = 0;
-                var result = _phonemizer.Phonemize("test", "en");
-                Assert.IsFalse(result.FromCache);
-            }
+            // Result should not be cached
+            _phonemizer.DelayMilliseconds = 0;
+            var result = _phonemizer.Phonemize("test", "en");
+            Assert.IsFalse(result.FromCache);
         }
 
         #endregion
@@ -395,7 +392,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 var phonemeStrings = new string[phonemes.Length];
                 var phonemeIds = new int[phonemes.Length];
 
-                for (int i = 0; i < phonemes.Length; i++)
+                for (var i = 0; i < phonemes.Length; i++)
                 {
                     phonemeStrings[i] = phonemes[i].ToString();
                     phonemeIds[i] = (int)phonemes[i];

@@ -1,8 +1,8 @@
-using UnityEditor;
-using UnityEngine;
-using System.Text;
 using System;
+using System.Text;
+using UnityEditor;
 using UnityEditor.Build;
+using UnityEngine;
 
 namespace uPiper.Editor.Build
 {
@@ -31,8 +31,8 @@ namespace uPiper.Editor.Build
 
             // Text encoding test
             Debug.Log("\n=== Text Encoding Test ===");
-            string testText = "こんにちは";
-            byte[] utf8Bytes = Encoding.UTF8.GetBytes(testText);
+            var testText = "こんにちは";
+            var utf8Bytes = Encoding.UTF8.GetBytes(testText);
             Debug.Log($"Test text: {testText}");
             Debug.Log($"UTF-8 bytes ({utf8Bytes.Length}): {BitConverter.ToString(utf8Bytes)}");
 
@@ -55,18 +55,18 @@ namespace uPiper.Editor.Build
             Debug.Log("[uPiper] Checking text assets encoding...");
 
             // Find all text assets in the project
-            string[] guids = AssetDatabase.FindAssets("t:TextAsset", new[] { "Assets" });
-            int fixedCount = 0;
+            var guids = AssetDatabase.FindAssets("t:TextAsset", new[] { "Assets" });
+            var fixedCount = 0;
 
-            foreach (string guid in guids)
+            foreach (var guid in guids)
             {
-                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var path = AssetDatabase.GUIDToAssetPath(guid);
 
                 // Skip non-uPiper assets
                 if (!path.Contains("uPiper"))
                     continue;
 
-                TextAsset textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+                var textAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
                 if (textAsset != null)
                 {
                     // Check if the text contains Japanese characters
@@ -96,7 +96,7 @@ namespace uPiper.Editor.Build
             if (string.IsNullOrEmpty(text))
                 return false;
 
-            foreach (char c in text)
+            foreach (var c in text)
             {
                 // Check for Hiragana (3040-309F), Katakana (30A0-30FF), or Kanji (4E00-9FAF)
                 if ((c >= '\u3040' && c <= '\u309F') ||

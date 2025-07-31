@@ -11,9 +11,9 @@ namespace uPiper.Core.Phonemizers.Text
     public class TextNormalizer : ITextNormalizer
     {
         // Regex patterns for normalization
-        private static readonly Regex multipleSpacesRegex = new Regex(@"\s{2,}", RegexOptions.Compiled);
-        private static readonly Regex lineBreaksRegex = new Regex(@"[\r\n]+", RegexOptions.Compiled);
-        private static readonly Regex controlCharsRegex = new Regex(@"[\x00-\x1F\x7F]", RegexOptions.Compiled);
+        private static readonly Regex multipleSpacesRegex = new(@"\s{2,}", RegexOptions.Compiled);
+        private static readonly Regex lineBreaksRegex = new(@"[\r\n]+", RegexOptions.Compiled);
+        private static readonly Regex controlCharsRegex = new(@"[\x00-\x1F\x7F]", RegexOptions.Compiled);
 
         /// <summary>
         /// Normalizes text for phonemization.
@@ -108,7 +108,7 @@ namespace uPiper.Core.Phonemizers.Text
         {
             var sb = new StringBuilder(text.Length);
 
-            foreach (char c in text)
+            foreach (var c in text)
             {
                 // Convert full-width alphanumeric to half-width
                 if (c >= '０' && c <= '９')
@@ -173,7 +173,7 @@ namespace uPiper.Core.Phonemizers.Text
             // For now, just handle full-width to half-width conversion
             var sb = new StringBuilder(text.Length);
 
-            foreach (char c in text)
+            foreach (var c in text)
             {
                 // Convert full-width punctuation
                 switch (c)
@@ -205,7 +205,7 @@ namespace uPiper.Core.Phonemizers.Text
         /// </summary>
         private bool NeedsJapaneseNormalization(string text)
         {
-            foreach (char c in text)
+            foreach (var c in text)
             {
                 // Check for full-width characters
                 if ((c >= '０' && c <= '９') ||

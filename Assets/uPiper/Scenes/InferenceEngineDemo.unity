@@ -2540,6 +2540,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _inputField: {fileID: 1590792294}
   _generateButton: {fileID: 1634153316}
+  _inferenceButton: {fileID: 0}
   _statusText: {fileID: 526426024}
   _audioSource: {fileID: 811054988}
   _modelDropdown: {fileID: 2058744719}

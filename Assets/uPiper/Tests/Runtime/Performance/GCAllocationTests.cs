@@ -21,7 +21,7 @@ namespace uPiper.Tests.Runtime.Performance
             // Prepare test data
             var testKeys = new string[100];
             var testValues = new string[100];
-            for (int i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
                 testKeys[i] = $"key{i}";
                 testValues[i] = $"value{i}";
@@ -29,7 +29,7 @@ namespace uPiper.Tests.Runtime.Performance
             }
 
             // Warm up
-            for (int i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
                 cache.TryGet(testKeys[i % 100], out _);
                 cache.ContainsKey(testKeys[i % 100]);
@@ -37,7 +37,7 @@ namespace uPiper.Tests.Runtime.Performance
 
             // Benchmark TryGet
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            for (int i = 0; i < 100000; i++)
+            for (var i = 0; i < 100000; i++)
             {
                 cache.TryGet(testKeys[i % 100], out _);
             }
@@ -48,7 +48,7 @@ namespace uPiper.Tests.Runtime.Performance
 
             // Benchmark ContainsKey
             stopwatch.Restart();
-            for (int i = 0; i < 100000; i++)
+            for (var i = 0; i < 100000; i++)
             {
                 cache.ContainsKey(testKeys[i % 100]);
             }
@@ -64,7 +64,7 @@ namespace uPiper.Tests.Runtime.Performance
             var cache = new LRUCache<string, string>(100);
 
             // Prepare cache with data
-            for (int i = 0; i < 50; i++)
+            for (var i = 0; i < 50; i++)
             {
                 cache.Add($"key{i}", $"value{i}");
             }
@@ -83,7 +83,7 @@ namespace uPiper.Tests.Runtime.Performance
             var testKeys = new string[100];
 
             // Prepare data
-            for (int i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
                 testKeys[i] = $"key{i}";
                 cache.Add(testKeys[i], $"value{i}");
@@ -93,12 +93,12 @@ namespace uPiper.Tests.Runtime.Performance
             var tasks = new System.Threading.Tasks.Task[4];
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-            for (int t = 0; t < tasks.Length; t++)
+            for (var t = 0; t < tasks.Length; t++)
             {
-                int threadId = t;
+                var threadId = t;
                 tasks[t] = System.Threading.Tasks.Task.Run(() =>
                 {
-                    for (int i = 0; i < 25000; i++)
+                    for (var i = 0; i < 25000; i++)
                     {
                         cache.TryGet(testKeys[(i + threadId * 25) % 100], out _);
                     }

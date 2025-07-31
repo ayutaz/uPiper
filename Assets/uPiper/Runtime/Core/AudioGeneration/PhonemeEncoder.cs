@@ -37,7 +37,7 @@ namespace uPiper.Core.AudioGeneration
         }
 
         // Multi-character phonemes to PUA mapping (must match openjtalk_phonemize.cpp)
-        private static readonly Dictionary<string, string> multiCharPhonemeMap = new Dictionary<string, string>
+        private static readonly Dictionary<string, string> multiCharPhonemeMap = new()
         {
             // Long vowels
             ["a:"] = "\ue000",
@@ -82,7 +82,7 @@ namespace uPiper.Core.AudioGeneration
             var ids = new List<int>();
 
             // BOS/EOSトークンを追加するかどうかのフラグ（デバッグ用）
-            bool addSpecialTokens = false; // 一旦falseにして、後で必要に応じて有効化
+            var addSpecialTokens = false; // 一旦falseにして、後で必要に応じて有効化
 
             if (addSpecialTokens)
             {
@@ -228,7 +228,7 @@ namespace uPiper.Core.AudioGeneration
                 " ", ".", ",", "?", "!", "'", "-"
             };
 
-            int nextId = 3; // 特殊トークンの後から開始
+            var nextId = 3; // 特殊トークンの後から開始
             foreach (var phoneme in defaultPhonemes)
             {
                 if (!_phonemeToId.ContainsKey(phoneme))

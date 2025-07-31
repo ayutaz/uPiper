@@ -7,14 +7,9 @@ namespace uPiper.Editor.Build
     /// <summary>
     /// Validates Android native libraries and their import settings
     /// </summary>
-    [InitializeOnLoad]
     public static class AndroidLibraryValidator
     {
-        static AndroidLibraryValidator()
-        {
-            // Run validation on editor load
-            EditorApplication.delayCall += ValidateAndroidLibraries;
-        }
+        // 自動実行を完全に削除 - 必要な時に手動で実行
 
         [MenuItem("uPiper/Android/Validate Native Libraries")]
         public static void ValidateAndroidLibraries()
@@ -22,13 +17,13 @@ namespace uPiper.Editor.Build
             Debug.Log("[uPiper] Validating Android native libraries...");
 
             string[] abis = { "arm64-v8a", "armeabi-v7a", "x86", "x86_64" };
-            string baseLibPath = "Assets/uPiper/Plugins/Android/libs";
-            bool hasIssues = false;
+            var baseLibPath = "Assets/uPiper/Plugins/Android/libs";
+            var hasIssues = false;
 
             foreach (var abi in abis)
             {
-                string libPath = Path.Combine(baseLibPath, abi, "libopenjtalk_wrapper.so");
-                string fullPath = Path.GetFullPath(libPath);
+                var libPath = Path.Combine(baseLibPath, abi, "libopenjtalk_wrapper.so");
+                var fullPath = Path.GetFullPath(libPath);
 
                 if (File.Exists(fullPath))
                 {
@@ -45,7 +40,7 @@ namespace uPiper.Editor.Build
                     if (importer != null)
                     {
                         // Ensure correct settings
-                        bool needsReimport = false;
+                        var needsReimport = false;
 
                         if (!importer.GetCompatibleWithPlatform(BuildTarget.Android))
                         {
@@ -55,8 +50,8 @@ namespace uPiper.Editor.Build
                         }
 
                         // Set CPU architecture
-                        string expectedCPU = GetExpectedCPU(abi);
-                        string currentCPU = importer.GetPlatformData(BuildTarget.Android, "CPU");
+                        var expectedCPU = GetExpectedCPU(abi);
+                        var currentCPU = importer.GetPlatformData(BuildTarget.Android, "CPU");
 
                         if (currentCPU != expectedCPU)
                         {
@@ -95,19 +90,14 @@ namespace uPiper.Editor.Build
 
         private static string GetExpectedCPU(string abi)
         {
-            switch (abi)
+            return abi switch
             {
-                case "arm64-v8a":
-                    return "ARM64";
-                case "armeabi-v7a":
-                    return "ARMv7";
-                case "x86":
-                    return "X86";
-                case "x86_64":
-                    return "X86_64";
-                default:
-                    return "AnyCPU";
-            }
+                "arm64-v8a" => "ARM64",
+                "armeabi-v7a" => "ARMv7",
+                "x86" => "X86",
+                "x86_64" => "X86_64",
+                _ => "AnyCPU",
+            };
         }
 
         [MenuItem("uPiper/Android/Fix Library Import Settings")]

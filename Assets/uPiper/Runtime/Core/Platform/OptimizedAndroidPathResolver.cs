@@ -19,7 +19,7 @@ namespace uPiper.Core.Platform
         private static readonly string DICT_ZIP_NAME = "naist_jdic.zip";
         private static readonly string DICT_EXTRACTED_MARKER = ".extracted";
 
-        private static readonly object _lock = new object();
+        private static readonly object _lock = new();
 
         /// <summary>
         /// アプリ起動時に非同期で辞書展開を開始
@@ -114,43 +114,41 @@ namespace uPiper.Core.Platform
                         }
 
                         // メモリ効率的な展開
-                        using (var zipStream = new MemoryStream(request.downloadHandler.data))
-                        using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Read))
+                        using var zipStream = new MemoryStream(request.downloadHandler.data);
+                        using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read);
+                        PiperLogger.LogInfo($"[OptimizedAndroid] Extracting {archive.Entries.Count} files...");
+
+                        var extracted = 0;
+                        foreach (var entry in archive.Entries)
                         {
-                            PiperLogger.LogInfo($"[OptimizedAndroid] Extracting {archive.Entries.Count} files...");
+                            if (string.IsNullOrEmpty(entry.Name))
+                                continue; // ディレクトリエントリをスキップ
 
-                            int extracted = 0;
-                            foreach (var entry in archive.Entries)
+                            var targetPath = Path.Combine(destPath, entry.FullName);
+                            var targetDir = Path.GetDirectoryName(targetPath);
+
+                            if (!Directory.Exists(targetDir))
                             {
-                                if (string.IsNullOrEmpty(entry.Name))
-                                    continue; // ディレクトリエントリをスキップ
-
-                                var targetPath = Path.Combine(destPath, entry.FullName);
-                                var targetDir = Path.GetDirectoryName(targetPath);
-
-                                if (!Directory.Exists(targetDir))
-                                {
-                                    Directory.CreateDirectory(targetDir);
-                                }
-
-                                using (var entryStream = entry.Open())
-                                using (var fileStream = File.Create(targetPath))
-                                {
-                                    await entryStream.CopyToAsync(fileStream);
-                                }
-
-                                extracted++;
-
-                                // 定期的にGCを実行してメモリ使用量を抑える
-                                if (extracted % 100 == 0)
-                                {
-                                    GC.Collect();
-                                    await Task.Yield();
-                                }
+                                Directory.CreateDirectory(targetDir);
                             }
 
-                            PiperLogger.LogInfo($"[OptimizedAndroid] Extracted {extracted} files");
+                            using (var entryStream = entry.Open())
+                            using (var fileStream = File.Create(targetPath))
+                            {
+                                await entryStream.CopyToAsync(fileStream);
+                            }
+
+                            extracted++;
+
+                            // 定期的にGCを実行してメモリ使用量を抑える
+                            if (extracted % 100 == 0)
+                            {
+                                GC.Collect();
+                                await Task.Yield();
+                            }
                         }
+
+                        PiperLogger.LogInfo($"[OptimizedAndroid] Extracted {extracted} files");
                     }
 
                     // 展開完了マーカーを作成

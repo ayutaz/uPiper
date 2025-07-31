@@ -12,16 +12,13 @@ namespace uPiper.Samples.AndroidDemo
     public class AndroidOpenJTalkTest : MonoBehaviour
     {
         [Header("UI References")]
-        [SerializeField] private Text statusText;
-        [SerializeField] private Button testButton;
-        [SerializeField] private AudioSource audioSource;
+        [SerializeField] private readonly Text statusText;
+        [SerializeField] private readonly Button testButton;
+        [SerializeField] private readonly AudioSource audioSource;
 
         private void Start()
         {
-            if (testButton != null)
-            {
-                testButton.onClick.AddListener(RunTest);
-            }
+            testButton?.onClick.AddListener(RunTest);
 
             UpdateStatus("Ready to test OpenJTalk");
         }
@@ -64,7 +61,7 @@ namespace uPiper.Samples.AndroidDemo
                 try
                 {
                     UpdateStatus("Testing phonemization...");
-                    string testText = "こんにちは";
+                    var testText = "こんにちは";
                     UpdateStatus($"Input text: {testText}");
 
                     var result = phonemizer.Phonemize(testText);
@@ -113,8 +110,8 @@ namespace uPiper.Samples.AndroidDemo
             if (piperTTS != null)
             {
                 UpdateStatus("Waiting for PiperTTS initialization...");
-                float timeout = 5f;
-                float elapsed = 0f;
+                var timeout = 5f;
+                var elapsed = 0f;
 
                 while (!piperTTS.IsInitialized && elapsed < timeout)
                 {
@@ -129,7 +126,7 @@ namespace uPiper.Samples.AndroidDemo
                     // Try to generate audio
                     try
                     {
-                        string testText = "テスト";
+                        var testText = "テスト";
                         UpdateStatus($"Generating audio for: {testText}");
 
                         var audioClip = piperTTS.GenerateAudio(testText);
@@ -176,10 +173,7 @@ namespace uPiper.Samples.AndroidDemo
 
         private void OnDestroy()
         {
-            if (testButton != null)
-            {
-                testButton.onClick.RemoveListener(RunTest);
-            }
+            testButton?.onClick.RemoveListener(RunTest);
         }
     }
 }
