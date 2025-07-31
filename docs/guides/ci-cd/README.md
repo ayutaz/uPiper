@@ -50,6 +50,52 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 - 並列実行で高速化
 
 ### 5. unity-tests.yml
+**目的**: Unity Test Runnerの実行
+
+**特徴**:
+- Linux/macOS: Dockerベース（game-ci/unity-test-runner）
+- Windows: 現在無効化（Docker制限のため）
+- PlayModeとEditModeテスト
+
+### 6. unity-tests-windows-cli.yml
+**目的**: Windows環境でのUnity Test Runner
+
+**特徴**:
+- Unity CLIを直接使用（Docker不要）
+- Unity Hub/Editor自動インストール
+- Windows専用の代替実装
+
+### 7. locale-tests.yml
+**目的**: 日本語ロケール環境でのテスト
+
+**特徴**:
+- UTF-8エンコーディング検証
+- 日本語音素化テスト
+- Windowsロケール設定
+
+### 8. dotnet-format.yml
+**目的**: C#コードフォーマットチェック
+
+**特徴**:
+- dotnet formatによる自動チェック
+- コードスタイル統一
+
+### 9. performance-regression.yml
+**目的**: パフォーマンスベンチマーク
+
+**特徴**:
+- Unity Performance Testing拡張使用
+- 回帰検出とレポート生成
+
+### 10. unity-il2cpp-build.yml
+**目的**: IL2CPP専用ビルド
+
+**特徴**:
+- Windows/macOSネイティブランナー使用
+- Visual Studio/Xcode統合
+- 完全なIL2CPPサポート
+
+### 5. unity-tests.yml
 **目的**: UnityのEdit Mode/Play Modeテスト実行
 
 **特徴**:
