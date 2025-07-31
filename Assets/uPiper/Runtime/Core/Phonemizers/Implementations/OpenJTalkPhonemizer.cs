@@ -620,6 +620,14 @@ namespace uPiper.Core.Phonemizers.Implementations
                 var windowsPath = Path.Combine(uPiperPluginsPath, "Windows", "x86_64", "openjtalk_wrapper.dll");
                 if (File.Exists(windowsPath)) return windowsPath;
 
+                // CI/Docker environment: Check project root
+                var projectRootPath = Path.Combine(Directory.GetCurrentDirectory(), "openjtalk_wrapper.dll");
+                if (File.Exists(projectRootPath))
+                {
+                    Debug.Log($"[OpenJTalkPhonemizer] Found library in project root (CI environment): {projectRootPath}");
+                    return projectRootPath;
+                }
+
                 // Fallback to old path
                 return Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll");
             }

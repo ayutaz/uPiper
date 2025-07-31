@@ -173,6 +173,34 @@ jobs:
           }
         }
 
+    # Windows: Copy DLL to multiple locations for Docker volume mapping
+    - name: Prepare Windows DLL for Docker (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: |
+        echo "=== Preparing OpenJTalk DLL for Docker environment ==="
+        # Docker mounts the project at C:/github/workspace
+        # Copy DLL to ensure it's accessible in the container
+        
+        # Verify source DLL exists
+        if [ -f "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" ]; then
+          echo "Source DLL found at: Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll"
+          
+          # Create additional copy in project root for Docker
+          cp "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" "./openjtalk_wrapper.dll"
+          echo "Copied DLL to project root"
+          
+          # List files to verify
+          echo "=== Files in project root ==="
+          ls -la *.dll || true
+          
+          echo "=== Files in plugin directory ==="
+          ls -la Assets/uPiper/Plugins/Windows/x86_64/ || true
+        else
+          echo "ERROR: Source DLL not found!"
+          exit 1
+        fi
+
     # Unity 6対応 - game-ci/unity-test-runnerを使用
     - name: Run Unity Tests
       uses: game-ci/unity-test-runner@v4
