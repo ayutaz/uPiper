@@ -76,34 +76,6 @@ Unity Editorから手動でパッケージを作成：
 2. `uPiper/Package/Export UPM Package (.tgz)` - Unity Package Manager形式
 3. `uPiper/Package/Export Both Formats` - 両形式を同時にエクスポート
 
-## アーキテクチャと設計判断
-
-### 音声合成パイプライン
-uPiperは、ニューラルネットワークベースの音声合成（VITS）を採用しています：
-
-```
-テキスト → 音素化（OpenJTalk/eSpeak-NG） → VITSモデル → 音声
-```
-
-### 重要な設計判断（Phase 1.10）
-
-#### 1. 音素タイミングの簡略化
-- **現状**: OpenJTalkから出力される音素の継続時間は全て50ms固定
-- **理由**: VITSモデル内のDuration Predictorが自動的に適切なタイミングを再計算するため
-- **影響**: 音声品質への影響なし（ニューラルモデルが補正）
-
-#### 2. PUA（Private Use Area）文字の使用
-- **目的**: 複数文字の音素（"ky", "ch", "ts"など）を単一文字として表現
-- **理由**: Piperモデルは1音素=1文字を期待するため
-- **実装**: Unicode PUA領域（U+E000-U+F8FF）を使用
-
-#### 3. HTS Engine非使用
-- **決定**: OpenJTalkのHTS Engine音声合成機能は使用しない
-- **理由**: Piperはニューラル音声合成（VITS）を使用するため、HMMベースの合成は不要
-- **利点**: 依存関係の削減、ビルドサイズの縮小
-
-詳細な技術情報は[ドキュメント](docs/)を参照してください。
-
 ## GPU推論の使用
 
 uPiperはGPU推論をサポートしており、より高速な音声生成が可能です：
@@ -124,20 +96,11 @@ var config = new PiperConfig
 
 詳細は[GPU推論ガイド](docs/ja/guides/technical/gpu-inference.md)を参照してください。
 
-## 実装進捗
+## 詳細ドキュメント
 
-### 開発状況
-
-**Phase 1 完了**（2025年1月23日）
-- ✅ Core API実装とテスト（250+テスト）
-- ✅ OpenJTalk統合による高精度日本語音素化
-- ✅ Unity.InferenceEngineによるONNX推論
-- ✅ IL2CPPサポート（Mono/IL2CPP両対応）
-- ✅ GPU推論サポート（Auto/CPU/GPUCompute/GPUPixel）
-- ✅ マルチプラットフォーム対応（Windows/macOS/Linux/Android）
-- ✅ 高度なサンプル実装（ストリーミング、マルチボイス、リアルタイム）
-
-詳細は[開発ログ](DEVELOPMENT_LOG.md)を参照してください。
+- [アーキテクチャ](docs/ja/ARCHITECTURE.md) - 設計と技術的な詳細
+- [開発ログ](DEVELOPMENT_LOG.md) - 開発進捗と変更履歴
+- [技術ドキュメント](docs/ja/guides/technical/) - 詳細な技術情報
 
 ## ライセンス
 
