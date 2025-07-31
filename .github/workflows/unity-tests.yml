@@ -12,6 +12,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        # Note: Windows Unity tests are currently skipped due to lack of Docker support on Windows runners
+        # Only building and verifying the native library on Windows for now
         os: [windows-latest, macos-latest]
         include:
           - os: windows-latest
@@ -226,8 +228,8 @@ jobs:
     # Unity 6対応 - game-ci/unity-test-runnerを使用
     - name: Run Unity Tests
       uses: game-ci/unity-test-runner@v4
-      # Skip on macOS as Docker is not supported
-      if: matrix.os != 'macos-latest'
+      # Skip on macOS and Windows as Docker is not supported on these runners
+      if: matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -250,7 +252,7 @@ jobs:
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
       uses: actions/upload-artifact@v4
-      if: always() && matrix.os != 'macos-latest'
+      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
       with:
         name: Test Results - Unity - ${{ matrix.platform }}
         path: |
@@ -262,7 +264,7 @@ jobs:
         
     # テスト結果のデバッグ情報
     - name: Debug Test Results
-      if: always() && matrix.os != 'macos-latest'
+      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
       shell: bash
       run: |
         echo "=== Test Results Directory Contents ==="
@@ -280,7 +282,7 @@ jobs:
     
     # テスト結果のサマリーを作成
     - name: Create Test Summary
-      if: always() && matrix.os != 'macos-latest'
+      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
       shell: bash
       run: |
         echo "## Unity Test Results Summary" >> $GITHUB_STEP_SUMMARY
@@ -331,7 +333,7 @@ jobs:
     # カバレッジレポートをアップロード
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
-      if: always() && matrix.os != 'macos-latest'
+      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
       with:
         name: Coverage Report - ${{ matrix.platform }}
         path: |
@@ -348,7 +350,7 @@ jobs:
         
     # コードカバレッジチェック
     - name: Check Code Coverage
-      if: always() && matrix.os != 'macos-latest'
+      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
       shell: bash
       run: |
         # カバレッジサマリーファイルを探す
@@ -436,7 +438,7 @@ jobs:
     # Codecovにカバレッジをアップロード
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
-      if: always() && matrix.os != 'macos-latest'
+      if: always() && matrix.os != 'macos-latest' && matrix.os != 'windows-latest'
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         directory: ./
@@ -445,6 +447,19 @@ jobs:
         name: uPiper
         fail_ci_if_error: false
         verbose: true
+
+    # Windows-specific summary when Unity tests are skipped
+    - name: Create Windows Summary
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: |
+        echo "## Windows Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ OpenJTalk native library built successfully" >> $GITHUB_STEP_SUMMARY
+        echo "✅ DLL verified at: Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "⚠️ **Note**: Unity tests are skipped on Windows runners due to Docker limitations." >> $GITHUB_STEP_SUMMARY
+        echo "Unity tests run on Ubuntu runner instead." >> $GITHUB_STEP_SUMMARY
 
   # macOS専用のテスト（Dockerがサポートされていないため）
   macos-unity-test:
