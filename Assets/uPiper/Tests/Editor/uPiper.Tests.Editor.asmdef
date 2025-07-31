@@ -5,7 +5,8 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Unity.InferenceEngine",
-        "uPiper.Runtime"
+        "uPiper.Runtime",
+        "uPiper.Editor"
     ],
     "includePlatforms": [
         "Editor"
