@@ -224,7 +224,9 @@ jobs:
           # Fallback: create tar.gz manually
           cd ..
           mkdir -p PackageExports
-          tar -czf PackageExports/com.yousan.upiper-${{ steps.version.outputs.version }}.tgz -C temp-upm-package .
+          # Get package name from package.json
+          PACKAGE_NAME=$(jq -r '.name' Assets/uPiper/package.json)
+          tar -czf PackageExports/${PACKAGE_NAME}-${{ steps.version.outputs.version }}.tgz -C temp-upm-package .
         fi
         
     - name: Download build artifacts

@@ -16,6 +16,7 @@ namespace uPiper.Editor
         private const string PACKAGE_NAME = "uPiper";
         private const string PACKAGE_JSON_PATH = "Assets/uPiper/package.json";
         private const string UPIPER_ROOT = "Assets/uPiper";
+        private const string TEMP_PACKAGE_DIR = "uPiperPackageTemp";
         
         [MenuItem("uPiper/Package/Export Unity Package (.unitypackage)", false, Menu.uPiperMenuStructure.PRIORITY_BUILD + 50)]
         public static void ExportUnityPackage()
@@ -265,7 +266,7 @@ namespace uPiper.Editor
         
         private static void CreateUPMPackage(string outputPath, PackageInfo packageInfo)
         {
-            var tempDir = Path.Combine(Application.temporaryCachePath, "uPiperPackageTemp");
+            var tempDir = Path.Combine(Application.temporaryCachePath, TEMP_PACKAGE_DIR);
             
             try
             {

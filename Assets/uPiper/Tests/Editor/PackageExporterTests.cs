@@ -54,12 +54,14 @@ namespace uPiper.Tests.Editor
             Assert.IsTrue(File.Exists(originalPackageJsonPath));
             
             var json = File.ReadAllText(originalPackageJsonPath);
+            
+            // Test JSON validity by attempting to parse with JsonUtility using the PackageInfo structure
             Assert.DoesNotThrow(() => 
             {
-                var parsed = JsonUtility.FromJson<object>(json);
-                // JsonUtility doesn't work with generic object, so just check if JSON is parseable
-                Assert.IsTrue(!string.IsNullOrEmpty(json) && json.Trim().StartsWith("{"));
-            }, "package.json should contain valid JSON");
+                var packageInfo = JsonUtility.FromJson<PackageInfo>(json);
+                Assert.IsNotNull(packageInfo, "Should be able to parse package.json as PackageInfo");
+                Assert.IsNotEmpty(packageInfo.Name, "Parsed package should have a name");
+            }, "package.json should contain valid JSON parseable by JsonUtility");
         }
         
         [Test]
