@@ -4,7 +4,7 @@
 [![Unity Build](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml)
 [![codecov](https://codecov.io/github/ayutaz/uPiper/graph/badge.svg?token=348eb741-4320-4368-89fa-3eee5188bd3f)](https://codecov.io/github/ayutaz/uPiper)
 
-[Piper TTS](https://github.com/rhasspy/piper)のUnityプラグイン - 高品質なニューラル音声合成エンジン
+[Piper TTS](https://github.com/ayutaz/piper-plus)のUnityプラグイン - 高品質なニューラル音声合成エンジン
 
 ## 機能
 
@@ -12,7 +12,7 @@
 - 🌍 多言語対応（日本語、英語、中国語、韓国語など）
 - 🚀 Unity AI Inference Engineによる高速推論
 - 📱 マルチプラットフォーム対応
-- 🔧 OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux）
+- 🔧 OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux/Android）
 - ⚡ GPU推論サポート（GPUCompute/GPUPixel）
 - 🎭 高度なサンプル（ストリーミング、複数音声、リアルタイム）
 
@@ -51,10 +51,11 @@
 - ✅ Windows (x64)
 - ✅ macOS (Apple Silicon/Intel)
 - ✅ Linux (x64)
+- ✅ Android (ARM64)
 
 ### 未対応
-- ❌ WebGL - Unity.InferenceEngineがWebGLをサポートしていないため
-- ❌ iOS/Android - モバイル対応は今後検討予定
+- ❌ WebGL - 技術調査中（piper-plus連携により将来対応予定）
+- ❌ iOS - Phase 5で対応予定
 
 ## ビルドとパッケージ作成
 
@@ -100,6 +101,13 @@ uPiperは、ニューラルネットワークベースの音声合成（VITS）�
 
 詳細な技術情報は[ドキュメント](docs/)を参照してください。
 
+## ビルド要件
+
+- **Windows**: Visual Studio 2019以降
+- **macOS**: Xcode 14以降
+- **Linux**: GCC 9以降
+- **Android**: NDK r21以降
+
 ## GPU推論の使用
 
 uPiperはGPU推論をサポートしており、より高速な音声生成が可能です：
@@ -130,7 +138,7 @@ var config = new PiperConfig
 - ✅ Unity.InferenceEngineによるONNX推論
 - ✅ IL2CPPサポート（Mono/IL2CPP両対応）
 - ✅ GPU推論サポート（Auto/CPU/GPUCompute/GPUPixel）
-- ✅ マルチプラットフォーム対応（Windows/macOS/Linux）
+- ✅ マルチプラットフォーム対応（Windows/macOS/Linux/Android）
 - ✅ 高度なサンプル実装（ストリーミング、マルチボイス、リアルタイム）
 
 詳細は[CHANGELOG](CHANGELOG.md)および[ロードマップ](docs/ROADMAP.md)を参照してください。
