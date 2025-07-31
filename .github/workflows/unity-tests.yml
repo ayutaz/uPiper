@@ -180,15 +180,25 @@ jobs:
       run: |
         echo "=== Preparing OpenJTalk DLL for Docker environment ==="
         # Docker mounts the project at C:/github/workspace
-        # Copy DLL to ensure it's accessible in the container
+        # Copy DLL to multiple locations to ensure Unity can find it
         
         # Verify source DLL exists
         if [ -f "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" ]; then
           echo "Source DLL found at: Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll"
           
-          # Create additional copy in project root for Docker
+          # Create additional copies for Docker environment
           cp "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" "./openjtalk_wrapper.dll"
           echo "Copied DLL to project root"
+          
+          # Also copy to Assets/Plugins for legacy support
+          mkdir -p "Assets/Plugins/x86_64"
+          cp "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" "Assets/Plugins/x86_64/openjtalk_wrapper.dll"
+          echo "Copied DLL to Assets/Plugins/x86_64"
+          
+          # Copy to Library/ScriptAssemblies (where Unity looks for native libraries)
+          mkdir -p "Library/ScriptAssemblies"
+          cp "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" "Library/ScriptAssemblies/openjtalk_wrapper.dll"
+          echo "Copied DLL to Library/ScriptAssemblies"
           
           # List files to verify
           echo "=== Files in project root ==="
@@ -196,6 +206,9 @@ jobs:
           
           echo "=== Files in plugin directory ==="
           ls -la Assets/uPiper/Plugins/Windows/x86_64/ || true
+          
+          echo "=== Files in Assets/Plugins/x86_64 ==="
+          ls -la Assets/Plugins/x86_64/ || true
         else
           echo "ERROR: Source DLL not found!"
           exit 1

@@ -177,6 +177,15 @@ namespace uPiper.Core.Phonemizers.Implementations
                         $"Dictionary directory not found: {_dictionaryPath}");
                 }
 
+                // Add detailed logging for CI debugging
+                Debug.Log($"[OpenJTalkPhonemizer] Environment info:");
+                Debug.Log($"[OpenJTalkPhonemizer]   UNITY_EDITOR: {UnityEngine.Application.isEditor}");
+                Debug.Log($"[OpenJTalkPhonemizer]   Batch mode: {UnityEngine.Application.isBatchMode}");
+                Debug.Log($"[OpenJTalkPhonemizer]   Platform: {UnityEngine.Application.platform}");
+                Debug.Log($"[OpenJTalkPhonemizer]   Data path: {UnityEngine.Application.dataPath}");
+                Debug.Log($"[OpenJTalkPhonemizer]   Current directory: {System.IO.Directory.GetCurrentDirectory()}");
+                Debug.Log($"[OpenJTalkPhonemizer]   GITHUB_ACTIONS env: {System.Environment.GetEnvironmentVariable("GITHUB_ACTIONS")}");
+
                 try
                 {
 #if ENABLE_PINVOKE
@@ -521,14 +530,15 @@ namespace uPiper.Core.Phonemizers.Implementations
         {
             try
             {
-#if UNITY_EDITOR
-                // In Editor, check if the library file exists
                 var libraryPath = GetExpectedLibraryPath();
                 if (string.IsNullOrEmpty(libraryPath))
                 {
                     Debug.LogError("[OpenJTalkPhonemizer] No library path defined for current platform");
                     return false;
                 }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+                // In Editor or standalone builds, check if the library file exists
 
                 // For bundle format on macOS, check if directory exists
                 var libraryExists = false;
@@ -610,6 +620,28 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         private string GetExpectedLibraryPath()
         {
+            // Check for CI/Docker environment first (regardless of UNITY_EDITOR)
+            if (PlatformHelper.IsWindows && (Application.isBatchMode || Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null))
+            {
+                // CI/Docker environment: Check multiple locations
+                var possiblePaths = new[]
+                {
+                    Path.Combine(Directory.GetCurrentDirectory(), "openjtalk_wrapper.dll"),
+                    Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll"),
+                    Path.Combine(Directory.GetCurrentDirectory(), "Library", "ScriptAssemblies", "openjtalk_wrapper.dll"),
+                    Path.Combine(Application.dataPath, "uPiper", "Plugins", "Windows", "x86_64", "openjtalk_wrapper.dll")
+                };
+
+                foreach (var path in possiblePaths)
+                {
+                    if (File.Exists(path))
+                    {
+                        Debug.Log($"[OpenJTalkPhonemizer] Found library in CI environment: {path}");
+                        return path;
+                    }
+                }
+            }
+
             // In Unity Editor
 #if UNITY_EDITOR
             // First try uPiper/Plugins path
@@ -619,14 +651,6 @@ namespace uPiper.Core.Phonemizers.Implementations
             {
                 var windowsPath = Path.Combine(uPiperPluginsPath, "Windows", "x86_64", "openjtalk_wrapper.dll");
                 if (File.Exists(windowsPath)) return windowsPath;
-
-                // CI/Docker environment: Check project root
-                var projectRootPath = Path.Combine(Directory.GetCurrentDirectory(), "openjtalk_wrapper.dll");
-                if (File.Exists(projectRootPath))
-                {
-                    Debug.Log($"[OpenJTalkPhonemizer] Found library in project root (CI environment): {projectRootPath}");
-                    return projectRootPath;
-                }
 
                 // Fallback to old path
                 return Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll");
