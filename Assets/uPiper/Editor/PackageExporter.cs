@@ -5,7 +5,6 @@ using UnityEditor;
 using UnityEngine;
 using System.Linq;
 using System.Diagnostics;
-using Newtonsoft.Json;
 
 namespace uPiper.Editor
 {
@@ -235,7 +234,7 @@ namespace uPiper.Editor
                 }
                 
                 var json = File.ReadAllText(PACKAGE_JSON_PATH);
-                return JsonConvert.DeserializeObject<PackageInfo>(json);
+                return JsonUtility.FromJson<PackageInfo>(json);
             }
             catch (Exception ex)
             {
@@ -283,7 +282,7 @@ namespace uPiper.Editor
                 var packageJsonPath = Path.Combine(tempDir, "package.json");
                 if (!File.Exists(packageJsonPath))
                 {
-                    var packageJson = JsonConvert.SerializeObject(packageInfo, Formatting.Indented);
+                    var packageJson = JsonUtility.ToJson(packageInfo, true);
                     File.WriteAllText(packageJsonPath, packageJson);
                 }
                 
@@ -399,32 +398,20 @@ namespace uPiper.Editor
         [System.Serializable]
         private class PackageInfo
         {
-            public string Name { get; set; }
-            public string Version { get; set; }
-            public string DisplayName { get; set; }
-            public string Description { get; set; }
-            public string Unity { get; set; }
-            public string UnityRelease { get; set; }
-            public Dictionary<string, string> Dependencies { get; set; }
-            public string[] Keywords { get; set; }
-            public AuthorInfo Author { get; set; }
-            public SampleInfo[] Samples { get; set; }
-        }
-        
-        [System.Serializable]
-        private class AuthorInfo
-        {
-            public string Name { get; set; }
-            public string Email { get; set; }
-            public string Url { get; set; }
-        }
-        
-        [System.Serializable]
-        private class SampleInfo
-        {
-            public string DisplayName { get; set; }
-            public string Description { get; set; }
-            public string Path { get; set; }
+            public string name;
+            public string version;
+            public string displayName;
+            public string description;
+            public string unity;
+            public string unityRelease;
+            
+            // Properties for compatibility
+            public string Name => name;
+            public string Version => version;
+            public string DisplayName => displayName;
+            public string Description => description;
+            public string Unity => unity;
+            public string UnityRelease => unityRelease;
         }
         
         /// <summary>
