@@ -20,6 +20,13 @@
 * Unity 6000.0.35f1
 * Unity AI Interface (Inference Engine) 2.2.x
 
+## ビルド要件
+
+- **Windows**: Visual Studio 2019以降
+- **macOS**: Xcode 14以降
+- **Linux**: GCC 9以降
+- **Android**: NDK r21以降
+
 ## インストール
 
 ### Unity Package Manager経由（推奨）
@@ -63,10 +70,6 @@
 - mainブランチへのプッシュ時に自動的に全プラットフォーム向けのビルドが実行されます
 - リリースタグ（v*）をプッシュすると、自動的にリリースとパッケージが作成されます
 
-### 手動ビルド
-1. Unity Editorで `uPiper/Build/Configure Build Settings` を実行
-2. `uPiper/Build/Build All Platforms` で全プラットフォームをビルド
-
 ### パッケージエクスポート（開発者向け）
 Unity Editorから手動でパッケージを作成：
 1. `uPiper/Package/Export Unity Package (.unitypackage)` - レガシー形式
@@ -101,13 +104,6 @@ uPiperは、ニューラルネットワークベースの音声合成（VITS）�
 
 詳細な技術情報は[ドキュメント](docs/)を参照してください。
 
-## ビルド要件
-
-- **Windows**: Visual Studio 2019以降
-- **macOS**: Xcode 14以降
-- **Linux**: GCC 9以降
-- **Android**: NDK r21以降
-
 ## GPU推論の使用
 
 uPiperはGPU推論をサポートしており、より高速な音声生成が可能です：
@@ -126,13 +122,13 @@ var config = new PiperConfig
 };
 ```
 
-詳細は[GPU推論ガイド](docs/technical/GPU-INFERENCE-GUIDE.md)を参照してください。
+詳細は[GPU推論ガイド](docs/ja/guides/technical/gpu-inference.md)を参照してください。
 
 ## 実装進捗
 
-### リリース状況
+### 開発状況
 
-**v0.1.0** - Phase 1 完了（2025年1月23日）
+**Phase 1 完了**（2025年1月23日）
 - ✅ Core API実装とテスト（250+テスト）
 - ✅ OpenJTalk統合による高精度日本語音素化
 - ✅ Unity.InferenceEngineによるONNX推論
@@ -141,11 +137,15 @@ var config = new PiperConfig
 - ✅ マルチプラットフォーム対応（Windows/macOS/Linux/Android）
 - ✅ 高度なサンプル実装（ストリーミング、マルチボイス、リアルタイム）
 
-詳細は[開発ログ](DEVELOPMENT_LOG.md)および[ロードマップ](docs/ROADMAP.md)を参照してください。
+詳細は[開発ログ](DEVELOPMENT_LOG.md)を参照してください。
 
 ## ライセンス
 
-### フォント
+このプロジェクトは Apache License 2.0 の下でライセンスされています。詳細は [LICENSE](LICENSE) ファイルを参照してください。
+
+### サードパーティライセンス
+
+#### フォント
 - **Noto Sans Japanese**: SIL Open Font License, Version 1.1
   - Copyright 2014-2021 Adobe (http://www.adobe.com/)
   - TextMeshProでの日本語表示に使用
