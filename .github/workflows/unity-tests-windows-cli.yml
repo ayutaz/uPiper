@@ -78,27 +78,38 @@ jobs:
         Write-Host "Installing Unity 6000.0.35f1..."
         & "${env:ProgramFiles}\Unity Hub\Unity Hub.exe" -- --headless install --version 6000.0.35f1 --changeset bb8081de9a21 --module windows-il2cpp
         
-        # Wait for installation
-        Start-Sleep -Seconds 30
+        # Wait for installation (Unity Editor installation takes several minutes)
+        Write-Host "Waiting for Unity installation to complete (this may take 5-10 minutes)..."
+        Start-Sleep -Seconds 300
+        
+        # Check Unity Hub installations
+        Write-Host "Checking Unity Hub installations..."
+        & "${env:ProgramFiles}\Unity Hub\Unity Hub.exe" -- --headless editors -i
         
         # Verify installation
-        $unityPath = "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe"
-        if (Test-Path $unityPath) {
-          Write-Host "Unity installed successfully at: $unityPath"
-        } else {
-          Write-Host "Unity installation failed. Checking alternative paths..."
-          # Check alternative paths
-          $altPaths = @(
-            "${env:ProgramFiles}\Unity\6000.0.35f1\Editor\Unity.exe",
-            "${env:ProgramFiles(x86)}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
-            "C:\Program Files\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe"
-          )
-          foreach ($path in $altPaths) {
-            if (Test-Path $path) {
-              Write-Host "Unity found at: $path"
-              break
-            }
+        $unityPaths = @(
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles(x86)}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Editor\6000.0.35f1\Editor\Unity.exe"
+        )
+        
+        $foundUnity = $false
+        foreach ($path in $unityPaths) {
+          if (Test-Path $path) {
+            Write-Host "Unity found at: $path"
+            $foundUnity = $true
+            break
           }
+        }
+        
+        if (-not $foundUnity) {
+          Write-Host "Unity installation failed or still in progress."
+          Write-Host "Checking common Unity installation directories:"
+          Get-ChildItem -Path "C:\Program Files\Unity" -ErrorAction SilentlyContinue
+          Get-ChildItem -Path "${env:ProgramFiles}\Unity" -ErrorAction SilentlyContinue
+          exit 1
         }
         
     - name: Activate Unity License

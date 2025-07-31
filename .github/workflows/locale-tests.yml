@@ -184,8 +184,9 @@ jobs:
         Write-Host "Installing Unity 6000.0.35f1..."
         & "${env:ProgramFiles}\Unity Hub\Unity Hub.exe" -- --headless install --version 6000.0.35f1 --changeset bb8081de9a21
         
-        # Wait for installation
-        Start-Sleep -Seconds 30
+        # Wait for installation (Unity Editor installation takes several minutes)
+        Write-Host "Waiting for Unity installation to complete (this may take 5-10 minutes)..."
+        Start-Sleep -Seconds 300
         
     - name: Activate Unity License (Windows)
       if: matrix.os == 'windows-latest'
