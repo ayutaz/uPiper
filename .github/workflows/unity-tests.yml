@@ -823,10 +823,16 @@ jobs:
       run: |
         echo "Installing Unity Hub for macOS..."
         # Download Unity Hub
-        curl -L -o UnityHub.pkg "https://public-cdn.cloud.unity3d.com/hub/prod/UnityHub.pkg"
+        curl -L -o UnityHub.dmg "https://public-cdn.cloud.unity3d.com/hub/prod/UnityHubSetup.dmg"
         
-        # Install Unity Hub
-        sudo installer -pkg UnityHub.pkg -target /
+        # Mount the DMG
+        hdiutil attach UnityHub.dmg
+        
+        # Copy Unity Hub to Applications
+        sudo cp -R "/Volumes/Unity Hub/Unity Hub.app" /Applications/
+        
+        # Unmount the DMG
+        hdiutil detach "/Volumes/Unity Hub"
         
         # Add Unity Hub to PATH
         export PATH="/Applications/Unity Hub.app/Contents/MacOS:$PATH"
