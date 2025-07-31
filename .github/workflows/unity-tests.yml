@@ -789,6 +789,7 @@ jobs:
   macos-unity-test:
     name: Unity Test Runner - macOS (Native)
     runs-on: macos-latest
+    timeout-minutes: 60  # タイムアウトを60分に設定
     permissions:
       contents: read
       checks: write
@@ -832,6 +833,18 @@ jobs:
         cd NativePlugins/OpenJTalk/build
         # Run all native tests
         ctest --output-on-failure -V
+        
+    # Unity Hubとエディターのキャッシュ
+    - name: Cache Unity
+      uses: actions/cache@v4
+      with:
+        path: |
+          /Applications/Unity*
+          ~/Library/Unity*
+        key: unity-macos-6000.0.35f1-${{ runner.os }}
+        restore-keys: |
+          unity-macos-6000.0.35f1-
+          unity-macos-
         
     - name: Install Unity Hub
       run: |
