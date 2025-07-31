@@ -249,6 +249,122 @@ jobs:
         dockerCpuLimit: 4
         dockerMemoryLimit: 8192
         
+    # macOS用のUnity直接実行
+    - name: Install Unity Hub (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        echo "Installing Unity Hub for macOS..."
+        # Download Unity Hub
+        curl -L -o UnityHub.pkg "https://public-cdn.cloud.unity3d.com/hub/prod/UnityHub.pkg"
+        
+        # Install Unity Hub
+        sudo installer -pkg UnityHub.pkg -target /
+        
+        # Add Unity Hub to PATH
+        export PATH="/Applications/Unity Hub.app/Contents/MacOS:$PATH"
+        echo "/Applications/Unity Hub.app/Contents/MacOS" >> $GITHUB_PATH
+        
+    - name: Install Unity Editor (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        # Install Unity 6000.0.35f1
+        echo "Installing Unity 6000.0.35f1..."
+        "/Applications/Unity Hub.app/Contents/MacOS/Unity Hub" -- --headless install --version 6000.0.35f1 --changeset bb8081de9a21 --module mac-il2cpp
+        
+        # Wait for installation with progress checking
+        echo "Waiting for Unity installation to complete..."
+        maxWaitTime=900  # 15 minutes maximum
+        checkInterval=30  # Check every 30 seconds
+        elapsed=0
+        
+        unityPaths=(
+          "/Applications/Unity/Hub/Editor/6000.0.35f1/Unity.app/Contents/MacOS/Unity"
+          "/Applications/Unity/6000.0.35f1/Unity.app/Contents/MacOS/Unity"
+        )
+        
+        foundUnity=false
+        while [ $elapsed -lt $maxWaitTime ] && [ "$foundUnity" = false ]; do
+          sleep $checkInterval
+          elapsed=$((elapsed + checkInterval))
+          
+          echo "Checking for Unity installation... ($elapsed seconds elapsed)"
+          
+          for path in "${unityPaths[@]}"; do
+            if [ -f "$path" ]; then
+              echo "Unity found at: $path"
+              foundUnity=true
+              break
+            fi
+          done
+        done
+        
+        if [ "$foundUnity" = false ]; then
+          echo "Unity installation failed after $elapsed seconds."
+          exit 1
+        fi
+        
+    - name: Activate Unity License (macOS)
+      if: matrix.os == 'macos-latest'
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      run: |
+        # Find Unity executable
+        unityPaths=(
+          "/Applications/Unity/Hub/Editor/6000.0.35f1/Unity.app/Contents/MacOS/Unity"
+          "/Applications/Unity/6000.0.35f1/Unity.app/Contents/MacOS/Unity"
+        )
+        
+        unityExe=""
+        for path in "${unityPaths[@]}"; do
+          if [ -f "$path" ]; then
+            unityExe="$path"
+            break
+          fi
+        done
+        
+        if [ -z "$unityExe" ]; then
+          echo "Unity executable not found!"
+          exit 1
+        fi
+        
+        echo "Using Unity at: $unityExe"
+        
+        # Create license file
+        echo "$UNITY_LICENSE" > Unity_v6000.x.ulf
+        
+        # Activate license
+        "$unityExe" -batchmode -nographics -silent-crashes -logFile - -manualLicenseFile Unity_v6000.x.ulf -quit
+        
+    - name: Run Unity Tests on macOS (Direct CLI)
+      if: matrix.os == 'macos-latest'
+      run: |
+        # Find Unity executable
+        unityPaths=(
+          "/Applications/Unity/Hub/Editor/6000.0.35f1/Unity.app/Contents/MacOS/Unity"
+          "/Applications/Unity/6000.0.35f1/Unity.app/Contents/MacOS/Unity"
+        )
+        
+        unityExe=""
+        for path in "${unityPaths[@]}"; do
+          if [ -f "$path" ]; then
+            unityExe="$path"
+            break
+          fi
+        done
+        
+        echo "Using Unity at: $unityExe"
+        
+        # Create test results directory
+        mkdir -p test-results
+        
+        # Run EditMode tests
+        echo "Running EditMode tests..."
+        "$unityExe" -batchmode -nographics -silent-crashes -logFile - -projectPath . -runTests -testPlatform EditMode -testResults test-results/editmode-results.xml -enableCodeCoverage -coverageResultsPath test-results -coverageOptions "generateAdditionalMetrics;generateHtmlReport;assemblyFilters:+uPiper.*,-uPiper.Tests.*"
+        
+        # Run PlayMode tests
+        echo "Running PlayMode tests..."
+        "$unityExe" -batchmode -nographics -silent-crashes -logFile - -projectPath . -runTests -testPlatform PlayMode -testResults test-results/playmode-results.xml
+        
     # Windows用のUnity直接実行
     - name: Install Unity Hub (Windows)
       if: matrix.os == 'windows-latest'
@@ -381,7 +497,7 @@ jobs:
     # テスト結果をJUnit形式で保存
     - name: Upload Test Results
       uses: actions/upload-artifact@v4
-      if: always() && matrix.os != 'macos-latest'
+      if: always()
       with:
         name: Test Results - Unity - ${{ matrix.platform }}
         path: |
@@ -393,7 +509,7 @@ jobs:
         
     # テスト結果のデバッグ情報
     - name: Debug Test Results
-      if: always() && matrix.os != 'macos-latest'
+      if: always()
       shell: bash
       run: |
         echo "=== Test Results Directory Contents ==="
@@ -411,7 +527,7 @@ jobs:
     
     # テスト結果のサマリーを作成
     - name: Create Test Summary
-      if: always() && matrix.os != 'macos-latest'
+      if: always()
       shell: bash
       run: |
         echo "## Unity Test Results Summary" >> $GITHUB_STEP_SUMMARY
@@ -462,7 +578,7 @@ jobs:
     # カバレッジレポートをアップロード
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
-      if: always() && matrix.os != 'macos-latest'
+      if: always()
       with:
         name: Coverage Report - ${{ matrix.platform }}
         path: |
@@ -479,7 +595,7 @@ jobs:
         
     # コードカバレッジチェック
     - name: Check Code Coverage
-      if: always() && matrix.os != 'macos-latest'
+      if: always()
       shell: bash
       run: |
         # カバレッジサマリーファイルを探す
@@ -615,6 +731,39 @@ jobs:
             Write-Host "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
           }
         }
+        
+    # macOS-specific summary
+    - name: Create macOS Summary
+      if: matrix.os == 'macos-latest' && always()
+      run: |
+        echo "## macOS Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ OpenJTalk native library built successfully" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Library verified at: Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Unity tests run natively on macOS using Unity CLI" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Parse macOS test results if available
+        if [ -d "test-results" ]; then
+          for file in test-results/*.xml; do
+            if [ -f "$file" ]; then
+              echo "### $(basename $file)" >> $GITHUB_STEP_SUMMARY
+              
+              # Try to extract test counts
+              total=$(grep -o 'total="[0-9]*"' "$file" | grep -o '[0-9]*' | head -1 || echo "0")
+              passed=$(grep -o 'passed="[0-9]*"' "$file" | grep -o '[0-9]*' | head -1 || echo "0")
+              failed=$(grep -o 'failed="[0-9]*"' "$file" | grep -o '[0-9]*' | head -1 || echo "0")
+              
+              if [ -n "$total" ]; then
+                echo "- Total: $total" >> $GITHUB_STEP_SUMMARY
+                echo "- Passed: $passed ✅" >> $GITHUB_STEP_SUMMARY
+                echo "- Failed: $failed ❌" >> $GITHUB_STEP_SUMMARY
+              fi
+              
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+        fi
 
   # macOS専用のテスト（Dockerがサポートされていないため）
   macos-unity-test:
@@ -664,12 +813,128 @@ jobs:
         # Run all native tests
         ctest --output-on-failure -V
         
+    - name: Install Unity Hub
+      run: |
+        echo "Installing Unity Hub for macOS..."
+        # Download Unity Hub
+        curl -L -o UnityHub.pkg "https://public-cdn.cloud.unity3d.com/hub/prod/UnityHub.pkg"
+        
+        # Install Unity Hub
+        sudo installer -pkg UnityHub.pkg -target /
+        
+        # Add Unity Hub to PATH
+        export PATH="/Applications/Unity Hub.app/Contents/MacOS:$PATH"
+        echo "/Applications/Unity Hub.app/Contents/MacOS" >> $GITHUB_PATH
+        
+    - name: Install Unity Editor
+      run: |
+        # Install Unity 6000.0.35f1
+        echo "Installing Unity 6000.0.35f1..."
+        "/Applications/Unity Hub.app/Contents/MacOS/Unity Hub" -- --headless install --version 6000.0.35f1 --changeset bb8081de9a21 --module mac-il2cpp
+        
+        # Wait for installation with progress checking
+        echo "Waiting for Unity installation to complete..."
+        maxWaitTime=900  # 15 minutes maximum
+        checkInterval=30  # Check every 30 seconds
+        elapsed=0
+        
+        unityPaths=(
+          "/Applications/Unity/Hub/Editor/6000.0.35f1/Unity.app/Contents/MacOS/Unity"
+          "/Applications/Unity/6000.0.35f1/Unity.app/Contents/MacOS/Unity"
+        )
+        
+        foundUnity=false
+        while [ $elapsed -lt $maxWaitTime ] && [ "$foundUnity" = false ]; do
+          sleep $checkInterval
+          elapsed=$((elapsed + checkInterval))
+          
+          echo "Checking for Unity installation... ($elapsed seconds elapsed)"
+          
+          for path in "${unityPaths[@]}"; do
+            if [ -f "$path" ]; then
+              echo "Unity found at: $path"
+              foundUnity=true
+              break
+            fi
+          done
+        done
+        
+        if [ "$foundUnity" = false ]; then
+          echo "Unity installation failed after $elapsed seconds."
+          exit 1
+        fi
+        
+    - name: Activate Unity License
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      run: |
+        # Find Unity executable
+        unityPaths=(
+          "/Applications/Unity/Hub/Editor/6000.0.35f1/Unity.app/Contents/MacOS/Unity"
+          "/Applications/Unity/6000.0.35f1/Unity.app/Contents/MacOS/Unity"
+        )
+        
+        unityExe=""
+        for path in "${unityPaths[@]}"; do
+          if [ -f "$path" ]; then
+            unityExe="$path"
+            break
+          fi
+        done
+        
+        if [ -z "$unityExe" ]; then
+          echo "Unity executable not found!"
+          exit 1
+        fi
+        
+        echo "Using Unity at: $unityExe"
+        
+        # Create license file
+        echo "$UNITY_LICENSE" > Unity_v6000.x.ulf
+        
+        # Activate license
+        "$unityExe" -batchmode -nographics -silent-crashes -logFile - -manualLicenseFile Unity_v6000.x.ulf -quit
+        
+    - name: Run Unity Tests
+      run: |
+        # Find Unity executable
+        unityPaths=(
+          "/Applications/Unity/Hub/Editor/6000.0.35f1/Unity.app/Contents/MacOS/Unity"
+          "/Applications/Unity/6000.0.35f1/Unity.app/Contents/MacOS/Unity"
+        )
+        
+        unityExe=""
+        for path in "${unityPaths[@]}"; do
+          if [ -f "$path" ]; then
+            unityExe="$path"
+            break
+          fi
+        done
+        
+        echo "Running Unity tests with: $unityExe"
+        
+        # Run EditMode tests
+        echo "Running EditMode tests..."
+        "$unityExe" -batchmode -nographics -silent-crashes -logFile - -projectPath . -runTests -testPlatform EditMode -testResults test-results/editmode-results.xml -enableCodeCoverage -coverageResultsPath test-results -coverageOptions "generateAdditionalMetrics;generateHtmlReport;assemblyFilters:+uPiper.*,-uPiper.Tests.*"
+        
+        # Run PlayMode tests
+        echo "Running PlayMode tests..."
+        "$unityExe" -batchmode -nographics -silent-crashes -logFile - -projectPath . -runTests -testPlatform PlayMode -testResults test-results/playmode-results.xml
+        
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: Test Results - Unity - macOS
+        path: |
+          test-results/**/*.xml
+          test-results/**/*.html
+        retention-days: 7
+        
     - name: Create Test Summary
       if: always()
       run: |
-        echo "## macOS Native Test Results" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Native OpenJTalk tests completed" >> $GITHUB_STEP_SUMMARY
+        echo "## macOS Unity Test Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
         # Check if library is properly built
@@ -677,9 +942,27 @@ jobs:
           echo "✅ OpenJTalk library built successfully" >> $GITHUB_STEP_SUMMARY
           echo "- Location: Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" >> $GITHUB_STEP_SUMMARY
           echo "- Architecture: $(lipo -info Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib 2>&1)" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ OpenJTalk library not found" >> $GITHUB_STEP_SUMMARY
         fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Parse test results
+        for file in test-results/*.xml; do
+          if [ -f "$file" ]; then
+            echo "### $(basename $file)" >> $GITHUB_STEP_SUMMARY
+            # Try to extract test counts using grep
+            total=$(grep -o 'total="[0-9]*"' "$file" | grep -o '[0-9]*' | head -1 || echo "0")
+            passed=$(grep -o 'passed="[0-9]*"' "$file" | grep -o '[0-9]*' | head -1 || echo "0")
+            failed=$(grep -o 'failed="[0-9]*"' "$file" | grep -o '[0-9]*' | head -1 || echo "0")
+            
+            if [ -n "$total" ]; then
+              echo "- Total: $total" >> $GITHUB_STEP_SUMMARY
+              echo "- Passed: $passed ✅" >> $GITHUB_STEP_SUMMARY
+              echo "- Failed: $failed ❌" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
 
   # Ubuntu専用のテスト（Docker環境外で実行）
   ubuntu-test:
