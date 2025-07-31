@@ -14,7 +14,7 @@ namespace uPiper.Editor
     {
         private const string ScenePath = "Assets/uPiper/Scenes/InferenceEngineDemo.unity";
 
-        [MenuItem("uPiper/Scenes/Open Inference Demo Scene")]
+        [MenuItem("uPiper/Demo/Open Inference Demo Scene", false, 100)]
         public static void OpenDemoScene()
         {
             // シーンが存在しない場合は作成
@@ -32,7 +32,7 @@ namespace uPiper.Editor
             }
         }
 
-        [MenuItem("uPiper/Scenes/Create Inference Demo Scene")]
+        [MenuItem("uPiper/Demo/Create Inference Demo Scene", false, 101)]
         public static void CreateDemoScene()
         {
             // 新しいシーンを作成

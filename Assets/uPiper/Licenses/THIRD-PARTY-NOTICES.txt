@@ -1,0 +1,108 @@
+================================================================================
+                        THIRD-PARTY SOFTWARE NOTICES
+================================================================================
+
+This software includes third-party components with the following licenses:
+
+================================================================================
+1. OpenJTalk
+================================================================================
+License: Modified BSD License
+Copyright (c) 2008-2016  Nagoya Institute of Technology
+                         Department of Computer Science
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of the Nagoya Institute of Technology nor the names of its
+  contributors may be used to endorse or promote products derived from this
+  software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+================================================================================
+2. CMU Pronouncing Dictionary
+================================================================================
+License: BSD-style License
+Copyright (C) 1993-2015 Carnegie Mellon University. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+   The contents of this file are deemed to be source code.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+This work was supported in part by funding from the Defense Advanced Research
+Projects Agency, the Office of Naval Research and the National Science
+Foundation of the United States of America, and by member companies of the
+Carnegie Mellon Sphinx Speech Consortium. We acknowledge the contributions of
+many volunteers to the expansion and improvement of this dictionary.
+
+THIS SOFTWARE IS PROVIDED BY CARNEGIE MELLON UNIVERSITY ``AS IS'' AND ANY
+EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY NOR ITS EMPLOYEES BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+================================================================================
+3. OpenPhonemizer (予定)
+================================================================================
+License: BSD 3-Clause Clear License
+[License text will be added when integrated]
+
+================================================================================
+4. Flite - Festival Lite (予定)
+================================================================================
+License: MIT-CMU License
+[License text will be added when integrated]
+
+================================================================================
+5. pypinyin (予定)
+================================================================================
+License: MIT License
+[License text will be added when integrated]
+
+================================================================================
+6. IndicXlit (予定)
+================================================================================
+License: MIT License
+[License text will be added when integrated]
+
+================================================================================
+7. bnbphoneticparser (予定)
+================================================================================
+License: MIT License
+[License text will be added when integrated]
+
+================================================================================
+
+For questions about these licenses, please refer to the individual project
+repositories or contact the respective copyright holders.
+
+This software (uPiper) itself is distributed under its own license terms.
+Please see the LICENSE file in the root directory for details.

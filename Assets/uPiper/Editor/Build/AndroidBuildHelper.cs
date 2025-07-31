@@ -14,8 +14,8 @@ namespace uPiper.Editor.Build
         {
             Debug.Log("[uPiper] Setting up Android native libraries...");
 
-            string sourceDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../../NativePlugins/OpenJTalk/output/android"));
-            string targetDir = Path.Combine(Application.dataPath, "uPiper/Plugins/Android/libs");
+            var sourceDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../../NativePlugins/OpenJTalk/output/android"));
+            var targetDir = Path.Combine(Application.dataPath, "uPiper/Plugins/Android/libs");
 
             if (!Directory.Exists(sourceDir))
             {
@@ -32,12 +32,12 @@ namespace uPiper.Editor.Build
 
             // Copy libraries for each ABI
             string[] abis = { "arm64-v8a", "armeabi-v7a", "x86", "x86_64" };
-            int copiedCount = 0;
+            var copiedCount = 0;
 
             foreach (var abi in abis)
             {
-                string sourceAbiDir = Path.Combine(sourceDir, abi);
-                string targetAbiDir = Path.Combine(targetDir, abi);
+                var sourceAbiDir = Path.Combine(sourceDir, abi);
+                var targetAbiDir = Path.Combine(targetDir, abi);
 
                 if (Directory.Exists(sourceAbiDir))
                 {
@@ -46,8 +46,8 @@ namespace uPiper.Editor.Build
                         Directory.CreateDirectory(targetAbiDir);
                     }
 
-                    string sourceLib = Path.Combine(sourceAbiDir, "libopenjtalk_wrapper.so");
-                    string targetLib = Path.Combine(targetAbiDir, "libopenjtalk_wrapper.so");
+                    var sourceLib = Path.Combine(sourceAbiDir, "libopenjtalk_wrapper.so");
+                    var targetLib = Path.Combine(targetAbiDir, "libopenjtalk_wrapper.so");
 
                     if (File.Exists(sourceLib))
                     {
@@ -83,10 +83,10 @@ namespace uPiper.Editor.Build
 
         private static void SetAndroidPluginSettings(string libraryPath, string abi)
         {
-            string assetPath = "Assets" + libraryPath.Substring(Application.dataPath.Length).Replace('\\', '/');
+            var assetPath = "Assets" + libraryPath[Application.dataPath.Length..].Replace('\\', '/');
 
             AssetDatabase.ImportAsset(assetPath);
-            PluginImporter importer = AssetImporter.GetAtPath(assetPath) as PluginImporter;
+            var importer = AssetImporter.GetAtPath(assetPath) as PluginImporter;
 
             if (importer != null)
             {
@@ -102,19 +102,14 @@ namespace uPiper.Editor.Build
 
         private static string GetCPUFromABI(string abi)
         {
-            switch (abi)
+            return abi switch
             {
-                case "arm64-v8a":
-                    return "ARM64";
-                case "armeabi-v7a":
-                    return "ARMv7";
-                case "x86":
-                    return "X86";
-                case "x86_64":
-                    return "X86_64";
-                default:
-                    return "AnyCPU";
-            }
+                "arm64-v8a" => "ARM64",
+                "armeabi-v7a" => "ARMv7",
+                "x86" => "X86",
+                "x86_64" => "X86_64",
+                _ => "AnyCPU",
+            };
         }
 
         [MenuItem("uPiper/Android/Verify Android Setup")]
@@ -122,10 +117,10 @@ namespace uPiper.Editor.Build
         {
             Debug.Log("[uPiper] Verifying Android setup...");
 
-            bool hasIssues = false;
+            var hasIssues = false;
 
             // Check native libraries
-            string pluginsPath = Path.Combine(Application.dataPath, "uPiper/Plugins/Android/libs");
+            var pluginsPath = Path.Combine(Application.dataPath, "uPiper/Plugins/Android/libs");
             if (!Directory.Exists(pluginsPath))
             {
                 Debug.LogError("[uPiper] Android plugins directory not found.");
@@ -136,7 +131,7 @@ namespace uPiper.Editor.Build
                 string[] abis = { "arm64-v8a", "armeabi-v7a", "x86", "x86_64" };
                 foreach (var abi in abis)
                 {
-                    string libPath = Path.Combine(pluginsPath, abi, "libopenjtalk_wrapper.so");
+                    var libPath = Path.Combine(pluginsPath, abi, "libopenjtalk_wrapper.so");
                     if (File.Exists(libPath))
                     {
                         var fileInfo = new FileInfo(libPath);
@@ -151,7 +146,7 @@ namespace uPiper.Editor.Build
             }
 
             // Check AndroidManifest.xml
-            string manifestPath = Path.Combine(Application.dataPath, "uPiper/Plugins/Android/AndroidManifest.xml");
+            var manifestPath = Path.Combine(Application.dataPath, "uPiper/Plugins/Android/AndroidManifest.xml");
             if (File.Exists(manifestPath))
             {
                 Debug.Log("[uPiper] ✓ AndroidManifest.xml found");
@@ -163,7 +158,7 @@ namespace uPiper.Editor.Build
             }
 
             // Check dictionary in StreamingAssets
-            string dictPath = Path.Combine(Application.streamingAssetsPath, "uPiper/OpenJTalk/open_jtalk_dic_utf_8-1.11");
+            var dictPath = Path.Combine(Application.streamingAssetsPath, "uPiper/OpenJTalk/open_jtalk_dic_utf_8-1.11");
             if (Directory.Exists(dictPath))
             {
                 Debug.Log("[uPiper] ✓ OpenJTalk dictionary found in StreamingAssets");

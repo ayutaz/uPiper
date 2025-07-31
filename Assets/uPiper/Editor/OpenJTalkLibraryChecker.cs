@@ -21,16 +21,16 @@ namespace uPiper.Editor
             Debug.Log("=== OpenJTalk Library Check ===");
 
             // Check library files
-            string pluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins", "macOS");
+            var pluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins", "macOS");
             Debug.Log($"Plugins path: {pluginsPath}");
 
             if (Directory.Exists(pluginsPath))
             {
-                string[] files = Directory.GetFiles(pluginsPath, "*.dylib");
-                foreach (string file in files)
+                var files = Directory.GetFiles(pluginsPath, "*.dylib");
+                foreach (var file in files)
                 {
                     Debug.Log($"Found library: {Path.GetFileName(file)}");
-                    FileInfo fi = new FileInfo(file);
+                    var fi = new FileInfo(file);
                     Debug.Log($"  Size: {fi.Length} bytes");
                     Debug.Log($"  Last modified: {fi.LastWriteTime}");
                 }
@@ -44,10 +44,10 @@ namespace uPiper.Editor
             Debug.Log("\nAttempting to call native function...");
             try
             {
-                IntPtr versionPtr = openjtalk_get_version();
+                var versionPtr = openjtalk_get_version();
                 if (versionPtr != IntPtr.Zero)
                 {
-                    string version = Marshal.PtrToStringAnsi(versionPtr);
+                    var version = Marshal.PtrToStringAnsi(versionPtr);
                     Debug.Log($"SUCCESS: OpenJTalk version: {version}");
                 }
                 else
@@ -75,16 +75,16 @@ namespace uPiper.Editor
 
             // Check dictionary
             Debug.Log("\n=== Dictionary Check ===");
-            string dictPath = Path.Combine(Application.dataPath, "uPiper", "Native", "OpenJTalk", "test_dictionary");
+            var dictPath = Path.Combine(Application.dataPath, "uPiper", "Native", "OpenJTalk", "test_dictionary");
             if (Directory.Exists(dictPath))
             {
                 Debug.Log($"Test dictionary found at: {dictPath}");
-                foreach (string file in OpenJTalkConstants.RequiredDictionaryFiles)
+                foreach (var file in OpenJTalkConstants.RequiredDictionaryFiles)
                 {
-                    string filePath = Path.Combine(dictPath, file);
+                    var filePath = Path.Combine(dictPath, file);
                     if (File.Exists(filePath))
                     {
-                        FileInfo fi = new FileInfo(filePath);
+                        var fi = new FileInfo(filePath);
                         Debug.Log($"  {file}: {fi.Length} bytes");
                     }
                     else

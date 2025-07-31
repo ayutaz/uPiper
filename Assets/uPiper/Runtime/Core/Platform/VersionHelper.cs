@@ -21,7 +21,7 @@ namespace uPiper.Core.Platform
 
             // Match pattern like "2.0.0", "3.1.2", "2.0.0-full", etc.
             var match = Regex.Match(versionString, @"^(\d+)\.(\d+)");
-            if (match.Success && int.TryParse(match.Groups[1].Value, out int majorVersion))
+            if (match.Success && int.TryParse(match.Groups[1].Value, out var majorVersion))
             {
                 return majorVersion;
             }
@@ -56,19 +56,19 @@ namespace uPiper.Core.Platform
             if (!match.Success)
                 return null;
 
-            if (!int.TryParse(match.Groups[1].Value, out int major))
+            if (!int.TryParse(match.Groups[1].Value, out var major))
                 return null;
 
-            if (!int.TryParse(match.Groups[2].Value, out int minor))
+            if (!int.TryParse(match.Groups[2].Value, out var minor))
                 return null;
 
-            int patch = 0;
+            var patch = 0;
             if (!string.IsNullOrEmpty(match.Groups[3].Value))
             {
                 int.TryParse(match.Groups[3].Value, out patch);
             }
 
-            string suffix = match.Groups[4].Value;
+            var suffix = match.Groups[4].Value;
             if (string.IsNullOrEmpty(suffix))
                 suffix = null;
 

@@ -188,12 +188,12 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             var itemCount = 100;
 
             // Multiple threads adding items
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
                 var threadId = i;
                 tasks.Add(Task.Run(() =>
                 {
-                    for (int j = 0; j < itemCount; j++)
+                    for (var j = 0; j < itemCount; j++)
                     {
                         _cache.Add($"thread{threadId}_item{j}", $"value_{threadId}_{j}");
                     }
@@ -201,11 +201,11 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             }
 
             // Multiple threads reading items
-            for (int i = 0; i < 5; i++)
+            for (var i = 0; i < 5; i++)
             {
                 tasks.Add(Task.Run(() =>
                 {
-                    for (int j = 0; j < itemCount * 10; j++)
+                    for (var j = 0; j < itemCount * 10; j++)
                     {
                         _cache.TryGet($"thread{j % 10}_item{j % itemCount}", out _);
                     }
@@ -267,7 +267,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
 
             // Prepare cache with data and pre-create test keys
             var testKeys = new string[100];
-            for (int i = 0; i < 500; i++)
+            for (var i = 0; i < 500; i++)
             {
                 largeCache.Add($"key{i}", $"value{i}");
                 if (i < 100)
@@ -279,14 +279,14 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             try
             {
                 // Warm up the cache
-                for (int warm = 0; warm < 10; warm++)
+                for (var warm = 0; warm < 10; warm++)
                 {
                     largeCache.TryGet(testKeys[0], out _);
                 }
 
                 // Measure performance
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-                for (int i = 0; i < 10000; i++)
+                for (var i = 0; i < 10000; i++)
                 {
                     largeCache.TryGet(testKeys[i % 100], out _);
                 }
@@ -309,7 +309,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
 
             // Prepare cache with data and pre-create test keys
             var testKeys = new string[100];
-            for (int i = 0; i < 500; i++)
+            for (var i = 0; i < 500; i++)
             {
                 largeCache.Add($"key{i}", $"value{i}");
                 if (i < 100)
@@ -321,15 +321,15 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             try
             {
                 // Warm up the cache
-                for (int warm = 0; warm < 10; warm++)
+                for (var warm = 0; warm < 10; warm++)
                 {
                     largeCache.ContainsKey(testKeys[0]);
                 }
 
                 // Measure performance
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-                int foundCount = 0;
-                for (int i = 0; i < 10000; i++)
+                var foundCount = 0;
+                for (var i = 0; i < 10000; i++)
                 {
                     if (largeCache.ContainsKey(testKeys[i % 100]))
                     {
@@ -355,7 +355,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             var largeCache = new LRUCache<string, string>(1000);
 
             // Prepare cache with data
-            for (int i = 0; i < 500; i++)
+            for (var i = 0; i < 500; i++)
             {
                 largeCache.Add($"key{i}", $"value{i}");
             }

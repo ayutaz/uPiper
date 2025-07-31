@@ -8,6 +8,7 @@ using UnityEngine;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Core
@@ -24,7 +25,7 @@ namespace uPiper.Core
         private string _currentVoiceId;
         private bool _isInitialized;
         private bool _isDisposed;
-        private readonly object _lockObject = new object();
+        private readonly object _lockObject = new();
 
         // Event backing fields
         private event Action<bool> _onInitialized;
@@ -327,17 +328,10 @@ namespace uPiper.Core
                 PiperLogger.LogInfo("Loading voice: {0}", voice.VoiceId);
 
                 // Load model asset
-                var modelAsset = Resources.Load<ModelAsset>($"Models/{voice.VoiceId}");
-                if (modelAsset == null)
-                {
-                    throw new PiperException($"Model asset not found: Models/{voice.VoiceId}");
-                }
+                var modelAsset = Resources.Load<ModelAsset>($"Models/{voice.VoiceId}") ?? throw new PiperException($"Model asset not found: Models/{voice.VoiceId}");
 
                 // Initialize audio generator if not already done
-                if (_inferenceGenerator == null)
-                {
-                    _inferenceGenerator = new InferenceAudioGenerator();
-                }
+                _inferenceGenerator ??= new InferenceAudioGenerator();
 
                 // Initialize the audio generator with the model and config
                 // Note: IInferenceAudioGenerator interface only supports 3 parameters
@@ -352,10 +346,7 @@ namespace uPiper.Core
                 lock (_lockObject)
                 {
                     _voices[voice.VoiceId] = voice;
-                    if (_currentVoiceId == null)
-                    {
-                        _currentVoiceId = voice.VoiceId;
-                    }
+                    _currentVoiceId ??= voice.VoiceId;
                 }
 
                 PiperLogger.LogInfo("Voice loaded successfully: {0}", voice.VoiceId);
@@ -483,7 +474,7 @@ namespace uPiper.Core
             {
                 IsProcessing = true;
                 PiperLogger.LogInfo("Generating audio for text: \"{0}\" (length: {1})",
-                    text.Length > 50 ? text.Substring(0, 50) + "..." : text,
+                    text.Length > 50 ? text[..50] + "..." : text,
                     text.Length);
 
                 // Report initial progress
@@ -711,7 +702,7 @@ namespace uPiper.Core
 
                     // Create a dummy audio chunk
                     var audioData = new float[_config.SampleRate / 10]; // 0.1 second of audio
-                    for (int i = 0; i < audioData.Length; i++)
+                    for (var i = 0; i < audioData.Length; i++)
                     {
                         audioData[i] = 0f; // Silence for now
                     }
@@ -1285,7 +1276,7 @@ namespace uPiper.Core
             var sentenceEnders = new[] { '.', '!', '?', '。', '！', '？' };
             var currentSentence = new System.Text.StringBuilder();
 
-            foreach (char c in text)
+            foreach (var c in text)
             {
                 currentSentence.Append(c);
 

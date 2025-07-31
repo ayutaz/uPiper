@@ -1,0 +1,135 @@
+# Spanish Pronunciation Dictionary (Sample)
+# Format: WORD[TAB]PHONEME1 PHONEME2 ...
+# Using Spanish IPA phonemes
+# This is a sample dictionary for development/testing
+
+# Common words
+HOLA	o l a
+MUNDO	m u n d o
+BUENOS	b w e n o s
+DÍAS	d i a s
+GRACIAS	g ɾ a θ j a s
+POR	p o ɾ
+FAVOR	f a β o ɾ
+SEÑOR	s e ɲ o ɾ
+SEÑORA	s e ɲ o ɾ a
+SÍ	s i
+NO	n o
+CASA	k a s a
+PERRO	p e r o
+GATO	g a t o
+AGUA	a ɣ w a
+COMIDA	k o m i ð a
+TIEMPO	t j e m p o
+AÑO	a ɲ o
+DÍA	d i a
+NOCHE	n o tʃ e
+MAÑANA	m a ɲ a n a
+TARDE	t a ɾ ð e
+AHORA	a o ɾ a
+DESPUÉS	d e s p w e s
+ANTES	a n t e s
+SIEMPRE	s j e m p ɾ e
+NUNCA	n u ŋ k a
+TODO	t o ð o
+NADA	n a ð a
+MUCHO	m u tʃ o
+POCO	p o k o
+GRANDE	g ɾ a n d e
+PEQUEÑO	p e k e ɲ o
+BUENO	b w e n o
+MALO	m a l o
+NUEVO	n w e β o
+VIEJO	b j e x o
+JOVEN	x o β e n
+FELIZ	f e l i θ
+TRISTE	t ɾ i s t e
+FÁCIL	f a θ i l
+DIFÍCIL	d i f i θ i l
+POSIBLE	p o s i β l e
+IMPOSIBLE	i m p o s i β l e
+VERDAD	β e ɾ ð a ð
+MENTIRA	m e n t i ɾ a
+AMOR	a m o ɾ
+ODIO	o ð j o
+VIDA	β i ð a
+MUERTE	m w e ɾ t e
+TRABAJO	t ɾ a β a x o
+DINERO	d i n e ɾ o
+FAMILIA	f a m i l j a
+AMIGO	a m i ɣ o
+ENEMIGO	e n e m i ɣ o
+HOMBRE	o m b ɾ e
+MUJER	m u x e ɾ
+NIÑO	n i ɲ o
+NIÑA	n i ɲ a
+PADRE	p a ð ɾ e
+MADRE	m a ð ɾ e
+HIJO	i x o
+HIJA	i x a
+HERMANO	e ɾ m a n o
+HERMANA	e ɾ m a n a
+COMER	k o m e ɾ
+BEBER	b e β e ɾ
+DORMIR	d o ɾ m i ɾ
+HABLAR	a β l a ɾ
+ESCUCHAR	e s k u tʃ a ɾ
+VER	β e ɾ
+MIRAR	m i ɾ a ɾ
+PENSAR	p e n s a ɾ
+SENTIR	s e n t i ɾ
+QUERER	k e ɾ e ɾ
+PODER	p o ð e ɾ
+DEBER	d e β e ɾ
+TENER	t e n e ɾ
+HACER	a θ e ɾ
+SER	s e ɾ
+ESTAR	e s t a ɾ
+IR	i ɾ
+VENIR	β e n i ɾ
+SALIR	s a l i ɾ
+ENTRAR	e n t ɾ a ɾ
+LLEGAR	ʎ e ɣ a ɾ
+PARTIR	p a ɾ t i ɾ
+VOLVER	β o l β e ɾ
+QUEDAR	k e ð a ɾ
+LLEVAR	ʎ e β a ɾ
+TRAER	t ɾ a e ɾ
+DAR	d a ɾ
+RECIBIR	r e θ i β i ɾ
+COMPRAR	k o m p ɾ a ɾ
+VENDER	β e n d e ɾ
+PAGAR	p a ɣ a ɾ
+COSTAR	k o s t a ɾ
+GANAR	g a n a ɾ
+PERDER	p e ɾ ð e ɾ
+ENCONTRAR	e ŋ k o n t ɾ a ɾ
+BUSCAR	b u s k a ɾ
+CONOCER	k o n o θ e ɾ
+SABER	s a β e ɾ
+APRENDER	a p ɾ e n d e ɾ
+ENSEÑAR	e n s e ɲ a ɾ
+ESTUDIAR	e s t u ð j a ɾ
+LEER	l e e ɾ
+ESCRIBIR	e s k ɾ i β i ɾ
+ESPAÑA	e s p a ɲ a
+MÉXICO	m e x i k o
+ARGENTINA	a ɾ x e n t i n a
+COLOMBIA	k o l o m b j a
+CHILE	tʃ i l e
+PERÚ	p e ɾ u
+VENEZUELA	β e n e θ w e l a
+ECUADOR	e k w a ð o ɾ
+BOLIVIA	b o l i β j a
+URUGUAY	u ɾ u ɣ w a j
+PARAGUAY	p a ɾ a ɣ w a j
+UNO	u n o
+DOS	d o s
+TRES	t ɾ e s
+CUATRO	k w a t ɾ o
+CINCO	θ i ŋ k o
+SEIS	s e j s
+SIETE	s j e t e
+OCHO	o tʃ o
+NUEVE	n w e β e
+DIEZ	d j e θ

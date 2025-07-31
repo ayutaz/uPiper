@@ -14,8 +14,8 @@ namespace uPiper.Core.Performance
     /// </summary>
     public class AndroidPerformanceProfiler
     {
-        private readonly Dictionary<string, ProfileData> _profileData = new Dictionary<string, ProfileData>();
-        private readonly Stopwatch _stopwatch = new Stopwatch();
+        private readonly Dictionary<string, ProfileData> _profileData = new();
+        private readonly Stopwatch _stopwatch = new();
 
         public class ProfileData
         {
@@ -163,7 +163,7 @@ namespace uPiper.Core.Performance
         /// </summary>
         public static void LogMemoryUsage(string tag)
         {
-            long gcMemory = GC.GetTotalMemory(false);
+            var gcMemory = GC.GetTotalMemory(false);
             PiperLogger.LogInfo($"[Memory {tag}] GC: {gcMemory / 1024 / 1024:F2} MB");
 
 #if UNITY_ANDROID && !UNITY_EDITOR

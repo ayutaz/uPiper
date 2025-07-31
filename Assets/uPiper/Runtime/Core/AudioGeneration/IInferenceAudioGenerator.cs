@@ -18,7 +18,7 @@ namespace uPiper.Core.AudioGeneration
         /// <param name="config">音声設定</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
         /// <returns>初期化タスク</returns>
-        Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config, CancellationToken cancellationToken = default);
+        public Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// 音素から音声を生成する
@@ -29,7 +29,7 @@ namespace uPiper.Core.AudioGeneration
         /// <param name="noiseW">ノイズ幅</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
         /// <returns>生成された音声データ</returns>
-        Task<float[]> GenerateAudioAsync(
+        public Task<float[]> GenerateAudioAsync(
             int[] phonemeIds,
             float lengthScale = 1.0f,
             float noiseScale = 0.667f,
@@ -39,11 +39,11 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// 初期化されているかどうか
         /// </summary>
-        bool IsInitialized { get; }
+        public bool IsInitialized { get; }
 
         /// <summary>
         /// 現在のモデルのサンプルレート
         /// </summary>
-        int SampleRate { get; }
+        public int SampleRate { get; }
     }
 }

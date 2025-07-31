@@ -1,0 +1,25 @@
+--- a/lang/usenglish/us_text.c
++++ b/lang/usenglish/us_text.c
+@@ -211,11 +211,11 @@
+ 	    item_set_string(state_name,"tok_prepunctuation",
+ 			    item_feat_string(token,"prepunctuation"));
+ 	/* FIXME: we need a better way to do this */
+-	/* If text is all UTF-8, we need to extract the "word" */
++	/* If text is all UTF-8, we need to extract the word */
+ 	/* from the multi-byte sequence */
+ 	if (text_splitable(item_feat_string(t,"name"),'/'))
+ 	    word = string_before(item_feat_string(t,"name"),"/");
+-	/* In extreme cases (or a bug), the actual printed */
++	/* In extreme cases or a bug, the actual printed */
+ 	/* punctuation can contain a "/" which causes the above */
+ 	/* to give NULL, in this case copy the whole thing */
+ 	else if ((word == 0) && (text_splitable(item_feat_string(t,"name"),'\\')))
+@@ -227,7 +227,7 @@
+ 	    item_set_string(state_name,"tok_prepunctuation",
+ 			    state_path);
+ 	    
+-	/* FIXME: we need a better way to do this */
++	/* FIXME: we need a better way to do this */
+ 	if (text_splitable(state_name,"/"))
+ 	    word = string_before(state_name,"/");
+ 	/* In extreme cases (or a bug), the actual printed */

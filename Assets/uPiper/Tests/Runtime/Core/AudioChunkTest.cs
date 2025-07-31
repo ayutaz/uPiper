@@ -195,7 +195,7 @@ namespace uPiper.Tests.Runtime.Core
             var chunk = new AudioChunk(new float[1000], 22050, 1, 0, false);
 
             // Warm up
-            for (int i = 0; i < 10; i++)
+            for (var i = 0; i < 10; i++)
             {
                 var temp = chunk.SampleRate;
                 temp = chunk.Channels;
@@ -203,7 +203,7 @@ namespace uPiper.Tests.Runtime.Core
 
             // Test that accessing properties is fast
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            for (int i = 0; i < 100000; i++)
+            for (var i = 0; i < 100000; i++)
             {
                 var sampleRate = chunk.SampleRate;
                 var channels = chunk.Channels;
@@ -227,7 +227,7 @@ namespace uPiper.Tests.Runtime.Core
 
             // Test that calculating duration is fast
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            for (int i = 0; i < 100000; i++)
+            for (var i = 0; i < 100000; i++)
             {
                 var duration = chunk.Duration;
             }

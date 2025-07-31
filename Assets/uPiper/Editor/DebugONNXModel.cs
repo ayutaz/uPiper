@@ -1,8 +1,8 @@
+using System.Collections.Generic;
 using System.Linq;
 using Unity.InferenceEngine;
 using UnityEditor;
 using UnityEngine;
-using System.Collections.Generic;
 
 namespace uPiper.Editor
 {
@@ -40,7 +40,7 @@ namespace uPiper.Editor
 
             // 入力情報
             Debug.Log($"\n--- Inputs ({model.inputs.Count}) ---");
-            for (int i = 0; i < model.inputs.Count; i++)
+            for (var i = 0; i < model.inputs.Count; i++)
             {
                 var input = model.inputs[i];
                 Debug.Log($"Input[{i}]:");
@@ -53,7 +53,7 @@ namespace uPiper.Editor
 
             // 出力情報
             Debug.Log($"\n--- Outputs ({model.outputs.Count}) ---");
-            for (int i = 0; i < model.outputs.Count; i++)
+            for (var i = 0; i < model.outputs.Count; i++)
             {
                 var output = model.outputs[i];
                 Debug.Log($"Output[{i}]:");
@@ -63,7 +63,7 @@ namespace uPiper.Editor
 
             // レイヤー情報（最初の10個）
             Debug.Log($"\n--- Layers (first 10 of {model.layers.Count}) ---");
-            for (int i = 0; i < Mathf.Min(10, model.layers.Count); i++)
+            for (var i = 0; i < Mathf.Min(10, model.layers.Count); i++)
             {
                 var layer = model.layers[i];
                 Debug.Log($"Layer[{i}]: Type = {layer.GetType().Name}");
@@ -110,8 +110,7 @@ namespace uPiper.Editor
                 worker.Schedule();
 
                 // 出力取得
-                var output = worker.PeekOutput() as Tensor<float>;
-                if (output != null)
+                if (worker.PeekOutput() is Tensor<float> output)
                 {
                     var shape = output.shape;
                     Debug.Log($"Output shape: {shape}");
@@ -120,7 +119,7 @@ namespace uPiper.Editor
                     // 最初の10サンプルを表示
                     var readableOutput = output.ReadbackAndClone();
                     var samples = new float[Mathf.Min(10, readableOutput.shape.length)];
-                    for (int i = 0; i < samples.Length; i++)
+                    for (var i = 0; i < samples.Length; i++)
                     {
                         samples[i] = readableOutput[i];
                     }

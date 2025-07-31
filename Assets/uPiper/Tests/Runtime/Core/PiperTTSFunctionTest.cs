@@ -95,7 +95,7 @@ namespace uPiper.Tests.Runtime.Core
         [Test]
         public void OnInitialized_CanSubscribeAndUnsubscribe()
         {
-            void Handler(bool result) { }
+            static void Handler(bool result) { }
 
             Assert.DoesNotThrow(() => _piperTTS.OnInitialized += Handler);
             Assert.DoesNotThrow(() => _piperTTS.OnInitialized -= Handler);
@@ -104,7 +104,7 @@ namespace uPiper.Tests.Runtime.Core
         [Test]
         public void OnVoiceLoaded_CanSubscribeAndUnsubscribe()
         {
-            void Handler(PiperVoiceConfig voice) { }
+            static void Handler(PiperVoiceConfig voice) { }
 
             Assert.DoesNotThrow(() => _piperTTS.OnVoiceLoaded += Handler);
             Assert.DoesNotThrow(() => _piperTTS.OnVoiceLoaded -= Handler);
@@ -113,7 +113,7 @@ namespace uPiper.Tests.Runtime.Core
         [Test]
         public void OnError_CanSubscribeAndUnsubscribe()
         {
-            void Handler(PiperException error) { }
+            static void Handler(PiperException error) { }
 
             Assert.DoesNotThrow(() => _piperTTS.OnError += Handler);
             Assert.DoesNotThrow(() => _piperTTS.OnError -= Handler);
@@ -122,7 +122,7 @@ namespace uPiper.Tests.Runtime.Core
         [Test]
         public void OnProcessingProgress_CanSubscribeAndUnsubscribe()
         {
-            void Handler(float progress) { }
+            static void Handler(float progress) { }
 
             Assert.DoesNotThrow(() => _piperTTS.OnProcessingProgress += Handler);
             Assert.DoesNotThrow(() => _piperTTS.OnProcessingProgress -= Handler);

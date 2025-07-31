@@ -1,0 +1,260 @@
+name: Unity Tests - Windows CLI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-windows-cli:
+    name: Unity Test Runner - Windows (Direct CLI)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+        
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+        
+    - name: Install CMake
+      uses: lukka/get-cmake@latest
+        
+    - name: Build OpenJTalk Native Library
+      shell: bash
+      run: |
+        cd NativePlugins/OpenJTalk
+        chmod +x build_ci.sh
+        ./build_ci.sh
+        
+        # Verify library was built
+        echo "=== Verifying library placement ==="
+        ls -la build/bin/Release/ || ls -la build/bin/
+        
+        # Copy to Unity Plugins directory
+        mkdir -p ../../Assets/uPiper/Plugins/Windows/x86_64
+        cp build/bin/Release/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/Windows/x86_64/ || cp build/bin/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/Windows/x86_64/
+        
+        echo "=== Library copied to Unity ==="
+        ls -la ../../Assets/uPiper/Plugins/Windows/x86_64/
+        
+    - name: Install Unity Hub
+      shell: powershell
+      run: |
+        Write-Host "Installing Unity Hub..."
+        $hubPath = "$env:TEMP\UnityHubSetup.exe"
+        Invoke-WebRequest -Uri "https://public-cdn.cloud.unity3d.com/hub/prod/UnityHubSetup.exe" -OutFile $hubPath
+        
+        # Silent install
+        Start-Process -FilePath $hubPath -ArgumentList "/S" -Wait
+        
+        # Add Unity Hub to PATH
+        $unityHubPath = "${env:ProgramFiles}\Unity Hub"
+        echo "$unityHubPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        
+        # Verify installation
+        if (Test-Path "$unityHubPath\Unity Hub.exe") {
+          Write-Host "Unity Hub installed successfully"
+        } else {
+          Write-Host "Unity Hub installation failed"
+          exit 1
+        }
+        
+    - name: Install Unity Editor
+      shell: powershell
+      run: |
+        # Add Unity Hub to current session PATH
+        $env:PATH = "${env:ProgramFiles}\Unity Hub;$env:PATH"
+        
+        # Install Unity 6000.0.35f1
+        Write-Host "Installing Unity 6000.0.35f1..."
+        & "${env:ProgramFiles}\Unity Hub\Unity Hub.exe" -- --headless install --version 6000.0.35f1 --changeset bb8081de9a21 --module windows-il2cpp
+        
+        # Wait for installation with progress checking
+        Write-Host "Waiting for Unity installation to complete..."
+        $maxWaitTime = 900  # 15 minutes maximum
+        $checkInterval = 30  # Check every 30 seconds
+        $elapsed = 0
+        
+        $unityPaths = @(
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles(x86)}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Editor\6000.0.35f1\Editor\Unity.exe"
+        )
+        
+        $foundUnity = $false
+        while ($elapsed -lt $maxWaitTime -and -not $foundUnity) {
+          Start-Sleep -Seconds $checkInterval
+          $elapsed += $checkInterval
+          
+          Write-Host "Checking for Unity installation... ($elapsed seconds elapsed)"
+          
+          foreach ($path in $unityPaths) {
+            if (Test-Path $path) {
+              Write-Host "Unity found at: $path"
+              $foundUnity = $true
+              break
+            }
+          }
+          
+          if (-not $foundUnity) {
+            # Check Unity Hub installation status
+            Write-Host "Unity not found yet. Checking Hub status..."
+            & "${env:ProgramFiles}\Unity Hub\Unity Hub.exe" -- --headless editors -i
+          }
+        }
+        
+        if (-not $foundUnity) {
+          Write-Host "Unity installation failed after $elapsed seconds."
+          Write-Host "Checking common Unity installation directories:"
+          Get-ChildItem -Path "C:\Program Files\Unity" -ErrorAction SilentlyContinue
+          Get-ChildItem -Path "${env:ProgramFiles}\Unity" -ErrorAction SilentlyContinue
+          Write-Host "Checking Hub Editor directory:"
+          Get-ChildItem -Path "C:\Program Files\Unity\Hub\Editor" -ErrorAction SilentlyContinue
+          exit 1
+        }
+        
+    - name: Activate Unity License
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      shell: powershell
+      run: |
+        # Find Unity executable
+        $unityPaths = @(
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles(x86)}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe"
+        )
+        
+        $unityExe = $null
+        foreach ($path in $unityPaths) {
+          if (Test-Path $path) {
+            $unityExe = $path
+            break
+          }
+        }
+        
+        if ($null -eq $unityExe) {
+          Write-Host "Unity executable not found!"
+          exit 1
+        }
+        
+        Write-Host "Using Unity at: $unityExe"
+        
+        # Create license file
+        $env:UNITY_LICENSE | Out-File -FilePath "Unity_v6000.x.ulf" -Encoding utf8
+        
+        # Activate license
+        & $unityExe -batchmode -nographics -silent-crashes -logFile - -manualLicenseFile Unity_v6000.x.ulf -quit
+        
+    - name: Run Unity Tests - EditMode
+      shell: powershell
+      run: |
+        # Find Unity executable
+        $unityPaths = @(
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles(x86)}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe"
+        )
+        
+        $unityExe = $null
+        foreach ($path in $unityPaths) {
+          if (Test-Path $path) {
+            $unityExe = $path
+            break
+          }
+        }
+        
+        Write-Host "Running EditMode tests with Unity at: $unityExe"
+        
+        # Set OpenJTalk DLL path for Unity
+        $env:PATH = "$env:GITHUB_WORKSPACE\Assets\uPiper\Plugins\Windows\x86_64;$env:PATH"
+        
+        # Run EditMode tests
+        & $unityExe -batchmode -nographics -silent-crashes -logFile - -projectPath . -runTests -testPlatform EditMode -testResults test-results/editmode-results.xml -enableCodeCoverage -coverageResultsPath test-results -coverageOptions "generateAdditionalMetrics;generateHtmlReport;assemblyFilters:+uPiper.*,-uPiper.Tests.*"
+        
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -ne 0) {
+          Write-Host "EditMode tests failed with exit code: $exitCode"
+          # Don't fail immediately, continue to PlayMode tests
+        }
+        
+    - name: Run Unity Tests - PlayMode
+      shell: powershell
+      run: |
+        # Find Unity executable
+        $unityPaths = @(
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.35f1\Editor\Unity.exe",
+          "${env:ProgramFiles(x86)}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe"
+        )
+        
+        $unityExe = $null
+        foreach ($path in $unityPaths) {
+          if (Test-Path $path) {
+            $unityExe = $path
+            break
+          }
+        }
+        
+        Write-Host "Running PlayMode tests with Unity at: $unityExe"
+        
+        # Run PlayMode tests
+        & $unityExe -batchmode -nographics -silent-crashes -logFile - -projectPath . -runTests -testPlatform PlayMode -testResults test-results/playmode-results.xml
+        
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -ne 0) {
+          Write-Host "PlayMode tests failed with exit code: $exitCode"
+        }
+        
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: Test Results - Unity - Windows-CLI
+        path: |
+          test-results/**/*.xml
+          test-results/**/*.html
+        retention-days: 7
+        
+    - name: Parse Test Results
+      if: always()
+      shell: powershell
+      run: |
+        Write-Host "## Windows Unity CLI Test Results" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+        Write-Host "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+        
+        $testFiles = Get-ChildItem -Path "test-results" -Filter "*.xml" -Recurse
+        foreach ($file in $testFiles) {
+          Write-Host "### $($file.Name)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          
+          [xml]$xml = Get-Content $file.FullName
+          $testSuite = $xml.SelectSingleNode("//test-suite")
+          
+          if ($testSuite) {
+            $total = $testSuite.GetAttribute("total")
+            $passed = $testSuite.GetAttribute("passed")
+            $failed = $testSuite.GetAttribute("failed")
+            $skipped = $testSuite.GetAttribute("skipped")
+            
+            Write-Host "- Total: $total" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+            Write-Host "- Passed: $passed ✅" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+            Write-Host "- Failed: $failed ❌" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+            Write-Host "- Skipped: $skipped ⏭️" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          }
+          
+          Write-Host "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+        }

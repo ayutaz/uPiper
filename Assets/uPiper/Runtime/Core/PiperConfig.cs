@@ -123,7 +123,7 @@ namespace uPiper.Core
         /// GPU-specific settings
         /// </summary>
         [Tooltip("Settings specific to GPU inference")]
-        public GPUInferenceSettings GPUSettings = new GPUInferenceSettings();
+        public GPUInferenceSettings GPUSettings = new();
 
         /// <summary>
         /// Allow fallback to CPU if GPU fails
@@ -243,10 +243,7 @@ namespace uPiper.Core
             }
 
             // GPU settings validation
-            if (GPUSettings != null)
-            {
-                GPUSettings.Validate();
-            }
+            GPUSettings?.Validate();
 
             PiperLogger.LogInfo("PiperConfig validated successfully");
         }

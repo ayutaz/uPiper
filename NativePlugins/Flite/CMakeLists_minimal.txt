@@ -1,0 +1,78 @@
+cmake_minimum_required(VERSION 3.10)
+project(flite_unity)
+
+# C standard
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# Options
+option(BUILD_SHARED_LIBS "Build shared library" ON)
+
+# Platform-specific settings
+if(WIN32)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-DWIN32)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MT")
+elseif(APPLE)
+    set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
+    set(CMAKE_MACOSX_RPATH ON)
+elseif(UNIX)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+endif()
+
+# Flite source directory
+set(FLITE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/flite)
+
+# Include directories
+include_directories(
+    ${FLITE_DIR}/include
+    ${FLITE_DIR}/lang/cmulex
+)
+
+# Define minimal Flite
+add_definitions(
+    -DFLITE_LEAN_AND_MEAN
+    -DCST_NO_SOCKETS
+    -DCST_AUDIO_NONE
+)
+
+# Minimal source files for LTS only
+set(FLITE_MINIMAL_SRCS
+    # Core utils
+    ${FLITE_DIR}/src/utils/cst_alloc.c
+    ${FLITE_DIR}/src/utils/cst_error.c
+    ${FLITE_DIR}/src/utils/cst_string.c
+    ${FLITE_DIR}/src/utils/cst_val.c
+    ${FLITE_DIR}/src/utils/cst_val_const.c
+    
+    # LTS
+    ${FLITE_DIR}/src/lexicon/cst_lts.c
+    
+    # CMU LTS rules
+    ${FLITE_DIR}/lang/cmulex/cmu_lts_model.c
+    ${FLITE_DIR}/lang/cmulex/cmu_lts_rules.c
+)
+
+# Unity wrapper
+set(UNITY_WRAPPER_SRCS
+    src/flite_unity_minimal.c
+)
+
+# Create library
+add_library(flite_unity ${FLITE_MINIMAL_SRCS} ${UNITY_WRAPPER_SRCS})
+
+# Export settings
+if(WIN32)
+    target_compile_definitions(flite_unity PRIVATE FLITE_UNITY_EXPORTS)
+endif()
+
+# Install
+install(TARGETS flite_unity
+    RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/../../Assets/uPiper/Plugins/Windows/x86_64
+    LIBRARY DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/../../Assets/uPiper/Plugins/${CMAKE_SYSTEM_NAME}
+)
+
+message(STATUS "=== Flite Unity Minimal Configuration ===")
+message(STATUS "Platform: ${CMAKE_SYSTEM_NAME}")
+message(STATUS "Build type: Minimal LTS only")
+message(STATUS "========================================")

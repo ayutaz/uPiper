@@ -24,9 +24,10 @@ namespace uPiper.Tests.Runtime.Core
         [Test]
         public void Validate_ClampsMaxBatchSize()
         {
-            var settings = new GPUInferenceSettings();
-
-            settings.MaxBatchSize = 100;
+            var settings = new GPUInferenceSettings
+            {
+                MaxBatchSize = 100
+            };
             settings.Validate();
             Assert.AreEqual(16, settings.MaxBatchSize);
 
@@ -38,9 +39,10 @@ namespace uPiper.Tests.Runtime.Core
         [Test]
         public void Validate_ClampsMaxMemoryMB()
         {
-            var settings = new GPUInferenceSettings();
-
-            settings.MaxMemoryMB = 10000;
+            var settings = new GPUInferenceSettings
+            {
+                MaxMemoryMB = 10000
+            };
             settings.Validate();
             Assert.AreEqual(2048, settings.MaxMemoryMB);
 
@@ -52,9 +54,10 @@ namespace uPiper.Tests.Runtime.Core
         [Test]
         public void Validate_FixesInvalidDeviceIndex()
         {
-            var settings = new GPUInferenceSettings();
-
-            settings.PreferredDeviceIndex = -10;
+            var settings = new GPUInferenceSettings
+            {
+                PreferredDeviceIndex = -10
+            };
             settings.Validate();
             Assert.AreEqual(-1, settings.PreferredDeviceIndex);
 

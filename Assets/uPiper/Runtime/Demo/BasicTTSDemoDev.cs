@@ -1,11 +1,12 @@
 using System.Collections;
 using TMPro;
+using Unity.InferenceEngine;
 using UnityEngine;
 using UnityEngine.UI;
-using Unity.InferenceEngine;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Demo
@@ -17,15 +18,15 @@ namespace uPiper.Demo
     public class BasicTTSDemoDev : MonoBehaviour
     {
         [Header("UI References")]
-        [SerializeField] private TMP_InputField _inputField;
-        [SerializeField] private Button _generateButton;
-        [SerializeField] private TextMeshProUGUI _statusText;
-        [SerializeField] private AudioSource _audioSource;
+        [SerializeField] private readonly TMP_InputField _inputField;
+        [SerializeField] private readonly Button _generateButton;
+        [SerializeField] private readonly TextMeshProUGUI _statusText;
+        [SerializeField] private readonly AudioSource _audioSource;
 
         [Header("Model Settings")]
         [SerializeField] private ModelAsset _modelAsset;
-        [SerializeField] private float _speakingRate = 1.0f;
-        [SerializeField] private int _sampleRate = 22050;
+        [SerializeField] private readonly float _speakingRate = 1.0f;
+        [SerializeField] private readonly int _sampleRate = 22050;
 
         private InferenceAudioGenerator _audioGenerator;
         private IPhonemizer _phonemizer;
@@ -42,8 +43,7 @@ namespace uPiper.Demo
             StartCoroutine(Initialize());
 
             // Add button listener
-            if (_generateButton != null)
-                _generateButton.onClick.AddListener(OnGenerateButtonClicked);
+            _generateButton?.onClick.AddListener(OnGenerateButtonClicked);
         }
 
         private IEnumerator Initialize()
