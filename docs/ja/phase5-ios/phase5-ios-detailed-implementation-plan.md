@@ -37,7 +37,7 @@ uPiper/
 #### ios-cmakeツールチェーンのダウンロード
 ```bash
 cd NativePlugins/OpenJTalk
-curl -L https://raw.githubusercontent.com/leetal/ios-cmake/master/ios.toolchain.cmake -o ios.toolchain.cmake
+curl -L https://raw.githubusercontent.com/leetal/ios-cmake/v4.3.0/ios.toolchain.cmake -o ios.toolchain.cmake
 ```
 
 ### 3.2 Step 2: ビルドスクリプト作成

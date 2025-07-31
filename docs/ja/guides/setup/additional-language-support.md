@@ -330,7 +330,7 @@ public static class PhonemeMapper
 
 ### 最小限のスペイン語サポート
 
-1. ダウンロード: [スペイン語スターターパック](link-to-resource)
+1. ダウンロード: [スペイン語スターターパック（準備中）](#)
 2. 展開先: `Assets/StreamingAssets/uPiper/Languages/Spanish/`
 3. バックエンドを追加: 
    ```csharp
