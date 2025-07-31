@@ -30,6 +30,14 @@
 - パフォーマンス最適化
 - トラブルシューティング
 
+### 4. [webgl-investigation.md](webgl-investigation.md)
+**WebGL対応技術調査報告書**
+- OpenJTalk WebAssembly実装の発見
+- Unity WebGLの技術的優位性
+- piper-plusプロジェクトとの比較
+- 実装アプローチと推奨事項
+- フル辞書での高精度音素化の実現可能性
+
 ## ドキュメントの使い方
 
 ### 新規開発者向け
