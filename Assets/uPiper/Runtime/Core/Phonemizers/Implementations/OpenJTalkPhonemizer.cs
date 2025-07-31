@@ -676,7 +676,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                         return path;
                     }
                 }
-                
+
                 // If not found, log all searched paths for debugging
                 Debug.LogError($"[OpenJTalkPhonemizer] DLL not found in CI environment. Searched paths:");
                 foreach (var path in possiblePaths)
