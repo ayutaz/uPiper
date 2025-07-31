@@ -261,8 +261,18 @@ jobs:
         hdiutil attach UnityHub.dmg
         
         # Find the mounted volume
-        MOUNT_POINT=$(diskutil list | grep "Unity Hub" | awk '{print "/Volumes/" substr($0, index($0,$3))}' | head -1)
+        MOUNT_POINT=$(mount | grep "Unity Hub" | awk -F' on ' '{print $2}' | awk '{print $1}' | head -1)
         echo "Unity Hub mounted at: $MOUNT_POINT"
+        
+        # Verify mount point exists
+        if [ ! -d "$MOUNT_POINT" ]; then
+          echo "Error: Mount point not found. Trying alternative method..."
+          MOUNT_POINT="/Volumes/Unity Hub 3.11.1"
+          if [ ! -d "$MOUNT_POINT" ]; then
+            MOUNT_POINT="/Volumes/Unity Hub"
+          fi
+        fi
+        echo "Using mount point: $MOUNT_POINT"
         
         # Copy Unity Hub to Applications
         sudo cp -R "$MOUNT_POINT/Unity Hub.app" /Applications/
@@ -833,8 +843,18 @@ jobs:
         hdiutil attach UnityHub.dmg
         
         # Find the mounted volume
-        MOUNT_POINT=$(diskutil list | grep "Unity Hub" | awk '{print "/Volumes/" substr($0, index($0,$3))}' | head -1)
+        MOUNT_POINT=$(mount | grep "Unity Hub" | awk -F' on ' '{print $2}' | awk '{print $1}' | head -1)
         echo "Unity Hub mounted at: $MOUNT_POINT"
+        
+        # Verify mount point exists
+        if [ ! -d "$MOUNT_POINT" ]; then
+          echo "Error: Mount point not found. Trying alternative method..."
+          MOUNT_POINT="/Volumes/Unity Hub 3.11.1"
+          if [ ! -d "$MOUNT_POINT" ]; then
+            MOUNT_POINT="/Volumes/Unity Hub"
+          fi
+        fi
+        echo "Using mount point: $MOUNT_POINT"
         
         # Copy Unity Hub to Applications
         sudo cp -R "$MOUNT_POINT/Unity Hub.app" /Applications/
