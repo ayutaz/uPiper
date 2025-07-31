@@ -12,20 +12,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # Note: Windows Unity tests are currently skipped due to lack of Docker support on Windows runners
-        # Only building and verifying the native library on Windows for now
-        os: [windows-latest, macos-latest]
+        # Note: macOS Unity tests are temporarily disabled due to Unity license machine binding issues
+        # Windows tests now run via Unity CLI
+        os: [windows-latest]  # macOS temporarily removed
         include:
           - os: windows-latest
             platform: Windows
             lib_ext: dll
             lib_prefix: ""
             lib_path: Windows/x86_64
-          - os: macos-latest
-            platform: macOS
-            lib_ext: dylib
-            lib_prefix: lib
-            lib_path: macOS
+          # - os: macos-latest  # TODO: Re-enable after fixing Unity license issues
+          #   platform: macOS
+          #   lib_ext: dylib
+          #   lib_prefix: lib
+          #   lib_path: macOS
     permissions:
       contents: read
       checks: write
@@ -350,8 +350,12 @@ jobs:
         
         echo "Using Unity at: $unityExe"
         
-        # Create license file
-        echo "$UNITY_LICENSE" > Unity_v6000.x.ulf
+        # Create license file with proper encoding
+        echo "$UNITY_LICENSE" | iconv -t UTF-8 > Unity_v6000.x.ulf
+        
+        # Debug: Check license file
+        echo "License file size: $(wc -c < Unity_v6000.x.ulf) bytes"
+        echo "License file first line: $(head -1 Unity_v6000.x.ulf)"
         
         # Activate license
         "$unityExe" -batchmode -nographics -silent-crashes -logFile - -manualLicenseFile Unity_v6000.x.ulf -quit
@@ -791,6 +795,8 @@ jobs:
     name: Unity Test Runner - macOS (Native)
     runs-on: macos-latest
     timeout-minutes: 60  # タイムアウトを60分に設定
+    # macOSのUnityライセンス問題のため一時的にスキップ
+    if: false  # TODO: Unity ライセンスのマシンバインディング問題を解決後に有効化
     permissions:
       contents: read
       checks: write
@@ -944,8 +950,12 @@ jobs:
         
         echo "Using Unity at: $unityExe"
         
-        # Create license file
-        echo "$UNITY_LICENSE" > Unity_v6000.x.ulf
+        # Create license file with proper encoding
+        echo "$UNITY_LICENSE" | iconv -t UTF-8 > Unity_v6000.x.ulf
+        
+        # Debug: Check license file
+        echo "License file size: $(wc -c < Unity_v6000.x.ulf) bytes"
+        echo "License file first line: $(head -1 Unity_v6000.x.ulf)"
         
         # Activate license
         "$unityExe" -batchmode -nographics -silent-crashes -logFile - -manualLicenseFile Unity_v6000.x.ulf -quit
