@@ -76,14 +76,21 @@ namespace uPiper.Core.Phonemizers.Implementations
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_get_error_string(int error_code);
 #else
-        // Stub implementations for when P/Invoke is disabled
-        private static IntPtr openjtalk_create(string dict_path) => IntPtr.Zero;
-        private static void openjtalk_destroy(IntPtr handle) { }
-        private static IntPtr openjtalk_phonemize(IntPtr handle, string text) => IntPtr.Zero;
-        private static void openjtalk_free_result(IntPtr result) { }
-        private static IntPtr openjtalk_get_version() => IntPtr.Zero;
-        private static int openjtalk_get_last_error(IntPtr handle) => -1;
-        private static IntPtr openjtalk_get_error_string(int error_code) => IntPtr.Zero;
+        // Throw exceptions for unsupported platforms
+        private static IntPtr openjtalk_create(string dict_path) 
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static void openjtalk_destroy(IntPtr handle) 
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static IntPtr openjtalk_phonemize(IntPtr handle, string text) 
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static void openjtalk_free_result(IntPtr result) 
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static IntPtr openjtalk_get_version() 
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static int openjtalk_get_last_error(IntPtr handle) 
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static IntPtr openjtalk_get_error_string(int error_code) 
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
 #endif
 
         #endregion
