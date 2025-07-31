@@ -141,7 +141,7 @@ var config = new PiperConfig
 - ✅ マルチプラットフォーム対応（Windows/macOS/Linux/Android）
 - ✅ 高度なサンプル実装（ストリーミング、マルチボイス、リアルタイム）
 
-詳細は[CHANGELOG](CHANGELOG.md)および[ロードマップ](docs/ROADMAP.md)を参照してください。
+詳細は[開発ログ](DEVELOPMENT_LOG.md)および[ロードマップ](docs/ROADMAP.md)を参照してください。
 
 ## ライセンス
 
