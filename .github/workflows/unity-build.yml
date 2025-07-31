@@ -150,7 +150,86 @@ jobs:
       contents: write
       
     steps:
-    - name: Download all artifacts
+    - name: Checkout for package creation
+      uses: actions/checkout@v4
+      with:
+        lfs: true
+        
+    - name: Extract version from tag
+      id: version
+      run: |
+        TAG_NAME="${{ github.ref_name }}"
+        VERSION="${TAG_NAME#v}"
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+        echo "Version: ${VERSION}"
+        
+    - name: Validate package.json version
+      run: |
+        PACKAGE_VERSION=$(jq -r '.version' Assets/uPiper/package.json)
+        EXPECTED_VERSION="${{ steps.version.outputs.version }}"
+        
+        if [[ "$PACKAGE_VERSION" != "$EXPECTED_VERSION" ]]; then
+          echo "❌ Version mismatch!"
+          echo "package.json version: $PACKAGE_VERSION"
+          echo "Expected version: $EXPECTED_VERSION"
+          echo ""
+          echo "Please update Assets/uPiper/package.json version to match the tag"
+          exit 1
+        else
+          echo "✅ Version validation passed: $PACKAGE_VERSION"
+        fi
+        
+    - name: Cache Library for Package Export
+      uses: actions/cache@v4
+      with:
+        path: Library
+        key: Library-PackageExport-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+        restore-keys: |
+          Library-PackageExport-
+          Library-
+          
+    - name: Create Unity Package (.unitypackage)
+      uses: game-ci/unity-builder@v4
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      with:
+        unityVersion: 6000.0.35f1
+        targetPlatform: NoTarget
+        buildMethod: uPiper.Editor.PackageExporter.ExportUnityPackageCI
+        customParameters: -outputPath ./PackageExports/uPiper-${{ steps.version.outputs.version }}.unitypackage
+        
+    - name: Create UPM Package (.tgz)
+      run: |
+        # Create temporary directory for UPM package
+        mkdir -p ./temp-upm-package
+        
+        # Copy uPiper assets (excluding .meta files)
+        rsync -av --exclude='*.meta' Assets/uPiper/ ./temp-upm-package/
+        
+        # Ensure package.json exists
+        if [[ ! -f ./temp-upm-package/package.json ]]; then
+          cp Assets/uPiper/package.json ./temp-upm-package/
+        fi
+        
+        # Create tarball using npm pack
+        cd ./temp-upm-package
+        if command -v npm >/dev/null 2>&1; then
+          npm pack
+          mkdir -p ../PackageExports
+          mv *.tgz ../PackageExports/
+        else
+          # Fallback: create tar.gz manually
+          cd ..
+          mkdir -p PackageExports
+          # Get package name from package.json
+          PACKAGE_NAME=$(jq -r '.name' Assets/uPiper/package.json)
+          tar -czf PackageExports/${PACKAGE_NAME}-${{ steps.version.outputs.version }}.tgz -C temp-upm-package .
+        fi
+        
+    - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
         path: ./artifacts
@@ -166,10 +245,124 @@ jobs:
           cd ..
         done
         
+    - name: Generate Release Notes
+      id: release_notes
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        
+        # Extract changelog for this version
+        if [[ -f CHANGELOG.md ]]; then
+          echo "Extracting changelog for version $VERSION..."
+          
+          # Find the section for this version
+          CHANGELOG_CONTENT=$(awk -v version="$VERSION" '
+            /^## / {
+              if (found) exit
+              if ($0 ~ "\\[" version "\\]" || $0 ~ version) {
+                found = 1
+                next
+              }
+            }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md | sed '/^[[:space:]]*$/d')
+          
+          if [[ -n "$CHANGELOG_CONTENT" ]]; then
+            echo "Found changelog content for version $VERSION"
+            {
+              echo "RELEASE_NOTES<<EOF"
+              echo "## 🚀 uPiper $VERSION"
+              echo ""
+              echo "$CHANGELOG_CONTENT"
+              echo ""
+              echo "---"
+              echo ""
+              echo "### 📦 インストール方法"
+              echo ""
+              echo "#### Unity Package Manager (推奨)"
+              echo "\`\`\`"
+              echo "https://github.com/ayutaz/uPiper.git?path=Assets/uPiper"
+              echo "\`\`\`"
+              echo ""
+              echo "#### パッケージファイル"
+              echo "- **Unity Package (.unitypackage)**: レガシー形式、全てのUnityバージョンで使用可能"
+              echo "- **UPM Package (.tgz)**: Unity Package Manager用、Unity 2019.3以降"
+              echo ""
+              echo "### 🏗️ ビルド成果物"
+              echo "- **Windows Build**: Windows x64向けスタンドアロンビルド"
+              echo "- **macOS Build**: macOS (Intel/Apple Silicon) 向けスタンドアロンビルド"
+              echo "- **Linux Build**: Linux x64向けスタンドアロンビルド"
+              echo ""
+              echo "### 🔗 関連リンク"
+              echo "- [📚 ドキュメント](https://github.com/ayutaz/uPiper/blob/main/docs/ja/README.md)"
+              echo "- [🐛 バグ報告](https://github.com/ayutaz/uPiper/issues)"
+              echo "- [💬 ディスカッション](https://github.com/ayutaz/uPiper/discussions)"
+              echo ""
+              echo "---"
+              echo "*🤖 このリリースは GitHub Actions により自動生成されました*"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
+          else
+            echo "No changelog content found for version $VERSION, using default"
+            {
+              echo "RELEASE_NOTES<<EOF"
+              echo "## 🚀 uPiper $VERSION"
+              echo ""
+              echo "このバージョンの詳細な変更内容については、[CHANGELOG.md](https://github.com/ayutaz/uPiper/blob/main/CHANGELOG.md) を参照してください。"
+              echo ""
+              echo "### 📦 インストール方法"
+              echo ""
+              echo "#### Unity Package Manager (推奨)"
+              echo "\`\`\`"
+              echo "https://github.com/ayutaz/uPiper.git?path=Assets/uPiper"
+              echo "\`\`\`"
+              echo ""
+              echo "#### パッケージファイル"
+              echo "- **Unity Package (.unitypackage)**: レガシー形式、全てのUnityバージョンで使用可能"
+              echo "- **UPM Package (.tgz)**: Unity Package Manager用、Unity 2019.3以降"
+              echo ""
+              echo "### 🏗️ ビルド成果物"
+              echo "- **Windows Build**: Windows x64向けスタンドアロンビルド"
+              echo "- **macOS Build**: macOS (Intel/Apple Silicon) 向けスタンドアロンビルド"
+              echo "- **Linux Build**: Linux x64向けスタンドアロンビルド"
+              echo ""
+              echo "### 🔗 関連リンク"
+              echo "- [📚 ドキュメント](https://github.com/ayutaz/uPiper/blob/main/docs/ja/README.md)"
+              echo "- [🐛 バグ報告](https://github.com/ayutaz/uPiper/issues)"
+              echo "- [💬 ディスカッション](https://github.com/ayutaz/uPiper/discussions)"
+              echo ""
+              echo "---"
+              echo "*🤖 このリリースは GitHub Actions により自動生成されました*"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "CHANGELOG.md not found, using minimal release notes"
+          {
+            echo "RELEASE_NOTES<<EOF"
+            echo "## 🚀 uPiper $VERSION"
+            echo ""
+            echo "新しいバージョンがリリースされました。"
+            echo ""
+            echo "### 📦 インストール方法"
+            echo ""
+            echo "#### Unity Package Manager (推奨)"
+            echo "\`\`\`"
+            echo "https://github.com/ayutaz/uPiper.git?path=Assets/uPiper"
+            echo "\`\`\`"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+        fi
+        
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: artifacts/*.zip
-        generate_release_notes: true
+        tag_name: ${{ steps.version.outputs.tag_name }}
+        name: uPiper ${{ steps.version.outputs.version }}
+        body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
+        files: |
+          artifacts/*.zip
+          PackageExports/*
         draft: false
-        prerelease: false
+        prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+        generate_release_notes: false

@@ -30,6 +30,11 @@
    https://github.com/ayutaz/uPiper.git?path=Assets/uPiper
    ```
 
+### パッケージファイルからのインストール
+[Releases](https://github.com/ayutaz/uPiper/releases)から最新のパッケージファイルをダウンロード：
+- **Unity Package (.unitypackage)**: レガシー形式、全てのUnityバージョンで使用可能
+- **UPM Package (.tgz)**: Unity Package Manager用、Unity 2019.3以降
+
 ### サンプルのインポート
 1. Package Managerで uPiper を選択
 2. `Samples` タブを開く
@@ -51,15 +56,21 @@
 - ❌ WebGL - Unity.InferenceEngineがWebGLをサポートしていないため
 - ❌ iOS/Android - モバイル対応は今後検討予定
 
-## ビルド
+## ビルドとパッケージ作成
 
 ### 自動ビルド（GitHub Actions）
 - mainブランチへのプッシュ時に自動的に全プラットフォーム向けのビルドが実行されます
-- リリースタグ（v*）をプッシュすると、自動的にリリースが作成されます
+- リリースタグ（v*）をプッシュすると、自動的にリリースとパッケージが作成されます
 
 ### 手動ビルド
 1. Unity Editorで `uPiper/Build/Configure Build Settings` を実行
 2. `uPiper/Build/Build All Platforms` で全プラットフォームをビルド
+
+### パッケージエクスポート（開発者向け）
+Unity Editorから手動でパッケージを作成：
+1. `uPiper/Package/Export Unity Package (.unitypackage)` - レガシー形式
+2. `uPiper/Package/Export UPM Package (.tgz)` - Unity Package Manager形式
+3. `uPiper/Package/Export Both Formats` - 両形式を同時にエクスポート
 
 ## アーキテクチャと設計判断
 
