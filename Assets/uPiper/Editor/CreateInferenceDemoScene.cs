@@ -817,7 +817,7 @@ namespace uPiper.Editor
             var label = labelGO.AddComponent<TextMeshProUGUI>();
             label.text = "Option A";
             label.fontSize = 14;
-            label.color = Color.black;
+            label.color = Color.white;
             var labelRect = labelGO.GetComponent<RectTransform>();
             labelRect.anchorMin = Vector2.zero;
             labelRect.anchorMax = Vector2.one;
@@ -830,7 +830,7 @@ namespace uPiper.Editor
             var arrowText = arrowGO.AddComponent<TextMeshProUGUI>();
             arrowText.text = "▼";
             arrowText.fontSize = 14;
-            arrowText.color = Color.black;
+            arrowText.color = Color.white;
             var arrowRect = arrowGO.GetComponent<RectTransform>();
             arrowRect.anchorMin = new Vector2(1, 0.5f);
             arrowRect.anchorMax = new Vector2(1, 0.5f);

@@ -88,31 +88,31 @@ namespace uPiper.Demo
     public class InferenceEngineDemo : MonoBehaviour
     {
         [Header("UI References")]
-        [SerializeField] private readonly TMP_InputField _inputField;
-        [SerializeField] private readonly Button _generateButton;
-        [SerializeField] private readonly Button _inferenceButton; // Add for Android auto-test
-        [SerializeField] private readonly TextMeshProUGUI _statusText;
+        [SerializeField] private TMP_InputField _inputField;
+        [SerializeField] private Button _generateButton;
+        [SerializeField] private Button _inferenceButton; // Add for Android auto-test
+        [SerializeField] private TextMeshProUGUI _statusText;
         [SerializeField] private AudioSource _audioSource;
-        [SerializeField] private readonly TMP_Dropdown _modelDropdown;
-        [SerializeField] private readonly TMP_Dropdown _phraseDropdown;
-        [SerializeField] private readonly TextMeshProUGUI _phonemeDetailsText;
-        [SerializeField] private readonly TextMeshProUGUI _backendInfoText;
+        [SerializeField] private TMP_Dropdown _modelDropdown;
+        [SerializeField] private TMP_Dropdown _phraseDropdown;
+        [SerializeField] private TextMeshProUGUI _phonemeDetailsText;
+        [SerializeField] private TextMeshProUGUI _backendInfoText;
 
         [Header("GPU Inference UI")]
-        [SerializeField] private readonly TMP_Dropdown _backendDropdown;
-        [SerializeField] private readonly Toggle _cpuFallbackToggle;
-        [SerializeField] private readonly Toggle _useFloat16Toggle;
-        [SerializeField] private readonly Slider _batchSizeSlider;
-        [SerializeField] private readonly TextMeshProUGUI _batchSizeText;
+        [SerializeField] private TMP_Dropdown _backendDropdown;
+        [SerializeField] private Toggle _cpuFallbackToggle;
+        [SerializeField] private Toggle _useFloat16Toggle;
+        [SerializeField] private Slider _batchSizeSlider;
+        [SerializeField] private TextMeshProUGUI _batchSizeText;
 
         [Header("Settings")]
         [SerializeField] private string _defaultJapaneseText = "";  // Will be set in Start()
-        [SerializeField] private readonly string _defaultEnglishText = "Hello world";
+        [SerializeField] private string _defaultEnglishText = "Hello world";
 
         private InferenceAudioGenerator _generator;
         private PhonemeEncoder _encoder;
         private AudioClipBuilder _audioBuilder;
-        private readonly PiperVoiceConfig _currentConfig;
+        private PiperVoiceConfig _currentConfig;
         private bool _isGenerating;
         private InferenceBackend _selectedBackend = InferenceBackend.Auto;
         private GPUInferenceSettings _gpuSettings;
@@ -122,7 +122,7 @@ namespace uPiper.Demo
         private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
 #endif
 
-        private readonly Dictionary<string, string> _modelLanguages = new()
+        private Dictionary<string, string> _modelLanguages = new()
         {
             { "ja_JP-test-medium", "ja" },
             { "test_voice", "en" },
@@ -133,7 +133,7 @@ namespace uPiper.Demo
         private List<string> _japaneseTestPhrases;
         private List<string> _chineseTestPhrases;
 
-        private readonly List<string> _englishTestPhrases = new()
+        private List<string> _englishTestPhrases = new()
         {
             "Custom Input",  // Custom input option
             "Hello world",
@@ -302,6 +302,12 @@ namespace uPiper.Demo
 
         private void SetupUI()
         {
+            PiperLogger.LogInfo($"[SetupUI] Starting UI setup");
+            PiperLogger.LogInfo($"[SetupUI] _japaneseTestPhrases count: {_japaneseTestPhrases?.Count ?? 0}");
+            PiperLogger.LogInfo($"[SetupUI] _chineseTestPhrases count: {_chineseTestPhrases?.Count ?? 0}");
+            PiperLogger.LogInfo($"[SetupUI] _englishTestPhrases count: {_englishTestPhrases?.Count ?? 0}");
+            PiperLogger.LogInfo($"[SetupUI] _phraseDropdown is null: {_phraseDropdown == null}");
+            
             // モデル選択ドロップダウンの設定
             if (_modelDropdown != null)
             {
@@ -313,18 +319,25 @@ namespace uPiper.Demo
             // フレーズ選択ドロップダウンの設定
             if (_phraseDropdown != null)
             {
+                PiperLogger.LogInfo("[SetupUI] Setting up phrase dropdown");
                 _phraseDropdown.ClearOptions();
                 if (_japaneseTestPhrases != null && _japaneseTestPhrases.Count > 0)
                 {
+                    PiperLogger.LogInfo($"[SetupUI] Adding {_japaneseTestPhrases.Count} Japanese phrases to dropdown");
                     _phraseDropdown.AddOptions(_japaneseTestPhrases);
                 }
                 else
                 {
                     // フォールバック
+                    PiperLogger.LogWarning("[SetupUI] Japanese test phrases not initialized, using fallback");
                     _phraseDropdown.AddOptions(new List<string> { "Custom Input", "Hello", "Test" });
-                    PiperLogger.LogWarning("[InferenceEngineDemo] Japanese test phrases not initialized");
                 }
                 _phraseDropdown.onValueChanged.AddListener(OnPhraseChanged);
+                PiperLogger.LogInfo($"[SetupUI] Phrase dropdown options count: {_phraseDropdown.options.Count}");
+            }
+            else
+            {
+                PiperLogger.LogError("[SetupUI] _phraseDropdown is null! Please check Unity Inspector");
             }
 
             // GPU推論バックエンドドロップダウンの設定
@@ -381,13 +394,20 @@ namespace uPiper.Demo
             // フレーズドロップダウンを更新
             if (_phraseDropdown != null)
             {
+                PiperLogger.LogInfo($"[OnModelChanged] Updating phrase dropdown for language: {language}");
                 _phraseDropdown.ClearOptions();
                 if (language == "ja")
                 {
                     if (_japaneseTestPhrases != null && _japaneseTestPhrases.Count > 0)
+                    {
+                        PiperLogger.LogInfo($"[OnModelChanged] Adding {_japaneseTestPhrases.Count} Japanese phrases");
                         _phraseDropdown.AddOptions(_japaneseTestPhrases);
+                    }
                     else
+                    {
+                        PiperLogger.LogWarning("[OnModelChanged] Japanese phrases not available, using fallback");
                         _phraseDropdown.AddOptions(new List<string> { "Custom Input", "こんにちは" });
+                    }
                     
                     if (_inputField != null)
                         _inputField.text = _defaultJapaneseText;
@@ -395,9 +415,15 @@ namespace uPiper.Demo
                 else if (language == "zh")
                 {
                     if (_chineseTestPhrases != null && _chineseTestPhrases.Count > 0)
+                    {
+                        PiperLogger.LogInfo($"[OnModelChanged] Adding {_chineseTestPhrases.Count} Chinese phrases");
                         _phraseDropdown.AddOptions(_chineseTestPhrases);
+                    }
                     else
+                    {
+                        PiperLogger.LogWarning("[OnModelChanged] Chinese phrases not available, using fallback");
                         _phraseDropdown.AddOptions(new List<string> { "Custom Input", "你好" });
+                    }
                     
                     if (_inputField != null)
                         _inputField.text = "你好";
@@ -405,14 +431,25 @@ namespace uPiper.Demo
                 else
                 {
                     if (_englishTestPhrases != null && _englishTestPhrases.Count > 0)
+                    {
+                        PiperLogger.LogInfo($"[OnModelChanged] Adding {_englishTestPhrases.Count} English phrases");
                         _phraseDropdown.AddOptions(_englishTestPhrases);
+                    }
                     else
+                    {
+                        PiperLogger.LogWarning("[OnModelChanged] English phrases not available, using fallback");
                         _phraseDropdown.AddOptions(new List<string> { "Custom Input", "Hello" });
+                    }
                     
                     if (_inputField != null)
                         _inputField.text = _defaultEnglishText;
                 }
+                PiperLogger.LogInfo($"[OnModelChanged] Phrase dropdown now has {_phraseDropdown.options.Count} options");
                 _phraseDropdown.value = 1; // デフォルトフレーズを選択
+            }
+            else
+            {
+                PiperLogger.LogError("[OnModelChanged] _phraseDropdown is null! Please check Unity Inspector");
             }
         }
 
