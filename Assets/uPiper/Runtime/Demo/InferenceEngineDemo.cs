@@ -806,7 +806,12 @@ namespace uPiper.Demo
 
                 // 音素をIDに変換
                 var encodeStopwatch = Stopwatch.StartNew();
-                var phonemeIds = _encoder.Encode(phonemes);
+                
+                // パッドトークンを除去（モデルによっては不要な場合がある）
+                var filteredPhonemes = phonemes.Where(p => p != "_").ToArray();
+                PiperLogger.LogInfo($"Filtered phonemes ({filteredPhonemes.Length}): {string.Join(" ", filteredPhonemes)}");
+                
+                var phonemeIds = _encoder.Encode(filteredPhonemes);
                 PiperLogger.LogInfo($"Phoneme IDs ({phonemeIds.Length}): {string.Join(", ", phonemeIds)}");
                 timings["Encoding"] = encodeStopwatch.ElapsedMilliseconds;
 
@@ -832,12 +837,21 @@ namespace uPiper.Demo
 
                 // 音声データが既に小さい値の場合は増幅、大きい値の場合は正規化
                 float[] processedAudio;
-                if (maxVal < 0.1f)
+                
+                // 音声データの詳細な統計情報
+                PiperLogger.LogInfo($"Audio statistics before processing:");
+                PiperLogger.LogInfo($"  - Sample count: {audioData.Length}");
+                PiperLogger.LogInfo($"  - Duration: {audioData.Length / (float)config.SampleRate:F2} seconds");
+                PiperLogger.LogInfo($"  - Max absolute value: {maxVal:F6}");
+                PiperLogger.LogInfo($"  - Mean absolute value: {audioData.Select(x => Math.Abs(x)).Average():F6}");
+                PiperLogger.LogInfo($"  - First 10 samples: {string.Join(", ", audioData.Take(10).Select(x => x.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)))}");
+                
+                if (maxVal < 0.01f)
                 {
                     // 音声が小さすぎる場合は増幅
                     SetStatus("音声データを増幅中...");
-                    PiperLogger.LogDebug($"Amplifying audio data (max: {maxVal:F4} is too small)");
-                    var amplificationFactor = 0.5f / maxVal; // 最大値を0.5にする
+                    PiperLogger.LogWarning($"Audio data is extremely quiet (max: {maxVal:F6}). This may indicate a model output issue.");
+                    var amplificationFactor = 0.3f / maxVal; // 最大値を0.3にする
                     processedAudio = audioData.Select(x => x * amplificationFactor).ToArray();
                     PiperLogger.LogInfo($"Amplified audio by factor {amplificationFactor:F2}");
                 }
