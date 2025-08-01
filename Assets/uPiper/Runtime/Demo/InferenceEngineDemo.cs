@@ -344,7 +344,8 @@ namespace uPiper.Demo
             if (_backendDropdown != null)
             {
                 _backendDropdown.ClearOptions();
-                var options = new List<string> { "Auto", "CPU", "GPU Compute", "GPU Pixel" };
+                // GPU ComputeはVITSモデルとの互換性問題があるため除外
+                var options = new List<string> { "Auto", "CPU", "GPU Pixel" };
                 _backendDropdown.AddOptions(options);
                 _backendDropdown.value = 0; // Auto
                 _backendDropdown.onValueChanged.AddListener(OnBackendChanged);
@@ -490,12 +491,12 @@ namespace uPiper.Demo
 
         private void OnBackendChanged(int index)
         {
+            // GPU Computeを除外したため、インデックスが変更されている
             _selectedBackend = index switch
             {
                 0 => InferenceBackend.Auto,
                 1 => InferenceBackend.CPU,
-                2 => InferenceBackend.GPUCompute,
-                3 => InferenceBackend.GPUPixel,
+                2 => InferenceBackend.GPUPixel,
                 _ => InferenceBackend.Auto
             };
             PiperLogger.LogDebug($"Backend changed to: {_selectedBackend}");
