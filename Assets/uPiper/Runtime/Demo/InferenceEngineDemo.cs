@@ -314,7 +314,16 @@ namespace uPiper.Demo
             if (_phraseDropdown != null)
             {
                 _phraseDropdown.ClearOptions();
-                _phraseDropdown.AddOptions(_japaneseTestPhrases);
+                if (_japaneseTestPhrases != null && _japaneseTestPhrases.Count > 0)
+                {
+                    _phraseDropdown.AddOptions(_japaneseTestPhrases);
+                }
+                else
+                {
+                    // フォールバック
+                    _phraseDropdown.AddOptions(new List<string> { "Custom Input", "Hello", "Test" });
+                    PiperLogger.LogWarning("[InferenceEngineDemo] Japanese test phrases not initialized");
+                }
                 _phraseDropdown.onValueChanged.AddListener(OnPhraseChanged);
             }
 
@@ -375,19 +384,31 @@ namespace uPiper.Demo
                 _phraseDropdown.ClearOptions();
                 if (language == "ja")
                 {
-                    _phraseDropdown.AddOptions(_japaneseTestPhrases);
+                    if (_japaneseTestPhrases != null && _japaneseTestPhrases.Count > 0)
+                        _phraseDropdown.AddOptions(_japaneseTestPhrases);
+                    else
+                        _phraseDropdown.AddOptions(new List<string> { "Custom Input", "こんにちは" });
+                    
                     if (_inputField != null)
                         _inputField.text = _defaultJapaneseText;
                 }
                 else if (language == "zh")
                 {
-                    _phraseDropdown.AddOptions(_chineseTestPhrases);
+                    if (_chineseTestPhrases != null && _chineseTestPhrases.Count > 0)
+                        _phraseDropdown.AddOptions(_chineseTestPhrases);
+                    else
+                        _phraseDropdown.AddOptions(new List<string> { "Custom Input", "你好" });
+                    
                     if (_inputField != null)
                         _inputField.text = "你好";
                 }
                 else
                 {
-                    _phraseDropdown.AddOptions(_englishTestPhrases);
+                    if (_englishTestPhrases != null && _englishTestPhrases.Count > 0)
+                        _phraseDropdown.AddOptions(_englishTestPhrases);
+                    else
+                        _phraseDropdown.AddOptions(new List<string> { "Custom Input", "Hello" });
+                    
                     if (_inputField != null)
                         _inputField.text = _defaultEnglishText;
                 }
