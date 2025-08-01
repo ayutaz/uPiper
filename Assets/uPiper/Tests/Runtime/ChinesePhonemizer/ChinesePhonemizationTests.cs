@@ -12,12 +12,12 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
 {
     public class ChinesePhonemizationTests
     {
-        private Core.Phonemizers.Backend.ChinesePhonemizer phonemizer;
+        private uPiper.Core.Phonemizers.Backend.ChinesePhonemizer phonemizer;
         
         [SetUp]
         public async Task Setup()
         {
-            phonemizer = new Core.Phonemizers.Backend.ChinesePhonemizer();
+            phonemizer = new uPiper.Core.Phonemizers.Backend.ChinesePhonemizer();
             var initialized = await phonemizer.InitializeAsync(new PhonemizerBackendOptions());
             Assert.IsTrue(initialized, "Failed to initialize Chinese phonemizer");
         }
