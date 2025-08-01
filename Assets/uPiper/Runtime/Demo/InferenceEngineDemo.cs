@@ -19,6 +19,38 @@ using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Demo
 {
+    // Temporary workaround for compilation issue
+    internal static class ArpabetToIPAConverterTemp
+    {
+        private static readonly Dictionary<string, string> ArpabetToIPA = new()
+        {
+            // Vowels
+            ["AA"] = "ɑ", ["AE"] = "æ", ["AH"] = "ʌ", ["AO"] = "ɔ",
+            ["AW"] = "aʊ", ["AY"] = "aɪ", ["EH"] = "ɛ", ["ER"] = "ɚ",
+            ["EY"] = "eɪ", ["IH"] = "ɪ", ["IY"] = "i", ["OW"] = "oʊ",
+            ["OY"] = "ɔɪ", ["UH"] = "ʊ", ["UW"] = "u",
+            // Consonants
+            ["B"] = "b", ["CH"] = "tʃ", ["D"] = "d", ["DH"] = "ð",
+            ["F"] = "f", ["G"] = "ɡ", ["HH"] = "h", ["JH"] = "dʒ",
+            ["K"] = "k", ["L"] = "l", ["M"] = "m", ["N"] = "n",
+            ["NG"] = "ŋ", ["P"] = "p", ["R"] = "ɹ", ["S"] = "s",
+            ["SH"] = "ʃ", ["T"] = "t", ["TH"] = "θ", ["V"] = "v",
+            ["W"] = "w", ["Y"] = "j", ["Z"] = "z", ["ZH"] = "ʒ",
+        };
+
+        public static string[] ConvertAll(string[] arpabetPhonemes)
+        {
+            var result = new string[arpabetPhonemes.Length];
+            for (int i = 0; i < arpabetPhonemes.Length; i++)
+            {
+                var basePhoneme = arpabetPhonemes[i].TrimEnd('0', '1', '2');
+                result[i] = ArpabetToIPA.TryGetValue(basePhoneme.ToUpper(), out var ipa) 
+                    ? ipa : arpabetPhonemes[i].ToLower();
+            }
+            return result;
+        }
+    }
+
     /// <summary>
     /// Phase 1.10 - Unity.InferenceEngineを使用したPiper TTSデモ（OpenJTalk統合版）
     /// 
@@ -656,7 +688,7 @@ namespace uPiper.Demo
                     var arpabetPhonemes = phonemeResult.Phonemes;
                     PiperLogger.LogInfo($"[English] Arpabet phonemes ({arpabetPhonemes.Length}): {string.Join(" ", arpabetPhonemes)}");
                     
-                    phonemes = uPiper.Core.Phonemizers.ArpabetToIPAConverter.ConvertAll(arpabetPhonemes);
+                    phonemes = ArpabetToIPAConverterTemp.ConvertAll(arpabetPhonemes);
                     PiperLogger.LogInfo($"[English] IPA phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
 
                     // Show phoneme details in UI
