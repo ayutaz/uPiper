@@ -152,56 +152,52 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 return "";
                 
             var result = new StringBuilder();
-            var groups = new long[4]; // 个、万、亿、万亿
             
-            // Split number into groups of 4 digits
-            for (int i = 0; i < 4 && value > 0; i++)
+            // Special case for exact 10000
+            if (value == 10000)
+                return "一万";
+                
+            // Break down the number
+            var yi = value / 100000000;  // 億
+            value %= 100000000;
+            var wan = value / 10000;      // 万
+            value %= 10000;
+            var qian = value / 1000;      // 千
+            value %= 1000;
+            var bai = value / 100;        // 百
+            value %= 100;
+            var shi = value / 10;         // 十
+            var ge = value % 10;          // 個
+            
+            // Process 億
+            if (yi > 0)
             {
-                groups[i] = value % 10000;
-                value /= 10000;
+                result.Append(ConvertPositiveToFormalChinese(yi));
+                result.Append("亿");
             }
             
-            // Find the highest non-zero group
-            int highestGroup = 3;
-            while (highestGroup >= 0 && groups[highestGroup] == 0)
+            // Process 万
+            if (wan > 0)
             {
-                highestGroup--;
+                // Add 零 if needed (億 exists but no 千万/百万/十万)
+                if (result.Length > 0 && wan < 1000)
+                {
+                    result.Append("零");
+                }
+                result.Append(ConvertSegmentToChinese(wan));
+                result.Append("万");
             }
             
-            // Track if we've seen any groups (for zero insertion)
-            bool hasSeenNonZeroGroup = false;
-            bool needZero = false;
-            
-            for (int i = highestGroup; i >= 0; i--)
+            // Process remaining (千百十個)
+            var remaining = qian * 1000 + bai * 100 + shi * 10 + ge;
+            if (remaining > 0)
             {
-                if (groups[i] == 0)
+                // Add 零 if we have 万 or 億 but no 千
+                if (result.Length > 0 && qian == 0)
                 {
-                    // Mark that we might need a zero if we see another group
-                    if (hasSeenNonZeroGroup)
-                    {
-                        needZero = true;
-                    }
+                    result.Append("零");
                 }
-                else
-                {
-                    // We have a non-zero group
-                    if (needZero && groups[i] < 1000)
-                    {
-                        result.Append("零");
-                    }
-                    
-                    // Convert the group
-                    result.Append(ConvertSegmentToChinese(groups[i]));
-                    
-                    // Add unit (万、亿、万亿)
-                    if (i > 0)
-                    {
-                        result.Append(bigUnits[i]);
-                    }
-                    
-                    hasSeenNonZeroGroup = true;
-                    needZero = false;
-                }
+                result.Append(ConvertSegmentToChinese(remaining));
             }
             
             // Handle special cases like "一十" -> "十"
