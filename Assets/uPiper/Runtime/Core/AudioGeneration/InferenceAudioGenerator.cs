@@ -238,8 +238,9 @@ namespace uPiper.Core.AudioGeneration
                         // GPU Computeバックエンドの場合は特別な処理が必要な場合がある
                         if (_actualBackendType == BackendType.GPUCompute)
                         {
-                            PiperLogger.LogInfo("[InferenceAudioGenerator] GPU Compute backend - ensuring all operations complete");
-                            _worker.CompleteAllPendingOperations();
+                            PiperLogger.LogInfo("[InferenceAudioGenerator] GPU Compute backend - applying special handling");
+                            // Note: Unity.InferenceEngine handles synchronization internally
+                            // The output retrieval will block until computation is complete
                         }
                         
                         PiperLogger.LogInfo("[InferenceAudioGenerator] Inference completed");
