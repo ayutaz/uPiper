@@ -126,7 +126,9 @@ namespace uPiper.Demo
         {
             { "ja_JP-test-medium", "ja" },
             { "test_voice", "en" },
-            { "zh_CN-huayan-medium", "zh" }
+            { "zh_CN-huayan-medium", "zh" },
+            // 一時的に日本語モデルで英語テスト
+            { "ja_JP-test-medium-en", "en" }
         };
 
         // テスト用の定型文 - will be initialized in Start() to avoid encoding issues
@@ -312,7 +314,7 @@ namespace uPiper.Demo
             if (_modelDropdown != null)
             {
                 _modelDropdown.ClearOptions();
-                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "test_voice", "zh_CN-huayan-medium" });
+                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "test_voice (現在利用不可)", "zh_CN-huayan-medium", "英語テスト(日本語モデル使用)" });
                 _modelDropdown.onValueChanged.AddListener(OnModelChanged);
             }
 
@@ -388,9 +390,11 @@ namespace uPiper.Demo
 
         private void OnModelChanged(int index)
         {
-            var modelNames = new[] { "ja_JP-test-medium", "test_voice", "zh_CN-huayan-medium" };
+            var modelNames = new[] { "ja_JP-test-medium", "test_voice", "zh_CN-huayan-medium", "ja_JP-test-medium-en" };
+            if (index >= modelNames.Length) return;
+            
             var modelName = modelNames[index];
-            var language = _modelLanguages[modelName];
+            var language = _modelLanguages.ContainsKey(modelName) ? _modelLanguages[modelName] : "ja";
 
             // フレーズドロップダウンを更新
             if (_phraseDropdown != null)
@@ -576,9 +580,14 @@ namespace uPiper.Demo
             try
             {
                 // モデル名を取得
-                var modelNames = new[] { "ja_JP-test-medium", "test_voice", "zh_CN-huayan-medium" };
-                var modelName = modelNames[_modelDropdown?.value ?? 0];
-                PiperLogger.LogDebug($"Selected model: {modelName}");
+                var modelNames = new[] { "ja_JP-test-medium", "test_voice", "zh_CN-huayan-medium", "ja_JP-test-medium-en" };
+                var selectedIndex = _modelDropdown?.value ?? 0;
+                
+                // 英語テストモードの場合は日本語モデルを使用
+                var modelName = selectedIndex == 3 ? "ja_JP-test-medium" : modelNames[selectedIndex];
+                var isEnglishTest = selectedIndex == 3;
+                
+                PiperLogger.LogDebug($"Selected model: {modelName} (English test mode: {isEnglishTest})");
 
                 // モデルをロード
                 SetStatus("モデルをロード中...");
@@ -660,7 +669,7 @@ namespace uPiper.Demo
                 SetStatus("音素に変換中...");
                 var phonemeStopwatch = Stopwatch.StartNew();
                 string[] phonemes;
-                var language = _modelLanguages[modelName];
+                var language = isEnglishTest ? "en" : _modelLanguages[modelName];
 
                 // Define konnichiwa string from UTF-8 bytes for special debugging
                 var konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
