@@ -86,16 +86,19 @@ namespace uPiper.Demo
         private GPUInferenceSettings _gpuSettings;
 #if !UNITY_WEBGL
         private ITextPhonemizer _phonemizer;
+        private Core.Phonemizers.Backend.ChinesePhonemizer _chinesePhonemizer;
 #endif
 
         private readonly Dictionary<string, string> _modelLanguages = new()
         {
             { "ja_JP-test-medium", "ja" },
-            { "test_voice", "en" }
+            { "test_voice", "en" },
+            { "zh_CN-huayan-medium", "zh" }
         };
 
         // テスト用の定型文 - will be initialized in Start() to avoid encoding issues
         private List<string> _japaneseTestPhrases;
+        private List<string> _chineseTestPhrases;
 
         private readonly List<string> _englishTestPhrases = new()
         {
@@ -130,6 +133,22 @@ namespace uPiper.Demo
                 System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x83, 0xA6, 0xE3, 0x83, 0x8B, 0xE3, 0x83, 0x86, 0xE3, 0x82, 0xA3, 0xE3, 0x81, 0xA7, 0xE6, 0x97, 0xA5, 0xE6, 0x9C, 0xAC, 0xE8, 0xAA, 0x9E, 0xE9, 0x9F, 0xB3, 0xE5, 0xA3, 0xB0, 0xE5, 0x90, 0x88, 0xE6, 0x88, 0x90, 0xE3, 0x81, 0x8C, 0xE3, 0x81, 0xA7, 0xE3, 0x81, 0x8D, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x97, 0xE3, 0x81, 0x9F }), // ユニティで日本語音声合成ができました
                 System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x8A, 0xE3, 0x81, 0xAF, 0xE3, 0x82, 0x88, 0xE3, 0x81, 0x86, 0xE3, 0x81, 0x94, 0xE3, 0x81, 0x96, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99, 0xE3, 0x80, 0x81, 0xE4, 0xBB, 0x8A, 0xE6, 0x97, 0xA5, 0xE3, 0x82, 0x82, 0xE4, 0xB8, 0x80, 0xE6, 0x97, 0xA5, 0xE9, 0xA0, 0x91, 0xE5, 0xBC, 0xB5, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x97, 0xE3, 0x82, 0x87, 0xE3, 0x81, 0x86 }), // おはようございます、今日も一日頑張りましょう
                 System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x99, 0xE3, 0x81, 0xBF, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x9B, 0xE3, 0x82, 0x93, 0xE3, 0x80, 0x81, 0xE3, 0x81, 0xA1, 0xE3, 0x82, 0x87, 0xE3, 0x81, 0xA3, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x8A, 0xE8, 0x81, 0x9E, 0xE3, 0x81, 0x8D, 0xE3, 0x81, 0x97, 0xE3, 0x81, 0x9F, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0x93, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x8C, 0xE3, 0x81, 0x82, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99 }) // すみません、ちょっとお聞きしたいことがあります
+            };
+
+            // Initialize Chinese test phrases
+            _chineseTestPhrases = new List<string>
+            {
+                "自定义输入",  // Custom input option
+                "你好",
+                "你好，世界！",
+                "谢谢你",
+                "欢迎使用Unity推理引擎",
+                "今天天气真好",
+                "这是一个语音合成测试",
+                "中文语音合成效果如何？",
+                "我们正在测试中文语音合成",
+                "Unity中文语音合成已经实现了",
+                "早上好，今天也要加油啊"
             };
 
             _generator = new InferenceAudioGenerator();
@@ -173,6 +192,30 @@ namespace uPiper.Demo
                 PiperLogger.LogError("[InferenceEngineDemo]   2. Run ./build.sh (macOS/Linux) or build.bat (Windows)");
                 _phonemizer = null;
             }
+
+            // Initialize Chinese phonemizer
+            Task.Run(async () =>
+            {
+                try
+                {
+                    _chinesePhonemizer = new Core.Phonemizers.Backend.ChinesePhonemizer();
+                    var initialized = await _chinesePhonemizer.InitializeAsync(new Core.Phonemizers.Backend.PhonemizerBackendOptions());
+                    if (initialized)
+                    {
+                        PiperLogger.LogInfo("[InferenceEngineDemo] Chinese phonemizer initialized successfully");
+                    }
+                    else
+                    {
+                        PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize Chinese phonemizer");
+                        _chinesePhonemizer = null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize Chinese phonemizer: {ex.Message}");
+                    _chinesePhonemizer = null;
+                }
+            });
 #endif
 
             SetupUI();
@@ -195,6 +238,7 @@ namespace uPiper.Demo
                     disposable.Dispose();
                 }
             }
+            _chinesePhonemizer?.Dispose();
 #endif
         }
 
@@ -204,7 +248,7 @@ namespace uPiper.Demo
             if (_modelDropdown != null)
             {
                 _modelDropdown.ClearOptions();
-                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "test_voice" });
+                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "test_voice", "zh_CN-huayan-medium" });
                 _modelDropdown.onValueChanged.AddListener(OnModelChanged);
             }
 
@@ -263,20 +307,33 @@ namespace uPiper.Demo
 
         private void OnModelChanged(int index)
         {
-            var modelName = index == 0 ? "ja_JP-test-medium" : "test_voice";
-            var isJapanese = _modelLanguages[modelName] == "ja";
+            var modelNames = new[] { "ja_JP-test-medium", "test_voice", "zh_CN-huayan-medium" };
+            var modelName = modelNames[index];
+            var language = _modelLanguages[modelName];
 
             // フレーズドロップダウンを更新
             if (_phraseDropdown != null)
             {
                 _phraseDropdown.ClearOptions();
-                _phraseDropdown.AddOptions(isJapanese ? _japaneseTestPhrases : _englishTestPhrases);
+                if (language == "ja")
+                {
+                    _phraseDropdown.AddOptions(_japaneseTestPhrases);
+                    if (_inputField != null)
+                        _inputField.text = _defaultJapaneseText;
+                }
+                else if (language == "zh")
+                {
+                    _phraseDropdown.AddOptions(_chineseTestPhrases);
+                    if (_inputField != null)
+                        _inputField.text = "你好";
+                }
+                else
+                {
+                    _phraseDropdown.AddOptions(_englishTestPhrases);
+                    if (_inputField != null)
+                        _inputField.text = _defaultEnglishText;
+                }
                 _phraseDropdown.value = 1; // デフォルトフレーズを選択
-            }
-
-            if (_inputField != null)
-            {
-                _inputField.text = isJapanese ? _defaultJapaneseText : _defaultEnglishText;
             }
         }
 
@@ -285,8 +342,15 @@ namespace uPiper.Demo
             if (_phraseDropdown == null || _inputField == null)
                 return;
 
-            var isJapanese = _modelDropdown?.value == 0;
-            var phrases = isJapanese ? _japaneseTestPhrases : _englishTestPhrases;
+            // モデルに応じたフレーズリストを取得
+            List<string> phrases;
+            var modelIndex = _modelDropdown?.value ?? 0;
+            if (modelIndex == 0)  // Japanese
+                phrases = _japaneseTestPhrases;
+            else if (modelIndex == 2)  // Chinese
+                phrases = _chineseTestPhrases;
+            else  // English
+                phrases = _englishTestPhrases;
 
             if (index > 0 && index < phrases.Count)
             {
@@ -301,7 +365,8 @@ namespace uPiper.Demo
                 if (string.IsNullOrEmpty(_inputField.text) || phrases.Contains(_inputField.text))
                 {
                     // 空または定型文の場合はデフォルトテキストを設定
-                    _inputField.text = isJapanese ? _defaultJapaneseText : _defaultEnglishText;
+                    var language = _modelLanguages[(_modelDropdown?.value ?? 0) == 0 ? "ja_JP-test-medium" : (_modelDropdown?.value ?? 0) == 2 ? "zh_CN-huayan-medium" : "test_voice"];
+                    _inputField.text = language == "ja" ? _defaultJapaneseText : language == "zh" ? "你好" : _defaultEnglishText;
                 }
                 _inputField.Select(); // フォーカスを設定
             }
@@ -394,7 +459,8 @@ namespace uPiper.Demo
             try
             {
                 // モデル名を取得
-                var modelName = _modelDropdown?.value == 0 ? "ja_JP-test-medium" : "test_voice";
+                var modelNames = new[] { "ja_JP-test-medium", "test_voice", "zh_CN-huayan-medium" };
+                var modelName = modelNames[_modelDropdown?.value ?? 0];
                 PiperLogger.LogDebug($"Selected model: {modelName}");
 
                 // モデルをロード
@@ -506,6 +572,31 @@ namespace uPiper.Demo
                     {
                         PiperLogger.LogDebug($"[OpenJTalk] Total duration: {phonemeResult.Durations.Sum():F3}s");
                     }
+                }
+                else if (language == "zh" && _chinesePhonemizer != null)
+                {
+                    PiperLogger.LogDebug("[InferenceEngineDemo] Using Chinese phonemizer for Chinese text");
+                    PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
+
+                    var chineseStopwatch = Stopwatch.StartNew();
+                    var phonemeResult = await _chinesePhonemizer.PhonemizeAsync(_inputField.text, "zh");
+                    timings["ChinesePhonemizer"] = chineseStopwatch.ElapsedMilliseconds;
+                    
+                    phonemes = phonemeResult.Phonemes;
+                    PiperLogger.LogInfo($"[Chinese] Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+
+                    // Show phoneme details in UI
+                    if (_phonemeDetailsText != null)
+                    {
+                        _phonemeDetailsText.text = $"Chinese: {string.Join(" ", phonemes)}";
+                    }
+                }
+                else if (language == "zh")
+                {
+                    // Chinese phonemizer is required for Chinese text
+                    var errorMsg = "Chinese phonemizer is required for Chinese text but is not available.\n" +
+                                  "This should not happen as it's built into the plugin.";
+                    throw new Exception(errorMsg);
                 }
                 else if (language == "ja")
                 {

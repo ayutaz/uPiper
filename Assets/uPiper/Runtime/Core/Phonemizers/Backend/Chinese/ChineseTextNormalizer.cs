@@ -153,6 +153,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 
             var result = new StringBuilder();
             var bigUnitIndex = 0;
+            var prevSegment = -1L;
             
             while (value > 0)
             {
@@ -165,10 +166,17 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                         segmentStr += bigUnits[bigUnitIndex];
                     }
                     
+                    // Add zero between segments if necessary (e.g., 10001 -> 一万零一)
+                    if (result.Length > 0 && prevSegment >= 0 && segment < 1000 && bigUnitIndex > 0)
+                    {
+                        result.Insert(0, "零");
+                    }
+                    
                     // Add to beginning
                     result.Insert(0, segmentStr);
                 }
                 
+                prevSegment = segment;
                 value /= 10000;
                 bigUnitIndex++;
             }
