@@ -57,7 +57,10 @@ build_ios() {
         -DENABLE_BITCODE=OFF \
         -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
         -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=NO \
-        -DCMAKE_IOS_INSTALL_COMBINED=YES
+        -DCMAKE_IOS_INSTALL_COMBINED=YES \
+        -DBUILD_TESTS=OFF \
+        -DBUILD_BENCHMARK=OFF \
+        -DIOS=ON
     
     # Build
     cmake --build . --config "${BUILD_TYPE}" --target install
@@ -74,7 +77,15 @@ build_ios "OS64" "arm64"
 
 # Copy the library to Unity Plugins folder
 echo -e "${GREEN}Copying library to Unity...${NC}"
-cp "${INSTALL_DIR}/OS64/lib/libopenjtalk_wrapper.a" "${OUTPUT_DIR}/"
+# The file might have .dylib extension but is actually a static library
+if [ -f "${INSTALL_DIR}/OS64/lib/libopenjtalk_wrapper.dylib" ]; then
+    cp "${INSTALL_DIR}/OS64/lib/libopenjtalk_wrapper.dylib" "${OUTPUT_DIR}/libopenjtalk_wrapper.a"
+elif [ -f "${INSTALL_DIR}/OS64/lib/libopenjtalk_wrapper.a" ]; then
+    cp "${INSTALL_DIR}/OS64/lib/libopenjtalk_wrapper.a" "${OUTPUT_DIR}/"
+else
+    echo -e "${RED}Error: Library not found!${NC}"
+    exit 1
+fi
 
 # Create .meta file for Unity
 echo -e "${GREEN}Creating Unity meta file...${NC}"

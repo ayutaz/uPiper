@@ -1,7 +1,7 @@
 #if !UNITY_WEBGL
 
 // Define a constant to control P/Invoke usage
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_EDITOR_LINUX || UNITY_STANDALONE_LINUX || UNITY_ANDROID
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_EDITOR_LINUX || UNITY_STANDALONE_LINUX || UNITY_ANDROID || UNITY_IOS
 #define ENABLE_PINVOKE
 #endif
 
@@ -47,7 +47,11 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region P/Invoke Declarations
 
+#if UNITY_IOS && !UNITY_EDITOR
+        private const string LIBRARY_NAME = "__Internal";
+#else
         private const string LIBRARY_NAME = "openjtalk_wrapper";
+#endif
 
 #if ENABLE_PINVOKE && UNITY_EDITOR_WIN
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -625,6 +629,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                 Debug.LogError($"[OpenJTalkPhonemizer] Development mode: Dictionary not found at: {developmentPath}");
                 return developmentPath; // Return expected path for error messages
             }
+#elif UNITY_IOS && !UNITY_EDITOR
+            // On iOS, StreamingAssets are included in the app bundle
+            // Use Application.dataPath + /Raw for iOS
+            return Path.Combine(Application.dataPath, "Raw", "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
 #else
             // After setup, files should always be in fixed locations - using consistent path structure
             var primaryPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
@@ -742,6 +750,13 @@ namespace uPiper.Core.Phonemizers.Implementations
                 return true;
 #else
                 // In built application, try to call a simple function to check if library is loaded
+                // For Android and iOS, the library is always available at runtime (statically linked or included in APK/IPA)
+                if (PlatformHelper.IsAndroid || PlatformHelper.IsIOS)
+                {
+                    Debug.Log($"[OpenJTalkPhonemizer] Native library is statically linked on {(PlatformHelper.IsAndroid ? "Android" : "iOS")}");
+                    return true;
+                }
+                
                 try
                 {
 #if ENABLE_PINVOKE
@@ -881,6 +896,8 @@ namespace uPiper.Core.Phonemizers.Implementations
                 return "libopenjtalk_wrapper.so";
             else if (PlatformHelper.IsAndroid)
                 return "libopenjtalk_wrapper.so";
+            else if (PlatformHelper.IsIOS)
+                return "libopenjtalk_wrapper.a";
             else
                 return "openjtalk_wrapper";  // Fallback for unknown platforms
 #endif
