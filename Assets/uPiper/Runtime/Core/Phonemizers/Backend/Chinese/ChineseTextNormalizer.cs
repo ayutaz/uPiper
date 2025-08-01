@@ -153,31 +153,39 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 
             var result = new StringBuilder();
             var bigUnitIndex = 0;
-            var prevSegment = -1L;
+            var needZero = false;
             
             while (value > 0)
             {
                 var segment = value % 10000;
+                value /= 10000;
+                
                 if (segment > 0)
                 {
                     var segmentStr = ConvertSegmentToChinese(segment);
+                    
+                    // Add big unit
                     if (bigUnitIndex > 0)
                     {
                         segmentStr += bigUnits[bigUnitIndex];
                     }
                     
-                    // Add zero between segments if necessary (e.g., 10001 -> 一万零一)
-                    if (result.Length > 0 && prevSegment >= 0 && segment < 1000 && bigUnitIndex > 0)
+                    // Add zero if needed (for gaps like 10001)
+                    if (needZero && segment < 1000)
                     {
-                        result.Insert(0, "零");
+                        segmentStr = "零" + segmentStr;
                     }
                     
-                    // Add to beginning
+                    // Insert at beginning
                     result.Insert(0, segmentStr);
+                    needZero = false;
+                }
+                else if (result.Length > 0)
+                {
+                    // Mark that we need a zero for the next non-zero segment
+                    needZero = true;
                 }
                 
-                prevSegment = segment;
-                value /= 10000;
                 bigUnitIndex++;
             }
             
