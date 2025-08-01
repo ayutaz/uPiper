@@ -630,9 +630,8 @@ namespace uPiper.Core.Phonemizers.Implementations
                 return developmentPath; // Return expected path for error messages
             }
 #elif UNITY_IOS && !UNITY_EDITOR
-            // On iOS, StreamingAssets are included in the app bundle
-            // Use Application.dataPath + /Raw for iOS
-            return Path.Combine(Application.dataPath, "Raw", "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
+            // On iOS, use the IOSPathResolver for proper path handling
+            return IOSPathResolver.GetOpenJTalkDictionaryPath();
 #else
             // After setup, files should always be in fixed locations - using consistent path structure
             var primaryPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
