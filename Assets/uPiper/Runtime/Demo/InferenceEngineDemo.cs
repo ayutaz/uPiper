@@ -87,6 +87,7 @@ namespace uPiper.Demo
 #if !UNITY_WEBGL
         private ITextPhonemizer _phonemizer;
         private Core.Phonemizers.Backend.ChinesePhonemizer _chinesePhonemizer;
+        private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
 #endif
 
         private readonly Dictionary<string, string> _modelLanguages = new()
@@ -216,6 +217,30 @@ namespace uPiper.Demo
                     _chinesePhonemizer = null;
                 }
             });
+
+            // Initialize English phonemizer (Flite LTS)
+            Task.Run(async () =>
+            {
+                try
+                {
+                    _englishPhonemizer = new Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer();
+                    var initialized = await _englishPhonemizer.InitializeAsync(new Core.Phonemizers.Backend.PhonemizerBackendOptions());
+                    if (initialized)
+                    {
+                        PiperLogger.LogInfo("[InferenceEngineDemo] Flite LTS phonemizer initialized successfully");
+                    }
+                    else
+                    {
+                        PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer");
+                        _englishPhonemizer = null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer: {ex.Message}");
+                    _englishPhonemizer = null;
+                }
+            });
 #endif
 
             SetupUI();
@@ -239,6 +264,7 @@ namespace uPiper.Demo
                 }
             }
             _chinesePhonemizer?.Dispose();
+            _englishPhonemizer?.Dispose();
 #endif
         }
 
@@ -617,19 +643,38 @@ namespace uPiper.Demo
 
                     throw new Exception(errorMsg);
                 }
+                else if (language == "en" && _englishPhonemizer != null)
+                {
+                    PiperLogger.LogDebug("[InferenceEngineDemo] Using Flite LTS phonemizer for English text");
+                    PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
+
+                    var englishStopwatch = Stopwatch.StartNew();
+                    var phonemeResult = await _englishPhonemizer.PhonemizeAsync(_inputField.text, "en");
+                    timings["FliteLTS"] = englishStopwatch.ElapsedMilliseconds;
+                    
+                    // Convert Arpabet to IPA for eSpeak-compatible model
+                    var arpabetPhonemes = phonemeResult.Phonemes;
+                    PiperLogger.LogInfo($"[English] Arpabet phonemes ({arpabetPhonemes.Length}): {string.Join(" ", arpabetPhonemes)}");
+                    
+                    phonemes = ArpabetToIPAConverter.ConvertAll(arpabetPhonemes);
+                    PiperLogger.LogInfo($"[English] IPA phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+
+                    // Show phoneme details in UI
+                    if (_phonemeDetailsText != null)
+                    {
+                        _phonemeDetailsText.text = $"English (Flite LTS):\nArpabet: {string.Join(" ", arpabetPhonemes)}\nIPA: {string.Join(" ", phonemes)}";
+                    }
+                }
                 else
                 {
-                    // TEMPORARY: Basic English phonemization
-                    // This is a placeholder implementation for Phase 1.10.
-                    // Phase 2 will integrate eSpeak-NG for proper English phonemization.
-                    // Current approach: simple word-based splitting (not real phonemes)
+                    // Fallback: Basic word splitting for unknown languages
                     phonemes = _inputField.text.ToLower()
                         .Replace(",", " _")
                         .Replace(".", " _")
                         .Replace("!", " _")
                         .Replace("?", " _")
                         .Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    PiperLogger.LogInfo($"Basic English phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+                    PiperLogger.LogInfo($"Fallback phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                 }
 #else
                 // WebGL is not supported for Japanese
