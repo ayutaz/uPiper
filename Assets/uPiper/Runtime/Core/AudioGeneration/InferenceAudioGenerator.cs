@@ -395,6 +395,16 @@ namespace uPiper.Core.AudioGeneration
                     return BackendType.CPU;
                 }
             }
+            
+            // GPU Compute has known issues with VITS models producing silent/corrupted audio
+            // Force GPU Pixel or CPU for better compatibility
+            if (config.Backend == InferenceBackend.GPUCompute)
+            {
+                PiperLogger.LogWarning("[InferenceAudioGenerator] GPU Compute backend has known issues with VITS audio models.");
+                PiperLogger.LogWarning("[InferenceAudioGenerator] Switching to GPU Pixel backend for better compatibility.");
+                PiperLogger.LogWarning("[InferenceAudioGenerator] If issues persist, please use CPU backend explicitly.");
+                return BackendType.GPUPixel;
+            }
 
             if (config.Backend == InferenceBackend.CPU)
             {
@@ -440,8 +450,9 @@ namespace uPiper.Core.AudioGeneration
                 }
                 else if (SystemInfo.supportsComputeShaders && SystemInfo.graphicsMemorySize >= config.GPUSettings.MaxMemoryMB)
                 {
-                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUCompute backend for desktop");
-                    return BackendType.GPUCompute;
+                    // GPU Pixel is more stable than GPU Compute for VITS models
+                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUPixel backend for desktop (better VITS compatibility)");
+                    return BackendType.GPUPixel;
                 }
                 else
                 {
