@@ -125,10 +125,8 @@ namespace uPiper.Demo
         private Dictionary<string, string> _modelLanguages = new()
         {
             { "ja_JP-test-medium", "ja" },
-            { "test_voice", "en" },
-            { "zh_CN-huayan-medium", "zh" },
-            // 一時的に日本語モデルで英語テスト
-            { "ja_JP-test-medium-en", "en" }
+            { "en_US-ljspeech-medium", "en" },
+            { "zh_CN-huayan-medium", "zh" }
         };
 
         // テスト用の定型文 - will be initialized in Start() to avoid encoding issues
@@ -314,7 +312,7 @@ namespace uPiper.Demo
             if (_modelDropdown != null)
             {
                 _modelDropdown.ClearOptions();
-                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "test_voice (現在利用不可)", "zh_CN-huayan-medium", "英語テスト(日本語モデル使用)" });
+                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" });
                 _modelDropdown.onValueChanged.AddListener(OnModelChanged);
             }
 
@@ -390,11 +388,9 @@ namespace uPiper.Demo
 
         private void OnModelChanged(int index)
         {
-            var modelNames = new[] { "ja_JP-test-medium", "test_voice", "zh_CN-huayan-medium", "ja_JP-test-medium-en" };
-            if (index >= modelNames.Length) return;
-            
+            var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" };
             var modelName = modelNames[index];
-            var language = _modelLanguages.ContainsKey(modelName) ? _modelLanguages[modelName] : "ja";
+            var language = _modelLanguages[modelName];
 
             // フレーズドロップダウンを更新
             if (_phraseDropdown != null)
@@ -580,35 +576,16 @@ namespace uPiper.Demo
             try
             {
                 // モデル名を取得
-                var modelNames = new[] { "ja_JP-test-medium", "test_voice", "zh_CN-huayan-medium", "ja_JP-test-medium-en" };
-                var selectedIndex = _modelDropdown?.value ?? 0;
-                
-                // 英語テストモードの場合は日本語モデルを使用
-                var modelName = selectedIndex == 3 ? "ja_JP-test-medium" : modelNames[selectedIndex];
-                var isEnglishTest = selectedIndex == 3;
-                
-                PiperLogger.LogDebug($"Selected model: {modelName} (English test mode: {isEnglishTest})");
+                var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" };
+                var modelName = modelNames[_modelDropdown?.value ?? 0];
+                PiperLogger.LogDebug($"Selected model: {modelName}");
 
                 // モデルをロード
                 SetStatus("モデルをロード中...");
                 var loadStopwatch = Stopwatch.StartNew();
                 PiperLogger.LogDebug($"Loading model asset: Models/{modelName}");
                 
-                // デバッグ: 利用可能なモデルをリスト
-                var allModels = Resources.LoadAll<ModelAsset>("Models");
-                PiperLogger.LogInfo($"Available ModelAssets in Resources/Models: {allModels.Length}");
-                foreach (var model in allModels)
-                {
-                    PiperLogger.LogInfo($"  - {model.name}");
-                }
-                
-                var modelAsset = Resources.Load<ModelAsset>($"Models/{modelName}");
-                if (modelAsset == null)
-                {
-                    PiperLogger.LogError($"Failed to load model: {modelName}");
-                    PiperLogger.LogError($"Attempted path: Models/{modelName}");
-                    throw new Exception($"モデルが見つかりません: {modelName}");
-                }
+                var modelAsset = Resources.Load<ModelAsset>($"Models/{modelName}") ?? throw new Exception($"モデルが見つかりません: {modelName}");
                 PiperLogger.LogDebug($"Model asset loaded successfully");
                 timings["ModelLoad"] = loadStopwatch.ElapsedMilliseconds;
 
@@ -669,7 +646,7 @@ namespace uPiper.Demo
                 SetStatus("音素に変換中...");
                 var phonemeStopwatch = Stopwatch.StartNew();
                 string[] phonemes;
-                var language = isEnglishTest ? "en" : _modelLanguages[modelName];
+                var language = _modelLanguages[modelName];
 
                 // Define konnichiwa string from UTF-8 bytes for special debugging
                 var konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
