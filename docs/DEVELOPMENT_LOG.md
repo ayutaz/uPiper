@@ -16,6 +16,13 @@ This document records the development progress and milestones achieved during th
   - IPA converter with Mandarin tone marks (˥, ˧˥, ˨˩˦, ˥˩)
   - Text normalizer supporting number conversion and mixed Chinese-English text
   - Basic multi-tone character rules (不, 一, 了)
+  - Number conversion with proper zero handling (e.g., 10001 → 一万零一)
+
+- **Unity Integration**
+  - InferenceEngineDemo updated with Chinese language support
+  - Added zh_CN-huayan-medium model configuration
+  - Chinese test phrases for easy testing
+  - Model switching automatically updates available phrases
 
 - **Testing Infrastructure**
   - Comprehensive test suite for Chinese phonemization
@@ -27,6 +34,7 @@ This document records the development progress and milestones achieved during th
 - Implemented modular architecture with separate components for each stage
 - Used Unicode escape sequences for special characters (\u2018, \u2019)
 - Python script for dictionary conversion using `uv` runtime
+- Proper namespace resolution for PhonemizerBackendOptions
 
 #### Known Limitations
 - Dictionary size limited to 364 characters (full implementation needs 20,000+)
