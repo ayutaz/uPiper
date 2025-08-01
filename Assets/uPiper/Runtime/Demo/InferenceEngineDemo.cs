@@ -19,6 +19,7 @@ using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Demo
 {
+    using uPiper.Core.Phonemizers;
     /// <summary>
     /// Phase 1.10 - Unity.InferenceEngineを使用したPiper TTSデモ（OpenJTalk統合版）
     /// 
