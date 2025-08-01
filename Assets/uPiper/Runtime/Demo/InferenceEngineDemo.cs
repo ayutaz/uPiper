@@ -19,7 +19,6 @@ using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Demo
 {
-    using uPiper.Core.Phonemizers;
     /// <summary>
     /// Phase 1.10 - Unity.InferenceEngineを使用したPiper TTSデモ（OpenJTalk統合版）
     /// 
@@ -657,7 +656,7 @@ namespace uPiper.Demo
                     var arpabetPhonemes = phonemeResult.Phonemes;
                     PiperLogger.LogInfo($"[English] Arpabet phonemes ({arpabetPhonemes.Length}): {string.Join(" ", arpabetPhonemes)}");
                     
-                    phonemes = ArpabetToIPAConverter.ConvertAll(arpabetPhonemes);
+                    phonemes = uPiper.Core.Phonemizers.ArpabetToIPAConverter.ConvertAll(arpabetPhonemes);
                     PiperLogger.LogInfo($"[English] IPA phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
 
                     // Show phoneme details in UI
