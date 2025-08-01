@@ -806,12 +806,7 @@ namespace uPiper.Demo
 
                 // 音素をIDに変換
                 var encodeStopwatch = Stopwatch.StartNew();
-                
-                // パッドトークンを除去（モデルによっては不要な場合がある）
-                var filteredPhonemes = phonemes.Where(p => p != "_").ToArray();
-                PiperLogger.LogInfo($"Filtered phonemes ({filteredPhonemes.Length}): {string.Join(" ", filteredPhonemes)}");
-                
-                var phonemeIds = _encoder.Encode(filteredPhonemes);
+                var phonemeIds = _encoder.Encode(phonemes);
                 PiperLogger.LogInfo($"Phoneme IDs ({phonemeIds.Length}): {string.Join(", ", phonemeIds)}");
                 timings["Encoding"] = encodeStopwatch.ElapsedMilliseconds;
 
