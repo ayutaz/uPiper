@@ -232,8 +232,16 @@ namespace uPiper.Core.AudioGeneration
                         }
 
                         // 推論を実行
-                        PiperLogger.LogInfo("[InferenceAudioGenerator] Running inference...");
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Running inference with backend: {_actualBackendType}...");
                         _worker.Schedule();
+                        
+                        // GPU Computeバックエンドの場合は特別な処理が必要な場合がある
+                        if (_actualBackendType == BackendType.GPUCompute)
+                        {
+                            PiperLogger.LogInfo("[InferenceAudioGenerator] GPU Compute backend - ensuring all operations complete");
+                            _worker.CompleteAllPendingOperations();
+                        }
+                        
                         PiperLogger.LogInfo("[InferenceAudioGenerator] Inference completed");
 
                         // 出力を取得
@@ -298,6 +306,21 @@ namespace uPiper.Core.AudioGeneration
                         var avg = audioData.Average();
                         var absAvg = audioData.Select(Math.Abs).Average();
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Audio stats - Min: {min:F4}, Max: {max:F4}, Avg: {avg:F4}, AbsAvg: {absAvg:F4}");
+                        
+                        // GPU Computeバックエンドでのデバッグ情報
+                        if (_actualBackendType == BackendType.GPUCompute)
+                        {
+                            PiperLogger.LogInfo($"[InferenceAudioGenerator] GPU Compute backend debug info:");
+                            PiperLogger.LogInfo($"  - Graphics device: {SystemInfo.graphicsDeviceType}");
+                            PiperLogger.LogInfo($"  - Compute shader support: {SystemInfo.supportsComputeShaders}");
+                            PiperLogger.LogInfo($"  - Graphics memory: {SystemInfo.graphicsMemorySize} MB");
+                            
+                            // データの妥当性を確認
+                            if (absAvg < 0.001f)
+                            {
+                                PiperLogger.LogWarning("[InferenceAudioGenerator] WARNING: Audio output appears to be near silent - this may indicate a GPU Compute issue");
+                            }
+                        }
 
                         // 読み戻し用のテンソルを破棄
                         readableTensor.Dispose();
