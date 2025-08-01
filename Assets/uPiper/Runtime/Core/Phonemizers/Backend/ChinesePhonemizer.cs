@@ -61,21 +61,41 @@ namespace uPiper.Core.Phonemizers.Backend
             PhonemeOptions options = null,
             CancellationToken cancellationToken = default)
         {
-            return await Task.Run(() =>
+            // For short text, execute synchronously to avoid Task.Run overhead
+            if (text == null || text.Length < 100)
             {
-                if (string.IsNullOrEmpty(text))
-                {
-                    return new PhonemeResult { Phonemes = new string[0] };
-                }
+                return PhonemizeInternal(text, language);
+            }
+            
+            return await Task.Run(() => PhonemizeInternal(text, language), cancellationToken);
+        }
+        
+        private PhonemeResult PhonemizeInternal(string text, string language)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return new PhonemeResult 
+                { 
+                    Phonemes = Array.Empty<string>(),
+                    Language = language,
+                    Success = true
+                };
+            }
 
-                try
-                {
+            // Quick check without lock
+            if (dictionary == null)
+            {
+                throw new InvalidOperationException("Chinese phonemizer not initialized");
+            }
+
+            try
+            {
                     // Step 1: Normalize text
                     var normalized = textNormalizer.Normalize(text, ChineseTextNormalizer.NumberFormat.Formal);
                     
                     // Step 2: Split mixed Chinese-English text
                     var segments = textNormalizer.SplitMixedText(normalized);
-                    var phonemes = new List<string>();
+                    var phonemes = new List<string>(normalized.Length * 2); // Pre-allocate capacity
                     
                     foreach (var (chinese, english) in segments)
                     {
@@ -90,7 +110,7 @@ namespace uPiper.Core.Phonemizers.Backend
                                 if (ChineseTextNormalizer.IsChinese(pinyin[0]))
                                 {
                                     // It's still a Chinese character (no pinyin found)
-                                    Debug.LogWarning($"No pinyin for character: {pinyin}");
+                                    // Skip Debug.LogWarning for performance
                                 }
                                 else if (char.IsPunctuation(pinyin[0]))
                                 {
@@ -135,7 +155,6 @@ namespace uPiper.Core.Phonemizers.Backend
                     Debug.LogError($"Error in Chinese phonemization: {ex.Message}");
                     throw;
                 }
-            }, cancellationToken);
         }
 
 
