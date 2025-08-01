@@ -584,7 +584,22 @@ namespace uPiper.Demo
                 SetStatus("モデルをロード中...");
                 var loadStopwatch = Stopwatch.StartNew();
                 PiperLogger.LogDebug($"Loading model asset: Models/{modelName}");
-                var modelAsset = Resources.Load<ModelAsset>($"Models/{modelName}") ?? throw new Exception($"モデルが見つかりません: {modelName}");
+                
+                // デバッグ: 利用可能なモデルをリスト
+                var allModels = Resources.LoadAll<ModelAsset>("Models");
+                PiperLogger.LogInfo($"Available ModelAssets in Resources/Models: {allModels.Length}");
+                foreach (var model in allModels)
+                {
+                    PiperLogger.LogInfo($"  - {model.name}");
+                }
+                
+                var modelAsset = Resources.Load<ModelAsset>($"Models/{modelName}");
+                if (modelAsset == null)
+                {
+                    PiperLogger.LogError($"Failed to load model: {modelName}");
+                    PiperLogger.LogError($"Attempted path: Models/{modelName}");
+                    throw new Exception($"モデルが見つかりません: {modelName}");
+                }
                 PiperLogger.LogDebug($"Model asset loaded successfully");
                 timings["ModelLoad"] = loadStopwatch.ElapsedMilliseconds;
 
