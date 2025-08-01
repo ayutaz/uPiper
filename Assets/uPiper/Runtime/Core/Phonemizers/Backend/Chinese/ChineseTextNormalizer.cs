@@ -161,16 +161,27 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 value /= 10000;
             }
             
-            // Process from highest to lowest group
-            bool previousGroupWasZero = false;
-            bool hasHigherGroup = false;
+            // Find the highest non-zero group
+            int highestGroup = 3;
+            while (highestGroup >= 0 && groups[highestGroup] == 0)
+            {
+                highestGroup--;
+            }
             
-            for (int i = 3; i >= 0; i--)
+            // Process from highest to lowest group
+            bool firstGroup = true;
+            int prevGroupIndex = -1;
+            
+            for (int i = highestGroup; i >= 0; i--)
             {
                 if (groups[i] > 0)
                 {
-                    // Add 零 if previous group was zero and we have content
-                    if (previousGroupWasZero && hasHigherGroup && groups[i] < 1000)
+                    // Check if we need 零
+                    // Add 零 when:
+                    // 1. Not the first group
+                    // 2. There's a gap from the previous group (prevGroupIndex - i > 1)
+                    // 3. Current group value < 1000
+                    if (!firstGroup && prevGroupIndex > 0 && prevGroupIndex - i > 1 && groups[i] < 1000)
                     {
                         result.Append("零");
                     }
@@ -184,12 +195,8 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                         result.Append(bigUnits[i]);
                     }
                     
-                    hasHigherGroup = true;
-                    previousGroupWasZero = false;
-                }
-                else if (hasHigherGroup)
-                {
-                    previousGroupWasZero = true;
+                    firstGroup = false;
+                    prevGroupIndex = i;
                 }
             }
             
