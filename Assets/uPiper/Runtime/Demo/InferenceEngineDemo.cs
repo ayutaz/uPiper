@@ -588,8 +588,8 @@ namespace uPiper.Demo
                 timings["ModelLoad"] = loadStopwatch.ElapsedMilliseconds;
 
                 // JSONコンフィグをロード
-                PiperLogger.LogDebug($"Loading config: Models/{modelName}.onnx");
-                var jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx") ?? throw new Exception($"設定ファイルが見つかりません: {modelName}.onnx.json");
+                PiperLogger.LogDebug($"Loading config: Models/{modelName}.onnx.json");
+                var jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx.json") ?? throw new Exception($"設定ファイルが見つかりません: {modelName}.onnx.json");
                 PiperLogger.LogDebug($"Config loaded, parsing JSON ({jsonAsset.text.Length} chars)");
 
                 var config = ParseConfig(jsonAsset.text, modelName);
