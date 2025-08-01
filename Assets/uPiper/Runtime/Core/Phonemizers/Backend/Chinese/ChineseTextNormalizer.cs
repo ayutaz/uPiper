@@ -152,41 +152,45 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 return "";
                 
             var result = new StringBuilder();
-            var bigUnitIndex = 0;
-            var needZero = false;
+            var groups = new long[4]; // 个、万、亿、万亿
             
-            while (value > 0)
+            // Split number into groups of 4 digits
+            for (int i = 0; i < 4 && value > 0; i++)
             {
-                var segment = value % 10000;
+                groups[i] = value % 10000;
                 value /= 10000;
-                
-                if (segment > 0)
+            }
+            
+            // Process from highest to lowest group
+            bool previousGroupWasZero = false;
+            bool hasHigherGroup = false;
+            
+            for (int i = 3; i >= 0; i--)
+            {
+                if (groups[i] > 0)
                 {
-                    var segmentStr = ConvertSegmentToChinese(segment);
-                    
-                    // Add big unit
-                    if (bigUnitIndex > 0)
+                    // Add 零 if previous group was zero and we have content
+                    if (previousGroupWasZero && hasHigherGroup && groups[i] < 1000)
                     {
-                        segmentStr += bigUnits[bigUnitIndex];
+                        result.Append("零");
                     }
                     
-                    // Add zero if needed (for gaps like 10001)
-                    if (needZero && segment < 1000)
+                    // Convert the group
+                    result.Append(ConvertSegmentToChinese(groups[i]));
+                    
+                    // Add unit (万、亿、万亿)
+                    if (i > 0)
                     {
-                        segmentStr = "零" + segmentStr;
+                        result.Append(bigUnits[i]);
                     }
                     
-                    // Insert at beginning
-                    result.Insert(0, segmentStr);
-                    needZero = false;
+                    hasHigherGroup = true;
+                    previousGroupWasZero = false;
                 }
-                else if (result.Length > 0)
+                else if (hasHigherGroup)
                 {
-                    // Mark that we need a zero for the next non-zero segment
-                    needZero = true;
+                    previousGroupWasZero = true;
                 }
-                
-                bigUnitIndex++;
             }
             
             // Handle special cases like "一十" -> "十"
