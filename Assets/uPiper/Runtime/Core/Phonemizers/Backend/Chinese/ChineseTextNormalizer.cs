@@ -168,20 +168,24 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 highestGroup--;
             }
             
-            // Process from highest to lowest group
-            bool firstGroup = true;
-            int prevGroupIndex = -1;
+            // Track if we've seen any groups (for zero insertion)
+            bool hasSeenNonZeroGroup = false;
+            bool needZero = false;
             
             for (int i = highestGroup; i >= 0; i--)
             {
-                if (groups[i] > 0)
+                if (groups[i] == 0)
                 {
-                    // Check if we need 零
-                    // Add 零 when:
-                    // 1. Not the first group
-                    // 2. There's a gap from the previous group (prevGroupIndex - i > 1)
-                    // 3. Current group value < 1000
-                    if (!firstGroup && prevGroupIndex > 0 && prevGroupIndex - i > 1 && groups[i] < 1000)
+                    // Mark that we might need a zero if we see another group
+                    if (hasSeenNonZeroGroup)
+                    {
+                        needZero = true;
+                    }
+                }
+                else
+                {
+                    // We have a non-zero group
+                    if (needZero && groups[i] < 1000)
                     {
                         result.Append("零");
                     }
@@ -195,8 +199,8 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                         result.Append(bigUnits[i]);
                     }
                     
-                    firstGroup = false;
-                    prevGroupIndex = i;
+                    hasSeenNonZeroGroup = true;
+                    needZero = false;
                 }
             }
             
