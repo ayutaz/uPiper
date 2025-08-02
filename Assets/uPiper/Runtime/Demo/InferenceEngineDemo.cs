@@ -110,7 +110,7 @@ namespace uPiper.Demo
         private AudioClipBuilder _audioBuilder;
         private PiperVoiceConfig _currentConfig;
         private bool _isGenerating;
-        private InferenceBackend _selectedBackend = InferenceBackend.Auto;
+        private InferenceBackend _selectedBackend = InferenceBackend.CPU;
         private GPUInferenceSettings _gpuSettings;
 #if !UNITY_WEBGL
         private ITextPhonemizer _phonemizer;
@@ -345,6 +345,7 @@ namespace uPiper.Demo
                 var options = new List<string> { "CPU", "GPU Pixel" };
                 _backendDropdown.AddOptions(options);
                 _backendDropdown.value = 0; // CPU
+                _selectedBackend = InferenceBackend.CPU; // 初期値を明示的に設定
                 _backendDropdown.onValueChanged.AddListener(OnBackendChanged);
             }
 
