@@ -33,7 +33,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         public string[] ConvertToIPA(string pinyinWithTone)
         {
             if (string.IsNullOrEmpty(pinyinWithTone))
-                return new string[0];
+                return Array.Empty<string>();
                 
             // Extract tone and base pinyin
             var (pinyin, tone) = ExtractTone(pinyinWithTone);

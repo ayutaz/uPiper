@@ -103,7 +103,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             var json = await LoadJsonFile(WORD_FREQ_FILE, cancellationToken);
             if (string.IsNullOrEmpty(json))
             {
-                return new ChineseDictionaryData.WordFrequencyEntry[0];
+                return Array.Empty<ChineseDictionaryData.WordFrequencyEntry>();
             }
             return JsonConvert.DeserializeObject<ChineseDictionaryData.WordFrequencyEntry[]>(json);
         }

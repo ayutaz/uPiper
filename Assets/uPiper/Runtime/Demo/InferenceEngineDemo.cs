@@ -460,8 +460,9 @@ namespace uPiper.Demo
                 if (string.IsNullOrEmpty(_inputField.text) || phrases.Contains(_inputField.text))
                 {
                     // 空または定型文の場合はデフォルトテキストを設定
-                    var language = _modelLanguages[(_modelDropdown?.value ?? 0) == 0 ? "ja_JP-test-medium" : (_modelDropdown?.value ?? 0) == 2 ? "zh_CN-huayan-medium" : "test_voice"];
-                    _inputField.text = language == "ja" ? _defaultJapaneseText : language == "zh" ? "你好" : _defaultEnglishText;
+                    var modelName = GetModelNameForIndex(_modelDropdown?.value ?? 0);
+                    var language = _modelLanguages[modelName];
+                    _inputField.text = GetDefaultTextForLanguage(language);
                 }
                 _inputField.Select(); // フォーカスを設定
             }
@@ -1174,5 +1175,28 @@ namespace uPiper.Demo
             }
         }
 #endif
+
+        /// <summary>
+        /// モデルのインデックスからモデル名を取得
+        /// </summary>
+        private string GetModelNameForIndex(int index)
+        {
+            var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" };
+            return index >= 0 && index < modelNames.Length ? modelNames[index] : modelNames[0];
+        }
+
+        /// <summary>
+        /// 言語に応じたデフォルトテキストを取得
+        /// </summary>
+        private string GetDefaultTextForLanguage(string language)
+        {
+            return language switch
+            {
+                "ja" => _defaultJapaneseText,
+                "zh" => "你好",
+                "en" => _defaultEnglishText,
+                _ => _defaultEnglishText
+            };
+        }
     }
 }

@@ -24,7 +24,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         public string[] GetPinyin(string text, bool usePhrase = true)
         {
             if (string.IsNullOrEmpty(text))
-                return new string[0];
+                return Array.Empty<string>();
                 
             var result = new List<string>();
             
