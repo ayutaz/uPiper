@@ -87,14 +87,15 @@ namespace uPiper.Core.AudioGeneration
 
             if (isESpeakModel)
             {
-                // eSpeak方式: BOSトークンを追加（IDは2）
-                if (_phonemeToId.TryGetValue("<BOS>", out var bosId))
+                // eSpeak方式: BOSトークン(^)を追加
+                if (_phonemeToId.TryGetValue("^", out var bosId))
                 {
                     ids.Add(bosId);
+                    PiperLogger.LogDebug($"Added BOS token '^' with ID {bosId}");
                 }
                 else
                 {
-                    ids.Add(2); // デフォルトBOS ID
+                    PiperLogger.LogWarning("BOS token '^' not found in phoneme map");
                 }
             }
 
@@ -121,17 +122,13 @@ namespace uPiper.Core.AudioGeneration
                     // eSpeak方式では各音素の後にPADを追加
                     if (isESpeakModel)
                     {
-                        if (_phonemeToId.TryGetValue("<PAD>", out var padId))
+                        if (_phonemeToId.TryGetValue("_", out var padId))
                         {
                             ids.Add(padId);
                         }
-                        else if (_phonemeToId.TryGetValue("_", out var underscoreId))
-                        {
-                            ids.Add(underscoreId);
-                        }
                         else
                         {
-                            ids.Add(0); // デフォルトPAD ID
+                            PiperLogger.LogWarning("PAD token '_' not found in phoneme map");
                         }
                     }
                 }
@@ -145,13 +142,14 @@ namespace uPiper.Core.AudioGeneration
             // EOSトークンを追加
             if (isESpeakModel)
             {
-                if (_phonemeToId.TryGetValue("<EOS>", out var eosId))
+                if (_phonemeToId.TryGetValue("$", out var eosId))
                 {
                     ids.Add(eosId);
+                    PiperLogger.LogDebug($"Added EOS token '$' with ID {eosId}");
                 }
-                else if (_phonemeToId.TryGetValue("$", out var dollarId))
+                else
                 {
-                    ids.Add(dollarId);
+                    PiperLogger.LogWarning("EOS token '$' not found in phoneme map");
                 }
             }
 
