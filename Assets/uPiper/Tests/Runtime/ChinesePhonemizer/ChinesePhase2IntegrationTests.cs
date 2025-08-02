@@ -116,13 +116,26 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             // Generate audio
             var generator = new InferenceAudioGenerator();
             
-            // Initialize generator first
-            var initTask = Task.Run(async () =>
-            {
-                await generator.InitializeAsync(chineseModel, config);
-            });
+            // Initialize generator on main thread
+            Task<bool> initTask = null;
+            bool initStarted = false;
             
-            while (!initTask.IsCompleted)
+            // Start initialization
+            yield return null; // Ensure we're on main thread
+            
+            try
+            {
+                initTask = generator.InitializeAsync(chineseModel, config);
+                initStarted = true;
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail($"Generator initialization failed: {ex.Message}");
+                yield break;
+            }
+            
+            // Wait for initialization to complete
+            while (initStarted && !initTask.IsCompleted)
             {
                 yield return null;
             }
