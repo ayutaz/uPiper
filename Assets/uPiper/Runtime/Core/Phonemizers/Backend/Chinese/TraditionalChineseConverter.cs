@@ -343,7 +343,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('對', '对');  // correct/pair
             AddMapping('錯', '错');  // wrong
             
-            Debug.Log($"[TraditionalChineseConverter] Initialized with {traditionalToSimplified.Count} mappings");
+            // Initialization complete
         }
         
         /// <summary>
