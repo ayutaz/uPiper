@@ -151,6 +151,14 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         public int PhraseCount => phraseToPinyin.Count;
         public int IPACount => pinyinToIPA.Count;
         public int WordCount => wordFrequency.Count;
+        
+        /// <summary>
+        /// Get all phrases in the dictionary
+        /// </summary>
+        public IEnumerable<string> GetAllPhrases()
+        {
+            return phraseToPinyin.Keys;
+        }
 
         private string RemoveToneNumber(string pinyin)
         {
