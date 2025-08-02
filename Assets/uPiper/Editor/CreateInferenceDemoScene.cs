@@ -329,51 +329,6 @@ namespace uPiper.Editor
             backendDropdown.AddOptions(new System.Collections.Generic.List<string> { "CPU", "GPU Pixel" });
 
 
-            // Float16トグル
-            var float16GO = new GameObject("Float16Toggle");
-            float16GO.transform.SetParent(panelGO.transform, false);
-            var float16Toggle = float16GO.AddComponent<Toggle>();
-            var float16BgGO = new GameObject("Background");
-            float16BgGO.transform.SetParent(float16GO.transform, false);
-            var float16BgImage = float16BgGO.AddComponent<Image>();
-            float16BgImage.color = new Color(0.3f, 0.3f, 0.3f);
-            var float16BgRect = float16BgGO.GetComponent<RectTransform>();
-            float16BgRect.anchorMin = Vector2.zero;
-            float16BgRect.anchorMax = Vector2.one;
-            float16BgRect.sizeDelta = new Vector2(20, 20);
-            float16BgRect.anchoredPosition = new Vector2(-60, 0);
-
-            var float16CheckGO = new GameObject("Checkmark");
-            float16CheckGO.transform.SetParent(float16GO.transform, false);
-            var float16CheckImage = float16CheckGO.AddComponent<Image>();
-            float16CheckImage.color = Color.white;
-            var float16CheckRect = float16CheckGO.GetComponent<RectTransform>();
-            float16CheckRect.anchorMin = new Vector2(0, 0.5f);
-            float16CheckRect.anchorMax = new Vector2(0, 0.5f);
-            float16CheckRect.sizeDelta = new Vector2(16, 16);
-            float16CheckRect.anchoredPosition = new Vector2(-60, 0);
-
-            float16Toggle.targetGraphic = float16BgImage;
-            float16Toggle.graphic = float16CheckImage;
-            float16Toggle.isOn = false;
-
-            var float16Rect = float16GO.GetComponent<RectTransform>();
-            float16Rect.anchorMin = new Vector2(0.72f, 0.42f);
-            float16Rect.anchorMax = new Vector2(0.9f, 0.46f);
-            float16Rect.offsetMin = Vector2.zero;
-            float16Rect.offsetMax = Vector2.zero;
-
-            var float16LabelGO = new GameObject("Label");
-            float16LabelGO.transform.SetParent(float16GO.transform, false);
-            var float16Label = float16LabelGO.AddComponent<TextMeshProUGUI>();
-            float16Label.text = "Float16";
-            float16Label.fontSize = 14;
-            float16Label.color = Color.white;
-            var float16LabelRect = float16LabelGO.GetComponent<RectTransform>();
-            float16LabelRect.anchorMin = Vector2.zero;
-            float16LabelRect.anchorMax = Vector2.one;
-            float16LabelRect.offsetMin = new Vector2(-40, 0);
-            float16LabelRect.offsetMax = Vector2.zero;
 
 
             // バックエンド情報テキスト
@@ -524,7 +479,6 @@ namespace uPiper.Editor
             serializedObject.FindProperty("_phraseDropdown").objectReferenceValue = phraseDropdown;
             serializedObject.FindProperty("_phonemeDetailsText").objectReferenceValue = phonemeDetailsText;
             serializedObject.FindProperty("_backendDropdown").objectReferenceValue = backendDropdown;
-            serializedObject.FindProperty("_useFloat16Toggle").objectReferenceValue = float16Toggle;
             serializedObject.FindProperty("_backendInfoText").objectReferenceValue = backendInfoText;
             serializedObject.ApplyModifiedProperties();
 

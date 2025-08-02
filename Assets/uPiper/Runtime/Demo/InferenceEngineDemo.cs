@@ -100,7 +100,6 @@ namespace uPiper.Demo
 
         [Header("GPU Inference UI")]
         [SerializeField] private TMP_Dropdown _backendDropdown;
-        [SerializeField] private Toggle _useFloat16Toggle;
 
         [Header("Settings")]
         [SerializeField] private string _defaultJapaneseText = "";  // Will be set in Start()
@@ -352,12 +351,8 @@ namespace uPiper.Demo
             // CPUフォールバックは常に有効（UIには表示しない）
             _gpuSettings.EnableCPUFallback = true;
 
-            // Float16トグルの設定
-            if (_useFloat16Toggle != null)
-            {
-                _useFloat16Toggle.isOn = false;
-                _useFloat16Toggle.onValueChanged.AddListener(OnFloat16Changed);
-            }
+            // Float16は無効（デフォルト設定）
+            _gpuSettings.UseFloat16 = false;
 
             // 生成ボタンの設定
             _generateButton?.onClick.AddListener(() => _ = GenerateAudioAsync());
@@ -485,11 +480,6 @@ namespace uPiper.Demo
         }
 
 
-        private void OnFloat16Changed(bool value)
-        {
-            _gpuSettings.UseFloat16 = value;
-            PiperLogger.LogDebug($"Float16 changed to: {value}");
-        }
 
         private async Task GenerateAudioAsync()
         {
