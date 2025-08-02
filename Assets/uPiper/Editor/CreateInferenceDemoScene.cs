@@ -325,7 +325,8 @@ namespace uPiper.Editor
             backendDropdownRect.offsetMax = Vector2.zero;
             var backendDropdown = backendDropdownGO.GetComponent<TMP_Dropdown>();
             backendDropdown.ClearOptions();
-            backendDropdown.AddOptions(new System.Collections.Generic.List<string> { "Auto", "CPU", "GPU Compute", "GPU Pixel" });
+            // GPU ComputeとAutoは音声生成に問題があるため除外
+            backendDropdown.AddOptions(new System.Collections.Generic.List<string> { "CPU", "GPU Pixel" });
 
             // CPUフォールバックトグル
             var cpuFallbackGO = new GameObject("CPUFallbackToggle");
