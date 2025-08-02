@@ -15,13 +15,13 @@ namespace uPiper.Tests.Runtime
             // Test instantiation of all phonemizers
             try
             {
-                var chinese = new ChinesePhonemizer();
+                var chinese = new uPiper.Core.Phonemizers.Backend.ChinesePhonemizer();
                 Debug.Log($"Chinese phonemizer created: {chinese.Name}");
 
-                var korean = new KoreanPhonemizer();
+                var korean = new uPiper.Core.Phonemizers.Backend.KoreanPhonemizer();
                 Debug.Log($"Korean phonemizer created: {korean.Name}");
 
-                var spanish = new SpanishPhonemizer();
+                var spanish = new uPiper.Core.Phonemizers.Backend.SpanishPhonemizer();
                 Debug.Log($"Spanish phonemizer created: {spanish.Name}");
 
                 var ruleBased = new RuleBasedPhonemizer();

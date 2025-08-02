@@ -80,57 +80,69 @@ namespace uPiper.Core.Phonemizers
         /// </summary>
         private static readonly Dictionary<string, int> DefaultPiperPhonemeToId = new()
         {
-            // Special tokens
+            // Special tokens (from ja_JP-test-medium.onnx.json)
             { "_", 0 },      // Pad token
             { "^", 1 },      // Start token
             { "$", 2 },      // End token
+            { "?", 3 },      // Question
+            { "#", 4 },      // Number sign
+            { "[", 5 },      // Left bracket
+            { "]", 6 },      // Right bracket
             
-            // Basic vowels
-            { "a", 4 },
-            { "i", 5 },
-            { "u", 6 },
-            { "U", 6 },      // 無声化された「う」
-            { "e", 7 },
-            { "o", 8 },
+            // Basic vowels (from model JSON)
+            { "a", 7 },
+            { "i", 8 },
+            { "u", 9 },
+            { "e", 10 },
+            { "o", 11 },
+            { "A", 12 },     // Large A
+            { "I", 13 },     // Large I
+            { "U", 14 },     // Large U
+            { "E", 15 },     // Large E
+            { "O", 16 },     // Large O
             
-            // Consonants
-            { "k", 9 },
-            { "g", 10 },
-            { "s", 11 },
-            { "z", 12 },
-            { "t", 13 },
-            { "d", 14 },
-            { "n", 15 },
-            { "h", 16 },
-            { "b", 17 },
-            { "p", 18 },
-            { "m", 19 },
-            { "y", 20 },
-            { "r", 21 },
-            { "w", 22 },
-            { "N", 23 },     // ん
-            { "ts", 24 },    // つ
-            { "ch", 25 },    // ち
-            { "sh", 26 },    // し
-            { "j", 27 },     // じ
-            { "f", 28 },     // ふ
-            
-            // 拗音 (Palatalized consonants)
-            { "ky", 25 },    // きゃ、きゅ、きょ
-            { "gy", 12 },    // ぎゃ、ぎゅ、ぎょ
-            { "sy", 26 },    // しゃ、しゅ、しょ (= sh)
-            { "zy", 27 },    // じゃ、じゅ、じょ (= j)
-            { "ty", 25 },    // ちゃ、ちゅ、ちょ (= ch)
-            { "dy", 33 },    // でゃ、でゅ、でょ
-            { "ny", 32 },    // にゃ、にゅ、にょ
-            { "hy", 16 },    // ひゃ、ひゅ、ひょ
-            { "by", 17 },    // びゃ、びゅ、びょ
-            { "py", 18 },    // ぴゃ、ぴゅ、ぴょ
-            { "my", 19 },    // みゃ、みゅ、みょ
-            { "ry", 21 },    // りゃ、りゅ、りょ
-            
-            // Space (word boundary)
-            { " ", 3 }
+            // PUA mappings for long vowels and multi-char phonemes (from model JSON)
+            { "\ue000", 17 },  // a:
+            { "\ue001", 18 },  // i:
+            { "\ue002", 19 },  // u:
+            { "\ue003", 20 },  // e:
+            { "\ue004", 21 },  // o:
+            { "N", 22 },       // ん
+            { "\ue005", 23 },  // cl
+            { "q", 24 },       // glottal stop
+            { "k", 25 },
+            { "\ue006", 26 },  // ky
+            { "\ue007", 27 },  // kw
+            { "g", 28 },
+            { "\ue008", 29 },  // gy
+            { "\ue009", 30 },  // gw
+            { "t", 31 },
+            { "\ue00a", 32 },  // ty (and ch!)
+            { "d", 33 },
+            { "\ue00b", 34 },  // dy
+            { "p", 35 },
+            { "\ue00c", 36 },  // py
+            { "b", 37 },
+            { "\ue00d", 38 },  // by
+            { "\ue00e", 39 },  // ch (mapped to same ID as ty)
+            { "\ue00f", 40 },  // ts
+            { "s", 41 },
+            { "\ue010", 42 },  // sh (and sy)
+            { "z", 43 },
+            { "j", 44 },
+            { "\ue011", 45 },  // zy
+            { "f", 46 },
+            { "h", 47 },
+            { "\ue012", 48 },  // hy
+            { "v", 49 },
+            { "n", 50 },
+            { "\ue013", 51 },  // ny
+            { "m", 52 },
+            { "\ue014", 53 },  // my
+            { "r", 54 },
+            { "\ue015", 55 },  // ry
+            { "w", 56 },
+            { "y", 57 }
         };
 
         /// <summary>
@@ -172,7 +184,7 @@ namespace uPiper.Core.Phonemizers
             { "ry", "\ue015" },  // りゃ、りゅ、りょ
             
             // Other multi-character phonemes
-            { "ch", "\ue00e" },  // ち、ちゃ、ちゅ、ちょ
+            { "ch", "\ue00a" },  // ち、ちゃ、ちゅ、ちょ (maps to same as ty in model)
             { "ts", "\ue00f" },  // つ
             { "sh", "\ue010" }   // し、しゃ、しゅ、しょ (same as "sy")
         };

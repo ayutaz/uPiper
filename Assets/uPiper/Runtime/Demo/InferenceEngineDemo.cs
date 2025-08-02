@@ -19,6 +19,67 @@ using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Demo
 {
+    // Temporary workaround for compilation issue
+    internal static class ArpabetToIPAConverterTemp
+    {
+        private static readonly Dictionary<string, string> ArpabetToIPA = new()
+        {
+            // Vowels
+            ["AA"] = "ɑ",
+            ["AE"] = "æ",
+            ["AH"] = "ʌ",
+            ["AO"] = "ɔ",
+            ["AW"] = "a",
+            ["AY"] = "a",
+            ["EH"] = "ɛ",
+            ["ER"] = "ɚ",  // Simplified diphthongs
+            ["EY"] = "e",
+            ["IH"] = "ɪ",
+            ["IY"] = "i",
+            ["OW"] = "o",   // Simplified diphthongs
+            ["OY"] = "ɔ",
+            ["UH"] = "ʊ",
+            ["UW"] = "u",                 // Simplified diphthongs
+            // Consonants
+            ["B"] = "b",
+            ["CH"] = "tʃ",
+            ["D"] = "d",
+            ["DH"] = "ð",
+            ["F"] = "f",
+            ["G"] = "ɡ",
+            ["HH"] = "h",
+            ["JH"] = "dʒ",
+            ["K"] = "k",
+            ["L"] = "l",
+            ["M"] = "m",
+            ["N"] = "n",
+            ["NG"] = "ŋ",
+            ["P"] = "p",
+            ["R"] = "ɹ",
+            ["S"] = "s",
+            ["SH"] = "ʃ",
+            ["T"] = "t",
+            ["TH"] = "θ",
+            ["V"] = "v",
+            ["W"] = "w",
+            ["Y"] = "j",
+            ["Z"] = "z",
+            ["ZH"] = "ʒ",
+        };
+
+        public static string[] ConvertAll(string[] arpabetPhonemes)
+        {
+            var result = new string[arpabetPhonemes.Length];
+            for (int i = 0; i < arpabetPhonemes.Length; i++)
+            {
+                var basePhoneme = arpabetPhonemes[i].TrimEnd('0', '1', '2');
+                result[i] = ArpabetToIPA.TryGetValue(basePhoneme.ToUpper(), out var ipa)
+                    ? ipa : arpabetPhonemes[i].ToLower();
+            }
+            return result;
+        }
+    }
+
     /// <summary>
     /// Phase 1.10 - Unity.InferenceEngineを使用したPiper TTSデモ（OpenJTalk統合版）
     /// 
@@ -56,48 +117,48 @@ namespace uPiper.Demo
     public class InferenceEngineDemo : MonoBehaviour
     {
         [Header("UI References")]
-        [SerializeField] private readonly TMP_InputField _inputField;
-        [SerializeField] private readonly Button _generateButton;
-        [SerializeField] private readonly Button _inferenceButton; // Add for Android auto-test
-        [SerializeField] private readonly TextMeshProUGUI _statusText;
+        [SerializeField] private TMP_InputField _inputField;
+        [SerializeField] private Button _generateButton;
+        [SerializeField] private Button _inferenceButton; // Add for Android auto-test
+        [SerializeField] private TextMeshProUGUI _statusText;
         [SerializeField] private AudioSource _audioSource;
-        [SerializeField] private readonly TMP_Dropdown _modelDropdown;
-        [SerializeField] private readonly TMP_Dropdown _phraseDropdown;
-        [SerializeField] private readonly TextMeshProUGUI _phonemeDetailsText;
-        [SerializeField] private readonly TextMeshProUGUI _backendInfoText;
+        [SerializeField] private TMP_Dropdown _modelDropdown;
+        [SerializeField] private TMP_Dropdown _phraseDropdown;
+        [SerializeField] private TextMeshProUGUI _phonemeDetailsText;
+        [SerializeField] private TextMeshProUGUI _backendInfoText;
 
         [Header("GPU Inference UI")]
-        [SerializeField] private readonly TMP_Dropdown _backendDropdown;
-        [SerializeField] private readonly Toggle _cpuFallbackToggle;
-        [SerializeField] private readonly Toggle _useFloat16Toggle;
-        [SerializeField] private readonly Slider _batchSizeSlider;
-        [SerializeField] private readonly TextMeshProUGUI _batchSizeText;
+        [SerializeField] private TMP_Dropdown _backendDropdown;
 
         [Header("Settings")]
         [SerializeField] private string _defaultJapaneseText = "";  // Will be set in Start()
-        [SerializeField] private readonly string _defaultEnglishText = "Hello world";
+        [SerializeField] private string _defaultEnglishText = "Hello world";
 
         private InferenceAudioGenerator _generator;
         private PhonemeEncoder _encoder;
         private AudioClipBuilder _audioBuilder;
-        private readonly PiperVoiceConfig _currentConfig;
+        private PiperVoiceConfig _currentConfig;
         private bool _isGenerating;
-        private InferenceBackend _selectedBackend = InferenceBackend.Auto;
+        private InferenceBackend _selectedBackend = InferenceBackend.CPU;
         private GPUInferenceSettings _gpuSettings;
 #if !UNITY_WEBGL
         private ITextPhonemizer _phonemizer;
+        private Core.Phonemizers.Backend.ChinesePhonemizer _chinesePhonemizer;
+        private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
 #endif
 
-        private readonly Dictionary<string, string> _modelLanguages = new()
+        private Dictionary<string, string> _modelLanguages = new()
         {
             { "ja_JP-test-medium", "ja" },
-            { "test_voice", "en" }
+            { "en_US-ljspeech-medium", "en" },
+            { "zh_CN-huayan-medium", "zh" }
         };
 
         // テスト用の定型文 - will be initialized in Start() to avoid encoding issues
         private List<string> _japaneseTestPhrases;
+        private List<string> _chineseTestPhrases;
 
-        private readonly List<string> _englishTestPhrases = new()
+        private List<string> _englishTestPhrases = new()
         {
             "Custom Input",  // Custom input option
             "Hello world",
@@ -130,6 +191,22 @@ namespace uPiper.Demo
                 System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x83, 0xA6, 0xE3, 0x83, 0x8B, 0xE3, 0x83, 0x86, 0xE3, 0x82, 0xA3, 0xE3, 0x81, 0xA7, 0xE6, 0x97, 0xA5, 0xE6, 0x9C, 0xAC, 0xE8, 0xAA, 0x9E, 0xE9, 0x9F, 0xB3, 0xE5, 0xA3, 0xB0, 0xE5, 0x90, 0x88, 0xE6, 0x88, 0x90, 0xE3, 0x81, 0x8C, 0xE3, 0x81, 0xA7, 0xE3, 0x81, 0x8D, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x97, 0xE3, 0x81, 0x9F }), // ユニティで日本語音声合成ができました
                 System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x8A, 0xE3, 0x81, 0xAF, 0xE3, 0x82, 0x88, 0xE3, 0x81, 0x86, 0xE3, 0x81, 0x94, 0xE3, 0x81, 0x96, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99, 0xE3, 0x80, 0x81, 0xE4, 0xBB, 0x8A, 0xE6, 0x97, 0xA5, 0xE3, 0x82, 0x82, 0xE4, 0xB8, 0x80, 0xE6, 0x97, 0xA5, 0xE9, 0xA0, 0x91, 0xE5, 0xBC, 0xB5, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x97, 0xE3, 0x82, 0x87, 0xE3, 0x81, 0x86 }), // おはようございます、今日も一日頑張りましょう
                 System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x99, 0xE3, 0x81, 0xBF, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x9B, 0xE3, 0x82, 0x93, 0xE3, 0x80, 0x81, 0xE3, 0x81, 0xA1, 0xE3, 0x82, 0x87, 0xE3, 0x81, 0xA3, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x8A, 0xE8, 0x81, 0x9E, 0xE3, 0x81, 0x8D, 0xE3, 0x81, 0x97, 0xE3, 0x81, 0x9F, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0x93, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x8C, 0xE3, 0x81, 0x82, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99 }) // すみません、ちょっとお聞きしたいことがあります
+            };
+
+            // Initialize Chinese test phrases
+            _chineseTestPhrases = new List<string>
+            {
+                "自定义输入",  // Custom input option
+                "你好",
+                "你好，世界！",
+                "谢谢你",
+                "欢迎使用Unity推理引擎",
+                "今天天气真好",
+                "这是一个语音合成测试",
+                "中文语音合成效果如何？",
+                "我们正在测试中文语音合成",
+                "Unity中文语音合成已经实现了",
+                "早上好，今天也要加油啊"
             };
 
             _generator = new InferenceAudioGenerator();
@@ -173,6 +250,54 @@ namespace uPiper.Demo
                 PiperLogger.LogError("[InferenceEngineDemo]   2. Run ./build.sh (macOS/Linux) or build.bat (Windows)");
                 _phonemizer = null;
             }
+
+            // Initialize Chinese phonemizer
+            Task.Run(async () =>
+            {
+                try
+                {
+                    _chinesePhonemizer = new Core.Phonemizers.Backend.ChinesePhonemizer();
+                    var initialized = await _chinesePhonemizer.InitializeAsync(new Core.Phonemizers.Backend.PhonemizerBackendOptions());
+                    if (initialized)
+                    {
+                        PiperLogger.LogInfo("[InferenceEngineDemo] Chinese phonemizer initialized successfully");
+                    }
+                    else
+                    {
+                        PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize Chinese phonemizer");
+                        _chinesePhonemizer = null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize Chinese phonemizer: {ex.Message}");
+                    _chinesePhonemizer = null;
+                }
+            });
+
+            // Initialize English phonemizer (Flite LTS)
+            Task.Run(async () =>
+            {
+                try
+                {
+                    _englishPhonemizer = new Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer();
+                    var initialized = await _englishPhonemizer.InitializeAsync(new Core.Phonemizers.Backend.PhonemizerBackendOptions());
+                    if (initialized)
+                    {
+                        PiperLogger.LogInfo("[InferenceEngineDemo] Flite LTS phonemizer initialized successfully");
+                    }
+                    else
+                    {
+                        PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer");
+                        _englishPhonemizer = null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer: {ex.Message}");
+                    _englishPhonemizer = null;
+                }
+            });
 #endif
 
             SetupUI();
@@ -195,61 +320,68 @@ namespace uPiper.Demo
                     disposable.Dispose();
                 }
             }
+            _chinesePhonemizer?.Dispose();
+            _englishPhonemizer?.Dispose();
 #endif
         }
 
         private void SetupUI()
         {
+            PiperLogger.LogInfo($"[SetupUI] Starting UI setup");
+            PiperLogger.LogInfo($"[SetupUI] _japaneseTestPhrases count: {_japaneseTestPhrases?.Count ?? 0}");
+            PiperLogger.LogInfo($"[SetupUI] _chineseTestPhrases count: {_chineseTestPhrases?.Count ?? 0}");
+            PiperLogger.LogInfo($"[SetupUI] _englishTestPhrases count: {_englishTestPhrases?.Count ?? 0}");
+            PiperLogger.LogInfo($"[SetupUI] _phraseDropdown is null: {_phraseDropdown == null}");
+
             // モデル選択ドロップダウンの設定
             if (_modelDropdown != null)
             {
                 _modelDropdown.ClearOptions();
-                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "test_voice" });
+                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" });
                 _modelDropdown.onValueChanged.AddListener(OnModelChanged);
             }
 
             // フレーズ選択ドロップダウンの設定
             if (_phraseDropdown != null)
             {
+                PiperLogger.LogInfo("[SetupUI] Setting up phrase dropdown");
                 _phraseDropdown.ClearOptions();
-                _phraseDropdown.AddOptions(_japaneseTestPhrases);
+                if (_japaneseTestPhrases != null && _japaneseTestPhrases.Count > 0)
+                {
+                    PiperLogger.LogInfo($"[SetupUI] Adding {_japaneseTestPhrases.Count} Japanese phrases to dropdown");
+                    _phraseDropdown.AddOptions(_japaneseTestPhrases);
+                }
+                else
+                {
+                    // フォールバック
+                    PiperLogger.LogWarning("[SetupUI] Japanese test phrases not initialized, using fallback");
+                    _phraseDropdown.AddOptions(new List<string> { "Custom Input", "Hello", "Test" });
+                }
                 _phraseDropdown.onValueChanged.AddListener(OnPhraseChanged);
+                PiperLogger.LogInfo($"[SetupUI] Phrase dropdown options count: {_phraseDropdown.options.Count}");
+            }
+            else
+            {
+                PiperLogger.LogError("[SetupUI] _phraseDropdown is null! Please check Unity Inspector");
             }
 
             // GPU推論バックエンドドロップダウンの設定
             if (_backendDropdown != null)
             {
                 _backendDropdown.ClearOptions();
-                var options = new List<string> { "Auto", "CPU", "GPU Compute", "GPU Pixel" };
+                // GPU ComputeはVITSモデルとの互換性問題があるため除外
+                // AutoもGPU Computeを選択する可能性があるため除外
+                var options = new List<string> { "CPU", "GPU Pixel" };
                 _backendDropdown.AddOptions(options);
-                _backendDropdown.value = 0; // Auto
+                _backendDropdown.value = 0; // CPU
+                _selectedBackend = InferenceBackend.CPU; // 初期値を明示的に設定
                 _backendDropdown.onValueChanged.AddListener(OnBackendChanged);
             }
 
-            // CPUフォールバックトグルの設定
-            if (_cpuFallbackToggle != null)
-            {
-                _cpuFallbackToggle.isOn = true;
-                _cpuFallbackToggle.onValueChanged.AddListener(OnCPUFallbackChanged);
-            }
+            // CPUフォールバックは InferenceAudioGenerator 側で自動的に処理される
 
-            // Float16トグルの設定
-            if (_useFloat16Toggle != null)
-            {
-                _useFloat16Toggle.isOn = false;
-                _useFloat16Toggle.onValueChanged.AddListener(OnFloat16Changed);
-            }
-
-            // バッチサイズスライダーの設定
-            if (_batchSizeSlider != null)
-            {
-                _batchSizeSlider.minValue = 1;
-                _batchSizeSlider.maxValue = 16;
-                _batchSizeSlider.wholeNumbers = true;
-                _batchSizeSlider.value = 1;
-                _batchSizeSlider.onValueChanged.AddListener(OnBatchSizeChanged);
-                UpdateBatchSizeText(1);
-            }
+            // Float16は無効（デフォルト設定）
+            _gpuSettings.UseFloat16 = false;
 
             // 生成ボタンの設定
             _generateButton?.onClick.AddListener(() => _ = GenerateAudioAsync());
@@ -263,20 +395,69 @@ namespace uPiper.Demo
 
         private void OnModelChanged(int index)
         {
-            var modelName = index == 0 ? "ja_JP-test-medium" : "test_voice";
-            var isJapanese = _modelLanguages[modelName] == "ja";
+            var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" };
+            var modelName = modelNames[index];
+            var language = _modelLanguages[modelName];
 
             // フレーズドロップダウンを更新
             if (_phraseDropdown != null)
             {
+                PiperLogger.LogInfo($"[OnModelChanged] Updating phrase dropdown for language: {language}");
                 _phraseDropdown.ClearOptions();
-                _phraseDropdown.AddOptions(isJapanese ? _japaneseTestPhrases : _englishTestPhrases);
+                if (language == "ja")
+                {
+                    if (_japaneseTestPhrases != null && _japaneseTestPhrases.Count > 0)
+                    {
+                        PiperLogger.LogInfo($"[OnModelChanged] Adding {_japaneseTestPhrases.Count} Japanese phrases");
+                        _phraseDropdown.AddOptions(_japaneseTestPhrases);
+                    }
+                    else
+                    {
+                        PiperLogger.LogWarning("[OnModelChanged] Japanese phrases not available, using fallback");
+                        _phraseDropdown.AddOptions(new List<string> { "Custom Input", "こんにちは" });
+                    }
+
+                    if (_inputField != null)
+                        _inputField.text = _defaultJapaneseText;
+                }
+                else if (language == "zh")
+                {
+                    if (_chineseTestPhrases != null && _chineseTestPhrases.Count > 0)
+                    {
+                        PiperLogger.LogInfo($"[OnModelChanged] Adding {_chineseTestPhrases.Count} Chinese phrases");
+                        _phraseDropdown.AddOptions(_chineseTestPhrases);
+                    }
+                    else
+                    {
+                        PiperLogger.LogWarning("[OnModelChanged] Chinese phrases not available, using fallback");
+                        _phraseDropdown.AddOptions(new List<string> { "Custom Input", "你好" });
+                    }
+
+                    if (_inputField != null)
+                        _inputField.text = "你好";
+                }
+                else
+                {
+                    if (_englishTestPhrases != null && _englishTestPhrases.Count > 0)
+                    {
+                        PiperLogger.LogInfo($"[OnModelChanged] Adding {_englishTestPhrases.Count} English phrases");
+                        _phraseDropdown.AddOptions(_englishTestPhrases);
+                    }
+                    else
+                    {
+                        PiperLogger.LogWarning("[OnModelChanged] English phrases not available, using fallback");
+                        _phraseDropdown.AddOptions(new List<string> { "Custom Input", "Hello" });
+                    }
+
+                    if (_inputField != null)
+                        _inputField.text = _defaultEnglishText;
+                }
+                PiperLogger.LogInfo($"[OnModelChanged] Phrase dropdown now has {_phraseDropdown.options.Count} options");
                 _phraseDropdown.value = 1; // デフォルトフレーズを選択
             }
-
-            if (_inputField != null)
+            else
             {
-                _inputField.text = isJapanese ? _defaultJapaneseText : _defaultEnglishText;
+                PiperLogger.LogError("[OnModelChanged] _phraseDropdown is null! Please check Unity Inspector");
             }
         }
 
@@ -285,8 +466,15 @@ namespace uPiper.Demo
             if (_phraseDropdown == null || _inputField == null)
                 return;
 
-            var isJapanese = _modelDropdown?.value == 0;
-            var phrases = isJapanese ? _japaneseTestPhrases : _englishTestPhrases;
+            // モデルに応じたフレーズリストを取得
+            List<string> phrases;
+            var modelIndex = _modelDropdown?.value ?? 0;
+            if (modelIndex == 0)  // Japanese
+                phrases = _japaneseTestPhrases;
+            else if (modelIndex == 2)  // Chinese
+                phrases = _chineseTestPhrases;
+            else  // English
+                phrases = _englishTestPhrases;
 
             if (index > 0 && index < phrases.Count)
             {
@@ -301,7 +489,9 @@ namespace uPiper.Demo
                 if (string.IsNullOrEmpty(_inputField.text) || phrases.Contains(_inputField.text))
                 {
                     // 空または定型文の場合はデフォルトテキストを設定
-                    _inputField.text = isJapanese ? _defaultJapaneseText : _defaultEnglishText;
+                    var modelName = GetModelNameForIndex(_modelDropdown?.value ?? 0);
+                    var language = _modelLanguages[modelName];
+                    _inputField.text = GetDefaultTextForLanguage(language);
                 }
                 _inputField.Select(); // フォーカスを設定
             }
@@ -309,42 +499,17 @@ namespace uPiper.Demo
 
         private void OnBackendChanged(int index)
         {
+            // AutoとGPU Computeを除外したため、インデックスが変更されている
             _selectedBackend = index switch
             {
-                0 => InferenceBackend.Auto,
-                1 => InferenceBackend.CPU,
-                2 => InferenceBackend.GPUCompute,
-                3 => InferenceBackend.GPUPixel,
-                _ => InferenceBackend.Auto
+                0 => InferenceBackend.CPU,
+                1 => InferenceBackend.GPUPixel,
+                _ => InferenceBackend.CPU
             };
             PiperLogger.LogDebug($"Backend changed to: {_selectedBackend}");
         }
 
-        private void OnCPUFallbackChanged(bool value)
-        {
-            PiperLogger.LogDebug($"CPU Fallback changed to: {value}");
-        }
 
-        private void OnFloat16Changed(bool value)
-        {
-            _gpuSettings.UseFloat16 = value;
-            PiperLogger.LogDebug($"Float16 changed to: {value}");
-        }
-
-        private void OnBatchSizeChanged(float value)
-        {
-            _gpuSettings.MaxBatchSize = (int)value;
-            UpdateBatchSizeText((int)value);
-            PiperLogger.LogDebug($"Batch size changed to: {(int)value}");
-        }
-
-        private void UpdateBatchSizeText(int value)
-        {
-            if (_batchSizeText != null)
-            {
-                _batchSizeText.text = $"Batch Size: {value}";
-            }
-        }
 
         private async Task GenerateAudioAsync()
         {
@@ -394,20 +559,42 @@ namespace uPiper.Demo
             try
             {
                 // モデル名を取得
-                var modelName = _modelDropdown?.value == 0 ? "ja_JP-test-medium" : "test_voice";
+                var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" };
+                var modelName = modelNames[_modelDropdown?.value ?? 0];
                 PiperLogger.LogDebug($"Selected model: {modelName}");
 
                 // モデルをロード
                 SetStatus("モデルをロード中...");
                 var loadStopwatch = Stopwatch.StartNew();
                 PiperLogger.LogDebug($"Loading model asset: Models/{modelName}");
+
                 var modelAsset = Resources.Load<ModelAsset>($"Models/{modelName}") ?? throw new Exception($"モデルが見つかりません: {modelName}");
                 PiperLogger.LogDebug($"Model asset loaded successfully");
                 timings["ModelLoad"] = loadStopwatch.ElapsedMilliseconds;
 
                 // JSONコンフィグをロード
-                PiperLogger.LogDebug($"Loading config: Models/{modelName}.onnx");
-                var jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx") ?? throw new Exception($"設定ファイルが見つかりません: {modelName}.onnx.json");
+                PiperLogger.LogDebug($"Loading config: Models/{modelName}.onnx.json");
+
+                // デバッグ: 利用可能なTextAssetをリスト
+                var allTextAssets = Resources.LoadAll<TextAsset>("Models");
+                PiperLogger.LogInfo($"Available TextAssets in Resources/Models: {allTextAssets.Length}");
+                foreach (var asset in allTextAssets)
+                {
+                    PiperLogger.LogInfo($"  - {asset.name}");
+                }
+
+                var jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx.json");
+                if (jsonAsset == null)
+                {
+                    // 拡張子なしで試す
+                    PiperLogger.LogDebug($"Trying without extension: Models/{modelName}.onnx");
+                    jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx");
+                }
+
+                if (jsonAsset == null)
+                {
+                    throw new Exception($"設定ファイルが見つかりません: {modelName}.onnx.json");
+                }
                 PiperLogger.LogDebug($"Config loaded, parsing JSON ({jsonAsset.text.Length} chars)");
 
                 var config = ParseConfig(jsonAsset.text, modelName);
@@ -436,7 +623,7 @@ namespace uPiper.Demo
                 var piperConfig = new PiperConfig
                 {
                     Backend = _selectedBackend,
-                    AllowFallbackToCPU = _cpuFallbackToggle?.isOn ?? true,
+                    AllowFallbackToCPU = true, // CPUフォールバックは常に有効
                     GPUSettings = _gpuSettings
                 };
 
@@ -507,6 +694,31 @@ namespace uPiper.Demo
                         PiperLogger.LogDebug($"[OpenJTalk] Total duration: {phonemeResult.Durations.Sum():F3}s");
                     }
                 }
+                else if (language == "zh" && _chinesePhonemizer != null)
+                {
+                    PiperLogger.LogDebug("[InferenceEngineDemo] Using Chinese phonemizer for Chinese text");
+                    PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
+
+                    var chineseStopwatch = Stopwatch.StartNew();
+                    var phonemeResult = await _chinesePhonemizer.PhonemizeAsync(_inputField.text, "zh");
+                    timings["ChinesePhonemizer"] = chineseStopwatch.ElapsedMilliseconds;
+
+                    phonemes = phonemeResult.Phonemes;
+                    PiperLogger.LogInfo($"[Chinese] Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+
+                    // Show phoneme details in UI
+                    if (_phonemeDetailsText != null)
+                    {
+                        _phonemeDetailsText.text = $"Chinese: {string.Join(" ", phonemes)}";
+                    }
+                }
+                else if (language == "zh")
+                {
+                    // Chinese phonemizer is required for Chinese text
+                    var errorMsg = "Chinese phonemizer is required for Chinese text but is not available.\n" +
+                                  "This should not happen as it's built into the plugin.";
+                    throw new Exception(errorMsg);
+                }
                 else if (language == "ja")
                 {
                     // OpenJTalk is required for Japanese
@@ -526,19 +738,50 @@ namespace uPiper.Demo
 
                     throw new Exception(errorMsg);
                 }
+                else if (language == "en" && _englishPhonemizer != null)
+                {
+                    PiperLogger.LogDebug("[InferenceEngineDemo] Using Flite LTS phonemizer for English text");
+                    PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
+
+                    var englishStopwatch = Stopwatch.StartNew();
+                    var phonemeResult = await _englishPhonemizer.PhonemizeAsync(_inputField.text, "en");
+                    timings["FliteLTS"] = englishStopwatch.ElapsedMilliseconds;
+
+                    // Convert Arpabet to IPA for eSpeak-compatible model
+                    var arpabetPhonemes = phonemeResult.Phonemes;
+                    PiperLogger.LogInfo($"[English] Arpabet phonemes ({arpabetPhonemes.Length}): {string.Join(" ", arpabetPhonemes)}");
+
+                    // Arpabet音素の詳細をログ出力
+                    for (int i = 0; i < arpabetPhonemes.Length; i++)
+                    {
+                        PiperLogger.LogDebug($"  Arpabet[{i}]: '{arpabetPhonemes[i]}'");
+                    }
+
+                    phonemes = ArpabetToIPAConverterTemp.ConvertAll(arpabetPhonemes);
+                    PiperLogger.LogInfo($"[English] IPA phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+
+                    // IPA音素の詳細をログ出力
+                    for (int i = 0; i < phonemes.Length; i++)
+                    {
+                        PiperLogger.LogDebug($"  IPA[{i}]: '{phonemes[i]}'");
+                    }
+
+                    // Show phoneme details in UI
+                    if (_phonemeDetailsText != null)
+                    {
+                        _phonemeDetailsText.text = $"English (Flite LTS):\nArpabet: {string.Join(" ", arpabetPhonemes)}\nIPA: {string.Join(" ", phonemes)}";
+                    }
+                }
                 else
                 {
-                    // TEMPORARY: Basic English phonemization
-                    // This is a placeholder implementation for Phase 1.10.
-                    // Phase 2 will integrate eSpeak-NG for proper English phonemization.
-                    // Current approach: simple word-based splitting (not real phonemes)
+                    // Fallback: Basic word splitting for unknown languages
                     phonemes = _inputField.text.ToLower()
                         .Replace(",", " _")
                         .Replace(".", " _")
                         .Replace("!", " _")
                         .Replace("?", " _")
                         .Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    PiperLogger.LogInfo($"Basic English phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+                    PiperLogger.LogInfo($"Fallback phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                 }
 #else
                 // WebGL is not supported for Japanese
@@ -606,12 +849,21 @@ namespace uPiper.Demo
 
                 // 音声データが既に小さい値の場合は増幅、大きい値の場合は正規化
                 float[] processedAudio;
-                if (maxVal < 0.1f)
+
+                // 音声データの詳細な統計情報
+                PiperLogger.LogInfo($"Audio statistics before processing:");
+                PiperLogger.LogInfo($"  - Sample count: {audioData.Length}");
+                PiperLogger.LogInfo($"  - Duration: {audioData.Length / (float)config.SampleRate:F2} seconds");
+                PiperLogger.LogInfo($"  - Max absolute value: {maxVal:F6}");
+                PiperLogger.LogInfo($"  - Mean absolute value: {audioData.Select(x => Math.Abs(x)).Average():F6}");
+                PiperLogger.LogInfo($"  - First 10 samples: {string.Join(", ", audioData.Take(10).Select(x => x.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)))}");
+
+                if (maxVal < 0.01f)
                 {
                     // 音声が小さすぎる場合は増幅
                     SetStatus("音声データを増幅中...");
-                    PiperLogger.LogDebug($"Amplifying audio data (max: {maxVal:F4} is too small)");
-                    var amplificationFactor = 0.5f / maxVal; // 最大値を0.5にする
+                    PiperLogger.LogWarning($"Audio data is extremely quiet (max: {maxVal:F6}). This may indicate a model output issue.");
+                    var amplificationFactor = 0.3f / maxVal; // 最大値を0.3にする
                     processedAudio = audioData.Select(x => x * amplificationFactor).ToArray();
                     PiperLogger.LogInfo($"Amplified audio by factor {amplificationFactor:F2}");
                 }
@@ -952,5 +1204,28 @@ namespace uPiper.Demo
             }
         }
 #endif
+
+        /// <summary>
+        /// モデルのインデックスからモデル名を取得
+        /// </summary>
+        private string GetModelNameForIndex(int index)
+        {
+            var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" };
+            return index >= 0 && index < modelNames.Length ? modelNames[index] : modelNames[0];
+        }
+
+        /// <summary>
+        /// 言語に応じたデフォルトテキストを取得
+        /// </summary>
+        private string GetDefaultTextForLanguage(string language)
+        {
+            return language switch
+            {
+                "ja" => _defaultJapaneseText,
+                "zh" => "你好",
+                "en" => _defaultEnglishText,
+                _ => _defaultEnglishText
+            };
+        }
     }
 }
