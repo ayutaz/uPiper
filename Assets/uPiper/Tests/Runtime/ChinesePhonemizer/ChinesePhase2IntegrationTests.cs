@@ -18,8 +18,6 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
     public class ChinesePhase2IntegrationTests
     {
         private uPiper.Core.Phonemizers.Backend.ChinesePhonemizer phonemizer;
-        private ModelAsset chineseModel;
-        private PiperVoiceConfig config;
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -40,23 +38,6 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             if (initTask.IsFaulted)
             {
                 throw initTask.Exception?.GetBaseException() ?? new System.Exception("Phonemizer init failed");
-            }
-            
-            // Try to load Chinese model
-            chineseModel = Resources.Load<ModelAsset>("Models/zh_CN-huayan-medium");
-            if (chineseModel == null)
-            {
-                Debug.LogWarning("[Phase2Integration] Chinese model not found, some tests will be skipped");
-            }
-            
-            // Load config if model exists
-            if (chineseModel != null)
-            {
-                var jsonAsset = Resources.Load<TextAsset>("Models/zh_CN-huayan-medium.onnx");
-                if (jsonAsset != null)
-                {
-                    config = JsonUtility.FromJson<PiperVoiceConfig>(jsonAsset.text);
-                }
             }
         }
 
@@ -85,95 +66,6 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         }
 
 
-        [UnityTest]
-        [Ignore("Skipping audio generation test - requires Chinese TTS model and takes too long")]
-        public IEnumerator FullPipeline_WithExpandedDictionary_ShouldGenerateAudio()
-        {
-            if (chineseModel == null || config == null)
-            {
-                Assert.Ignore("Chinese model not available for integration test");
-                yield break;
-            }
-
-            var testText = "人工智能和机器学习是未来的发展方向。";
-            
-            // Phonemize
-            var phonemizeTask = phonemizer.PhonemizeAsync(testText, "zh");
-            yield return new WaitUntil(() => phonemizeTask.IsCompleted);
-            
-            var phonemeResult = phonemizeTask.Result;
-            Assert.IsNotNull(phonemeResult);
-            Assert.Greater(phonemeResult.Phonemes.Length, 0);
-            
-            Debug.Log($"[Phase2Integration] Phonemes: {string.Join(" ", phonemeResult.Phonemes)}");
-            
-            // Encode phonemes
-            var encoder = new PhonemeEncoder(config);
-            var encodedIds = encoder.Encode(phonemeResult.Phonemes);
-            
-            Assert.IsNotNull(encodedIds);
-            Assert.Greater(encodedIds.Length, 0);
-            
-            // Generate audio
-            var generator = new InferenceAudioGenerator();
-            
-            // Initialize generator on main thread
-            Task initTask = null;
-            bool initStarted = false;
-            
-            // Start initialization
-            yield return null; // Ensure we're on main thread
-            
-            try
-            {
-                initTask = generator.InitializeAsync(chineseModel, config);
-                initStarted = true;
-            }
-            catch (System.Exception ex)
-            {
-                Assert.Fail($"Generator initialization failed: {ex.Message}");
-                yield break;
-            }
-            
-            // Wait for initialization to complete
-            while (initStarted && !initTask.IsCompleted)
-            {
-                yield return null;
-            }
-            
-            if (initTask.IsFaulted)
-            {
-                throw initTask.Exception?.GetBaseException() ?? new System.Exception("Generator init failed");
-            }
-            
-            // Now generate audio
-            var generateTask = Task.Run(async () =>
-            {
-                return await generator.GenerateAudioAsync(encodedIds);
-            });
-            
-            while (!generateTask.IsCompleted)
-            {
-                yield return null;
-            }
-            
-            Assert.IsFalse(generateTask.IsFaulted, 
-                $"Audio generation failed: {generateTask.Exception?.GetBaseException()?.Message}");
-            
-            var audioData = generateTask.Result;
-            Assert.IsNotNull(audioData);
-            Assert.Greater(audioData.Length, 0);
-            
-            // Verify audio quality
-            var maxAmplitude = audioData.Max(x => Mathf.Abs(x));
-            Assert.Greater(maxAmplitude, 0.01f, "Audio should have meaningful amplitude");
-            
-            Debug.Log($"[Phase2Integration] Generated audio: {audioData.Length} samples, " +
-                     $"max amplitude: {maxAmplitude:F4}");
-            
-            // Cleanup
-            generator.Dispose();
-        }
 
         [Test]
         public void CharacterCoverage_ShouldBeComprehensive()
