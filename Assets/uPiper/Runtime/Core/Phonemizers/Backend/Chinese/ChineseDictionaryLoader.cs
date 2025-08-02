@@ -18,6 +18,15 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         private const string PHRASE_DICT_FILE = "phrase_pinyin.json";
         private const string IPA_MAP_FILE = "pinyin_ipa_map.json";
         private const string WORD_FREQ_FILE = "word_frequency.json";
+        
+        // Phase 2 expanded dictionary files
+        private const string CHARACTER_DICT_EXPANDED_FILE = "character_pinyin_expanded.json";
+        private const string PHRASE_DICT_EXPANDED_FILE = "phrase_pinyin_expanded.json";
+        private const string IPA_MAP_EXPANDED_FILE = "pinyin_ipa_map_expanded.json";
+        private const string WORD_FREQ_EXPANDED_FILE = "word_frequency_expanded.json";
+        
+        // Flag to use expanded dictionaries (Phase 2)
+        private bool useExpandedDictionaries = true;
 
         /// <summary>
         /// Load all dictionary data asynchronously
@@ -67,7 +76,14 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
 
         private async Task<object> LoadCharacterDictionary(CancellationToken cancellationToken)
         {
-            var json = await LoadJsonFile(CHARACTER_DICT_FILE, cancellationToken);
+            var filename = useExpandedDictionaries ? CHARACTER_DICT_EXPANDED_FILE : CHARACTER_DICT_FILE;
+            var json = await LoadJsonFile(filename, cancellationToken);
+            if (string.IsNullOrEmpty(json) && useExpandedDictionaries)
+            {
+                // Fallback to basic dictionary if expanded not found
+                Debug.LogWarning($"Expanded character dictionary not found, falling back to basic dictionary");
+                json = await LoadJsonFile(CHARACTER_DICT_FILE, cancellationToken);
+            }
             if (string.IsNullOrEmpty(json))
             {
                 // Return basic character mappings as fallback
@@ -78,7 +94,14 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
 
         private async Task<object> LoadPhraseDictionary(CancellationToken cancellationToken)
         {
-            var json = await LoadJsonFile(PHRASE_DICT_FILE, cancellationToken);
+            var filename = useExpandedDictionaries ? PHRASE_DICT_EXPANDED_FILE : PHRASE_DICT_FILE;
+            var json = await LoadJsonFile(filename, cancellationToken);
+            if (string.IsNullOrEmpty(json) && useExpandedDictionaries)
+            {
+                // Fallback to basic dictionary if expanded not found
+                Debug.LogWarning($"Expanded phrase dictionary not found, falling back to basic dictionary");
+                json = await LoadJsonFile(PHRASE_DICT_FILE, cancellationToken);
+            }
             if (string.IsNullOrEmpty(json))
             {
                 // Return basic phrase mappings as fallback
@@ -89,7 +112,14 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
 
         private async Task<object> LoadIPAMapping(CancellationToken cancellationToken)
         {
-            var json = await LoadJsonFile(IPA_MAP_FILE, cancellationToken);
+            var filename = useExpandedDictionaries ? IPA_MAP_EXPANDED_FILE : IPA_MAP_FILE;
+            var json = await LoadJsonFile(filename, cancellationToken);
+            if (string.IsNullOrEmpty(json) && useExpandedDictionaries)
+            {
+                // Fallback to basic dictionary if expanded not found
+                Debug.LogWarning($"Expanded IPA mapping not found, falling back to basic mapping");
+                json = await LoadJsonFile(IPA_MAP_FILE, cancellationToken);
+            }
             if (string.IsNullOrEmpty(json))
             {
                 // Return basic IPA mappings as fallback
@@ -100,7 +130,14 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
 
         private async Task<object> LoadWordFrequency(CancellationToken cancellationToken)
         {
-            var json = await LoadJsonFile(WORD_FREQ_FILE, cancellationToken);
+            var filename = useExpandedDictionaries ? WORD_FREQ_EXPANDED_FILE : WORD_FREQ_FILE;
+            var json = await LoadJsonFile(filename, cancellationToken);
+            if (string.IsNullOrEmpty(json) && useExpandedDictionaries)
+            {
+                // Fallback to basic dictionary if expanded not found
+                Debug.LogWarning($"Expanded word frequency not found, falling back to basic frequency");
+                json = await LoadJsonFile(WORD_FREQ_FILE, cancellationToken);
+            }
             if (string.IsNullOrEmpty(json))
             {
                 return Array.Empty<ChineseDictionaryData.WordFrequencyEntry>();
