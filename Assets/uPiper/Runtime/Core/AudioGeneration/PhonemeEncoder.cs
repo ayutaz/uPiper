@@ -81,13 +81,21 @@ namespace uPiper.Core.AudioGeneration
 
             var ids = new List<int>();
 
-            // BOS/EOSトークンを追加するかどうかのフラグ（デバッグ用）
-            var addSpecialTokens = false; // 一旦falseにして、後で必要に応じて有効化
+            // 日本語モデルは音素だけ、英語/中国語などのeSpeak方式は各音素の後にPADを追加
+            var isJapaneseModel = _config.ModelName != null && _config.ModelName.Contains("ja_JP");
+            var isESpeakModel = !isJapaneseModel;
 
-            if (addSpecialTokens)
+            if (isESpeakModel)
             {
-                // BOSトークンを追加
-                ids.Add(GetBosId());
+                // eSpeak方式: BOSトークンを追加（IDは2）
+                if (_phonemeToId.TryGetValue("<BOS>", out var bosId))
+                {
+                    ids.Add(bosId);
+                }
+                else
+                {
+                    ids.Add(2); // デフォルトBOS ID
+                }
             }
 
             // 各音素をIDに変換
@@ -109,6 +117,23 @@ namespace uPiper.Core.AudioGeneration
                 if (_phonemeToId.TryGetValue(phonemeToLookup, out var id))
                 {
                     ids.Add(id);
+                    
+                    // eSpeak方式では各音素の後にPADを追加
+                    if (isESpeakModel)
+                    {
+                        if (_phonemeToId.TryGetValue("<PAD>", out var padId))
+                        {
+                            ids.Add(padId);
+                        }
+                        else if (_phonemeToId.TryGetValue("_", out var underscoreId))
+                        {
+                            ids.Add(underscoreId);
+                        }
+                        else
+                        {
+                            ids.Add(0); // デフォルトPAD ID
+                        }
+                    }
                 }
                 else
                 {
@@ -118,9 +143,16 @@ namespace uPiper.Core.AudioGeneration
             }
 
             // EOSトークンを追加
-            if (addSpecialTokens)
+            if (isESpeakModel)
             {
-                ids.Add(GetEosId());
+                if (_phonemeToId.TryGetValue("<EOS>", out var eosId))
+                {
+                    ids.Add(eosId);
+                }
+                else if (_phonemeToId.TryGetValue("$", out var dollarId))
+                {
+                    ids.Add(dollarId);
+                }
             }
 
             // 空の結果になった場合は、無音を表すPADトークンを1つ追加
@@ -129,7 +161,7 @@ namespace uPiper.Core.AudioGeneration
                 ids.Add(GetPadId());
             }
 
-            PiperLogger.LogDebug($"Encoded {phonemes.Length} phonemes to {ids.Count} IDs (special tokens: {addSpecialTokens})");
+            PiperLogger.LogDebug($"Encoded {phonemes.Length} phonemes to {ids.Count} IDs (model type: {(isJapaneseModel ? "Japanese" : "eSpeak")})");
             return ids.ToArray();
         }
 
