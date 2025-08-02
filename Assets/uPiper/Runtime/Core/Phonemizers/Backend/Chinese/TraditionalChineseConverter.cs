@@ -287,10 +287,26 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('願', '愿');  // wish
             AddMapping('希', '希');  // hope (same)
             AddMapping('望', '望');  // hope (same)
+            
+            // Additional characters for test cases
+            AddMapping('請', '请');  // please
+            AddMapping('謝', '谢');  // thank
+            AddMapping('聽', '听');  // listen
+            AddMapping('歡', '欢');  // joyful
+            AddMapping('臨', '临');  // arrive
+            AddMapping('沒', '没');  // not have
+            AddMapping('題', '题');  // topic
+            AddMapping('麼', '么');  // (particle)
+            AddMapping('錢', '钱');  // money
+            AddMapping('網', '网');  // net
+            AddMapping('際', '际');  // border
+            AddMapping('習', '习');  // learn
+            AddMapping('數', '数');  // number
+            AddMapping('據', '据');  // data
+            AddMapping('庫', '库');  // warehouse
             AddMapping('慮', '虑');  // consider
             AddMapping('憂', '忧');  // worry
             AddMapping('喜', '喜');  // happy (same)
-            AddMapping('歡', '欢');  // joyful
             AddMapping('樂', '乐');  // happy/music
             AddMapping('悲', '悲');  // sad (same)
             AddMapping('傷', '伤');  // hurt
