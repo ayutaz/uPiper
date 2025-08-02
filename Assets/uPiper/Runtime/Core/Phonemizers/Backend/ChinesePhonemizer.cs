@@ -167,7 +167,7 @@ namespace uPiper.Core.Phonemizers.Backend
                                             }
                                             else
                                             {
-                                                Debug.LogError($"[ChinesePhonemizer] No pinyin found for character '{ch}' (U+{codePoint:X4})");
+                                                Debug.LogWarning($"[ChinesePhonemizer] No pinyin found for character '{ch}' (U+{codePoint:X4})");
                                             }
                                         }
                                         continue;

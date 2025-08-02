@@ -293,7 +293,20 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 new ChineseDictionaryData.CharacterPinyinEntry { character = "法", pinyin = new[] { "fa3" } },
                 new ChineseDictionaryData.CharacterPinyinEntry { character = "要", pinyin = new[] { "yao4", "yao1" } },
                 new ChineseDictionaryData.CharacterPinyinEntry { character = "新", pinyin = new[] { "xin1" } },
-                new ChineseDictionaryData.CharacterPinyinEntry { character = "大", pinyin = new[] { "da4" } }
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "大", pinyin = new[] { "da4" } },
+                // Additional characters for tests
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "民", pinyin = new[] { "min2" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "共", pinyin = new[] { "gong4" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "和", pinyin = new[] { "he2", "he4" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "工", pinyin = new[] { "gong1" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "公", pinyin = new[] { "gong1" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "式", pinyin = new[] { "shi4" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "使", pinyin = new[] { "shi3" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "用", pinyin = new[] { "yong4" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "编", pinyin = new[] { "bian1" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "程", pinyin = new[] { "cheng2" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "时", pinyin = new[] { "shi2" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "代", pinyin = new[] { "dai4" } }
             };
         }
 
@@ -321,7 +334,12 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 new ChineseDictionaryData.PhrasePinyinEntry { phrase = "语言处理", pinyin = "yu3 yan2 chu3 li3" },
                 new ChineseDictionaryData.PhrasePinyinEntry { phrase = "计算机", pinyin = "ji4 suan4 ji1" },
                 new ChineseDictionaryData.PhrasePinyinEntry { phrase = "视觉系统", pinyin = "shi4 jue2 xi4 tong3" },
-                new ChineseDictionaryData.PhrasePinyinEntry { phrase = "神经网络", pinyin = "shen2 jing1 wang3 luo4" }
+                new ChineseDictionaryData.PhrasePinyinEntry { phrase = "神经网络", pinyin = "shen2 jing1 wang3 luo4" },
+                // Additional phrases for tests
+                new ChineseDictionaryData.PhrasePinyinEntry { phrase = "中国人民", pinyin = "zhong1 guo2 ren2 min2" },
+                new ChineseDictionaryData.PhrasePinyinEntry { phrase = "共和国", pinyin = "gong4 he2 guo2" },
+                new ChineseDictionaryData.PhrasePinyinEntry { phrase = "人民共和国", pinyin = "ren2 min2 gong4 he2 guo2" },
+                new ChineseDictionaryData.PhrasePinyinEntry { phrase = "中国人民共和国", pinyin = "zhong1 guo2 ren2 min2 gong4 he2 guo2" }
             };
         }
 
@@ -403,7 +421,14 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "fa", ipa = "fa" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "yao", ipa = "jau" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "xin", ipa = "ɕin" },
-                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "da", ipa = "ta" }
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "da", ipa = "ta" },
+                // Additional IPA mappings for new characters
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "min", ipa = "min" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "gong", ipa = "kuŋ" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "he", ipa = "xɤ" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "yong", ipa = "juŋ" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "bian", ipa = "piɛn" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "cheng", ipa = "ʈʂʰəŋ" }
             };
         }
     }
