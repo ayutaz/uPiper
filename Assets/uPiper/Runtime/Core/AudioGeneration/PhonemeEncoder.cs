@@ -82,7 +82,7 @@ namespace uPiper.Core.AudioGeneration
             var ids = new List<int>();
 
             // 日本語モデルは音素だけ、英語/中国語などのeSpeak方式は各音素の後にPADを追加
-            var isJapaneseModel = _config.ModelName != null && _config.ModelName.Contains("ja_JP");
+            var isJapaneseModel = _config.VoiceId != null && _config.VoiceId.Contains("ja_JP");
             var isESpeakModel = !isJapaneseModel;
 
             if (isESpeakModel)
