@@ -26,9 +26,9 @@ namespace uPiper.Demo
         {
             // Vowels
             ["AA"] = "ɑ", ["AE"] = "æ", ["AH"] = "ʌ", ["AO"] = "ɔ",
-            ["AW"] = "aʊ", ["AY"] = "aɪ", ["EH"] = "ɛ", ["ER"] = "ɚ",
-            ["EY"] = "eɪ", ["IH"] = "ɪ", ["IY"] = "i", ["OW"] = "oʊ",
-            ["OY"] = "ɔɪ", ["UH"] = "ʊ", ["UW"] = "u",
+            ["AW"] = "a", ["AY"] = "a", ["EH"] = "ɛ", ["ER"] = "ɚ",  // Simplified diphthongs
+            ["EY"] = "e", ["IH"] = "ɪ", ["IY"] = "i", ["OW"] = "o",   // Simplified diphthongs
+            ["OY"] = "ɔ", ["UH"] = "ʊ", ["UW"] = "u",                 // Simplified diphthongs
             // Consonants
             ["B"] = "b", ["CH"] = "tʃ", ["D"] = "d", ["DH"] = "ð",
             ["F"] = "f", ["G"] = "ɡ", ["HH"] = "h", ["JH"] = "dʒ",
@@ -591,7 +591,27 @@ namespace uPiper.Demo
 
                 // JSONコンフィグをロード
                 PiperLogger.LogDebug($"Loading config: Models/{modelName}.onnx.json");
-                var jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx.json") ?? throw new Exception($"設定ファイルが見つかりません: {modelName}.onnx.json");
+                
+                // デバッグ: 利用可能なTextAssetをリスト
+                var allTextAssets = Resources.LoadAll<TextAsset>("Models");
+                PiperLogger.LogInfo($"Available TextAssets in Resources/Models: {allTextAssets.Length}");
+                foreach (var asset in allTextAssets)
+                {
+                    PiperLogger.LogInfo($"  - {asset.name}");
+                }
+                
+                var jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx.json");
+                if (jsonAsset == null)
+                {
+                    // 拡張子なしで試す
+                    PiperLogger.LogDebug($"Trying without extension: Models/{modelName}.onnx");
+                    jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx");
+                }
+                
+                if (jsonAsset == null)
+                {
+                    throw new Exception($"設定ファイルが見つかりません: {modelName}.onnx.json");
+                }
                 PiperLogger.LogDebug($"Config loaded, parsing JSON ({jsonAsset.text.Length} chars)");
 
                 var config = ParseConfig(jsonAsset.text, modelName);
