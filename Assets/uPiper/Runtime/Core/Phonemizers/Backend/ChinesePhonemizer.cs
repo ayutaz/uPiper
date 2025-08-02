@@ -19,7 +19,20 @@ namespace uPiper.Core.Phonemizers.Backend
         private PinyinConverter pinyinConverter;
         private PinyinToIPAConverter ipaConverter;
         private ChineseTextNormalizer textNormalizer;
+        private ChineseWordSegmenter wordSegmenter;
         private readonly object dictLock = new();
+        
+        // Configuration option
+        private bool useWordSegmentation = true;
+        
+        /// <summary>
+        /// Enable or disable word segmentation
+        /// </summary>
+        public bool UseWordSegmentation
+        {
+            get => useWordSegmentation;
+            set => useWordSegmentation = value;
+        }
 
         public override string Name => "Chinese";
         public override string Version => "1.0.0";
@@ -42,6 +55,7 @@ namespace uPiper.Core.Phonemizers.Backend
                 pinyinConverter = new PinyinConverter(dictionary);
                 ipaConverter = new PinyinToIPAConverter(dictionary);
                 textNormalizer = new ChineseTextNormalizer();
+                wordSegmenter = new ChineseWordSegmenter(dictionary);
 
                 Debug.Log($"Chinese phonemizer initialized with {dictionary.CharacterCount} characters, " +
                          $"{dictionary.PhraseCount} phrases, {dictionary.IPACount} IPA mappings");
@@ -101,26 +115,50 @@ namespace uPiper.Core.Phonemizers.Backend
                 {
                     if (!string.IsNullOrEmpty(chinese))
                     {
-                        // Process Chinese text
-                        var pinyinArray = pinyinConverter.GetPinyin(chinese, usePhrase: true);
-
-                        // Convert each pinyin to IPA
-                        foreach (var pinyin in pinyinArray)
+                        if (useWordSegmentation)
                         {
-                            if (ChineseTextNormalizer.IsChinese(pinyin[0]))
+                            // Use word segmentation for better context
+                            var wordsWithPinyin = wordSegmenter.SegmentWithPinyin(chinese);
+                            
+                            foreach (var (word, pinyinArray) in wordsWithPinyin)
                             {
-                                // It's still a Chinese character (no pinyin found)
-                                // Skip Debug.LogWarning for performance
+                                // Convert each pinyin to IPA
+                                foreach (var pinyin in pinyinArray)
+                                {
+                                    if (pinyin.StartsWith("u") && pinyin.Length > 1)
+                                    {
+                                        // Unicode fallback, skip
+                                        continue;
+                                    }
+                                    
+                                    var ipaPhonemes = ipaConverter.ConvertToIPA(pinyin);
+                                    phonemes.AddRange(ipaPhonemes);
+                                }
                             }
-                            else if (char.IsPunctuation(pinyin[0]))
+                        }
+                        else
+                        {
+                            // Original character-by-character processing
+                            var pinyinArray = pinyinConverter.GetPinyin(chinese, usePhrase: true);
+
+                            // Convert each pinyin to IPA
+                            foreach (var pinyin in pinyinArray)
                             {
-                                phonemes.Add("_");
-                            }
-                            else
-                            {
-                                // Convert pinyin to IPA
-                                var ipaPhonemes = ipaConverter.ConvertToIPA(pinyin);
-                                phonemes.AddRange(ipaPhonemes);
+                                if (ChineseTextNormalizer.IsChinese(pinyin[0]))
+                                {
+                                    // It's still a Chinese character (no pinyin found)
+                                    // Skip Debug.LogWarning for performance
+                                }
+                                else if (char.IsPunctuation(pinyin[0]))
+                                {
+                                    phonemes.Add("_");
+                                }
+                                else
+                                {
+                                    // Convert pinyin to IPA
+                                    var ipaPhonemes = ipaConverter.ConvertToIPA(pinyin);
+                                    phonemes.AddRange(ipaPhonemes);
+                                }
                             }
                         }
                     }
