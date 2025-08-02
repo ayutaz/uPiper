@@ -191,7 +191,14 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     new ChineseDictionaryData.CharacterPinyinEntry { character = "到", pinyin = new[] { "dao4" } },
                     new ChineseDictionaryData.CharacterPinyinEntry { character = "变", pinyin = new[] { "bian4" } },
                     new ChineseDictionaryData.CharacterPinyinEntry { character = "要", pinyin = new[] { "yao4", "yao1" } },
-                    new ChineseDictionaryData.CharacterPinyinEntry { character = "起", pinyin = new[] { "qi3" } }
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "起", pinyin = new[] { "qi3" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "定", pinyin = new[] { "ding4" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "般", pinyin = new[] { "ban1" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "确", pinyin = new[] { "que4" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "目", pinyin = new[] { "mu4" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "书", pinyin = new[] { "shu1" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "小", pinyin = new[] { "xiao3" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "心", pinyin = new[] { "xin1" } }
                 },
                 phraseEntries = new[]
                 {
@@ -213,7 +220,14 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不错", pinyin = "bu2 cuo4" },
                     new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不变", pinyin = "bu2 bian4" },
                     new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不要", pinyin = "bu2 yao4" },
-                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "一起", pinyin = "yi4 qi3" }
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "一起", pinyin = "yi4 qi3" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "一定", pinyin = "yi2 ding4" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "一般", pinyin = "yi4 ban1" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "一个", pinyin = "yi2 ge4" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "我的", pinyin = "wo3 de5" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "的确", pinyin = "di2 que4" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "目的", pinyin = "mu4 di4" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "一不小心", pinyin = "yi4 bu4 xiao3 xin1" }
                 },
                 pinyinIPAEntries = new[]
                 {
@@ -337,7 +351,13 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "qu", ipa = "tɕʰy" },
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "dao", ipa = "tau" },
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "yao", ipa = "jau" },
-                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "qi", ipa = "tɕʰi" }
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "qi", ipa = "tɕʰi" },
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "ding", ipa = "tiŋ" },
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "ban", ipa = "pan" },
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "que", ipa = "tɕʰye" },
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "mu", ipa = "mu" },
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "xiao", ipa = "ɕiau" },
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "xin", ipa = "ɕin" }
                 },
                 wordFrequencies = new ChineseDictionaryData.WordFrequencyEntry[0]
             };
