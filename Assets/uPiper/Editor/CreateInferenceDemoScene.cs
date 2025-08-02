@@ -45,7 +45,11 @@ namespace uPiper.Editor
             var canvasGO = new GameObject("Canvas");
             var canvas = canvasGO.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvasGO.AddComponent<CanvasScaler>();
+            var canvasScaler = canvasGO.AddComponent<CanvasScaler>();
+            canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            canvasScaler.referenceResolution = new Vector2(1920, 1080);
+            canvasScaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            canvasScaler.matchWidthOrHeight = 0.5f;
             canvasGO.AddComponent<GraphicRaycaster>();
 
             // EventSystem を作成 (Input System対応)
@@ -57,10 +61,10 @@ namespace uPiper.Editor
             var panelGO = new GameObject("Panel");
             panelGO.transform.SetParent(canvasGO.transform, false);
             var panelImage = panelGO.AddComponent<Image>();
-            panelImage.color = new Color(0.2f, 0.2f, 0.2f, 0.9f);
+            panelImage.color = new Color(0.15f, 0.15f, 0.15f, 0.95f);
             var panelRect = panelGO.GetComponent<RectTransform>();
-            panelRect.anchorMin = new Vector2(0.1f, 0.1f);
-            panelRect.anchorMax = new Vector2(0.9f, 0.9f);
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
             panelRect.offsetMin = Vector2.zero;
             panelRect.offsetMax = Vector2.zero;
 
@@ -69,7 +73,7 @@ namespace uPiper.Editor
             titleGO.transform.SetParent(panelGO.transform, false);
             var titleText = titleGO.AddComponent<TextMeshProUGUI>();
             titleText.text = "Piper-Plus TTS (Unity) - InferenceEngine Demo";
-            titleText.fontSize = 24;
+            titleText.fontSize = 36;
             titleText.color = Color.white;
             titleText.alignment = TextAlignmentOptions.Center;
             // フォントはTMP Settingsのデフォルトを使用（プロジェクト側で日本語フォントを設定）
@@ -84,7 +88,7 @@ namespace uPiper.Editor
             modelLabelGO.transform.SetParent(panelGO.transform, false);
             var modelLabel = modelLabelGO.AddComponent<TextMeshProUGUI>();
             modelLabel.text = "Model:";
-            modelLabel.fontSize = 16;
+            modelLabel.fontSize = 20;
             modelLabel.color = Color.white;
             var modelLabelRect = modelLabelGO.GetComponent<RectTransform>();
             modelLabelRect.anchorMin = new Vector2(0.1f, 0.78f);
@@ -171,7 +175,7 @@ namespace uPiper.Editor
             itemLabelGO.transform.SetParent(itemGO.transform, false);
             var itemLabel = itemLabelGO.AddComponent<TextMeshProUGUI>();
             itemLabel.text = "Option";
-            itemLabel.fontSize = 14;
+            itemLabel.fontSize = 18;
             itemLabel.color = Color.black;
             var itemLabelRect = itemLabelGO.GetComponent<RectTransform>();
             itemLabelRect.anchorMin = Vector2.zero;
@@ -233,7 +237,7 @@ namespace uPiper.Editor
             labelGO.transform.SetParent(dropdownGO.transform, false);
             var labelText = labelGO.AddComponent<TextMeshProUGUI>();
             labelText.text = "ja_JP-test-medium";
-            labelText.fontSize = 14;
+            labelText.fontSize = 18;
             labelText.color = Color.white;
             labelText.alignment = TextAlignmentOptions.MidlineLeft;
             var labelRect = labelGO.GetComponent<RectTransform>();
@@ -247,7 +251,7 @@ namespace uPiper.Editor
             arrowGO.transform.SetParent(dropdownGO.transform, false);
             var arrowText = arrowGO.AddComponent<TextMeshProUGUI>();
             arrowText.text = "▼";
-            arrowText.fontSize = 14;
+            arrowText.fontSize = 18;
             arrowText.color = Color.white;
             var arrowRect = arrowGO.GetComponent<RectTransform>();
             arrowRect.anchorMin = new Vector2(1, 0.5f);
@@ -274,7 +278,7 @@ namespace uPiper.Editor
             phraseLabelGO.transform.SetParent(panelGO.transform, false);
             var phraseLabel = phraseLabelGO.AddComponent<TextMeshProUGUI>();
             phraseLabel.text = "Phrase:";
-            phraseLabel.fontSize = 16;
+            phraseLabel.fontSize = 20;
             phraseLabel.color = Color.white;
             var phraseLabelRect = phraseLabelGO.GetComponent<RectTransform>();
             phraseLabelRect.anchorMin = new Vector2(0.1f, 0.68f);
@@ -295,7 +299,7 @@ namespace uPiper.Editor
             gpuSectionLabelGO.transform.SetParent(panelGO.transform, false);
             var gpuSectionLabel = gpuSectionLabelGO.AddComponent<TextMeshProUGUI>();
             gpuSectionLabel.text = "GPU Inference Settings";
-            gpuSectionLabel.fontSize = 16;
+            gpuSectionLabel.fontSize = 24;
             gpuSectionLabel.color = Color.cyan;
             gpuSectionLabel.fontStyle = FontStyles.Bold;
             var gpuSectionLabelRect = gpuSectionLabelGO.GetComponent<RectTransform>();
@@ -309,7 +313,7 @@ namespace uPiper.Editor
             backendLabelGO.transform.SetParent(panelGO.transform, false);
             var backendLabel = backendLabelGO.AddComponent<TextMeshProUGUI>();
             backendLabel.text = "Backend:";
-            backendLabel.fontSize = 14;
+            backendLabel.fontSize = 18;
             backendLabel.color = Color.white;
             var backendLabelRect = backendLabelGO.GetComponent<RectTransform>();
             backendLabelRect.anchorMin = new Vector2(0.1f, 0.50f);
@@ -336,7 +340,7 @@ namespace uPiper.Editor
             backendInfoGO.transform.SetParent(panelGO.transform, false);
             var backendInfoText = backendInfoGO.AddComponent<TextMeshProUGUI>();
             backendInfoText.text = "Backend: (Not initialized)";
-            backendInfoText.fontSize = 12;
+            backendInfoText.fontSize = 16;
             backendInfoText.color = new Color(0.8f, 0.8f, 0.8f);
             backendInfoText.alignment = TextAlignmentOptions.MidlineLeft;
             var backendInfoRect = backendInfoGO.GetComponent<RectTransform>();
@@ -350,7 +354,7 @@ namespace uPiper.Editor
             inputLabelGO.transform.SetParent(panelGO.transform, false);
             var inputLabel = inputLabelGO.AddComponent<TextMeshProUGUI>();
             inputLabel.text = "Text:";
-            inputLabel.fontSize = 16;
+            inputLabel.fontSize = 20;
             inputLabel.color = Color.white;
             var inputLabelRect = inputLabelGO.GetComponent<RectTransform>();
             inputLabelRect.anchorMin = new Vector2(0.1f, 0.38f);
@@ -383,7 +387,7 @@ namespace uPiper.Editor
             placeholderGO.transform.SetParent(textAreaGO.transform, false);
             var placeholderText = placeholderGO.AddComponent<TextMeshProUGUI>();
             placeholderText.text = "Enter text...";
-            placeholderText.fontSize = 14;
+            placeholderText.fontSize = 18;
             placeholderText.color = new Color(0.5f, 0.5f, 0.5f, 0.5f);
             var placeholderRect = placeholderGO.GetComponent<RectTransform>();
             placeholderRect.anchorMin = Vector2.zero;
@@ -395,7 +399,7 @@ namespace uPiper.Editor
             var inputTextGO = new GameObject("Text", typeof(RectTransform));
             inputTextGO.transform.SetParent(textAreaGO.transform, false);
             var inputText = inputTextGO.AddComponent<TextMeshProUGUI>();
-            inputText.fontSize = 14;
+            inputText.fontSize = 18;
             inputText.color = Color.black;
             inputText.richText = false;
             var inputTextRect = inputTextGO.GetComponent<RectTransform>();
@@ -427,7 +431,7 @@ namespace uPiper.Editor
             buttonTextGO.transform.SetParent(buttonGO.transform, false);
             var buttonText = buttonTextGO.AddComponent<TextMeshProUGUI>();
             buttonText.text = "Generate";
-            buttonText.fontSize = 18;
+            buttonText.fontSize = 24;
             buttonText.color = Color.white;
             buttonText.alignment = TextAlignmentOptions.Center;
             var buttonTextRect = buttonTextGO.GetComponent<RectTransform>();
@@ -441,7 +445,7 @@ namespace uPiper.Editor
             statusGO.transform.SetParent(panelGO.transform, false);
             var statusText = statusGO.AddComponent<TextMeshProUGUI>();
             statusText.text = "Ready";
-            statusText.fontSize = 14;
+            statusText.fontSize = 18;
             statusText.color = Color.yellow;
             statusText.alignment = TextAlignmentOptions.Center;
             var statusRect = statusGO.GetComponent<RectTransform>();
@@ -455,7 +459,7 @@ namespace uPiper.Editor
             phonemeDetailsGO.transform.SetParent(panelGO.transform, false);
             var phonemeDetailsText = phonemeDetailsGO.AddComponent<TextMeshProUGUI>();
             phonemeDetailsText.text = "";
-            phonemeDetailsText.fontSize = 11;
+            phonemeDetailsText.fontSize = 14;
             phonemeDetailsText.color = new Color(0.8f, 0.8f, 0.8f);
             phonemeDetailsText.alignment = TextAlignmentOptions.MidlineLeft;
             var phonemeDetailsRect = phonemeDetailsGO.GetComponent<RectTransform>();
@@ -569,7 +573,7 @@ namespace uPiper.Editor
             itemLabelGO.transform.SetParent(itemGO.transform, false);
             var itemLabel = itemLabelGO.AddComponent<TextMeshProUGUI>();
             itemLabel.text = "Option";
-            itemLabel.fontSize = 14;
+            itemLabel.fontSize = 18;
             itemLabel.color = Color.black;
             var itemLabelRect = itemLabelGO.GetComponent<RectTransform>();
             itemLabelRect.anchorMin = Vector2.zero;
@@ -639,7 +643,7 @@ namespace uPiper.Editor
             labelGO.transform.SetParent(dropdownGO.transform, false);
             var label = labelGO.AddComponent<TextMeshProUGUI>();
             label.text = "Option A";
-            label.fontSize = 14;
+            label.fontSize = 18;
             label.color = Color.white;
             var labelRect = labelGO.GetComponent<RectTransform>();
             labelRect.anchorMin = Vector2.zero;
@@ -652,7 +656,7 @@ namespace uPiper.Editor
             arrowGO.transform.SetParent(dropdownGO.transform, false);
             var arrowText = arrowGO.AddComponent<TextMeshProUGUI>();
             arrowText.text = "▼";
-            arrowText.fontSize = 14;
+            arrowText.fontSize = 18;
             arrowText.color = Color.white;
             var arrowRect = arrowGO.GetComponent<RectTransform>();
             arrowRect.anchorMin = new Vector2(1, 0.5f);
