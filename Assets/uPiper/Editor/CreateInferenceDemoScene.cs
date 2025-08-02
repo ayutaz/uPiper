@@ -74,8 +74,8 @@ namespace uPiper.Editor
             titleText.alignment = TextAlignmentOptions.Center;
             // フォントはTMP Settingsのデフォルトを使用（プロジェクト側で日本語フォントを設定）
             var titleRect = titleGO.GetComponent<RectTransform>();
-            titleRect.anchorMin = new Vector2(0, 0.9f);
-            titleRect.anchorMax = new Vector2(1, 1);
+            titleRect.anchorMin = new Vector2(0, 0.88f);
+            titleRect.anchorMax = new Vector2(1, 0.98f);
             titleRect.offsetMin = Vector2.zero;
             titleRect.offsetMax = Vector2.zero;
 
@@ -87,8 +87,8 @@ namespace uPiper.Editor
             modelLabel.fontSize = 16;
             modelLabel.color = Color.white;
             var modelLabelRect = modelLabelGO.GetComponent<RectTransform>();
-            modelLabelRect.anchorMin = new Vector2(0.1f, 0.7f);
-            modelLabelRect.anchorMax = new Vector2(0.3f, 0.8f);
+            modelLabelRect.anchorMin = new Vector2(0.1f, 0.78f);
+            modelLabelRect.anchorMax = new Vector2(0.3f, 0.85f);
             modelLabelRect.offsetMin = Vector2.zero;
             modelLabelRect.offsetMax = Vector2.zero;
 
@@ -98,8 +98,8 @@ namespace uPiper.Editor
             dropdownImage.color = new Color(0.3f, 0.3f, 0.3f);
             var dropdown = dropdownGO.AddComponent<TMP_Dropdown>();
             var dropdownRect = dropdownGO.GetComponent<RectTransform>();
-            dropdownRect.anchorMin = new Vector2(0.3f, 0.7f);
-            dropdownRect.anchorMax = new Vector2(0.9f, 0.8f);
+            dropdownRect.anchorMin = new Vector2(0.3f, 0.78f);
+            dropdownRect.anchorMax = new Vector2(0.9f, 0.85f);
             dropdownRect.offsetMin = Vector2.zero;
             dropdownRect.offsetMax = Vector2.zero;
 
@@ -264,7 +264,7 @@ namespace uPiper.Editor
 
             // オプションを設定
             dropdown.ClearOptions();
-            dropdown.AddOptions(new System.Collections.Generic.List<string> { "ja_JP-test-medium", "test_voice" });
+            dropdown.AddOptions(new System.Collections.Generic.List<string> { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" });
 
             // Template を非表示
             templateGO.SetActive(false);
@@ -277,15 +277,15 @@ namespace uPiper.Editor
             phraseLabel.fontSize = 16;
             phraseLabel.color = Color.white;
             var phraseLabelRect = phraseLabelGO.GetComponent<RectTransform>();
-            phraseLabelRect.anchorMin = new Vector2(0.1f, 0.55f);
-            phraseLabelRect.anchorMax = new Vector2(0.3f, 0.65f);
+            phraseLabelRect.anchorMin = new Vector2(0.1f, 0.68f);
+            phraseLabelRect.anchorMax = new Vector2(0.3f, 0.75f);
             phraseLabelRect.offsetMin = Vector2.zero;
             phraseLabelRect.offsetMax = Vector2.zero;
 
             var phraseDropdownGO = CreateDropdown("PhraseDropdown", panelGO.transform);
             var phraseDropdownRect = phraseDropdownGO.GetComponent<RectTransform>();
-            phraseDropdownRect.anchorMin = new Vector2(0.3f, 0.55f);
-            phraseDropdownRect.anchorMax = new Vector2(0.9f, 0.65f);
+            phraseDropdownRect.anchorMin = new Vector2(0.3f, 0.68f);
+            phraseDropdownRect.anchorMax = new Vector2(0.9f, 0.75f);
             phraseDropdownRect.offsetMin = Vector2.zero;
             phraseDropdownRect.offsetMax = Vector2.zero;
             var phraseDropdown = phraseDropdownGO.GetComponent<TMP_Dropdown>();
@@ -295,12 +295,12 @@ namespace uPiper.Editor
             gpuSectionLabelGO.transform.SetParent(panelGO.transform, false);
             var gpuSectionLabel = gpuSectionLabelGO.AddComponent<TextMeshProUGUI>();
             gpuSectionLabel.text = "GPU Inference Settings";
-            gpuSectionLabel.fontSize = 18;
+            gpuSectionLabel.fontSize = 16;
             gpuSectionLabel.color = Color.cyan;
             gpuSectionLabel.fontStyle = FontStyles.Bold;
             var gpuSectionLabelRect = gpuSectionLabelGO.GetComponent<RectTransform>();
-            gpuSectionLabelRect.anchorMin = new Vector2(0.1f, 0.48f);
-            gpuSectionLabelRect.anchorMax = new Vector2(0.9f, 0.52f);
+            gpuSectionLabelRect.anchorMin = new Vector2(0.1f, 0.58f);
+            gpuSectionLabelRect.anchorMax = new Vector2(0.9f, 0.63f);
             gpuSectionLabelRect.offsetMin = Vector2.zero;
             gpuSectionLabelRect.offsetMax = Vector2.zero;
 
@@ -312,15 +312,15 @@ namespace uPiper.Editor
             backendLabel.fontSize = 14;
             backendLabel.color = Color.white;
             var backendLabelRect = backendLabelGO.GetComponent<RectTransform>();
-            backendLabelRect.anchorMin = new Vector2(0.1f, 0.42f);
-            backendLabelRect.anchorMax = new Vector2(0.25f, 0.46f);
+            backendLabelRect.anchorMin = new Vector2(0.1f, 0.50f);
+            backendLabelRect.anchorMax = new Vector2(0.25f, 0.55f);
             backendLabelRect.offsetMin = Vector2.zero;
             backendLabelRect.offsetMax = Vector2.zero;
 
             var backendDropdownGO = CreateDropdown("BackendDropdown", panelGO.transform);
             var backendDropdownRect = backendDropdownGO.GetComponent<RectTransform>();
-            backendDropdownRect.anchorMin = new Vector2(0.25f, 0.42f);
-            backendDropdownRect.anchorMax = new Vector2(0.45f, 0.46f);
+            backendDropdownRect.anchorMin = new Vector2(0.25f, 0.50f);
+            backendDropdownRect.anchorMax = new Vector2(0.45f, 0.55f);
             backendDropdownRect.offsetMin = Vector2.zero;
             backendDropdownRect.offsetMax = Vector2.zero;
             var backendDropdown = backendDropdownGO.GetComponent<TMP_Dropdown>();
@@ -338,10 +338,10 @@ namespace uPiper.Editor
             backendInfoText.text = "Backend: (Not initialized)";
             backendInfoText.fontSize = 12;
             backendInfoText.color = new Color(0.8f, 0.8f, 0.8f);
-            backendInfoText.alignment = TextAlignmentOptions.Center;
+            backendInfoText.alignment = TextAlignmentOptions.MidlineLeft;
             var backendInfoRect = backendInfoGO.GetComponent<RectTransform>();
-            backendInfoRect.anchorMin = new Vector2(0.1f, 0.32f);
-            backendInfoRect.anchorMax = new Vector2(0.9f, 0.35f);
+            backendInfoRect.anchorMin = new Vector2(0.5f, 0.50f);
+            backendInfoRect.anchorMax = new Vector2(0.9f, 0.55f);
             backendInfoRect.offsetMin = Vector2.zero;
             backendInfoRect.offsetMax = Vector2.zero;
 
@@ -353,8 +353,8 @@ namespace uPiper.Editor
             inputLabel.fontSize = 16;
             inputLabel.color = Color.white;
             var inputLabelRect = inputLabelGO.GetComponent<RectTransform>();
-            inputLabelRect.anchorMin = new Vector2(0.1f, 0.26f);
-            inputLabelRect.anchorMax = new Vector2(0.3f, 0.30f);
+            inputLabelRect.anchorMin = new Vector2(0.1f, 0.38f);
+            inputLabelRect.anchorMax = new Vector2(0.3f, 0.43f);
             inputLabelRect.offsetMin = Vector2.zero;
             inputLabelRect.offsetMax = Vector2.zero;
 
@@ -364,8 +364,8 @@ namespace uPiper.Editor
             inputImage.color = Color.white;
             var inputField = inputGO.AddComponent<TMP_InputField>();
             var inputRect = inputGO.GetComponent<RectTransform>();
-            inputRect.anchorMin = new Vector2(0.3f, 0.22f);
-            inputRect.anchorMax = new Vector2(0.9f, 0.30f);
+            inputRect.anchorMin = new Vector2(0.3f, 0.35f);
+            inputRect.anchorMax = new Vector2(0.9f, 0.43f);
             inputRect.offsetMin = Vector2.zero;
             inputRect.offsetMax = Vector2.zero;
 
@@ -418,8 +418,8 @@ namespace uPiper.Editor
             buttonImage.color = new Color(0.3f, 0.6f, 0.9f);
             button.targetGraphic = buttonImage;
             var buttonRect = buttonGO.GetComponent<RectTransform>();
-            buttonRect.anchorMin = new Vector2(0.3f, 0.16f);
-            buttonRect.anchorMax = new Vector2(0.7f, 0.21f);
+            buttonRect.anchorMin = new Vector2(0.3f, 0.25f);
+            buttonRect.anchorMax = new Vector2(0.7f, 0.32f);
             buttonRect.offsetMin = Vector2.zero;
             buttonRect.offsetMax = Vector2.zero;
 
@@ -445,8 +445,8 @@ namespace uPiper.Editor
             statusText.color = Color.yellow;
             statusText.alignment = TextAlignmentOptions.Center;
             var statusRect = statusGO.GetComponent<RectTransform>();
-            statusRect.anchorMin = new Vector2(0.1f, 0.11f);
-            statusRect.anchorMax = new Vector2(0.9f, 0.14f);
+            statusRect.anchorMin = new Vector2(0.1f, 0.18f);
+            statusRect.anchorMax = new Vector2(0.9f, 0.22f);
             statusRect.offsetMin = Vector2.zero;
             statusRect.offsetMax = Vector2.zero;
 
@@ -455,12 +455,12 @@ namespace uPiper.Editor
             phonemeDetailsGO.transform.SetParent(panelGO.transform, false);
             var phonemeDetailsText = phonemeDetailsGO.AddComponent<TextMeshProUGUI>();
             phonemeDetailsText.text = "";
-            phonemeDetailsText.fontSize = 12;
+            phonemeDetailsText.fontSize = 11;
             phonemeDetailsText.color = new Color(0.8f, 0.8f, 0.8f);
             phonemeDetailsText.alignment = TextAlignmentOptions.MidlineLeft;
             var phonemeDetailsRect = phonemeDetailsGO.GetComponent<RectTransform>();
-            phonemeDetailsRect.anchorMin = new Vector2(0.1f, 0.02f);
-            phonemeDetailsRect.anchorMax = new Vector2(0.9f, 0.08f);
+            phonemeDetailsRect.anchorMin = new Vector2(0.1f, 0.05f);
+            phonemeDetailsRect.anchorMax = new Vector2(0.9f, 0.15f);
             phonemeDetailsRect.offsetMin = Vector2.zero;
             phonemeDetailsRect.offsetMax = Vector2.zero;
 
