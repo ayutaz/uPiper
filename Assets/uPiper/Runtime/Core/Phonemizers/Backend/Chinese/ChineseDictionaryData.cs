@@ -159,6 +159,14 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             return phraseToPinyin.Keys;
         }
+        
+        /// <summary>
+        /// Get all characters in the dictionary
+        /// </summary>
+        public IEnumerable<char> GetAllCharacters()
+        {
+            return charToPinyin.Keys;
+        }
 
         private string RemoveToneNumber(string pinyin)
         {
