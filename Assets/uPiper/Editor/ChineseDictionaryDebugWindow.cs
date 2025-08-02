@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
+using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Backend.Chinese;
 using Debug = UnityEngine.Debug;
 
@@ -277,10 +278,10 @@ namespace uPiper.Editor
             var memoryStart = GC.GetTotalMemory(false);
             
             // Create many phonemizer instances
-            var phonemizers = new ChinesePhonemizer.ChinesePhonemizer[100];
+            var phonemizers = new uPiper.Core.Phonemizers.Backend.ChinesePhonemizer[100];
             for (int i = 0; i < phonemizers.Length; i++)
             {
-                phonemizers[i] = new ChinesePhonemizer.ChinesePhonemizer();
+                phonemizers[i] = new uPiper.Core.Phonemizers.Backend.ChinesePhonemizer();
             }
             
             var memoryAfterCreate = GC.GetTotalMemory(false);

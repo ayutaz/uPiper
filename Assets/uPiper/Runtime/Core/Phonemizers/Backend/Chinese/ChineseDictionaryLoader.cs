@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,7 +27,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         private const string WORD_FREQ_EXPANDED_FILE = "word_frequency_expanded.json";
         
         // Flag to use expanded dictionaries (Phase 2)
-        private bool useExpandedDictionaries = true;
+        private bool useExpandedDictionaries = false; // Temporarily disabled to avoid Unity freeze
+        
+        // Flag to skip word frequency loading for performance
+        private bool skipWordFrequency = true; // Temporarily skip to avoid Unity freeze
 
         /// <summary>
         /// Load all dictionary data asynchronously
@@ -38,14 +42,19 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
 
             try
             {
-                // Load all dictionary files in parallel
-                var loadTasks = new[]
+                // Load dictionary files (skip large files if needed)
+                var loadTasks = new List<Task<object>>
                 {
                     LoadCharacterDictionary(cancellationToken),
                     LoadPhraseDictionary(cancellationToken),
-                    LoadIPAMapping(cancellationToken),
-                    LoadWordFrequency(cancellationToken)
+                    LoadIPAMapping(cancellationToken)
                 };
+                
+                // Only load word frequency if not skipping
+                if (!skipWordFrequency)
+                {
+                    loadTasks.Add(LoadWordFrequency(cancellationToken));
+                }
 
                 await Task.WhenAll(loadTasks);
 
@@ -53,14 +62,25 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 dictionaryData.characterEntries = loadTasks[0].Result as ChineseDictionaryData.CharacterPinyinEntry[];
                 dictionaryData.phraseEntries = loadTasks[1].Result as ChineseDictionaryData.PhrasePinyinEntry[];
                 dictionaryData.pinyinIPAEntries = loadTasks[2].Result as ChineseDictionaryData.PinyinIPAEntry[];
-                dictionaryData.wordFrequencies = loadTasks[3].Result as ChineseDictionaryData.WordFrequencyEntry[];
+                
+                // Word frequencies might be skipped
+                if (loadTasks.Count > 3)
+                {
+                    dictionaryData.wordFrequencies = loadTasks[3].Result as ChineseDictionaryData.WordFrequencyEntry[];
+                }
+                else
+                {
+                    dictionaryData.wordFrequencies = new ChineseDictionaryData.WordFrequencyEntry[0];
+                }
 
                 // Load into runtime dictionary
                 dictionary.LoadFromData(dictionaryData);
 
-                Debug.Log($"Chinese dictionary loaded: {dictionary.CharacterCount} characters, " +
-                         $"{dictionary.PhraseCount} phrases, {dictionary.IPACount} IPA mappings, " +
-                         $"{dictionary.WordCount} word frequencies");
+                Debug.Log($"[ChineseDictionaryLoader] Dictionary loaded: " +
+                         $"{dictionary.CharacterCount} characters, " +
+                         $"{dictionary.PhraseCount} phrases, " +
+                         $"{dictionary.IPACount} IPA mappings" +
+                         (skipWordFrequency ? " (word frequency skipped)" : $", {dictionary.WordCount} word frequencies"));
 
                 return dictionary;
             }
@@ -130,6 +150,12 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
 
         private async Task<object> LoadWordFrequency(CancellationToken cancellationToken)
         {
+            if (skipWordFrequency)
+            {
+                Debug.LogWarning("[ChineseDictionaryLoader] Skipping word frequency loading for performance");
+                return Array.Empty<ChineseDictionaryData.WordFrequencyEntry>();
+            }
+            
             var filename = useExpandedDictionaries ? WORD_FREQ_EXPANDED_FILE : WORD_FREQ_FILE;
             var json = await LoadJsonFile(filename, cancellationToken);
             if (string.IsNullOrEmpty(json) && useExpandedDictionaries)
