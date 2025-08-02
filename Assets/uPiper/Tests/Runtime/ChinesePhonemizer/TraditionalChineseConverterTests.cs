@@ -35,100 +35,83 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public void ConvertToSimplified_BasicCharacters()
         {
             // Test basic character conversions
-            var testCases = new[]
-            {
-                ("學", "学"),    // learn
-                ("習", "习"),    // practice
-                ("國", "国"),    // country
-                ("愛", "爱"),    // love
-                ("體", "体"),    // body
-                ("語", "语"),    // language
-                ("書", "书"),    // book
-                ("讀", "读"),    // read
-                ("寫", "写"),    // write
-                ("說", "说"),    // speak
-            };
-
-            foreach (var (traditional, expectedSimplified) in testCases)
-            {
-                var result = converter.ConvertToSimplified(traditional);
-                Assert.AreEqual(expectedSimplified, result, 
-                    $"'{traditional}' should convert to '{expectedSimplified}'");
-            }
+            Assert.AreEqual("学", converter.ConvertToSimplified("學")); // learn
+            Assert.AreEqual("习", converter.ConvertToSimplified("習")); // practice
+            Assert.AreEqual("国", converter.ConvertToSimplified("國")); // country
+            Assert.AreEqual("爱", converter.ConvertToSimplified("愛")); // love
+            Assert.AreEqual("体", converter.ConvertToSimplified("體")); // body
+            Assert.AreEqual("语", converter.ConvertToSimplified("語")); // language
+            Assert.AreEqual("书", converter.ConvertToSimplified("書")); // book
+            Assert.AreEqual("读", converter.ConvertToSimplified("讀")); // read
+            Assert.AreEqual("写", converter.ConvertToSimplified("寫")); // write
+            Assert.AreEqual("说", converter.ConvertToSimplified("說")); // speak
         }
 
         [Test]
         public void ConvertToSimplified_Words()
         {
             // Test word conversions
-            var testCases = new[]
-            {
-                ("學習", "学习"),         // study
-                ("中國", "中国"),         // China
-                ("臺灣", "台湾"),         // Taiwan
-                ("語言", "语言"),         // language
-                ("愛國", "爱国"),         // patriotic
-                ("體育", "体育"),         // physical education
-                ("圖書館", "图书馆"),     // library
-                ("電腦", "电脑"),         // computer
-                ("網絡", "网络"),         // network
-                ("飛機", "飞机"),         // airplane
-            };
-
-            foreach (var (traditional, expectedSimplified) in testCases)
-            {
-                var result = converter.ConvertToSimplified(traditional);
-                Assert.AreEqual(expectedSimplified, result, 
-                    $"'{traditional}' should convert to '{expectedSimplified}'");
-            }
+            Assert.AreEqual("学习", converter.ConvertToSimplified("學習"));         // study
+            Assert.AreEqual("中国", converter.ConvertToSimplified("中國"));         // China
+            Assert.AreEqual("台湾", converter.ConvertToSimplified("臺灣"));         // Taiwan
+            Assert.AreEqual("语言", converter.ConvertToSimplified("語言"));         // language
+            Assert.AreEqual("爱国", converter.ConvertToSimplified("愛國"));         // patriotic
+            Assert.AreEqual("体育", converter.ConvertToSimplified("體育"));         // physical education
+            Assert.AreEqual("图书馆", converter.ConvertToSimplified("圖書館"));     // library
+            Assert.AreEqual("电脑", converter.ConvertToSimplified("電腦"));         // computer
+            Assert.AreEqual("网络", converter.ConvertToSimplified("網絡"));         // network
+            Assert.AreEqual("飞机", converter.ConvertToSimplified("飛機"));         // airplane
         }
 
         [Test]
         public void ConvertToSimplified_Sentences()
         {
             // Test full sentences
-            var testCases = new[]
-            {
-                ("我愛學習中國語言。", "我爱学习中国语言。"),
-                ("這是一個測試。", "这是一个测试。"),
-                ("歡迎來到臺灣！", "欢迎来到台湾！"),
-                ("請問這裡是圖書館嗎？", "请问这里是图书馆吗？"),
-                ("我們一起去飛機場。", "我们一起去飞机场。")
-            };
-
-            foreach (var (traditional, expectedSimplified) in testCases)
-            {
-                var result = converter.ConvertToSimplified(traditional);
-                Assert.AreEqual(expectedSimplified, result, 
-                    $"Sentence conversion failed");
-            }
+            Assert.AreEqual("我爱学习中国语言。", converter.ConvertToSimplified("我愛學習中國語言。"));
+            Assert.AreEqual("这是一个测试。", converter.ConvertToSimplified("這是一個測試。"));
+            Assert.AreEqual("欢迎来到台湾！", converter.ConvertToSimplified("歡迎來到臺灣！"));
+            Assert.AreEqual("请问这里是图书馆吗？", converter.ConvertToSimplified("請問這裡是圖書館嗎？"));
+            Assert.AreEqual("我们一起去飞机场。", converter.ConvertToSimplified("我們一起去飛機場。"));
         }
 
         [Test]
-        [Ignore("Temporarily disabled due to Unity Editor freeze issue")]
-        public void ConvertToSimplified_MixedText()
+        public void ConvertToSimplified_MixedText_EnglishSimplified()
         {
-            // Test each case individually to isolate the issue
-            
             // Test 1: English + Simplified (no change)
-            var result1 = converter.ConvertToSimplified("Hello 世界！");
-            Assert.AreEqual("Hello 世界！", result1, "English + Simplified test failed");
-            
+            var result = converter.ConvertToSimplified("Hello 世界！");
+            Assert.AreEqual("Hello 世界！", result);
+        }
+        
+        [Test]
+        public void ConvertToSimplified_MixedText_TraditionalEnglish()
+        {
             // Test 2: Traditional + English
-            var result2 = converter.ConvertToSimplified("學習English");
-            Assert.AreEqual("学习English", result2, "Traditional + English test failed");
-            
+            var result = converter.ConvertToSimplified("學習English");
+            Assert.AreEqual("学习English", result);
+        }
+        
+        [Test]
+        public void ConvertToSimplified_MixedText_Mixed()
+        {
             // Test 3: Mixed
-            var result3 = converter.ConvertToSimplified("我love臺灣");
-            Assert.AreEqual("我love台湾", result3, "Mixed test failed");
-            
+            var result = converter.ConvertToSimplified("我love臺灣");
+            Assert.AreEqual("我love台湾", result);
+        }
+        
+        [Test]
+        public void ConvertToSimplified_MixedText_NumbersTraditional()
+        {
             // Test 4: Numbers + Traditional
-            var result4 = converter.ConvertToSimplified("123書本456");
-            Assert.AreEqual("123书本456", result4, "Numbers + Traditional test failed");
-            
+            var result = converter.ConvertToSimplified("123書本456");
+            Assert.AreEqual("123书本456", result);
+        }
+        
+        [Test]
+        public void ConvertToSimplified_MixedText_LettersTraditional()
+        {
             // Test 5: Letters + Traditional
-            var result5 = converter.ConvertToSimplified("ABC語言XYZ");
-            Assert.AreEqual("ABC语言XYZ", result5, "Letters + Traditional test failed");
+            var result = converter.ConvertToSimplified("ABC語言XYZ");
+            Assert.AreEqual("ABC语言XYZ", result);
         }
 
         [Test]
@@ -196,46 +179,40 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public void ConvertToSimplified_CommonPhrases()
         {
             // Test common phrases that might appear in TTS
-            var testCases = new[]
-            {
-                ("請稍等一下", "请稍等一下"),       // Please wait a moment
-                ("謝謝您的幫助", "谢谢您的帮助"),   // Thank you for your help
-                ("對不起，我聽不懂", "对不起，我听不懂"), // Sorry, I don't understand
-                ("歡迎光臨", "欢迎光临"),           // Welcome
-                ("再見", "再见"),                   // Goodbye
-                ("沒問題", "没问题"),               // No problem
-                ("請問怎麼走？", "请问怎么走？"),   // How do I get there?
-                ("多少錢？", "多少钱？"),           // How much?
-            };
-
-            foreach (var (traditional, expectedSimplified) in testCases)
-            {
-                var result = converter.ConvertToSimplified(traditional);
-                Assert.AreEqual(expectedSimplified, result, 
-                    $"Common phrase conversion failed");
-            }
+            Assert.AreEqual("请稍等一下", converter.ConvertToSimplified("請稍等一下"));       // Please wait a moment
+            Assert.AreEqual("谢谢您的帮助", converter.ConvertToSimplified("謝謝您的幫助"));   // Thank you for your help
+            Assert.AreEqual("对不起，我听不懂", converter.ConvertToSimplified("對不起，我聽不懂")); // Sorry, I don't understand
+            Assert.AreEqual("欢迎光临", converter.ConvertToSimplified("歡迎光臨"));           // Welcome
+            Assert.AreEqual("再见", converter.ConvertToSimplified("再見"));                   // Goodbye
+            Assert.AreEqual("没问题", converter.ConvertToSimplified("沒問題"));               // No problem
+            Assert.AreEqual("请问怎么走？", converter.ConvertToSimplified("請問怎麼走？"));   // How do I get there?
+            Assert.AreEqual("多少钱？", converter.ConvertToSimplified("多少錢？"));           // How much?
         }
 
         [Test]
         public void ConvertToSimplified_TechnicalTerms()
         {
             // Test technical terms that might be different
-            var testCases = new[]
-            {
-                ("電腦軟體", "电脑软体"),     // Computer software
-                ("網際網路", "网际网路"),     // Internet
-                ("人工智慧", "人工智慧"),     // AI (same in both)
-                ("機器學習", "机器学习"),     // Machine learning
-                ("數據庫", "数据库"),         // Database
-                ("程式設計", "程式设计"),     // Programming
-            };
-
-            foreach (var (traditional, expectedSimplified) in testCases)
-            {
-                var result = converter.ConvertToSimplified(traditional);
-                Debug.Log($"[TraditionalTest] '{traditional}' → '{result}'");
-                // Note: Some technical terms might have regional variations
-            }
+            var result1 = converter.ConvertToSimplified("電腦軟體");
+            Debug.Log($"[TraditionalTest] '電腦軟體' → '{result1}'");
+            
+            var result2 = converter.ConvertToSimplified("網際網路");
+            Debug.Log($"[TraditionalTest] '網際網路' → '{result2}'");
+            
+            var result3 = converter.ConvertToSimplified("人工智慧");
+            Debug.Log($"[TraditionalTest] '人工智慧' → '{result3}'");
+            
+            var result4 = converter.ConvertToSimplified("機器學習");
+            Debug.Log($"[TraditionalTest] '機器學習' → '{result4}'");
+            Assert.AreEqual("机器学习", result4);
+            
+            var result5 = converter.ConvertToSimplified("數據庫");
+            Debug.Log($"[TraditionalTest] '數據庫' → '{result5}'");
+            Assert.AreEqual("数据库", result5);
+            
+            var result6 = converter.ConvertToSimplified("程式設計");
+            Debug.Log($"[TraditionalTest] '程式設計' → '{result6}'");
+            // Note: Some technical terms might have regional variations
         }
 
         [Test]
