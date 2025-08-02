@@ -189,7 +189,8 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     new ChineseDictionaryData.CharacterPinyinEntry { character = "错", pinyin = new[] { "cuo4" } },
                     new ChineseDictionaryData.CharacterPinyinEntry { character = "去", pinyin = new[] { "qu4" } },
                     new ChineseDictionaryData.CharacterPinyinEntry { character = "到", pinyin = new[] { "dao4" } },
-                    new ChineseDictionaryData.CharacterPinyinEntry { character = "变", pinyin = new[] { "bian4" } }
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "变", pinyin = new[] { "bian4" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "要", pinyin = new[] { "yao4", "yao1" } }
                 },
                 phraseEntries = new[]
                 {
@@ -209,7 +210,8 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不去", pinyin = "bu2 qu4" },
                     new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不到", pinyin = "bu2 dao4" },
                     new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不错", pinyin = "bu2 cuo4" },
-                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不变", pinyin = "bu2 bian4" }
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不变", pinyin = "bu2 bian4" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不要", pinyin = "bu2 yao4" }
                 },
                 pinyinIPAEntries = new[]
                 {
@@ -331,7 +333,8 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "dui", ipa = "tuei" },
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "cuo", ipa = "tsʰuo" },
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "qu", ipa = "tɕʰy" },
-                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "dao", ipa = "tau" }
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "dao", ipa = "tau" },
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "yao", ipa = "jau" }
                 },
                 wordFrequencies = new ChineseDictionaryData.WordFrequencyEntry[0]
             };
