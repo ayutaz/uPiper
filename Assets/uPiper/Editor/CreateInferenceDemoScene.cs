@@ -45,7 +45,11 @@ namespace uPiper.Editor
             var canvasGO = new GameObject("Canvas");
             var canvas = canvasGO.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvasGO.AddComponent<CanvasScaler>();
+            var canvasScaler = canvasGO.AddComponent<CanvasScaler>();
+            canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            canvasScaler.referenceResolution = new Vector2(1920, 1080);
+            canvasScaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            canvasScaler.matchWidthOrHeight = 0.5f;
             canvasGO.AddComponent<GraphicRaycaster>();
 
             // EventSystem を作成 (Input System対応)
@@ -57,10 +61,10 @@ namespace uPiper.Editor
             var panelGO = new GameObject("Panel");
             panelGO.transform.SetParent(canvasGO.transform, false);
             var panelImage = panelGO.AddComponent<Image>();
-            panelImage.color = new Color(0.2f, 0.2f, 0.2f, 0.9f);
+            panelImage.color = new Color(0.15f, 0.15f, 0.15f, 0.95f);
             var panelRect = panelGO.GetComponent<RectTransform>();
-            panelRect.anchorMin = new Vector2(0.1f, 0.1f);
-            panelRect.anchorMax = new Vector2(0.9f, 0.9f);
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
             panelRect.offsetMin = Vector2.zero;
             panelRect.offsetMax = Vector2.zero;
 
@@ -68,14 +72,14 @@ namespace uPiper.Editor
             var titleGO = new GameObject("Title");
             titleGO.transform.SetParent(panelGO.transform, false);
             var titleText = titleGO.AddComponent<TextMeshProUGUI>();
-            titleText.text = "Piper TTS - Unity.InferenceEngine Demo";
-            titleText.fontSize = 24;
+            titleText.text = "Piper-Plus TTS (Unity) - InferenceEngine Demo";
+            titleText.fontSize = 36;
             titleText.color = Color.white;
             titleText.alignment = TextAlignmentOptions.Center;
             // フォントはTMP Settingsのデフォルトを使用（プロジェクト側で日本語フォントを設定）
             var titleRect = titleGO.GetComponent<RectTransform>();
-            titleRect.anchorMin = new Vector2(0, 0.9f);
-            titleRect.anchorMax = new Vector2(1, 1);
+            titleRect.anchorMin = new Vector2(0, 0.88f);
+            titleRect.anchorMax = new Vector2(1, 0.98f);
             titleRect.offsetMin = Vector2.zero;
             titleRect.offsetMax = Vector2.zero;
 
@@ -84,11 +88,11 @@ namespace uPiper.Editor
             modelLabelGO.transform.SetParent(panelGO.transform, false);
             var modelLabel = modelLabelGO.AddComponent<TextMeshProUGUI>();
             modelLabel.text = "Model:";
-            modelLabel.fontSize = 16;
+            modelLabel.fontSize = 20;
             modelLabel.color = Color.white;
             var modelLabelRect = modelLabelGO.GetComponent<RectTransform>();
-            modelLabelRect.anchorMin = new Vector2(0.1f, 0.7f);
-            modelLabelRect.anchorMax = new Vector2(0.3f, 0.8f);
+            modelLabelRect.anchorMin = new Vector2(0.1f, 0.78f);
+            modelLabelRect.anchorMax = new Vector2(0.3f, 0.85f);
             modelLabelRect.offsetMin = Vector2.zero;
             modelLabelRect.offsetMax = Vector2.zero;
 
@@ -98,8 +102,8 @@ namespace uPiper.Editor
             dropdownImage.color = new Color(0.3f, 0.3f, 0.3f);
             var dropdown = dropdownGO.AddComponent<TMP_Dropdown>();
             var dropdownRect = dropdownGO.GetComponent<RectTransform>();
-            dropdownRect.anchorMin = new Vector2(0.3f, 0.7f);
-            dropdownRect.anchorMax = new Vector2(0.9f, 0.8f);
+            dropdownRect.anchorMin = new Vector2(0.3f, 0.78f);
+            dropdownRect.anchorMax = new Vector2(0.9f, 0.85f);
             dropdownRect.offsetMin = Vector2.zero;
             dropdownRect.offsetMax = Vector2.zero;
 
@@ -171,7 +175,7 @@ namespace uPiper.Editor
             itemLabelGO.transform.SetParent(itemGO.transform, false);
             var itemLabel = itemLabelGO.AddComponent<TextMeshProUGUI>();
             itemLabel.text = "Option";
-            itemLabel.fontSize = 14;
+            itemLabel.fontSize = 18;
             itemLabel.color = Color.black;
             var itemLabelRect = itemLabelGO.GetComponent<RectTransform>();
             itemLabelRect.anchorMin = Vector2.zero;
@@ -233,7 +237,7 @@ namespace uPiper.Editor
             labelGO.transform.SetParent(dropdownGO.transform, false);
             var labelText = labelGO.AddComponent<TextMeshProUGUI>();
             labelText.text = "ja_JP-test-medium";
-            labelText.fontSize = 14;
+            labelText.fontSize = 18;
             labelText.color = Color.white;
             labelText.alignment = TextAlignmentOptions.MidlineLeft;
             var labelRect = labelGO.GetComponent<RectTransform>();
@@ -247,7 +251,7 @@ namespace uPiper.Editor
             arrowGO.transform.SetParent(dropdownGO.transform, false);
             var arrowText = arrowGO.AddComponent<TextMeshProUGUI>();
             arrowText.text = "▼";
-            arrowText.fontSize = 14;
+            arrowText.fontSize = 18;
             arrowText.color = Color.white;
             var arrowRect = arrowGO.GetComponent<RectTransform>();
             arrowRect.anchorMin = new Vector2(1, 0.5f);
@@ -264,7 +268,7 @@ namespace uPiper.Editor
 
             // オプションを設定
             dropdown.ClearOptions();
-            dropdown.AddOptions(new System.Collections.Generic.List<string> { "ja_JP-test-medium", "test_voice" });
+            dropdown.AddOptions(new System.Collections.Generic.List<string> { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" });
 
             // Template を非表示
             templateGO.SetActive(false);
@@ -274,18 +278,18 @@ namespace uPiper.Editor
             phraseLabelGO.transform.SetParent(panelGO.transform, false);
             var phraseLabel = phraseLabelGO.AddComponent<TextMeshProUGUI>();
             phraseLabel.text = "Phrase:";
-            phraseLabel.fontSize = 16;
+            phraseLabel.fontSize = 20;
             phraseLabel.color = Color.white;
             var phraseLabelRect = phraseLabelGO.GetComponent<RectTransform>();
-            phraseLabelRect.anchorMin = new Vector2(0.1f, 0.55f);
-            phraseLabelRect.anchorMax = new Vector2(0.3f, 0.65f);
+            phraseLabelRect.anchorMin = new Vector2(0.1f, 0.68f);
+            phraseLabelRect.anchorMax = new Vector2(0.3f, 0.75f);
             phraseLabelRect.offsetMin = Vector2.zero;
             phraseLabelRect.offsetMax = Vector2.zero;
 
             var phraseDropdownGO = CreateDropdown("PhraseDropdown", panelGO.transform);
             var phraseDropdownRect = phraseDropdownGO.GetComponent<RectTransform>();
-            phraseDropdownRect.anchorMin = new Vector2(0.3f, 0.55f);
-            phraseDropdownRect.anchorMax = new Vector2(0.9f, 0.65f);
+            phraseDropdownRect.anchorMin = new Vector2(0.3f, 0.68f);
+            phraseDropdownRect.anchorMax = new Vector2(0.9f, 0.75f);
             phraseDropdownRect.offsetMin = Vector2.zero;
             phraseDropdownRect.offsetMax = Vector2.zero;
             var phraseDropdown = phraseDropdownGO.GetComponent<TMP_Dropdown>();
@@ -295,12 +299,12 @@ namespace uPiper.Editor
             gpuSectionLabelGO.transform.SetParent(panelGO.transform, false);
             var gpuSectionLabel = gpuSectionLabelGO.AddComponent<TextMeshProUGUI>();
             gpuSectionLabel.text = "GPU Inference Settings";
-            gpuSectionLabel.fontSize = 18;
+            gpuSectionLabel.fontSize = 24;
             gpuSectionLabel.color = Color.cyan;
             gpuSectionLabel.fontStyle = FontStyles.Bold;
             var gpuSectionLabelRect = gpuSectionLabelGO.GetComponent<RectTransform>();
-            gpuSectionLabelRect.anchorMin = new Vector2(0.1f, 0.48f);
-            gpuSectionLabelRect.anchorMax = new Vector2(0.9f, 0.52f);
+            gpuSectionLabelRect.anchorMin = new Vector2(0.1f, 0.58f);
+            gpuSectionLabelRect.anchorMax = new Vector2(0.9f, 0.63f);
             gpuSectionLabelRect.offsetMin = Vector2.zero;
             gpuSectionLabelRect.offsetMax = Vector2.zero;
 
@@ -309,212 +313,39 @@ namespace uPiper.Editor
             backendLabelGO.transform.SetParent(panelGO.transform, false);
             var backendLabel = backendLabelGO.AddComponent<TextMeshProUGUI>();
             backendLabel.text = "Backend:";
-            backendLabel.fontSize = 14;
+            backendLabel.fontSize = 18;
             backendLabel.color = Color.white;
             var backendLabelRect = backendLabelGO.GetComponent<RectTransform>();
-            backendLabelRect.anchorMin = new Vector2(0.1f, 0.42f);
-            backendLabelRect.anchorMax = new Vector2(0.25f, 0.46f);
+            backendLabelRect.anchorMin = new Vector2(0.1f, 0.50f);
+            backendLabelRect.anchorMax = new Vector2(0.25f, 0.55f);
             backendLabelRect.offsetMin = Vector2.zero;
             backendLabelRect.offsetMax = Vector2.zero;
 
             var backendDropdownGO = CreateDropdown("BackendDropdown", panelGO.transform);
             var backendDropdownRect = backendDropdownGO.GetComponent<RectTransform>();
-            backendDropdownRect.anchorMin = new Vector2(0.25f, 0.42f);
-            backendDropdownRect.anchorMax = new Vector2(0.45f, 0.46f);
+            backendDropdownRect.anchorMin = new Vector2(0.25f, 0.50f);
+            backendDropdownRect.anchorMax = new Vector2(0.45f, 0.55f);
             backendDropdownRect.offsetMin = Vector2.zero;
             backendDropdownRect.offsetMax = Vector2.zero;
             var backendDropdown = backendDropdownGO.GetComponent<TMP_Dropdown>();
             backendDropdown.ClearOptions();
-            backendDropdown.AddOptions(new System.Collections.Generic.List<string> { "Auto", "CPU", "GPU Compute", "GPU Pixel" });
+            // GPU ComputeとAutoは音声生成に問題があるため除外
+            backendDropdown.AddOptions(new System.Collections.Generic.List<string> { "CPU", "GPU Pixel" });
 
-            // CPUフォールバックトグル
-            var cpuFallbackGO = new GameObject("CPUFallbackToggle");
-            cpuFallbackGO.transform.SetParent(panelGO.transform, false);
-            var cpuFallbackToggle = cpuFallbackGO.AddComponent<Toggle>();
-            var cpuFallbackBgGO = new GameObject("Background");
-            cpuFallbackBgGO.transform.SetParent(cpuFallbackGO.transform, false);
-            var cpuFallbackBgImage = cpuFallbackBgGO.AddComponent<Image>();
-            cpuFallbackBgImage.color = new Color(0.3f, 0.3f, 0.3f);
-            var cpuFallbackBgRect = cpuFallbackBgGO.GetComponent<RectTransform>();
-            cpuFallbackBgRect.anchorMin = Vector2.zero;
-            cpuFallbackBgRect.anchorMax = Vector2.one;
-            cpuFallbackBgRect.sizeDelta = new Vector2(20, 20);
-            cpuFallbackBgRect.anchoredPosition = new Vector2(-60, 0);
 
-            var cpuFallbackCheckGO = new GameObject("Checkmark");
-            cpuFallbackCheckGO.transform.SetParent(cpuFallbackGO.transform, false);
-            var cpuFallbackCheckImage = cpuFallbackCheckGO.AddComponent<Image>();
-            cpuFallbackCheckImage.color = Color.white;
-            var cpuFallbackCheckRect = cpuFallbackCheckGO.GetComponent<RectTransform>();
-            cpuFallbackCheckRect.anchorMin = new Vector2(0, 0.5f);
-            cpuFallbackCheckRect.anchorMax = new Vector2(0, 0.5f);
-            cpuFallbackCheckRect.sizeDelta = new Vector2(16, 16);
-            cpuFallbackCheckRect.anchoredPosition = new Vector2(-60, 0);
 
-            cpuFallbackToggle.targetGraphic = cpuFallbackBgImage;
-            cpuFallbackToggle.graphic = cpuFallbackCheckImage;
-            cpuFallbackToggle.isOn = true;
-
-            var cpuFallbackRect = cpuFallbackGO.GetComponent<RectTransform>();
-            cpuFallbackRect.anchorMin = new Vector2(0.5f, 0.42f);
-            cpuFallbackRect.anchorMax = new Vector2(0.7f, 0.46f);
-            cpuFallbackRect.offsetMin = Vector2.zero;
-            cpuFallbackRect.offsetMax = Vector2.zero;
-
-            var cpuFallbackLabelGO = new GameObject("Label");
-            cpuFallbackLabelGO.transform.SetParent(cpuFallbackGO.transform, false);
-            var cpuFallbackLabel = cpuFallbackLabelGO.AddComponent<TextMeshProUGUI>();
-            cpuFallbackLabel.text = "CPU Fallback";
-            cpuFallbackLabel.fontSize = 14;
-            cpuFallbackLabel.color = Color.white;
-            var cpuFallbackLabelRect = cpuFallbackLabelGO.GetComponent<RectTransform>();
-            cpuFallbackLabelRect.anchorMin = Vector2.zero;
-            cpuFallbackLabelRect.anchorMax = Vector2.one;
-            cpuFallbackLabelRect.offsetMin = new Vector2(-40, 0);
-            cpuFallbackLabelRect.offsetMax = Vector2.zero;
-
-            // Float16トグル
-            var float16GO = new GameObject("Float16Toggle");
-            float16GO.transform.SetParent(panelGO.transform, false);
-            var float16Toggle = float16GO.AddComponent<Toggle>();
-            var float16BgGO = new GameObject("Background");
-            float16BgGO.transform.SetParent(float16GO.transform, false);
-            var float16BgImage = float16BgGO.AddComponent<Image>();
-            float16BgImage.color = new Color(0.3f, 0.3f, 0.3f);
-            var float16BgRect = float16BgGO.GetComponent<RectTransform>();
-            float16BgRect.anchorMin = Vector2.zero;
-            float16BgRect.anchorMax = Vector2.one;
-            float16BgRect.sizeDelta = new Vector2(20, 20);
-            float16BgRect.anchoredPosition = new Vector2(-60, 0);
-
-            var float16CheckGO = new GameObject("Checkmark");
-            float16CheckGO.transform.SetParent(float16GO.transform, false);
-            var float16CheckImage = float16CheckGO.AddComponent<Image>();
-            float16CheckImage.color = Color.white;
-            var float16CheckRect = float16CheckGO.GetComponent<RectTransform>();
-            float16CheckRect.anchorMin = new Vector2(0, 0.5f);
-            float16CheckRect.anchorMax = new Vector2(0, 0.5f);
-            float16CheckRect.sizeDelta = new Vector2(16, 16);
-            float16CheckRect.anchoredPosition = new Vector2(-60, 0);
-
-            float16Toggle.targetGraphic = float16BgImage;
-            float16Toggle.graphic = float16CheckImage;
-            float16Toggle.isOn = false;
-
-            var float16Rect = float16GO.GetComponent<RectTransform>();
-            float16Rect.anchorMin = new Vector2(0.72f, 0.42f);
-            float16Rect.anchorMax = new Vector2(0.9f, 0.46f);
-            float16Rect.offsetMin = Vector2.zero;
-            float16Rect.offsetMax = Vector2.zero;
-
-            var float16LabelGO = new GameObject("Label");
-            float16LabelGO.transform.SetParent(float16GO.transform, false);
-            var float16Label = float16LabelGO.AddComponent<TextMeshProUGUI>();
-            float16Label.text = "Float16";
-            float16Label.fontSize = 14;
-            float16Label.color = Color.white;
-            var float16LabelRect = float16LabelGO.GetComponent<RectTransform>();
-            float16LabelRect.anchorMin = Vector2.zero;
-            float16LabelRect.anchorMax = Vector2.one;
-            float16LabelRect.offsetMin = new Vector2(-40, 0);
-            float16LabelRect.offsetMax = Vector2.zero;
-
-            // バッチサイズスライダー
-            var batchSizeLabelGO = new GameObject("BatchSizeLabel");
-            batchSizeLabelGO.transform.SetParent(panelGO.transform, false);
-            var batchSizeLabel = batchSizeLabelGO.AddComponent<TextMeshProUGUI>();
-            batchSizeLabel.text = "Batch Size:";
-            batchSizeLabel.fontSize = 14;
-            batchSizeLabel.color = Color.white;
-            var batchSizeLabelRect = batchSizeLabelGO.GetComponent<RectTransform>();
-            batchSizeLabelRect.anchorMin = new Vector2(0.1f, 0.36f);
-            batchSizeLabelRect.anchorMax = new Vector2(0.25f, 0.40f);
-            batchSizeLabelRect.offsetMin = Vector2.zero;
-            batchSizeLabelRect.offsetMax = Vector2.zero;
-
-            var batchSizeSliderGO = new GameObject("BatchSizeSlider");
-            batchSizeSliderGO.transform.SetParent(panelGO.transform, false);
-            var batchSizeSlider = batchSizeSliderGO.AddComponent<Slider>();
-            var sliderBgGO = new GameObject("Background");
-            sliderBgGO.transform.SetParent(batchSizeSliderGO.transform, false);
-            var sliderBgImage = sliderBgGO.AddComponent<Image>();
-            sliderBgImage.color = new Color(0.2f, 0.2f, 0.2f);
-            var sliderBgRect = sliderBgGO.GetComponent<RectTransform>();
-            sliderBgRect.anchorMin = new Vector2(0, 0.25f);
-            sliderBgRect.anchorMax = new Vector2(1, 0.75f);
-            sliderBgRect.offsetMin = Vector2.zero;
-            sliderBgRect.offsetMax = Vector2.zero;
-
-            var sliderFillAreaGO = new GameObject("Fill Area", typeof(RectTransform));
-            sliderFillAreaGO.transform.SetParent(batchSizeSliderGO.transform, false);
-            var sliderFillAreaRect = sliderFillAreaGO.GetComponent<RectTransform>();
-            sliderFillAreaRect.anchorMin = new Vector2(0, 0.25f);
-            sliderFillAreaRect.anchorMax = new Vector2(1, 0.75f);
-            sliderFillAreaRect.offsetMin = new Vector2(5, 0);
-            sliderFillAreaRect.offsetMax = new Vector2(-15, 0);
-
-            var sliderFillGO = new GameObject("Fill", typeof(RectTransform));
-            sliderFillGO.transform.SetParent(sliderFillAreaGO.transform, false);
-            var sliderFillImage = sliderFillGO.AddComponent<Image>();
-            sliderFillImage.color = new Color(0.3f, 0.6f, 0.9f);
-            var sliderFillRect = sliderFillGO.GetComponent<RectTransform>();
-            sliderFillRect.anchorMin = Vector2.zero;
-            sliderFillRect.anchorMax = Vector2.one;
-            sliderFillRect.offsetMin = Vector2.zero;
-            sliderFillRect.offsetMax = Vector2.zero;
-
-            var sliderHandleAreaGO = new GameObject("Handle Slide Area", typeof(RectTransform));
-            sliderHandleAreaGO.transform.SetParent(batchSizeSliderGO.transform, false);
-            var sliderHandleAreaRect = sliderHandleAreaGO.GetComponent<RectTransform>();
-            sliderHandleAreaRect.anchorMin = new Vector2(0, 0);
-            sliderHandleAreaRect.anchorMax = new Vector2(1, 1);
-            sliderHandleAreaRect.offsetMin = new Vector2(10, 0);
-            sliderHandleAreaRect.offsetMax = new Vector2(-10, 0);
-
-            var sliderHandleGO = new GameObject("Handle", typeof(RectTransform));
-            sliderHandleGO.transform.SetParent(sliderHandleAreaGO.transform, false);
-            var sliderHandleImage = sliderHandleGO.AddComponent<Image>();
-            sliderHandleImage.color = Color.white;
-            var sliderHandleRect = sliderHandleGO.GetComponent<RectTransform>();
-            sliderHandleRect.sizeDelta = new Vector2(20, 0);
-
-            batchSizeSlider.fillRect = sliderFillRect;
-            batchSizeSlider.handleRect = sliderHandleRect;
-            batchSizeSlider.targetGraphic = sliderHandleImage;
-            batchSizeSlider.minValue = 1;
-            batchSizeSlider.maxValue = 16;
-            batchSizeSlider.wholeNumbers = true;
-            batchSizeSlider.value = 1;
-
-            var batchSizeSliderRect = batchSizeSliderGO.GetComponent<RectTransform>();
-            batchSizeSliderRect.anchorMin = new Vector2(0.25f, 0.36f);
-            batchSizeSliderRect.anchorMax = new Vector2(0.65f, 0.40f);
-            batchSizeSliderRect.offsetMin = Vector2.zero;
-            batchSizeSliderRect.offsetMax = Vector2.zero;
-
-            var batchSizeTextGO = new GameObject("BatchSizeText");
-            batchSizeTextGO.transform.SetParent(panelGO.transform, false);
-            var batchSizeText = batchSizeTextGO.AddComponent<TextMeshProUGUI>();
-            batchSizeText.text = "Batch Size: 1";
-            batchSizeText.fontSize = 14;
-            batchSizeText.color = Color.yellow;
-            var batchSizeTextRect = batchSizeTextGO.GetComponent<RectTransform>();
-            batchSizeTextRect.anchorMin = new Vector2(0.67f, 0.36f);
-            batchSizeTextRect.anchorMax = new Vector2(0.9f, 0.40f);
-            batchSizeTextRect.offsetMin = Vector2.zero;
-            batchSizeTextRect.offsetMax = Vector2.zero;
 
             // バックエンド情報テキスト
             var backendInfoGO = new GameObject("BackendInfoText");
             backendInfoGO.transform.SetParent(panelGO.transform, false);
             var backendInfoText = backendInfoGO.AddComponent<TextMeshProUGUI>();
             backendInfoText.text = "Backend: (Not initialized)";
-            backendInfoText.fontSize = 12;
+            backendInfoText.fontSize = 16;
             backendInfoText.color = new Color(0.8f, 0.8f, 0.8f);
-            backendInfoText.alignment = TextAlignmentOptions.Center;
+            backendInfoText.alignment = TextAlignmentOptions.MidlineLeft;
             var backendInfoRect = backendInfoGO.GetComponent<RectTransform>();
-            backendInfoRect.anchorMin = new Vector2(0.1f, 0.32f);
-            backendInfoRect.anchorMax = new Vector2(0.9f, 0.35f);
+            backendInfoRect.anchorMin = new Vector2(0.5f, 0.50f);
+            backendInfoRect.anchorMax = new Vector2(0.9f, 0.55f);
             backendInfoRect.offsetMin = Vector2.zero;
             backendInfoRect.offsetMax = Vector2.zero;
 
@@ -523,11 +354,11 @@ namespace uPiper.Editor
             inputLabelGO.transform.SetParent(panelGO.transform, false);
             var inputLabel = inputLabelGO.AddComponent<TextMeshProUGUI>();
             inputLabel.text = "Text:";
-            inputLabel.fontSize = 16;
+            inputLabel.fontSize = 20;
             inputLabel.color = Color.white;
             var inputLabelRect = inputLabelGO.GetComponent<RectTransform>();
-            inputLabelRect.anchorMin = new Vector2(0.1f, 0.26f);
-            inputLabelRect.anchorMax = new Vector2(0.3f, 0.30f);
+            inputLabelRect.anchorMin = new Vector2(0.1f, 0.38f);
+            inputLabelRect.anchorMax = new Vector2(0.3f, 0.43f);
             inputLabelRect.offsetMin = Vector2.zero;
             inputLabelRect.offsetMax = Vector2.zero;
 
@@ -537,8 +368,8 @@ namespace uPiper.Editor
             inputImage.color = Color.white;
             var inputField = inputGO.AddComponent<TMP_InputField>();
             var inputRect = inputGO.GetComponent<RectTransform>();
-            inputRect.anchorMin = new Vector2(0.3f, 0.22f);
-            inputRect.anchorMax = new Vector2(0.9f, 0.30f);
+            inputRect.anchorMin = new Vector2(0.3f, 0.35f);
+            inputRect.anchorMax = new Vector2(0.9f, 0.43f);
             inputRect.offsetMin = Vector2.zero;
             inputRect.offsetMax = Vector2.zero;
 
@@ -556,7 +387,7 @@ namespace uPiper.Editor
             placeholderGO.transform.SetParent(textAreaGO.transform, false);
             var placeholderText = placeholderGO.AddComponent<TextMeshProUGUI>();
             placeholderText.text = "Enter text...";
-            placeholderText.fontSize = 14;
+            placeholderText.fontSize = 18;
             placeholderText.color = new Color(0.5f, 0.5f, 0.5f, 0.5f);
             var placeholderRect = placeholderGO.GetComponent<RectTransform>();
             placeholderRect.anchorMin = Vector2.zero;
@@ -568,7 +399,7 @@ namespace uPiper.Editor
             var inputTextGO = new GameObject("Text", typeof(RectTransform));
             inputTextGO.transform.SetParent(textAreaGO.transform, false);
             var inputText = inputTextGO.AddComponent<TextMeshProUGUI>();
-            inputText.fontSize = 14;
+            inputText.fontSize = 18;
             inputText.color = Color.black;
             inputText.richText = false;
             var inputTextRect = inputTextGO.GetComponent<RectTransform>();
@@ -591,8 +422,8 @@ namespace uPiper.Editor
             buttonImage.color = new Color(0.3f, 0.6f, 0.9f);
             button.targetGraphic = buttonImage;
             var buttonRect = buttonGO.GetComponent<RectTransform>();
-            buttonRect.anchorMin = new Vector2(0.3f, 0.16f);
-            buttonRect.anchorMax = new Vector2(0.7f, 0.21f);
+            buttonRect.anchorMin = new Vector2(0.3f, 0.25f);
+            buttonRect.anchorMax = new Vector2(0.7f, 0.32f);
             buttonRect.offsetMin = Vector2.zero;
             buttonRect.offsetMax = Vector2.zero;
 
@@ -600,7 +431,7 @@ namespace uPiper.Editor
             buttonTextGO.transform.SetParent(buttonGO.transform, false);
             var buttonText = buttonTextGO.AddComponent<TextMeshProUGUI>();
             buttonText.text = "Generate";
-            buttonText.fontSize = 18;
+            buttonText.fontSize = 24;
             buttonText.color = Color.white;
             buttonText.alignment = TextAlignmentOptions.Center;
             var buttonTextRect = buttonTextGO.GetComponent<RectTransform>();
@@ -614,12 +445,12 @@ namespace uPiper.Editor
             statusGO.transform.SetParent(panelGO.transform, false);
             var statusText = statusGO.AddComponent<TextMeshProUGUI>();
             statusText.text = "Ready";
-            statusText.fontSize = 14;
+            statusText.fontSize = 18;
             statusText.color = Color.yellow;
             statusText.alignment = TextAlignmentOptions.Center;
             var statusRect = statusGO.GetComponent<RectTransform>();
-            statusRect.anchorMin = new Vector2(0.1f, 0.11f);
-            statusRect.anchorMax = new Vector2(0.9f, 0.14f);
+            statusRect.anchorMin = new Vector2(0.1f, 0.18f);
+            statusRect.anchorMax = new Vector2(0.9f, 0.22f);
             statusRect.offsetMin = Vector2.zero;
             statusRect.offsetMax = Vector2.zero;
 
@@ -628,12 +459,12 @@ namespace uPiper.Editor
             phonemeDetailsGO.transform.SetParent(panelGO.transform, false);
             var phonemeDetailsText = phonemeDetailsGO.AddComponent<TextMeshProUGUI>();
             phonemeDetailsText.text = "";
-            phonemeDetailsText.fontSize = 12;
+            phonemeDetailsText.fontSize = 14;
             phonemeDetailsText.color = new Color(0.8f, 0.8f, 0.8f);
             phonemeDetailsText.alignment = TextAlignmentOptions.MidlineLeft;
             var phonemeDetailsRect = phonemeDetailsGO.GetComponent<RectTransform>();
-            phonemeDetailsRect.anchorMin = new Vector2(0.1f, 0.02f);
-            phonemeDetailsRect.anchorMax = new Vector2(0.9f, 0.08f);
+            phonemeDetailsRect.anchorMin = new Vector2(0.1f, 0.05f);
+            phonemeDetailsRect.anchorMax = new Vector2(0.9f, 0.15f);
             phonemeDetailsRect.offsetMin = Vector2.zero;
             phonemeDetailsRect.offsetMax = Vector2.zero;
 
@@ -652,10 +483,6 @@ namespace uPiper.Editor
             serializedObject.FindProperty("_phraseDropdown").objectReferenceValue = phraseDropdown;
             serializedObject.FindProperty("_phonemeDetailsText").objectReferenceValue = phonemeDetailsText;
             serializedObject.FindProperty("_backendDropdown").objectReferenceValue = backendDropdown;
-            serializedObject.FindProperty("_cpuFallbackToggle").objectReferenceValue = cpuFallbackToggle;
-            serializedObject.FindProperty("_useFloat16Toggle").objectReferenceValue = float16Toggle;
-            serializedObject.FindProperty("_batchSizeSlider").objectReferenceValue = batchSizeSlider;
-            serializedObject.FindProperty("_batchSizeText").objectReferenceValue = batchSizeText;
             serializedObject.FindProperty("_backendInfoText").objectReferenceValue = backendInfoText;
             serializedObject.ApplyModifiedProperties();
 
@@ -746,7 +573,7 @@ namespace uPiper.Editor
             itemLabelGO.transform.SetParent(itemGO.transform, false);
             var itemLabel = itemLabelGO.AddComponent<TextMeshProUGUI>();
             itemLabel.text = "Option";
-            itemLabel.fontSize = 14;
+            itemLabel.fontSize = 18;
             itemLabel.color = Color.black;
             var itemLabelRect = itemLabelGO.GetComponent<RectTransform>();
             itemLabelRect.anchorMin = Vector2.zero;
@@ -816,8 +643,8 @@ namespace uPiper.Editor
             labelGO.transform.SetParent(dropdownGO.transform, false);
             var label = labelGO.AddComponent<TextMeshProUGUI>();
             label.text = "Option A";
-            label.fontSize = 14;
-            label.color = Color.black;
+            label.fontSize = 18;
+            label.color = Color.white;
             var labelRect = labelGO.GetComponent<RectTransform>();
             labelRect.anchorMin = Vector2.zero;
             labelRect.anchorMax = Vector2.one;
@@ -829,8 +656,8 @@ namespace uPiper.Editor
             arrowGO.transform.SetParent(dropdownGO.transform, false);
             var arrowText = arrowGO.AddComponent<TextMeshProUGUI>();
             arrowText.text = "▼";
-            arrowText.fontSize = 14;
-            arrowText.color = Color.black;
+            arrowText.fontSize = 18;
+            arrowText.color = Color.white;
             var arrowRect = arrowGO.GetComponent<RectTransform>();
             arrowRect.anchorMin = new Vector2(1, 0.5f);
             arrowRect.anchorMax = new Vector2(1, 0.5f);

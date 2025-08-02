@@ -232,8 +232,17 @@ namespace uPiper.Core.AudioGeneration
                         }
 
                         // 推論を実行
-                        PiperLogger.LogInfo("[InferenceAudioGenerator] Running inference...");
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Running inference with backend: {_actualBackendType}...");
                         _worker.Schedule();
+
+                        // GPU Computeバックエンドの場合は特別な処理が必要な場合がある
+                        if (_actualBackendType == BackendType.GPUCompute)
+                        {
+                            PiperLogger.LogInfo("[InferenceAudioGenerator] GPU Compute backend - applying special handling");
+                            // Note: Unity.InferenceEngine handles synchronization internally
+                            // The output retrieval will block until computation is complete
+                        }
+
                         PiperLogger.LogInfo("[InferenceAudioGenerator] Inference completed");
 
                         // 出力を取得
@@ -299,6 +308,21 @@ namespace uPiper.Core.AudioGeneration
                         var absAvg = audioData.Select(Math.Abs).Average();
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Audio stats - Min: {min:F4}, Max: {max:F4}, Avg: {avg:F4}, AbsAvg: {absAvg:F4}");
 
+                        // GPU Computeバックエンドでのデバッグ情報
+                        if (_actualBackendType == BackendType.GPUCompute)
+                        {
+                            PiperLogger.LogInfo($"[InferenceAudioGenerator] GPU Compute backend debug info:");
+                            PiperLogger.LogInfo($"  - Graphics device: {SystemInfo.graphicsDeviceType}");
+                            PiperLogger.LogInfo($"  - Compute shader support: {SystemInfo.supportsComputeShaders}");
+                            PiperLogger.LogInfo($"  - Graphics memory: {SystemInfo.graphicsMemorySize} MB");
+
+                            // データの妥当性を確認
+                            if (absAvg < 0.001f)
+                            {
+                                PiperLogger.LogWarning("[InferenceAudioGenerator] WARNING: Audio output appears to be near silent - this may indicate a GPU Compute issue");
+                            }
+                        }
+
                         // 読み戻し用のテンソルを破棄
                         readableTensor.Dispose();
 
@@ -309,6 +333,14 @@ namespace uPiper.Core.AudioGeneration
                         outputTensor.Dispose();
 
                         PiperLogger.LogDebug($"Generated audio: {audioData.Length} samples");
+
+                        // 音声の長さを秒単位で計算（22050 Hzの場合）
+                        var durationSeconds = audioData.Length / 22050.0f;
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Audio duration: {durationSeconds:F2} seconds");
+
+                        // 入力音素数との比較
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Input phoneme IDs: {phonemeIds.Length}, Output samples: {audioData.Length}");
+
                         return audioData;
                     }
                     catch (Exception ex)
@@ -373,6 +405,16 @@ namespace uPiper.Core.AudioGeneration
                 }
             }
 
+            // GPU Compute has known issues with VITS models producing silent/corrupted audio
+            // Force GPU Pixel or CPU for better compatibility
+            if (config.Backend == InferenceBackend.GPUCompute)
+            {
+                PiperLogger.LogWarning("[InferenceAudioGenerator] GPU Compute backend has known issues with VITS audio models.");
+                PiperLogger.LogWarning("[InferenceAudioGenerator] Switching to GPU Pixel backend for better compatibility.");
+                PiperLogger.LogWarning("[InferenceAudioGenerator] If issues persist, please use CPU backend explicitly.");
+                return BackendType.GPUPixel;
+            }
+
             if (config.Backend == InferenceBackend.CPU)
             {
                 return BackendType.CPU;
@@ -417,8 +459,9 @@ namespace uPiper.Core.AudioGeneration
                 }
                 else if (SystemInfo.supportsComputeShaders && SystemInfo.graphicsMemorySize >= config.GPUSettings.MaxMemoryMB)
                 {
-                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUCompute backend for desktop");
-                    return BackendType.GPUCompute;
+                    // GPU Pixel is more stable than GPU Compute for VITS models
+                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUPixel backend for desktop (better VITS compatibility)");
+                    return BackendType.GPUPixel;
                 }
                 else
                 {

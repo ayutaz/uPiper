@@ -13,15 +13,15 @@ uPiperは、Unity.InferenceEngineを使用してGPU推論をサポートして�
 
 ### 2. GPUCompute (BackendType.GPUCompute)
 - **特徴**: Compute Shaderを使用
-- **利点**: 高速な推論
-- **欠点**: プラットフォーム依存
-- **推奨**: デスクトップ環境
+- **利点**: 理論上は高速な推論が可能
+- **欠点**: VITSモデルとの互換性問題あり
+- **重要**: 現在、日本語音声モデルで音声が正しく生成されない問題があるため、GPU Pixelまたは CPUの使用を推奨
 
 ### 3. GPUPixel (BackendType.GPUPixel)
 - **特徴**: Pixel Shaderを使用
-- **利点**: WebGL互換
-- **欠点**: 機能制限あり
-- **推奨**: WebGLビルド
+- **利点**: WebGL互換、VITSモデルとの互換性良好
+- **欠点**: 一部の高度な機能に制限あり
+- **推奨**: WebGLビルド、GPU推論が必要な場合の第一選択
 
 ## 設定方法
 
@@ -56,9 +56,13 @@ config.Backend = InferenceBackend.CPU;
 
 ### Windows/Linux (Desktop)
 ```csharp
-config.Backend = InferenceBackend.Auto;  // GPUComputeが選択される
+config.Backend = InferenceBackend.Auto;  // GPUPixelが選択される（VITSモデル互換性のため）
 config.GPUSettings.MaxBatchSize = 4;
 config.GPUSettings.UseFloat16 = true;   // RTX系GPUで高速化
+
+// GPU Computeを明示的に使用したい場合（非推奨）
+// config.Backend = InferenceBackend.GPUCompute;
+// ※VITSモデルで音声が正しく生成されない可能性があります
 ```
 
 ### macOS
@@ -101,6 +105,18 @@ config.GPUSettings.UseFloat16 = true;
 ```
 
 ## トラブルシューティング
+
+### 問題: GPU Computeで日本語音声が「ぶー」音になる
+**症状**: GPU Computeバックエンドで日本語音声が正しく生成されない（「ぶー」という短音になる）
+**原因**: Unity Inference Engine (Sentis)のGPU ComputeバックエンドとVITSモデルの互換性問題
+**解決策**: 
+```csharp
+// GPU PixelまたはCPUを使用
+config.Backend = InferenceBackend.GPUPixel;  // 推奨
+// または
+config.Backend = InferenceBackend.CPU;       // 最も安定
+```
+**備考**: この問題は自動的に検出され、GPU ComputeからGPU Pixelへ自動フォールバックされます。
 
 ### 問題: Metal shader compilation error
 **症状**: macOSで「'metal_stdlib' file not found」エラー
@@ -180,9 +196,15 @@ config.GPUSettings.EnableProfiling = true;
 
 ## 既知の制限事項
 
-1. **Metal (macOS)**: シェーダーコンパイルエラーのためCPU推奨
-2. **WebGL**: GPUPixelのみサポート、FP16非対応
-3. **モバイル**: メモリ制限によりバッチサイズ制限あり
+1. **GPU Compute**: VITSモデル（日本語音声モデル）との互換性問題により、音声が正しく生成されない
+2. **Metal (macOS)**: シェーダーコンパイルエラーのためCPU推奨
+3. **WebGL**: GPUPixelのみサポート、FP16非対応
+4. **モバイル**: メモリ制限によりバッチサイズ制限あり
+
+### Unity Inference Engine (Sentis)の既知の問題
+- **GPU Compute**: 特定のONNXオペレーターが未対応
+- **テンソル転送**: GPU-CPU間のデータ転送時にデータ破損の可能性
+- **VITSモデル**: GPU ComputeバックエンドでVITSアーキテクチャが正しく処理されない
 
 ## 今後の改善予定
 

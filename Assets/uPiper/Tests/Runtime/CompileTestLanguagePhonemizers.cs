@@ -18,13 +18,13 @@ namespace uPiper.Tests.Runtime
                 Debug.Log($"PhonemizerBackendBase found: {baseType.FullName}");
 
                 // Test proxy classes
-                var chinese = new ChinesePhonemizer();
+                var chinese = new uPiper.Core.Phonemizers.Backend.ChinesePhonemizer();
                 Debug.Log($"Chinese proxy created: {chinese.Name}");
 
-                var korean = new KoreanPhonemizer();
+                var korean = new uPiper.Core.Phonemizers.Backend.KoreanPhonemizer();
                 Debug.Log($"Korean proxy created: {korean.Name}");
 
-                var spanish = new SpanishPhonemizer();
+                var spanish = new uPiper.Core.Phonemizers.Backend.SpanishPhonemizer();
                 Debug.Log($"Spanish proxy created: {spanish.Name}");
 
                 Debug.Log("All language phonemizers compiled successfully!");
