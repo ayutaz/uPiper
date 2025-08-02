@@ -68,7 +68,7 @@ namespace uPiper.Editor
             var titleGO = new GameObject("Title");
             titleGO.transform.SetParent(panelGO.transform, false);
             var titleText = titleGO.AddComponent<TextMeshProUGUI>();
-            titleText.text = "Piper TTS - Unity.InferenceEngine Demo";
+            titleText.text = "Piper-Plus TTS (Unity) - InferenceEngine Demo";
             titleText.fontSize = 24;
             titleText.color = Color.white;
             titleText.alignment = TextAlignmentOptions.Center;
