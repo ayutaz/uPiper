@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Diagnostics;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
@@ -183,7 +185,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             var testText = "并发测试文本";
             var errors = 0;
             
-            Parallel.For(0, 100, i =>
+            System.Threading.Tasks.Parallel.For(0, 100, i =>
             {
                 try
                 {
@@ -209,7 +211,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public IEnumerator StressTest_LongRunning_ShouldNotDegrade()
         {
             var testText = GenerateLongText(50);
-            var timings = new System.Collections.Generic.List<double>();
+            var timings = new System.Collections.Generic.List<float>();
             
             // Run for 5 seconds
             var endTime = Time.realtimeSinceStartup + 5.0f;
@@ -224,7 +226,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                 var ipa = ipaConverter.ConvertMultipleToIPA(pinyin);
                 
                 stopwatch.Stop();
-                timings.Add(stopwatch.ElapsedMilliseconds);
+                timings.Add((float)stopwatch.ElapsedMilliseconds);
                 iterations++;
                 
                 if (iterations % 100 == 0)

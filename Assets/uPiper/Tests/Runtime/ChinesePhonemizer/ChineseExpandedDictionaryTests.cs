@@ -69,12 +69,12 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                 "子", "中", "你", "说", "生", "国", "年", "着", "就", "那"
             };
 
-            foreach (var char in commonCharacters)
+            foreach (var ch in commonCharacters)
             {
-                Assert.IsTrue(dictionary.TryGetCharacterPinyin(char[0], out var pinyin),
-                    $"Character '{char}' should be in expanded dictionary");
+                Assert.IsTrue(dictionary.TryGetCharacterPinyin(ch[0], out var pinyin),
+                    $"Character '{ch}' should be in expanded dictionary");
                 Assert.Greater(pinyin.Length, 0, 
-                    $"Character '{char}' should have pinyin readings");
+                    $"Character '{ch}' should have pinyin readings");
             }
         }
 
@@ -138,12 +138,12 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             };
 
             int foundCount = 0;
-            foreach (var char in rareCharacters)
+            foreach (var ch in rareCharacters)
             {
-                if (dictionary.TryGetCharacterPinyin(char[0], out var pinyin))
+                if (dictionary.TryGetCharacterPinyin(ch[0], out var pinyin))
                 {
                     foundCount++;
-                    Debug.Log($"Found rare character: {char} -> {string.Join(", ", pinyin)}");
+                    Debug.Log($"Found rare character: {ch} -> {string.Join(", ", pinyin)}");
                 }
             }
 
