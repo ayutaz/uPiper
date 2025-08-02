@@ -145,42 +145,59 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public void WordSegmentation_ShouldImproveMultiToneHandling()
         {
             // Test multi-tone characters with different pronunciations in context
-            var testCases = new[]
-            {
-                // "行" has different pronunciations
-                ("银行", "银行 should be segmented as one word"),
-                ("行动", "行动 should be segmented as one word"),
-                ("中国银行", "Should segment '中国' and '银行'"),
-                
-                // "长" has different pronunciations
-                ("长大", "长大 (grow up) should be one word"),
-                ("长度", "长度 (length) should be one word"),
-                
-                // "重" has different pronunciations
-                ("重要", "重要 (important) should be one word"),
-                ("重新", "重新 (again) should be one word")
-            };
-
-            foreach (var (text, description) in testCases)
-            {
-                Debug.Log($"[WordSegIntegration] Testing: {text}");
-                
-                var result = phonemizer.PhonemizeAsync(text, "zh").Result;
-                
-                Assert.IsNotNull(result, $"Should phonemize: {text}");
-                Assert.IsTrue(result.Success, $"Phonemization should succeed for: {text}");
-                
-                if (!result.Success || result.Phonemes.Length == 0)
-                {
-                    Debug.LogError($"[WordSegIntegration] Failed for '{text}': Success={result.Success}, Phonemes={result.Phonemes?.Length ?? 0}");
-                }
-                
-                Assert.Greater(result.Phonemes.Length, 0, $"Should produce phonemes for: {text}");
-                
-                Debug.Log($"[WordSegIntegration] {description}");
-                Debug.Log($"  Text: {text}");
-                Debug.Log($"  Phonemes: {string.Join(" ", result.Phonemes)}");
-            }
+            // Avoid tuple syntax for Unity compatibility
+            
+            // Test "行" pronunciations
+            var result1 = phonemizer.PhonemizeAsync("银行", "zh").Result;
+            Assert.IsNotNull(result1);
+            Assert.IsTrue(result1.Success);
+            Assert.Greater(result1.Phonemes.Length, 0);
+            Debug.Log("[WordSegIntegration] 银行 should be segmented as one word");
+            Debug.Log($"  Phonemes: {string.Join(" ", result1.Phonemes)}");
+            
+            var result2 = phonemizer.PhonemizeAsync("行动", "zh").Result;
+            Assert.IsNotNull(result2);
+            Assert.IsTrue(result2.Success);
+            Assert.Greater(result2.Phonemes.Length, 0);
+            Debug.Log("[WordSegIntegration] 行动 should be segmented as one word");
+            Debug.Log($"  Phonemes: {string.Join(" ", result2.Phonemes)}");
+            
+            var result3 = phonemizer.PhonemizeAsync("中国银行", "zh").Result;
+            Assert.IsNotNull(result3);
+            Assert.IsTrue(result3.Success);
+            Assert.Greater(result3.Phonemes.Length, 0);
+            Debug.Log("[WordSegIntegration] Should segment '中国' and '银行'");
+            Debug.Log($"  Phonemes: {string.Join(" ", result3.Phonemes)}");
+            
+            // Test "长" pronunciations
+            var result4 = phonemizer.PhonemizeAsync("长大", "zh").Result;
+            Assert.IsNotNull(result4);
+            Assert.IsTrue(result4.Success);
+            Assert.Greater(result4.Phonemes.Length, 0);
+            Debug.Log("[WordSegIntegration] 长大 (grow up) should be one word");
+            Debug.Log($"  Phonemes: {string.Join(" ", result4.Phonemes)}");
+            
+            var result5 = phonemizer.PhonemizeAsync("长度", "zh").Result;
+            Assert.IsNotNull(result5);
+            Assert.IsTrue(result5.Success);
+            Assert.Greater(result5.Phonemes.Length, 0);
+            Debug.Log("[WordSegIntegration] 长度 (length) should be one word");
+            Debug.Log($"  Phonemes: {string.Join(" ", result5.Phonemes)}");
+            
+            // Test "重" pronunciations
+            var result6 = phonemizer.PhonemizeAsync("重要", "zh").Result;
+            Assert.IsNotNull(result6);
+            Assert.IsTrue(result6.Success);
+            Assert.Greater(result6.Phonemes.Length, 0);
+            Debug.Log("[WordSegIntegration] 重要 (important) should be one word");
+            Debug.Log($"  Phonemes: {string.Join(" ", result6.Phonemes)}");
+            
+            var result7 = phonemizer.PhonemizeAsync("重新", "zh").Result;
+            Assert.IsNotNull(result7);
+            Assert.IsTrue(result7.Success);
+            Assert.Greater(result7.Phonemes.Length, 0);
+            Debug.Log("[WordSegIntegration] 重新 (again) should be one word");
+            Debug.Log($"  Phonemes: {string.Join(" ", result7.Phonemes)}");
         }
 
         [Test]
