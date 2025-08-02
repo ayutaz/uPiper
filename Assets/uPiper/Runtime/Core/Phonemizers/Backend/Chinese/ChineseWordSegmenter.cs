@@ -369,12 +369,31 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                                 if (dictionary.TryGetCharacterPinyin(context.NextChar.Value, out var nextCharPinyin) && nextCharPinyin.Length > 0)
                                 {
                                     context.NextTone = ExtractTone(nextCharPinyin[0]);
+                                    Debug.Log($"[WordSegmenter] Next char '{context.NextChar}' has pinyin '{nextCharPinyin[0]}' with tone {context.NextTone}");
+                                }
+                                else
+                                {
+                                    Debug.LogWarning($"[WordSegmenter] Could not find pinyin for next char '{context.NextChar}'");
                                 }
                             }
                             // Or next word's first character
-                            else if (fullTextIndex + word.Length < text.Length)
+                            else if (segIdx < segments.Count - 1)
                             {
-                                context.NextChar = text[fullTextIndex + word.Length];
+                                var nextWord = segments[segIdx + 1];
+                                if (nextWord.Length > 0)
+                                {
+                                    context.NextChar = nextWord[0];
+                                    // Try to get tone for next word's first character
+                                    if (dictionary.TryGetCharacterPinyin(context.NextChar.Value, out var nextCharPinyin) && nextCharPinyin.Length > 0)
+                                    {
+                                        context.NextTone = ExtractTone(nextCharPinyin[0]);
+                                        Debug.Log($"[WordSegmenter] Next word's first char '{context.NextChar}' has pinyin '{nextCharPinyin[0]}' with tone {context.NextTone}");
+                                    }
+                                    else
+                                    {
+                                        Debug.LogWarning($"[WordSegmenter] Could not find pinyin for next word's first char '{context.NextChar}'");
+                                    }
+                                }
                             }
                             
                             // Previous and next words
