@@ -183,7 +183,13 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     new ChineseDictionaryData.CharacterPinyinEntry { character = "乐", pinyin = new[] { "yue4", "le4" } },
                     new ChineseDictionaryData.CharacterPinyinEntry { character = "影", pinyin = new[] { "ying3" } },
                     new ChineseDictionaryData.CharacterPinyinEntry { character = "诗", pinyin = new[] { "shi1" } },
-                    new ChineseDictionaryData.CharacterPinyinEntry { character = "歌", pinyin = new[] { "ge1" } }
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "歌", pinyin = new[] { "ge1" } },
+                    // Characters for tone sandhi tests
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "对", pinyin = new[] { "dui4" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "错", pinyin = new[] { "cuo4" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "去", pinyin = new[] { "qu4" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "到", pinyin = new[] { "dao4" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "变", pinyin = new[] { "bian4" } }
                 },
                 phraseEntries = new[]
                 {
@@ -196,7 +202,14 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     new ChineseDictionaryData.PhrasePinyinEntry { phrase = "长大", pinyin = "zhang3 da4" },
                     new ChineseDictionaryData.PhrasePinyinEntry { phrase = "长度", pinyin = "chang2 du4" },
                     new ChineseDictionaryData.PhrasePinyinEntry { phrase = "重要", pinyin = "zhong4 yao4" },
-                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "重新", pinyin = "chong2 xin1" }
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "重新", pinyin = "chong2 xin1" },
+                    // Phrases for tone sandhi tests
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不是", pinyin = "bu2 shi4" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不对", pinyin = "bu2 dui4" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不去", pinyin = "bu2 qu4" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不到", pinyin = "bu2 dao4" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不错", pinyin = "bu2 cuo4" },
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "不变", pinyin = "bu2 bian4" }
                 },
                 pinyinIPAEntries = new[]
                 {
@@ -313,7 +326,12 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "yue", ipa = "ye" },
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "le", ipa = "lɤ" },
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "ying", ipa = "iŋ" },
-                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "ge", ipa = "kɤ" }
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "ge", ipa = "kɤ" },
+                    // IPA for tone sandhi test characters
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "dui", ipa = "tuei" },
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "cuo", ipa = "tsʰuo" },
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "qu", ipa = "tɕʰy" },
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "dao", ipa = "tau" }
                 },
                 wordFrequencies = new ChineseDictionaryData.WordFrequencyEntry[0]
             };
