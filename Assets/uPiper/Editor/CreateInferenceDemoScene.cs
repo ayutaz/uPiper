@@ -419,90 +419,6 @@ namespace uPiper.Editor
             float16LabelRect.offsetMin = new Vector2(-40, 0);
             float16LabelRect.offsetMax = Vector2.zero;
 
-            // バッチサイズスライダー
-            var batchSizeLabelGO = new GameObject("BatchSizeLabel");
-            batchSizeLabelGO.transform.SetParent(panelGO.transform, false);
-            var batchSizeLabel = batchSizeLabelGO.AddComponent<TextMeshProUGUI>();
-            batchSizeLabel.text = "Batch Size:";
-            batchSizeLabel.fontSize = 14;
-            batchSizeLabel.color = Color.white;
-            var batchSizeLabelRect = batchSizeLabelGO.GetComponent<RectTransform>();
-            batchSizeLabelRect.anchorMin = new Vector2(0.1f, 0.36f);
-            batchSizeLabelRect.anchorMax = new Vector2(0.25f, 0.40f);
-            batchSizeLabelRect.offsetMin = Vector2.zero;
-            batchSizeLabelRect.offsetMax = Vector2.zero;
-
-            var batchSizeSliderGO = new GameObject("BatchSizeSlider");
-            batchSizeSliderGO.transform.SetParent(panelGO.transform, false);
-            var batchSizeSlider = batchSizeSliderGO.AddComponent<Slider>();
-            var sliderBgGO = new GameObject("Background");
-            sliderBgGO.transform.SetParent(batchSizeSliderGO.transform, false);
-            var sliderBgImage = sliderBgGO.AddComponent<Image>();
-            sliderBgImage.color = new Color(0.2f, 0.2f, 0.2f);
-            var sliderBgRect = sliderBgGO.GetComponent<RectTransform>();
-            sliderBgRect.anchorMin = new Vector2(0, 0.25f);
-            sliderBgRect.anchorMax = new Vector2(1, 0.75f);
-            sliderBgRect.offsetMin = Vector2.zero;
-            sliderBgRect.offsetMax = Vector2.zero;
-
-            var sliderFillAreaGO = new GameObject("Fill Area", typeof(RectTransform));
-            sliderFillAreaGO.transform.SetParent(batchSizeSliderGO.transform, false);
-            var sliderFillAreaRect = sliderFillAreaGO.GetComponent<RectTransform>();
-            sliderFillAreaRect.anchorMin = new Vector2(0, 0.25f);
-            sliderFillAreaRect.anchorMax = new Vector2(1, 0.75f);
-            sliderFillAreaRect.offsetMin = new Vector2(5, 0);
-            sliderFillAreaRect.offsetMax = new Vector2(-15, 0);
-
-            var sliderFillGO = new GameObject("Fill", typeof(RectTransform));
-            sliderFillGO.transform.SetParent(sliderFillAreaGO.transform, false);
-            var sliderFillImage = sliderFillGO.AddComponent<Image>();
-            sliderFillImage.color = new Color(0.3f, 0.6f, 0.9f);
-            var sliderFillRect = sliderFillGO.GetComponent<RectTransform>();
-            sliderFillRect.anchorMin = Vector2.zero;
-            sliderFillRect.anchorMax = Vector2.one;
-            sliderFillRect.offsetMin = Vector2.zero;
-            sliderFillRect.offsetMax = Vector2.zero;
-
-            var sliderHandleAreaGO = new GameObject("Handle Slide Area", typeof(RectTransform));
-            sliderHandleAreaGO.transform.SetParent(batchSizeSliderGO.transform, false);
-            var sliderHandleAreaRect = sliderHandleAreaGO.GetComponent<RectTransform>();
-            sliderHandleAreaRect.anchorMin = new Vector2(0, 0);
-            sliderHandleAreaRect.anchorMax = new Vector2(1, 1);
-            sliderHandleAreaRect.offsetMin = new Vector2(10, 0);
-            sliderHandleAreaRect.offsetMax = new Vector2(-10, 0);
-
-            var sliderHandleGO = new GameObject("Handle", typeof(RectTransform));
-            sliderHandleGO.transform.SetParent(sliderHandleAreaGO.transform, false);
-            var sliderHandleImage = sliderHandleGO.AddComponent<Image>();
-            sliderHandleImage.color = Color.white;
-            var sliderHandleRect = sliderHandleGO.GetComponent<RectTransform>();
-            sliderHandleRect.sizeDelta = new Vector2(20, 0);
-
-            batchSizeSlider.fillRect = sliderFillRect;
-            batchSizeSlider.handleRect = sliderHandleRect;
-            batchSizeSlider.targetGraphic = sliderHandleImage;
-            batchSizeSlider.minValue = 1;
-            batchSizeSlider.maxValue = 16;
-            batchSizeSlider.wholeNumbers = true;
-            batchSizeSlider.value = 1;
-
-            var batchSizeSliderRect = batchSizeSliderGO.GetComponent<RectTransform>();
-            batchSizeSliderRect.anchorMin = new Vector2(0.25f, 0.36f);
-            batchSizeSliderRect.anchorMax = new Vector2(0.65f, 0.40f);
-            batchSizeSliderRect.offsetMin = Vector2.zero;
-            batchSizeSliderRect.offsetMax = Vector2.zero;
-
-            var batchSizeTextGO = new GameObject("BatchSizeText");
-            batchSizeTextGO.transform.SetParent(panelGO.transform, false);
-            var batchSizeText = batchSizeTextGO.AddComponent<TextMeshProUGUI>();
-            batchSizeText.text = "Batch Size: 1";
-            batchSizeText.fontSize = 14;
-            batchSizeText.color = Color.yellow;
-            var batchSizeTextRect = batchSizeTextGO.GetComponent<RectTransform>();
-            batchSizeTextRect.anchorMin = new Vector2(0.67f, 0.36f);
-            batchSizeTextRect.anchorMax = new Vector2(0.9f, 0.40f);
-            batchSizeTextRect.offsetMin = Vector2.zero;
-            batchSizeTextRect.offsetMax = Vector2.zero;
 
             // バックエンド情報テキスト
             var backendInfoGO = new GameObject("BackendInfoText");
@@ -654,8 +570,6 @@ namespace uPiper.Editor
             serializedObject.FindProperty("_backendDropdown").objectReferenceValue = backendDropdown;
             serializedObject.FindProperty("_cpuFallbackToggle").objectReferenceValue = cpuFallbackToggle;
             serializedObject.FindProperty("_useFloat16Toggle").objectReferenceValue = float16Toggle;
-            serializedObject.FindProperty("_batchSizeSlider").objectReferenceValue = batchSizeSlider;
-            serializedObject.FindProperty("_batchSizeText").objectReferenceValue = batchSizeText;
             serializedObject.FindProperty("_backendInfoText").objectReferenceValue = backendInfoText;
             serializedObject.ApplyModifiedProperties();
 
