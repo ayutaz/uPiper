@@ -102,8 +102,6 @@ namespace uPiper.Demo
         [SerializeField] private TMP_Dropdown _backendDropdown;
         [SerializeField] private Toggle _cpuFallbackToggle;
         [SerializeField] private Toggle _useFloat16Toggle;
-        [SerializeField] private Slider _batchSizeSlider;
-        [SerializeField] private TextMeshProUGUI _batchSizeText;
 
         [Header("Settings")]
         [SerializeField] private string _defaultJapaneseText = "";  // Will be set in Start()
@@ -366,17 +364,6 @@ namespace uPiper.Demo
                 _useFloat16Toggle.onValueChanged.AddListener(OnFloat16Changed);
             }
 
-            // バッチサイズスライダーの設定
-            if (_batchSizeSlider != null)
-            {
-                _batchSizeSlider.minValue = 1;
-                _batchSizeSlider.maxValue = 16;
-                _batchSizeSlider.wholeNumbers = true;
-                _batchSizeSlider.value = 1;
-                _batchSizeSlider.onValueChanged.AddListener(OnBatchSizeChanged);
-                UpdateBatchSizeText(1);
-            }
-
             // 生成ボタンの設定
             _generateButton?.onClick.AddListener(() => _ = GenerateAudioAsync());
 
@@ -511,21 +498,6 @@ namespace uPiper.Demo
         {
             _gpuSettings.UseFloat16 = value;
             PiperLogger.LogDebug($"Float16 changed to: {value}");
-        }
-
-        private void OnBatchSizeChanged(float value)
-        {
-            _gpuSettings.MaxBatchSize = (int)value;
-            UpdateBatchSizeText((int)value);
-            PiperLogger.LogDebug($"Batch size changed to: {(int)value}");
-        }
-
-        private void UpdateBatchSizeText(int value)
-        {
-            if (_batchSizeText != null)
-            {
-                _batchSizeText.text = $"Batch Size: {value}";
-            }
         }
 
         private async Task GenerateAudioAsync()
