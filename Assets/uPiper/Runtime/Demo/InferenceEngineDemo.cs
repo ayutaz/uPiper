@@ -720,8 +720,20 @@ namespace uPiper.Demo
                     var arpabetPhonemes = phonemeResult.Phonemes;
                     PiperLogger.LogInfo($"[English] Arpabet phonemes ({arpabetPhonemes.Length}): {string.Join(" ", arpabetPhonemes)}");
                     
+                    // Arpabet音素の詳細をログ出力
+                    for (int i = 0; i < arpabetPhonemes.Length; i++)
+                    {
+                        PiperLogger.LogDebug($"  Arpabet[{i}]: '{arpabetPhonemes[i]}'");
+                    }
+                    
                     phonemes = ArpabetToIPAConverterTemp.ConvertAll(arpabetPhonemes);
                     PiperLogger.LogInfo($"[English] IPA phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+                    
+                    // IPA音素の詳細をログ出力
+                    for (int i = 0; i < phonemes.Length; i++)
+                    {
+                        PiperLogger.LogDebug($"  IPA[{i}]: '{phonemes[i]}'");
+                    }
 
                     // Show phoneme details in UI
                     if (_phonemeDetailsText != null)

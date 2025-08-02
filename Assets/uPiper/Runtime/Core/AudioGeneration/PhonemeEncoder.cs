@@ -118,6 +118,7 @@ namespace uPiper.Core.AudioGeneration
                 if (_phonemeToId.TryGetValue(phonemeToLookup, out var id))
                 {
                     ids.Add(id);
+                    PiperLogger.LogDebug($"Phoneme '{phoneme}' -> ID {id}");
                     
                     // eSpeak方式では各音素の後にPADを追加
                     if (isESpeakModel)
@@ -125,6 +126,7 @@ namespace uPiper.Core.AudioGeneration
                         if (_phonemeToId.TryGetValue("_", out var padId))
                         {
                             ids.Add(padId);
+                            PiperLogger.LogDebug($"Added PAD after '{phoneme}' -> ID {padId}");
                         }
                         else
                         {

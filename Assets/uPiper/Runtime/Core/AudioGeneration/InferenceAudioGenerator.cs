@@ -333,6 +333,14 @@ namespace uPiper.Core.AudioGeneration
                         outputTensor.Dispose();
 
                         PiperLogger.LogDebug($"Generated audio: {audioData.Length} samples");
+                        
+                        // 音声の長さを秒単位で計算（22050 Hzの場合）
+                        var durationSeconds = audioData.Length / 22050.0f;
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Audio duration: {durationSeconds:F2} seconds");
+                        
+                        // 入力音素数との比較
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Input phoneme IDs: {phonemeIds.Length}, Output samples: {audioData.Length}");
+                        
                         return audioData;
                     }
                     catch (Exception ex)
