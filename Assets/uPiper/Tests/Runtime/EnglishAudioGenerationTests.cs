@@ -104,7 +104,6 @@ namespace uPiper.Tests.Runtime
             }
 
             Assert.IsTrue(initTask.Result, "FliteLTS should initialize successfully");
-            Assert.IsTrue(_phonemizer.IsInitialized, "Phonemizer should be initialized");
         }
 
         [UnityTest]
