@@ -328,51 +328,6 @@ namespace uPiper.Editor
             // GPU ComputeとAutoは音声生成に問題があるため除外
             backendDropdown.AddOptions(new System.Collections.Generic.List<string> { "CPU", "GPU Pixel" });
 
-            // CPUフォールバックトグル
-            var cpuFallbackGO = new GameObject("CPUFallbackToggle");
-            cpuFallbackGO.transform.SetParent(panelGO.transform, false);
-            var cpuFallbackToggle = cpuFallbackGO.AddComponent<Toggle>();
-            var cpuFallbackBgGO = new GameObject("Background");
-            cpuFallbackBgGO.transform.SetParent(cpuFallbackGO.transform, false);
-            var cpuFallbackBgImage = cpuFallbackBgGO.AddComponent<Image>();
-            cpuFallbackBgImage.color = new Color(0.3f, 0.3f, 0.3f);
-            var cpuFallbackBgRect = cpuFallbackBgGO.GetComponent<RectTransform>();
-            cpuFallbackBgRect.anchorMin = Vector2.zero;
-            cpuFallbackBgRect.anchorMax = Vector2.one;
-            cpuFallbackBgRect.sizeDelta = new Vector2(20, 20);
-            cpuFallbackBgRect.anchoredPosition = new Vector2(-60, 0);
-
-            var cpuFallbackCheckGO = new GameObject("Checkmark");
-            cpuFallbackCheckGO.transform.SetParent(cpuFallbackGO.transform, false);
-            var cpuFallbackCheckImage = cpuFallbackCheckGO.AddComponent<Image>();
-            cpuFallbackCheckImage.color = Color.white;
-            var cpuFallbackCheckRect = cpuFallbackCheckGO.GetComponent<RectTransform>();
-            cpuFallbackCheckRect.anchorMin = new Vector2(0, 0.5f);
-            cpuFallbackCheckRect.anchorMax = new Vector2(0, 0.5f);
-            cpuFallbackCheckRect.sizeDelta = new Vector2(16, 16);
-            cpuFallbackCheckRect.anchoredPosition = new Vector2(-60, 0);
-
-            cpuFallbackToggle.targetGraphic = cpuFallbackBgImage;
-            cpuFallbackToggle.graphic = cpuFallbackCheckImage;
-            cpuFallbackToggle.isOn = true;
-
-            var cpuFallbackRect = cpuFallbackGO.GetComponent<RectTransform>();
-            cpuFallbackRect.anchorMin = new Vector2(0.5f, 0.42f);
-            cpuFallbackRect.anchorMax = new Vector2(0.7f, 0.46f);
-            cpuFallbackRect.offsetMin = Vector2.zero;
-            cpuFallbackRect.offsetMax = Vector2.zero;
-
-            var cpuFallbackLabelGO = new GameObject("Label");
-            cpuFallbackLabelGO.transform.SetParent(cpuFallbackGO.transform, false);
-            var cpuFallbackLabel = cpuFallbackLabelGO.AddComponent<TextMeshProUGUI>();
-            cpuFallbackLabel.text = "CPU Fallback";
-            cpuFallbackLabel.fontSize = 14;
-            cpuFallbackLabel.color = Color.white;
-            var cpuFallbackLabelRect = cpuFallbackLabelGO.GetComponent<RectTransform>();
-            cpuFallbackLabelRect.anchorMin = Vector2.zero;
-            cpuFallbackLabelRect.anchorMax = Vector2.one;
-            cpuFallbackLabelRect.offsetMin = new Vector2(-40, 0);
-            cpuFallbackLabelRect.offsetMax = Vector2.zero;
 
             // Float16トグル
             var float16GO = new GameObject("Float16Toggle");
@@ -569,7 +524,6 @@ namespace uPiper.Editor
             serializedObject.FindProperty("_phraseDropdown").objectReferenceValue = phraseDropdown;
             serializedObject.FindProperty("_phonemeDetailsText").objectReferenceValue = phonemeDetailsText;
             serializedObject.FindProperty("_backendDropdown").objectReferenceValue = backendDropdown;
-            serializedObject.FindProperty("_cpuFallbackToggle").objectReferenceValue = cpuFallbackToggle;
             serializedObject.FindProperty("_useFloat16Toggle").objectReferenceValue = float16Toggle;
             serializedObject.FindProperty("_backendInfoText").objectReferenceValue = backendInfoText;
             serializedObject.ApplyModifiedProperties();

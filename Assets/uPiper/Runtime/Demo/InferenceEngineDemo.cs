@@ -100,7 +100,6 @@ namespace uPiper.Demo
 
         [Header("GPU Inference UI")]
         [SerializeField] private TMP_Dropdown _backendDropdown;
-        [SerializeField] private Toggle _cpuFallbackToggle;
         [SerializeField] private Toggle _useFloat16Toggle;
 
         [Header("Settings")]
@@ -350,12 +349,8 @@ namespace uPiper.Demo
                 _backendDropdown.onValueChanged.AddListener(OnBackendChanged);
             }
 
-            // CPUフォールバックトグルの設定
-            if (_cpuFallbackToggle != null)
-            {
-                _cpuFallbackToggle.isOn = true;
-                _cpuFallbackToggle.onValueChanged.AddListener(OnCPUFallbackChanged);
-            }
+            // CPUフォールバックは常に有効（UIには表示しない）
+            _gpuSettings.EnableCPUFallback = true;
 
             // Float16トグルの設定
             if (_useFloat16Toggle != null)
@@ -489,10 +484,6 @@ namespace uPiper.Demo
             PiperLogger.LogDebug($"Backend changed to: {_selectedBackend}");
         }
 
-        private void OnCPUFallbackChanged(bool value)
-        {
-            PiperLogger.LogDebug($"CPU Fallback changed to: {value}");
-        }
 
         private void OnFloat16Changed(bool value)
         {
