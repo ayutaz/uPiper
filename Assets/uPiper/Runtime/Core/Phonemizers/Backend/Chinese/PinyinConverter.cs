@@ -12,12 +12,12 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
     public class PinyinConverter
     {
         private readonly ChinesePinyinDictionary dictionary;
-        
+
         public PinyinConverter(ChinesePinyinDictionary dictionary)
         {
             this.dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
         }
-        
+
         /// <summary>
         /// Convert Chinese text to pinyin with phrase matching
         /// </summary>
@@ -25,9 +25,9 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             if (string.IsNullOrEmpty(text))
                 return Array.Empty<string>();
-                
+
             var result = new List<string>();
-            
+
             if (usePhrase)
             {
                 // Try phrase matching first
@@ -38,32 +38,32 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 // Simple character-by-character conversion
                 result = GetPinyinPerCharacter(text);
             }
-            
+
             return result.ToArray();
         }
-        
+
         private List<string> GetPinyinWithPhraseMatching(string text)
         {
             var result = new List<string>();
             var i = 0;
-            
+
             while (i < text.Length)
             {
                 // Try to match longest phrase first
                 var matched = false;
-                
+
                 // Try phrases of decreasing length (max 4 characters)
                 for (int len = Math.Min(4, text.Length - i); len >= 2; len--)
                 {
                     if (i + len > text.Length)
                         continue;
-                        
+
                     var phrase = text.Substring(i, len);
-                    
+
                     // Check if all characters are Chinese
                     if (!phrase.All(ch => IsChinese(ch)))
                         continue;
-                    
+
                     if (dictionary.TryGetPhrasePinyin(phrase, out var phrasePinyin))
                     {
                         // Split phrase pinyin by spaces
@@ -74,7 +74,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                         break;
                     }
                 }
-                
+
                 if (!matched)
                 {
                     // No phrase match, try single character
@@ -101,14 +101,14 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     i++;
                 }
             }
-            
+
             return result;
         }
-        
+
         private List<string> GetPinyinPerCharacter(string text)
         {
             var result = new List<string>();
-            
+
             foreach (var ch in text)
             {
                 if (IsChinese(ch))
@@ -130,10 +130,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     result.Add(ch.ToString());
                 }
             }
-            
+
             return result;
         }
-        
+
         /// <summary>
         /// Select appropriate pinyin based on context (multi-tone character resolution)
         /// </summary>
@@ -141,9 +141,9 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             if (words == null || pinyinOptions == null || words.Length != pinyinOptions.Length)
                 throw new ArgumentException("Words and pinyin options must have the same length");
-                
+
             var result = new string[words.Length];
-            
+
             for (int i = 0; i < words.Length; i++)
             {
                 if (pinyinOptions[i] == null || pinyinOptions[i].Length == 0)
@@ -151,24 +151,24 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     result[i] = words[i]; // Fallback to original
                     continue;
                 }
-                
+
                 if (pinyinOptions[i].Length == 1)
                 {
                     result[i] = pinyinOptions[i][0]; // Only one option
                     continue;
                 }
-                
+
                 // Multiple options - apply context rules
                 result[i] = SelectBestPinyin(words, i, pinyinOptions[i]);
             }
-            
+
             return result;
         }
-        
+
         private string SelectBestPinyin(string[] words, int index, string[] options)
         {
             var word = words[index];
-            
+
             // Special rules for common multi-tone characters
             switch (word)
             {
@@ -183,7 +183,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                         }
                     }
                     return "bu4";
-                    
+
                 case "一":
                     // "一" tone changes based on context
                     if (index < words.Length - 1)
@@ -198,7 +198,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                         }
                     }
                     return "yi1";
-                    
+
                 case "了":
                     // Context-based selection for "了"
                     if (index > 0 && index == words.Length - 1)
@@ -206,13 +206,13 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                         return "le5"; // Particle at end of sentence
                     }
                     return "liao3"; // Verb
-                    
+
                 default:
                     // Default to first option
                     return options[0];
             }
         }
-        
+
         private string GetFirstPinyinOption(string word)
         {
             if (word.Length == 1 && IsChinese(word[0]))
@@ -224,7 +224,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             }
             return null;
         }
-        
+
         private bool IsChinese(char ch)
         {
             return (ch >= 0x4E00 && ch <= 0x9FFF) ||   // CJK Unified Ideographs

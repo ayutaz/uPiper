@@ -34,18 +34,18 @@ namespace uPiper.Core.Phonemizers.Backend
             {
                 // Initialize dictionary loader
                 dictionaryLoader = new ChineseDictionaryLoader();
-                
+
                 // Load dictionary data
                 dictionary = await dictionaryLoader.LoadAsync(cancellationToken);
-                
+
                 // Initialize converters
                 pinyinConverter = new PinyinConverter(dictionary);
                 ipaConverter = new PinyinToIPAConverter(dictionary);
                 textNormalizer = new ChineseTextNormalizer();
-                
+
                 Debug.Log($"Chinese phonemizer initialized with {dictionary.CharacterCount} characters, " +
                          $"{dictionary.PhraseCount} phrases, {dictionary.IPACount} IPA mappings");
-                
+
                 return true;
             }
             catch (Exception ex)
@@ -66,16 +66,16 @@ namespace uPiper.Core.Phonemizers.Backend
             {
                 return PhonemizeInternal(text, language);
             }
-            
+
             return await Task.Run(() => PhonemizeInternal(text, language), cancellationToken);
         }
-        
+
         private PhonemeResult PhonemizeInternal(string text, string language)
         {
             if (string.IsNullOrEmpty(text))
             {
-                return new PhonemeResult 
-                { 
+                return new PhonemeResult
+                {
                     Phonemes = Array.Empty<string>(),
                     Language = language,
                     Success = true
@@ -90,71 +90,71 @@ namespace uPiper.Core.Phonemizers.Backend
 
             try
             {
-                    // Step 1: Normalize text
-                    var normalized = textNormalizer.Normalize(text, ChineseTextNormalizer.NumberFormat.Formal);
-                    
-                    // Step 2: Split mixed Chinese-English text
-                    var segments = textNormalizer.SplitMixedText(normalized);
-                    var phonemes = new List<string>(normalized.Length * 2); // Pre-allocate capacity
-                    
-                    foreach (var (chinese, english) in segments)
+                // Step 1: Normalize text
+                var normalized = textNormalizer.Normalize(text, ChineseTextNormalizer.NumberFormat.Formal);
+
+                // Step 2: Split mixed Chinese-English text
+                var segments = textNormalizer.SplitMixedText(normalized);
+                var phonemes = new List<string>(normalized.Length * 2); // Pre-allocate capacity
+
+                foreach (var (chinese, english) in segments)
+                {
+                    if (!string.IsNullOrEmpty(chinese))
                     {
-                        if (!string.IsNullOrEmpty(chinese))
+                        // Process Chinese text
+                        var pinyinArray = pinyinConverter.GetPinyin(chinese, usePhrase: true);
+
+                        // Convert each pinyin to IPA
+                        foreach (var pinyin in pinyinArray)
                         {
-                            // Process Chinese text
-                            var pinyinArray = pinyinConverter.GetPinyin(chinese, usePhrase: true);
-                            
-                            // Convert each pinyin to IPA
-                            foreach (var pinyin in pinyinArray)
+                            if (ChineseTextNormalizer.IsChinese(pinyin[0]))
                             {
-                                if (ChineseTextNormalizer.IsChinese(pinyin[0]))
-                                {
-                                    // It's still a Chinese character (no pinyin found)
-                                    // Skip Debug.LogWarning for performance
-                                }
-                                else if (char.IsPunctuation(pinyin[0]))
-                                {
-                                    phonemes.Add("_");
-                                }
-                                else
-                                {
-                                    // Convert pinyin to IPA
-                                    var ipaPhonemes = ipaConverter.ConvertToIPA(pinyin);
-                                    phonemes.AddRange(ipaPhonemes);
-                                }
+                                // It's still a Chinese character (no pinyin found)
+                                // Skip Debug.LogWarning for performance
                             }
-                        }
-                        
-                        if (!string.IsNullOrEmpty(english))
-                        {
-                            // For English text, just use letters as phonemes (simplified)
-                            // TODO: Integrate with English phonemizer
-                            foreach (var ch in english.ToLower())
+                            else if (char.IsPunctuation(pinyin[0]))
                             {
-                                if (char.IsLetter(ch))
-                                {
-                                    phonemes.Add(ch.ToString());
-                                }
-                                else if (char.IsWhiteSpace(ch))
-                                {
-                                    phonemes.Add("_");
-                                }
+                                phonemes.Add("_");
+                            }
+                            else
+                            {
+                                // Convert pinyin to IPA
+                                var ipaPhonemes = ipaConverter.ConvertToIPA(pinyin);
+                                phonemes.AddRange(ipaPhonemes);
                             }
                         }
                     }
 
-                    return new PhonemeResult
+                    if (!string.IsNullOrEmpty(english))
                     {
-                        Phonemes = phonemes.ToArray(),
-                        Language = language,
-                        Success = true
-                    };
+                        // For English text, just use letters as phonemes (simplified)
+                        // TODO: Integrate with English phonemizer
+                        foreach (var ch in english.ToLower())
+                        {
+                            if (char.IsLetter(ch))
+                            {
+                                phonemes.Add(ch.ToString());
+                            }
+                            else if (char.IsWhiteSpace(ch))
+                            {
+                                phonemes.Add("_");
+                            }
+                        }
+                    }
                 }
-                catch (Exception ex)
+
+                return new PhonemeResult
                 {
-                    Debug.LogError($"Error in Chinese phonemization: {ex.Message}");
-                    throw;
-                }
+                    Phonemes = phonemes.ToArray(),
+                    Language = language,
+                    Success = true
+                };
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error in Chinese phonemization: {ex.Message}");
+                throw;
+            }
         }
 
 
@@ -169,13 +169,13 @@ namespace uPiper.Core.Phonemizers.Backend
         {
             if (dictionary == null)
                 return 0;
-                
+
             // Estimate memory usage
             var charMemory = dictionary.CharacterCount * 50; // ~50 bytes per character entry
             var phraseMemory = dictionary.PhraseCount * 100; // ~100 bytes per phrase
             var ipaMemory = dictionary.IPACount * 60; // ~60 bytes per IPA mapping
             var wordMemory = dictionary.WordCount * 40; // ~40 bytes per word frequency
-            
+
             return charMemory + phraseMemory + ipaMemory + wordMemory;
         }
 

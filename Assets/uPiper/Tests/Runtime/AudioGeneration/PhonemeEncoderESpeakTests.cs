@@ -47,7 +47,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             Assert.IsNotNull(ids);
             // BOS + (a + PAD) + (b + PAD) + (c + PAD) + EOS = 8
             Assert.AreEqual(8, ids.Length);
-            
+
             // Check structure
             Assert.AreEqual(1, ids[0]); // BOS (^)
             Assert.AreEqual(3, ids[1]); // a
@@ -72,7 +72,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             Assert.IsNotNull(ids);
             // BOS + (a + PAD) + (b + PAD) + EOS = 6
             Assert.AreEqual(6, ids.Length);
-            
+
             Assert.AreEqual(1, ids[0]); // BOS (^)
             Assert.AreEqual(3, ids[1]); // a
             Assert.AreEqual(0, ids[2]); // PAD (_)

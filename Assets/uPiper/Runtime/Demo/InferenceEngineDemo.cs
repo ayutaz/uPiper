@@ -25,17 +25,46 @@ namespace uPiper.Demo
         private static readonly Dictionary<string, string> ArpabetToIPA = new()
         {
             // Vowels
-            ["AA"] = "ɑ", ["AE"] = "æ", ["AH"] = "ʌ", ["AO"] = "ɔ",
-            ["AW"] = "a", ["AY"] = "a", ["EH"] = "ɛ", ["ER"] = "ɚ",  // Simplified diphthongs
-            ["EY"] = "e", ["IH"] = "ɪ", ["IY"] = "i", ["OW"] = "o",   // Simplified diphthongs
-            ["OY"] = "ɔ", ["UH"] = "ʊ", ["UW"] = "u",                 // Simplified diphthongs
+            ["AA"] = "ɑ",
+            ["AE"] = "æ",
+            ["AH"] = "ʌ",
+            ["AO"] = "ɔ",
+            ["AW"] = "a",
+            ["AY"] = "a",
+            ["EH"] = "ɛ",
+            ["ER"] = "ɚ",  // Simplified diphthongs
+            ["EY"] = "e",
+            ["IH"] = "ɪ",
+            ["IY"] = "i",
+            ["OW"] = "o",   // Simplified diphthongs
+            ["OY"] = "ɔ",
+            ["UH"] = "ʊ",
+            ["UW"] = "u",                 // Simplified diphthongs
             // Consonants
-            ["B"] = "b", ["CH"] = "tʃ", ["D"] = "d", ["DH"] = "ð",
-            ["F"] = "f", ["G"] = "ɡ", ["HH"] = "h", ["JH"] = "dʒ",
-            ["K"] = "k", ["L"] = "l", ["M"] = "m", ["N"] = "n",
-            ["NG"] = "ŋ", ["P"] = "p", ["R"] = "ɹ", ["S"] = "s",
-            ["SH"] = "ʃ", ["T"] = "t", ["TH"] = "θ", ["V"] = "v",
-            ["W"] = "w", ["Y"] = "j", ["Z"] = "z", ["ZH"] = "ʒ",
+            ["B"] = "b",
+            ["CH"] = "tʃ",
+            ["D"] = "d",
+            ["DH"] = "ð",
+            ["F"] = "f",
+            ["G"] = "ɡ",
+            ["HH"] = "h",
+            ["JH"] = "dʒ",
+            ["K"] = "k",
+            ["L"] = "l",
+            ["M"] = "m",
+            ["N"] = "n",
+            ["NG"] = "ŋ",
+            ["P"] = "p",
+            ["R"] = "ɹ",
+            ["S"] = "s",
+            ["SH"] = "ʃ",
+            ["T"] = "t",
+            ["TH"] = "θ",
+            ["V"] = "v",
+            ["W"] = "w",
+            ["Y"] = "j",
+            ["Z"] = "z",
+            ["ZH"] = "ʒ",
         };
 
         public static string[] ConvertAll(string[] arpabetPhonemes)
@@ -44,7 +73,7 @@ namespace uPiper.Demo
             for (int i = 0; i < arpabetPhonemes.Length; i++)
             {
                 var basePhoneme = arpabetPhonemes[i].TrimEnd('0', '1', '2');
-                result[i] = ArpabetToIPA.TryGetValue(basePhoneme.ToUpper(), out var ipa) 
+                result[i] = ArpabetToIPA.TryGetValue(basePhoneme.ToUpper(), out var ipa)
                     ? ipa : arpabetPhonemes[i].ToLower();
             }
             return result;
@@ -303,7 +332,7 @@ namespace uPiper.Demo
             PiperLogger.LogInfo($"[SetupUI] _chineseTestPhrases count: {_chineseTestPhrases?.Count ?? 0}");
             PiperLogger.LogInfo($"[SetupUI] _englishTestPhrases count: {_englishTestPhrases?.Count ?? 0}");
             PiperLogger.LogInfo($"[SetupUI] _phraseDropdown is null: {_phraseDropdown == null}");
-            
+
             // モデル選択ドロップダウンの設定
             if (_modelDropdown != null)
             {
@@ -387,7 +416,7 @@ namespace uPiper.Demo
                         PiperLogger.LogWarning("[OnModelChanged] Japanese phrases not available, using fallback");
                         _phraseDropdown.AddOptions(new List<string> { "Custom Input", "こんにちは" });
                     }
-                    
+
                     if (_inputField != null)
                         _inputField.text = _defaultJapaneseText;
                 }
@@ -403,7 +432,7 @@ namespace uPiper.Demo
                         PiperLogger.LogWarning("[OnModelChanged] Chinese phrases not available, using fallback");
                         _phraseDropdown.AddOptions(new List<string> { "Custom Input", "你好" });
                     }
-                    
+
                     if (_inputField != null)
                         _inputField.text = "你好";
                 }
@@ -419,7 +448,7 @@ namespace uPiper.Demo
                         PiperLogger.LogWarning("[OnModelChanged] English phrases not available, using fallback");
                         _phraseDropdown.AddOptions(new List<string> { "Custom Input", "Hello" });
                     }
-                    
+
                     if (_inputField != null)
                         _inputField.text = _defaultEnglishText;
                 }
@@ -538,14 +567,14 @@ namespace uPiper.Demo
                 SetStatus("モデルをロード中...");
                 var loadStopwatch = Stopwatch.StartNew();
                 PiperLogger.LogDebug($"Loading model asset: Models/{modelName}");
-                
+
                 var modelAsset = Resources.Load<ModelAsset>($"Models/{modelName}") ?? throw new Exception($"モデルが見つかりません: {modelName}");
                 PiperLogger.LogDebug($"Model asset loaded successfully");
                 timings["ModelLoad"] = loadStopwatch.ElapsedMilliseconds;
 
                 // JSONコンフィグをロード
                 PiperLogger.LogDebug($"Loading config: Models/{modelName}.onnx.json");
-                
+
                 // デバッグ: 利用可能なTextAssetをリスト
                 var allTextAssets = Resources.LoadAll<TextAsset>("Models");
                 PiperLogger.LogInfo($"Available TextAssets in Resources/Models: {allTextAssets.Length}");
@@ -553,7 +582,7 @@ namespace uPiper.Demo
                 {
                     PiperLogger.LogInfo($"  - {asset.name}");
                 }
-                
+
                 var jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx.json");
                 if (jsonAsset == null)
                 {
@@ -561,7 +590,7 @@ namespace uPiper.Demo
                     PiperLogger.LogDebug($"Trying without extension: Models/{modelName}.onnx");
                     jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx");
                 }
-                
+
                 if (jsonAsset == null)
                 {
                     throw new Exception($"設定ファイルが見つかりません: {modelName}.onnx.json");
@@ -673,7 +702,7 @@ namespace uPiper.Demo
                     var chineseStopwatch = Stopwatch.StartNew();
                     var phonemeResult = await _chinesePhonemizer.PhonemizeAsync(_inputField.text, "zh");
                     timings["ChinesePhonemizer"] = chineseStopwatch.ElapsedMilliseconds;
-                    
+
                     phonemes = phonemeResult.Phonemes;
                     PiperLogger.LogInfo($"[Chinese] Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
 
@@ -717,20 +746,20 @@ namespace uPiper.Demo
                     var englishStopwatch = Stopwatch.StartNew();
                     var phonemeResult = await _englishPhonemizer.PhonemizeAsync(_inputField.text, "en");
                     timings["FliteLTS"] = englishStopwatch.ElapsedMilliseconds;
-                    
+
                     // Convert Arpabet to IPA for eSpeak-compatible model
                     var arpabetPhonemes = phonemeResult.Phonemes;
                     PiperLogger.LogInfo($"[English] Arpabet phonemes ({arpabetPhonemes.Length}): {string.Join(" ", arpabetPhonemes)}");
-                    
+
                     // Arpabet音素の詳細をログ出力
                     for (int i = 0; i < arpabetPhonemes.Length; i++)
                     {
                         PiperLogger.LogDebug($"  Arpabet[{i}]: '{arpabetPhonemes[i]}'");
                     }
-                    
+
                     phonemes = ArpabetToIPAConverterTemp.ConvertAll(arpabetPhonemes);
                     PiperLogger.LogInfo($"[English] IPA phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
-                    
+
                     // IPA音素の詳細をログ出力
                     for (int i = 0; i < phonemes.Length; i++)
                     {
@@ -820,7 +849,7 @@ namespace uPiper.Demo
 
                 // 音声データが既に小さい値の場合は増幅、大きい値の場合は正規化
                 float[] processedAudio;
-                
+
                 // 音声データの詳細な統計情報
                 PiperLogger.LogInfo($"Audio statistics before processing:");
                 PiperLogger.LogInfo($"  - Sample count: {audioData.Length}");
@@ -828,7 +857,7 @@ namespace uPiper.Demo
                 PiperLogger.LogInfo($"  - Max absolute value: {maxVal:F6}");
                 PiperLogger.LogInfo($"  - Mean absolute value: {audioData.Select(x => Math.Abs(x)).Average():F6}");
                 PiperLogger.LogInfo($"  - First 10 samples: {string.Join(", ", audioData.Take(10).Select(x => x.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)))}");
-                
+
                 if (maxVal < 0.01f)
                 {
                     // 音声が小さすぎる場合は増幅

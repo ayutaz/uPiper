@@ -25,7 +25,7 @@ namespace uPiper.Core.Phonemizers
             ["OY"] = "ɔɪ",   // boy
             ["UH"] = "ʊ",    // book
             ["UW"] = "u",    // boot
-            
+
             // Consonants
             ["B"] = "b",
             ["CH"] = "tʃ",   // church
@@ -63,7 +63,7 @@ namespace uPiper.Core.Phonemizers
 
             // Remove stress markers (0, 1, 2)
             var basePhoneme = arpabetPhoneme.TrimEnd('0', '1', '2');
-            
+
             // Try to find mapping
             if (ArpabetToIPA.TryGetValue(basePhoneme.ToUpper(), out var ipa))
             {

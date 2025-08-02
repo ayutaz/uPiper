@@ -119,7 +119,7 @@ namespace uPiper.Core.AudioGeneration
                 {
                     ids.Add(id);
                     PiperLogger.LogDebug($"Phoneme '{phoneme}' -> ID {id}");
-                    
+
                     // eSpeak方式では各音素の後にPADを追加
                     if (isESpeakModel)
                     {

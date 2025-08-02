@@ -7,13 +7,13 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
     public class ChineseTextNormalizerTests
     {
         private ChineseTextNormalizer normalizer;
-        
+
         [SetUp]
         public void Setup()
         {
             normalizer = new ChineseTextNormalizer();
         }
-        
+
         [Test]
         public void Normalizer_NumberConversion_Individual()
         {
@@ -23,14 +23,14 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                 ("2024", "二零二四"),
                 ("9876", "九八七六")
             };
-            
+
             foreach (var (input, expected) in testCases)
             {
                 var result = normalizer.NormalizeNumbers(input, ChineseTextNormalizer.NumberFormat.Individual);
                 Assert.AreEqual(expected, result, $"Failed to convert '{input}' to individual Chinese");
             }
         }
-        
+
         [Test]
         public void Normalizer_NumberConversion_Formal()
         {
@@ -49,14 +49,14 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                 ("10001", "一万零一"),
                 ("12345", "一万二千三百四十五")
             };
-            
+
             foreach (var (input, expected) in testCases)
             {
                 var result = normalizer.NormalizeNumbers(input, ChineseTextNormalizer.NumberFormat.Formal);
                 Assert.AreEqual(expected, result, $"Failed to convert '{input}' to formal Chinese");
             }
         }
-        
+
         [Test]
         public void Normalizer_PunctuationNormalization()
         {
@@ -69,82 +69,82 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                 ("【标题】", "[标题]"),
                 ("《书名》", "<书名>")
             };
-            
+
             foreach (var (input, expected) in testCases)
             {
                 var result = normalizer.NormalizePunctuation(input);
                 Assert.AreEqual(expected, result, $"Failed to normalize punctuation in '{input}'");
             }
         }
-        
+
         [Test]
         public void Normalizer_MixedTextSplitting()
         {
             var text = "这是Chinese text with English words混合在一起";
             var segments = normalizer.SplitMixedText(text);
-            
+
             // Debug output to see actual segments
             for (int i = 0; i < segments.Length; i++)
             {
                 Debug.Log($"Segment {i}: chinese='{segments[i].chinese}', english='{segments[i].english}'");
             }
-            
+
             Assert.AreEqual(3, segments.Length, "Should have 3 segments");
-            
+
             Assert.AreEqual("这是", segments[0].chinese);
             Assert.AreEqual("", segments[0].english);
-            
+
             Assert.AreEqual("", segments[1].chinese);
             Assert.AreEqual("Chinese text with English words", segments[1].english);
-            
+
             Assert.AreEqual("混合在一起", segments[2].chinese);
             Assert.AreEqual("", segments[2].english);
         }
-        
+
         [Test]
         public void Normalizer_CompleteNormalization()
         {
             var text = "今天是2024年12月25日，temperature是-5°C。";
             var result = normalizer.Normalize(text, ChineseTextNormalizer.NumberFormat.Formal);
-            
+
             Debug.Log($"Original: {text}");
             Debug.Log($"Normalized: {result}");
-            
+
             // Should convert numbers to Chinese
             Assert.IsTrue(result.Contains("二千零二十四年"), "Should contain year in formal Chinese");
             Assert.IsTrue(result.Contains("十二月"), "Should contain month in Chinese");
             Assert.IsTrue(result.Contains("二十五日"), "Should contain day in Chinese");
-            
+
             // Should preserve English word
             Assert.IsTrue(result.Contains("temperature"));
         }
-        
+
         [Test]
         public void Normalizer_WhitespaceHandling()
         {
             var text = "你好  ，  世界   ！   ";
             var result = normalizer.Normalize(text);
-            
+
             // Should remove extra spaces around punctuation
             Assert.AreEqual("你好,世界!", result);
         }
-        
+
         [Test]
         public void Normalizer_EmptyText()
         {
             var result = normalizer.Normalize("");
             Assert.AreEqual("", result);
-            
+
             result = normalizer.Normalize(null);
             Assert.IsNull(result);
         }
-        
+
         [Test]
         public void Normalizer_SpecialCharacters()
         {
             var text = "Mr. Smith说：'Hello!'";
             var result = normalizer.Normalize(text);
-            
+
             // Should replace Mr. with 先生
             Assert.IsTrue(result.Contains("先生"));
             Assert.IsTrue(result.Contains("Smith"));

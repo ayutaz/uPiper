@@ -96,7 +96,7 @@ namespace uPiper.Tests.Runtime
         public IEnumerator TestFliteLTSInitialization()
         {
             var initTask = _phonemizer.InitializeAsync(new uPiper.Core.Phonemizers.Backend.PhonemizerBackendOptions());
-            
+
             // Wait for initialization
             while (!initTask.IsCompleted)
             {
@@ -124,7 +124,7 @@ namespace uPiper.Tests.Runtime
             Assert.Greater(result.Phonemes.Length, 0);
 
             Debug.Log($"[Test] Arpabet phonemes for 'Hello world': {string.Join(" ", result.Phonemes)}");
-            
+
             // Expected Arpabet: HH EH L OW _ W ER L D (or similar)
             Assert.IsTrue(result.Phonemes.Any(p => p.StartsWith("HH")), "Should contain 'H' sound");
             Assert.IsTrue(result.Phonemes.Any(p => p.StartsWith("L")), "Should contain 'L' sound");
@@ -175,7 +175,7 @@ namespace uPiper.Tests.Runtime
             {
                 var phonemeIndex = 1 + (i * 2);
                 var padIndex = phonemeIndex + 1;
-                
+
                 if (padIndex < ids.Length - 1)
                 {
                     Assert.AreEqual(0, ids[padIndex], $"Phoneme at position {i} should be followed by PAD");
@@ -193,14 +193,14 @@ namespace uPiper.Tests.Runtime
 
             // Test text
             var text = "Hello world";
-            
+
             // Step 1: Phonemize
             var phonemizeTask = _phonemizer.PhonemizeAsync(text, "en");
             while (!phonemizeTask.IsCompleted) yield return null;
-            
+
             var phonemeResult = phonemizeTask.Result;
             Assert.IsNotNull(phonemeResult);
-            
+
             var arpabetPhonemes = phonemeResult.Phonemes;
             Debug.Log($"[Test] Step 1 - Arpabet ({arpabetPhonemes.Length}): {string.Join(" ", arpabetPhonemes)}");
 
@@ -216,7 +216,7 @@ namespace uPiper.Tests.Runtime
             Assert.Greater(arpabetPhonemes.Length, 0, "Should have Arpabet phonemes");
             Assert.Greater(ipaPhonemes.Length, 0, "Should have IPA phonemes");
             Assert.Greater(ids.Length, 0, "Should have encoded IDs");
-            
+
             // For "Hello world", we expect around 8-10 phonemes
             Assert.GreaterOrEqual(arpabetPhonemes.Length, 6, "Should have at least 6 phonemes");
             Assert.LessOrEqual(arpabetPhonemes.Length, 12, "Should have at most 12 phonemes");
@@ -227,24 +227,53 @@ namespace uPiper.Tests.Runtime
             var arpabetToIPA = new Dictionary<string, string>
             {
                 // Vowels
-                ["AA"] = "ɑ", ["AE"] = "æ", ["AH"] = "ʌ", ["AO"] = "ɔ",
-                ["AW"] = "a", ["AY"] = "a", ["EH"] = "ɛ", ["ER"] = "ɚ",
-                ["EY"] = "e", ["IH"] = "ɪ", ["IY"] = "i", ["OW"] = "o",
-                ["OY"] = "ɔ", ["UH"] = "ʊ", ["UW"] = "u",
+                ["AA"] = "ɑ",
+                ["AE"] = "æ",
+                ["AH"] = "ʌ",
+                ["AO"] = "ɔ",
+                ["AW"] = "a",
+                ["AY"] = "a",
+                ["EH"] = "ɛ",
+                ["ER"] = "ɚ",
+                ["EY"] = "e",
+                ["IH"] = "ɪ",
+                ["IY"] = "i",
+                ["OW"] = "o",
+                ["OY"] = "ɔ",
+                ["UH"] = "ʊ",
+                ["UW"] = "u",
                 // Consonants
-                ["B"] = "b", ["CH"] = "tʃ", ["D"] = "d", ["DH"] = "ð",
-                ["F"] = "f", ["G"] = "ɡ", ["HH"] = "h", ["JH"] = "dʒ",
-                ["K"] = "k", ["L"] = "l", ["M"] = "m", ["N"] = "n",
-                ["NG"] = "ŋ", ["P"] = "p", ["R"] = "ɹ", ["S"] = "s",
-                ["SH"] = "ʃ", ["T"] = "t", ["TH"] = "θ", ["V"] = "v",
-                ["W"] = "w", ["Y"] = "j", ["Z"] = "z", ["ZH"] = "ʒ",
+                ["B"] = "b",
+                ["CH"] = "tʃ",
+                ["D"] = "d",
+                ["DH"] = "ð",
+                ["F"] = "f",
+                ["G"] = "ɡ",
+                ["HH"] = "h",
+                ["JH"] = "dʒ",
+                ["K"] = "k",
+                ["L"] = "l",
+                ["M"] = "m",
+                ["N"] = "n",
+                ["NG"] = "ŋ",
+                ["P"] = "p",
+                ["R"] = "ɹ",
+                ["S"] = "s",
+                ["SH"] = "ʃ",
+                ["T"] = "t",
+                ["TH"] = "θ",
+                ["V"] = "v",
+                ["W"] = "w",
+                ["Y"] = "j",
+                ["Z"] = "z",
+                ["ZH"] = "ʒ",
             };
 
             var result = new string[arpabetPhonemes.Length];
             for (int i = 0; i < arpabetPhonemes.Length; i++)
             {
                 var basePhoneme = arpabetPhonemes[i].TrimEnd('0', '1', '2');
-                result[i] = arpabetToIPA.TryGetValue(basePhoneme.ToUpper(), out var ipa) 
+                result[i] = arpabetToIPA.TryGetValue(basePhoneme.ToUpper(), out var ipa)
                     ? ipa : arpabetPhonemes[i].ToLower();
             }
             return result;

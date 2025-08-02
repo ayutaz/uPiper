@@ -234,7 +234,7 @@ namespace uPiper.Core.AudioGeneration
                         // 推論を実行
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Running inference with backend: {_actualBackendType}...");
                         _worker.Schedule();
-                        
+
                         // GPU Computeバックエンドの場合は特別な処理が必要な場合がある
                         if (_actualBackendType == BackendType.GPUCompute)
                         {
@@ -242,7 +242,7 @@ namespace uPiper.Core.AudioGeneration
                             // Note: Unity.InferenceEngine handles synchronization internally
                             // The output retrieval will block until computation is complete
                         }
-                        
+
                         PiperLogger.LogInfo("[InferenceAudioGenerator] Inference completed");
 
                         // 出力を取得
@@ -307,7 +307,7 @@ namespace uPiper.Core.AudioGeneration
                         var avg = audioData.Average();
                         var absAvg = audioData.Select(Math.Abs).Average();
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Audio stats - Min: {min:F4}, Max: {max:F4}, Avg: {avg:F4}, AbsAvg: {absAvg:F4}");
-                        
+
                         // GPU Computeバックエンドでのデバッグ情報
                         if (_actualBackendType == BackendType.GPUCompute)
                         {
@@ -315,7 +315,7 @@ namespace uPiper.Core.AudioGeneration
                             PiperLogger.LogInfo($"  - Graphics device: {SystemInfo.graphicsDeviceType}");
                             PiperLogger.LogInfo($"  - Compute shader support: {SystemInfo.supportsComputeShaders}");
                             PiperLogger.LogInfo($"  - Graphics memory: {SystemInfo.graphicsMemorySize} MB");
-                            
+
                             // データの妥当性を確認
                             if (absAvg < 0.001f)
                             {
@@ -333,14 +333,14 @@ namespace uPiper.Core.AudioGeneration
                         outputTensor.Dispose();
 
                         PiperLogger.LogDebug($"Generated audio: {audioData.Length} samples");
-                        
+
                         // 音声の長さを秒単位で計算（22050 Hzの場合）
                         var durationSeconds = audioData.Length / 22050.0f;
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Audio duration: {durationSeconds:F2} seconds");
-                        
+
                         // 入力音素数との比較
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Input phoneme IDs: {phonemeIds.Length}, Output samples: {audioData.Length}");
-                        
+
                         return audioData;
                     }
                     catch (Exception ex)
@@ -404,7 +404,7 @@ namespace uPiper.Core.AudioGeneration
                     return BackendType.CPU;
                 }
             }
-            
+
             // GPU Compute has known issues with VITS models producing silent/corrupted audio
             // Force GPU Pixel or CPU for better compatibility
             if (config.Backend == InferenceBackend.GPUCompute)

@@ -58,7 +58,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             catch (Exception ex)
             {
                 Debug.LogError($"Failed to load Chinese dictionary: {ex.Message}");
-                
+
                 // Return dictionary with fallback data
                 LoadFallbackData(dictionary);
                 return dictionary;
