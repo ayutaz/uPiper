@@ -14,6 +14,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         private readonly ChinesePinyinDictionary dictionary;
         private readonly HashSet<string> wordSet;
         private readonly int maxWordLength;
+        private MultiToneProcessor multiToneProcessor;
         
         // Default word frequencies for unknown words
         private const float DEFAULT_WORD_FREQ = 1.0f;
@@ -22,6 +23,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         public ChineseWordSegmenter(ChinesePinyinDictionary dictionary)
         {
             this.dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
+            this.multiToneProcessor = new MultiToneProcessor(dictionary);
             
             // Build word set from phrase dictionary
             wordSet = new HashSet<string>();
@@ -217,9 +219,9 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     {
                         if (dictionary.TryGetCharacterPinyin(ch, out var charPinyin))
                         {
-                            // Use first pronunciation for now
-                            // TODO: Use context to select best pronunciation
-                            pinyinList.Add(charPinyin[0]);
+                            // Use context to select best pronunciation
+                            var bestPinyin = GetBestPinyinForCharacter(ch, word, pinyinList, charPinyin);
+                            pinyinList.Add(bestPinyin);
                         }
                         else
                         {
@@ -230,6 +232,187 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 }
                 
                 result.Add((word, pinyin));
+            }
+            
+            return result;
+        }
+        
+        /// <summary>
+        /// Get best pinyin pronunciation for a character based on context
+        /// </summary>
+        private string GetBestPinyinForCharacter(char ch, string word, List<string> pinyinList, string[] availablePinyin)
+        {
+            // Build context
+            var context = new PronunciationContext
+            {
+                Character = ch,
+                Phrase = word
+            };
+            
+            // Get character position in word
+            var charIndex = pinyinList.Count; // Current position
+            
+            // Set previous character context
+            if (charIndex > 0)
+            {
+                context.PrevChar = word[charIndex - 1];
+                // Get previous tone if available
+                if (pinyinList.Count > 0)
+                {
+                    var prevPinyin = pinyinList[pinyinList.Count - 1];
+                    context.PrevTone = ExtractTone(prevPinyin);
+                }
+            }
+            
+            // Set next character context
+            if (charIndex < word.Length - 1)
+            {
+                context.NextChar = word[charIndex + 1];
+                // For next tone, we'd need to look ahead, which is complex
+                // So we'll use a simpler approach for now
+            }
+            
+            // Use MultiToneProcessor to get best pronunciation
+            var bestPinyin = multiToneProcessor.GetBestPronunciation(ch, context);
+            
+            // If MultiToneProcessor returns a result, use it
+            if (!string.IsNullOrEmpty(bestPinyin))
+            {
+                return bestPinyin;
+            }
+            
+            // Otherwise, use first available pronunciation
+            return availablePinyin[0];
+        }
+        
+        /// <summary>
+        /// Extract tone number from pinyin
+        /// </summary>
+        private int? ExtractTone(string pinyin)
+        {
+            if (string.IsNullOrEmpty(pinyin))
+                return null;
+            
+            var lastChar = pinyin[pinyin.Length - 1];
+            if (char.IsDigit(lastChar))
+            {
+                return lastChar - '0';
+            }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// Segment with pinyin using multi-tone context awareness
+        /// </summary>
+        public List<(string word, string[] pinyin)> SegmentWithPinyinV2(string text)
+        {
+            var segments = Segment(text);
+            var result = new List<(string word, string[] pinyin)>();
+            var fullTextIndex = 0;
+            
+            for (int segIdx = 0; segIdx < segments.Count; segIdx++)
+            {
+                var word = segments[segIdx];
+                string[] pinyin;
+                
+                // Try phrase first
+                if (dictionary.TryGetPhrasePinyin(word, out var phrasePinyin))
+                {
+                    pinyin = phrasePinyin.Split(' ');
+                }
+                else
+                {
+                    // Process character by character with context
+                    var pinyinList = new List<string>();
+                    
+                    for (int charIdx = 0; charIdx < word.Length; charIdx++)
+                    {
+                        var ch = word[charIdx];
+                        
+                        if (dictionary.TryGetCharacterPinyin(ch, out var charPinyin))
+                        {
+                            // Build comprehensive context
+                            var context = new PronunciationContext
+                            {
+                                Character = ch,
+                                Phrase = text // Full text for broader context
+                            };
+                            
+                            // Previous character in current word
+                            if (charIdx > 0)
+                            {
+                                context.PrevChar = word[charIdx - 1];
+                                if (pinyinList.Count > 0)
+                                {
+                                    context.PrevTone = ExtractTone(pinyinList[pinyinList.Count - 1]);
+                                }
+                            }
+                            // Or previous word's last character
+                            else if (fullTextIndex > 0)
+                            {
+                                context.PrevChar = text[fullTextIndex - 1];
+                            }
+                            
+                            // Next character in current word
+                            if (charIdx < word.Length - 1)
+                            {
+                                context.NextChar = word[charIdx + 1];
+                                // Look ahead for next tone
+                                if (dictionary.TryGetCharacterPinyin(context.NextChar.Value, out var nextCharPinyin))
+                                {
+                                    var nextContext = new PronunciationContext
+                                    {
+                                        Character = context.NextChar.Value,
+                                        PrevChar = ch
+                                    };
+                                    var nextPinyin = multiToneProcessor.GetBestPronunciation(context.NextChar.Value, nextContext);
+                                    if (!string.IsNullOrEmpty(nextPinyin))
+                                    {
+                                        context.NextTone = ExtractTone(nextPinyin);
+                                    }
+                                }
+                            }
+                            // Or next word's first character
+                            else if (fullTextIndex + word.Length < text.Length)
+                            {
+                                context.NextChar = text[fullTextIndex + word.Length];
+                            }
+                            
+                            // Previous and next words
+                            if (segIdx > 0)
+                            {
+                                context.PrevWord = segments[segIdx - 1];
+                            }
+                            if (segIdx < segments.Count - 1)
+                            {
+                                context.NextWord = segments[segIdx + 1];
+                            }
+                            
+                            // Get best pronunciation
+                            var bestPinyin = multiToneProcessor.GetBestPronunciation(ch, context);
+                            
+                            if (!string.IsNullOrEmpty(bestPinyin))
+                            {
+                                pinyinList.Add(bestPinyin);
+                            }
+                            else
+                            {
+                                // Fallback to first pronunciation
+                                pinyinList.Add(charPinyin[0]);
+                            }
+                        }
+                        else
+                        {
+                            pinyinList.Add($"u{(int)ch:x}"); // Unicode fallback
+                        }
+                    }
+                    
+                    pinyin = pinyinList.ToArray();
+                }
+                
+                result.Add((word, pinyin));
+                fullTextIndex += word.Length;
             }
             
             return result;

@@ -12,7 +12,6 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
     /// </summary>
     public class ChineseBasicDictionaryTests
     {
-        private ChineseDictionaryLoader loader;
         private ChinesePinyinDictionary dictionary;
 
         [UnitySetUp]
@@ -121,7 +120,6 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public void TearDown()
         {
             dictionary = null;
-            loader = null;
         }
     }
 }

@@ -20,6 +20,8 @@ namespace uPiper.Core.Phonemizers.Backend
         private PinyinToIPAConverter ipaConverter;
         private ChineseTextNormalizer textNormalizer;
         private ChineseWordSegmenter wordSegmenter;
+        private MultiToneProcessor multiToneProcessor;
+        private TraditionalChineseConverter traditionalConverter;
         private readonly object dictLock = new();
         
         // Configuration option
@@ -56,6 +58,8 @@ namespace uPiper.Core.Phonemizers.Backend
                 ipaConverter = new PinyinToIPAConverter(dictionary);
                 textNormalizer = new ChineseTextNormalizer();
                 wordSegmenter = new ChineseWordSegmenter(dictionary);
+                multiToneProcessor = new MultiToneProcessor(dictionary);
+                traditionalConverter = new TraditionalChineseConverter();
 
                 Debug.Log($"Chinese phonemizer initialized with {dictionary.CharacterCount} characters, " +
                          $"{dictionary.PhraseCount} phrases, {dictionary.IPACount} IPA mappings");
@@ -104,6 +108,13 @@ namespace uPiper.Core.Phonemizers.Backend
 
             try
             {
+                // Step 0: Convert Traditional Chinese to Simplified if needed
+                if (traditionalConverter.ContainsTraditional(text))
+                {
+                    text = traditionalConverter.ConvertToSimplified(text);
+                    Debug.Log($"[ChinesePhonemizer] Converted Traditional to Simplified Chinese");
+                }
+                
                 // Step 1: Normalize text
                 var normalized = textNormalizer.Normalize(text, ChineseTextNormalizer.NumberFormat.Formal);
 
@@ -118,10 +129,17 @@ namespace uPiper.Core.Phonemizers.Backend
                         if (useWordSegmentation)
                         {
                             // Use word segmentation for better context
-                            var wordsWithPinyin = wordSegmenter.SegmentWithPinyin(chinese);
+                            var wordsWithPinyin = wordSegmenter.SegmentWithPinyinV2(chinese);
                             
                             foreach (var (word, pinyinArray) in wordsWithPinyin)
                             {
+                                // Check if the word is punctuation
+                                if (word.Length == 1 && char.IsPunctuation(word[0]))
+                                {
+                                    phonemes.Add("_");
+                                    continue;
+                                }
+                                
                                 // Convert each pinyin to IPA
                                 foreach (var pinyin in pinyinArray)
                                 {
@@ -241,6 +259,9 @@ namespace uPiper.Core.Phonemizers.Backend
             pinyinConverter = null;
             ipaConverter = null;
             textNormalizer = null;
+            wordSegmenter = null;
+            multiToneProcessor = null;
+            traditionalConverter = null;
         }
     }
 }

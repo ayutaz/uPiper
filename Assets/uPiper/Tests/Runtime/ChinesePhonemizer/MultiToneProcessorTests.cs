@@ -177,7 +177,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         [Test]
         public void GetBestPronunciation_ShouldHandleUnknownCharacters()
         {
-            var unknownChar = '🌟'; // Emoji, not in dictionary
+            var unknownChar = '\u2728'; // Sparkles emoji (U+2728), not in dictionary
             var context = new PronunciationContext { Character = unknownChar };
             
             var result = processor.GetBestPronunciation(unknownChar, context);

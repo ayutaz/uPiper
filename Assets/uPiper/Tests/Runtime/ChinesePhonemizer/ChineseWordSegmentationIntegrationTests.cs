@@ -22,7 +22,8 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             // Initialize phonemizer
             var initTask = Task.Run(async () =>
             {
-                await phonemizer.InitializeAsync();
+                await phonemizer.InitializeAsync(
+                    new uPiper.Core.Phonemizers.Backend.PhonemizerBackendOptions());
             });
             
             while (!initTask.IsCompleted)
@@ -34,6 +35,9 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             {
                 throw initTask.Exception?.GetBaseException() ?? new System.Exception("Phonemizer init failed");
             }
+            
+            // Ensure word segmentation is enabled
+            phonemizer.UseWordSegmentation = true;
         }
 
         [Test]
@@ -178,11 +182,12 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             Assert.Less(avgMs, 100, "Should process within 100ms");
         }
 
-        [TearDown]
-        public void TearDown()
+        [UnityTearDown]
+        public IEnumerator TearDown()
         {
             phonemizer?.Dispose();
             phonemizer = null;
+            yield return null;
         }
     }
 }
