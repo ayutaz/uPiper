@@ -348,8 +348,7 @@ namespace uPiper.Demo
                 _backendDropdown.onValueChanged.AddListener(OnBackendChanged);
             }
 
-            // CPUフォールバックは常に有効（UIには表示しない）
-            _gpuSettings.EnableCPUFallback = true;
+            // CPUフォールバックは InferenceAudioGenerator 側で自動的に処理される
 
             // Float16は無効（デフォルト設定）
             _gpuSettings.UseFloat16 = false;
@@ -593,7 +592,7 @@ namespace uPiper.Demo
                 var piperConfig = new PiperConfig
                 {
                     Backend = _selectedBackend,
-                    AllowFallbackToCPU = _cpuFallbackToggle?.isOn ?? true,
+                    AllowFallbackToCPU = true, // CPUフォールバックは常に有効
                     GPUSettings = _gpuSettings
                 };
 
