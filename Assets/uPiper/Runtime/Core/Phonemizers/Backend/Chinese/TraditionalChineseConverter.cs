@@ -182,14 +182,11 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('載', '载');  // carry
             AddMapping('飛', '飞');  // fly
             AddMapping('機', '机');  // machine/opportunity
-            AddMapping('場', '场');  // field/site
             AddMapping('鐵', '铁');  // iron/railway
             AddMapping('軌', '轨');  // rail
-            AddMapping('號', '号');  // number
             
             // Technology and modern life
             AddMapping('電', '电');  // electricity
-            AddMapping('腦', '脑');  // brain/computer
             AddMapping('網', '网');  // net
             AddMapping('絡', '络');  // network
             AddMapping('線', '线');  // line
@@ -203,7 +200,6 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('術', '术');  // technique
             AddMapping('軟', '软');  // soft
             AddMapping('硬', '硬');  // hard (same)
-            AddMapping('體', '体');  // body/style
             
             // Common verbs and actions
             AddMapping('來', '来');  // come
@@ -250,7 +246,6 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('複', '复');  // complex
             AddMapping('雜', '杂');  // mixed
             AddMapping('亂', '乱');  // messy
-            AddMapping('靜', '静');  // quiet
             AddMapping('鬧', '闹');  // noisy
             
             // Nature and environment
@@ -291,33 +286,24 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             // Additional characters for test cases
             AddMapping('請', '请');  // please
             AddMapping('謝', '谢');  // thank
-            AddMapping('聽', '听');  // listen
             AddMapping('歡', '欢');  // joyful
             AddMapping('臨', '临');  // arrive
             AddMapping('沒', '没');  // not have
-            AddMapping('題', '题');  // topic
             AddMapping('麼', '么');  // (particle)
-            AddMapping('錢', '钱');  // money
             AddMapping('網', '网');  // net
             AddMapping('際', '际');  // border
-            AddMapping('習', '习');  // learn
             AddMapping('數', '数');  // number
-            AddMapping('據', '据');  // data
             AddMapping('庫', '库');  // warehouse
             // Additional characters for sentence tests
             AddMapping('這', '这');  // this
             AddMapping('個', '个');  // measure word
             AddMapping('測', '测');  // test/measure
             AddMapping('試', '试');  // try/test
-            AddMapping('臺', '台');  // platform/Taiwan
-            AddMapping('灣', '湾');  // bay
             AddMapping('裡', '里');  // inside
             AddMapping('圖', '图');  // picture
             AddMapping('館', '馆');  // building
-            AddMapping('嗎', '吗');  // question particle
             AddMapping('們', '们');  // plural marker
             AddMapping('飛', '飞');  // fly
-            AddMapping('場', '场');  // place
             AddMapping('慮', '虑');  // consider
             AddMapping('憂', '忧');  // worry
             AddMapping('喜', '喜');  // happy (same)
@@ -340,20 +326,16 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('雖', '虽');  // although
             AddMapping('然', '然');  // however (same)
             AddMapping('則', '则');  // then
-            AddMapping('麼', '么');  // question particle
             AddMapping('嗎', '吗');  // question particle
             AddMapping('呢', '呢');  // particle (same)
             AddMapping('啊', '啊');  // particle (same)
             AddMapping('吧', '吧');  // particle (same)
-            AddMapping('裡', '里');  // inside
             AddMapping('邊', '边');  // side
             AddMapping('後', '后');  // after
-            AddMapping('頭', '头');  // head/suffix
             AddMapping('樣', '样');  // appearance
             AddMapping('種', '种');  // kind/plant
             AddMapping('類', '类');  // category
             AddMapping('級', '级');  // level
-            AddMapping('個', '个');  // classifier
             AddMapping('條', '条');  // strip/clause
             AddMapping('張', '张');  // sheet/surname
             AddMapping('隻', '只');  // classifier
