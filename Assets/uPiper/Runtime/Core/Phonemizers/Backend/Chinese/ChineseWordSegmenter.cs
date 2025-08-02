@@ -308,6 +308,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         public List<(string word, string[] pinyin)> SegmentWithPinyinV2(string text)
         {
             var segments = Segment(text);
+            Debug.Log($"[WordSegmenter] Segmented '{text}' into: [{string.Join(", ", segments.Select(s => $"'{s}'"))}]");
             var result = new List<(string word, string[] pinyin)>();
             var fullTextIndex = 0;
             
@@ -319,10 +320,12 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 // Try phrase first
                 if (dictionary.TryGetPhrasePinyin(word, out var phrasePinyin))
                 {
+                    Debug.Log($"[WordSegmenter] Found phrase '{word}' → '{phrasePinyin}'");
                     pinyin = phrasePinyin.Split(' ');
                 }
                 else
                 {
+                    Debug.Log($"[WordSegmenter] Phrase '{word}' not found, processing character by character");
                     // Process character by character with context
                     var pinyinList = new List<string>();
                     

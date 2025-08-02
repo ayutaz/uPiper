@@ -131,6 +131,8 @@ namespace uPiper.Core.Phonemizers.Backend
                             // Use word segmentation for better context
                             var wordsWithPinyin = wordSegmenter.SegmentWithPinyinV2(chinese);
                             
+                            Debug.Log($"[ChinesePhonemizer] Segmented '{chinese}' into {wordsWithPinyin.Count} words");
+                            
                             foreach (var (word, pinyinArray) in wordsWithPinyin)
                             {
                                 // Check if the word is punctuation
@@ -141,15 +143,38 @@ namespace uPiper.Core.Phonemizers.Backend
                                 }
                                 
                                 // Convert each pinyin to IPA
+                                Debug.Log($"[ChinesePhonemizer] Word '{word}' has {pinyinArray.Length} pinyin: [{string.Join(", ", pinyinArray)}]");
+                                
                                 foreach (var pinyin in pinyinArray)
                                 {
-                                    if (pinyin.StartsWith("u") && pinyin.Length > 1)
+                                    if (pinyin.StartsWith("u") && pinyin.Length > 1 && pinyin.Length <= 6)
                                     {
-                                        // Unicode fallback, skip
+                                        // Unicode fallback (e.g., u94f6), try to get character and retry
+                                        Debug.LogWarning($"[ChinesePhonemizer] Found Unicode fallback: {pinyin} for character in '{word}'");
+                                        
+                                        // Try to parse the Unicode value
+                                        if (pinyin.Length >= 2 && int.TryParse(pinyin.Substring(1), System.Globalization.NumberStyles.HexNumber, null, out int codePoint))
+                                        {
+                                            var ch = (char)codePoint;
+                                            Debug.LogWarning($"[ChinesePhonemizer] Unicode {pinyin} represents character '{ch}'");
+                                            
+                                            // Try to get pinyin for this character from dictionary
+                                            if (dictionary.TryGetCharacterPinyin(ch, out var fallbackPinyin) && fallbackPinyin.Length > 0)
+                                            {
+                                                var fallbackIPA = ipaConverter.ConvertToIPA(fallbackPinyin[0]);
+                                                Debug.Log($"[ChinesePhonemizer] Fallback: '{ch}' → {fallbackPinyin[0]} → {fallbackIPA.Length} IPA phonemes");
+                                                phonemes.AddRange(fallbackIPA);
+                                            }
+                                            else
+                                            {
+                                                Debug.LogError($"[ChinesePhonemizer] No pinyin found for character '{ch}' (U+{codePoint:X4})");
+                                            }
+                                        }
                                         continue;
                                     }
                                     
                                     var ipaPhonemes = ipaConverter.ConvertToIPA(pinyin);
+                                    Debug.Log($"[ChinesePhonemizer] Pinyin '{pinyin}' → {ipaPhonemes.Length} IPA phonemes");
                                     phonemes.AddRange(ipaPhonemes);
                                 }
                             }

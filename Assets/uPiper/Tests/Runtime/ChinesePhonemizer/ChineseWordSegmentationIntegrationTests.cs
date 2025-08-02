@@ -17,13 +17,18 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            Debug.Log("[WordSegIntegration] Starting SetUp");
+            
             phonemizer = new uPiper.Core.Phonemizers.Backend.ChinesePhonemizer();
             
             // Initialize phonemizer
             var initTask = Task.Run(async () =>
             {
-                await phonemizer.InitializeAsync(
+                Debug.Log("[WordSegIntegration] Initializing phonemizer...");
+                var result = await phonemizer.InitializeAsync(
                     new uPiper.Core.Phonemizers.Backend.PhonemizerBackendOptions());
+                Debug.Log($"[WordSegIntegration] Init result: {result}");
+                return result;
             });
             
             while (!initTask.IsCompleted)
@@ -33,13 +38,109 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             
             if (initTask.IsFaulted)
             {
+                Debug.LogError($"[WordSegIntegration] Init failed: {initTask.Exception}");
                 throw initTask.Exception?.GetBaseException() ?? new System.Exception("Phonemizer init failed");
+            }
+            
+            if (!initTask.Result)
+            {
+                Debug.LogError("[WordSegIntegration] Phonemizer initialization returned false");
+                throw new System.Exception("Phonemizer initialization failed");
             }
             
             // Ensure word segmentation is enabled
             phonemizer.UseWordSegmentation = true;
+            Debug.Log($"[WordSegIntegration] SetUp complete. IsAvailable: {phonemizer.IsAvailable}");
         }
 
+        [Test]
+        public void BasicTest_ShouldWork()
+        {
+            // Very simple test to check if phonemizer works at all
+            var simpleText = "你好";
+            var result = phonemizer.PhonemizeAsync(simpleText, "zh").Result;
+            
+            Assert.IsNotNull(result, "Result should not be null");
+            Assert.IsTrue(result.Success, "Should succeed for simple text");
+            Assert.Greater(result.Phonemes.Length, 0, "Should produce phonemes for 你好");
+            
+            Debug.Log($"[WordSegIntegration] Basic test: '{simpleText}' → {result.Phonemes.Length} phonemes");
+        }
+        
+        [Test]
+        public void DebugDictionary_CheckCharacters()
+        {
+            // Get the dictionary through reflection or other means
+            var dict = ChineseDictionaryTestCache.GetDictionary();
+            
+            // Check specific characters
+            var testChars = new[] { '银', '行', '你', '好' };
+            
+            foreach (var ch in testChars)
+            {
+                Debug.Log($"[WordSegIntegration] Checking '{ch}' (U+{((int)ch):X4}):");
+                
+                if (dict.TryGetCharacterPinyin(ch, out var pinyin))
+                {
+                    Debug.Log($"  Found in dictionary: {string.Join(", ", pinyin)}");
+                }
+                else
+                {
+                    Debug.LogError($"  NOT FOUND in dictionary!");
+                }
+            }
+            
+            // Log dictionary statistics
+            Debug.Log($"[WordSegIntegration] Dictionary stats: {dict.CharacterCount} characters");
+        }
+        
+        [Test]
+        public void TestSpecificCharacters_ShouldWork()
+        {
+            // Test specific characters that are failing
+            var testChars = new[] { "银", "行", "中", "国" };
+            
+            foreach (var ch in testChars)
+            {
+                var result = phonemizer.PhonemizeAsync(ch, "zh").Result;
+                
+                Debug.Log($"[WordSegIntegration] Testing character '{ch}':");
+                Debug.Log($"  Success: {result.Success}");
+                Debug.Log($"  Phonemes: {result.Phonemes?.Length ?? 0}");
+                if (result.Phonemes != null && result.Phonemes.Length > 0)
+                {
+                    Debug.Log($"  Phoneme values: {string.Join(", ", result.Phonemes)}");
+                }
+                
+                Assert.IsTrue(result.Success, $"Should succeed for character '{ch}'");
+                Assert.Greater(result.Phonemes.Length, 0, $"Should produce phonemes for '{ch}'");
+            }
+        }
+        
+        [Test]
+        public void TestWithoutWordSegmentation_ShouldWork()
+        {
+            // Temporarily disable word segmentation
+            phonemizer.UseWordSegmentation = false;
+            
+            var text = "银行";
+            var result = phonemizer.PhonemizeAsync(text, "zh").Result;
+            
+            Debug.Log($"[WordSegIntegration] Testing '{text}' WITHOUT word segmentation:");
+            Debug.Log($"  Success: {result.Success}");
+            Debug.Log($"  Phonemes: {result.Phonemes?.Length ?? 0}");
+            if (result.Phonemes != null && result.Phonemes.Length > 0)
+            {
+                Debug.Log($"  Phoneme values: {string.Join(", ", result.Phonemes)}");
+            }
+            
+            // Re-enable word segmentation
+            phonemizer.UseWordSegmentation = true;
+            
+            Assert.IsTrue(result.Success, "Should succeed without word segmentation");
+            Assert.Greater(result.Phonemes.Length, 0, "Should produce phonemes without word segmentation");
+        }
+        
         [Test]
         public void WordSegmentation_ShouldImproveMultiToneHandling()
         {
@@ -62,9 +163,18 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
 
             foreach (var (text, description) in testCases)
             {
+                Debug.Log($"[WordSegIntegration] Testing: {text}");
+                
                 var result = phonemizer.PhonemizeAsync(text, "zh").Result;
                 
                 Assert.IsNotNull(result, $"Should phonemize: {text}");
+                Assert.IsTrue(result.Success, $"Phonemization should succeed for: {text}");
+                
+                if (!result.Success || result.Phonemes.Length == 0)
+                {
+                    Debug.LogError($"[WordSegIntegration] Failed for '{text}': Success={result.Success}, Phonemes={result.Phonemes?.Length ?? 0}");
+                }
+                
                 Assert.Greater(result.Phonemes.Length, 0, $"Should produce phonemes for: {text}");
                 
                 Debug.Log($"[WordSegIntegration] {description}");

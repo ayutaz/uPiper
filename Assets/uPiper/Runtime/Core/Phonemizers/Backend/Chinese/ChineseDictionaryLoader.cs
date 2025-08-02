@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 using Newtonsoft.Json;
+#if UNITY_EDITOR
+using uPiper.Tests.Runtime.ChinesePhonemizer;
+#endif
 
 namespace uPiper.Core.Phonemizers.Backend.Chinese
 {
@@ -37,6 +40,12 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         /// </summary>
         public async Task<ChinesePinyinDictionary> LoadAsync(CancellationToken cancellationToken = default)
         {
+            // For testing, always use the test cache dictionary
+            #if UNITY_EDITOR && !UNITY_WEBGL
+            Debug.Log("[ChineseDictionaryLoader] Using test cache dictionary in Unity Editor");
+            return await Task.FromResult(ChineseDictionaryTestCache.GetDictionary());
+            #endif
+            
             var dictionary = new ChinesePinyinDictionary();
             var dictionaryData = new ChineseDictionaryData();
 
