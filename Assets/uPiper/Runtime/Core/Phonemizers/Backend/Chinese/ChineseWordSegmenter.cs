@@ -268,8 +268,12 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             if (charIndex < word.Length - 1)
             {
                 context.NextChar = word[charIndex + 1];
-                // For next tone, we'd need to look ahead, which is complex
-                // So we'll use a simpler approach for now
+                // Try to get next character's tone
+                if (dictionary.TryGetCharacterPinyin(context.NextChar.Value, out var nextCharPinyin) && nextCharPinyin.Length > 0)
+                {
+                    // Use the first pronunciation's tone
+                    context.NextTone = ExtractTone(nextCharPinyin[0]);
+                }
             }
             
             // Use MultiToneProcessor to get best pronunciation
@@ -361,19 +365,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                             if (charIdx < word.Length - 1)
                             {
                                 context.NextChar = word[charIdx + 1];
-                                // Look ahead for next tone
-                                if (dictionary.TryGetCharacterPinyin(context.NextChar.Value, out var nextCharPinyin))
+                                // Look ahead for next tone - use the first available pronunciation
+                                if (dictionary.TryGetCharacterPinyin(context.NextChar.Value, out var nextCharPinyin) && nextCharPinyin.Length > 0)
                                 {
-                                    var nextContext = new PronunciationContext
-                                    {
-                                        Character = context.NextChar.Value,
-                                        PrevChar = ch
-                                    };
-                                    var nextPinyin = multiToneProcessor.GetBestPronunciation(context.NextChar.Value, nextContext);
-                                    if (!string.IsNullOrEmpty(nextPinyin))
-                                    {
-                                        context.NextTone = ExtractTone(nextPinyin);
-                                    }
+                                    context.NextTone = ExtractTone(nextCharPinyin[0]);
                                 }
                             }
                             // Or next word's first character

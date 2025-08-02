@@ -205,16 +205,20 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             // Check if it's a multi-tone character with rules
             if (multiToneRules.TryGetValue(character, out var rule))
             {
+                Debug.Log($"[MultiToneProcessor] Processing '{character}' with context: PrevChar='{context.PrevChar}', NextChar='{context.NextChar}', NextTone={context.NextTone}");
+                
                 // Apply rules in order
                 foreach (var contextRule in rule.Rules)
                 {
                     if (contextRule.Condition(context))
                     {
+                        Debug.Log($"[MultiToneProcessor] Rule matched: {contextRule.Description} → {contextRule.ResultPinyin}");
                         return contextRule.ResultPinyin;
                     }
                 }
                 
                 // Return default if no rule matches
+                Debug.Log($"[MultiToneProcessor] No rule matched, using default: {rule.DefaultPinyin}");
                 return rule.DefaultPinyin;
             }
             
