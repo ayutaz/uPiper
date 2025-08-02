@@ -304,6 +304,20 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('數', '数');  // number
             AddMapping('據', '据');  // data
             AddMapping('庫', '库');  // warehouse
+            // Additional characters for sentence tests
+            AddMapping('這', '这');  // this
+            AddMapping('個', '个');  // measure word
+            AddMapping('測', '测');  // test/measure
+            AddMapping('試', '试');  // try/test
+            AddMapping('臺', '台');  // platform/Taiwan
+            AddMapping('灣', '湾');  // bay
+            AddMapping('裡', '里');  // inside
+            AddMapping('圖', '图');  // picture
+            AddMapping('館', '馆');  // building
+            AddMapping('嗎', '吗');  // question particle
+            AddMapping('們', '们');  // plural marker
+            AddMapping('飛', '飞');  // fly
+            AddMapping('場', '场');  // place
             AddMapping('慮', '虑');  // consider
             AddMapping('憂', '忧');  // worry
             AddMapping('喜', '喜');  // happy (same)
