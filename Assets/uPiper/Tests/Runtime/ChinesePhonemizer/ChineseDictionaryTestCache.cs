@@ -40,7 +40,9 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                 
                 // Return fallback dictionary for now
                 Debug.Log("[DictionaryCache] Returning fallback dictionary to avoid loading");
-                return GetFallbackDictionary();
+                _cachedDictionary = GetFallbackDictionary();
+                Debug.Log($"[DictionaryCache] Created fallback dictionary with {_cachedDictionary.CharacterCount} characters, {_cachedDictionary.PhraseCount} phrases");
+                return _cachedDictionary;
             }
         }
         
@@ -198,7 +200,11 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     new ChineseDictionaryData.CharacterPinyinEntry { character = "目", pinyin = new[] { "mu4" } },
                     new ChineseDictionaryData.CharacterPinyinEntry { character = "书", pinyin = new[] { "shu1" } },
                     new ChineseDictionaryData.CharacterPinyinEntry { character = "小", pinyin = new[] { "xiao3" } },
-                    new ChineseDictionaryData.CharacterPinyinEntry { character = "心", pinyin = new[] { "xin1" } }
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "心", pinyin = new[] { "xin1" } },
+                    // Add missing characters for tests
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "谢", pinyin = new[] { "xie4" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "再", pinyin = new[] { "zai4" } },
+                    new ChineseDictionaryData.CharacterPinyinEntry { character = "见", pinyin = new[] { "jian4" } }
                 },
                 phraseEntries = new[]
                 {
@@ -227,7 +233,9 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     new ChineseDictionaryData.PhrasePinyinEntry { phrase = "我的", pinyin = "wo3 de5" },
                     new ChineseDictionaryData.PhrasePinyinEntry { phrase = "的确", pinyin = "di2 que4" },
                     new ChineseDictionaryData.PhrasePinyinEntry { phrase = "目的", pinyin = "mu4 di4" },
-                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "一不小心", pinyin = "yi4 bu4 xiao3 xin1" }
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "一不小心", pinyin = "yi4 bu4 xiao3 xin1" },
+                    // Add phrase for "谢谢" test
+                    new ChineseDictionaryData.PhrasePinyinEntry { phrase = "谢谢", pinyin = "xie4 xie5" }
                 },
                 pinyinIPAEntries = new[]
                 {
@@ -261,7 +269,6 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     // Additional mappings for common characters
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "de", ipa = "tɤ" },
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "le", ipa = "lɤ" },
-                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "zai", ipa = "tsai" },
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "you", ipa = "jou" },
                     // Additional IPA mappings for test characters
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "bu", ipa = "pu" },
@@ -358,12 +365,37 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "que", ipa = "tɕʰye" },
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "mu", ipa = "mu" },
                     new ChineseDictionaryData.PinyinIPAEntry { pinyin = "xiao", ipa = "ɕiau" },
-                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "xin", ipa = "ɕin" }
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "xin", ipa = "ɕin" },
+                    // Add IPA for "xie" (谢)
+                    new ChineseDictionaryData.PinyinIPAEntry { pinyin = "xie", ipa = "ɕie" }
                 },
                 wordFrequencies = new ChineseDictionaryData.WordFrequencyEntry[0]
             };
             
             dictionary.LoadFromData(data);
+            
+            // Log dictionary contents for debugging
+            Debug.Log($"[TestDictionary] Loaded {dictionary.CharacterCount} characters, {dictionary.PhraseCount} phrases, {dictionary.IPACount} IPA mappings");
+            
+            // Check if specific test characters are loaded
+            if (dictionary.TryGetCharacterPinyin('谢', out var xiePinyin))
+            {
+                Debug.Log($"[TestDictionary] Found '谢' with pinyin: {string.Join(", ", xiePinyin)}");
+            }
+            else
+            {
+                Debug.LogWarning("[TestDictionary] Character '谢' not found in dictionary!");
+            }
+            
+            if (dictionary.TryGetPhrasePinyin("谢谢", out var xieXiePinyin))
+            {
+                Debug.Log($"[TestDictionary] Found phrase '谢谢' with pinyin: {xieXiePinyin}");
+            }
+            else
+            {
+                Debug.LogWarning("[TestDictionary] Phrase '谢谢' not found in dictionary!");
+            }
+            
             return dictionary;
         }
         

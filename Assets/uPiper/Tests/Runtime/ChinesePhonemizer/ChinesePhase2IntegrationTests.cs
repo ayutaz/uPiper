@@ -24,11 +24,8 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         {
             phonemizer = new uPiper.Core.Phonemizers.Backend.ChinesePhonemizer();
             
-            // Initialize phonemizer
-            var initTask = Task.Run(async () =>
-            {
-                await phonemizer.InitializeAsync();
-            });
+            // Initialize phonemizer without Task.Run to avoid threading issues
+            var initTask = phonemizer.InitializeAsync();
             
             while (!initTask.IsCompleted)
             {
@@ -38,6 +35,11 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             if (initTask.IsFaulted)
             {
                 throw initTask.Exception?.GetBaseException() ?? new System.Exception("Phonemizer init failed");
+            }
+            
+            if (!initTask.Result)
+            {
+                throw new System.Exception("Phonemizer initialization returned false");
             }
         }
 
@@ -71,37 +73,45 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public void CharacterCoverage_ShouldBeComprehensive()
         {
             // Test coverage of different character categories
-            var testCategories = new (string name, string chars)[]
-            {
-                ("Common", "的一是了我不人在他有这个上们来到时大地为"),
-                ("Numbers", "零一二三四五六七八九十百千万亿"),
-                ("Technical", "电脑网络软件硬件数据算法程序代码系统"),
-                ("Daily", "吃饭睡觉工作学习生活家庭朋友"),
-                ("Geography", "中国美国日本英国法国德国俄罗斯"),
-                ("Culture", "文化历史艺术音乐电影文学诗歌")
-            };
-
             // Use cached fallback dictionary
             var dictionary = ChineseDictionaryTestCache.GetDictionary();
 
-            foreach (var (category, chars) in testCategories)
+            // Test Common characters
+            TestCategoryCharacters("Common", "的一是了我不人在他有这个上们来到时大地为", dictionary);
+            
+            // Test Numbers
+            TestCategoryCharacters("Numbers", "零一二三四五六七八九十百千万亿", dictionary);
+            
+            // Test Technical terms
+            TestCategoryCharacters("Technical", "电脑网络软件硬件数据算法程序代码系统", dictionary);
+            
+            // Test Daily life
+            TestCategoryCharacters("Daily", "吃饭睡觉工作学习生活家庭朋友", dictionary);
+            
+            // Test Geography
+            TestCategoryCharacters("Geography", "中国美国日本英国法国德国俄罗斯", dictionary);
+            
+            // Test Culture
+            TestCategoryCharacters("Culture", "文化历史艺术音乐电影文学诗歌", dictionary);
+        }
+        
+        private void TestCategoryCharacters(string category, string chars, ChinesePinyinDictionary dictionary)
+        {
+            int found = 0;
+            foreach (char c in chars)
             {
-                int found = 0;
-                foreach (char c in chars)
+                if (dictionary.TryGetCharacterPinyin(c, out _))
                 {
-                    if (dictionary.TryGetCharacterPinyin(c, out _))
-                    {
-                        found++;
-                    }
+                    found++;
                 }
-                
-                var coverage = found / (float)chars.Length * 100;
-                Debug.Log($"[Phase2Integration] {category} coverage: {found}/{chars.Length} ({coverage:F1}%)");
-                
-                // Should have high coverage for all categories
-                Assert.GreaterOrEqual(coverage, 90f, 
-                    $"{category} category should have >=90% coverage, but only has {coverage:F1}%");
             }
+            
+            var coverage = found / (float)chars.Length * 100;
+            Debug.Log($"[Phase2Integration] {category} coverage: {found}/{chars.Length} ({coverage:F1}%)");
+            
+            // Should have high coverage for all categories
+            Assert.GreaterOrEqual(coverage, 90f, 
+                $"{category} category should have >=90% coverage, but only has {coverage:F1}%");
         }
 
         [TearDown]

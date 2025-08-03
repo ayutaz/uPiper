@@ -34,23 +34,26 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         [Test]
         public void SegmentMaxMatch_ShouldSegmentBasicPhrases()
         {
-            var testCases = new[]
-            {
-                ("你好世界", new[] { "你好", "世界" }),
-                ("中国人", new[] { "中国", "人" }),
-                ("我是学生", new[] { "我", "是", "学", "生" }) // No "学生" in fallback dict
-            };
-
-            foreach (var (input, expected) in testCases)
-            {
-                var result = segmenter.SegmentMaxMatch(input);
-                Debug.Log($"[SegmenterTest] MaxMatch: '{input}' -> [{string.Join(", ", result)}]");
-                
-                // Check if segmentation is reasonable
-                Assert.IsNotNull(result);
-                Assert.Greater(result.Count, 0);
-                Assert.AreEqual(input, string.Join("", result), "Segmentation should preserve original text");
-            }
+            // Test case 1: 你好世界
+            var result1 = segmenter.SegmentMaxMatch("你好世界");
+            Debug.Log($"[SegmenterTest] MaxMatch: '你好世界' -> [{string.Join(", ", result1)}]");
+            Assert.IsNotNull(result1);
+            Assert.Greater(result1.Count, 0);
+            Assert.AreEqual("你好世界", string.Join("", result1));
+            
+            // Test case 2: 中国人
+            var result2 = segmenter.SegmentMaxMatch("中国人");
+            Debug.Log($"[SegmenterTest] MaxMatch: '中国人' -> [{string.Join(", ", result2)}]");
+            Assert.IsNotNull(result2);
+            Assert.Greater(result2.Count, 0);
+            Assert.AreEqual("中国人", string.Join("", result2));
+            
+            // Test case 3: 我是学生
+            var result3 = segmenter.SegmentMaxMatch("我是学生");
+            Debug.Log($"[SegmenterTest] MaxMatch: '我是学生' -> [{string.Join(", ", result3)}]");
+            Assert.IsNotNull(result3);
+            Assert.Greater(result3.Count, 0);
+            Assert.AreEqual("我是学生", string.Join("", result3));
         }
 
         [Test]
@@ -89,8 +92,10 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             Assert.Greater(result.Count, 0);
             
             Debug.Log($"[SegmenterTest] Segment with pinyin for '{text}':");
-            foreach (var (word, pinyin) in result)
+            foreach (var item in result)
             {
+                var word = item.Item1;
+                var pinyin = item.Item2;
                 Debug.Log($"  {word} -> {string.Join(" ", pinyin)}");
                 
                 // Each word should have pinyin

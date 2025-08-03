@@ -39,7 +39,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             var dictionary = new ChinesePinyinDictionary();
             
-            // For Unity Editor testing, always use fallback dictionary to avoid loading issues
+            // For Unity Editor testing, use fallback dictionary to avoid loading issues
             #if UNITY_EDITOR
             Debug.Log("[ChineseDictionaryLoader] Using fallback dictionary in Unity Editor for testing");
             LoadFallbackData(dictionary);
@@ -245,6 +245,8 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 // Basic characters
                 new ChineseDictionaryData.CharacterPinyinEntry { character = "你", pinyin = new[] { "ni3" } },
                 new ChineseDictionaryData.CharacterPinyinEntry { character = "好", pinyin = new[] { "hao3", "hao4" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "世", pinyin = new[] { "shi4" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "界", pinyin = new[] { "jie4" } },
                 new ChineseDictionaryData.CharacterPinyinEntry { character = "中", pinyin = new[] { "zhong1", "zhong4" } },
                 new ChineseDictionaryData.CharacterPinyinEntry { character = "国", pinyin = new[] { "guo2" } },
                 new ChineseDictionaryData.CharacterPinyinEntry { character = "人", pinyin = new[] { "ren2" } },
@@ -321,7 +323,11 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 new ChineseDictionaryData.CharacterPinyinEntry { character = "目", pinyin = new[] { "mu4" } },
                 new ChineseDictionaryData.CharacterPinyinEntry { character = "书", pinyin = new[] { "shu1" } },
                 new ChineseDictionaryData.CharacterPinyinEntry { character = "小", pinyin = new[] { "xiao3" } },
-                new ChineseDictionaryData.CharacterPinyinEntry { character = "心", pinyin = new[] { "xin1" } }
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "心", pinyin = new[] { "xin1" } },
+                // Add missing test characters
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "谢", pinyin = new[] { "xie4" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "再", pinyin = new[] { "zai4" } },
+                new ChineseDictionaryData.CharacterPinyinEntry { character = "见", pinyin = new[] { "jian4" } }
             };
         }
 
@@ -370,7 +376,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 new ChineseDictionaryData.PhrasePinyinEntry { phrase = "我的", pinyin = "wo3 de5" },
                 new ChineseDictionaryData.PhrasePinyinEntry { phrase = "的确", pinyin = "di2 que4" },
                 new ChineseDictionaryData.PhrasePinyinEntry { phrase = "目的", pinyin = "mu4 di4" },
-                new ChineseDictionaryData.PhrasePinyinEntry { phrase = "一不小心", pinyin = "yi4 bu4 xiao3 xin1" }
+                new ChineseDictionaryData.PhrasePinyinEntry { phrase = "一不小心", pinyin = "yi4 bu4 xiao3 xin1" },
+                // Add missing test phrases
+                new ChineseDictionaryData.PhrasePinyinEntry { phrase = "谢谢", pinyin = "xie4 xie5" },
+                new ChineseDictionaryData.PhrasePinyinEntry { phrase = "再见", pinyin = "zai4 jian4" }
             };
         }
 
@@ -408,6 +417,8 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 // Common syllables
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "ni", ipa = "ni" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "hao", ipa = "xau" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "shi", ipa = "ʂʅ" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "jie", ipa = "tɕie" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "zhong", ipa = "ʈʂʊŋ" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "guo", ipa = "kuo" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "ren", ipa = "ʐən" },
@@ -474,7 +485,11 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "que", ipa = "tɕʰye" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "mu", ipa = "mu" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "xiao", ipa = "ɕiau" },
-                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "xin", ipa = "ɕin" }
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "xin", ipa = "ɕin" },
+                // Add missing test IPA mappings
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "xie", ipa = "ɕie" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "zai", ipa = "tsai" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "jian", ipa = "tɕiɛn" }
             };
         }
     }

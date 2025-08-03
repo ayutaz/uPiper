@@ -89,8 +89,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                         }
                         else
                         {
-                            // Unknown character
-                            result.Add($"u{(int)ch:x4}"); // Unicode escape
+                            // Unknown character - fallback to the character itself
+                            // This prevents IPA converter from receiving invalid pinyin
+                            Debug.LogWarning($"[PinyinConverter] No pinyin found for character: {ch} (U+{(int)ch:X4})");
+                            result.Add(ch.ToString());
                         }
                     }
                     else
@@ -121,7 +123,9 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     else
                     {
                         // Unknown character
-                        result.Add($"u{(int)ch:x4}");
+                        // Unknown character - fallback to the character itself
+                        Debug.LogWarning($"[PinyinConverter] No pinyin found for character in phrase mode: {ch} (U+{(int)ch:X4})");
+                        result.Add(ch.ToString());
                     }
                 }
                 else

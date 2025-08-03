@@ -147,6 +147,13 @@ namespace uPiper.Core.Phonemizers.Backend
                                 
                                 foreach (var pinyin in pinyinArray)
                                 {
+                                    // Check if it's a punctuation character
+                                    if (pinyin.Length == 1 && char.IsPunctuation(pinyin[0]))
+                                    {
+                                        phonemes.Add("_");
+                                        continue;
+                                    }
+                                    
                                     if (pinyin.StartsWith("u") && pinyin.Length > 1 && pinyin.Length <= 6)
                                     {
                                         // Unicode fallback (e.g., u94f6), try to get character and retry

@@ -26,7 +26,11 @@ Assert.AreEqual("expected", result1);
 ## Status:
 - TraditionalChineseConverterTests.cs - FIXED ✓
 - TraditionalChineseIntegrationTests.cs - FIXED ✓
-- ChineseWordSegmentationIntegrationTests.cs - PARTIALLY FIXED
-- Others - PENDING
+- ChineseWordSegmentationIntegrationTests.cs - FIXED ✓
+- ChineseWordSegmenterTests.cs - FIXED ✓
+- IntegratedMultiToneTests.cs - FIXED ✓
+- ChineseTextNormalizerTests.cs - FIXED ✓
+- ChinesePhase2IntegrationTests.cs - FIXED ✓
+- MultiToneProcessorTests.cs - NOT AFFECTED ✓
 
-To run all tests safely, the remaining tuple syntax must be removed.
+All tuple syntax has been removed from Chinese test files.

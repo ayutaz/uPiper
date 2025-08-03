@@ -42,113 +42,125 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public void ToneSandhi_Bu_ShouldChange()
         {
             // Test 不 tone sandhi
-            var testCases = new[]
-            {
-                // 不 + 4th tone → bu2
-                (new PronunciationContext { Character = '不', NextTone = 4 }, "bu2"),
-                // 不 + other tones → bu4
-                (new PronunciationContext { Character = '不', NextTone = 1 }, "bu4"),
-                (new PronunciationContext { Character = '不', NextTone = 2 }, "bu4"),
-                (new PronunciationContext { Character = '不', NextTone = 3 }, "bu4"),
-                (new PronunciationContext { Character = '不' }, "bu4") // No context
-            };
-
-            foreach (var (context, expected) in testCases)
-            {
-                var result = processor.GetBestPronunciation('不', context);
-                Assert.AreEqual(expected, result, 
-                    $"不 with next tone {context.NextTone} should be {expected}");
-            }
+            
+            // 不 + 4th tone → bu2
+            var context1 = new PronunciationContext { Character = '不', NextTone = 4 };
+            var result1 = processor.GetBestPronunciation('不', context1);
+            Assert.AreEqual("bu2", result1);
+            
+            // 不 + 1st tone → bu4
+            var context2 = new PronunciationContext { Character = '不', NextTone = 1 };
+            var result2 = processor.GetBestPronunciation('不', context2);
+            Assert.AreEqual("bu4", result2);
+            
+            // 不 + 2nd tone → bu4
+            var context3 = new PronunciationContext { Character = '不', NextTone = 2 };
+            var result3 = processor.GetBestPronunciation('不', context3);
+            Assert.AreEqual("bu4", result3);
+            
+            // 不 + 3rd tone → bu4
+            var context4 = new PronunciationContext { Character = '不', NextTone = 3 };
+            var result4 = processor.GetBestPronunciation('不', context4);
+            Assert.AreEqual("bu4", result4);
+            
+            // No context → bu4
+            var context5 = new PronunciationContext { Character = '不' };
+            var result5 = processor.GetBestPronunciation('不', context5);
+            Assert.AreEqual("bu4", result5);
         }
 
         [Test]
         public void ToneSandhi_Yi_ShouldChange()
         {
             // Test 一 tone sandhi
-            var testCases = new[]
-            {
-                // 一 + 4th tone → yi2
-                (new PronunciationContext { Character = '一', NextTone = 4 }, "yi2"),
-                // 一 + 1st/2nd/3rd tone → yi4
-                (new PronunciationContext { Character = '一', NextTone = 1 }, "yi4"),
-                (new PronunciationContext { Character = '一', NextTone = 2 }, "yi4"),
-                (new PronunciationContext { Character = '一', NextTone = 3 }, "yi4"),
-                // Default
-                (new PronunciationContext { Character = '一' }, "yi1")
-            };
-
-            foreach (var (context, expected) in testCases)
-            {
-                var result = processor.GetBestPronunciation('一', context);
-                Assert.AreEqual(expected, result, 
-                    $"一 with next tone {context.NextTone} should be {expected}");
-            }
+            
+            // 一 + 4th tone → yi2
+            var context1 = new PronunciationContext { Character = '一', NextTone = 4 };
+            var result1 = processor.GetBestPronunciation('一', context1);
+            Assert.AreEqual("yi2", result1);
+            
+            // 一 + 1st tone → yi4
+            var context2 = new PronunciationContext { Character = '一', NextTone = 1 };
+            var result2 = processor.GetBestPronunciation('一', context2);
+            Assert.AreEqual("yi4", result2);
+            
+            // 一 + 2nd tone → yi4
+            var context3 = new PronunciationContext { Character = '一', NextTone = 2 };
+            var result3 = processor.GetBestPronunciation('一', context3);
+            Assert.AreEqual("yi4", result3);
+            
+            // 一 + 3rd tone → yi4
+            var context4 = new PronunciationContext { Character = '一', NextTone = 3 };
+            var result4 = processor.GetBestPronunciation('一', context4);
+            Assert.AreEqual("yi4", result4);
+            
+            // Default → yi1
+            var context5 = new PronunciationContext { Character = '一' };
+            var result5 = processor.GetBestPronunciation('一', context5);
+            Assert.AreEqual("yi1", result5);
         }
 
         [Test]
         public void MultiTone_De_ShouldSelectByContext()
         {
             // Test 的 pronunciation selection
-            var testCases = new[]
-            {
-                // 的确 → di2
-                (new PronunciationContext { Character = '的', NextChar = '确' }, "di2"),
-                // 目的 → di4
-                (new PronunciationContext { Character = '的', PrevChar = '目' }, "di4"),
-                // Default possessive → de5
-                (new PronunciationContext { Character = '的' }, "de5")
-            };
-
-            foreach (var (context, expected) in testCases)
-            {
-                var result = processor.GetBestPronunciation('的', context);
-                Assert.AreEqual(expected, result, 
-                    $"的 in context should be {expected}");
-            }
+            
+            // 的确 → di2
+            var context1 = new PronunciationContext { Character = '的', NextChar = '确' };
+            var result1 = processor.GetBestPronunciation('的', context1);
+            Assert.AreEqual("di2", result1);
+            
+            // 目的 → di4
+            var context2 = new PronunciationContext { Character = '的', PrevChar = '目' };
+            var result2 = processor.GetBestPronunciation('的', context2);
+            Assert.AreEqual("di4", result2);
+            
+            // Default possessive → de5
+            var context3 = new PronunciationContext { Character = '的' };
+            var result3 = processor.GetBestPronunciation('的', context3);
+            Assert.AreEqual("de5", result3);
         }
 
         [Test]
         public void MultiTone_Le_ShouldSelectByContext()
         {
             // Test 了 pronunciation selection
-            var testCases = new[]
-            {
-                // 了解 → liao3
-                (new PronunciationContext { Character = '了', NextChar = '解' }, "liao3"),
-                // 为了 → liao3
-                (new PronunciationContext { Character = '了', PrevChar = '为' }, "liao3"),
-                // Default aspectual particle → le5
-                (new PronunciationContext { Character = '了' }, "le5")
-            };
-
-            foreach (var (context, expected) in testCases)
-            {
-                var result = processor.GetBestPronunciation('了', context);
-                Assert.AreEqual(expected, result, 
-                    $"了 in context should be {expected}");
-            }
+            
+            // 了解 → liao3
+            var context1 = new PronunciationContext { Character = '了', NextChar = '解' };
+            var result1 = processor.GetBestPronunciation('了', context1);
+            Assert.AreEqual("liao3", result1);
+            
+            // 为了 → liao3
+            var context2 = new PronunciationContext { Character = '了', PrevChar = '为' };
+            var result2 = processor.GetBestPronunciation('了', context2);
+            Assert.AreEqual("liao3", result2);
+            
+            // Default aspectual particle → le5
+            var context3 = new PronunciationContext { Character = '了' };
+            var result3 = processor.GetBestPronunciation('了', context3);
+            Assert.AreEqual("le5", result3);
         }
 
         [Test]
         public void MultiTone_Xing_ShouldSelectByContext()
         {
             // Test 行 pronunciation selection
-            var testCases = new[]
-            {
-                // 银行 → hang2
-                (new PronunciationContext { Character = '行', PrevChar = '银' }, "hang2"),
-                // 行业 → hang2
-                (new PronunciationContext { Character = '行', NextChar = '业' }, "hang2"),
-                // Default (to walk, OK) → xing2
-                (new PronunciationContext { Character = '行' }, "xing2")
-            };
-
-            foreach (var (context, expected) in testCases)
-            {
-                var result = processor.GetBestPronunciation('行', context);
-                Assert.AreEqual(expected, result, 
-                    $"行 in context should be {expected}");
-            }
+            
+            // 银行 → hang2
+            var context1 = new PronunciationContext { Character = '行', PrevChar = '银' };
+            var result1 = processor.GetBestPronunciation('行', context1);
+            Assert.AreEqual("hang2", result1);
+            
+            // 行业 → hang2
+            var context2 = new PronunciationContext { Character = '行', NextChar = '业' };
+            var result2 = processor.GetBestPronunciation('行', context2);
+            Assert.AreEqual("hang2", result2);
+            
+            // Default (to walk, OK) → xing2
+            var context3 = new PronunciationContext { Character = '行' };
+            var result3 = processor.GetBestPronunciation('行', context3);
+            Assert.AreEqual("xing2", result3);
         }
 
         [Test]

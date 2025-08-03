@@ -225,7 +225,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                         }
                         else
                         {
-                            pinyinList.Add($"u{(int)ch:x}"); // Unicode fallback
+                            // Unknown character - fallback to the character itself
+                            // This prevents IPA converter from receiving invalid pinyin
+                            Debug.LogWarning($"[ChineseWordSegmenter] No pinyin found for character: {ch} (U+{(int)ch:X4})");
+                            pinyinList.Add(ch.ToString());
                         }
                     }
                     pinyin = pinyinList.ToArray();
@@ -421,7 +424,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                         }
                         else
                         {
-                            pinyinList.Add($"u{(int)ch:x}"); // Unicode fallback
+                            // Unknown character - fallback to the character itself
+                            // This prevents IPA converter from receiving invalid pinyin
+                            Debug.LogWarning($"[ChineseWordSegmenter] No pinyin found for character: {ch} (U+{(int)ch:X4})");
+                            pinyinList.Add(ch.ToString());
                         }
                     }
                     
