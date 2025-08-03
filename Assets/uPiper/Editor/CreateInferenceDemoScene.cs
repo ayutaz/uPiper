@@ -73,7 +73,7 @@ namespace uPiper.Editor
             titleGO.transform.SetParent(panelGO.transform, false);
             var titleText = titleGO.AddComponent<TextMeshProUGUI>();
             titleText.text = "Piper-Plus TTS (Unity) - InferenceEngine Demo";
-            titleText.fontSize = 36;
+            titleText.fontSize = 48;
             titleText.color = Color.white;
             titleText.alignment = TextAlignmentOptions.Center;
             // フォントはTMP Settingsのデフォルトを使用（プロジェクト側で日本語フォントを設定）
@@ -88,7 +88,7 @@ namespace uPiper.Editor
             modelLabelGO.transform.SetParent(panelGO.transform, false);
             var modelLabel = modelLabelGO.AddComponent<TextMeshProUGUI>();
             modelLabel.text = "Model:";
-            modelLabel.fontSize = 20;
+            modelLabel.fontSize = 24;
             modelLabel.color = Color.white;
             var modelLabelRect = modelLabelGO.GetComponent<RectTransform>();
             modelLabelRect.anchorMin = new Vector2(0.1f, 0.78f);
@@ -175,7 +175,7 @@ namespace uPiper.Editor
             itemLabelGO.transform.SetParent(itemGO.transform, false);
             var itemLabel = itemLabelGO.AddComponent<TextMeshProUGUI>();
             itemLabel.text = "Option";
-            itemLabel.fontSize = 18;
+            itemLabel.fontSize = 20;
             itemLabel.color = Color.black;
             var itemLabelRect = itemLabelGO.GetComponent<RectTransform>();
             itemLabelRect.anchorMin = Vector2.zero;
@@ -237,7 +237,7 @@ namespace uPiper.Editor
             labelGO.transform.SetParent(dropdownGO.transform, false);
             var labelText = labelGO.AddComponent<TextMeshProUGUI>();
             labelText.text = "ja_JP-test-medium";
-            labelText.fontSize = 18;
+            labelText.fontSize = 22;
             labelText.color = Color.white;
             labelText.alignment = TextAlignmentOptions.MidlineLeft;
             var labelRect = labelGO.GetComponent<RectTransform>();
@@ -251,7 +251,7 @@ namespace uPiper.Editor
             arrowGO.transform.SetParent(dropdownGO.transform, false);
             var arrowText = arrowGO.AddComponent<TextMeshProUGUI>();
             arrowText.text = "▼";
-            arrowText.fontSize = 18;
+            arrowText.fontSize = 20;
             arrowText.color = Color.white;
             var arrowRect = arrowGO.GetComponent<RectTransform>();
             arrowRect.anchorMin = new Vector2(1, 0.5f);
@@ -278,7 +278,7 @@ namespace uPiper.Editor
             phraseLabelGO.transform.SetParent(panelGO.transform, false);
             var phraseLabel = phraseLabelGO.AddComponent<TextMeshProUGUI>();
             phraseLabel.text = "Phrase:";
-            phraseLabel.fontSize = 20;
+            phraseLabel.fontSize = 24;
             phraseLabel.color = Color.white;
             var phraseLabelRect = phraseLabelGO.GetComponent<RectTransform>();
             phraseLabelRect.anchorMin = new Vector2(0.1f, 0.68f);
@@ -299,7 +299,7 @@ namespace uPiper.Editor
             gpuSectionLabelGO.transform.SetParent(panelGO.transform, false);
             var gpuSectionLabel = gpuSectionLabelGO.AddComponent<TextMeshProUGUI>();
             gpuSectionLabel.text = "GPU Inference Settings";
-            gpuSectionLabel.fontSize = 24;
+            gpuSectionLabel.fontSize = 28;
             gpuSectionLabel.color = Color.cyan;
             gpuSectionLabel.fontStyle = FontStyles.Bold;
             var gpuSectionLabelRect = gpuSectionLabelGO.GetComponent<RectTransform>();
@@ -313,7 +313,7 @@ namespace uPiper.Editor
             backendLabelGO.transform.SetParent(panelGO.transform, false);
             var backendLabel = backendLabelGO.AddComponent<TextMeshProUGUI>();
             backendLabel.text = "Backend:";
-            backendLabel.fontSize = 18;
+            backendLabel.fontSize = 22;
             backendLabel.color = Color.white;
             var backendLabelRect = backendLabelGO.GetComponent<RectTransform>();
             backendLabelRect.anchorMin = new Vector2(0.1f, 0.50f);
@@ -340,7 +340,7 @@ namespace uPiper.Editor
             backendInfoGO.transform.SetParent(panelGO.transform, false);
             var backendInfoText = backendInfoGO.AddComponent<TextMeshProUGUI>();
             backendInfoText.text = "Backend: (Not initialized)";
-            backendInfoText.fontSize = 16;
+            backendInfoText.fontSize = 20;
             backendInfoText.color = new Color(0.8f, 0.8f, 0.8f);
             backendInfoText.alignment = TextAlignmentOptions.MidlineLeft;
             var backendInfoRect = backendInfoGO.GetComponent<RectTransform>();
@@ -354,7 +354,7 @@ namespace uPiper.Editor
             inputLabelGO.transform.SetParent(panelGO.transform, false);
             var inputLabel = inputLabelGO.AddComponent<TextMeshProUGUI>();
             inputLabel.text = "Text:";
-            inputLabel.fontSize = 20;
+            inputLabel.fontSize = 24;
             inputLabel.color = Color.white;
             var inputLabelRect = inputLabelGO.GetComponent<RectTransform>();
             inputLabelRect.anchorMin = new Vector2(0.1f, 0.38f);
@@ -387,7 +387,7 @@ namespace uPiper.Editor
             placeholderGO.transform.SetParent(textAreaGO.transform, false);
             var placeholderText = placeholderGO.AddComponent<TextMeshProUGUI>();
             placeholderText.text = "Enter text...";
-            placeholderText.fontSize = 18;
+            placeholderText.fontSize = 22;
             placeholderText.color = new Color(0.5f, 0.5f, 0.5f, 0.5f);
             var placeholderRect = placeholderGO.GetComponent<RectTransform>();
             placeholderRect.anchorMin = Vector2.zero;
@@ -399,7 +399,7 @@ namespace uPiper.Editor
             var inputTextGO = new GameObject("Text", typeof(RectTransform));
             inputTextGO.transform.SetParent(textAreaGO.transform, false);
             var inputText = inputTextGO.AddComponent<TextMeshProUGUI>();
-            inputText.fontSize = 18;
+            inputText.fontSize = 22;
             inputText.color = Color.black;
             inputText.richText = false;
             var inputTextRect = inputTextGO.GetComponent<RectTransform>();
@@ -431,7 +431,7 @@ namespace uPiper.Editor
             buttonTextGO.transform.SetParent(buttonGO.transform, false);
             var buttonText = buttonTextGO.AddComponent<TextMeshProUGUI>();
             buttonText.text = "Generate";
-            buttonText.fontSize = 24;
+            buttonText.fontSize = 28;
             buttonText.color = Color.white;
             buttonText.alignment = TextAlignmentOptions.Center;
             var buttonTextRect = buttonTextGO.GetComponent<RectTransform>();
@@ -445,7 +445,7 @@ namespace uPiper.Editor
             statusGO.transform.SetParent(panelGO.transform, false);
             var statusText = statusGO.AddComponent<TextMeshProUGUI>();
             statusText.text = "Ready";
-            statusText.fontSize = 18;
+            statusText.fontSize = 22;
             statusText.color = Color.yellow;
             statusText.alignment = TextAlignmentOptions.Center;
             var statusRect = statusGO.GetComponent<RectTransform>();
@@ -459,7 +459,7 @@ namespace uPiper.Editor
             phonemeDetailsGO.transform.SetParent(panelGO.transform, false);
             var phonemeDetailsText = phonemeDetailsGO.AddComponent<TextMeshProUGUI>();
             phonemeDetailsText.text = "";
-            phonemeDetailsText.fontSize = 14;
+            phonemeDetailsText.fontSize = 18;
             phonemeDetailsText.color = new Color(0.8f, 0.8f, 0.8f);
             phonemeDetailsText.alignment = TextAlignmentOptions.MidlineLeft;
             var phonemeDetailsRect = phonemeDetailsGO.GetComponent<RectTransform>();
@@ -484,6 +484,10 @@ namespace uPiper.Editor
             serializedObject.FindProperty("_phonemeDetailsText").objectReferenceValue = phonemeDetailsText;
             serializedObject.FindProperty("_backendDropdown").objectReferenceValue = backendDropdown;
             serializedObject.FindProperty("_backendInfoText").objectReferenceValue = backendInfoText;
+
+            // フォントアセットを自動設定
+            SetupFontAssets(serializedObject);
+
             serializedObject.ApplyModifiedProperties();
 
             // シーンを保存
@@ -573,7 +577,7 @@ namespace uPiper.Editor
             itemLabelGO.transform.SetParent(itemGO.transform, false);
             var itemLabel = itemLabelGO.AddComponent<TextMeshProUGUI>();
             itemLabel.text = "Option";
-            itemLabel.fontSize = 18;
+            itemLabel.fontSize = 20;
             itemLabel.color = Color.black;
             var itemLabelRect = itemLabelGO.GetComponent<RectTransform>();
             itemLabelRect.anchorMin = Vector2.zero;
@@ -643,7 +647,7 @@ namespace uPiper.Editor
             labelGO.transform.SetParent(dropdownGO.transform, false);
             var label = labelGO.AddComponent<TextMeshProUGUI>();
             label.text = "Option A";
-            label.fontSize = 18;
+            label.fontSize = 20;
             label.color = Color.white;
             var labelRect = labelGO.GetComponent<RectTransform>();
             labelRect.anchorMin = Vector2.zero;
@@ -656,7 +660,7 @@ namespace uPiper.Editor
             arrowGO.transform.SetParent(dropdownGO.transform, false);
             var arrowText = arrowGO.AddComponent<TextMeshProUGUI>();
             arrowText.text = "▼";
-            arrowText.fontSize = 18;
+            arrowText.fontSize = 20;
             arrowText.color = Color.white;
             var arrowRect = arrowGO.GetComponent<RectTransform>();
             arrowRect.anchorMin = new Vector2(1, 0.5f);
@@ -670,6 +674,91 @@ namespace uPiper.Editor
             templateGO.SetActive(false);
 
             return dropdownGO;
+        }
+
+        private static void SetupFontAssets(SerializedObject serializedObject)
+        {
+            // フォントアセットを検索
+            var fontAssets = AssetDatabase.FindAssets("t:TMP_FontAsset");
+
+            TMP_FontAsset defaultFont = null;
+            TMP_FontAsset defaultFallbackFont = null;
+            TMP_FontAsset japaneseFont = null;
+            TMP_FontAsset chineseFont = null;
+
+            foreach (var guid in fontAssets)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(path);
+
+                if (fontAsset == null) continue;
+
+                var fontName = fontAsset.name.ToLower();
+
+                // デフォルトフォントの検出（LiberationSansなど）
+                if (fontName.Contains("liberation") || fontName.Contains("default"))
+                {
+                    if (fontName.Contains("fallback"))
+                    {
+                        defaultFallbackFont = fontAsset;
+                    }
+                    else
+                    {
+                        defaultFont = fontAsset;
+                    }
+                }
+                // 日本語フォントの検出
+                else if (fontName.Contains("notosansjp") || fontName.Contains("japanese") ||
+                         fontName.Contains("jp") && !fontName.Contains("cjk"))
+                {
+                    japaneseFont = fontAsset;
+                }
+                // 中国語フォントの検出
+                else if (fontName.Contains("notosanssc") || fontName.Contains("chinese") ||
+                         fontName.Contains("cn") || fontName.Contains("sc"))
+                {
+                    chineseFont = fontAsset;
+                }
+            }
+
+            // フォールバック付きフォントがある場合は、それをデフォルトとして使用
+            if (defaultFallbackFont != null && defaultFont == null)
+            {
+                defaultFont = defaultFallbackFont;
+            }
+
+            // フォントアセットを設定
+            if (defaultFont != null)
+            {
+                serializedObject.FindProperty("_defaultFontAsset").objectReferenceValue = defaultFont;
+                Debug.Log($"[CreateInferenceDemoScene] Default font set to: {defaultFont.name}");
+            }
+
+            if (japaneseFont != null)
+            {
+                serializedObject.FindProperty("_japaneseFontAsset").objectReferenceValue = japaneseFont;
+                Debug.Log($"[CreateInferenceDemoScene] Japanese font set to: {japaneseFont.name}");
+            }
+            else
+            {
+                Debug.LogWarning("[CreateInferenceDemoScene] Japanese font not found. Please set manually.");
+            }
+
+            if (chineseFont != null)
+            {
+                serializedObject.FindProperty("_chineseFontAsset").objectReferenceValue = chineseFont;
+                Debug.Log($"[CreateInferenceDemoScene] Chinese font set to: {chineseFont.name}");
+            }
+            else
+            {
+                Debug.LogWarning("[CreateInferenceDemoScene] Chinese font not found. Please set manually.");
+            }
+
+            // デフォルトフォントが見つからない場合の警告
+            if (defaultFont == null)
+            {
+                Debug.LogWarning("[CreateInferenceDemoScene] Default font not found. Using TextMeshPro default settings.");
+            }
         }
     }
 }

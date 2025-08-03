@@ -119,7 +119,6 @@ namespace uPiper.Demo
         [Header("UI References")]
         [SerializeField] private TMP_InputField _inputField;
         [SerializeField] private Button _generateButton;
-        [SerializeField] private Button _inferenceButton; // Add for Android auto-test
         [SerializeField] private TextMeshProUGUI _statusText;
         [SerializeField] private AudioSource _audioSource;
         [SerializeField] private TMP_Dropdown _modelDropdown;
@@ -133,6 +132,11 @@ namespace uPiper.Demo
         [Header("Settings")]
         [SerializeField] private string _defaultJapaneseText = "";  // Will be set in Start()
         [SerializeField] private string _defaultEnglishText = "Hello world";
+
+        [Header("Font Settings")]
+        [SerializeField] private TMP_FontAsset _chineseFontAsset;
+        [SerializeField] private TMP_FontAsset _japaneseFontAsset;
+        [SerializeField] private TMP_FontAsset _defaultFontAsset;
 
         private InferenceAudioGenerator _generator;
         private PhonemeEncoder _encoder;
@@ -176,6 +180,9 @@ namespace uPiper.Demo
             // Set default Japanese text from UTF-8 bytes to avoid encoding issues
             var konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
             _defaultJapaneseText = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
+
+            // Setup Chinese font as fallback
+            SetupChineseFontFallback();
 
             // Initialize Japanese test phrases from UTF-8 bytes
             _japaneseTestPhrases = new List<string>
@@ -304,6 +311,131 @@ namespace uPiper.Demo
             SetStatus("準備完了");
         }
 
+        private void SetupChineseFontFallback()
+        {
+            // Store default font if not set
+            if (_defaultFontAsset == null && _inputField != null)
+            {
+                _defaultFontAsset = _inputField.fontAsset;
+            }
+
+            // Setup font fallback chain for multi-language support
+            SetupFontFallbackChain();
+        }
+
+        private void SetupFontFallbackChain()
+        {
+            // Create a fallback chain: Default -> Japanese -> Chinese
+            if (_defaultFontAsset != null)
+            {
+                if (_defaultFontAsset.fallbackFontAssetTable == null)
+                {
+                    _defaultFontAsset.fallbackFontAssetTable = new List<TMP_FontAsset>();
+                }
+
+                // Add Japanese font as fallback if available and not already present
+                if (_japaneseFontAsset != null && !_defaultFontAsset.fallbackFontAssetTable.Contains(_japaneseFontAsset))
+                {
+                    _defaultFontAsset.fallbackFontAssetTable.Add(_japaneseFontAsset);
+                    PiperLogger.LogInfo($"[InferenceEngineDemo] Added Japanese font as fallback to default font");
+                }
+
+                // Add Chinese font as fallback if available and not already present
+                if (_chineseFontAsset != null && !_defaultFontAsset.fallbackFontAssetTable.Contains(_chineseFontAsset))
+                {
+                    _defaultFontAsset.fallbackFontAssetTable.Add(_chineseFontAsset);
+                    PiperLogger.LogInfo($"[InferenceEngineDemo] Added Chinese font as fallback to default font");
+                }
+            }
+
+            // Also setup Japanese font to have Chinese as fallback
+            if (_japaneseFontAsset != null && _chineseFontAsset != null)
+            {
+                if (_japaneseFontAsset.fallbackFontAssetTable == null)
+                {
+                    _japaneseFontAsset.fallbackFontAssetTable = new List<TMP_FontAsset>();
+                }
+
+                if (!_japaneseFontAsset.fallbackFontAssetTable.Contains(_chineseFontAsset))
+                {
+                    _japaneseFontAsset.fallbackFontAssetTable.Add(_chineseFontAsset);
+                    PiperLogger.LogInfo($"[InferenceEngineDemo] Added Chinese font as fallback to Japanese font");
+                }
+            }
+        }
+
+        private void ApplyChineseFont()
+        {
+            ApplyLanguageFont("zh");
+        }
+
+        private void ApplyLanguageFont(string language)
+        {
+            TMP_FontAsset targetFont = null;
+
+            // Select appropriate font based on language
+            switch (language)
+            {
+                case "ja":
+                    targetFont = _japaneseFontAsset ?? _defaultFontAsset;
+                    break;
+                case "zh":
+                    targetFont = _chineseFontAsset ?? _defaultFontAsset;
+                    break;
+                case "en":
+                default:
+                    targetFont = _defaultFontAsset;
+                    break;
+            }
+
+            if (targetFont == null)
+            {
+                PiperLogger.LogWarning($"[InferenceEngineDemo] No font available for language: {language}");
+                return;
+            }
+
+            // Apply font to all text components
+            ApplyFontToUIElements(targetFont);
+            PiperLogger.LogInfo($"[InferenceEngineDemo] Applied {targetFont.name} font for language: {language}");
+        }
+
+        private void ApplyFontToUIElements(TMP_FontAsset font)
+        {
+            // Apply font to input field
+            if (_inputField != null)
+            {
+                _inputField.fontAsset = font;
+            }
+
+            // Apply font to phrase dropdown
+            if (_phraseDropdown != null)
+            {
+                var dropdownText = _phraseDropdown.captionText;
+                if (dropdownText != null)
+                {
+                    dropdownText.font = font;
+                }
+
+                var itemText = _phraseDropdown.itemText;
+                if (itemText != null)
+                {
+                    itemText.font = font;
+                }
+            }
+
+            // Apply font to status text
+            if (_statusText != null)
+            {
+                _statusText.font = font;
+            }
+
+            // Apply font to phoneme details text  
+            if (_phonemeDetailsText != null)
+            {
+                _phonemeDetailsText.font = font;
+            }
+        }
+
         private void OnDestroy()
         {
             // Unsubscribe from audio configuration changes
@@ -419,6 +551,9 @@ namespace uPiper.Demo
 
                     if (_inputField != null)
                         _inputField.text = _defaultJapaneseText;
+
+                    // Apply Japanese font
+                    ApplyLanguageFont("ja");
                 }
                 else if (language == "zh")
                 {
@@ -435,6 +570,9 @@ namespace uPiper.Demo
 
                     if (_inputField != null)
                         _inputField.text = "你好";
+
+                    // Apply Chinese font to UI elements if available
+                    ApplyLanguageFont("zh");
                 }
                 else
                 {
@@ -451,6 +589,9 @@ namespace uPiper.Demo
 
                     if (_inputField != null)
                         _inputField.text = _defaultEnglishText;
+
+                    // Apply English/default font
+                    ApplyLanguageFont("en");
                 }
                 PiperLogger.LogInfo($"[OnModelChanged] Phrase dropdown now has {_phraseDropdown.options.Count} options");
                 _phraseDropdown.value = 1; // デフォルトフレーズを選択
