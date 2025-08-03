@@ -226,8 +226,8 @@ namespace uPiper.Editor
                 _phonemizer = new OpenJTalkPhonemizer();
                 _statusMessage = "OpenJTalkPhonemizer initialized successfully (Native Mode)";
 #else
-                _phonemizer = new MockPhonemizer();
-                _statusMessage = "MockPhonemizer initialized (WebGL fallback)";
+                _phonemizer = null;
+                _statusMessage = "OpenJTalk not available on WebGL platform. Build for WebGL to use WebAssembly-based phonemization.";
 #endif
 
                 Repaint();

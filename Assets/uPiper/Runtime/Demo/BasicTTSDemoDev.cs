@@ -7,7 +7,7 @@ using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Backend;
-#if !UNITY_WEBGL || (UNITY_WEBGL && UNITY_EDITOR)
+#if !UNITY_WEBGL
 using uPiper.Core.Phonemizers.Implementations;
 #endif
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -63,13 +63,13 @@ namespace uPiper.Demo
             _phonemizer = new WebGLOpenJTalkPhonemizer();
             UpdateStatus("Using WebGLOpenJTalkPhonemizer");
 #elif UNITY_WEBGL && UNITY_EDITOR
-            // In Unity Editor with WebGL platform selected - use MockPhonemizer for testing
-            _phonemizer = new MockPhonemizer();
-            UpdateStatus("Using MockPhonemizer in Editor (WebGL phonemizer not available in Editor)");
+            // In Unity Editor with WebGL platform selected
+            _phonemizer = null;
+            UpdateStatus("Phonemizer not available in Editor with WebGL platform. Build for WebGL to test.");
 #elif UNITY_IOS
-            // Use MockPhonemizer for iOS (no native library support)
-            _phonemizer = new MockPhonemizer();
-            UpdateStatus("Using MockPhonemizer (no native library support on iOS)");
+            // iOS is not supported
+            _phonemizer = null;
+            UpdateStatus("iOS platform is not supported");
 #else
             // Use OpenJTalkPhonemizer for desktop platforms
             try
@@ -80,8 +80,8 @@ namespace uPiper.Demo
             catch (System.Exception e)
             {
                 Debug.LogError($"Failed to initialize OpenJTalkPhonemizer: {e.Message}");
-                _phonemizer = new MockPhonemizer();
-                UpdateStatus("Falling back to MockPhonemizer");
+                _phonemizer = null;
+                UpdateStatus("Failed to initialize phonemizer");
             }
 #endif
 
@@ -143,6 +143,16 @@ namespace uPiper.Demo
 
             var text = _inputField.text.Trim();
             UpdateStatus($"Processing: {text}");
+
+            // Check if phonemizer is available
+            if (_phonemizer == null)
+            {
+                UpdateStatus("Phonemizer not available on this platform", Color.red);
+                _isProcessing = false;
+                if (_generateButton != null)
+                    _generateButton.interactable = true;
+                yield break;
+            }
 
             // Phonemize text
             var phonemizeTask = _phonemizer.PhonemizeAsync(text);
