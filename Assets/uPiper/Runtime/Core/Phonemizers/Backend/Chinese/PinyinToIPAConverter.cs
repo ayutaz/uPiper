@@ -98,7 +98,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             var phonemes = new List<string>();
 
             // Split IPA into individual phonemes
-            var ipaPhonemes = SplitIPA(ipa);
+            var ipaPhonemes = SplitIPA(ipa, useESpeakFormat);
             phonemes.AddRange(ipaPhonemes);
 
             // Add tone mark if applicable
@@ -122,7 +122,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             return phonemes.ToArray();
         }
 
-        private string[] SplitIPA(string ipa)
+        private string[] SplitIPA(string ipa, bool useESpeakFormat = false)
         {
             // Advanced IPA splitting logic
             var phonemes = new List<string>();
@@ -136,9 +136,24 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 if (i < ipa.Length - 1)
                 {
                     var twoChar = ipa.Substring(i, 2);
+                    
+                    // For eSpeak format, split diphthongs into individual vowels
+                    if (useESpeakFormat && IsVowelDiphthong(twoChar))
+                    {
+                        if (current.Length > 0)
+                        {
+                            phonemes.Add(current.ToString());
+                            current.Clear();
+                        }
+                        // Split diphthong into individual vowels for eSpeak
+                        phonemes.Add(twoChar[0].ToString());
+                        phonemes.Add(twoChar[1].ToString());
+                        i++; // Skip next character
+                        continue;
+                    }
 
                     // Common two-character IPA symbols in Chinese
-                    if (IsDigraph(twoChar))
+                    if (!useESpeakFormat && IsDigraph(twoChar))
                     {
                         if (current.Length > 0)
                         {
