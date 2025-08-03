@@ -66,10 +66,10 @@ namespace uPiper.Demo
             // In Unity Editor with WebGL platform selected - use MockPhonemizer for testing
             _phonemizer = new MockPhonemizer();
             UpdateStatus("Using MockPhonemizer in Editor (WebGL phonemizer not available in Editor)");
-#elif UNITY_ANDROID || UNITY_IOS
-            // Use MockPhonemizer for mobile platforms
+#elif UNITY_IOS
+            // Use MockPhonemizer for iOS (no native library support)
             _phonemizer = new MockPhonemizer();
-            UpdateStatus("Using MockPhonemizer (no native library support on this platform)");
+            UpdateStatus("Using MockPhonemizer (no native library support on iOS)");
 #else
             // Use OpenJTalkPhonemizer for desktop platforms
             try
