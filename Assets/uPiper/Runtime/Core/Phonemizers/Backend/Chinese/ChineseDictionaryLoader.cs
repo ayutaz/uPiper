@@ -43,8 +43,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             #if UNITY_EDITOR
             Debug.Log("[ChineseDictionaryLoader] Using fallback dictionary in Unity Editor for testing");
             LoadFallbackData(dictionary);
+            // Add minimal async operation to avoid compiler warning
+            await Task.CompletedTask;
             return dictionary;
-            #endif
+            #else
             
             var dictionaryData = new ChineseDictionaryData();
 
@@ -100,6 +102,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 LoadFallbackData(dictionary);
                 return dictionary;
             }
+            #endif
         }
 
         private async Task<object> LoadCharacterDictionary(CancellationToken cancellationToken)
