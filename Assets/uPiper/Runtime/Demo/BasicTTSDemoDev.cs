@@ -7,8 +7,11 @@ using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Backend;
-#if !UNITY_WEBGL
+#if !UNITY_WEBGL || (UNITY_WEBGL && UNITY_EDITOR)
 using uPiper.Core.Phonemizers.Implementations;
+#endif
+#if UNITY_WEBGL && !UNITY_EDITOR
+using uPiper.Core.Phonemizers.WebGL;
 #endif
 
 namespace uPiper.Demo
@@ -55,8 +58,16 @@ namespace uPiper.Demo
                 _generateButton.interactable = false;
 
             // Initialize phonemizer
-#if UNITY_WEBGL || UNITY_ANDROID || UNITY_IOS
-            // Use MockPhonemizer for platforms without native library support
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // Use WebGL phonemizer for WebGL builds
+            _phonemizer = new WebGLOpenJTalkPhonemizer();
+            UpdateStatus("Using WebGLOpenJTalkPhonemizer");
+#elif UNITY_WEBGL && UNITY_EDITOR
+            // In Unity Editor with WebGL platform selected - use MockPhonemizer for testing
+            _phonemizer = new MockPhonemizer();
+            UpdateStatus("Using MockPhonemizer in Editor (WebGL phonemizer not available in Editor)");
+#elif UNITY_ANDROID || UNITY_IOS
+            // Use MockPhonemizer for mobile platforms
             _phonemizer = new MockPhonemizer();
             UpdateStatus("Using MockPhonemizer (no native library support on this platform)");
 #else
@@ -64,6 +75,7 @@ namespace uPiper.Demo
             try
             {
                 _phonemizer = new OpenJTalkPhonemizer();
+                UpdateStatus("Using OpenJTalkPhonemizer");
             }
             catch (System.Exception e)
             {
