@@ -19,7 +19,22 @@ namespace uPiper.Core.Phonemizers.Backend
         private PinyinConverter pinyinConverter;
         private PinyinToIPAConverter ipaConverter;
         private ChineseTextNormalizer textNormalizer;
+        private ChineseWordSegmenter wordSegmenter;
+        private MultiToneProcessor multiToneProcessor;
+        private TraditionalChineseConverter traditionalConverter;
         private readonly object dictLock = new();
+
+        // Configuration option
+        private bool useWordSegmentation = true;
+
+        /// <summary>
+        /// Enable or disable word segmentation
+        /// </summary>
+        public bool UseWordSegmentation
+        {
+            get => useWordSegmentation;
+            set => useWordSegmentation = value;
+        }
 
         public override string Name => "Chinese";
         public override string Version => "1.0.0";
@@ -42,6 +57,9 @@ namespace uPiper.Core.Phonemizers.Backend
                 pinyinConverter = new PinyinConverter(dictionary);
                 ipaConverter = new PinyinToIPAConverter(dictionary);
                 textNormalizer = new ChineseTextNormalizer();
+                wordSegmenter = new ChineseWordSegmenter(dictionary);
+                multiToneProcessor = new MultiToneProcessor(dictionary);
+                traditionalConverter = new TraditionalChineseConverter();
 
                 Debug.Log($"Chinese phonemizer initialized with {dictionary.CharacterCount} characters, " +
                          $"{dictionary.PhraseCount} phrases, {dictionary.IPACount} IPA mappings");
@@ -88,8 +106,19 @@ namespace uPiper.Core.Phonemizers.Backend
                 throw new InvalidOperationException("Chinese phonemizer not initialized");
             }
 
+            // Determine if we should use eSpeak format (for TTS models)
+            // All Chinese TTS models use eSpeak format with tone numbers
+            bool useESpeakFormat = true;
+
             try
             {
+                // Step 0: Convert Traditional Chinese to Simplified if needed
+                if (traditionalConverter.ContainsTraditional(text))
+                {
+                    text = traditionalConverter.ConvertToSimplified(text);
+                    Debug.Log($"[ChinesePhonemizer] Converted Traditional to Simplified Chinese");
+                }
+
                 // Step 1: Normalize text
                 var normalized = textNormalizer.Normalize(text, ChineseTextNormalizer.NumberFormat.Formal);
 
@@ -101,26 +130,89 @@ namespace uPiper.Core.Phonemizers.Backend
                 {
                     if (!string.IsNullOrEmpty(chinese))
                     {
-                        // Process Chinese text
-                        var pinyinArray = pinyinConverter.GetPinyin(chinese, usePhrase: true);
-
-                        // Convert each pinyin to IPA
-                        foreach (var pinyin in pinyinArray)
+                        if (useWordSegmentation)
                         {
-                            if (ChineseTextNormalizer.IsChinese(pinyin[0]))
+                            // Use word segmentation for better context
+                            var wordsWithPinyin = wordSegmenter.SegmentWithPinyinV2(chinese);
+
+                            Debug.Log($"[ChinesePhonemizer] Segmented '{chinese}' into {wordsWithPinyin.Count} words");
+
+                            foreach (var (word, pinyinArray) in wordsWithPinyin)
                             {
-                                // It's still a Chinese character (no pinyin found)
-                                // Skip Debug.LogWarning for performance
+                                // Check if the word is punctuation
+                                if (word.Length == 1 && char.IsPunctuation(word[0]))
+                                {
+                                    phonemes.Add("_");
+                                    continue;
+                                }
+
+                                // Convert each pinyin to IPA
+                                Debug.Log($"[ChinesePhonemizer] Word '{word}' has {pinyinArray.Length} pinyin: [{string.Join(", ", pinyinArray)}]");
+
+                                foreach (var pinyin in pinyinArray)
+                                {
+                                    // Check if it's a punctuation character
+                                    if (pinyin.Length == 1 && char.IsPunctuation(pinyin[0]))
+                                    {
+                                        phonemes.Add("_");
+                                        continue;
+                                    }
+
+                                    if (pinyin.StartsWith("u") && pinyin.Length > 1 && pinyin.Length <= 6)
+                                    {
+                                        // Unicode fallback (e.g., u94f6), try to get character and retry
+                                        Debug.LogWarning($"[ChinesePhonemizer] Found Unicode fallback: {pinyin} for character in '{word}'");
+
+                                        // Try to parse the Unicode value
+                                        if (pinyin.Length >= 2 && int.TryParse(pinyin.Substring(1), System.Globalization.NumberStyles.HexNumber, null, out int codePoint))
+                                        {
+                                            var ch = (char)codePoint;
+                                            Debug.LogWarning($"[ChinesePhonemizer] Unicode {pinyin} represents character '{ch}'");
+
+                                            // Try to get pinyin for this character from dictionary
+                                            if (dictionary.TryGetCharacterPinyin(ch, out var fallbackPinyin) && fallbackPinyin.Length > 0)
+                                            {
+                                                var fallbackIPA = ipaConverter.ConvertToIPA(fallbackPinyin[0], useESpeakFormat);
+                                                Debug.Log($"[ChinesePhonemizer] Fallback: '{ch}' → {fallbackPinyin[0]} → {fallbackIPA.Length} IPA phonemes: [{string.Join(", ", fallbackIPA)}]");
+                                                phonemes.AddRange(fallbackIPA);
+                                            }
+                                            else
+                                            {
+                                                Debug.LogWarning($"[ChinesePhonemizer] No pinyin found for character '{ch}' (U+{codePoint:X4})");
+                                            }
+                                        }
+                                        continue;
+                                    }
+
+                                    var ipaPhonemes = ipaConverter.ConvertToIPA(pinyin, useESpeakFormat);
+                                    Debug.Log($"[ChinesePhonemizer] Pinyin '{pinyin}' → {ipaPhonemes.Length} IPA phonemes: [{string.Join(", ", ipaPhonemes)}]");
+                                    phonemes.AddRange(ipaPhonemes);
+                                }
                             }
-                            else if (char.IsPunctuation(pinyin[0]))
+                        }
+                        else
+                        {
+                            // Original character-by-character processing
+                            var pinyinArray = pinyinConverter.GetPinyin(chinese, usePhrase: true);
+
+                            // Convert each pinyin to IPA
+                            foreach (var pinyin in pinyinArray)
                             {
-                                phonemes.Add("_");
-                            }
-                            else
-                            {
-                                // Convert pinyin to IPA
-                                var ipaPhonemes = ipaConverter.ConvertToIPA(pinyin);
-                                phonemes.AddRange(ipaPhonemes);
+                                if (ChineseTextNormalizer.IsChinese(pinyin[0]))
+                                {
+                                    // It's still a Chinese character (no pinyin found)
+                                    // Skip Debug.LogWarning for performance
+                                }
+                                else if (char.IsPunctuation(pinyin[0]))
+                                {
+                                    phonemes.Add("_");
+                                }
+                                else
+                                {
+                                    // Convert pinyin to IPA
+                                    var ipaPhonemes = ipaConverter.ConvertToIPA(pinyin, useESpeakFormat);
+                                    phonemes.AddRange(ipaPhonemes);
+                                }
                             }
                         }
                     }
@@ -203,6 +295,9 @@ namespace uPiper.Core.Phonemizers.Backend
             pinyinConverter = null;
             ipaConverter = null;
             textNormalizer = null;
+            wordSegmenter = null;
+            multiToneProcessor = null;
+            traditionalConverter = null;
         }
     }
 }

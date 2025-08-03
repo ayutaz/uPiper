@@ -22,6 +22,16 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             [5] = ""                // neutral tone (no mark)
         };
 
+        // eSpeak tone numbers for Mandarin Chinese
+        private readonly Dictionary<int, string> eSpeakToneNumbers = new()
+        {
+            [1] = "1",  // high level
+            [2] = "2",  // rising
+            [3] = "3",  // dipping
+            [4] = "4",  // falling
+            [5] = "5"   // neutral
+        };
+
         public PinyinToIPAConverter(ChinesePinyinDictionary dictionary)
         {
             this.dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
@@ -30,7 +40,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         /// <summary>
         /// Convert pinyin with tone number to IPA phonemes
         /// </summary>
-        public string[] ConvertToIPA(string pinyinWithTone)
+        public string[] ConvertToIPA(string pinyinWithTone, bool useESpeakFormat = false)
         {
             if (string.IsNullOrEmpty(pinyinWithTone))
                 return Array.Empty<string>();
@@ -46,19 +56,19 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             }
 
             // Apply tone and split into phonemes
-            return ApplyToneAndSplit(ipaBase, tone);
+            return ApplyToneAndSplit(ipaBase, tone, useESpeakFormat);
         }
 
         /// <summary>
         /// Convert multiple pinyin syllables to IPA
         /// </summary>
-        public string[] ConvertMultipleToIPA(string[] pinyinArray)
+        public string[] ConvertMultipleToIPA(string[] pinyinArray, bool useESpeakFormat = false)
         {
             var result = new List<string>();
 
             foreach (var pinyin in pinyinArray)
             {
-                var ipaPhonemes = ConvertToIPA(pinyin);
+                var ipaPhonemes = ConvertToIPA(pinyin, useESpeakFormat);
                 result.AddRange(ipaPhonemes);
             }
 
@@ -83,27 +93,36 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             return (pinyinWithTone, 0);
         }
 
-        private string[] ApplyToneAndSplit(string ipa, int tone)
+        private string[] ApplyToneAndSplit(string ipa, int tone, bool useESpeakFormat = false)
         {
             var phonemes = new List<string>();
 
             // Split IPA into individual phonemes
-            var ipaPhonemes = SplitIPA(ipa);
+            var ipaPhonemes = SplitIPA(ipa, useESpeakFormat);
             phonemes.AddRange(ipaPhonemes);
 
             // Add tone mark if applicable
-            if (tone >= 1 && tone <= 5 && toneMarks.TryGetValue(tone, out var toneMark))
+            if (tone >= 1 && tone <= 5)
             {
-                if (!string.IsNullOrEmpty(toneMark))
+                if (useESpeakFormat && eSpeakToneNumbers.TryGetValue(tone, out var toneNumber))
                 {
-                    phonemes.Add(toneMark);
+                    // For eSpeak format, add tone number
+                    phonemes.Add(toneNumber);
+                }
+                else if (!useESpeakFormat && toneMarks.TryGetValue(tone, out var toneMark))
+                {
+                    // For IPA format, add tone mark
+                    if (!string.IsNullOrEmpty(toneMark))
+                    {
+                        phonemes.Add(toneMark);
+                    }
                 }
             }
 
             return phonemes.ToArray();
         }
 
-        private string[] SplitIPA(string ipa)
+        private string[] SplitIPA(string ipa, bool useESpeakFormat = false)
         {
             // Advanced IPA splitting logic
             var phonemes = new List<string>();
@@ -118,8 +137,23 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 {
                     var twoChar = ipa.Substring(i, 2);
 
+                    // For eSpeak format, split diphthongs into individual vowels
+                    if (useESpeakFormat && IsVowelDiphthong(twoChar))
+                    {
+                        if (current.Length > 0)
+                        {
+                            phonemes.Add(current.ToString());
+                            current.Clear();
+                        }
+                        // Split diphthong into individual vowels for eSpeak
+                        phonemes.Add(twoChar[0].ToString());
+                        phonemes.Add(twoChar[1].ToString());
+                        i++; // Skip next character
+                        continue;
+                    }
+
                     // Common two-character IPA symbols in Chinese
-                    if (IsDigraph(twoChar))
+                    if (!useESpeakFormat && IsDigraph(twoChar))
                     {
                         if (current.Length > 0)
                         {
@@ -160,7 +194,8 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             var digraphs = new HashSet<string>
             {
                 "tɕ", "tɕʰ", "ʈʂ", "ʈʂʰ", "ts", "tsʰ",
-                "ai", "ei", "ao", "ou", "an", "en", "in", "un", "yn",
+                "ai", "ei", "ao", "ou", "au", "eu", "iu",
+                "an", "en", "in", "un", "yn",
                 "aŋ", "əŋ", "iŋ", "uŋ", "yŋ"
             };
 
@@ -194,6 +229,16 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             var vowels = "aeiouəɚɤʅɿyæɛɑɔ";
             return vowels.Contains(ch);
+        }
+
+        private bool IsVowelDiphthong(string twoChar)
+        {
+            // Common diphthongs that need to be split for eSpeak
+            var diphthongs = new HashSet<string>
+            {
+                "ai", "ei", "ao", "ou", "au", "eu", "iu"
+            };
+            return diphthongs.Contains(twoChar);
         }
 
         /// <summary>

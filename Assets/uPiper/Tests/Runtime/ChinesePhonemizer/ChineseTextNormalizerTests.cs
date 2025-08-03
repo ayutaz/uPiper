@@ -17,64 +17,47 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         [Test]
         public void Normalizer_NumberConversion_Individual()
         {
-            var testCases = new (string input, string expected)[]
-            {
-                ("123", "一二三"),
-                ("2024", "二零二四"),
-                ("9876", "九八七六")
-            };
+            // Test case 1: 123 -> 一二三
+            var result1 = normalizer.NormalizeNumbers("123", ChineseTextNormalizer.NumberFormat.Individual);
+            Assert.AreEqual("一二三", result1, "Failed to convert '123' to individual Chinese");
 
-            foreach (var (input, expected) in testCases)
-            {
-                var result = normalizer.NormalizeNumbers(input, ChineseTextNormalizer.NumberFormat.Individual);
-                Assert.AreEqual(expected, result, $"Failed to convert '{input}' to individual Chinese");
-            }
+            // Test case 2: 2024 -> 二零二四
+            var result2 = normalizer.NormalizeNumbers("2024", ChineseTextNormalizer.NumberFormat.Individual);
+            Assert.AreEqual("二零二四", result2, "Failed to convert '2024' to individual Chinese");
+
+            // Test case 3: 9876 -> 九八七六
+            var result3 = normalizer.NormalizeNumbers("9876", ChineseTextNormalizer.NumberFormat.Individual);
+            Assert.AreEqual("九八七六", result3, "Failed to convert '9876' to individual Chinese");
         }
 
         [Test]
         public void Normalizer_NumberConversion_Formal()
         {
-            var testCases = new (string input, string expected)[]
-            {
-                ("0", "零"),
-                ("1", "一"),
-                ("10", "十"),
-                ("11", "十一"),
-                ("20", "二十"),
-                ("100", "一百"),
-                ("123", "一百二十三"),
-                ("1000", "一千"),
-                ("1234", "一千二百三十四"),
-                ("10000", "一万"),
-                ("10001", "一万零一"),
-                ("12345", "一万二千三百四十五")
-            };
-
-            foreach (var (input, expected) in testCases)
-            {
-                var result = normalizer.NormalizeNumbers(input, ChineseTextNormalizer.NumberFormat.Formal);
-                Assert.AreEqual(expected, result, $"Failed to convert '{input}' to formal Chinese");
-            }
+            // Test individual numbers
+            Assert.AreEqual("零", normalizer.NormalizeNumbers("0", ChineseTextNormalizer.NumberFormat.Formal), "Failed to convert '0' to formal Chinese");
+            Assert.AreEqual("一", normalizer.NormalizeNumbers("1", ChineseTextNormalizer.NumberFormat.Formal), "Failed to convert '1' to formal Chinese");
+            Assert.AreEqual("十", normalizer.NormalizeNumbers("10", ChineseTextNormalizer.NumberFormat.Formal), "Failed to convert '10' to formal Chinese");
+            Assert.AreEqual("十一", normalizer.NormalizeNumbers("11", ChineseTextNormalizer.NumberFormat.Formal), "Failed to convert '11' to formal Chinese");
+            Assert.AreEqual("二十", normalizer.NormalizeNumbers("20", ChineseTextNormalizer.NumberFormat.Formal), "Failed to convert '20' to formal Chinese");
+            Assert.AreEqual("一百", normalizer.NormalizeNumbers("100", ChineseTextNormalizer.NumberFormat.Formal), "Failed to convert '100' to formal Chinese");
+            Assert.AreEqual("一百二十三", normalizer.NormalizeNumbers("123", ChineseTextNormalizer.NumberFormat.Formal), "Failed to convert '123' to formal Chinese");
+            Assert.AreEqual("一千", normalizer.NormalizeNumbers("1000", ChineseTextNormalizer.NumberFormat.Formal), "Failed to convert '1000' to formal Chinese");
+            Assert.AreEqual("一千二百三十四", normalizer.NormalizeNumbers("1234", ChineseTextNormalizer.NumberFormat.Formal), "Failed to convert '1234' to formal Chinese");
+            Assert.AreEqual("一万", normalizer.NormalizeNumbers("10000", ChineseTextNormalizer.NumberFormat.Formal), "Failed to convert '10000' to formal Chinese");
+            Assert.AreEqual("一万零一", normalizer.NormalizeNumbers("10001", ChineseTextNormalizer.NumberFormat.Formal), "Failed to convert '10001' to formal Chinese");
+            Assert.AreEqual("一万二千三百四十五", normalizer.NormalizeNumbers("12345", ChineseTextNormalizer.NumberFormat.Formal), "Failed to convert '12345' to formal Chinese");
         }
 
         [Test]
         public void Normalizer_PunctuationNormalization()
         {
-            var testCases = new (string input, string expected)[]
-            {
-                ("你好，世界！", "你好,世界!"),
-                ("这是一个句子。", "这是一个句子."),
-                ("什么？", "什么?"),
-                ("（括号）", "(括号)"),
-                ("【标题】", "[标题]"),
-                ("《书名》", "<书名>")
-            };
-
-            foreach (var (input, expected) in testCases)
-            {
-                var result = normalizer.NormalizePunctuation(input);
-                Assert.AreEqual(expected, result, $"Failed to normalize punctuation in '{input}'");
-            }
+            // Test Chinese punctuation normalization
+            Assert.AreEqual("你好,世界!", normalizer.NormalizePunctuation("你好，世界！"), "Failed to normalize punctuation in '你好，世界！'");
+            Assert.AreEqual("这是一个句子.", normalizer.NormalizePunctuation("这是一个句子。"), "Failed to normalize punctuation in '这是一个句子。'");
+            Assert.AreEqual("什么?", normalizer.NormalizePunctuation("什么？"), "Failed to normalize punctuation in '什么？'");
+            Assert.AreEqual("(括号)", normalizer.NormalizePunctuation("（括号）"), "Failed to normalize punctuation in '（括号）'");
+            Assert.AreEqual("[标题]", normalizer.NormalizePunctuation("【标题】"), "Failed to normalize punctuation in '【标题】'");
+            Assert.AreEqual("<书名>", normalizer.NormalizePunctuation("《书名》"), "Failed to normalize punctuation in '《书名》'");
         }
 
         [Test]

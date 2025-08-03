@@ -17,6 +17,9 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         [SetUp]
         public async Task Setup()
         {
+            // Clear cached dictionary to ensure latest changes are used
+            ChineseDictionaryTestCache.ClearCache();
+
             phonemizer = new uPiper.Core.Phonemizers.Backend.ChinesePhonemizer();
             var initialized = await phonemizer.InitializeAsync(new PhonemizerBackendOptions());
             Assert.IsTrue(initialized, "Failed to initialize Chinese phonemizer");
