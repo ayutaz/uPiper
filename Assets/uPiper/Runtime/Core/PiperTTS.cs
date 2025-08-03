@@ -1141,17 +1141,21 @@ namespace uPiper.Core
 #if !UNITY_WEBGL
                     _phonemizer = new OpenJTalkPhonemizer();
                     PiperLogger.LogInfo("Initialized OpenJTalkPhonemizer for Japanese");
-#else
+#elif UNITY_WEBGL && !UNITY_EDITOR
                     // Use WebGL implementation
-                    _phonemizer = new WebGL.WebGLOpenJTalkPhonemizer();
+                    _phonemizer = new WebGLOpenJTalkPhonemizer();
                     PiperLogger.LogInfo("Initialized WebGLOpenJTalkPhonemizer for Japanese");
+#else
+                    // In Unity Editor with WebGL platform selected
+                    PiperLogger.LogWarning("OpenJTalkPhonemizer is not available in Unity Editor with WebGL platform. Phonemizer will be null.");
+                    _phonemizer = null;
 #endif
                 }
                 else
                 {
 #if UNITY_WEBGL && !UNITY_EDITOR
                     // Use WebGL eSpeak-ng implementation for other languages
-                    _phonemizer = new WebGL.WebGLESpeakPhonemizer();
+                    _phonemizer = new WebGLESpeakPhonemizer();
                     PiperLogger.LogInfo("Initialized WebGLESpeakPhonemizer for language: {0}", _config.DefaultLanguage);
 #else
                     // For other languages, phonemizer is not available yet
