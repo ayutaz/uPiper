@@ -10,6 +10,9 @@ using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Implementations;
+#if UNITY_WEBGL && !UNITY_EDITOR
+using uPiper.Core.Phonemizers.WebGL;
+#endif
 
 namespace uPiper.Core
 {
@@ -1139,16 +1142,23 @@ namespace uPiper.Core
                     _phonemizer = new OpenJTalkPhonemizer();
                     PiperLogger.LogInfo("Initialized OpenJTalkPhonemizer for Japanese");
 #else
-                    PiperLogger.LogWarning("OpenJTalkPhonemizer is not supported on WebGL platform");
-                    _phonemizer = null; // No phonemizer available on WebGL
+                    // Use WebGL implementation
+                    _phonemizer = new WebGL.WebGLOpenJTalkPhonemizer();
+                    PiperLogger.LogInfo("Initialized WebGLOpenJTalkPhonemizer for Japanese");
 #endif
                 }
                 else
                 {
+#if UNITY_WEBGL && !UNITY_EDITOR
+                    // Use WebGL eSpeak-ng implementation for other languages
+                    _phonemizer = new WebGL.WebGLESpeakPhonemizer();
+                    PiperLogger.LogInfo("Initialized WebGLESpeakPhonemizer for language: {0}", _config.DefaultLanguage);
+#else
                     // For other languages, phonemizer is not available yet
                     // espeak-ng phonemizer will be implemented in a future phase
                     _phonemizer = null;
                     PiperLogger.LogWarning("No phonemizer available for language: {0}. Text-to-speech will use fallback mode.", _config.DefaultLanguage);
+#endif
                 }
 
                 // Small delay to simulate async operation
