@@ -55,6 +55,11 @@
       "displayName": "Realtime TTS Demo",
       "description": "Low-latency text-to-speech for interactive applications and games.",
       "path": "Samples~/RealtimeTTS"
+    },
+    {
+      "displayName": "WebGL Demo",
+      "description": "Multi-language text-to-speech demo for WebGL platform with WebAssembly integration.",
+      "path": "Samples~/WebGLDemo"
     }
   ]
 }

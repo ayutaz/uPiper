@@ -59,13 +59,31 @@ namespace uPiper.Editor.BuildSettings
 
             // WebGL固有の設定
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
-            // Unity 6ではデフォルトテンプレートを使用
-            PlayerSettings.WebGL.template = "APPLICATION:Default";
+            
+            // Use uPiper custom template if available
+            string customTemplate = "uPiper";
+            if (System.IO.Directory.Exists($"Assets/WebGLTemplates/{customTemplate}"))
+            {
+                PlayerSettings.WebGL.template = $"APPLICATION:{customTemplate}";
+                PiperLogger.LogInfo($"[PiperBuildProcessor] Using custom WebGL template: {customTemplate}");
+            }
+            else
+            {
+                PlayerSettings.WebGL.template = "APPLICATION:Default";
+                PiperLogger.LogInfo("[PiperBuildProcessor] Using default WebGL template");
+            }
 
             // メモリサイズの設定（ONNXモデルのため大きめに）
-            PlayerSettings.WebGL.memorySize = 512;
+            // Increased from 512MB to 1GB for better performance
+            PlayerSettings.WebGL.memorySize = 1024;
 
             // Unity 6ではWebAssembly算術例外は常に無視される
+            
+            // Enable WebAssembly streaming instantiation for faster loading
+            PlayerSettings.WebGL.decompressionFallback = true;
+            
+            // Set linker target to reduce code size
+            PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Asm;
         }
 
         private void ConfigureWindowsBuild()
