@@ -132,7 +132,7 @@ namespace uPiper.Demo
         [Header("Settings")]
         [SerializeField] private string _defaultJapaneseText = "";  // Will be set in Start()
         [SerializeField] private string _defaultEnglishText = "Hello world";
-        
+
         [Header("Font Settings")]
         [SerializeField] private TMP_FontAsset _chineseFontAsset;
         [SerializeField] private TMP_FontAsset _japaneseFontAsset;
@@ -180,7 +180,7 @@ namespace uPiper.Demo
             // Set default Japanese text from UTF-8 bytes to avoid encoding issues
             var konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
             _defaultJapaneseText = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
-            
+
             // Setup Chinese font as fallback
             SetupChineseFontFallback();
 
@@ -318,11 +318,11 @@ namespace uPiper.Demo
             {
                 _defaultFontAsset = _inputField.fontAsset;
             }
-            
+
             // Setup font fallback chain for multi-language support
             SetupFontFallbackChain();
         }
-        
+
         private void SetupFontFallbackChain()
         {
             // Create a fallback chain: Default -> Japanese -> Chinese
@@ -332,14 +332,14 @@ namespace uPiper.Demo
                 {
                     _defaultFontAsset.fallbackFontAssetTable = new List<TMP_FontAsset>();
                 }
-                
+
                 // Add Japanese font as fallback if available and not already present
                 if (_japaneseFontAsset != null && !_defaultFontAsset.fallbackFontAssetTable.Contains(_japaneseFontAsset))
                 {
                     _defaultFontAsset.fallbackFontAssetTable.Add(_japaneseFontAsset);
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Added Japanese font as fallback to default font");
                 }
-                
+
                 // Add Chinese font as fallback if available and not already present
                 if (_chineseFontAsset != null && !_defaultFontAsset.fallbackFontAssetTable.Contains(_chineseFontAsset))
                 {
@@ -347,7 +347,7 @@ namespace uPiper.Demo
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Added Chinese font as fallback to default font");
                 }
             }
-            
+
             // Also setup Japanese font to have Chinese as fallback
             if (_japaneseFontAsset != null && _chineseFontAsset != null)
             {
@@ -355,7 +355,7 @@ namespace uPiper.Demo
                 {
                     _japaneseFontAsset.fallbackFontAssetTable = new List<TMP_FontAsset>();
                 }
-                
+
                 if (!_japaneseFontAsset.fallbackFontAssetTable.Contains(_chineseFontAsset))
                 {
                     _japaneseFontAsset.fallbackFontAssetTable.Add(_chineseFontAsset);
@@ -368,11 +368,11 @@ namespace uPiper.Demo
         {
             ApplyLanguageFont("zh");
         }
-        
+
         private void ApplyLanguageFont(string language)
         {
             TMP_FontAsset targetFont = null;
-            
+
             // Select appropriate font based on language
             switch (language)
             {
@@ -387,18 +387,18 @@ namespace uPiper.Demo
                     targetFont = _defaultFontAsset;
                     break;
             }
-            
+
             if (targetFont == null)
             {
                 PiperLogger.LogWarning($"[InferenceEngineDemo] No font available for language: {language}");
                 return;
             }
-            
+
             // Apply font to all text components
             ApplyFontToUIElements(targetFont);
             PiperLogger.LogInfo($"[InferenceEngineDemo] Applied {targetFont.name} font for language: {language}");
         }
-        
+
         private void ApplyFontToUIElements(TMP_FontAsset font)
         {
             // Apply font to input field
@@ -415,7 +415,7 @@ namespace uPiper.Demo
                 {
                     dropdownText.font = font;
                 }
-                
+
                 var itemText = _phraseDropdown.itemText;
                 if (itemText != null)
                 {
@@ -551,7 +551,7 @@ namespace uPiper.Demo
 
                     if (_inputField != null)
                         _inputField.text = _defaultJapaneseText;
-                    
+
                     // Apply Japanese font
                     ApplyLanguageFont("ja");
                 }
@@ -570,7 +570,7 @@ namespace uPiper.Demo
 
                     if (_inputField != null)
                         _inputField.text = "你好";
-                    
+
                     // Apply Chinese font to UI elements if available
                     ApplyLanguageFont("zh");
                 }
@@ -589,7 +589,7 @@ namespace uPiper.Demo
 
                     if (_inputField != null)
                         _inputField.text = _defaultEnglishText;
-                    
+
                     // Apply English/default font
                     ApplyLanguageFont("en");
                 }

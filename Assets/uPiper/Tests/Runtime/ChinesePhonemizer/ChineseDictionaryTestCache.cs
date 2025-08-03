@@ -13,7 +13,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         private static readonly object _lock = new object();
         private static bool _isLoading;
         private static bool _loadFailed;
-        
+
         /// <summary>
         /// Get cached dictionary (loads only once)
         /// </summary>
@@ -26,18 +26,18 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     Debug.LogWarning("[DictionaryCache] Previous load failed, returning fallback dictionary");
                     return GetFallbackDictionary();
                 }
-                
+
                 if (_cachedDictionary != null)
                 {
                     return _cachedDictionary;
                 }
-                
+
                 if (_isLoading)
                 {
                     Debug.LogWarning("[DictionaryCache] Dictionary is still loading, returning fallback");
                     return GetFallbackDictionary();
                 }
-                
+
                 // Return fallback dictionary for now
                 Debug.Log("[DictionaryCache] Returning fallback dictionary to avoid loading");
                 _cachedDictionary = GetFallbackDictionary();
@@ -45,7 +45,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                 return _cachedDictionary;
             }
         }
-        
+
         /// <summary>
         /// Create a minimal fallback dictionary for testing
         /// </summary>
@@ -371,12 +371,12 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                 },
                 wordFrequencies = new ChineseDictionaryData.WordFrequencyEntry[0]
             };
-            
+
             dictionary.LoadFromData(data);
-            
+
             // Log dictionary contents for debugging
             Debug.Log($"[TestDictionary] Loaded {dictionary.CharacterCount} characters, {dictionary.PhraseCount} phrases, {dictionary.IPACount} IPA mappings");
-            
+
             // Check if specific test characters are loaded
             if (dictionary.TryGetCharacterPinyin('谢', out var xiePinyin))
             {
@@ -386,7 +386,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             {
                 Debug.LogWarning("[TestDictionary] Character '谢' not found in dictionary!");
             }
-            
+
             if (dictionary.TryGetPhrasePinyin("谢谢", out var xieXiePinyin))
             {
                 Debug.Log($"[TestDictionary] Found phrase '谢谢' with pinyin: {xieXiePinyin}");
@@ -395,10 +395,10 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             {
                 Debug.LogWarning("[TestDictionary] Phrase '谢谢' not found in dictionary!");
             }
-            
+
             return dictionary;
         }
-        
+
         /// <summary>
         /// Clear the cache (for testing purposes)
         /// </summary>

@@ -28,7 +28,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             Assert.IsNotNull(dictionary, "Dictionary should be loaded");
             Assert.Greater(dictionary.CharacterCount, 0, "Should have at least some characters");
             Assert.Greater(dictionary.IPACount, 0, "Should have IPA mappings");
-            
+
             Debug.Log($"[BasicDictionary] Loaded: {dictionary.CharacterCount} characters, " +
                      $"{dictionary.PhraseCount} phrases, {dictionary.IPACount} IPA mappings");
         }
@@ -38,7 +38,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         {
             // Test very common characters that should be in any dictionary
             var commonChars = new[] { "你", "好", "我", "是", "的", "了", "在", "有" };
-            
+
             int foundCount = 0;
             foreach (var ch in commonChars)
             {
@@ -49,8 +49,8 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     Debug.Log($"[BasicDictionary] {ch} -> {string.Join(", ", pinyin)}");
                 }
             }
-            
-            Assert.GreaterOrEqual(foundCount, commonChars.Length / 2, 
+
+            Assert.GreaterOrEqual(foundCount, commonChars.Length / 2,
                 "Should find at least half of common characters");
         }
 
@@ -59,7 +59,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         {
             // Test basic phrases
             var testPhrases = new[] { "你好", "中国" };
-            
+
             foreach (var phrase in testPhrases)
             {
                 if (dictionary.TryGetPhrasePinyin(phrase, out var pinyin))
@@ -78,7 +78,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         {
             // Test basic IPA conversion
             var testSyllables = new[] { "ni", "hao", "wo", "shi" };
-            
+
             int convertedCount = 0;
             foreach (var syllable in testSyllables)
             {
@@ -89,7 +89,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     Debug.Log($"[BasicDictionary] {syllable} -> {ipa}");
                 }
             }
-            
+
             Assert.Greater(convertedCount, 0, "Should convert at least some syllables to IPA");
         }
 
@@ -100,18 +100,18 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             var testText = "你好世界";
             var normalizer = new ChineseTextNormalizer();
             var converter = new PinyinConverter(dictionary);
-            
+
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            
+
             for (int i = 0; i < 100; i++)
             {
                 var normalized = normalizer.Normalize(testText);
                 var pinyin = converter.GetPinyin(normalized);
             }
-            
+
             stopwatch.Stop();
             var avgMs = stopwatch.ElapsedMilliseconds / 100.0;
-            
+
             Debug.Log($"[BasicDictionary] Average processing time: {avgMs:F2}ms for '{testText}'");
             Assert.Less(avgMs, 10.0, "Basic text should process in less than 10ms");
         }

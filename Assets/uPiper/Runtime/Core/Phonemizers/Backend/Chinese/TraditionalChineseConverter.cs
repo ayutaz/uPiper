@@ -13,14 +13,14 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
     {
         private readonly Dictionary<char, char> traditionalToSimplified;
         private readonly HashSet<char> traditionalCharacters;
-        
+
         public TraditionalChineseConverter()
         {
             traditionalToSimplified = new Dictionary<char, char>();
             traditionalCharacters = new HashSet<char>();
             InitializeMappings();
         }
-        
+
         /// <summary>
         /// Convert Traditional Chinese text to Simplified Chinese
         /// </summary>
@@ -28,9 +28,9 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             if (string.IsNullOrEmpty(text))
                 return text;
-            
+
             var result = new StringBuilder(text.Length);
-            
+
             foreach (char ch in text)
             {
                 if (traditionalToSimplified.TryGetValue(ch, out char simplified))
@@ -42,10 +42,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     result.Append(ch);
                 }
             }
-            
+
             return result.ToString();
         }
-        
+
         /// <summary>
         /// Check if a character is Traditional Chinese
         /// </summary>
@@ -53,7 +53,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             return traditionalCharacters.Contains(ch);
         }
-        
+
         /// <summary>
         /// Check if text contains any Traditional Chinese characters
         /// </summary>
@@ -61,16 +61,16 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             if (string.IsNullOrEmpty(text))
                 return false;
-            
+
             foreach (char ch in text)
             {
                 if (IsTraditionalCharacter(ch))
                     return true;
             }
-            
+
             return false;
         }
-        
+
         /// <summary>
         /// Get statistics about the converter
         /// </summary>
@@ -78,7 +78,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             return (traditionalToSimplified.Count, traditionalCharacters.Count);
         }
-        
+
         /// <summary>
         /// Initialize Traditional to Simplified mappings
         /// </summary>
@@ -93,7 +93,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('寫', '写');  // write
             AddMapping('畫', '画');  // draw/picture
             AddMapping('題', '题');  // topic/question
-            
+
             // Country and geography
             AddMapping('國', '国');  // country
             AddMapping('臺', '台');  // Taiwan
@@ -102,7 +102,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('區', '区');  // district
             AddMapping('縣', '县');  // county
             AddMapping('鄉', '乡');  // village
-            
+
             // Language and communication
             AddMapping('語', '语');  // language
             AddMapping('話', '话');  // speech
@@ -111,7 +111,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('論', '论');  // discuss
             AddMapping('講', '讲');  // speak/teach
             AddMapping('聽', '听');  // listen
-            
+
             // Time and calendar
             AddMapping('時', '时');  // time
             AddMapping('間', '间');  // between/room
@@ -119,7 +119,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('曆', '历');  // calendar
             AddMapping('鐘', '钟');  // clock
             AddMapping('點', '点');  // point/o'clock
-            
+
             // People and relationships
             AddMapping('親', '亲');  // parent/relative
             AddMapping('愛', '爱');  // love
@@ -127,7 +127,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('媽', '妈');  // mother
             AddMapping('爺', '爷');  // grandfather
             AddMapping('歲', '岁');  // age
-            
+
             // Body and health
             AddMapping('體', '体');  // body
             AddMapping('頭', '头');  // head
@@ -139,7 +139,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('醫', '医');  // medical
             AddMapping('藥', '药');  // medicine
             AddMapping('療', '疗');  // therapy
-            
+
             // Food and dining
             AddMapping('飯', '饭');  // rice/meal
             AddMapping('麵', '面');  // noodles
@@ -157,7 +157,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('鹽', '盐');  // salt
             AddMapping('糖', '糖');  // sugar (same)
             AddMapping('醬', '酱');  // sauce
-            
+
             // Business and economy
             AddMapping('買', '买');  // buy
             AddMapping('賣', '卖');  // sell
@@ -173,7 +173,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('產', '产');  // produce
             AddMapping('廠', '厂');  // factory
             AddMapping('場', '场');  // place/field
-            
+
             // Transportation
             AddMapping('車', '车');  // vehicle
             AddMapping('輛', '辆');  // classifier for vehicles
@@ -184,7 +184,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('機', '机');  // machine/opportunity
             AddMapping('鐵', '铁');  // iron/railway
             AddMapping('軌', '轨');  // rail
-            
+
             // Technology and modern life
             AddMapping('電', '电');  // electricity
             AddMapping('網', '网');  // net
@@ -200,7 +200,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('術', '术');  // technique
             AddMapping('軟', '软');  // soft
             AddMapping('硬', '硬');  // hard (same)
-            
+
             // Common verbs and actions
             AddMapping('來', '来');  // come
             AddMapping('去', '去');  // go (same)
@@ -228,7 +228,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('實', '实');  // real
             AddMapping('變', '变');  // change
             AddMapping('換', '换');  // exchange
-            
+
             // Common adjectives
             AddMapping('長', '长');  // long
             AddMapping('短', '短');  // short (same)
@@ -247,7 +247,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('雜', '杂');  // mixed
             AddMapping('亂', '乱');  // messy
             AddMapping('鬧', '闹');  // noisy
-            
+
             // Nature and environment
             AddMapping('風', '风');  // wind
             AddMapping('雲', '云');  // cloud
@@ -264,7 +264,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('髒', '脏');  // dirty
             AddMapping('環', '环');  // ring/environment
             AddMapping('境', '境');  // boundary (same)
-            
+
             // Buildings and structures
             AddMapping('樓', '楼');  // building
             AddMapping('層', '层');  // floor/layer
@@ -276,13 +276,13 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('蓋', '盖');  // cover
             AddMapping('築', '筑');  // build
             AddMapping('設', '设');  // establish
-            
+
             // Abstract concepts
             AddMapping('夢', '梦');  // dream
             AddMapping('願', '愿');  // wish
             AddMapping('希', '希');  // hope (same)
             AddMapping('望', '望');  // hope (same)
-            
+
             // Additional characters for test cases
             AddMapping('請', '请');  // please
             AddMapping('謝', '谢');  // thank
@@ -313,7 +313,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('痛', '痛');  // pain (same)
             AddMapping('苦', '苦');  // bitter (same)
             AddMapping('甜', '甜');  // sweet (same)
-            
+
             // More common characters
             AddMapping('於', '于');  // at/in
             AddMapping('與', '与');  // and/with
@@ -342,10 +342,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             AddMapping('雙', '双');  // pair
             AddMapping('對', '对');  // correct/pair
             AddMapping('錯', '错');  // wrong
-            
+
             // Initialization complete
         }
-        
+
         /// <summary>
         /// Add a mapping and update the traditional character set
         /// </summary>

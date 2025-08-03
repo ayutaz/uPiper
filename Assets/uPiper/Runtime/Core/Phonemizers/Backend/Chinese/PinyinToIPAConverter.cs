@@ -21,7 +21,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             [4] = "\u02e5\u02e9",   // ˥˩ (51) - falling
             [5] = ""                // neutral tone (no mark)
         };
-        
+
         // eSpeak tone numbers for Mandarin Chinese
         private readonly Dictionary<int, string> eSpeakToneNumbers = new()
         {
@@ -136,7 +136,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 if (i < ipa.Length - 1)
                 {
                     var twoChar = ipa.Substring(i, 2);
-                    
+
                     // For eSpeak format, split diphthongs into individual vowels
                     if (useESpeakFormat && IsVowelDiphthong(twoChar))
                     {
@@ -230,7 +230,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             var vowels = "aeiouəɚɤʅɿyæɛɑɔ";
             return vowels.Contains(ch);
         }
-        
+
         private bool IsVowelDiphthong(string twoChar)
         {
             // Common diphthongs that need to be split for eSpeak

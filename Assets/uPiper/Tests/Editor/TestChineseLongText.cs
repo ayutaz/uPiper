@@ -40,14 +40,14 @@ namespace uPiper.Tests.Editor
             foreach (var text in testTexts)
             {
                 Debug.Log($"\n=== Testing: {text} ===");
-                
+
                 var result = phonemizer.PhonemizeAsync(text, "zh").Result;
-                
+
                 Assert.IsNotNull(result);
                 Assert.Greater(result.Phonemes.Length, 0);
-                
+
                 Debug.Log($"Phonemes ({result.Phonemes.Length}): {string.Join(" ", result.Phonemes)}");
-                
+
                 // Log detailed phoneme breakdown
                 Debug.Log("Detailed breakdown:");
                 for (int i = 0; i < result.Phonemes.Length; i++)
@@ -73,12 +73,12 @@ namespace uPiper.Tests.Editor
             foreach (var text in testTexts)
             {
                 Debug.Log($"\n=== Testing mixed: {text} ===");
-                
+
                 var result = phonemizer.PhonemizeAsync(text, "zh").Result;
-                
+
                 Assert.IsNotNull(result);
                 Assert.Greater(result.Phonemes.Length, 0);
-                
+
                 Debug.Log($"Phonemes: {string.Join(" ", result.Phonemes)}");
             }
         }
@@ -87,8 +87,8 @@ namespace uPiper.Tests.Editor
         public void CompareShortVsLongText()
         {
             var shortTexts = new[] { "你", "好", "你好", "中国" };
-            var longTexts = new[] 
-            { 
+            var longTexts = new[]
+            {
                 "你好世界",
                 "你好，我是助手",
                 "中国人民共和国",

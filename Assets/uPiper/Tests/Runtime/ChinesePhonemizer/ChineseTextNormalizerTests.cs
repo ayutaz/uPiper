@@ -20,11 +20,11 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             // Test case 1: 123 -> 一二三
             var result1 = normalizer.NormalizeNumbers("123", ChineseTextNormalizer.NumberFormat.Individual);
             Assert.AreEqual("一二三", result1, "Failed to convert '123' to individual Chinese");
-            
+
             // Test case 2: 2024 -> 二零二四
             var result2 = normalizer.NormalizeNumbers("2024", ChineseTextNormalizer.NumberFormat.Individual);
             Assert.AreEqual("二零二四", result2, "Failed to convert '2024' to individual Chinese");
-            
+
             // Test case 3: 9876 -> 九八七六
             var result3 = normalizer.NormalizeNumbers("9876", ChineseTextNormalizer.NumberFormat.Individual);
             Assert.AreEqual("九八七六", result3, "Failed to convert '9876' to individual Chinese");

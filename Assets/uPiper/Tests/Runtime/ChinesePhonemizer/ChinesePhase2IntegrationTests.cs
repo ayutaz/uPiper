@@ -23,20 +23,20 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public IEnumerator SetUp()
         {
             phonemizer = new uPiper.Core.Phonemizers.Backend.ChinesePhonemizer();
-            
+
             // Initialize phonemizer without Task.Run to avoid threading issues
             var initTask = phonemizer.InitializeAsync();
-            
+
             while (!initTask.IsCompleted)
             {
                 yield return null;
             }
-            
+
             if (initTask.IsFaulted)
             {
                 throw initTask.Exception?.GetBaseException() ?? new System.Exception("Phonemizer init failed");
             }
-            
+
             if (!initTask.Result)
             {
                 throw new System.Exception("Phonemizer initialization returned false");
@@ -59,10 +59,10 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             foreach (var text in mixedTexts)
             {
                 var result = phonemizer.PhonemizeAsync(text, "zh").Result;
-                
+
                 Assert.IsNotNull(result);
                 Assert.Greater(result.Phonemes.Length, 0);
-                
+
                 Debug.Log($"[Phase2Integration] Mixed: '{text}' -> {string.Join(" ", result.Phonemes)}");
             }
         }
@@ -78,23 +78,23 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
 
             // Test Common characters
             TestCategoryCharacters("Common", "的一是了我不人在他有这个上们来到时大地为", dictionary);
-            
+
             // Test Numbers
             TestCategoryCharacters("Numbers", "零一二三四五六七八九十百千万亿", dictionary);
-            
+
             // Test Technical terms
             TestCategoryCharacters("Technical", "电脑网络软件硬件数据算法程序代码系统", dictionary);
-            
+
             // Test Daily life
             TestCategoryCharacters("Daily", "吃饭睡觉工作学习生活家庭朋友", dictionary);
-            
+
             // Test Geography
             TestCategoryCharacters("Geography", "中国美国日本英国法国德国俄罗斯", dictionary);
-            
+
             // Test Culture
             TestCategoryCharacters("Culture", "文化历史艺术音乐电影文学诗歌", dictionary);
         }
-        
+
         private void TestCategoryCharacters(string category, string chars, ChinesePinyinDictionary dictionary)
         {
             int found = 0;
@@ -105,12 +105,12 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     found++;
                 }
             }
-            
+
             var coverage = found / (float)chars.Length * 100;
             Debug.Log($"[Phase2Integration] {category} coverage: {found}/{chars.Length} ({coverage:F1}%)");
-            
+
             // Should have high coverage for all categories
-            Assert.GreaterOrEqual(coverage, 90f, 
+            Assert.GreaterOrEqual(coverage, 90f,
                 $"{category} category should have >=90% coverage, but only has {coverage:F1}%");
         }
 

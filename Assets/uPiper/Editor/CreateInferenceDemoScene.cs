@@ -484,10 +484,10 @@ namespace uPiper.Editor
             serializedObject.FindProperty("_phonemeDetailsText").objectReferenceValue = phonemeDetailsText;
             serializedObject.FindProperty("_backendDropdown").objectReferenceValue = backendDropdown;
             serializedObject.FindProperty("_backendInfoText").objectReferenceValue = backendInfoText;
-            
+
             // フォントアセットを自動設定
             SetupFontAssets(serializedObject);
-            
+
             serializedObject.ApplyModifiedProperties();
 
             // シーンを保存
@@ -675,26 +675,26 @@ namespace uPiper.Editor
 
             return dropdownGO;
         }
-        
+
         private static void SetupFontAssets(SerializedObject serializedObject)
         {
             // フォントアセットを検索
             var fontAssets = AssetDatabase.FindAssets("t:TMP_FontAsset");
-            
+
             TMP_FontAsset defaultFont = null;
             TMP_FontAsset defaultFallbackFont = null;
             TMP_FontAsset japaneseFont = null;
             TMP_FontAsset chineseFont = null;
-            
+
             foreach (var guid in fontAssets)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
                 var fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(path);
-                
+
                 if (fontAsset == null) continue;
-                
+
                 var fontName = fontAsset.name.ToLower();
-                
+
                 // デフォルトフォントの検出（LiberationSansなど）
                 if (fontName.Contains("liberation") || fontName.Contains("default"))
                 {
@@ -708,32 +708,32 @@ namespace uPiper.Editor
                     }
                 }
                 // 日本語フォントの検出
-                else if (fontName.Contains("notosansjp") || fontName.Contains("japanese") || 
+                else if (fontName.Contains("notosansjp") || fontName.Contains("japanese") ||
                          fontName.Contains("jp") && !fontName.Contains("cjk"))
                 {
                     japaneseFont = fontAsset;
                 }
                 // 中国語フォントの検出
-                else if (fontName.Contains("notosanssc") || fontName.Contains("chinese") || 
+                else if (fontName.Contains("notosanssc") || fontName.Contains("chinese") ||
                          fontName.Contains("cn") || fontName.Contains("sc"))
                 {
                     chineseFont = fontAsset;
                 }
             }
-            
+
             // フォールバック付きフォントがある場合は、それをデフォルトとして使用
             if (defaultFallbackFont != null && defaultFont == null)
             {
                 defaultFont = defaultFallbackFont;
             }
-            
+
             // フォントアセットを設定
             if (defaultFont != null)
             {
                 serializedObject.FindProperty("_defaultFontAsset").objectReferenceValue = defaultFont;
                 Debug.Log($"[CreateInferenceDemoScene] Default font set to: {defaultFont.name}");
             }
-            
+
             if (japaneseFont != null)
             {
                 serializedObject.FindProperty("_japaneseFontAsset").objectReferenceValue = japaneseFont;
@@ -743,7 +743,7 @@ namespace uPiper.Editor
             {
                 Debug.LogWarning("[CreateInferenceDemoScene] Japanese font not found. Please set manually.");
             }
-            
+
             if (chineseFont != null)
             {
                 serializedObject.FindProperty("_chineseFontAsset").objectReferenceValue = chineseFont;
@@ -753,7 +753,7 @@ namespace uPiper.Editor
             {
                 Debug.LogWarning("[CreateInferenceDemoScene] Chinese font not found. Please set manually.");
             }
-            
+
             // デフォルトフォントが見つからない場合の警告
             if (defaultFont == null)
             {

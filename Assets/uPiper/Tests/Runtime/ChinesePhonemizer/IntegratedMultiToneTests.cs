@@ -23,15 +23,15 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         {
             // Use cached fallback dictionary
             dictionary = ChineseDictionaryTestCache.GetDictionary();
-            
+
             // Initialize components
             segmenter = new ChineseWordSegmenter(dictionary);
             multiToneProcessor = new MultiToneProcessor(dictionary);
-            
+
             // Initialize phonemizer
             phonemizer = new uPiper.Core.Phonemizers.Backend.ChinesePhonemizer();
             yield return phonemizer.InitializeAsync(new uPiper.Core.Phonemizers.Backend.PhonemizerBackendOptions());
-            
+
             // Enable word segmentation
             phonemizer.UseWordSegmentation = true;
         }
@@ -47,28 +47,28 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public void ToneSandhi_Bu_InContext()
         {
             // Test cases with 不
-            
+
             // Test case 1: 不是 (不 + 4th tone)
             var segments1 = segmenter.SegmentWithPinyinV2("不是");
             Debug.Log($"[IntegratedTest] '不是' segmented as: {string.Join(" | ", segments1.Select(s => $"{s.word}[{string.Join(" ", s.pinyin)}]"))}");
             var allPinyin1 = segments1.SelectMany(s => s.pinyin).ToArray();
             Assert.Greater(allPinyin1.Length, 0);
             Assert.AreEqual("bu2", allPinyin1[0]);
-            
+
             // Test case 2: 不好 (不 + 3rd tone)
             var segments2 = segmenter.SegmentWithPinyinV2("不好");
             Debug.Log($"[IntegratedTest] '不好' segmented as: {string.Join(" | ", segments2.Select(s => $"{s.word}[{string.Join(" ", s.pinyin)}]"))}");
             var allPinyin2 = segments2.SelectMany(s => s.pinyin).ToArray();
             Assert.Greater(allPinyin2.Length, 0);
             Assert.AreEqual("bu4", allPinyin2[0]);
-            
+
             // Test case 3: 不对 (不 + 4th tone)
             var segments3 = segmenter.SegmentWithPinyinV2("不对");
             Debug.Log($"[IntegratedTest] '不对' segmented as: {string.Join(" | ", segments3.Select(s => $"{s.word}[{string.Join(" ", s.pinyin)}]"))}");
             var allPinyin3 = segments3.SelectMany(s => s.pinyin).ToArray();
             Assert.Greater(allPinyin3.Length, 0);
             Assert.AreEqual("bu2", allPinyin3[0]);
-            
+
             // Test case 4: 不要 (不 + 4th tone)
             var segments4 = segmenter.SegmentWithPinyinV2("不要");
             Debug.Log($"[IntegratedTest] '不要' segmented as: {string.Join(" | ", segments4.Select(s => $"{s.word}[{string.Join(" ", s.pinyin)}]"))}");
@@ -81,28 +81,28 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public void ToneSandhi_Yi_InContext()
         {
             // Test cases with 一
-            
+
             // Test case 1: 一个 (一 + 4th tone → yi2)
             var segments1 = segmenter.SegmentWithPinyinV2("一个");
             Debug.Log($"[IntegratedTest] '一个' segmented as: {string.Join(" | ", segments1.Select(s => $"{s.word}[{string.Join(" ", s.pinyin)}]"))}");
             var allPinyin1 = segments1.SelectMany(s => s.pinyin).ToArray();
             Assert.Greater(allPinyin1.Length, 0);
             Assert.AreEqual("yi2", allPinyin1[0]);
-            
+
             // Test case 2: 一起 (一 + 3rd tone → yi4)
             var segments2 = segmenter.SegmentWithPinyinV2("一起");
             Debug.Log($"[IntegratedTest] '一起' segmented as: {string.Join(" | ", segments2.Select(s => $"{s.word}[{string.Join(" ", s.pinyin)}]"))}");
             var allPinyin2 = segments2.SelectMany(s => s.pinyin).ToArray();
             Assert.Greater(allPinyin2.Length, 0);
             Assert.AreEqual("yi4", allPinyin2[0]);
-            
+
             // Test case 3: 一定 (一 + 4th tone → yi2)
             var segments3 = segmenter.SegmentWithPinyinV2("一定");
             Debug.Log($"[IntegratedTest] '一定' segmented as: {string.Join(" | ", segments3.Select(s => $"{s.word}[{string.Join(" ", s.pinyin)}]"))}");
             var allPinyin3 = segments3.SelectMany(s => s.pinyin).ToArray();
             Assert.Greater(allPinyin3.Length, 0);
             Assert.AreEqual("yi2", allPinyin3[0]);
-            
+
             // Test case 4: 一般 (一 + 1st tone → yi4)
             var segments4 = segmenter.SegmentWithPinyinV2("一般");
             Debug.Log($"[IntegratedTest] '一般' segmented as: {string.Join(" | ", segments4.Select(s => $"{s.word}[{string.Join(" ", s.pinyin)}]"))}");
@@ -116,7 +116,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         {
             // Test 的 in different contexts
             // Test each case separately
-            
+
             // Test case 1: 我的 (Possessive)
             var segments1 = segmenter.SegmentWithPinyinV2("我的");
             Debug.Log($"[IntegratedTest] '我的' segmented as: {string.Join(" | ", segments1.Select(s => $"{s.word}[{string.Join(" ", s.pinyin)}]"))}");
@@ -134,7 +134,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                 }
             }
             Assert.IsTrue(deFound1);
-            
+
             // Test case 2: 的确 (indeed)
             var segments2 = segmenter.SegmentWithPinyinV2("的确");
             Debug.Log($"[IntegratedTest] '的确' segmented as: {string.Join(" | ", segments2.Select(s => $"{s.word}[{string.Join(" ", s.pinyin)}]"))}");
@@ -152,7 +152,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                 }
             }
             Assert.IsTrue(deFound2);
-            
+
             // Test case 3: 目的 (purpose)
             var segments3 = segmenter.SegmentWithPinyinV2("目的");
             Debug.Log($"[IntegratedTest] '目的' segmented as: {string.Join(" | ", segments3.Select(s => $"{s.word}[{string.Join(" ", s.pinyin)}]"))}");
@@ -170,7 +170,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                 }
             }
             Assert.IsTrue(deFound3);
-            
+
             // Test case 4: 他的书 (Possessive in phrase)
             var segments4 = segmenter.SegmentWithPinyinV2("他的书");
             Debug.Log($"[IntegratedTest] '他的书' segmented as: {string.Join(" | ", segments4.Select(s => $"{s.word}[{string.Join(" ", s.pinyin)}]"))}");
@@ -195,7 +195,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         {
             // Test complex phrases with multiple tone sandhi
             // Test each complex phrase separately
-            
+
             // Test case 1: 不一定 (bu + yi + ding)
             var segments1 = segmenter.SegmentWithPinyinV2("不一定");
             Debug.Log("[IntegratedTest] Complex phrase '不一定':");
@@ -205,7 +205,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             }
             Assert.Greater(segments1.Count, 0);
             Assert.AreEqual("不一定".Length, segments1.Sum(s => s.word.Length));
-            
+
             // Test case 2: 一不小心 (yi + bu + xiao + xin)
             var segments2 = segmenter.SegmentWithPinyinV2("一不小心");
             Debug.Log("[IntegratedTest] Complex phrase '一不小心':");
@@ -215,7 +215,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             }
             Assert.Greater(segments2.Count, 0);
             Assert.AreEqual("一不小心".Length, segments2.Sum(s => s.word.Length));
-            
+
             // Test case 3: 不是一个 (bu + shi + yi + ge)
             var segments3 = segmenter.SegmentWithPinyinV2("不是一个");
             Debug.Log("[IntegratedTest] Complex phrase '不是一个':");
@@ -225,7 +225,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             }
             Assert.Greater(segments3.Count, 0);
             Assert.AreEqual("不是一个".Length, segments3.Sum(s => s.word.Length));
-            
+
             // Test case 4: 一行不行 (yi + xing/hang + bu + xing)
             var segments4 = segmenter.SegmentWithPinyinV2("一行不行");
             Debug.Log("[IntegratedTest] Complex phrase '一行不行':");
@@ -242,14 +242,14 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         {
             // Test that word segmentation works with multi-tone characters
             var text = "银行行长的目的不是这个";
-            
+
             var segments = segmenter.SegmentWithPinyinV2(text);
             Debug.Log($"[IntegratedTest] Segmentation of '{text}':");
-            
+
             foreach (var segment in segments)
             {
                 Debug.Log($"  '{segment.word}' → [{string.Join(" ", segment.pinyin)}]");
-                
+
                 // Check specific pronunciations
                 if (segment.word.Contains("行"))
                 {
@@ -258,7 +258,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                     {
                         var xingPinyin = segment.pinyin[xingIndex];
                         Debug.Log($"    行 pronounced as: {xingPinyin}");
-                        
+
                         // In 银行, should be hang2
                         if (segment.word == "银行")
                         {
@@ -273,7 +273,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public IEnumerator FullPipeline_WithMultiTone()
         {
             // Test full phonemization pipeline
-            
+
             // Test case 1: 不要这样
             var text1 = "不要这样";
             var task1 = phonemizer.PhonemizeAsync(text1, "zh-CN");
@@ -283,7 +283,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             Assert.Greater(result1.Phonemes.Length, 0, $"Should produce phonemes for '{text1}'");
             Debug.Log($"[IntegratedTest] '{text1}' → {result1.Phonemes.Length} phonemes");
             Debug.Log($"  Phonemes: {string.Join(" ", result1.Phonemes.Take(20))}..."); // Show first 20
-            
+
             // Test case 2: 一个人的生活
             var text2 = "一个人的生活";
             var task2 = phonemizer.PhonemizeAsync(text2, "zh-CN");
@@ -293,7 +293,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             Assert.Greater(result2.Phonemes.Length, 0, $"Should produce phonemes for '{text2}'");
             Debug.Log($"[IntegratedTest] '{text2}' → {result2.Phonemes.Length} phonemes");
             Debug.Log($"  Phonemes: {string.Join(" ", result2.Phonemes.Take(20))}..."); // Show first 20
-            
+
             // Test case 3: 我了解你的意思
             var text3 = "我了解你的意思";
             var task3 = phonemizer.PhonemizeAsync(text3, "zh-CN");
@@ -303,7 +303,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             Assert.Greater(result3.Phonemes.Length, 0, $"Should produce phonemes for '{text3}'");
             Debug.Log($"[IntegratedTest] '{text3}' → {result3.Phonemes.Length} phonemes");
             Debug.Log($"  Phonemes: {string.Join(" ", result3.Phonemes.Take(20))}..."); // Show first 20
-            
+
             // Test case 4: 银行不行
             var text4 = "银行不行";
             var task4 = phonemizer.PhonemizeAsync(text4, "zh-CN");
@@ -319,7 +319,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public void EdgeCases_MultiTone()
         {
             // Test edge cases
-            
+
             // Test case 1: Empty string
             try
             {
@@ -331,7 +331,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             {
                 Assert.Fail($"Should handle edge case '' without exception: {ex.Message}");
             }
-            
+
             // Test case 2: Single multi-tone character
             try
             {
@@ -343,7 +343,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             {
                 Assert.Fail($"Should handle edge case '不' without exception: {ex.Message}");
             }
-            
+
             // Test case 3: Repeated multi-tone character
             try
             {
@@ -355,7 +355,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             {
                 Assert.Fail($"Should handle edge case '的的的' without exception: {ex.Message}");
             }
-            
+
             // Test case 4: Repeated tone sandhi character
             try
             {
@@ -367,7 +367,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             {
                 Assert.Fail($"Should handle edge case '不不不' without exception: {ex.Message}");
             }
-            
+
             // Test case 5: Repeated number character
             try
             {
@@ -379,7 +379,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             {
                 Assert.Fail($"Should handle edge case '一一一' without exception: {ex.Message}");
             }
-            
+
             // Test case 6: Punctuation only
             try
             {

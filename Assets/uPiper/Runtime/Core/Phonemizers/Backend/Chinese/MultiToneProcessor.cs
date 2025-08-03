@@ -13,18 +13,18 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         private readonly ChinesePinyinDictionary dictionary;
         private readonly Dictionary<char, MultiToneRule> multiToneRules;
         private readonly HashSet<char> multiToneCharacters;
-        
+
         public MultiToneProcessor(ChinesePinyinDictionary dictionary)
         {
             this.dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
-            
+
             multiToneRules = new Dictionary<char, MultiToneRule>();
             multiToneCharacters = new HashSet<char>();
-            
+
             InitializeMultiToneData();
             InitializeRules();
         }
-        
+
         /// <summary>
         /// Initialize multi-tone character data from dictionary
         /// </summary>
@@ -38,10 +38,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     multiToneCharacters.Add(ch);
                 }
             }
-            
+
             Debug.Log($"[MultiToneProcessor] Found {multiToneCharacters.Count} multi-tone characters");
         }
-        
+
         /// <summary>
         /// Get all characters from dictionary
         /// </summary>
@@ -49,7 +49,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             return dictionary.GetAllCharacters();
         }
-        
+
         /// <summary>
         /// Initialize tone sandhi and context rules
         /// </summary>
@@ -70,7 +70,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     }
                 }
             };
-            
+
             // 一 - complex tone sandhi
             multiToneRules['一'] = new MultiToneRule
             {
@@ -92,7 +92,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     }
                 }
             };
-            
+
             // 的 - most common multi-tone character
             multiToneRules['的'] = new MultiToneRule
             {
@@ -114,7 +114,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     }
                 }
             };
-            
+
             // 了 - aspectual particle vs verb
             multiToneRules['了'] = new MultiToneRule
             {
@@ -136,7 +136,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     }
                 }
             };
-            
+
             // 着 - various uses
             multiToneRules['着'] = new MultiToneRule
             {
@@ -158,7 +158,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     }
                 }
             };
-            
+
             // 行 - xing2 vs hang2
             multiToneRules['行'] = new MultiToneRule
             {
@@ -174,7 +174,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     }
                 }
             };
-            
+
             // 长 - chang2 vs zhang3
             multiToneRules['长'] = new MultiToneRule
             {
@@ -185,18 +185,18 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     new ContextRule
                     {
                         Description = "长大/成长/生长 → zhang3",
-                        Condition = (context) => 
-                            context.NextChar == '大' || 
-                            context.PrevChar == '成' || 
+                        Condition = (context) =>
+                            context.NextChar == '大' ||
+                            context.PrevChar == '成' ||
                             context.PrevChar == '生',
                         ResultPinyin = "zhang3"
                     }
                 }
             };
-            
+
             // Add more rules as needed...
         }
-        
+
         /// <summary>
         /// Get the best pronunciation for a character based on context
         /// </summary>
@@ -206,7 +206,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             if (multiToneRules.TryGetValue(character, out var rule))
             {
                 Debug.Log($"[MultiToneProcessor] Processing '{character}' with context: PrevChar='{context.PrevChar}', NextChar='{context.NextChar}', NextTone={context.NextTone}");
-                
+
                 // Apply rules in order
                 foreach (var contextRule in rule.Rules)
                 {
@@ -216,22 +216,22 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                         return contextRule.ResultPinyin;
                     }
                 }
-                
+
                 // Return default if no rule matches
                 Debug.Log($"[MultiToneProcessor] No rule matched, using default: {rule.DefaultPinyin}");
                 return rule.DefaultPinyin;
             }
-            
+
             // For characters without specific rules, return first pronunciation
             if (dictionary.TryGetCharacterPinyin(character, out var pinyinArray))
             {
                 return pinyinArray[0];
             }
-            
+
             // Fallback
             return null;
         }
-        
+
         /// <summary>
         /// Check if a character is multi-tone
         /// </summary>
@@ -239,7 +239,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             return multiToneCharacters.Contains(character);
         }
-        
+
         /// <summary>
         /// Get statistics about multi-tone characters
         /// </summary>
@@ -253,7 +253,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             };
         }
     }
-    
+
     /// <summary>
     /// Rule for a multi-tone character
     /// </summary>
@@ -263,7 +263,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         public string DefaultPinyin { get; set; }
         public List<ContextRule> Rules { get; set; } = new List<ContextRule>();
     }
-    
+
     /// <summary>
     /// Context-based pronunciation rule
     /// </summary>
@@ -273,7 +273,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         public Func<PronunciationContext, bool> Condition { get; set; }
         public string ResultPinyin { get; set; }
     }
-    
+
     /// <summary>
     /// Context information for pronunciation selection
     /// </summary>
@@ -288,7 +288,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         public int? NextTone { get; set; }
         public string Phrase { get; set; } // Full phrase if available
     }
-    
+
     /// <summary>
     /// Statistics about multi-tone processing
     /// </summary>

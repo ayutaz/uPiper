@@ -19,16 +19,16 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         private const string PHRASE_DICT_FILE = "phrase_pinyin.json";
         private const string IPA_MAP_FILE = "pinyin_ipa_map.json";
         private const string WORD_FREQ_FILE = "word_frequency.json";
-        
+
         // Phase 2 expanded dictionary files
         private const string CHARACTER_DICT_EXPANDED_FILE = "character_pinyin_expanded.json";
         private const string PHRASE_DICT_EXPANDED_FILE = "phrase_pinyin_expanded.json";
         private const string IPA_MAP_EXPANDED_FILE = "pinyin_ipa_map_expanded.json";
         private const string WORD_FREQ_EXPANDED_FILE = "word_frequency_expanded.json";
-        
+
         // Flag to use expanded dictionaries (Phase 2)
         private bool useExpandedDictionaries = false; // Temporarily disabled to avoid Unity freeze
-        
+
         // Flag to skip word frequency loading for performance
         private bool skipWordFrequency = true; // Temporarily skip to avoid Unity freeze
 
@@ -38,16 +38,16 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         public async Task<ChinesePinyinDictionary> LoadAsync(CancellationToken cancellationToken = default)
         {
             var dictionary = new ChinesePinyinDictionary();
-            
+
             // For Unity Editor testing, use fallback dictionary to avoid loading issues
-            #if UNITY_EDITOR
+#if UNITY_EDITOR
             Debug.Log("[ChineseDictionaryLoader] Using fallback dictionary in Unity Editor for testing");
             LoadFallbackData(dictionary);
             // Add minimal async operation to avoid compiler warning
             await Task.CompletedTask;
             return dictionary;
-            #else
-            
+#else
+
             var dictionaryData = new ChineseDictionaryData();
 
             try
@@ -59,7 +59,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     LoadPhraseDictionary(cancellationToken),
                     LoadIPAMapping(cancellationToken)
                 };
-                
+
                 // Only load word frequency if not skipping
                 if (!skipWordFrequency)
                 {
@@ -72,7 +72,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 dictionaryData.characterEntries = loadTasks[0].Result as ChineseDictionaryData.CharacterPinyinEntry[];
                 dictionaryData.phraseEntries = loadTasks[1].Result as ChineseDictionaryData.PhrasePinyinEntry[];
                 dictionaryData.pinyinIPAEntries = loadTasks[2].Result as ChineseDictionaryData.PinyinIPAEntry[];
-                
+
                 // Word frequencies might be skipped
                 if (loadTasks.Count > 3)
                 {
@@ -102,7 +102,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 LoadFallbackData(dictionary);
                 return dictionary;
             }
-            #endif
+#endif
         }
 
         private async Task<object> LoadCharacterDictionary(CancellationToken cancellationToken)
@@ -166,7 +166,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 Debug.LogWarning("[ChineseDictionaryLoader] Skipping word frequency loading for performance");
                 return Array.Empty<ChineseDictionaryData.WordFrequencyEntry>();
             }
-            
+
             var filename = useExpandedDictionaries ? WORD_FREQ_EXPANDED_FILE : WORD_FREQ_FILE;
             var json = await LoadJsonFile(filename, cancellationToken);
             if (string.IsNullOrEmpty(json) && useExpandedDictionaries)

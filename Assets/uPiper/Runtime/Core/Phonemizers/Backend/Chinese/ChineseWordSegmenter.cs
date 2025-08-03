@@ -15,30 +15,30 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         private readonly HashSet<string> wordSet;
         private readonly int maxWordLength;
         private MultiToneProcessor multiToneProcessor;
-        
+
         // Default word frequencies for unknown words
         private const float DEFAULT_WORD_FREQ = 1.0f;
         private const float SINGLE_CHAR_PENALTY = 0.5f; // Penalty for single character words
-        
+
         public ChineseWordSegmenter(ChinesePinyinDictionary dictionary)
         {
             this.dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
             this.multiToneProcessor = new MultiToneProcessor(dictionary);
-            
+
             // Build word set from phrase dictionary
             wordSet = new HashSet<string>();
             maxWordLength = 0;
-            
+
             // Add all phrases to word set
             foreach (var phrase in dictionary.GetAllPhrases())
             {
                 wordSet.Add(phrase);
                 maxWordLength = Math.Max(maxWordLength, phrase.Length);
             }
-            
+
             Debug.Log($"[ChineseWordSegmenter] Initialized with {wordSet.Count} words, max length: {maxWordLength}");
         }
-        
+
         /// <summary>
         /// Segment Chinese text into words using dynamic programming
         /// </summary>
@@ -46,29 +46,29 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             if (string.IsNullOrEmpty(text))
                 return new List<string>();
-            
+
             // Dynamic programming approach
             var n = text.Length;
             var dp = new float[n + 1]; // dp[i] = best score for text[0..i)
             var prev = new int[n + 1]; // prev[i] = best split position for text[0..i)
-            
+
             // Initialize
             dp[0] = 0;
             prev[0] = -1;
-            
+
             // Fill DP table
             for (int i = 0; i < n; i++)
             {
                 if (float.IsNegativeInfinity(dp[i]))
                     continue;
-                
+
                 // Try all possible word lengths
                 for (int len = 1; len <= Math.Min(maxWordLength, n - i); len++)
                 {
                     var word = text.Substring(i, len);
                     var score = GetWordScore(word);
                     var newScore = dp[i] + score;
-                    
+
                     if (newScore > dp[i + len])
                     {
                         dp[i + len] = newScore;
@@ -76,11 +76,11 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     }
                 }
             }
-            
+
             // Backtrack to find the best segmentation
             var result = new List<string>();
             var pos = n;
-            
+
             while (pos > 0)
             {
                 var start = prev[pos];
@@ -96,11 +96,11 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     pos = start;
                 }
             }
-            
+
             result.Reverse();
             return result;
         }
-        
+
         /// <summary>
         /// Segment using maximum forward matching (simpler but less accurate)
         /// </summary>
@@ -108,16 +108,16 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             var result = new List<string>();
             var i = 0;
-            
+
             while (i < text.Length)
             {
                 var matched = false;
-                
+
                 // Try longest match first
                 for (int len = Math.Min(maxWordLength, text.Length - i); len > 0; len--)
                 {
                     var word = text.Substring(i, len);
-                    
+
                     if (IsKnownWord(word))
                     {
                         result.Add(word);
@@ -126,7 +126,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                         break;
                     }
                 }
-                
+
                 // No match found, add single character
                 if (!matched)
                 {
@@ -134,10 +134,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     i++;
                 }
             }
-            
+
             return result;
         }
-        
+
         /// <summary>
         /// Get score for a word (higher is better)
         /// </summary>
@@ -153,7 +153,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 }
                 return (float)Math.Log(DEFAULT_WORD_FREQ + 1);
             }
-            
+
             // Single character
             if (word.Length == 1)
             {
@@ -163,11 +163,11 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     return (float)Math.Log(DEFAULT_WORD_FREQ * SINGLE_CHAR_PENALTY + 1);
                 }
             }
-            
+
             // Unknown word - heavily penalized
             return -word.Length * 0.5f;
         }
-        
+
         /// <summary>
         /// Check if a word is known (either as phrase or valid character sequence)
         /// </summary>
@@ -176,13 +176,13 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             // Check phrase dictionary
             if (wordSet.Contains(word))
                 return true;
-            
+
             // For single characters, check if it's in character dictionary
             if (word.Length == 1)
             {
                 return dictionary.TryGetCharacterPinyin(word[0], out _);
             }
-            
+
             // For multi-character words not in phrase dictionary,
             // check if all characters are known
             foreach (char ch in word)
@@ -190,10 +190,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 if (!dictionary.TryGetCharacterPinyin(ch, out _))
                     return false;
             }
-            
+
             return true;
         }
-        
+
         /// <summary>
         /// Segment and get pinyin for each word
         /// </summary>
@@ -201,11 +201,11 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             var segments = Segment(text);
             var result = new List<(string word, string[] pinyin)>();
-            
+
             foreach (var word in segments)
             {
                 string[] pinyin;
-                
+
                 // Try phrase first
                 if (dictionary.TryGetPhrasePinyin(word, out var phrasePinyin))
                 {
@@ -233,13 +233,13 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     }
                     pinyin = pinyinList.ToArray();
                 }
-                
+
                 result.Add((word, pinyin));
             }
-            
+
             return result;
         }
-        
+
         /// <summary>
         /// Get best pinyin pronunciation for a character based on context
         /// </summary>
@@ -251,10 +251,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 Character = ch,
                 Phrase = word
             };
-            
+
             // Get character position in word
             var charIndex = pinyinList.Count; // Current position
-            
+
             // Set previous character context
             if (charIndex > 0)
             {
@@ -266,7 +266,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     context.PrevTone = ExtractTone(prevPinyin);
                 }
             }
-            
+
             // Set next character context
             if (charIndex < word.Length - 1)
             {
@@ -278,20 +278,20 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     context.NextTone = ExtractTone(nextCharPinyin[0]);
                 }
             }
-            
+
             // Use MultiToneProcessor to get best pronunciation
             var bestPinyin = multiToneProcessor.GetBestPronunciation(ch, context);
-            
+
             // If MultiToneProcessor returns a result, use it
             if (!string.IsNullOrEmpty(bestPinyin))
             {
                 return bestPinyin;
             }
-            
+
             // Otherwise, use first available pronunciation
             return availablePinyin[0];
         }
-        
+
         /// <summary>
         /// Extract tone number from pinyin
         /// </summary>
@@ -299,16 +299,16 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             if (string.IsNullOrEmpty(pinyin))
                 return null;
-            
+
             var lastChar = pinyin[pinyin.Length - 1];
             if (char.IsDigit(lastChar))
             {
                 return lastChar - '0';
             }
-            
+
             return null;
         }
-        
+
         /// <summary>
         /// Segment with pinyin using multi-tone context awareness
         /// </summary>
@@ -318,12 +318,12 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             Debug.Log($"[WordSegmenter] Segmented '{text}' into: [{string.Join(", ", segments.Select(s => $"'{s}'"))}]");
             var result = new List<(string word, string[] pinyin)>();
             var fullTextIndex = 0;
-            
+
             for (int segIdx = 0; segIdx < segments.Count; segIdx++)
             {
                 var word = segments[segIdx];
                 string[] pinyin;
-                
+
                 // Try phrase first
                 if (dictionary.TryGetPhrasePinyin(word, out var phrasePinyin))
                 {
@@ -335,11 +335,11 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                     Debug.Log($"[WordSegmenter] Phrase '{word}' not found, processing character by character");
                     // Process character by character with context
                     var pinyinList = new List<string>();
-                    
+
                     for (int charIdx = 0; charIdx < word.Length; charIdx++)
                     {
                         var ch = word[charIdx];
-                        
+
                         if (dictionary.TryGetCharacterPinyin(ch, out var charPinyin))
                         {
                             // Build comprehensive context
@@ -348,7 +348,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                                 Character = ch,
                                 Phrase = text // Full text for broader context
                             };
-                            
+
                             // Previous character in current word
                             if (charIdx > 0)
                             {
@@ -363,7 +363,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                             {
                                 context.PrevChar = text[fullTextIndex - 1];
                             }
-                            
+
                             // Next character in current word
                             if (charIdx < word.Length - 1)
                             {
@@ -398,7 +398,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                                     }
                                 }
                             }
-                            
+
                             // Previous and next words
                             if (segIdx > 0)
                             {
@@ -408,10 +408,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                             {
                                 context.NextWord = segments[segIdx + 1];
                             }
-                            
+
                             // Get best pronunciation
                             var bestPinyin = multiToneProcessor.GetBestPronunciation(ch, context);
-                            
+
                             if (!string.IsNullOrEmpty(bestPinyin))
                             {
                                 pinyinList.Add(bestPinyin);
@@ -430,14 +430,14 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                             pinyinList.Add(ch.ToString());
                         }
                     }
-                    
+
                     pinyin = pinyinList.ToArray();
                 }
-                
+
                 result.Add((word, pinyin));
                 fullTextIndex += word.Length;
             }
-            
+
             return result;
         }
     }

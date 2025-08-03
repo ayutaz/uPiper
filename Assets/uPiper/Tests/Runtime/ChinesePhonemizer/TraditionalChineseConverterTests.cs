@@ -23,10 +23,10 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
         public void Converter_ShouldInitialize()
         {
             Assert.IsNotNull(converter);
-            
+
             var (mappingCount, traditionalCount) = converter.GetStatistics();
             Debug.Log($"[TraditionalTest] Initialized with {mappingCount} mappings, {traditionalCount} traditional characters");
-            
+
             Assert.Greater(mappingCount, 200, "Should have at least 200 character mappings");
             Assert.AreEqual(mappingCount, traditionalCount, "Mapping count should equal traditional character count");
         }
@@ -81,7 +81,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             var result = converter.ConvertToSimplified("Hello 世界！");
             Assert.AreEqual("Hello 世界！", result);
         }
-        
+
         [Test]
         public void ConvertToSimplified_MixedText_TraditionalEnglish()
         {
@@ -89,7 +89,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             var result = converter.ConvertToSimplified("學習English");
             Assert.AreEqual("学习English", result);
         }
-        
+
         [Test]
         public void ConvertToSimplified_MixedText_Mixed()
         {
@@ -97,7 +97,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             var result = converter.ConvertToSimplified("我love臺灣");
             Assert.AreEqual("我love台湾", result);
         }
-        
+
         [Test]
         public void ConvertToSimplified_MixedText_NumbersTraditional()
         {
@@ -105,7 +105,7 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             var result = converter.ConvertToSimplified("123書本456");
             Assert.AreEqual("123书本456", result);
         }
-        
+
         [Test]
         public void ConvertToSimplified_MixedText_LettersTraditional()
         {
@@ -121,17 +121,17 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             Assert.IsTrue(converter.IsTraditionalCharacter('學'));
             Assert.IsTrue(converter.IsTraditionalCharacter('國'));
             Assert.IsTrue(converter.IsTraditionalCharacter('愛'));
-            
+
             // Simplified characters
             Assert.IsFalse(converter.IsTraditionalCharacter('学'));
             Assert.IsFalse(converter.IsTraditionalCharacter('国'));
             Assert.IsFalse(converter.IsTraditionalCharacter('爱'));
-            
+
             // Common characters (same in both)
             Assert.IsFalse(converter.IsTraditionalCharacter('我'));
             Assert.IsFalse(converter.IsTraditionalCharacter('你'));
             Assert.IsFalse(converter.IsTraditionalCharacter('好'));
-            
+
             // Non-Chinese characters
             Assert.IsFalse(converter.IsTraditionalCharacter('A'));
             Assert.IsFalse(converter.IsTraditionalCharacter('1'));
@@ -145,14 +145,14 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             Assert.IsTrue(converter.ContainsTraditional("我愛你"));
             Assert.IsTrue(converter.ContainsTraditional("學習中文"));
             Assert.IsTrue(converter.ContainsTraditional("Hello 臺灣"));
-            
+
             // No traditional
             Assert.IsFalse(converter.ContainsTraditional("我爱你"));
             Assert.IsFalse(converter.ContainsTraditional("学习中文"));
             Assert.IsFalse(converter.ContainsTraditional("Hello 台湾"));
             Assert.IsFalse(converter.ContainsTraditional("Hello World"));
             Assert.IsFalse(converter.ContainsTraditional("12345"));
-            
+
             // Edge cases
             Assert.IsFalse(converter.ContainsTraditional(""));
             Assert.IsFalse(converter.ContainsTraditional(null));
@@ -164,13 +164,13 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             // Empty and null
             Assert.AreEqual("", converter.ConvertToSimplified(""));
             Assert.AreEqual(null, converter.ConvertToSimplified(null));
-            
+
             // Only punctuation
             Assert.AreEqual("！？。，", converter.ConvertToSimplified("！？。，"));
-            
+
             // Only numbers
             Assert.AreEqual("12345", converter.ConvertToSimplified("12345"));
-            
+
             // Already simplified
             Assert.AreEqual("我爱学习", converter.ConvertToSimplified("我爱学习"));
         }
@@ -195,21 +195,21 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
             // Test technical terms that might be different
             var result1 = converter.ConvertToSimplified("電腦軟體");
             Debug.Log($"[TraditionalTest] '電腦軟體' → '{result1}'");
-            
+
             var result2 = converter.ConvertToSimplified("網際網路");
             Debug.Log($"[TraditionalTest] '網際網路' → '{result2}'");
-            
+
             var result3 = converter.ConvertToSimplified("人工智慧");
             Debug.Log($"[TraditionalTest] '人工智慧' → '{result3}'");
-            
+
             var result4 = converter.ConvertToSimplified("機器學習");
             Debug.Log($"[TraditionalTest] '機器學習' → '{result4}'");
             Assert.AreEqual("机器学习", result4);
-            
+
             var result5 = converter.ConvertToSimplified("數據庫");
             Debug.Log($"[TraditionalTest] '數據庫' → '{result5}'");
             Assert.AreEqual("数据库", result5);
-            
+
             var result6 = converter.ConvertToSimplified("程式設計");
             Debug.Log($"[TraditionalTest] '程式設計' → '{result6}'");
             // Note: Some technical terms might have regional variations
@@ -223,15 +223,15 @@ namespace uPiper.Tests.Runtime.ChinesePhonemizer
                            我們需要確保轉換器能夠快速處理大量文字。
                            包括各種不同的繁體字：學習、國家、愛情、體育、語言等。
                            還有一些複雜的句子結構和標點符號。";
-            
+
             var startTime = Time.realtimeSinceStartup;
             var result = converter.ConvertToSimplified(largeText);
             var elapsed = Time.realtimeSinceStartup - startTime;
-            
+
             Assert.IsNotNull(result);
             Assert.Greater(result.Length, 0);
             Assert.Less(elapsed, 0.01f, "Conversion should be very fast (< 10ms)");
-            
+
             Debug.Log($"[TraditionalTest] Converted {largeText.Length} characters in {elapsed * 1000:F2}ms");
         }
     }
