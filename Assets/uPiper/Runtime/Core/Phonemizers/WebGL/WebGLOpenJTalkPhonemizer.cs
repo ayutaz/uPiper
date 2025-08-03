@@ -37,6 +37,9 @@ namespace uPiper.Core.Phonemizers.WebGL
                     {
                         Debug.Log("[WebGLOpenJTalkPhonemizer] Initializing WebGL OpenJTalk...");
                         
+                        // Initialize IndexedDB cache
+                        WebGLCacheManager.Initialize();
+                        
                         // Initialize OpenJTalk WebAssembly
                         bool success = WebGLInterop.InitializeOpenJTalkWeb();
                         
@@ -86,6 +89,19 @@ namespace uPiper.Core.Phonemizers.WebGL
             {
                 try
                 {
+                    // Check cache first
+                    var cachedPhonemes = WebGLCacheManager.GetCachedPhonemesForText(text, language);
+                    if (cachedPhonemes != null)
+                    {
+                        Debug.Log($"[WebGLOpenJTalkPhonemizer] Using cached phonemes for text: {text.Substring(0, Math.Min(20, text.Length))}...");
+                        return new PhonemeResult
+                        {
+                            Phonemes = cachedPhonemes,
+                            Language = language,
+                            Success = true
+                        };
+                    }
+
                     // Call JavaScript function
                     IntPtr resultPtr = WebGLInterop.PhonemizeJapaneseText(text);
                     var result = WebGLInterop.ParseJSONResult<WebGLInterop.PhonemeResult>(resultPtr);
@@ -98,6 +114,9 @@ namespace uPiper.Core.Phonemizers.WebGL
 
                     // Convert to PUA format if needed
                     var phonemes = ConvertToPUAFormat(result.phonemes);
+                    
+                    // Cache the result
+                    WebGLCacheManager.CachePhonemesForText(text, language, phonemes);
 
                     return new PhonemeResult
                     {
