@@ -62,8 +62,10 @@ namespace uPiper.Core.Phonemizers
             {
                 var tasks = new List<Task<(string language, IPhonemizerBackend backend, bool success)>>
                 {
+#if !UNITY_WEBGL
                     // Initialize Japanese backends
                     InitializeBackendAsync("ja", () => CreateOpenJTalkBackend(), options, cancellationToken),
+#endif
 
                     // Initialize English backends
                     InitializeBackendAsync("en", () => CreateSimpleLTSBackend(), options, cancellationToken),
@@ -460,6 +462,7 @@ namespace uPiper.Core.Phonemizers
             }
         }
 
+#if !UNITY_WEBGL
         /// <summary>
         /// Creates an OpenJTalk backend using reflection to avoid compile-time dependency.
         /// 
@@ -486,6 +489,7 @@ namespace uPiper.Core.Phonemizers
                 return null;
             }
         }
+#endif
 
         /// <summary>
         /// Creates a SimpleLTS backend using reflection to avoid compile-time dependency.

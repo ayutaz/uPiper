@@ -40,6 +40,7 @@ namespace uPiper.Core.Phonemizers
         {
             try
             {
+#if !UNITY_WEBGL
                 // Initialize Japanese backend (OpenJTalk)
                 var jaBackend = CreateOpenJTalkBackend();
                 if (jaBackend == null)
@@ -54,6 +55,7 @@ namespace uPiper.Core.Phonemizers
                     return false;
                 }
                 backends["ja"] = jaBackend;
+#endif
 
                 // Initialize English backend (SimpleLTS as primary, RuleBased as fallback)
                 IPhonemizerBackend enBackend = null;
@@ -331,6 +333,7 @@ namespace uPiper.Core.Phonemizers
             }
         }
 
+#if !UNITY_WEBGL
         /// <summary>
         /// Creates an OpenJTalk backend using reflection to avoid compile-time dependency.
         /// </summary>
@@ -352,6 +355,7 @@ namespace uPiper.Core.Phonemizers
                 return null;
             }
         }
+#endif
 
         /// <summary>
         /// Creates a SimpleLTS backend using reflection to avoid compile-time dependency.
