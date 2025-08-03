@@ -30,7 +30,7 @@
 - 🚀 Unity AI Inference Engineによる高速推論
 - 📱 マルチプラットフォーム対応
 - 🔧 OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux/Android）
-- 🇨🇳 中国語音声合成対応（eSpeak-NG音素化、ピンイン変換）
+- 🇨🇳 中国語音声合成対応（eSpeak-NG音素化、ピンイン変換）※音素精度に改善の余地あり
 - ⚡ GPU推論サポート（GPUCompute/GPUPixel）
 - 🎭 高度なサンプル（ストリーミング、複数音声、リアルタイム）
 

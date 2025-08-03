@@ -30,7 +30,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 - 🚀 Fast inference with Unity AI Inference Engine
 - 📱 Multi-platform support
 - 🔧 High-precision Japanese phonemization with OpenJTalk (Windows/macOS/Linux/Android)
-- 🇨🇳 Chinese speech synthesis support (eSpeak-NG phonemization, Pinyin conversion)
+- 🇨🇳 Chinese speech synthesis support (eSpeak-NG phonemization, Pinyin conversion) *Note: Phoneme accuracy needs improvement
 - ⚡ GPU inference support (GPUCompute/GPUPixel)
 - 🎭 Advanced samples (streaming, multi-voice, real-time)
 
