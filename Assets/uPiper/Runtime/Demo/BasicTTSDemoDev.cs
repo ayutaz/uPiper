@@ -7,7 +7,9 @@ using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Backend;
+#if !UNITY_WEBGL
 using uPiper.Core.Phonemizers.Implementations;
+#endif
 
 namespace uPiper.Demo
 {

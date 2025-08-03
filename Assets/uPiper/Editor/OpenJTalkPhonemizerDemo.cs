@@ -4,10 +4,28 @@ using UnityEditor;
 using UnityEngine;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Backend;
+#if !UNITY_WEBGL
 using uPiper.Core.Phonemizers.Implementations;
+#endif
 
 namespace uPiper.Editor
 {
+#if UNITY_WEBGL
+    /// <summary>
+    /// Editor window for testing OpenJTalkPhonemizer functionality (not available on WebGL)
+    /// </summary>
+    public class OpenJTalkPhonemizerDemo : EditorWindow
+    {
+        [MenuItem("uPiper/Tools/OpenJTalk Phonemizer Test")]
+        public static void ShowWindow()
+        {
+            EditorUtility.DisplayDialog("Not Available", 
+                "OpenJTalk Phonemizer Test is not available on WebGL platform.\n\n" +
+                "WebGL uses WebAssembly-based phonemization instead.", 
+                "OK");
+        }
+    }
+#else
     /// <summary>
     /// Editor window for testing OpenJTalkPhonemizer functionality
     /// </summary>
@@ -280,4 +298,5 @@ namespace uPiper.Editor
             Repaint();
         }
     }
+#endif
 }

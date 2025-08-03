@@ -6,7 +6,9 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using uPiper.Core.Performance;
+#if !UNITY_WEBGL
 using uPiper.Core.Phonemizers.Implementations;
+#endif
 using uPiper.Core.Platform;
 
 namespace uPiper.Tests.Runtime.Performance

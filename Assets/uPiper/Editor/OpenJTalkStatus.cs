@@ -3,7 +3,9 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using uPiper.Core.Phonemizers;
+#if !UNITY_WEBGL
 using uPiper.Core.Phonemizers.Implementations;
+#endif
 
 namespace uPiper.Editor
 {
@@ -14,6 +16,11 @@ namespace uPiper.Editor
         {
             Debug.Log("=== OpenJTalk Status Report ===");
 
+#if UNITY_WEBGL
+            Debug.LogWarning("OpenJTalk native library is not available on WebGL platform.");
+            Debug.LogWarning("WebGL uses WebAssembly-based phonemization instead.");
+            return;
+#else
             // Try to create phonemizer to check status
             OpenJTalkPhonemizer phonemizer = null;
 
@@ -109,6 +116,7 @@ namespace uPiper.Editor
 
             phonemizer?.Dispose();
             Debug.Log("\n=== End of Status Report ===");
+#endif
         }
     }
 }
