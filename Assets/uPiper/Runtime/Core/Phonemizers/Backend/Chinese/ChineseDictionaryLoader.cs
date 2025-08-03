@@ -401,7 +401,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "l", ipa = "l" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "g", ipa = "k" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "k", ipa = "kʰ" },
-                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "h", ipa = "x" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "h", ipa = "h" },
                 
                 // Retroflex consonants
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "zh", ipa = "ʈʂ" },
@@ -419,7 +419,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 
                 // Common syllables
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "ni", ipa = "ni" },
-                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "hao", ipa = "xau" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "hao", ipa = "hau" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "shi", ipa = "ʂʅ" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "jie", ipa = "tɕie" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "zhong", ipa = "ʈʂʊŋ" },
@@ -437,7 +437,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "ge", ipa = "kɤ" },
                 // Additional IPA mappings for test characters
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "yin", ipa = "in" },
-                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "hang", ipa = "xaŋ" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "hang", ipa = "haŋ" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "xing", ipa = "ɕiŋ" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "chong", ipa = "ʈʂʰuŋ" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "chang", ipa = "ʈʂʰaŋ" },
@@ -470,7 +470,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 // Additional IPA mappings for new characters
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "min", ipa = "min" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "gong", ipa = "kuŋ" },
-                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "he", ipa = "xɤ" },
+                new ChineseDictionaryData.PinyinIPAEntry { pinyin = "he", ipa = "hɤ" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "yong", ipa = "juŋ" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "bian", ipa = "piɛn" },
                 new ChineseDictionaryData.PinyinIPAEntry { pinyin = "cheng", ipa = "ʈʂʰəŋ" },
