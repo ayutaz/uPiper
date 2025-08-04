@@ -41,19 +41,66 @@ namespace uPiper.Core.Phonemizers.WebGL
                         WebGLCacheManager.Initialize();
                         
                         // Initialize OpenJTalk WebAssembly
-                        bool success = WebGLInterop.InitializeOpenJTalkWeb();
+                        int initResult = WebGLInterop.InitializeOpenJTalkWeb();
                         
-                        if (success)
+                        if (initResult == 1)
                         {
+                            // Already initialized
                             isInitialized = true;
-                            Debug.Log("[WebGLOpenJTalkPhonemizer] Initialization successful");
+                            Debug.Log("[WebGLOpenJTalkPhonemizer] Already initialized");
+                            return true;
+                        }
+                        else if (initResult == 0)
+                        {
+                            // Async initialization in progress, wait for module to load
+                            Debug.Log("[WebGLOpenJTalkPhonemizer] Waiting for module loading...");
+                            
+                            // Wait for module to be loaded
+                            int moduleLoadAttempts = 100; // 10 seconds max
+                            for (int i = 0; i < moduleLoadAttempts; i++)
+                            {
+                                await Task.Delay(100, cancellationToken);
+                                
+                                // Check if module is loaded (not necessarily initialized)
+                                int moduleStatus = WebGLInterop.InitializeOpenJTalkWeb();
+                                if (moduleStatus == 1 || moduleStatus == -1)
+                                {
+                                    // Module loaded or error
+                                    break;
+                                }
+                            }
+                            
+                            // Now load dictionary
+                            Debug.Log("[WebGLOpenJTalkPhonemizer] Loading dictionary...");
+                            bool dictLoaded = WebGLInterop.LoadOpenJTalkDictionary(null, 0);
+                            
+                            if (!dictLoaded)
+                            {
+                                Debug.LogError("[WebGLOpenJTalkPhonemizer] Failed to start dictionary loading");
+                                return false;
+                            }
+                            
+                            // Wait for dictionary initialization
+                            int dictLoadAttempts = 50; // 5 seconds max
+                            for (int i = 0; i < dictLoadAttempts; i++)
+                            {
+                                await Task.Delay(100, cancellationToken);
+                                if (WebGLInterop.IsOpenJTalkInitialized())
+                                {
+                                    isInitialized = true;
+                                    Debug.Log("[WebGLOpenJTalkPhonemizer] Initialization successful");
+                                    return true;
+                                }
+                            }
+                            
+                            Debug.LogError("[WebGLOpenJTalkPhonemizer] Dictionary initialization timeout");
+                            return false;
                         }
                         else
                         {
                             Debug.LogError("[WebGLOpenJTalkPhonemizer] Initialization failed");
+                            return false;
                         }
-                        
-                        return success;
                     }
                     catch (Exception e)
                     {
@@ -138,29 +185,8 @@ namespace uPiper.Core.Phonemizers.WebGL
         /// </summary>
         private string[] ConvertToPUAFormat(string[] phonemes)
         {
-            // This should match the conversion in native OpenJTalkPhonemizer
-            for (int i = 0; i < phonemes.Length; i++)
-            {
-                switch (phonemes[i])
-                {
-                    case "cl": phonemes[i] = "\ue000"; break;
-                    case "pau": phonemes[i] = "\ue001"; break;
-                    case "sil": phonemes[i] = "\ue002"; break;
-                    case "by": phonemes[i] = "\ue003"; break;
-                    case "ch": phonemes[i] = "\ue004"; break;
-                    case "dy": phonemes[i] = "\ue005"; break;
-                    case "gy": phonemes[i] = "\ue006"; break;
-                    case "hy": phonemes[i] = "\ue007"; break;
-                    case "ky": phonemes[i] = "\ue008"; break;
-                    case "my": phonemes[i] = "\ue009"; break;
-                    case "ny": phonemes[i] = "\ue00a"; break;
-                    case "py": phonemes[i] = "\ue00b"; break;
-                    case "ry": phonemes[i] = "\ue00c"; break;
-                    case "sh": phonemes[i] = "\ue00d"; break;
-                    case "ts": phonemes[i] = "\ue00e"; break;
-                    case "ty": phonemes[i] = "\ue00f"; break;
-                }
-            }
+            // The JavaScript side already converts to PUA format, so just return as is
+            // This function is kept for consistency with the interface
             return phonemes;
         }
 

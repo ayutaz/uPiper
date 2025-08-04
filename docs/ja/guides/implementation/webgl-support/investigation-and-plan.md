@@ -4,14 +4,16 @@
 
 ## 実装進捗サマリー
 
-- **Phase 1 基盤整備**: 70%完了 ✅
+- **Phase 1 基盤整備**: 90%完了 ✅
   - JavaScript interop層完成
   - WebGL音素化クラス実装済み
-  - ⚠️ WebAssemblyライブラリ統合が未完了（プレースホルダー実装）
+  - ✅ wasm_open_jtalk統合完了（2025-08-04）
+  - ⚠️ eSpeak-ng統合が未完了
   
-- **Phase 2 Core機能**: 40%完了 🔄
+- **Phase 2 Core機能**: 50%完了 🔄
   - InferenceEngineDemoのWebGL対応済み
   - 基本的なキャッシュ機能実装済み
+  - ✅ WebGLビルドテンプレート作成済み
   - WebGL専用デモシーン未作成
   
 - **Phase 3 CI/CD**: 0%完了 ❌
@@ -81,15 +83,18 @@
 
 最終更新: 2025-08-04
 
-### Phase 1: 基盤整備（1週間） - **進捗: 70%完了**
+### Phase 1: 基盤整備（1週間） - **進捗: 90%完了**
 
 #### 1.1 WebAssembly音素化エンジンの準備
-- [ ] wasm_open_jtalkのビルドと統合 ⚠️ **プレースホルダー実装のみ**
+- [x] wasm_open_jtalkのビルドと統合 ✅ **2025-08-04完了**
+  - piper-plusからopenjtalk.js/wasmをコピー
+  - 実際のOpenJTalk WebAssembly統合実装
+  - 辞書ファイル配置とローディング機能
 - [ ] eSpeak-ng WebAssemblyビルドの準備 ⚠️ **プレースホルダー実装のみ**
 - [x] Unity WebGLプラグインディレクトリ構造の整備 ✅
 
 #### 1.2 JavaScript Interopレイヤー実装
-- [x] `openjtalk_wrapper.jslib`の作成 ✅
+- [x] `openjtalk_wrapper.jslib`の作成 ✅ **実装完了**
 - [x] `espeak_wrapper.jslib`の作成 ✅
 - [x] `indexeddb_cache.jslib`の作成 ✅
 - [x] P/Invoke定義の追加 (`WebGLInterop.cs`) ✅
@@ -100,12 +105,13 @@
 - [x] `WebGLCacheManager`クラスの作成 ✅
 - [x] 既存の音素化システムとの統合 ✅
 
-### Phase 2: Core機能実装（2週間） - **進捗: 40%完了**
+### Phase 2: Core機能実装（2週間） - **進捗: 50%完了**
 
 #### 2.1 音声合成パイプライン対応
 - [x] WebGL用InferenceAudioGeneratorの調整 (GPUPixelバックエンド) ✅
 - [x] メモリ管理の最適化（IndexedDBキャッシュ基本実装） ✅
 - [x] 非同期処理の実装 ✅
+- [x] WebGLビルドテンプレート作成 ✅ **2025-08-04完了**
 - [ ] メモリ使用量の詳細な最適化
 
 #### 2.2 言語切り替え機能
@@ -206,32 +212,42 @@
    - ✅ モバイルデバイス対応
    - ✅ エラーハンドリング完備
 
-## 現在のモック実装状況
+## 実装完了項目（2025-08-04更新）
 
-### JavaScript側のプレースホルダー実装
-1. **openjtalk_wrapper.jslib**
-   - `PhonemizeJapaneseText`: 固定値 `['k', 'o', 'N', 'n', 'i', 'ch', 'i', 'w', 'a']` を返す
-   - 実際のwasm_open_jtalk統合待ち
+### WebAssembly統合
+1. **openjtalk_wrapper.jslib** ✅
+   - `InitializeOpenJTalkWeb`: 実際のOpenJTalkモジュールロード実装
+   - `LoadOpenJTalkDictionary`: 辞書ファイルの非同期ロード実装
+   - `PhonemizeJapaneseText`: `_openjtalk_synthesis_labels`を使用した実装
+   - PUA文字へのマッピング実装（ch→\ue001等）
 
-2. **espeak_wrapper.jslib**
+2. **ディレクトリ構造** ✅
+   - `Assets/StreamingAssets/`: WebAssemblyファイル配置
+   - `Assets/StreamingAssets/dict/`: OpenJTalk辞書ファイル配置
+   - `Assets/StreamingAssets/voice/`: 音声ファイル配置
+   - `Assets/WebGLTemplates/uPiperTemplate/`: カスタムテンプレート作成
+
+### 残りのモック実装
+1. **espeak_wrapper.jslib**
    - `PhonemizeText`: 空の配列を返す
    - 実際のeSpeak-ng WASM統合待ち
 
-### その他の未実装機能
-- 統一音素化API（言語自動検出）
-- WebGL専用デモシーン
-- メモリ使用量の詳細な最適化
+2. **その他の未実装機能**
+   - 統一音素化API（言語自動検出）
+   - WebGL専用デモシーン
+   - メモリ使用量の詳細な最適化
 
 ## 次のステップ
 
-1. **最優先**: wasm_open_jtalkの実際の統合
-   - piper-plusのPR #144の実装を参考に
-   - 現在のプレースホルダーを実際の実装に置き換え
+1. **eSpeak-ng統合**
+   - piper-plusのeSpeak-ng WASM実装を参考に
+   - 英語音素化の実装
 
 2. **CI/CD構築**
    - GitHub ActionsでのWebGLビルド自動化
    - GitHub Pagesへの自動デプロイ設定
 
-3. **ドキュメント整備**
-   - WebGLビルド手順の詳細化
-   - ユーザー向けWebGL使用ガイド
+3. **テストとデモ**
+   - WebGLビルドのローカルテスト
+   - デモシーンの作成
+   - パフォーマンス測定

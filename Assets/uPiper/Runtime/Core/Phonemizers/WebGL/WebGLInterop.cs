@@ -12,7 +12,10 @@ namespace uPiper.Core.Phonemizers.WebGL
     {
         // OpenJTalk WebAssembly functions
         [DllImport("__Internal")]
-        public static extern bool InitializeOpenJTalkWeb();
+        public static extern int InitializeOpenJTalkWeb();
+        
+        [DllImport("__Internal")]
+        public static extern bool IsOpenJTalkInitialized();
 
         [DllImport("__Internal")]
         public static extern bool LoadOpenJTalkDictionary(byte[] dictionaryData, int dataLength);
