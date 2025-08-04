@@ -1,5 +1,26 @@
 # WebGL対応 調査結果と実装計画
 
+最終更新: 2025-08-04
+
+## 実装進捗サマリー
+
+- **Phase 1 基盤整備**: 70%完了 ✅
+  - JavaScript interop層完成
+  - WebGL音素化クラス実装済み
+  - ⚠️ WebAssemblyライブラリ統合が未完了（プレースホルダー実装）
+  
+- **Phase 2 Core機能**: 40%完了 🔄
+  - InferenceEngineDemoのWebGL対応済み
+  - 基本的なキャッシュ機能実装済み
+  - WebGL専用デモシーン未作成
+  
+- **Phase 3 CI/CD**: 0%完了 ❌
+  - GitHub Actions設定未実装
+  - 自動デプロイ未設定
+  
+- **Phase 4 最適化**: 0%完了 ❌
+  - パフォーマンス最適化未着手
+
 ## 調査結果
 
 ### 1. piper-plus側のWeb対応実装（PR #144）
@@ -56,43 +77,49 @@
 - ❌ WebGLデモシーン実装
 - ❌ CI/CDでのWebGLビルド
 
-## 実装計画
+## 実装計画と進捗状況
 
-### Phase 1: 基盤整備（1週間）
+最終更新: 2025-08-04
+
+### Phase 1: 基盤整備（1週間） - **進捗: 70%完了**
 
 #### 1.1 WebAssembly音素化エンジンの準備
-- [ ] wasm_open_jtalkのビルドと統合
-- [ ] eSpeak-ng WebAssemblyビルドの準備
-- [ ] Unity WebGLプラグインディレクトリ構造の整備
+- [ ] wasm_open_jtalkのビルドと統合 ⚠️ **プレースホルダー実装のみ**
+- [ ] eSpeak-ng WebAssemblyビルドの準備 ⚠️ **プレースホルダー実装のみ**
+- [x] Unity WebGLプラグインディレクトリ構造の整備 ✅
 
 #### 1.2 JavaScript Interopレイヤー実装
-- [ ] `openjtalk_wrapper.jslib`の作成
-- [ ] `espeak_wrapper.jslib`の作成
-- [ ] P/Invoke定義の追加
+- [x] `openjtalk_wrapper.jslib`の作成 ✅
+- [x] `espeak_wrapper.jslib`の作成 ✅
+- [x] `indexeddb_cache.jslib`の作成 ✅
+- [x] P/Invoke定義の追加 (`WebGLInterop.cs`) ✅
 
 #### 1.3 WebGL用音素化クラス実装
-- [ ] `WebGLOpenJTalkPhonemizer`クラスの作成
-- [ ] `WebGLESpeakPhonemizer`クラスの作成
-- [ ] 既存の音素化システムとの統合
+- [x] `WebGLOpenJTalkPhonemizer`クラスの作成 ✅
+- [x] `WebGLESpeakPhonemizer`クラスの作成 ✅
+- [x] `WebGLCacheManager`クラスの作成 ✅
+- [x] 既存の音素化システムとの統合 ✅
 
-### Phase 2: Core機能実装（2週間）
+### Phase 2: Core機能実装（2週間） - **進捗: 40%完了**
 
 #### 2.1 音声合成パイプライン対応
-- [ ] WebGL用InferenceAudioGeneratorの調整
-- [ ] メモリ管理の最適化（IndexedDBキャッシュ）
-- [ ] 非同期処理の実装
+- [x] WebGL用InferenceAudioGeneratorの調整 (GPUPixelバックエンド) ✅
+- [x] メモリ管理の最適化（IndexedDBキャッシュ基本実装） ✅
+- [x] 非同期処理の実装 ✅
+- [ ] メモリ使用量の詳細な最適化
 
 #### 2.2 言語切り替え機能
+- [x] InferenceEngineDemoのWebGL対応 ✅
 - [ ] 統一音素化APIの実装
-- [ ] 日本語・英語・中国語の切り替え対応
-- [ ] フォールバック処理の実装
+- [ ] 日本語・英語・中国語の自動切り替え対応
+- [ ] 高度なフォールバック処理の実装
 
 #### 2.3 デモシーン作成
-- [ ] WebGLDemoSceneの実装
+- [ ] WebGL専用デモシーンの実装
 - [ ] UIの最適化（WebGL向け）
 - [ ] パフォーマンスモニタリング
 
-### Phase 3: CI/CDとデプロイ（1週間）
+### Phase 3: CI/CDとデプロイ（1週間） - **進捗: 0%完了**
 
 #### 3.1 ビルドパイプライン構築
 - [ ] GitHub ActionsでのWebGLビルド設定
@@ -105,11 +132,12 @@
 - [ ] カスタムドメイン設定（オプション）
 
 #### 3.3 テストとドキュメント
-- [ ] WebGLプラットフォームテスト
+- [x] WebGLプラットフォームテスト（EditMode） ✅
+- [ ] WebGLランタイムテスト
 - [ ] パフォーマンステスト
 - [ ] ユーザードキュメントの作成
 
-### Phase 4: 最適化と拡張（2週間）
+### Phase 4: 最適化と拡張（2週間） - **進捗: 0%完了**
 
 #### 4.1 パフォーマンス最適化
 - [ ] WASMストリーミングインスタンシエーション
@@ -178,8 +206,32 @@
    - ✅ モバイルデバイス対応
    - ✅ エラーハンドリング完備
 
+## 現在のモック実装状況
+
+### JavaScript側のプレースホルダー実装
+1. **openjtalk_wrapper.jslib**
+   - `PhonemizeJapaneseText`: 固定値 `['k', 'o', 'N', 'n', 'i', 'ch', 'i', 'w', 'a']` を返す
+   - 実際のwasm_open_jtalk統合待ち
+
+2. **espeak_wrapper.jslib**
+   - `PhonemizeText`: 空の配列を返す
+   - 実際のeSpeak-ng WASM統合待ち
+
+### その他の未実装機能
+- 統一音素化API（言語自動検出）
+- WebGL専用デモシーン
+- メモリ使用量の詳細な最適化
+
 ## 次のステップ
 
-1. wasm_open_jtalkのビルド環境構築
-2. 基本的な.jslibファイルの作成とテスト
-3. WebGLOpenJTalkPhonemizerクラスの実装開始
+1. **最優先**: wasm_open_jtalkの実際の統合
+   - piper-plusのPR #144の実装を参考に
+   - 現在のプレースホルダーを実際の実装に置き換え
+
+2. **CI/CD構築**
+   - GitHub ActionsでのWebGLビルド自動化
+   - GitHub Pagesへの自動デプロイ設定
+
+3. **ドキュメント整備**
+   - WebGLビルド手順の詳細化
+   - ユーザー向けWebGL使用ガイド
