@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>uPiper WebGL Demo - Unity Text-to-Speech</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #1a1a1a;
+            color: #fff;
+            overflow: hidden;
+        }
+        .header {
+            background: #2a2a2a;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #4CAF50;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2em;
+            color: #4CAF50;
+        }
+        .subtitle {
+            margin-top: 10px;
+            color: #888;
+        }
+        .info-banner {
+            background: #333;
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #444;
+        }
+        .info-banner a {
+            color: #4CAF50;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .info-banner a:hover {
+            text-decoration: underline;
+        }
+        .unity-container {
+            position: absolute;
+            top: 140px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .loading-spinner {
+            border: 4px solid #333;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .features {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(42, 42, 42, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 300px;
+            font-size: 14px;
+        }
+        .features h3 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+        }
+        .features ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .features li {
+            margin-bottom: 5px;
+        }
+        @media (max-width: 768px) {
+            .features {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎤 uPiper WebGL Demo</h1>
+        <p class="subtitle">High-Quality Text-to-Speech in Unity WebGL</p>
+    </div>
+    
+    <div class="info-banner">
+        <a href="https://github.com/ayutaz/uPiper" target="_blank">📚 Documentation</a>
+        <a href="https://github.com/ayutaz/uPiper/issues" target="_blank">🐛 Report Issue</a>
+        <a href="https://github.com/ayutaz/uPiper/releases" target="_blank">📦 Downloads</a>
+    </div>
+    
+    <div class="unity-container">
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Loading Unity WebGL...</p>
+            <p style="color: #666; font-size: 14px;">This may take a moment on first load</p>
+        </div>
+        <iframe 
+            id="unity-frame" 
+            src="./index.html"
+            style="display: none;"
+            onload="document.getElementById('loading').style.display='none'; this.style.display='block';">
+        </iframe>
+    </div>
+    
+    <div class="features">
+        <h3>✨ Features</h3>
+        <ul>
+            <li>🇯🇵 Japanese (OpenJTalk)</li>
+            <li>🇺🇸 English (eSpeak-ng)</li>
+            <li>🌏 Multi-language Support</li>
+            <li>🚀 WebAssembly Performance</li>
+            <li>🎯 Neural TTS (VITS)</li>
+            <li>💾 Browser Caching</li>
+        </ul>
+    </div>
+</body>
+</html>

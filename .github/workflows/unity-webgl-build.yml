@@ -1,0 +1,86 @@
+name: Unity WebGL Build and Deploy
+
+on:
+  push:
+    branches: [ main, feature/webgl-support ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-webgl:
+    name: Build Unity WebGL
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          submodules: 'recursive'
+      
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-WebGL-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-WebGL-
+            Library-
+      
+      - name: Build Unity project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: WebGL
+          unityVersion: 6000.0.35f1
+          buildName: uPiperWebGL
+          buildsPath: build
+          customParameters: |
+            -buildTarget WebGL
+            -executeMethod PiperBuildProcessor.BuildWebGL
+      
+      - name: Upload WebGL Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-WebGL
+          path: build/WebGL
+          retention-days: 7
+      
+      - name: Prepare WebGL deployment
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/webgl-support')
+        run: |
+          chmod +x .github/workflows/prepare-webgl-deploy.sh
+          .github/workflows/prepare-webgl-deploy.sh
+      
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/webgl-support')
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/WebGL/uPiperWebGL
+  
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build-webgl
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/webgl-support')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,21 @@
+# GitHub Pages configuration
+theme: null
+plugins: []
+
+# Exclude files from GitHub Pages
+exclude:
+  - Assets
+  - Packages
+  - ProjectSettings
+  - Library
+  - Logs
+  - obj
+  - Temp
+  - UserSettings
+  - .vs
+  - .vscode
+  - "*.csproj"
+  - "*.sln"
+  - "*.unityproj"
+  - README.md
+  - LICENSE

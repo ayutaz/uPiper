@@ -204,5 +204,131 @@ namespace uPiper.Editor.BuildSettings
                 PiperLogger.LogError($"[PiperBuildMenu] {target} build failed");
             }
         }
+
+        /// <summary>
+        /// CI/CD用のWebGLビルドメソッド
+        /// </summary>
+        [MenuItem("uPiper/Build/Build WebGL")]
+        public static void BuildWebGL()
+        {
+            var buildPath = GetBuildPath();
+            var buildName = GetBuildName();
+            var fullPath = Path.Combine(buildPath, "WebGL", buildName);
+
+            PiperLogger.LogInfo($"[PiperBuildMenu] Starting WebGL build to: {fullPath}");
+
+            // Configure WebGL-specific settings
+            ConfigureWebGLBuildSettings();
+
+            // Get enabled scenes
+            var scenes = EditorBuildSettings.scenes
+                .Where(s => s.enabled)
+                .Select(s => s.path)
+                .ToArray();
+
+            if (scenes.Length == 0)
+            {
+                PiperLogger.LogError("[PiperBuildMenu] No scenes are enabled in build settings");
+                EditorApplication.Exit(1);
+                return;
+            }
+
+            var buildOptions = new BuildPlayerOptions
+            {
+                scenes = scenes,
+                locationPathName = fullPath,
+                target = BuildTarget.WebGL,
+                options = BuildOptions.None
+            };
+
+            // Add development build option if specified
+            if (GetCommandLineArg("-developmentBuild") == "true")
+            {
+                buildOptions.options |= BuildOptions.Development;
+            }
+
+            var report = BuildPipeline.BuildPlayer(buildOptions);
+
+            if (report.summary.result == BuildResult.Succeeded)
+            {
+                PiperLogger.LogInfo($"[PiperBuildMenu] WebGL build succeeded");
+                PiperLogger.LogInfo($"[PiperBuildMenu] Build size: {report.summary.totalSize / (1024 * 1024)}MB");
+                PiperLogger.LogInfo($"[PiperBuildMenu] Build time: {report.summary.totalTime.TotalSeconds:F2} seconds");
+            }
+            else
+            {
+                PiperLogger.LogError($"[PiperBuildMenu] WebGL build failed: {report.summary.result}");
+                foreach (var step in report.steps)
+                {
+                    foreach (var message in step.messages)
+                    {
+                        if (message.type == LogType.Error || message.type == LogType.Exception)
+                        {
+                            PiperLogger.LogError($"[PiperBuildMenu] {message.content}");
+                        }
+                    }
+                }
+                EditorApplication.Exit(1);
+            }
+        }
+
+        private static void ConfigureWebGLBuildSettings()
+        {
+            // Use custom WebGL template
+            string customTemplatePath = "Assets/WebGLTemplates/uPiperTemplate";
+            if (Directory.Exists(customTemplatePath))
+            {
+                PlayerSettings.WebGL.template = "PROJECT:uPiperTemplate";
+                PiperLogger.LogInfo("[PiperBuildMenu] Using custom WebGL template: uPiperTemplate");
+            }
+            else
+            {
+                PlayerSettings.WebGL.template = "APPLICATION:Default";
+                PiperLogger.LogInfo("[PiperBuildMenu] Using default WebGL template");
+            }
+
+            // Configure compression
+            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
+            
+            // Configure memory
+            PlayerSettings.WebGL.memorySize = 1024; // 1GB for ONNX models
+            
+            // Configure other settings
+            PlayerSettings.WebGL.decompressionFallback = true;
+            PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Asm;
+        }
+
+        private static string GetBuildPath()
+        {
+            var buildPath = GetCommandLineArg("-customBuildPath");
+            if (string.IsNullOrEmpty(buildPath))
+            {
+                buildPath = "build";
+            }
+            return buildPath;
+        }
+
+        private static string GetBuildName()
+        {
+            var buildName = GetCommandLineArg("-customBuildName");
+            if (string.IsNullOrEmpty(buildName))
+            {
+                buildName = "uPiperWebGL";
+            }
+            return buildName;
+        }
+
+        private static string GetCommandLineArg(string name)
+        {
+            var args = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == name && args.Length > i + 1)
+                {
+                    return args[i + 1];
+                }
+            }
+            return null;
+        }
     }
 }
