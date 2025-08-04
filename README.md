@@ -33,6 +33,7 @@
 - 🇨🇳 中国語音声合成対応（eSpeak-NG音素化、ピンイン変換）※音素精度に改善の余地あり
 - ⚡ GPU推論サポート（GPUCompute/GPUPixel）
 - 🎭 高度なサンプル（ストリーミング、複数音声、リアルタイム）
+- 🌐 **WebGL対応**（実験的）- WebAssemblyによる日本語・英語音声合成
 
 ## Requirements
 * Unity 6000.0.35f1
@@ -77,9 +78,9 @@
 - ✅ macOS (Apple Silicon/Intel)
 - ✅ Linux (x64)
 - ✅ Android (ARM64)
+- ✅ WebGL（実験的）- 日本語（OpenJTalk）・英語（eSpeak-ng）対応
 
 ### 未対応
-- ❌ WebGL - 技術調査中（piper-plus連携により将来対応予定）
 - ❌ iOS - Phase 5で対応予定
 
 ## ビルドとパッケージ作成
@@ -113,6 +114,39 @@ var config = new PiperConfig
 ```
 
 詳細は[GPU推論ガイド](docs/ja/guides/technical/gpu-inference.md)を参照してください。
+
+## WebGL対応（実験的）
+
+uPiperはWebGLプラットフォームでの音声合成をサポートしています：
+
+### 主な機能
+- 🌐 ブラウザ上での高品質音声合成
+- 🇯🇵 OpenJTalk WebAssemblyによる日本語音素化
+- 🇺🇸 eSpeak-ng WebAssemblyによる英語音素化
+- 💾 IndexedDBによる音素化結果のキャッシュ
+- 🚀 GitHub Pagesへの自動デプロイ
+
+### ビルド方法
+```bash
+# Unity Editorから
+Menu: uPiper/Build/Build WebGL
+
+# コマンドラインから
+Unity -batchmode -quit -projectPath . -buildTarget WebGL -executeMethod PiperBuildProcessor.BuildWebGL
+```
+
+### デモサイト
+GitHub Actionsによる自動デプロイ後、以下のURLでアクセス可能：
+```
+https://[username].github.io/uPiper/
+```
+
+### 制限事項
+- 初回ロード時間が長い（WebAssembly + ONNXモデル）
+- メモリ使用量が多い（Unity WebGL heap 1GB）
+- 中国語音素化は基本実装のみ
+
+詳細は[WebGL対応ガイド](docs/ja/guides/implementation/webgl-support/README.md)を参照してください。
 
 ## 詳細ドキュメント
 
