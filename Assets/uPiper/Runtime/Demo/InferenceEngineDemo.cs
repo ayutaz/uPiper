@@ -15,6 +15,8 @@ using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
 #if !UNITY_WEBGL
 using uPiper.Core.Phonemizers.Implementations;
+#elif UNITY_WEBGL && !UNITY_EDITOR
+using uPiper.Core.Phonemizers.WebGL;
 #endif
 
 namespace uPiper.Demo
@@ -149,6 +151,8 @@ namespace uPiper.Demo
         private ITextPhonemizer _phonemizer;
         private Core.Phonemizers.Backend.ChinesePhonemizer _chinesePhonemizer;
         private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
+#elif UNITY_WEBGL && !UNITY_EDITOR
+        private WebGLOpenJTalkPhonemizer _webGLPhonemizer;
 #endif
 
         private Dictionary<string, string> _modelLanguages = new()
@@ -305,6 +309,18 @@ namespace uPiper.Demo
                     _englishPhonemizer = null;
                 }
             });
+#elif UNITY_WEBGL && !UNITY_EDITOR
+            // Initialize WebGL phonemizer
+            try
+            {
+                _webGLPhonemizer = new WebGLOpenJTalkPhonemizer();
+                PiperLogger.LogInfo("[InferenceEngineDemo] WebGL phonemizer initialized successfully");
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize WebGL phonemizer: {ex.Message}");
+                _webGLPhonemizer = null;
+            }
 #endif
 
             SetupUI();
@@ -454,6 +470,8 @@ namespace uPiper.Demo
             }
             _chinesePhonemizer?.Dispose();
             _englishPhonemizer?.Dispose();
+#elif UNITY_WEBGL && !UNITY_EDITOR
+            _webGLPhonemizer?.Dispose();
 #endif
         }
 
@@ -924,11 +942,34 @@ namespace uPiper.Demo
                         .Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     PiperLogger.LogInfo($"Fallback phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                 }
-#else
-                // WebGL is not supported for Japanese
-                if (language == "ja")
+#elif UNITY_WEBGL && !UNITY_EDITOR
+                // Use WebGL phonemizer
+                if (language == "ja" && _webGLPhonemizer != null)
                 {
-                    throw new Exception("Japanese text-to-speech is not supported on WebGL platform. OpenJTalk native library is required.");
+                    PiperLogger.LogDebug("[InferenceEngineDemo] Using WebGL phonemizer for Japanese text");
+                    var webGLStopwatch = Stopwatch.StartNew();
+                    var phonemeResult = await _webGLPhonemizer.PhonemizeAsync(_inputField.text);
+                    timings["WebGL Phonemizer"] = webGLStopwatch.ElapsedMilliseconds;
+                    
+                    if (phonemeResult.Success && phonemeResult.Phonemes != null)
+                    {
+                        var webGLPhonemes = phonemeResult.Phonemes;
+                        PiperLogger.LogInfo($"[WebGL] Raw phonemes ({webGLPhonemes.Length}): {string.Join(" ", webGLPhonemes)}");
+                        
+                        // Convert to Piper phonemes if needed
+                        phonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(webGLPhonemes);
+                        PiperLogger.LogInfo($"[WebGL] Converted to Piper phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+                        
+                        // Show phoneme details in UI
+                        if (_phonemeDetailsText != null)
+                        {
+                            _phonemeDetailsText.text = $"WebGL: {string.Join(" ", webGLPhonemes)}\nPiper: {string.Join(" ", phonemes)}";
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception($"WebGL phonemization failed: {phonemeResult.Error}");
+                    }
                 }
                 else
                 {
@@ -939,8 +980,11 @@ namespace uPiper.Demo
                         .Replace("!", " _")
                         .Replace("?", " _")
                         .Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    PiperLogger.LogInfo($"English phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+                    PiperLogger.LogInfo($"Basic phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                 }
+#else
+                // Unity Editor with WebGL platform or other unsupported platforms
+                throw new Exception("Text-to-speech is not supported in Unity Editor with WebGL platform. Please build for WebGL to test.");
 #endif
 
                 // 音素変換の詳細をログ出力
