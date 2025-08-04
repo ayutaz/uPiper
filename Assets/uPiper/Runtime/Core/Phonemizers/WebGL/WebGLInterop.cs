@@ -25,7 +25,10 @@ namespace uPiper.Core.Phonemizers.WebGL
 
         // eSpeak-ng WebAssembly functions
         [DllImport("__Internal")]
-        public static extern bool InitializeESpeakWeb();
+        public static extern int InitializeESpeakWeb();
+        
+        [DllImport("__Internal")]
+        public static extern bool IsESpeakInitialized();
 
         [DllImport("__Internal")]
         public static extern bool SetESpeakLanguage(string language);

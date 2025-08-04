@@ -1,6 +1,7 @@
 #if UNITY_WEBGL && !UNITY_EDITOR
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -40,22 +41,43 @@ namespace uPiper.Core.Phonemizers.WebGL
                         Debug.Log("[WebGLESpeakPhonemizer] Initializing WebGL eSpeak-ng...");
                         
                         // Initialize eSpeak-ng WebAssembly
-                        bool success = WebGLInterop.InitializeESpeakWeb();
+                        int initResult = WebGLInterop.InitializeESpeakWeb();
                         
-                        if (success)
+                        if (initResult == 1)
                         {
-                            // Get supported languages
+                            // Already initialized
                             LoadSupportedLanguages();
-                            
                             isInitialized = true;
-                            Debug.Log($"[WebGLESpeakPhonemizer] Initialization successful. Supported languages: {string.Join(", ", supportedLanguages)}");
+                            Debug.Log($"[WebGLESpeakPhonemizer] Already initialized. Supported languages: {string.Join(", ", supportedLanguages)}");
+                            return true;
+                        }
+                        else if (initResult == 0)
+                        {
+                            // Async initialization in progress
+                            Debug.Log("[WebGLESpeakPhonemizer] Waiting for async initialization...");
+                            
+                            // Poll for initialization completion
+                            int maxAttempts = 100; // 10 seconds max
+                            for (int i = 0; i < maxAttempts; i++)
+                            {
+                                await Task.Delay(100, cancellationToken);
+                                if (WebGLInterop.IsESpeakInitialized())
+                                {
+                                    LoadSupportedLanguages();
+                                    isInitialized = true;
+                                    Debug.Log($"[WebGLESpeakPhonemizer] Initialization successful. Supported languages: {string.Join(", ", supportedLanguages)}");
+                                    return true;
+                                }
+                            }
+                            
+                            Debug.LogError("[WebGLESpeakPhonemizer] Initialization timeout");
+                            return false;
                         }
                         else
                         {
                             Debug.LogError("[WebGLESpeakPhonemizer] Initialization failed");
+                            return false;
                         }
-                        
-                        return success;
                     }
                     catch (Exception e)
                     {
