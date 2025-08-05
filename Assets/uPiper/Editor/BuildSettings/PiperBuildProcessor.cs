@@ -61,18 +61,9 @@ namespace uPiper.Editor.BuildSettings
             // WebGL固有の設定
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
             
-            // Use uPiper custom template if available
-            string customTemplate = "uPiperTemplate";
-            if (System.IO.Directory.Exists($"Assets/WebGLTemplates/{customTemplate}"))
-            {
-                PlayerSettings.WebGL.template = $"PROJECT:{customTemplate}";
-                PiperLogger.LogInfo($"[PiperBuildProcessor] Using custom WebGL template: {customTemplate}");
-            }
-            else
-            {
-                PlayerSettings.WebGL.template = "APPLICATION:Default";
-                PiperLogger.LogInfo("[PiperBuildProcessor] Using default WebGL template");
-            }
+            // Use default Unity WebGL template for better compatibility
+            PlayerSettings.WebGL.template = "APPLICATION:Default";
+            PiperLogger.LogInfo("[PiperBuildProcessor] Using default WebGL template");
 
             // メモリサイズの設定（ONNXモデルのため大きめに）
             // Increased from 512MB to 1GB for better performance
@@ -83,8 +74,8 @@ namespace uPiper.Editor.BuildSettings
             // Enable WebAssembly streaming instantiation for faster loading
             PlayerSettings.WebGL.decompressionFallback = true;
             
-            // Set linker target to reduce code size
-            PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Asm;
+            // Set linker target to Wasm (Asm.js is deprecated)
+            PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Wasm;
         }
 
         private void ConfigureWindowsBuild()
@@ -291,18 +282,9 @@ namespace uPiper.Editor.BuildSettings
 
         private static void ConfigureWebGLBuildSettings()
         {
-            // Use custom WebGL template
-            string customTemplatePath = "Assets/WebGLTemplates/uPiperTemplate";
-            if (Directory.Exists(customTemplatePath))
-            {
-                PlayerSettings.WebGL.template = "PROJECT:uPiperTemplate";
-                PiperLogger.LogInfo("[PiperBuildMenu] Using custom WebGL template: uPiperTemplate");
-            }
-            else
-            {
-                PlayerSettings.WebGL.template = "APPLICATION:Default";
-                PiperLogger.LogInfo("[PiperBuildMenu] Using default WebGL template");
-            }
+            // Use default Unity WebGL template for better compatibility
+            PlayerSettings.WebGL.template = "APPLICATION:Default";
+            PiperLogger.LogInfo("[PiperBuildMenu] Using default WebGL template");
 
             // Configure compression
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
@@ -312,7 +294,7 @@ namespace uPiper.Editor.BuildSettings
             
             // Configure other settings
             PlayerSettings.WebGL.decompressionFallback = true;
-            PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Asm;
+            PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Wasm;
         }
 
         private static string GetBuildPath()

@@ -77,6 +77,14 @@
         productName: {{{ JSON.stringify(PRODUCT_NAME) }}},
         productVersion: {{{ JSON.stringify(PRODUCT_VERSION) }}},
         showBanner: unityShowBanner,
+        // Unity 6 WebGL loader requires cacheControl
+        cacheControl: function (url) {
+          if (!url || typeof url !== 'string') return "no-store";
+          if (url.match(/\.data/)) return "must-revalidate";
+          if (url.match(/\.wasm/)) return "must-revalidate";
+          if (url.match(/\.framework\.js/)) return "must-revalidate";
+          return "no-store";
+        },
       };
 
       // By default, Unity keeps WebGL canvas render target size matched with
