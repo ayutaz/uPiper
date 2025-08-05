@@ -1,6 +1,5 @@
 #if UNITY_WEBGL && !UNITY_EDITOR
 using System;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,7 +9,7 @@ using uPiper.Core.Phonemizers.Backend;
 namespace uPiper.Core.Phonemizers.WebGL
 {
     /// <summary>
-    /// WebGL implementation of multi-language phonemizer using eSpeak-ng WebAssembly
+    /// WebGL implementation of multilingual phonemizer using eSpeak-ng
     /// </summary>
     public class WebGLESpeakPhonemizer : PhonemizerBackendBase
     {
@@ -27,65 +26,78 @@ namespace uPiper.Core.Phonemizers.WebGL
             PhonemizerBackendOptions options,
             CancellationToken cancellationToken)
         {
-            return await Task.Run(() =>
+            bool needsAsyncInit = false;
+            
+            lock (initLock)
             {
-                lock (initLock)
+                if (isInitialized)
                 {
-                    if (isInitialized)
+                    return true;
+                }
+
+                try
+                {
+                    Debug.Log("[WebGLESpeakPhonemizer] Initializing WebGL eSpeak-ng...");
+                    
+                    // Initialize IndexedDB cache
+                    WebGLCacheManager.Initialize();
+                    
+                    // Initialize eSpeak-ng WebAssembly
+                    int initResult = WebGLInterop.InitializeESpeakWeb();
+                    
+                    if (initResult == 1)
                     {
+                        // Already initialized
+                        LoadSupportedLanguages();
+                        isInitialized = true;
+                        Debug.Log($"[WebGLESpeakPhonemizer] Already initialized. Supported languages: {string.Join(", ", supportedLanguages)}");
                         return true;
                     }
-
-                    try
+                    else if (initResult == 0)
                     {
-                        Debug.Log("[WebGLESpeakPhonemizer] Initializing WebGL eSpeak-ng...");
-                        
-                        // Initialize eSpeak-ng WebAssembly
-                        int initResult = WebGLInterop.InitializeESpeakWeb();
-                        
-                        if (initResult == 1)
-                        {
-                            // Already initialized
-                            LoadSupportedLanguages();
-                            isInitialized = true;
-                            Debug.Log($"[WebGLESpeakPhonemizer] Already initialized. Supported languages: {string.Join(", ", supportedLanguages)}");
-                            return true;
-                        }
-                        else if (initResult == 0)
-                        {
-                            // Async initialization in progress
-                            Debug.Log("[WebGLESpeakPhonemizer] Waiting for async initialization...");
-                            
-                            // Poll for initialization completion
-                            int maxAttempts = 100; // 10 seconds max
-                            for (int i = 0; i < maxAttempts; i++)
-                            {
-                                await Task.Delay(100, cancellationToken);
-                                if (WebGLInterop.IsESpeakInitialized())
-                                {
-                                    LoadSupportedLanguages();
-                                    isInitialized = true;
-                                    Debug.Log($"[WebGLESpeakPhonemizer] Initialization successful. Supported languages: {string.Join(", ", supportedLanguages)}");
-                                    return true;
-                                }
-                            }
-                            
-                            Debug.LogError("[WebGLESpeakPhonemizer] Initialization timeout");
-                            return false;
-                        }
-                        else
-                        {
-                            Debug.LogError("[WebGLESpeakPhonemizer] Initialization failed");
-                            return false;
-                        }
+                        // Async initialization in progress
+                        needsAsyncInit = true;
                     }
-                    catch (Exception e)
+                    else
                     {
-                        Debug.LogError($"[WebGLESpeakPhonemizer] Initialization error: {e.Message}");
+                        Debug.LogError("[WebGLESpeakPhonemizer] Initialization failed");
                         return false;
                     }
                 }
-            }, cancellationToken);
+                catch (Exception e)
+                {
+                    Debug.LogError($"[WebGLESpeakPhonemizer] Initialization error: {e.Message}");
+                    return false;
+                }
+            }
+            
+            // Handle async initialization outside of lock
+            if (needsAsyncInit)
+            {
+                Debug.Log("[WebGLESpeakPhonemizer] Waiting for async initialization...");
+                
+                // Poll for initialization completion
+                int maxAttempts = 100; // 10 seconds max
+                for (int i = 0; i < maxAttempts; i++)
+                {
+                    await Task.Delay(100, cancellationToken);
+                    if (WebGLInterop.IsESpeakInitialized())
+                    {
+                        LoadSupportedLanguages();
+                        lock (initLock)
+                        {
+                            isInitialized = true;
+                        }
+                        Debug.Log($"[WebGLESpeakPhonemizer] Initialization successful. Supported languages: {string.Join(", ", supportedLanguages)}");
+                        return true;
+                    }
+                }
+                
+                Debug.LogError("[WebGLESpeakPhonemizer] Initialization timeout");
+                return false;
+            }
+            
+            return false;
         }
 
         private void LoadSupportedLanguages()
@@ -127,129 +139,130 @@ namespace uPiper.Core.Phonemizers.WebGL
                 };
             }
 
-            return await Task.Run(() =>
+            // Map language codes to eSpeak language codes
+            string espeakLanguage = MapToESpeakLanguage(language);
+
+            // Check cache first
+            var cacheKey = $"espeak_{text}_{espeakLanguage}";
+            var cachedResult = WebGLCacheManager.GetCachedPhonemesForText(cacheKey);
+            if (cachedResult != null)
+            {
+                Debug.Log($"[WebGLESpeakPhonemizer] Using cached result for: {text}");
+                return new PhonemeResult
+                {
+                    Phonemes = cachedResult.Split(' '),
+                    PhonemeString = cachedResult,
+                    Language = language,
+                    Success = true
+                };
+            }
+
+            // Perform phonemization
+            string phonemes = await Task.Run(() =>
             {
                 try
                 {
-                    // Normalize language code
-                    string normalizedLang = NormalizeLanguageCode(language);
-                    
-                    // Call JavaScript function
-                    IntPtr resultPtr = WebGLInterop.PhonemizeEnglishText(text, normalizedLang);
-                    var result = WebGLInterop.ParseJSONResult<ESpeakResult>(resultPtr);
-
-                    if (!result.success)
-                    {
-                        Debug.LogError($"[WebGLESpeakPhonemizer] Phonemization failed: {result.error}");
-                        throw new Exception(result.error);
-                    }
-
-                    // Process phonemes based on language
-                    var processedPhonemes = ProcessPhonemes(result.phonemes, normalizedLang);
-
-                    return new PhonemeResult
-                    {
-                        Phonemes = processedPhonemes,
-                        Language = language,
-                        Success = true
-                    };
+                    return WebGLInterop.PhonemizeESpeak(text, espeakLanguage);
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"[WebGLESpeakPhonemizer] Error: {e.Message}");
-                    throw;
+                    Debug.LogError($"[WebGLESpeakPhonemizer] Phonemization error: {e.Message}");
+                    return null;
                 }
             }, cancellationToken);
-        }
 
-        private string NormalizeLanguageCode(string language)
-        {
-            // Convert language codes to eSpeak-ng format
-            switch (language.ToLower())
+            if (string.IsNullOrEmpty(phonemes))
             {
-                case "ja":
-                case "ja-jp":
-                    // Japanese should use OpenJTalk, not eSpeak
-                    Debug.LogWarning("[WebGLESpeakPhonemizer] Japanese should use WebGLOpenJTalkPhonemizer");
-                    return "ja";
-                    
-                case "en":
-                case "en-us":
-                    return "en";
-                    
-                case "en-gb":
-                    return "en-gb";
-                    
-                case "zh":
-                case "zh-cn":
-                    return "zh";
-                    
-                case "zh-tw":
-                case "zh-hk":
-                    return "zh-yue"; // Cantonese
-                    
-                default:
-                    return language.ToLower();
+                return new PhonemeResult
+                {
+                    Phonemes = Array.Empty<string>(),
+                    Language = language,
+                    Success = false,
+                    ErrorMessage = "Failed to phonemize text"
+                };
             }
-        }
 
-        private string[] ProcessPhonemes(string[] phonemes, string language)
-        {
-            // Apply language-specific processing if needed
-            if (language.StartsWith("zh"))
-            {
-                // Chinese might need special handling for tones
-                return ProcessChinesePhonemes(phonemes);
-            }
+            // Cache the result
+            WebGLCacheManager.CachePhonemesForText(cacheKey, phonemes);
+
+            // Parse phonemes
+            var phonemeArray = phonemes.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             
-            return phonemes;
+            return new PhonemeResult
+            {
+                Phonemes = phonemeArray,
+                PhonemeString = phonemes,
+                Language = language,
+                Success = true
+            };
         }
 
-        private string[] ProcessChinesePhonemes(string[] phonemes)
+        private string MapToESpeakLanguage(string language)
         {
-            // Process Chinese phonemes for eSpeak-ng format
-            // This is a simplified version - actual implementation would need proper tone handling
-            return phonemes;
+            // Map common language codes to eSpeak format
+            return language switch
+            {
+                "en" => "en",
+                "en-US" => "en-us",
+                "en-GB" => "en-gb",
+                "zh" => "zh",
+                "zh-CN" => "zh",
+                "zh-TW" => "zh-yue",
+                "ko" => "ko",
+                "ko-KR" => "ko",
+                "es" => "es",
+                "fr" => "fr",
+                "de" => "de",
+                "it" => "it",
+                "pt" => "pt",
+                "ru" => "ru",
+                _ => language.ToLower()
+            };
         }
 
         public override long GetMemoryUsage()
         {
-            // Estimate based on WebAssembly module size
-            return 20 * 1024 * 1024; // 20MB estimate for eSpeak-ng
+            // Estimate memory usage
+            return 5 * 1024 * 1024; // 5MB for eSpeak-ng
         }
 
-        public override BackendCapabilities GetCapabilities()
+        public override PhonemizerCapabilities GetCapabilities()
         {
-            return new BackendCapabilities
+            return new PhonemizerCapabilities
             {
-                SupportsIPA = true,
-                SupportsStress = true,
-                SupportsSyllables = false,
-                SupportsTones = true, // eSpeak-ng supports tones for tonal languages
-                SupportsDuration = false,
                 SupportsBatchProcessing = false,
-                IsThreadSafe = false, // JavaScript is single-threaded
-                RequiresNetwork = false
+                SupportsStreaming = false,
+                MaxTextLength = 5000,
+                RequiresNetwork = false,
+                EstimatedLatencyMs = 30
             };
         }
 
         protected override void DisposeInternal()
         {
-            // WebAssembly resources are managed by the browser
-            isInitialized = false;
-            supportedLanguages = Array.Empty<string>();
+            lock (initLock)
+            {
+                if (isInitialized)
+                {
+                    try
+                    {
+                        // Cleanup if needed
+                        Debug.Log("[WebGLESpeakPhonemizer] Disposing...");
+                        isInitialized = false;
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"[WebGLESpeakPhonemizer] Disposal error: {e.Message}");
+                    }
+                }
+            }
         }
 
-        /// <summary>
-        /// Extended result structure for eSpeak
-        /// </summary>
-        [Serializable]
-        private class ESpeakResult
+        public async Task<bool> InitializeAsync(
+            PhonemizerBackendOptions options = null,
+            CancellationToken cancellationToken = default)
         {
-            public bool success;
-            public string error;
-            public string[] phonemes;
-            public string language;
+            return await InitializeInternalAsync(options, cancellationToken);
         }
     }
 }

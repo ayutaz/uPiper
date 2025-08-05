@@ -6,14 +6,14 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
-using uPiper.Core.Phonemizers.Backend;
+using uPiper.Core.Phonemizers.Text;
 
 namespace uPiper.Core.Phonemizers.WebGL
 {
     /// <summary>
     /// Unified phonemizer for WebGL that automatically selects the appropriate backend based on language
     /// </summary>
-    public class UnifiedWebGLPhonemizer : PhonemizerBackendBase
+    public class UnifiedWebGLPhonemizer : BasePhonemizer
     {
         private WebGLOpenJTalkPhonemizer japanesePhonmizer;
         private WebGLESpeakPhonemizer multilingualPhonemizer;
@@ -28,7 +28,6 @@ namespace uPiper.Core.Phonemizers.WebGL
 
         public override string Name => "Unified WebGL Phonemizer";
         public override string Version => "1.0.0";
-        public override string License => "Mixed (BSD-3-Clause for OpenJTalk, GPL-3.0 for eSpeak-ng)";
         
         // Combine supported languages from both backends
         public override string[] SupportedLanguages => new[] 
@@ -41,242 +40,247 @@ namespace uPiper.Core.Phonemizers.WebGL
             "es", "fr", "de", "it", "pt", "ru" // Other languages via eSpeak-ng
         };
 
-        protected override async Task<bool> InitializeInternalAsync(
-            PhonemizerBackendOptions options,
-            CancellationToken cancellationToken)
+        public UnifiedWebGLPhonemizer() : base(new TextNormalizer(), cacheSize: 1000)
         {
-            return await Task.Run(async () =>
-            {
-                lock (initLock)
-                {
-                    if (isInitialized)
-                    {
-                        return true;
-                    }
-                }
-
-                try
-                {
-                    Debug.Log("[UnifiedWebGLPhonemizer] Initializing unified phonemizer...");
-
-                    // Initialize both backends in parallel
-                    var tasks = new List<Task<bool>>();
-
-                    // Initialize Japanese phonemizer
-                    japanesePhonmizer = new WebGLOpenJTalkPhonemizer();
-                    tasks.Add(japanesePhonmizer.InitializeAsync(options, cancellationToken));
-
-                    // Initialize multilingual phonemizer
-                    multilingualPhonemizer = new WebGLESpeakPhonemizer();
-                    tasks.Add(multilingualPhonemizer.InitializeAsync(options, cancellationToken));
-
-                    // Wait for both to complete
-                    var results = await Task.WhenAll(tasks);
-
-                    lock (initLock)
-                    {
-                        isInitialized = results.All(r => r);
-                        if (isInitialized)
-                        {
-                            Debug.Log("[UnifiedWebGLPhonemizer] All backends initialized successfully");
-                        }
-                        else
-                        {
-                            Debug.LogError("[UnifiedWebGLPhonemizer] One or more backends failed to initialize");
-                        }
-                        return isInitialized;
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"[UnifiedWebGLPhonemizer] Initialization error: {e.Message}");
-                    return false;
-                }
-            });
+            InitializeLanguageInfos();
+            _ = InitializeAsync();
         }
-
-        public override async Task<PhonemeResult> PhonemizeAsync(
-            string text,
-            string language,
-            PhonemeOptions options = null,
-            CancellationToken cancellationToken = default)
+        
+        private void InitializeLanguageInfos()
         {
-            if (!isInitialized)
+            foreach (var lang in SupportedLanguages)
             {
-                throw new InvalidOperationException("UnifiedWebGLPhonemizer is not initialized");
-            }
-
-            if (string.IsNullOrEmpty(text))
-            {
-                return new PhonemeResult
+                _languageInfos[lang] = new LanguageInfo
                 {
-                    Phonemes = Array.Empty<string>(),
-                    Language = language,
-                    Success = true
+                    Code = lang,
+                    Name = GetLanguageName(lang),
+                    EnglishName = GetLanguageEnglishName(lang),
+                    IsSupported = true
                 };
             }
+        }
+        
+        private string GetLanguageName(string code)
+        {
+            return code switch
+            {
+                "auto" => "Auto-detect",
+                "ja" => "日本語",
+                "ja-JP" => "日本語",
+                "en" => "English",
+                "en-US" => "English (US)",
+                "en-GB" => "English (UK)",
+                "zh" => "中文",
+                "zh-CN" => "中文（简体）",
+                "zh-TW" => "中文（繁體）",
+                "ko" => "한국어",
+                "ko-KR" => "한국어",
+                "es" => "Español",
+                "fr" => "Français",
+                "de" => "Deutsch",
+                "it" => "Italiano",
+                "pt" => "Português",
+                "ru" => "Русский",
+                _ => code
+            };
+        }
+        
+        private string GetLanguageEnglishName(string code)
+        {
+            return code switch
+            {
+                "auto" => "Auto-detect",
+                "ja" => "Japanese",
+                "ja-JP" => "Japanese",
+                "en" => "English",
+                "en-US" => "English (US)",
+                "en-GB" => "English (UK)",
+                "zh" => "Chinese",
+                "zh-CN" => "Chinese (Simplified)",
+                "zh-TW" => "Chinese (Traditional)",
+                "ko" => "Korean",
+                "ko-KR" => "Korean",
+                "es" => "Spanish",
+                "fr" => "French",
+                "de" => "German",
+                "it" => "Italian",
+                "pt" => "Portuguese",
+                "ru" => "Russian",
+                _ => code
+            };
+        }
 
-            // Determine the actual language to use
-            var detectedLanguage = language.ToLower() == "auto" 
-                ? DetectLanguage(text) 
-                : language;
-
-            Debug.Log($"[UnifiedWebGLPhonemizer] Processing text with language: {detectedLanguage} (requested: {language})");
+        private async Task<bool> InitializeAsync(CancellationToken cancellationToken = default)
+        {
+            lock (initLock)
+            {
+                if (isInitialized)
+                {
+                    return true;
+                }
+            }
 
             try
             {
-                // For mixed text, process by segments
-                if (language.ToLower() == "auto" && ContainsMixedLanguages(text))
+                Debug.Log("[UnifiedWebGLPhonemizer] Initializing unified phonemizer...");
+
+                // Initialize both backends in parallel
+                var tasks = new List<Task<bool>>();
+
+                // Initialize Japanese phonemizer
+                japanesePhonmizer = new WebGLOpenJTalkPhonemizer();
+                tasks.Add(japanesePhonmizer.InitializeAsync(null, cancellationToken));
+
+                // Initialize multilingual phonemizer
+                multilingualPhonemizer = new WebGLESpeakPhonemizer();
+                tasks.Add(multilingualPhonemizer.InitializeAsync(null, cancellationToken));
+
+                // Wait for both to initialize
+                var results = await Task.WhenAll(tasks);
+
+                lock (initLock)
                 {
-                    return await ProcessMixedLanguageText(text, options, cancellationToken);
+                    isInitialized = results.All(r => r);
                 }
 
-                // Route to appropriate backend
-                var backend = SelectBackend(detectedLanguage);
-                if (backend == null)
+                if (isInitialized)
                 {
-                    throw new NotSupportedException($"Language '{detectedLanguage}' is not supported");
+                    Debug.Log("[UnifiedWebGLPhonemizer] Unified phonemizer initialized successfully");
+                }
+                else
+                {
+                    Debug.LogError("[UnifiedWebGLPhonemizer] Failed to initialize one or more backends");
                 }
 
-                return await backend.PhonemizeAsync(text, detectedLanguage, options, cancellationToken);
+                return isInitialized;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                // Fallback handling
-                Debug.LogWarning($"[UnifiedWebGLPhonemizer] Primary phonemization failed: {e.Message}");
-                return await HandleFallback(text, detectedLanguage, options, cancellationToken);
+                Debug.LogError($"[UnifiedWebGLPhonemizer] Initialization error: {ex.Message}");
+                return false;
             }
         }
 
-        private PhonemizerBackendBase SelectBackend(string language)
+        protected override async Task<PhonemeResult> InternalPhonemizeAsync(
+            string text, 
+            string language, 
+            CancellationToken cancellationToken)
         {
-            var normalizedLang = language.ToLower();
-            
-            // Japanese always uses OpenJTalk
-            if (normalizedLang.StartsWith("ja"))
+            // Ensure initialization
+            if (!isInitialized)
             {
-                return japanesePhonmizer;
+                await InitializeAsync(cancellationToken);
+                if (!isInitialized)
+                {
+                    throw new InvalidOperationException("Failed to initialize UnifiedWebGLPhonemizer");
+                }
             }
 
-            // All other languages use eSpeak-ng
-            return multilingualPhonemizer;
+            // Handle auto-detection
+            if (language == "auto")
+            {
+                language = DetectLanguage(text);
+                Debug.Log($"[UnifiedWebGLPhonemizer] Auto-detected language: {language}");
+            }
+
+            // Handle mixed language text
+            if (ContainsMixedLanguages(text))
+            {
+                return await ProcessMixedLanguageTextAsync(text, cancellationToken);
+            }
+
+            // Select appropriate backend based on language
+            if (ShouldUseJapanesePhonemizer(language))
+            {
+                return await japanesePhonmizer.PhonemizeAsync(text, language, cancellationToken);
+            }
+            else
+            {
+                return await multilingualPhonemizer.PhonemizeAsync(text, language, cancellationToken);
+            }
         }
 
         private string DetectLanguage(string text)
         {
             // Count characters by script
-            var scriptCounts = new Dictionary<string, int>
-            {
-                ["ja"] = JapanesePattern.Matches(text).Count,
-                ["zh"] = ChinesePattern.Matches(text).Count,
-                ["ko"] = KoreanPattern.Matches(text).Count,
-                ["en"] = LatinPattern.Matches(text).Count
-            };
+            int japaneseCount = JapanesePattern.Matches(text).Count;
+            int chineseCount = ChinesePattern.Matches(text).Count;
+            int koreanCount = KoreanPattern.Matches(text).Count;
+            int latinCount = LatinPattern.Matches(text).Count;
 
-            // Japanese detection (prioritize if contains kana)
-            if (scriptCounts["ja"] > 0 && text.Any(c => 
-                (c >= '\u3040' && c <= '\u309F') || // Hiragana
-                (c >= '\u30A0' && c <= '\u30FF')))   // Katakana
+            // Japanese characters often overlap with Chinese, so check for kana first
+            if (japaneseCount - chineseCount > 0 || 
+                Regex.IsMatch(text, @"[\u3040-\u309F\u30A0-\u30FF]"))
             {
                 return "ja";
             }
 
-            // Find the script with the most characters
-            var dominantScript = scriptCounts.OrderByDescending(kvp => kvp.Value).First();
-            
-            // If no specific script dominates, default to English
-            if (dominantScript.Value == 0)
+            // Check for predominant script
+            var counts = new[]
             {
-                return "en";
-            }
+                (count: chineseCount, lang: "zh"),
+                (count: koreanCount, lang: "ko"),
+                (count: latinCount, lang: "en")
+            };
 
-            return dominantScript.Key;
+            var dominant = counts.OrderByDescending(c => c.count).First();
+            return dominant.count > 0 ? dominant.lang : "en"; // Default to English
         }
 
         private bool ContainsMixedLanguages(string text)
         {
-            int scriptTypeCount = 0;
-            
-            if (JapanesePattern.IsMatch(text)) scriptTypeCount++;
-            if (ChinesePattern.IsMatch(text) && !JapanesePattern.IsMatch(text)) scriptTypeCount++;
-            if (KoreanPattern.IsMatch(text)) scriptTypeCount++;
-            if (LatinPattern.IsMatch(text)) scriptTypeCount++;
+            int scriptCount = 0;
+            if (JapanesePattern.IsMatch(text)) scriptCount++;
+            if (ChinesePattern.IsMatch(text) && !JapanesePattern.IsMatch(text)) scriptCount++;
+            if (KoreanPattern.IsMatch(text)) scriptCount++;
+            if (LatinPattern.IsMatch(text)) scriptCount++;
 
-            return scriptTypeCount > 1;
+            return scriptCount > 1;
         }
 
-        private async Task<PhonemeResult> ProcessMixedLanguageText(
+        private async Task<PhonemeResult> ProcessMixedLanguageTextAsync(
             string text,
-            PhonemeOptions options,
             CancellationToken cancellationToken)
         {
             Debug.Log("[UnifiedWebGLPhonemizer] Processing mixed language text");
-            
-            var segments = SegmentTextByLanguage(text);
-            var allPhonemes = new List<string>();
 
+            // Split text into segments by detected language
+            var segments = SegmentTextByLanguage(text);
+            var results = new List<PhonemeResult>();
+
+            // Process each segment with appropriate backend
             foreach (var segment in segments)
             {
-                try
+                if (string.IsNullOrWhiteSpace(segment.text))
+                    continue;
+
+                PhonemeResult result;
+                if (ShouldUseJapanesePhonemizer(segment.language))
                 {
-                    var backend = SelectBackend(segment.Language);
-                    if (backend != null)
-                    {
-                        var result = await backend.PhonemizeAsync(
-                            segment.Text, 
-                            segment.Language, 
-                            options, 
-                            cancellationToken);
-                        
-                        if (result.Success)
-                        {
-                            // Remove start/end markers from intermediate segments
-                            var phonemes = result.Phonemes.ToList();
-                            if (allPhonemes.Count > 0 && phonemes.Count > 0 && phonemes[0] == "^")
-                            {
-                                phonemes.RemoveAt(0);
-                            }
-                            if (phonemes.Count > 0 && phonemes[phonemes.Count - 1] == "$")
-                            {
-                                phonemes.RemoveAt(phonemes.Count - 1);
-                            }
-                            
-                            allPhonemes.AddRange(phonemes);
-                        }
-                    }
+                    result = await japanesePhonmizer.PhonemizeAsync(
+                        segment.text, segment.language, cancellationToken);
                 }
-                catch (Exception e)
+                else
                 {
-                    Debug.LogWarning($"[UnifiedWebGLPhonemizer] Failed to process segment '{segment.Text}': {e.Message}");
-                    // Add a pause for failed segments
-                    allPhonemes.Add("_");
+                    result = await multilingualPhonemizer.PhonemizeAsync(
+                        segment.text, segment.language, cancellationToken);
                 }
+
+                results.Add(result);
             }
 
-            // Add start and end markers
-            if (allPhonemes.Count > 0)
-            {
-                allPhonemes.Insert(0, "^");
-                allPhonemes.Add("$");
-            }
-
-            return new PhonemeResult
-            {
-                Phonemes = allPhonemes.ToArray(),
-                Language = "mixed",
-                Success = true
-            };
+            // Combine results
+            return CombinePhonemeResults(results);
         }
 
-        private List<TextSegment> SegmentTextByLanguage(string text)
+        private List<(string text, string language)> SegmentTextByLanguage(string text)
         {
-            var segments = new List<TextSegment>();
+            var segments = new List<(string text, string language)>();
             var currentSegment = new System.Text.StringBuilder();
             string currentLanguage = null;
 
-            for (int i = 0; i < text.Length; i++)
+            foreach (char c in text)
             {
-                char c = text[i];
                 string charLanguage = DetectCharacterLanguage(c);
 
                 if (currentLanguage == null)
@@ -284,30 +288,24 @@ namespace uPiper.Core.Phonemizers.WebGL
                     currentLanguage = charLanguage;
                 }
 
-                if (charLanguage != currentLanguage && currentSegment.Length > 0)
+                if (charLanguage != currentLanguage)
                 {
-                    // Language changed, save current segment
-                    segments.Add(new TextSegment 
-                    { 
-                        Text = currentSegment.ToString(), 
-                        Language = currentLanguage 
-                    });
-                    
-                    currentSegment.Clear();
+                    // Save current segment
+                    if (currentSegment.Length > 0)
+                    {
+                        segments.Add((currentSegment.ToString(), currentLanguage));
+                        currentSegment.Clear();
+                    }
                     currentLanguage = charLanguage;
                 }
 
                 currentSegment.Append(c);
             }
 
-            // Add the last segment
+            // Add final segment
             if (currentSegment.Length > 0)
             {
-                segments.Add(new TextSegment 
-                { 
-                    Text = currentSegment.ToString(), 
-                    Language = currentLanguage 
-                });
+                segments.Add((currentSegment.ToString(), currentLanguage));
             }
 
             return segments;
@@ -315,114 +313,84 @@ namespace uPiper.Core.Phonemizers.WebGL
 
         private string DetectCharacterLanguage(char c)
         {
-            // Japanese (Hiragana, Katakana)
-            if ((c >= '\u3040' && c <= '\u309F') || (c >= '\u30A0' && c <= '\u30FF'))
-            {
-                return "ja";
-            }
-
-            // CJK Unified Ideographs (could be Chinese or Japanese)
-            if (c >= '\u4E00' && c <= '\u9FAF')
-            {
-                // This is simplified - in reality, we'd need context
-                return "zh"; // Default to Chinese for now
-            }
-
-            // Korean
-            if ((c >= '\uAC00' && c <= '\uD7AF') || (c >= '\u1100' && c <= '\u11FF'))
-            {
+            string s = c.ToString();
+            
+            if (Regex.IsMatch(s, @"[\u3040-\u309F\u30A0-\u30FF]"))
+                return "ja"; // Kana = definitely Japanese
+                
+            if (JapanesePattern.IsMatch(s))
+                return "ja"; // Kanji in Japanese context
+                
+            if (ChinesePattern.IsMatch(s))
+                return "zh";
+                
+            if (KoreanPattern.IsMatch(s))
                 return "ko";
-            }
-
-            // Default to English for Latin characters and others
-            return "en";
+                
+            return "en"; // Default to English for Latin and other scripts
         }
 
-        private async Task<PhonemeResult> HandleFallback(
-            string text,
-            string language,
-            PhonemeOptions options,
-            CancellationToken cancellationToken)
+        private PhonemeResult CombinePhonemeResults(List<PhonemeResult> results)
         {
-            Debug.Log($"[UnifiedWebGLPhonemizer] Attempting fallback for language: {language}");
-
-            // Try with a different backend
-            PhonemizerBackendBase fallbackBackend = null;
-
-            if (language.StartsWith("ja"))
+            if (results.Count == 0)
             {
-                // If Japanese failed, try eSpeak-ng (won't be good but better than nothing)
-                fallbackBackend = multilingualPhonemizer;
-            }
-            else
-            {
-                // For other languages, we could try Japanese phonemizer for romaji
-                // but that's probably not useful
-                fallbackBackend = null;
-            }
-
-            if (fallbackBackend != null)
-            {
-                try
+                return new PhonemeResult
                 {
-                    var result = await fallbackBackend.PhonemizeAsync(text, "en", options, cancellationToken);
-                    result.Language = language; // Keep original language tag
-                    Debug.LogWarning($"[UnifiedWebGLPhonemizer] Fallback successful using {fallbackBackend.Name}");
-                    return result;
-                }
-                catch (Exception e)
+                    Success = false,
+                    ErrorMessage = "No phoneme results to combine"
+                };
+            }
+
+            var combinedPhonemes = new List<string>();
+            var combinedDetails = new List<PhonemeDetail>();
+            int offset = 0;
+
+            foreach (var result in results)
+            {
+                if (!result.Success)
+                    continue;
+
+                combinedPhonemes.AddRange(result.Phonemes);
+
+                if (result.Details != null)
                 {
-                    Debug.LogError($"[UnifiedWebGLPhonemizer] Fallback also failed: {e.Message}");
+                    foreach (var detail in result.Details)
+                    {
+                        combinedDetails.Add(new PhonemeDetail
+                        {
+                            Phoneme = detail.Phoneme,
+                            Position = detail.Position + offset,
+                            Duration = detail.Duration
+                        });
+                    }
+                    offset += result.Details.Count;
                 }
             }
 
-            // Last resort: return empty phonemes with error
             return new PhonemeResult
             {
-                Phonemes = new[] { "^", "_", "$" }, // Just silence
-                Language = language,
-                Success = false,
-                Error = "Phonemization failed for all backends"
+                Success = true,
+                Phonemes = combinedPhonemes.ToArray(),
+                PhonemeString = string.Join(" ", combinedPhonemes),
+                Language = "mixed",
+                Details = combinedDetails.ToArray(),
+                ProcessingTimeMs = results.Sum(r => r.ProcessingTimeMs)
             };
         }
 
-        public override long GetMemoryUsage()
+        private bool ShouldUseJapanesePhonemizer(string language)
         {
-            long total = 0;
-            if (japanesePhonmizer != null) total += japanesePhonmizer.GetMemoryUsage();
-            if (multilingualPhonemizer != null) total += multilingualPhonemizer.GetMemoryUsage();
-            return total;
+            return language == "ja" || language == "ja-JP";
         }
 
-        public override BackendCapabilities GetCapabilities()
+        protected override void Dispose(bool disposing)
         {
-            // Combined capabilities
-            return new BackendCapabilities
+            if (disposing)
             {
-                SupportsIPA = true, // eSpeak-ng supports IPA
-                SupportsStress = true, // eSpeak-ng supports stress
-                SupportsSyllables = false,
-                SupportsTones = true, // eSpeak-ng supports tones
-                SupportsDuration = false,
-                SupportsBatchProcessing = false,
-                IsThreadSafe = false,
-                RequiresNetwork = false
-            };
-        }
-
-        protected override void DisposeInternal()
-        {
-            japanesePhonmizer?.Dispose();
-            multilingualPhonemizer?.Dispose();
-            japanesePhonmizer = null;
-            multilingualPhonemizer = null;
-            isInitialized = false;
-        }
-
-        private class TextSegment
-        {
-            public string Text { get; set; }
-            public string Language { get; set; }
+                japanesePhonmizer?.Dispose();
+                multilingualPhonemizer?.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }

@@ -60,8 +60,8 @@ namespace uPiper.Demo
             // Initialize phonemizer
 #if UNITY_WEBGL && !UNITY_EDITOR
             // Use WebGL phonemizer for WebGL builds
-            _phonemizer = new WebGLOpenJTalkPhonemizer();
-            UpdateStatus("Using WebGLOpenJTalkPhonemizer");
+            _phonemizer = new UnifiedWebGLPhonemizer();
+            UpdateStatus("Using UnifiedWebGLPhonemizer");
 #elif UNITY_WEBGL && UNITY_EDITOR
             // In Unity Editor with WebGL platform selected
             _phonemizer = null;

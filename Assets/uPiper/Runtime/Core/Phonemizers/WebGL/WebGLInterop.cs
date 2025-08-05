@@ -87,7 +87,7 @@ namespace uPiper.Core.Phonemizers.WebGL
             try
             {
                 Debug.Log("[WebGLInterop] Initializing OpenJTalk WebAssembly...");
-                openJTalkSuccess = InitializeOpenJTalkWeb();
+                openJTalkSuccess = InitializeOpenJTalkWeb() != 0;
                 if (!openJTalkSuccess)
                 {
                     Debug.LogWarning("[WebGLInterop] OpenJTalk initialization failed");
@@ -101,7 +101,7 @@ namespace uPiper.Core.Phonemizers.WebGL
             try
             {
                 Debug.Log("[WebGLInterop] Initializing eSpeak-ng WebAssembly...");
-                espeakSuccess = InitializeESpeakWeb();
+                espeakSuccess = InitializeESpeakWeb() != 0;
                 if (!espeakSuccess)
                 {
                     Debug.LogWarning("[WebGLInterop] eSpeak-ng initialization failed");
