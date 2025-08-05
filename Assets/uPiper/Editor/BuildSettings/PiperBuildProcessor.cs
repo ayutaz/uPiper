@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEngine;
 using uPiper.Core.Logging;
 
 namespace uPiper.Editor.BuildSettings

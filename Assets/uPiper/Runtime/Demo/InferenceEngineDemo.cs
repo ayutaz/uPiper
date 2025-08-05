@@ -152,7 +152,7 @@ namespace uPiper.Demo
         private Core.Phonemizers.Backend.ChinesePhonemizer _chinesePhonemizer;
         private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
 #elif UNITY_WEBGL && !UNITY_EDITOR
-        private WebGLOpenJTalkPhonemizer _webGLPhonemizer;
+        private UnifiedWebGLPhonemizer _webGLPhonemizer;
 #endif
 
         private Dictionary<string, string> _modelLanguages = new()
@@ -313,8 +313,8 @@ namespace uPiper.Demo
             // Initialize WebGL phonemizer
             try
             {
-                _webGLPhonemizer = new WebGLOpenJTalkPhonemizer();
-                PiperLogger.LogInfo("[InferenceEngineDemo] WebGL phonemizer initialized successfully");
+                _webGLPhonemizer = new UnifiedWebGLPhonemizer();
+                PiperLogger.LogInfo("[InferenceEngineDemo] Unified WebGL phonemizer initialized successfully");
             }
             catch (Exception ex)
             {
@@ -943,12 +943,12 @@ namespace uPiper.Demo
                     PiperLogger.LogInfo($"Fallback phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                 }
 #elif UNITY_WEBGL && !UNITY_EDITOR
-                // Use WebGL phonemizer
-                if (language == "ja" && _webGLPhonemizer != null)
+                // Use unified WebGL phonemizer for all languages
+                if (_webGLPhonemizer != null)
                 {
-                    PiperLogger.LogDebug("[InferenceEngineDemo] Using WebGL phonemizer for Japanese text");
+                    PiperLogger.LogDebug($"[InferenceEngineDemo] Using unified WebGL phonemizer for {language} text");
                     var webGLStopwatch = Stopwatch.StartNew();
-                    var phonemeResult = await _webGLPhonemizer.PhonemizeAsync(_inputField.text);
+                    var phonemeResult = await _webGLPhonemizer.PhonemizeAsync(_inputField.text, language);
                     timings["WebGL Phonemizer"] = webGLStopwatch.ElapsedMilliseconds;
                     
                     if (phonemeResult.Success && phonemeResult.Phonemes != null)

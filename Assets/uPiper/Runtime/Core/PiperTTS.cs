@@ -451,7 +451,9 @@ namespace uPiper.Core
                 };
             }
 
-            var language = CurrentVoice?.Language ?? "ja";
+            var language = CurrentVoice?.Language ?? _config.DefaultLanguage ?? "auto";
+            
+            // If UnifiedWebGLPhonemizer is used, it will handle auto-detection
             return await _phonemizer.PhonemizeAsync(text, language, cancellationToken);
         }
 
@@ -1142,9 +1144,9 @@ namespace uPiper.Core
                     _phonemizer = new OpenJTalkPhonemizer();
                     PiperLogger.LogInfo("Initialized OpenJTalkPhonemizer for Japanese");
 #elif UNITY_WEBGL && !UNITY_EDITOR
-                    // Use WebGL implementation
-                    _phonemizer = new WebGLOpenJTalkPhonemizer();
-                    PiperLogger.LogInfo("Initialized WebGLOpenJTalkPhonemizer for Japanese");
+                    // Use unified WebGL phonemizer that supports all languages
+                    _phonemizer = new UnifiedWebGLPhonemizer();
+                    PiperLogger.LogInfo("Initialized UnifiedWebGLPhonemizer for multi-language support");
 #else
                     // In Unity Editor with WebGL platform selected
                     PiperLogger.LogWarning("OpenJTalkPhonemizer is not available in Unity Editor with WebGL platform. Phonemizer will be null.");
@@ -1154,9 +1156,9 @@ namespace uPiper.Core
                 else
                 {
 #if UNITY_WEBGL && !UNITY_EDITOR
-                    // Use WebGL eSpeak-ng implementation for other languages
-                    _phonemizer = new WebGLESpeakPhonemizer();
-                    PiperLogger.LogInfo("Initialized WebGLESpeakPhonemizer for language: {0}", _config.DefaultLanguage);
+                    // Use unified WebGL phonemizer for all languages
+                    _phonemizer = new UnifiedWebGLPhonemizer();
+                    PiperLogger.LogInfo("Initialized UnifiedWebGLPhonemizer for language: {0}", _config.DefaultLanguage);
 #else
                     // For other languages, phonemizer is not available yet
                     // espeak-ng phonemizer will be implemented in a future phase
