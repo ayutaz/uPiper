@@ -12,7 +12,7 @@ namespace uPiper.Core.Phonemizers.WebGL
     /// </summary>
     public class WebGLOpenJTalkPhonemizer : PhonemizerBackendBase
     {
-        private bool isInitialized = false;
+        private new bool isInitialized = false;
         private readonly object initLock = new object();
 
         public override string Name => "WebGL OpenJTalk";
@@ -144,13 +144,13 @@ namespace uPiper.Core.Phonemizers.WebGL
 
             // Check cache first
             var cacheKey = $"openjtalk_{text}_{language}";
-            var cachedResult = WebGLCacheManager.GetCachedPhonemesForText(cacheKey);
+            var cachedResult = WebGLCacheManager.GetCachedPhonemesForText(text, language);
             if (cachedResult != null)
             {
                 Debug.Log($"[WebGLOpenJTalkPhonemizer] Using cached result for: {text}");
                 return new PhonemeResult
                 {
-                    Phonemes = cachedResult.Split(' '),
+                    Phonemes = cachedResult,
                     Language = language,
                     Success = true
                 };
@@ -161,7 +161,10 @@ namespace uPiper.Core.Phonemizers.WebGL
             {
                 try
                 {
-                    return WebGLInterop.PhonemizeOpenJTalk(text);
+                    var resultPtr = WebGLInterop.PhonemizeJapaneseText(text);
+                    string result = System.Runtime.InteropServices.Marshal.PtrToStringUTF8(resultPtr);
+                    WebGLInterop.FreeWebGLMemory(resultPtr);
+                    return result;
                 }
                 catch (Exception e)
                 {
@@ -182,7 +185,7 @@ namespace uPiper.Core.Phonemizers.WebGL
             }
 
             // Cache the result
-            WebGLCacheManager.CachePhonemesForText(cacheKey, phonemes);
+            WebGLCacheManager.CachePhonemesForText(text, language, phonemeArray);
 
             // Parse phonemes
             var phonemeArray = phonemes.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
@@ -236,7 +239,7 @@ namespace uPiper.Core.Phonemizers.WebGL
             }
         }
 
-        public async Task<bool> InitializeAsync(
+        public override async Task<bool> InitializeAsync(
             PhonemizerBackendOptions options = null,
             CancellationToken cancellationToken = default)
         {

@@ -41,7 +41,7 @@ namespace uPiper.Core.Phonemizers.WebGL
             "es", "fr", "de", "it", "pt", "ru" // Other languages via eSpeak-ng
         };
 
-        public UnifiedWebGLPhonemizer() : base(new TextNormalizer(), cacheSize: 1000)
+        public UnifiedWebGLPhonemizer() : base(1000, new TextNormalizer())
         {
             InitializeLanguageInfos();
             _ = InitializeAsync();
@@ -54,14 +54,13 @@ namespace uPiper.Core.Phonemizers.WebGL
                 _languageInfos[lang] = new LanguageInfo
                 {
                     Code = lang,
-                    Name = GetLanguageName(lang),
-                    EnglishName = GetLanguageEnglishName(lang),
-                    IsSupported = true
+                    Name = GetLanguageEnglishName(lang),
+                    NativeName = GetLanguageName(lang)
                 };
             }
         }
         
-        private string GetLanguageName(string code)
+        protected override string GetLanguageName(string code)
         {
             return code switch
             {
@@ -193,11 +192,11 @@ namespace uPiper.Core.Phonemizers.WebGL
             // Select appropriate backend based on language
             if (ShouldUseJapanesePhonemizer(language))
             {
-                return await japanesePhonmizer.PhonemizeAsync(text, language, cancellationToken);
+                return await japanesePhonmizer.PhonemizeAsync(text, language, null, cancellationToken);
             }
             else
             {
-                return await multilingualPhonemizer.PhonemizeAsync(text, language, cancellationToken);
+                return await multilingualPhonemizer.PhonemizeAsync(text, language, null, cancellationToken);
             }
         }
 
@@ -259,12 +258,12 @@ namespace uPiper.Core.Phonemizers.WebGL
                 if (ShouldUseJapanesePhonemizer(segment.language))
                 {
                     result = await japanesePhonmizer.PhonemizeAsync(
-                        segment.text, segment.language, cancellationToken);
+                        segment.text, segment.language, null, cancellationToken);
                 }
                 else
                 {
                     result = await multilingualPhonemizer.PhonemizeAsync(
-                        segment.text, segment.language, cancellationToken);
+                        segment.text, segment.language, null, cancellationToken);
                 }
 
                 results.Add(result);
