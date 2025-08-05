@@ -184,11 +184,11 @@ namespace uPiper.Core.Phonemizers.WebGL
                 };
             }
 
-            // Cache the result
-            WebGLCacheManager.CachePhonemesForText(text, espeakLanguage, phonemeArray);
-
             // Parse phonemes
             var phonemeArray = phonemes.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            
+            // Cache the result
+            WebGLCacheManager.CachePhonemesForText(text, espeakLanguage, phonemeArray);
             
             return new PhonemeResult
             {
