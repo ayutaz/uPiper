@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Text;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers.WebGL
 {
@@ -161,7 +162,7 @@ namespace uPiper.Core.Phonemizers.WebGL
             }
         }
 
-        protected override async Task<PhonemeResult> InternalPhonemizeAsync(
+        protected override async Task<PhonemeResult> PhonemizeInternalAsync(
             string text, 
             string language, 
             CancellationToken cancellationToken)
@@ -342,8 +343,8 @@ namespace uPiper.Core.Phonemizers.WebGL
             }
 
             var combinedPhonemes = new List<string>();
-            var combinedDetails = new List<PhonemeDetail>();
-            int offset = 0;
+            var combinedDurations = new List<float>();
+            float totalProcessingTime = 0;
 
             foreach (var result in results)
             {
@@ -351,30 +352,27 @@ namespace uPiper.Core.Phonemizers.WebGL
                     continue;
 
                 combinedPhonemes.AddRange(result.Phonemes);
-
-                if (result.Details != null)
+                
+                if (result.Durations != null && result.Durations.Length > 0)
                 {
-                    foreach (var detail in result.Details)
-                    {
-                        combinedDetails.Add(new PhonemeDetail
-                        {
-                            Phoneme = detail.Phoneme,
-                            Position = detail.Position + offset,
-                            Duration = detail.Duration
-                        });
-                    }
-                    offset += result.Details.Count;
+                    combinedDurations.AddRange(result.Durations);
                 }
+                else
+                {
+                    // Add default durations if not provided
+                    combinedDurations.AddRange(Enumerable.Repeat(50f, result.Phonemes.Length));
+                }
+                
+                totalProcessingTime += result.ProcessingTimeMs;
             }
 
             return new PhonemeResult
             {
                 Success = true,
                 Phonemes = combinedPhonemes.ToArray(),
-                PhonemeString = string.Join(" ", combinedPhonemes),
                 Language = "mixed",
-                Details = combinedDetails.ToArray(),
-                ProcessingTimeMs = results.Sum(r => r.ProcessingTimeMs)
+                Durations = combinedDurations.ToArray(),
+                ProcessingTimeMs = totalProcessingTime
             };
         }
 

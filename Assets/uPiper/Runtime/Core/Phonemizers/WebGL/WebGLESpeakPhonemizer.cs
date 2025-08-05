@@ -151,7 +151,6 @@ namespace uPiper.Core.Phonemizers.WebGL
                 return new PhonemeResult
                 {
                     Phonemes = cachedResult.Split(' '),
-                    PhonemeString = cachedResult,
                     Language = language,
                     Success = true
                 };
@@ -191,7 +190,6 @@ namespace uPiper.Core.Phonemizers.WebGL
             return new PhonemeResult
             {
                 Phonemes = phonemeArray,
-                PhonemeString = phonemes,
                 Language = language,
                 Success = true
             };
@@ -226,15 +224,18 @@ namespace uPiper.Core.Phonemizers.WebGL
             return 5 * 1024 * 1024; // 5MB for eSpeak-ng
         }
 
-        public override PhonemizerCapabilities GetCapabilities()
+        public override BackendCapabilities GetCapabilities()
         {
-            return new PhonemizerCapabilities
+            return new BackendCapabilities
             {
+                SupportsIPA = true,
+                SupportsStress = false,
+                SupportsSyllables = false,
+                SupportsTones = false,
+                SupportsDuration = false,
                 SupportsBatchProcessing = false,
-                SupportsStreaming = false,
-                MaxTextLength = 5000,
-                RequiresNetwork = false,
-                EstimatedLatencyMs = 30
+                IsThreadSafe = false,
+                RequiresNetwork = false
             };
         }
 

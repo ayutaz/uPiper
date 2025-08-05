@@ -151,7 +151,6 @@ namespace uPiper.Core.Phonemizers.WebGL
                 return new PhonemeResult
                 {
                     Phonemes = cachedResult.Split(' '),
-                    PhonemeString = cachedResult,
                     Language = language,
                     Success = true
                 };
@@ -191,7 +190,6 @@ namespace uPiper.Core.Phonemizers.WebGL
             return new PhonemeResult
             {
                 Phonemes = phonemeArray,
-                PhonemeString = phonemes,
                 Language = language,
                 Success = true
             };
@@ -203,15 +201,18 @@ namespace uPiper.Core.Phonemizers.WebGL
             return 10 * 1024 * 1024; // 10MB for OpenJTalk
         }
 
-        public override PhonemizerCapabilities GetCapabilities()
+        public override BackendCapabilities GetCapabilities()
         {
-            return new PhonemizerCapabilities
+            return new BackendCapabilities
             {
+                SupportsIPA = false,
+                SupportsStress = false,
+                SupportsSyllables = false,
+                SupportsTones = false,
+                SupportsDuration = true,
                 SupportsBatchProcessing = false,
-                SupportsStreaming = false,
-                MaxTextLength = 1000,
-                RequiresNetwork = false,
-                EstimatedLatencyMs = 50
+                IsThreadSafe = false,
+                RequiresNetwork = false
             };
         }
 
