@@ -62,10 +62,10 @@ namespace uPiper.Editor.BuildSettings
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
             
             // Use uPiper custom template if available
-            string customTemplate = "uPiper";
+            string customTemplate = "uPiperTemplate";
             if (System.IO.Directory.Exists($"Assets/WebGLTemplates/{customTemplate}"))
             {
-                PlayerSettings.WebGL.template = $"APPLICATION:{customTemplate}";
+                PlayerSettings.WebGL.template = $"PROJECT:{customTemplate}";
                 PiperLogger.LogInfo($"[PiperBuildProcessor] Using custom WebGL template: {customTemplate}");
             }
             else
@@ -292,11 +292,11 @@ namespace uPiper.Editor.BuildSettings
         private static void ConfigureWebGLBuildSettings()
         {
             // Use custom WebGL template
-            string customTemplatePath = "Assets/WebGLTemplates/uPiper";
+            string customTemplatePath = "Assets/WebGLTemplates/uPiperTemplate";
             if (Directory.Exists(customTemplatePath))
             {
-                PlayerSettings.WebGL.template = "PROJECT:uPiper";
-                PiperLogger.LogInfo("[PiperBuildMenu] Using custom WebGL template: uPiper");
+                PlayerSettings.WebGL.template = "PROJECT:uPiperTemplate";
+                PiperLogger.LogInfo("[PiperBuildMenu] Using custom WebGL template: uPiperTemplate");
             }
             else
             {
