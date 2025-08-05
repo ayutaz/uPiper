@@ -207,7 +207,7 @@ namespace uPiper.Editor.BuildSettings
         }
 
         /// <summary>
-        /// CI/CD用のWebGLビルドメソッド
+        /// CI/CD用のWebGLビルドメソッド（Unity Builder互換）
         /// </summary>
         [MenuItem("uPiper/Build/Build WebGL")]
         public static void BuildWebGL()
@@ -346,6 +346,14 @@ namespace uPiper.Editor.BuildSettings
                 }
             }
             return null;
+        }
+        
+        /// <summary>
+        /// CI/CD用のシンプルなWebGLビルドメソッド（Unity Builder用）
+        /// </summary>
+        public static void PerformWebGLBuild()
+        {
+            BuildWebGL();
         }
     }
 }

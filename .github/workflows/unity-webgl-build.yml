@@ -64,7 +64,7 @@ jobs:
           unityVersion: 6000.0.35f1
           buildName: ${{ github.event.inputs.buildName || 'uPiperWebGL' }}
           buildsPath: build
-          buildMethod: uPiper.Editor.BuildSettings.PiperBuildProcessor.BuildWebGL
+          buildMethod: uPiper.Editor.BuildSettings.PiperBuildProcessor.PerformWebGLBuild
       
       - name: List build output
         if: always()
