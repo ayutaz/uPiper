@@ -65,7 +65,6 @@ jobs:
           buildName: ${{ github.event.inputs.buildName || 'uPiperWebGL' }}
           buildsPath: build
           customParameters: |
-            -buildTarget WebGL
             -executeMethod uPiper.Editor.BuildSettings.PiperBuildProcessor.BuildWebGL
             -logFile -
             ${{ github.event.inputs.developmentBuild == 'true' && '-developmentBuild true' || '' }}
