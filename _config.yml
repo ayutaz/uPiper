@@ -2,20 +2,15 @@
 theme: null
 plugins: []
 
-# Exclude files from GitHub Pages
+# Exclude files from GitHub Pages build
 exclude:
-  - Assets
-  - Packages
-  - ProjectSettings
-  - Library
-  - Logs
-  - obj
-  - Temp
-  - UserSettings
-  - .vs
-  - .vscode
-  - "*.csproj"
-  - "*.sln"
-  - "*.unityproj"
   - README.md
   - LICENSE
+  - .gitignore
+  - .github
+  - Assets
+  - NativePlugins
+  - Packages
+  - ProjectSettings
+  - docs
+  - "*.meta"

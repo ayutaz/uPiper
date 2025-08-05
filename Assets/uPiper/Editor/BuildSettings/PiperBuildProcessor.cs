@@ -221,7 +221,7 @@ namespace uPiper.Editor.BuildSettings
             // Configure WebGL-specific settings
             ConfigureWebGLBuildSettings();
 
-            // Get enabled scenes
+            // Get enabled scenes or use InferenceEngineDemo scene
             var scenes = EditorBuildSettings.scenes
                 .Where(s => s.enabled)
                 .Select(s => s.path)
@@ -229,9 +229,25 @@ namespace uPiper.Editor.BuildSettings
 
             if (scenes.Length == 0)
             {
-                PiperLogger.LogError("[PiperBuildMenu] No scenes are enabled in build settings");
-                EditorApplication.Exit(1);
-                return;
+                // Try to find InferenceEngineDemo scene
+                string demoScenePath = "Assets/uPiper/Scenes/InferenceEngineDemo.unity";
+                if (!File.Exists(demoScenePath))
+                {
+                    // Alternative path - WebGL specific demo
+                    demoScenePath = "Assets/uPiper/Samples~/WebGLDemo/WebGLDemoScene.unity";
+                }
+                
+                if (File.Exists(demoScenePath))
+                {
+                    PiperLogger.LogWarning($"[PiperBuildMenu] No scenes enabled, using demo scene: {demoScenePath}");
+                    scenes = new[] { demoScenePath };
+                }
+                else
+                {
+                    PiperLogger.LogError("[PiperBuildMenu] No scenes are enabled in build settings and demo scene not found");
+                    EditorApplication.Exit(1);
+                    return;
+                }
             }
 
             var buildOptions = new BuildPlayerOptions
@@ -276,11 +292,11 @@ namespace uPiper.Editor.BuildSettings
         private static void ConfigureWebGLBuildSettings()
         {
             // Use custom WebGL template
-            string customTemplatePath = "Assets/WebGLTemplates/uPiperTemplate";
+            string customTemplatePath = "Assets/WebGLTemplates/uPiper";
             if (Directory.Exists(customTemplatePath))
             {
-                PlayerSettings.WebGL.template = "PROJECT:uPiperTemplate";
-                PiperLogger.LogInfo("[PiperBuildMenu] Using custom WebGL template: uPiperTemplate");
+                PlayerSettings.WebGL.template = "PROJECT:uPiper";
+                PiperLogger.LogInfo("[PiperBuildMenu] Using custom WebGL template: uPiper");
             }
             else
             {

@@ -50,7 +50,16 @@ jobs:
           buildsPath: build
           customParameters: |
             -buildTarget WebGL
-            -executeMethod PiperBuildProcessor.BuildWebGL
+            -executeMethod uPiper.Editor.BuildSettings.PiperBuildProcessor.BuildWebGL
+            -logFile -
+      
+      - name: List build output
+        if: always()
+        run: |
+          echo "=== Build directory structure ==="
+          find build -type f -name "*.html" -o -name "*.js" -o -name "*.wasm" | head -20
+          echo "=== WebGL directory contents ==="
+          ls -la build/WebGL/ || echo "WebGL directory not found"
       
       - name: Upload WebGL Build
         uses: actions/upload-artifact@v4
