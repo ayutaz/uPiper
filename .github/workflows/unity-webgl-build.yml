@@ -6,6 +6,22 @@ on:
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      buildName:
+        description: 'Build name (default: uPiperWebGL)'
+        required: false
+        default: 'uPiperWebGL'
+        type: string
+      deployToPages:
+        description: 'Deploy to GitHub Pages'
+        required: false
+        default: true
+        type: boolean
+      developmentBuild:
+        description: 'Create development build'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -18,7 +34,7 @@ concurrency:
 
 jobs:
   build-webgl:
-    name: Build Unity WebGL
+    name: Build Unity WebGL${{ github.event_name == 'workflow_dispatch' && format(' ({0})', github.event.inputs.buildName) || '' }}
     runs-on: ubuntu-latest
     
     steps:
@@ -46,12 +62,13 @@ jobs:
         with:
           targetPlatform: WebGL
           unityVersion: 6000.0.35f1
-          buildName: uPiperWebGL
+          buildName: ${{ github.event.inputs.buildName || 'uPiperWebGL' }}
           buildsPath: build
           customParameters: |
             -buildTarget WebGL
             -executeMethod uPiper.Editor.BuildSettings.PiperBuildProcessor.BuildWebGL
             -logFile -
+            ${{ github.event.inputs.developmentBuild == 'true' && '-developmentBuild true' || '' }}
       
       - name: List build output
         if: always()
@@ -69,21 +86,27 @@ jobs:
           retention-days: 7
       
       - name: Prepare WebGL deployment
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/webgl-support')
+        if: |
+          (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/webgl-support')) ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.deployToPages == 'true')
         run: |
           chmod +x .github/workflows/prepare-webgl-deploy.sh
-          .github/workflows/prepare-webgl-deploy.sh
+          .github/workflows/prepare-webgl-deploy.sh "${{ github.event.inputs.buildName || 'uPiperWebGL' }}"
       
       - name: Upload Pages artifact
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/webgl-support')
+        if: |
+          (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/webgl-support')) ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.deployToPages == 'true')
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build/WebGL/uPiperWebGL
+          path: build/WebGL/${{ github.event.inputs.buildName || 'uPiperWebGL' }}
   
   deploy:
     name: Deploy to GitHub Pages
     needs: build-webgl
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/webgl-support')
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/webgl-support')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.deployToPages == 'true')
     runs-on: ubuntu-latest
     environment:
       name: github-pages

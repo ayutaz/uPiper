@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# WebGL build output directory
-BUILD_DIR="build/WebGL/uPiperWebGL"
+# WebGL build output directory - support custom build name
+BUILD_NAME="${1:-uPiperWebGL}"
+BUILD_DIR="build/WebGL/${BUILD_NAME}"
 
 # Check if build directory exists
 if [ ! -d "$BUILD_DIR" ]; then
