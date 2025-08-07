@@ -202,22 +202,27 @@ namespace uPiper.Core.Phonemizers.WebGL
                 };
             }
 
-            // Perform phonemization in main thread
-            string phonemes = await Task.Run(() =>
+            // Perform phonemization (WebGL is single-threaded, so no Task.Run)
+            string phonemes = null;
+            try
             {
-                try
+                var resultPtr = WebGLInterop.PhonemizeJapaneseText(text);
+                if (resultPtr == IntPtr.Zero)
                 {
-                    var resultPtr = WebGLInterop.PhonemizeJapaneseText(text);
-                    string result = System.Runtime.InteropServices.Marshal.PtrToStringUTF8(resultPtr);
+                    Debug.LogError($"[WebGLOpenJTalkPhonemizer] PhonemizeJapaneseText returned null");
+                    phonemes = null;
+                }
+                else
+                {
+                    phonemes = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(resultPtr);
                     WebGLInterop.FreeWebGLMemory(resultPtr);
-                    return result;
                 }
-                catch (Exception e)
-                {
-                    Debug.LogError($"[WebGLOpenJTalkPhonemizer] Phonemization error: {e.Message}");
-                    return null;
-                }
-            }, cancellationToken);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[WebGLOpenJTalkPhonemizer] Phonemization error: {e.Message}");
+                phonemes = null;
+            }
 
             if (string.IsNullOrEmpty(phonemes))
             {
