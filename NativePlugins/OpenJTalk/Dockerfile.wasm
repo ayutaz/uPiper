@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     git \
     wget \
     tar \
+    patch \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -16,40 +17,171 @@ WORKDIR /build
 # Copy OpenJTalk source
 COPY . /build/
 
-# Download and build HTSEngine
-RUN wget https://sourceforge.net/projects/hts-engine/files/hts_engine%20API/hts_engine_API-1.10/hts_engine_API-1.10.tar.gz && \
-    tar -xzf hts_engine_API-1.10.tar.gz && \
-    cd hts_engine_API-1.10 && \
-    emconfigure ./configure --prefix=/build/external/install && \
-    emmake make && \
-    make install && \
-    cd .. && \
-    rm -rf hts_engine_API-1.10*
+# First, check if we have pre-built libraries
+RUN if [ -d "external/open_jtalk-1.11" ]; then \
+        echo "Using existing OpenJTalk build"; \
+    else \
+        echo "Downloading OpenJTalk source..."; \
+        wget https://sourceforge.net/projects/open-jtalk/files/Open%20JTalk/open_jtalk-1.11/open_jtalk-1.11.tar.gz && \
+        tar -xzf open_jtalk-1.11.tar.gz && \
+        mkdir -p external && \
+        mv open_jtalk-1.11 external/ && \
+        rm open_jtalk-1.11.tar.gz; \
+    fi
 
-# Download and build OpenJTalk
-RUN wget https://sourceforge.net/projects/open-jtalk/files/Open%20JTalk/open_jtalk-1.11/open_jtalk-1.11.tar.gz && \
-    tar -xzf open_jtalk-1.11.tar.gz && \
-    cd open_jtalk-1.11 && \
-    # Apply Emscripten-specific patches if needed
-    emconfigure ./configure \
-        --prefix=/build/external/install \
-        --with-hts-engine-header-path=/build/external/install/include \
-        --with-hts-engine-library-path=/build/external/install/lib \
-        --disable-shared \
-        --enable-static && \
-    emmake make && \
-    make install && \
-    cd .. && \
-    # Keep the source for static libraries
-    mv open_jtalk-1.11 external/
+# Create a simplified CMakeLists.txt for WebAssembly without HTSEngine
+RUN cat > CMakeLists.wasm.simple.txt << 'EOF'
+cmake_minimum_required(VERSION 3.10)
+project(openjtalk_wrapper VERSION 3.0.0)
 
-# Build the wrapper library with Emscripten
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# Source files - minimal wrapper
+set(SOURCES
+    src/openjtalk_minimal_wrapper.c
+)
+
+# Create executable for Emscripten
+add_executable(openjtalk_wrapper ${SOURCES})
+
+# Set output directory first
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+set_target_properties(openjtalk_wrapper PROPERTIES
+    SUFFIX ".js"
+)
+
+# Emscripten compile flags
+target_compile_options(openjtalk_wrapper PRIVATE
+    -O3
+    -fno-exceptions
+    -fno-rtti
+)
+
+# Emscripten link flags
+target_link_options(openjtalk_wrapper PRIVATE
+    "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','setValue','allocate','allocateUTF8','UTF8ToString','lengthBytesUTF8','stringToUTF8','_malloc','_free']"
+    "-sEXPORTED_FUNCTIONS=['_malloc','_free','_openjtalk_test','_custom_malloc','_custom_free']"
+    "-sALLOW_MEMORY_GROWTH=1"
+    "-sINITIAL_MEMORY=16777216"
+    "-sMODULARIZE=1"
+    "-sEXPORT_NAME='OpenJTalkModule'"
+    "-sEXPORT_ES6=0"
+    "-sUSE_ES6_IMPORT_META=0"
+    "-sENVIRONMENT='web,worker'"
+    "-sFILESYSTEM=1"
+    "-sWASM=1"
+)
+
+# Add pre/post JS if they exist
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/pre.js")
+    target_link_options(openjtalk_wrapper PRIVATE
+        "--pre-js" "${CMAKE_CURRENT_SOURCE_DIR}/src/pre.js"
+    )
+endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/post.js")
+    target_link_options(openjtalk_wrapper PRIVATE
+        "--post-js" "${CMAKE_CURRENT_SOURCE_DIR}/src/post.js"
+    )
+endif()
+EOF
+
+# Create a minimal wrapper source
+RUN mkdir -p src && cat > src/openjtalk_minimal_wrapper.c << 'EOF'
+#include <emscripten.h>
+#include <string.h>
+#include <stdlib.h>
+
+// Minimal OpenJTalk wrapper for testing HEAP export
+EMSCRIPTEN_KEEPALIVE
+int openjtalk_test(const char* text) {
+    // Just return the length of input text as a test
+    return strlen(text);
+}
+
+// Export malloc/free for testing
+EMSCRIPTEN_KEEPALIVE
+void* custom_malloc(size_t size) {
+    return malloc(size);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void custom_free(void* ptr) {
+    free(ptr);
+}
+EOF
+
+# Create pre.js to ensure HEAP arrays are properly exported
+RUN cat > src/pre.js << 'EOF'
+// Pre-JS to ensure proper HEAP export
+Module['preRun'] = Module['preRun'] || [];
+Module['preRun'].push(function() {
+    // Ensure HEAP arrays are accessible
+    if (typeof Module['HEAP8'] === 'undefined' && typeof HEAP8 !== 'undefined') {
+        Module['HEAP8'] = HEAP8;
+    }
+    if (typeof Module['HEAPU8'] === 'undefined' && typeof HEAPU8 !== 'undefined') {
+        Module['HEAPU8'] = HEAPU8;
+    }
+    if (typeof Module['HEAP16'] === 'undefined' && typeof HEAP16 !== 'undefined') {
+        Module['HEAP16'] = HEAP16;
+    }
+    if (typeof Module['HEAPU16'] === 'undefined' && typeof HEAPU16 !== 'undefined') {
+        Module['HEAPU16'] = HEAPU16;
+    }
+    if (typeof Module['HEAP32'] === 'undefined' && typeof HEAP32 !== 'undefined') {
+        Module['HEAP32'] = HEAP32;
+    }
+    if (typeof Module['HEAPU32'] === 'undefined' && typeof HEAPU32 !== 'undefined') {
+        Module['HEAPU32'] = HEAPU32;
+    }
+    if (typeof Module['HEAPF32'] === 'undefined' && typeof HEAPF32 !== 'undefined') {
+        Module['HEAPF32'] = HEAPF32;
+    }
+    if (typeof Module['HEAPF64'] === 'undefined' && typeof HEAPF64 !== 'undefined') {
+        Module['HEAPF64'] = HEAPF64;
+    }
+});
+EOF
+
+# Create post.js to expose HEAP arrays
+RUN cat > src/post.js << 'EOF'
+// Post-JS to expose HEAP arrays
+if (typeof Module !== 'undefined') {
+    // Export HEAP arrays
+    Module['HEAP8'] = HEAP8;
+    Module['HEAPU8'] = HEAPU8;
+    Module['HEAP16'] = HEAP16;
+    Module['HEAPU16'] = HEAPU16;
+    Module['HEAP32'] = HEAP32;
+    Module['HEAPU32'] = HEAPU32;
+    Module['HEAPF32'] = HEAPF32;
+    Module['HEAPF64'] = HEAPF64;
+    
+    // Also ensure they're accessible globally for compatibility
+    if (typeof window !== 'undefined') {
+        window.HEAP8 = HEAP8;
+        window.HEAPU8 = HEAPU8;
+        window.HEAP16 = HEAP16;
+        window.HEAPU16 = HEAPU16;
+        window.HEAP32 = HEAP32;
+        window.HEAPU32 = HEAPU32;
+        window.HEAPF32 = HEAPF32;
+        window.HEAPF64 = HEAPF64;
+    }
+}
+EOF
+
+# Copy the simplified CMakeLists to the correct location
+RUN cp CMakeLists.wasm.simple.txt CMakeLists.txt
+
+# Build the minimal wrapper with Emscripten
 RUN mkdir -p build_wasm && cd build_wasm && \
-    emcmake cmake .. \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DEMSCRIPTEN=ON \
-        -DBUILD_TESTS=OFF \
-        -DBUILD_BENCHMARK=OFF && \
+    emcmake cmake -DCMAKE_BUILD_TYPE=Release .. && \
     emmake make
 
 # The output files will be in /build/build_wasm/lib/
