@@ -36,7 +36,7 @@
 - 🌐 **WebGL対応**（実験的）- WebAssemblyによる日本語・英語音声合成
 
 ## Requirements
-* Unity 6000.0.35f1
+* Unity 6000.0.55f1
 * Unity AI Interface (Inference Engine) 2.2.x
 
 ## ビルド要件

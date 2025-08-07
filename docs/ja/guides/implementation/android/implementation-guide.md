@@ -10,7 +10,7 @@ Phase 2では、uPiperのAndroidプラットフォーム対応を実装します
 
 - Phase 1（Windows/Linux/macOS）が完了していること ✅
 - Android NDK r23b以上 ✅
-- Unity 6000.0.35f1以上 ✅
+- Unity 6000.0.55f1以上 ✅
 - Docker環境（CI/CD統合用）✅
 
 ## 実装状況（完了）
