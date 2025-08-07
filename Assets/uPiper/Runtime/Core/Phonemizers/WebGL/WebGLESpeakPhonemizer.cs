@@ -13,7 +13,7 @@ namespace uPiper.Core.Phonemizers.WebGL
     /// </summary>
     public class WebGLESpeakPhonemizer : PhonemizerBackendBase
     {
-        private new bool isInitialized = false;
+        private bool webGLInitialized = false;
         private readonly object initLock = new object();
         private string[] supportedLanguages = Array.Empty<string>();
 
@@ -30,7 +30,7 @@ namespace uPiper.Core.Phonemizers.WebGL
             
             lock (initLock)
             {
-                if (isInitialized)
+                if (webGLInitialized)
                 {
                     return true;
                 }
@@ -49,6 +49,7 @@ namespace uPiper.Core.Phonemizers.WebGL
                     {
                         // Already initialized
                         LoadSupportedLanguages();
+                        webGLInitialized = true;
                         isInitialized = true;
                         Debug.Log($"[WebGLESpeakPhonemizer] Already initialized. Supported languages: {string.Join(", ", supportedLanguages)}");
                         return true;
@@ -86,7 +87,8 @@ namespace uPiper.Core.Phonemizers.WebGL
                         LoadSupportedLanguages();
                         lock (initLock)
                         {
-                            isInitialized = true;
+                            webGLInitialized = true;
+                        isInitialized = true;
                         }
                         Debug.Log($"[WebGLESpeakPhonemizer] Initialization successful. Supported languages: {string.Join(", ", supportedLanguages)}");
                         return true;
@@ -124,7 +126,7 @@ namespace uPiper.Core.Phonemizers.WebGL
             PhonemeOptions options = null,
             CancellationToken cancellationToken = default)
         {
-            if (!isInitialized)
+            if (!webGLInitialized)
             {
                 throw new InvalidOperationException("WebGLESpeakPhonemizer is not initialized");
             }
@@ -156,22 +158,20 @@ namespace uPiper.Core.Phonemizers.WebGL
                 };
             }
 
-            // Perform phonemization
-            string phonemes = await Task.Run(() =>
+            // Perform phonemization (WebGL is single-threaded, so no Task.Run)
+            string phonemes = null;
+            try
             {
-                try
-                {
-                    var resultPtr = WebGLInterop.PhonemizeEnglishText(text, espeakLanguage);
-                    string result = System.Runtime.InteropServices.Marshal.PtrToStringUTF8(resultPtr);
-                    WebGLInterop.FreeWebGLMemory(resultPtr);
-                    return result;
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError($"[WebGLESpeakPhonemizer] Phonemization error: {e.Message}");
-                    return null;
-                }
-            }, cancellationToken);
+                var resultPtr = WebGLInterop.PhonemizeEnglishText(text, espeakLanguage);
+                // Unity/.NET Standard 2.0 doesn't have PtrToStringUTF8, use PtrToStringAnsi
+                phonemes = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(resultPtr);
+                WebGLInterop.FreeWebGLMemory(resultPtr);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[WebGLESpeakPhonemizer] Phonemization error: {e.Message}");
+                phonemes = null;
+            }
 
             if (string.IsNullOrEmpty(phonemes))
             {
@@ -246,12 +246,13 @@ namespace uPiper.Core.Phonemizers.WebGL
         {
             lock (initLock)
             {
-                if (isInitialized)
+                if (webGLInitialized)
                 {
                     try
                     {
                         // Cleanup if needed
                         Debug.Log("[WebGLESpeakPhonemizer] Disposing...");
+                        webGLInitialized = false;
                         isInitialized = false;
                     }
                     catch (Exception e)
@@ -262,12 +263,6 @@ namespace uPiper.Core.Phonemizers.WebGL
             }
         }
 
-        public override async Task<bool> InitializeAsync(
-            PhonemizerBackendOptions options = null,
-            CancellationToken cancellationToken = default)
-        {
-            return await InitializeInternalAsync(options, cancellationToken);
-        }
     }
 }
 #endif

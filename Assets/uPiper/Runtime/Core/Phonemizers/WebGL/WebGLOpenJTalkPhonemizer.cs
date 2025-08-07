@@ -1,6 +1,7 @@
 #if UNITY_WEBGL && !UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -217,7 +218,8 @@ namespace uPiper.Core.Phonemizers.WebGL
                 }
                 else
                 {
-                    var jsonResult = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(resultPtr);
+                    // Unity/.NET Standard 2.0 doesn't have PtrToStringUTF8, use PtrToStringAnsi
+                    var jsonResult = Marshal.PtrToStringAnsi(resultPtr);
                     WebGLInterop.FreeWebGLMemory(resultPtr);
                     
                     // Parse JSON result
