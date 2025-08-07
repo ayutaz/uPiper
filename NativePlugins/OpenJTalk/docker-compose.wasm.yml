@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  openjtalk-wasm-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile.wasm
+    volumes:
+      - ./output:/output
+    command: |
+      sh -c "
+        cp /build/build_wasm/lib/openjtalk_wrapper.js /output/ &&
+        cp /build/build_wasm/lib/openjtalk_wrapper.wasm /output/ &&
+        echo 'Build files copied to output directory'
+      "

@@ -6,7 +6,10 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Platform detection
-if(WIN32)
+if(EMSCRIPTEN)
+    set(PLATFORM_NAME "wasm")
+    message(STATUS "Building for WebAssembly with Emscripten")
+elseif(WIN32)
     set(PLATFORM_NAME "windows")
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-DOPENJTALK_EXPORTS)
@@ -94,8 +97,18 @@ if(NOT EXISTS "${OPENJTALK_INCLUDE_DIR}/jpcommon.h")
     endif()
 endif()
 
-# Create shared library
-add_library(openjtalk_wrapper SHARED ${SOURCES})
+# Create library based on platform
+if(EMSCRIPTEN)
+    # For Emscripten, create executable that generates .js and .wasm
+    add_executable(openjtalk_wrapper ${SOURCES})
+    set_target_properties(openjtalk_wrapper PROPERTIES
+        SUFFIX ".js"
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+    )
+else()
+    # For other platforms, create shared library
+    add_library(openjtalk_wrapper SHARED ${SOURCES})
+endif()
 
 # Link libraries
 if(ANDROID)
@@ -260,6 +273,47 @@ else()
     # Enable debug logging for Android builds to diagnose issues
     if(ANDROID)
         target_compile_definitions(openjtalk_wrapper PRIVATE ENABLE_DEBUG_LOG)
+    endif()
+endif()
+
+# Emscripten-specific settings
+if(EMSCRIPTEN)
+    # Emscripten compile flags
+    target_compile_options(openjtalk_wrapper PRIVATE
+        -O3
+        -fno-exceptions
+        -fno-rtti
+    )
+    
+    # Emscripten link flags
+    target_link_options(openjtalk_wrapper PRIVATE
+        "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','setValue','allocate','allocateUTF8','UTF8ToString','lengthBytesUTF8','stringToUTF8','_malloc','_free']"
+        "-sEXPORTED_FUNCTIONS=['_malloc','_free','_openjtalk_initialize','_openjtalk_synthesis_labels','_openjtalk_free_string','_openjtalk_clear']"
+        "-sALLOW_MEMORY_GROWTH=1"
+        "-sINITIAL_MEMORY=67108864"
+        "-sSTACK_SIZE=16777216"
+        "-sMODULARIZE=1"
+        "-sEXPORT_NAME='OpenJTalkModule'"
+        "-sEXPORT_ES6=0"
+        "-sUSE_ES6_IMPORT_META=0"
+        "-sENVIRONMENT='web,worker'"
+        "-sFILESYSTEM=1"
+        "-sWASM=1"
+        "-sWASM_ASYNC_COMPILATION=1"
+        "-sNO_DISABLE_EXCEPTION_CATCHING"
+    )
+    
+    # Add pre/post JS if they exist
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/pre.js")
+        target_link_options(openjtalk_wrapper PRIVATE
+            "--pre-js" "${CMAKE_CURRENT_SOURCE_DIR}/src/pre.js"
+        )
+    endif()
+    
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/post.js")
+        target_link_options(openjtalk_wrapper PRIVATE
+            "--post-js" "${CMAKE_CURRENT_SOURCE_DIR}/src/post.js"
+        )
     endif()
 endif()
 

@@ -1,0 +1,55 @@
+# Dockerfile for building OpenJTalk WebAssembly module
+FROM emscripten/emsdk:3.1.50
+
+# Install required packages
+RUN apt-get update && apt-get install -y \
+    cmake \
+    build-essential \
+    git \
+    wget \
+    tar \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /build
+
+# Copy OpenJTalk source
+COPY . /build/
+
+# Download and build HTSEngine
+RUN wget https://sourceforge.net/projects/hts-engine/files/hts_engine%20API/hts_engine_API-1.10/hts_engine_API-1.10.tar.gz && \
+    tar -xzf hts_engine_API-1.10.tar.gz && \
+    cd hts_engine_API-1.10 && \
+    emconfigure ./configure --prefix=/build/external/install && \
+    emmake make && \
+    make install && \
+    cd .. && \
+    rm -rf hts_engine_API-1.10*
+
+# Download and build OpenJTalk
+RUN wget https://sourceforge.net/projects/open-jtalk/files/Open%20JTalk/open_jtalk-1.11/open_jtalk-1.11.tar.gz && \
+    tar -xzf open_jtalk-1.11.tar.gz && \
+    cd open_jtalk-1.11 && \
+    # Apply Emscripten-specific patches if needed
+    emconfigure ./configure \
+        --prefix=/build/external/install \
+        --with-hts-engine-header-path=/build/external/install/include \
+        --with-hts-engine-library-path=/build/external/install/lib \
+        --disable-shared \
+        --enable-static && \
+    emmake make && \
+    make install && \
+    cd .. && \
+    # Keep the source for static libraries
+    mv open_jtalk-1.11 external/
+
+# Build the wrapper library with Emscripten
+RUN mkdir -p build_wasm && cd build_wasm && \
+    emcmake cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DEMSCRIPTEN=ON \
+        -DBUILD_TESTS=OFF \
+        -DBUILD_BENCHMARK=OFF && \
+    emmake make
+
+# The output files will be in /build/build_wasm/lib/
