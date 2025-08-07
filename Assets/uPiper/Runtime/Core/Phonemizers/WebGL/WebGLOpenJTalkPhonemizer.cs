@@ -13,7 +13,7 @@ namespace uPiper.Core.Phonemizers.WebGL
     /// </summary>
     public class WebGLOpenJTalkPhonemizer : PhonemizerBackendBase
     {
-        private new bool isInitialized = false;
+        private bool webGLInitialized = false;
         private readonly object initLock = new object();
         // Removed fallback phonemizer - using simple fallback instead
         private bool useFallback = false;
@@ -31,7 +31,7 @@ namespace uPiper.Core.Phonemizers.WebGL
             
             lock (initLock)
             {
-                if (isInitialized)
+                if (webGLInitialized)
                 {
                     return true;
                 }
@@ -49,6 +49,7 @@ namespace uPiper.Core.Phonemizers.WebGL
                     if (initResult == 1)
                     {
                         // Already initialized
+                        webGLInitialized = true;
                         isInitialized = true;
                         Debug.Log("[WebGLOpenJTalkPhonemizer] Already initialized");
                         return true;
@@ -64,6 +65,7 @@ namespace uPiper.Core.Phonemizers.WebGL
                         
                         // Use simple fallback
                         useFallback = true;
+                        webGLInitialized = true;
                         isInitialized = true;
                         
                         return true;
@@ -115,7 +117,8 @@ namespace uPiper.Core.Phonemizers.WebGL
                     {
                         lock (initLock)
                         {
-                            isInitialized = true;
+                            webGLInitialized = true;
+                        isInitialized = true;
                         }
                         Debug.Log("[WebGLOpenJTalkPhonemizer] Initialization successful");
                         return true;
@@ -128,7 +131,7 @@ namespace uPiper.Core.Phonemizers.WebGL
                 lock (initLock)
                 {
                     useFallback = true;
-                    isInitialized = true;
+                    webGLInitialized = true;
                 }
                 
                 return true;
@@ -143,7 +146,7 @@ namespace uPiper.Core.Phonemizers.WebGL
             PhonemeOptions options = null,
             CancellationToken cancellationToken = default)
         {
-            if (!isInitialized)
+            if (!webGLInitialized)
             {
                 throw new InvalidOperationException("WebGLOpenJTalkPhonemizer is not initialized");
             }
@@ -308,12 +311,13 @@ namespace uPiper.Core.Phonemizers.WebGL
         {
             lock (initLock)
             {
-                if (isInitialized)
+                if (webGLInitialized)
                 {
                     try
                     {
                         // Cleanup if needed
                         Debug.Log("[WebGLOpenJTalkPhonemizer] Disposing...");
+                        webGLInitialized = false;
                         isInitialized = false;
                     }
                     catch (Exception e)
@@ -326,12 +330,6 @@ namespace uPiper.Core.Phonemizers.WebGL
             }
         }
 
-        public override async Task<bool> InitializeAsync(
-            PhonemizerBackendOptions options = null,
-            CancellationToken cancellationToken = default)
-        {
-            return await InitializeInternalAsync(options, cancellationToken);
-        }
     }
 }
 #endif
