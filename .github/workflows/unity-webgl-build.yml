@@ -61,7 +61,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           targetPlatform: WebGL
-          unityVersion: 6000.0.35f1
+          unityVersion: 6000.0.55f1
           buildName: ${{ github.event.inputs.buildName || 'uPiperWebGL' }}
           buildsPath: build
           buildMethod: uPiper.Editor.CI.WebGLBuilder.Build

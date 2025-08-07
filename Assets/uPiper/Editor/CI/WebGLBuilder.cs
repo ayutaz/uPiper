@@ -48,10 +48,10 @@ namespace uPiper.Editor.CI
             
             // プラットフォーム固有の設定
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
-            PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Asm;
+            PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Wasm; // Asm.jsは非推奨
             PlayerSettings.WebGL.memorySize = 1024;
             PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.FullWithStacktrace;
-            PlayerSettings.WebGL.template = "PROJECT:uPiper";
+            PlayerSettings.WebGL.template = "APPLICATION:Default"; // デフォルトテンプレートを使用
             
             Debug.Log($"[WebGLBuilder] Building {buildPlayerOptions.scenes.Length} scenes");
             
