@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OpenJTalk Browser Test</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        #output {
+            background-color: #000;
+            color: #0f0;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            height: 400px;
+            overflow-y: auto;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        input {
+            padding: 10px;
+            width: 300px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>OpenJTalk Browser Test</h1>
+    
+    <div>
+        <button onclick="runTest()">Run Test</button>
+        <button onclick="clearOutput()">Clear Output</button>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <input type="text" id="testText" value="こんにちは" placeholder="Enter Japanese text">
+        <button onclick="testPhonemize()">Test Phonemize</button>
+    </div>
+    
+    <div id="output"></div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message, isError = false) {
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = isError ? '[ERROR]' : '[INFO]';
+            output.innerHTML += `${timestamp} ${prefix} ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+            
+            if (isError) {
+                console.error(message);
+            } else {
+                console.log(message);
+            }
+        }
+        
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+        
+        let openJTalkModule = null;
+        
+        async function runTest() {
+            log('=== Starting OpenJTalk Test ===');
+            
+            try {
+                // 1. Load OpenJTalk module
+                log('Loading OpenJTalk module...');
+                
+                const script = document.createElement('script');
+                script.src = 'Assets/uPiper/Plugins/WebGL/openjtalk.js';
+                
+                await new Promise((resolve, reject) => {
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('Failed to load openjtalk.js'));
+                    document.head.appendChild(script);
+                });
+                
+                log('Script loaded, checking for OpenJTalkModule...');
+                
+                // Wait for module to be available
+                let attempts = 0;
+                while (typeof window.OpenJTalkModule === 'undefined' && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (typeof window.OpenJTalkModule === 'undefined') {
+                    throw new Error('OpenJTalkModule not found after loading script');
+                }
+                
+                log('OpenJTalkModule found, initializing...');
+                
+                // 2. Initialize the module
+                openJTalkModule = await window.OpenJTalkModule({
+                    locateFile: (path) => {
+                        if (path.endsWith('.wasm')) {
+                            return 'Assets/uPiper/Plugins/WebGL/openjtalk.wasm';
+                        }
+                        return path;
+                    },
+                    print: (text) => log(`[OpenJTalk] ${text}`),
+                    printErr: (text) => log(`[OpenJTalk Error] ${text}`, true),
+                    onRuntimeInitialized: () => {
+                        log('OpenJTalk runtime initialized');
+                    }
+                });
+                
+                log('Module created, checking functions...');
+                
+                // 3. Check available functions
+                const functions = [
+                    '_openjtalk_initialize',
+                    '_openjtalk_synthesis_labels',
+                    '_openjtalk_free_string',
+                    '_openjtalk_clear',
+                    '_test_function',
+                    '_get_version',
+                    '_malloc',
+                    '_free'
+                ];
+                
+                for (const func of functions) {
+                    if (openJTalkModule[func]) {
+                        log(`✓ ${func} available`);
+                    } else {
+                        log(`✗ ${func} NOT available`, true);
+                    }
+                }
+                
+                // 4. Test basic functionality
+                if (openJTalkModule._test_function) {
+                    const result = openJTalkModule._test_function(5, 3);
+                    log(`Test function: 5 + 3 = ${result}`);
+                }
+                
+                if (openJTalkModule._get_version) {
+                    const versionPtr = openJTalkModule._get_version();
+                    const version = openJTalkModule.UTF8ToString(versionPtr);
+                    log(`Version: ${version}`);
+                }
+                
+                // 5. Try to initialize OpenJTalk
+                if (openJTalkModule._openjtalk_initialize) {
+                    log('\nInitializing OpenJTalk with dictionary...');
+                    
+                    // Create file paths
+                    const dictPath = openJTalkModule.allocateUTF8('/dict');
+                    const voicePath = openJTalkModule.allocateUTF8('/voice/mei_normal.htsvoice');
+                    
+                    const initResult = openJTalkModule._openjtalk_initialize(dictPath, voicePath);
+                    
+                    openJTalkModule._free(dictPath);
+                    openJTalkModule._free(voicePath);
+                    
+                    log(`Initialization result: ${initResult}`);
+                    
+                    if (initResult === 0) {
+                        log('✓ OpenJTalk initialized successfully!');
+                    } else {
+                        log('✗ OpenJTalk initialization failed', true);
+                    }
+                }
+                
+                log('\n=== Test Complete ===');
+                
+            } catch (error) {
+                log(`Test failed: ${error.message}`, true);
+                console.error(error);
+            }
+        }
+        
+        async function testPhonemize() {
+            if (!openJTalkModule) {
+                log('Please run the test first to initialize OpenJTalk', true);
+                return;
+            }
+            
+            const text = document.getElementById('testText').value;
+            if (!text) {
+                log('Please enter some text', true);
+                return;
+            }
+            
+            log(`\nTesting phonemization for: "${text}"`);
+            
+            try {
+                if (openJTalkModule._openjtalk_synthesis_labels) {
+                    // Allocate memory for text
+                    const textPtr = openJTalkModule.allocateUTF8(text);
+                    
+                    // Call synthesis_labels
+                    const resultPtr = openJTalkModule._openjtalk_synthesis_labels(textPtr);
+                    openJTalkModule._free(textPtr);
+                    
+                    if (resultPtr) {
+                        const labels = openJTalkModule.UTF8ToString(resultPtr);
+                        openJTalkModule._openjtalk_free_string(resultPtr);
+                        
+                        log('Labels received:');
+                        log(labels);
+                        
+                        // Extract phonemes
+                        const lines = labels.split('\n').filter(line => line.trim());
+                        const phonemes = [];
+                        
+                        for (const line of lines) {
+                            const match = line.match(/-([^+]+)\+/);
+                            if (match && match[1] !== 'sil') {
+                                phonemes.push(match[1]);
+                            }
+                        }
+                        
+                        log(`\nExtracted phonemes: [${phonemes.join(', ')}]`);
+                        
+                    } else {
+                        log('Failed to get labels', true);
+                    }
+                } else {
+                    log('synthesis_labels function not available', true);
+                }
+                
+            } catch (error) {
+                log(`Phonemization error: ${error.message}`, true);
+            }
+        }
+    </script>
+</body>
+</html>
