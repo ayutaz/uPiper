@@ -70,9 +70,18 @@ mergeInto(LibraryManager.library, {
                             });
                         }
                         
-                        // Create required directories
-                        module.FS.mkdir('/dict');
-                        module.FS.mkdir('/voice');
+                        // Create required directories (only if FS is available)
+                        if (module.FS && module.FS.mkdir) {
+                            try {
+                                module.FS.mkdir('/dict');
+                                module.FS.mkdir('/voice');
+                            } catch (e) {
+                                console.warn('[uPiper] Failed to create directories:', e);
+                                // Continue without directories - they may not be needed
+                            }
+                        } else {
+                            console.log('[uPiper] File system not available, skipping directory creation');
+                        }
                         
                         // Store module reference with all required functions
                         window.uPiperOpenJTalk = {
@@ -159,7 +168,16 @@ mergeInto(LibraryManager.library, {
         
         try {
             var module = window.uPiperOpenJTalk.module;
-            var FS = window.uPiperOpenJTalk.FS;
+            
+            // Check if filesystem is available
+            if (!module.FS) {
+                console.warn('[uPiper] Filesystem not available in OpenJTalk module, using dummy mode');
+                window.uPiperOpenJTalk.initialized = true;
+                return true;
+            }
+            
+            var FS = module.FS;
+            window.uPiperOpenJTalk.FS = FS;
             
             // Dictionary files that need to be loaded
             var dictFiles = ['char.bin', 'matrix.bin', 'sys.dic', 'unk.dic', 'left-id.def', 'pos-id.def', 'rewrite.def', 'right-id.def'];
