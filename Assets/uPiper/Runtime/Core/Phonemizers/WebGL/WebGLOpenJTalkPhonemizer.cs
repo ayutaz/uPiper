@@ -203,28 +203,65 @@ namespace uPiper.Core.Phonemizers.WebGL
             }
 
             // Perform phonemization (WebGL is single-threaded, so no Task.Run)
-            string phonemes = null;
+            string[] phonemeArray = null;
             try
             {
                 var resultPtr = WebGLInterop.PhonemizeJapaneseText(text);
                 if (resultPtr == IntPtr.Zero)
                 {
                     Debug.LogError($"[WebGLOpenJTalkPhonemizer] PhonemizeJapaneseText returned null");
-                    phonemes = null;
+                    phonemeArray = null;
                 }
                 else
                 {
-                    phonemes = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(resultPtr);
+                    var jsonResult = System.Runtime.InteropServices.Marshal.PtrToStringAnsi(resultPtr);
                     WebGLInterop.FreeWebGLMemory(resultPtr);
+                    
+                    // Parse JSON result
+                    try
+                    {
+                        // Simple JSON parsing for the expected format
+                        // {"success": true/false, "phonemes": ["a", "b", ...], "error": "..."}
+                        if (jsonResult.Contains("\"success\":true"))
+                        {
+                            // Extract phonemes array
+                            var phonemesStart = jsonResult.IndexOf("\"phonemes\":[") + 12;
+                            var phonemesEnd = jsonResult.IndexOf("]", phonemesStart);
+                            var phonemesStr = jsonResult.Substring(phonemesStart, phonemesEnd - phonemesStart);
+                            
+                            // Parse phoneme array
+                            var phonemesList = new List<string>();
+                            var parts = phonemesStr.Split(',');
+                            foreach (var part in parts)
+                            {
+                                var phoneme = part.Trim().Trim('"');
+                                if (!string.IsNullOrEmpty(phoneme))
+                                {
+                                    phonemesList.Add(phoneme);
+                                }
+                            }
+                            phonemeArray = phonemesList.ToArray();
+                        }
+                        else
+                        {
+                            Debug.LogError($"[WebGLOpenJTalkPhonemizer] Phonemization failed: {jsonResult}");
+                            phonemeArray = null;
+                        }
+                    }
+                    catch (Exception parseEx)
+                    {
+                        Debug.LogError($"[WebGLOpenJTalkPhonemizer] JSON parsing error: {parseEx.Message}");
+                        phonemeArray = null;
+                    }
                 }
             }
             catch (Exception e)
             {
                 Debug.LogError($"[WebGLOpenJTalkPhonemizer] Phonemization error: {e.Message}");
-                phonemes = null;
+                phonemeArray = null;
             }
 
-            if (string.IsNullOrEmpty(phonemes))
+            if (phonemeArray == null || phonemeArray.Length == 0)
             {
                 return new PhonemeResult
                 {
@@ -234,9 +271,6 @@ namespace uPiper.Core.Phonemizers.WebGL
                     ErrorMessage = "Failed to phonemize text"
                 };
             }
-
-            // Parse phonemes
-            var phonemeArray = phonemes.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             
             // Cache the result
             WebGLCacheManager.CachePhonemesForText(text, language, phonemeArray);
