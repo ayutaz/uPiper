@@ -24,12 +24,13 @@
             const response = await fetch('StreamingAssets/openjtalk.js');
             const moduleText = await response.text();
             
-            // Replace import.meta references
+            // Replace import.meta references and remove export statement
             const modifiedText = moduleText
                 .replace(/import\.meta\.url/g, '"' + window.location.href + '"')
                 .replace(/new URL\((.*?),\s*import\.meta\.url\)/g, function(match, p1) {
                     return 'new URL(' + p1 + ', window.location.href)';
-                });
+                })
+                .replace(/export\s+default\s+OpenJTalkModule\s*;?\s*$/m, ''); // Remove export default statement
             
             // Create and execute the module
             const moduleFunc = new Function('moduleArg', modifiedText + '\nreturn OpenJTalkModule(moduleArg);');
