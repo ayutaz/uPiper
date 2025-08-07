@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers.WebGL
 {
@@ -77,7 +78,7 @@ namespace uPiper.Core.Phonemizers.WebGL
         
         public override string[] SupportedLanguages => new[] { "ja" };
         
-        protected override async Task<List<string>> PhonemizeInternalAsync(string text, string language, CancellationToken cancellationToken)
+        protected override async Task<PhonemeResult> PhonemizeInternalAsync(string text, string language, CancellationToken cancellationToken)
         {
             var phonemes = new List<string> { "^" }; // BOS marker
             
@@ -110,12 +111,16 @@ namespace uPiper.Core.Phonemizers.WebGL
             
             phonemes.Add("$"); // EOS marker
             
-            return await Task.FromResult(phonemes);
-        }
-        
-        public override void Initialize()
-        {
-            // 初期化処理は特に必要なし
+            var result = new PhonemeResult
+            {
+                Success = true,
+                Phonemes = phonemes.ToArray(),
+                PhonemeIds = new int[phonemes.Count],
+                OriginalText = text,
+                Language = language
+            };
+            
+            return await Task.FromResult(result);
         }
     }
 }
