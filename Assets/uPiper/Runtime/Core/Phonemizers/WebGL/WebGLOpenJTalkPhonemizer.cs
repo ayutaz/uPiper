@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
-using uPiper.Phonemizers.WebGL;
 
 namespace uPiper.Core.Phonemizers.WebGL
 {
