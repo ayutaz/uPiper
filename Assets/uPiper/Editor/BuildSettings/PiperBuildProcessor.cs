@@ -53,63 +53,6 @@ namespace uPiper.Editor.BuildSettings
             {
                 PiperLogger.LogWarning($"[PiperBuildProcessor] Build result: {report.summary.result}");
             }
-
-            // Unity 6000.0.42f1以降でcacheControlバグが修正されたため、ワークアラウンドは不要
-            // if (report.summary.platform == BuildTarget.WebGL && report.summary.result == BuildResult.Succeeded)
-            // {
-            //     FixWebGLIndexHtml(report.summary.outputPath);
-            // }
-        }
-
-        private void FixWebGLIndexHtml(string outputPath)
-        {
-            try
-            {
-                string indexPath = Path.Combine(outputPath, "index.html");
-                if (!File.Exists(indexPath))
-                {
-                    PiperLogger.LogWarning($"[PiperBuildProcessor] index.html not found at: {indexPath}");
-                    return;
-                }
-
-                string content = File.ReadAllText(indexPath);
-                
-                // Check if cacheControl is already present
-                if (content.Contains("cacheControl:"))
-                {
-                    PiperLogger.LogDebug("[PiperBuildProcessor] cacheControl already present in index.html");
-                    return;
-                }
-
-                // Find the showBanner line and add cacheControl after it
-                string searchPattern = "showBanner: unityShowBanner,";
-                string replacement = @"showBanner: unityShowBanner,
-        // Unity 6 requires cacheControl function
-        cacheControl: function (url) {
-          if (!url || typeof url !== 'string') {
-            return ""no-store"";
-          }
-          if (url === config.dataUrl || url.match(/\.data/)) {
-            return ""must-revalidate"";
-          }
-          if (url === config.codeUrl || url.match(/\.wasm/)) {
-            return ""must-revalidate"";
-          }
-          if (url === config.frameworkUrl || url.match(/\.framework\.js/)) {
-            return ""must-revalidate"";
-          }
-          return ""no-store"";
-        },";
-
-                content = content.Replace(searchPattern, replacement);
-                File.WriteAllText(indexPath, content);
-                
-                PiperLogger.LogInfo("[PiperBuildProcessor] Successfully added cacheControl to index.html");
-            }
-            catch (Exception e)
-            {
-                PiperLogger.LogError($"[PiperBuildProcessor] Failed to fix index.html: {e.Message}");
-            }
         }
 
         private void ConfigureWebGLBuild()
