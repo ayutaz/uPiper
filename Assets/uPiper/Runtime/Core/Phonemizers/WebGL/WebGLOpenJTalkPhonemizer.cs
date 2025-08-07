@@ -162,13 +162,8 @@ namespace uPiper.Core.Phonemizers.WebGL
             // Use fallback if needed
             if (useFallback && fallbackPhonemizer != null)
             {
-                var phonemes = fallbackPhonemizer.Phonemize(text);
-                return new PhonemeResult
-                {
-                    Phonemes = phonemes.ToArray(),
-                    Language = language,
-                    Success = true
-                };
+                var fallbackResult = await fallbackPhonemizer.PhonemizeAsync(text, language, options, cancellationToken);
+                return fallbackResult;
             }
 
             // Check cache first
