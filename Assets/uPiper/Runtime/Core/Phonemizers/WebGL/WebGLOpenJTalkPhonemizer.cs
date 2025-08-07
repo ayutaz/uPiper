@@ -162,7 +162,7 @@ namespace uPiper.Core.Phonemizers.WebGL
             // Use fallback if needed
             if (useFallback && fallbackPhonemizer != null)
             {
-                var fallbackResult = await fallbackPhonemizer.PhonemizeAsync(text, language, options, cancellationToken);
+                var fallbackResult = await fallbackPhonemizer.PhonemizeAsync(text, language, cancellationToken);
                 return fallbackResult;
             }
 
