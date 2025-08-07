@@ -987,23 +987,6 @@ namespace uPiper.Demo
                 throw new Exception("Text-to-speech is not supported in Unity Editor with WebGL platform. Please build for WebGL to test.");
 #endif
 
-                // 音素変換の詳細をログ出力
-                PiperLogger.LogDebug($"Input text: '{_inputField.text}'");
-
-                // 「こんにちは」の場合、特に詳しくログ
-                if (_inputField.text == konnichiwa)
-                {
-                    PiperLogger.LogInfo("=== Special debug for 'こんにちは' ===");
-                    for (var i = 0; i < phonemes.Length; i++)
-                    {
-                        PiperLogger.LogInfo($"  Phoneme[{i}]: '{phonemes[i]}' (length: {phonemes[i].Length})");
-                        if (phonemes[i] == "ch" || phonemes[i] == "t" || phonemes[i] == "ty" || phonemes[i] == "i")
-                        {
-                            PiperLogger.LogInfo($"    -> This is the 'chi' sound component");
-                        }
-                    }
-                }
-
                 timings["Phonemization"] = phonemeStopwatch.ElapsedMilliseconds;
 
                 // 音素をIDに変換
