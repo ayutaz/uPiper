@@ -1,14 +1,17 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core.Phonemizers;
 
-namespace uPiper.Phonemizers.WebGL
+namespace uPiper.Core.Phonemizers.WebGL
 {
     /// <summary>
     /// WebGL用の簡易日本語音素化実装
     /// OpenJTalkのWebAssemblyモジュールが正しく動作しない場合の代替実装
     /// </summary>
-    public class WebGLJapanesePhonemizer : BasePhonemizerWithCache
+    public class WebGLJapanesePhonemizer : BasePhonemizer
     {
         private static readonly Dictionary<char, string> KanaToPhoneme = new Dictionary<char, string>
         {
@@ -68,7 +71,13 @@ namespace uPiper.Phonemizers.WebGL
             {"ty", '\ue00d'}
         };
 
-        protected override List<string> PhonemizeInternal(string text)
+        public override string Name => "WebGL Japanese Phonemizer";
+        
+        public override string Version => "1.0.0";
+        
+        public override string[] SupportedLanguages => new[] { "ja" };
+        
+        protected override async Task<List<string>> PhonemizeInternalAsync(string text, string language, CancellationToken cancellationToken)
         {
             var phonemes = new List<string> { "^" }; // BOS marker
             
@@ -101,12 +110,12 @@ namespace uPiper.Phonemizers.WebGL
             
             phonemes.Add("$"); // EOS marker
             
-            return phonemes;
+            return await Task.FromResult(phonemes);
         }
-
-        public override void Dispose()
+        
+        public override void Initialize()
         {
-            // 特にリソースの解放は必要なし
+            // 初期化処理は特に必要なし
         }
     }
 }
