@@ -26,8 +26,35 @@ mergeInto(LibraryManager.library, {
                             .replace(/import\.meta\.url/g, '"' + window.location.href + '"')
                             .replace(/export\s+default\s+OpenJTalkModule\s*;?\s*$/m, 'window.OpenJTalkModule = OpenJTalkModule;');
                         
-                        // Execute the modified code
-                        eval(modifiedText);
+                        // Create a wrapper function that captures HEAP arrays
+                        const wrapperCode = `
+                        (function() {
+                            var originalModule;
+                            ${modifiedText}
+                            
+                            // Wrap OpenJTalkModule to capture HEAP arrays
+                            window.OpenJTalkModule = async function(moduleArg) {
+                                var module = await OpenJTalkModule(moduleArg);
+                                
+                                // After module is initialized, HEAP arrays should be available in the closure
+                                if (typeof HEAP8 !== 'undefined') {
+                                    module.HEAP8 = HEAP8;
+                                    module.HEAPU8 = HEAPU8;
+                                    module.HEAP16 = HEAP16;
+                                    module.HEAPU16 = HEAPU16;
+                                    module.HEAP32 = HEAP32;
+                                    module.HEAPU32 = HEAPU32;
+                                    module.HEAPF32 = HEAPF32;
+                                    module.HEAPF64 = HEAPF64;
+                                }
+                                
+                                return module;
+                            };
+                        })();
+                        `;
+                        
+                        // Execute the wrapped code
+                        eval(wrapperCode);
                         
                         // Wait for OpenJTalkModule to be available
                         let attempts = 0;
@@ -55,8 +82,22 @@ mergeInto(LibraryManager.library, {
                             },
                             print: function(text) {
                                 console.log('[OpenJTalk]', text);
+                            },
+                            onRuntimeInitialized: function() {
+                                console.log('[uPiper] OpenJTalk runtime initialized');
                             }
                         });
+                        
+                        // Wait for runtime to be initialized
+                        if (!module.calledRun) {
+                            await new Promise((resolve) => {
+                                const originalCallback = module.onRuntimeInitialized;
+                                module.onRuntimeInitialized = function() {
+                                    if (originalCallback) originalCallback();
+                                    resolve();
+                                };
+                            });
+                        }
                         
                         // Create required directories
                         module.FS.mkdir('/dict');
@@ -71,6 +112,10 @@ mergeInto(LibraryManager.library, {
                             cwrap: module.cwrap,
                             _malloc: module._malloc,
                             _free: module._free,
+                            HEAP8: module.HEAP8,
+                            HEAPU8: module.HEAPU8,
+                            HEAP32: module.HEAP32,
+                            HEAPU32: module.HEAPU32,
                             UTF8ToString: module.UTF8ToString,
                             stringToUTF8: module.stringToUTF8,
                             lengthBytesUTF8: module.lengthBytesUTF8,

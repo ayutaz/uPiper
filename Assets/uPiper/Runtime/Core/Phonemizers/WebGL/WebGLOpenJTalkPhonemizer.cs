@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
+using uPiper.Phonemizers.WebGL;
 
 namespace uPiper.Core.Phonemizers.WebGL
 {
@@ -14,8 +15,10 @@ namespace uPiper.Core.Phonemizers.WebGL
     {
         private new bool isInitialized = false;
         private readonly object initLock = new object();
+        private WebGLJapanesePhonemizer fallbackPhonemizer = null;
+        private bool useFallback = false;
 
-        public override string Name => "WebGL OpenJTalk";
+        public override string Name => useFallback ? "WebGL Japanese (Fallback)" : "WebGL OpenJTalk";
         public override string Version => "1.0.0";
         public override string License => "BSD-3-Clause";
         public override string[] SupportedLanguages => new[] { "ja", "ja-JP" };
@@ -57,8 +60,14 @@ namespace uPiper.Core.Phonemizers.WebGL
                     }
                     else
                     {
-                        Debug.LogError("[WebGLOpenJTalkPhonemizer] Initialization failed");
-                        return false;
+                        Debug.LogError("[WebGLOpenJTalkPhonemizer] Initialization failed, using fallback phonemizer");
+                        
+                        // Use fallback phonemizer
+                        fallbackPhonemizer = new WebGLJapanesePhonemizer();
+                        useFallback = true;
+                        isInitialized = true;
+                        
+                        return true;
                     }
                 }
                 catch (Exception e)
@@ -114,8 +123,17 @@ namespace uPiper.Core.Phonemizers.WebGL
                     }
                 }
                 
-                Debug.LogError("[WebGLOpenJTalkPhonemizer] Dictionary initialization timeout");
-                return false;
+                Debug.LogError("[WebGLOpenJTalkPhonemizer] Dictionary initialization timeout, using fallback phonemizer");
+                
+                // Use fallback phonemizer
+                lock (initLock)
+                {
+                    fallbackPhonemizer = new WebGLJapanesePhonemizer();
+                    useFallback = true;
+                    isInitialized = true;
+                }
+                
+                return true;
             }
             
             return false;
@@ -137,6 +155,18 @@ namespace uPiper.Core.Phonemizers.WebGL
                 return new PhonemeResult
                 {
                     Phonemes = Array.Empty<string>(),
+                    Language = language,
+                    Success = true
+                };
+            }
+            
+            // Use fallback if needed
+            if (useFallback && fallbackPhonemizer != null)
+            {
+                var phonemes = fallbackPhonemizer.Phonemize(text);
+                return new PhonemeResult
+                {
+                    Phonemes = phonemes.ToArray(),
                     Language = language,
                     Success = true
                 };
@@ -235,6 +265,8 @@ namespace uPiper.Core.Phonemizers.WebGL
                     {
                         Debug.LogError($"[WebGLOpenJTalkPhonemizer] Disposal error: {e.Message}");
                     }
+                    
+                    fallbackPhonemizer?.Dispose();
                 }
             }
         }
