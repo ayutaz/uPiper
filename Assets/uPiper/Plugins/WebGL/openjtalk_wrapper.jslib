@@ -16,33 +16,34 @@ mergeInto(LibraryManager.library, {
                     try {
                         console.log('[uPiper] Loading OpenJTalk module...');
                         
-                        // First, load the OpenJTalk loader
-                        const loaderScript = document.createElement('script');
-                        loaderScript.src = 'StreamingAssets/openjtalk-loader.js';
+                        // Unity WebGL provides Module object globally
+                        // Create a simple module loader that uses ES5 syntax
+                        const response = await fetch('StreamingAssets/openjtalk.js');
+                        const moduleText = await response.text();
                         
-                        // Wait for loader to load
-                        await new Promise((resolve, reject) => {
-                            loaderScript.onload = resolve;
-                            loaderScript.onerror = reject;
-                            document.head.appendChild(loaderScript);
-                        });
+                        // Replace ES6 module syntax with ES5
+                        const modifiedText = moduleText
+                            .replace(/import\.meta\.url/g, '"' + window.location.href + '"')
+                            .replace(/export\s+default\s+OpenJTalkModule\s*;?\s*$/m, 'window.OpenJTalkModule = OpenJTalkModule;');
+                        
+                        // Execute the modified code
+                        eval(modifiedText);
                         
                         // Wait for OpenJTalkModule to be available
                         let attempts = 0;
-                        while (typeof OpenJTalkModule === 'undefined' && attempts < 50) {
+                        while (typeof window.OpenJTalkModule === 'undefined' && attempts < 50) {
                             await new Promise(resolve => setTimeout(resolve, 100));
                             attempts++;
                         }
                         
-                        if (typeof OpenJTalkModule === 'undefined') {
-                            throw new Error('OpenJTalkModule not found after loading script');
+                        if (typeof window.OpenJTalkModule === 'undefined') {
+                            throw new Error('OpenJTalkModule not found');
                         }
                         
                         console.log('[uPiper] OpenJTalkModule loaded, initializing...');
                         
                         // Initialize the module
-                        // Configure module with explicit runtime method exports
-                        const moduleConfig = {
+                        const module = await window.OpenJTalkModule({
                             locateFile: function(path) {
                                 if (path.endsWith('.wasm')) {
                                     return 'StreamingAssets/openjtalk.wasm';
@@ -54,42 +55,26 @@ mergeInto(LibraryManager.library, {
                             },
                             print: function(text) {
                                 console.log('[OpenJTalk]', text);
-                            },
-                            // Ensure runtime methods are available
-                            EXPORTED_RUNTIME_METHODS: ['ccall', 'cwrap', 'UTF8ToString', 'stringToUTF8', 'lengthBytesUTF8', 'allocateUTF8'],
-                            EXPORTED_FUNCTIONS: ['_malloc', '_free', '_openjtalk_initialize', '_openjtalk_synthesis_labels', '_openjtalk_free_string', '_openjtalk_clear']
-                        };
-                        
-                        const module = await OpenJTalkModule(moduleConfig);
-                        
-                        // Make HEAP arrays globally available if needed
-                        if (!module.HEAP8 && typeof HEAP8 !== 'undefined') module.HEAP8 = HEAP8;
-                        if (!module.HEAPU8 && typeof HEAPU8 !== 'undefined') module.HEAPU8 = HEAPU8;
-                        if (!module.HEAP32 && typeof HEAP32 !== 'undefined') module.HEAP32 = HEAP32;
-                        if (!module.HEAPU32 && typeof HEAPU32 !== 'undefined') module.HEAPU32 = HEAPU32;
+                            }
+                        });
                         
                         // Create required directories
                         module.FS.mkdir('/dict');
                         module.FS.mkdir('/voice');
                         
                         // Store module reference with all required functions
-                        // Access HEAP arrays and functions that might not be directly exported
                         window.uPiperOpenJTalk = {
                             initialized: false, // Will be set to true after dictionary load
                             module: module,
                             FS: module.FS,
-                            ccall: module.ccall || Module.ccall,
-                            cwrap: module.cwrap || Module.cwrap,
-                            _malloc: module._malloc || Module._malloc,
-                            _free: module._free || Module._free,
-                            HEAP8: module.HEAP8 || Module.HEAP8,
-                            HEAPU8: module.HEAPU8 || Module.HEAPU8,
-                            HEAP32: module.HEAP32 || Module.HEAP32,
-                            HEAPU32: module.HEAPU32 || Module.HEAPU32,
-                            UTF8ToString: module.UTF8ToString || Module.UTF8ToString,
-                            stringToUTF8: module.stringToUTF8 || Module.stringToUTF8,
-                            lengthBytesUTF8: module.lengthBytesUTF8 || Module.lengthBytesUTF8,
-                            allocateUTF8: module.allocateUTF8 || Module.allocateUTF8,
+                            ccall: module.ccall,
+                            cwrap: module.cwrap,
+                            _malloc: module._malloc,
+                            _free: module._free,
+                            UTF8ToString: module.UTF8ToString,
+                            stringToUTF8: module.stringToUTF8,
+                            lengthBytesUTF8: module.lengthBytesUTF8,
+                            allocateUTF8: module.allocateUTF8,
                             // Wrap OpenJTalk functions
                             _openjtalk_initialize: module._openjtalk_initialize,
                             _openjtalk_synthesis_labels: module._openjtalk_synthesis_labels,
