@@ -90,18 +90,31 @@ namespace uPiper.Core.Phonemizers.WebGL
                 {
                     await Task.Delay(100, cancellationToken);
                     
-                    // Check if module is loaded (not necessarily initialized)
-                    int moduleStatus = WebGLInterop.InitializeOpenJTalkWeb();
-                    if (moduleStatus == 1 || moduleStatus == -1)
+                    // Check if the module is loaded
+                    if (WebGLInterop.IsOpenJTalkModuleLoaded())
                     {
-                        // Module loaded or error
+                        Debug.Log($"[WebGLOpenJTalkPhonemizer] Module loaded after {i * 100}ms");
                         break;
                     }
+                    
+                    if (i % 10 == 0)
+                    {
+                        Debug.Log($"[WebGLOpenJTalkPhonemizer] Waiting for module... ({i}/100)");
+                    }
+                }
+                
+                // Check if module was loaded
+                if (!WebGLInterop.IsOpenJTalkModuleLoaded())
+                {
+                    Debug.LogError("[WebGLOpenJTalkPhonemizer] Module loading timeout");
+                    return false;
                 }
                 
                 // Now load dictionary
                 Debug.Log("[WebGLOpenJTalkPhonemizer] Loading dictionary...");
-                bool dictLoaded = WebGLInterop.LoadOpenJTalkDictionary(null, 0);
+                // Pass empty array to trigger JavaScript-side dictionary loading
+                byte[] emptyData = new byte[0];
+                bool dictLoaded = WebGLInterop.LoadOpenJTalkDictionary(emptyData, 0);
                 
                 if (!dictLoaded)
                 {
@@ -110,7 +123,7 @@ namespace uPiper.Core.Phonemizers.WebGL
                 }
                 
                 // Wait for dictionary initialization
-                int dictLoadAttempts = 50; // 5 seconds max
+                int dictLoadAttempts = 100; // 10 seconds max
                 for (int i = 0; i < dictLoadAttempts; i++)
                 {
                     await Task.Delay(100, cancellationToken);
@@ -119,7 +132,7 @@ namespace uPiper.Core.Phonemizers.WebGL
                         lock (initLock)
                         {
                             webGLInitialized = true;
-                        isInitialized = true;
+                            isInitialized = true;
                         }
                         Debug.Log("[WebGLOpenJTalkPhonemizer] Initialization successful");
                         return true;
@@ -133,6 +146,7 @@ namespace uPiper.Core.Phonemizers.WebGL
                 {
                     useFallback = true;
                     webGLInitialized = true;
+                    isInitialized = true;
                 }
                 
                 return true;
@@ -220,6 +234,7 @@ namespace uPiper.Core.Phonemizers.WebGL
                 {
                     // Unity/.NET Standard 2.0 doesn't have PtrToStringUTF8, use PtrToStringAnsi
                     var jsonResult = Marshal.PtrToStringAnsi(resultPtr);
+                    // Memory was allocated by Unity's _malloc in the JavaScript side
                     WebGLInterop.FreeWebGLMemory(resultPtr);
                     
                     // Parse JSON result

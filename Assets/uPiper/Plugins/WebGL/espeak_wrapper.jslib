@@ -272,7 +272,7 @@ mergeInto(LibraryManager.library, {
     GetESpeakSupportedLanguages: function() {
         console.log('[uPiper] Getting eSpeak-ng supported languages');
         
-        if (typeof window.espeakNG === 'undefined' || !window.espeakNG.isInitialized) {
+        if (!window.uPiperESpeak || !window.uPiperESpeak.initialized) {
             console.error('[uPiper] eSpeak-ng WebAssembly not initialized');
             var errorResult = JSON.stringify([]);
             var bufferSize = lengthBytesUTF8(errorResult) + 1;

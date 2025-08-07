@@ -10,6 +10,9 @@ mergeInto(LibraryManager.library, {
                 return 1;
             }
             
+            // Store loading state
+            window.uPiperOpenJTalkLoadingState = 'loading';
+            
             // Create initialization promise
             if (!window.uPiperOpenJTalkInit) {
                 window.uPiperOpenJTalkInit = (async function() {
@@ -70,20 +73,7 @@ mergeInto(LibraryManager.library, {
                             });
                         }
                         
-                        // Create required directories (only if FS is available)
-                        if (module.FS && module.FS.mkdir) {
-                            try {
-                                module.FS.mkdir('/dict');
-                                module.FS.mkdir('/voice');
-                            } catch (e) {
-                                console.warn('[uPiper] Failed to create directories:', e);
-                                // Continue without directories - they may not be needed
-                            }
-                        } else {
-                            console.log('[uPiper] File system not available, skipping directory creation');
-                        }
-                        
-                        // Store module reference with all required functions
+                        // Store module reference immediately after loading
                         window.uPiperOpenJTalk = {
                             initialized: false, // Will be set to true after dictionary load
                             module: module,
@@ -114,33 +104,21 @@ mergeInto(LibraryManager.library, {
                             _openjtalk_test: module._openjtalk_test || null
                         };
                         
-                        // Test the module if test function is available
-                        if (module._openjtalk_test) {
-                            const testStr = module.allocateUTF8("test");
-                            const result = module._openjtalk_test(testStr);
-                            console.log('[uPiper] OpenJTalk test result:', result); // Should be 4
-                            module._free(testStr);
-                        }
-                        
-                        // Verify HEAP arrays are properly exported
-                        console.log('[uPiper] HEAP arrays available:', {
-                            HEAP8: !!window.uPiperOpenJTalk.HEAP8,
-                            HEAPU8: !!window.uPiperOpenJTalk.HEAPU8,
-                            HEAP16: !!window.uPiperOpenJTalk.HEAP16,
-                            HEAPU16: !!window.uPiperOpenJTalk.HEAPU16,
-                            HEAP32: !!window.uPiperOpenJTalk.HEAP32,
-                            HEAPU32: !!window.uPiperOpenJTalk.HEAPU32,
-                            HEAPF32: !!window.uPiperOpenJTalk.HEAPF32,
-                            HEAPF64: !!window.uPiperOpenJTalk.HEAPF64
-                        });
-                        
-                        console.log('[uPiper] OpenJTalk module loaded, awaiting dictionary initialization');
+                        console.log('[uPiper] OpenJTalk module loaded successfully');
+                        window.uPiperOpenJTalkLoadingState = 'loaded';
                         return true;
                     } catch (error) {
                         console.error('[uPiper] Failed to load OpenJTalk module:', error);
+                        window.uPiperOpenJTalkLoadingState = 'error';
                         return false;
                     }
                 })();
+            }
+            
+            // Check if already loaded during async init
+            if (window.uPiperOpenJTalk && window.uPiperOpenJTalk.module) {
+                console.log('[uPiper] OpenJTalk module already loaded during async init');
+                return 1;
             }
             
             // Return 0 to indicate async initialization in progress
@@ -157,6 +135,13 @@ mergeInto(LibraryManager.library, {
         return (window.uPiperOpenJTalk && window.uPiperOpenJTalk.initialized) ? 1 : 0;
     },
     
+    // Check if OpenJTalk module is loaded (but not necessarily initialized with dictionary)
+    IsOpenJTalkModuleLoaded: function() {
+        var isLoaded = (window.uPiperOpenJTalk && window.uPiperOpenJTalk.module) ? 1 : 0;
+        console.log('[uPiper] IsOpenJTalkModuleLoaded:', isLoaded, 'window.uPiperOpenJTalk:', !!window.uPiperOpenJTalk);
+        return isLoaded;
+    },
+    
     // Load dictionary data for OpenJTalk
     LoadOpenJTalkDictionary: function(dictionaryDataPtr, dataLength) {
         console.log('[uPiper] Loading OpenJTalk dictionary...');
@@ -169,84 +154,10 @@ mergeInto(LibraryManager.library, {
         try {
             var module = window.uPiperOpenJTalk.module;
             
-            // Check if filesystem is available
-            if (!module.FS) {
-                console.warn('[uPiper] Filesystem not available in OpenJTalk module, using dummy mode');
-                window.uPiperOpenJTalk.initialized = true;
-                return true;
-            }
-            
-            var FS = module.FS;
-            window.uPiperOpenJTalk.FS = FS;
-            
-            // Dictionary files that need to be loaded
-            var dictFiles = ['char.bin', 'matrix.bin', 'sys.dic', 'unk.dic', 'left-id.def', 'pos-id.def', 'rewrite.def', 'right-id.def'];
-            
-            // Load dictionary files from StreamingAssets
-            var loadPromises = dictFiles.map(function(filename) {
-                return fetch('StreamingAssets/dict/' + filename)
-                    .then(function(response) {
-                        if (!response.ok) {
-                            throw new Error('Failed to load ' + filename);
-                        }
-                        return response.arrayBuffer();
-                    })
-                    .then(function(data) {
-                        FS.writeFile('/dict/' + filename, new Uint8Array(data));
-                        console.log('[uPiper] Loaded dictionary file:', filename);
-                    });
-            });
-            
-            // Also load a dummy voice file (required by OpenJTalk)
-            loadPromises.push(
-                fetch('StreamingAssets/voice/dummy.htsvoice')
-                    .then(function(response) {
-                        return response.arrayBuffer();
-                    })
-                    .then(function(data) {
-                        FS.writeFile('/voice/voice.htsvoice', new Uint8Array(data));
-                    })
-                    .catch(function(error) {
-                        // If no voice file, create a minimal dummy
-                        console.warn('[uPiper] No voice file found, creating dummy');
-                        FS.writeFile('/voice/voice.htsvoice', new Uint8Array(1));
-                    })
-            );
-            
-            // Wait for all files to load
-            Promise.all(loadPromises).then(function() {
-                // Initialize OpenJTalk with the loaded dictionary
-                var allocateUTF8 = window.uPiperOpenJTalk.allocateUTF8;
-                var _free = window.uPiperOpenJTalk._free;
-                
-                var dictPtr = allocateUTF8('/dict');
-                var voicePtr = allocateUTF8('/voice/voice.htsvoice');
-                
-                // Check if openjtalk_initialize exists
-                if (module._openjtalk_initialize) {
-                    var result = module._openjtalk_initialize(dictPtr, voicePtr);
-                    
-                    _free(dictPtr);
-                    _free(voicePtr);
-                    
-                    if (result === 0) {
-                        window.uPiperOpenJTalk.initialized = true;
-                        console.log('[uPiper] OpenJTalk initialized successfully');
-                    } else {
-                        console.error('[uPiper] OpenJTalk initialization failed with code:', result);
-                    }
-                } else {
-                    // Minimal build without full OpenJTalk - mark as initialized for testing
-                    _free(dictPtr);
-                    _free(voicePtr);
-                    window.uPiperOpenJTalk.initialized = true;
-                    console.log('[uPiper] OpenJTalk minimal build - marked as initialized');
-                }
-            }).catch(function(error) {
-                console.error('[uPiper] Failed to load dictionary files:', error);
-            });
-            
-            // Return true to indicate async loading started
+            // For piper-plus version, just mark as initialized
+            // The actual initialization happens when synthesis_labels is called
+            console.log('[uPiper] OpenJTalk module ready for use (lazy initialization)');
+            window.uPiperOpenJTalk.initialized = true;
             return true;
         } catch (error) {
             console.error('[uPiper] Failed to load dictionary:', error);
@@ -257,57 +168,73 @@ mergeInto(LibraryManager.library, {
     // Phonemize Japanese text using OpenJTalk
     PhonemizeJapaneseText: function(textPtr) {
         var text = UTF8ToString(textPtr);
-        console.log('[uPiper] Phonemizing Japanese text:', text);
+        console.log('[uPiper] PhonemizeJapaneseText called with:', text);
         
-        if (!window.uPiperOpenJTalk || !window.uPiperOpenJTalk.initialized) {
-            console.error('[uPiper] OpenJTalk not initialized');
+        // Check if OpenJTalk is available
+        if (!window.uPiperOpenJTalk || !window.uPiperOpenJTalk.module) {
+            console.error('[uPiper] OpenJTalk module not loaded');
             var errorResult = JSON.stringify({
                 success: false,
-                error: 'OpenJTalk not initialized',
+                error: 'OpenJTalk module not loaded',
                 phonemes: []
             });
-            // Use Unity's built-in functions for memory allocation when module not initialized
-            var bufferSize = Module.lengthBytesUTF8(errorResult) + 1;
-            var buffer = Module._malloc(bufferSize);
-            Module.stringToUTF8(errorResult, buffer, bufferSize);
+            var bufferSize = lengthBytesUTF8(errorResult) + 1;
+            var buffer = _malloc(bufferSize);
+            stringToUTF8(errorResult, buffer, bufferSize);
             return buffer;
         }
         
+        
         try {
             var module = window.uPiperOpenJTalk.module;
-            var _malloc = window.uPiperOpenJTalk._malloc;
-            var _free = window.uPiperOpenJTalk._free;
-            var allocateUTF8 = window.uPiperOpenJTalk.allocateUTF8;
-            var UTF8ToString = window.uPiperOpenJTalk.UTF8ToString;
-            var stringToUTF8 = window.uPiperOpenJTalk.stringToUTF8;
-            var lengthBytesUTF8 = window.uPiperOpenJTalk.lengthBytesUTF8;
+            
+            // Log available functions
+            console.log('[uPiper] Using OpenJTalk for phonemization with text:', text);
+            
+            // Use OpenJTalk module functions for OpenJTalk operations
+            var openJTalkMalloc = window.uPiperOpenJTalk._malloc;
+            var openJTalkFree = window.uPiperOpenJTalk._free;
+            var openJTalkAllocateUTF8 = window.uPiperOpenJTalk.allocateUTF8 || function(str) {
+                var len = window.uPiperOpenJTalk.lengthBytesUTF8(str) + 1;
+                var ptr = openJTalkMalloc(len);
+                window.uPiperOpenJTalk.stringToUTF8(str, ptr, len);
+                return ptr;
+            };
+            var openJTalkUTF8ToString = window.uPiperOpenJTalk.UTF8ToString;
             
             var labels = '';
             
-            // Check if synthesis_labels function exists
-            if (module._openjtalk_synthesis_labels) {
+            // Convert text to proper encoding using OpenJTalk's allocator
+            var textPtr = openJTalkAllocateUTF8(text);
+            
+            // Use piper-plus production API
+            if (window.uPiperOpenJTalk._openjtalk_synthesis_labels) {
                 // Call OpenJTalk synthesis_labels function
-                var textMemPtr = allocateUTF8(text);
-                var labelsPtr = module._openjtalk_synthesis_labels(textMemPtr);
+                var resultPtr = window.uPiperOpenJTalk._openjtalk_synthesis_labels(textPtr);
+                openJTalkFree(textPtr);
                 
-                if (!labelsPtr) {
+                if (!resultPtr) {
                     throw new Error('OpenJTalk synthesis_labels returned null');
                 }
                 
-                labels = UTF8ToString(labelsPtr);
-                module._openjtalk_free_string(labelsPtr);
-                module._free(textMemPtr);
+                labels = openJTalkUTF8ToString(resultPtr);
+                window.uPiperOpenJTalk._openjtalk_free_string(resultPtr);
                 
-                console.log('[uPiper] OpenJTalk labels:', labels);
-                
-                // Check for errors
-                if (labels.startsWith('ERROR:')) {
-                    throw new Error(labels);
-                }
+                console.log('[uPiper] OpenJTalk labels received, processing phonemes...');
+                // Continue with label processing below...
             } else {
-                // Minimal build - return dummy labels for testing
-                console.log('[uPiper] Using dummy labels for minimal build');
-                labels = "0 50000 sil\n50000 100000 -k+o\n100000 150000 -o+n\n150000 200000 -n+n\n200000 250000 -n+i\n250000 300000 -i+ch\n300000 350000 -ch+i\n350000 400000 -i+w\n400000 450000 -w+a\n450000 500000 sil\n";
+                openJTalkFree(textPtr);
+                console.error('[uPiper] OpenJTalk synthesis_labels function not available');
+                var errorResult = JSON.stringify({
+                    success: false,
+                    error: 'OpenJTalk synthesis_labels function not available',
+                    phonemes: []
+                });
+                // Use Unity's global functions for the return buffer
+                var bufferSize = lengthBytesUTF8(errorResult) + 1;
+                var buffer = _malloc(bufferSize);
+                stringToUTF8(errorResult, buffer, bufferSize);
+                return buffer;
             }
             
             // Extract phonemes from labels
@@ -375,22 +302,26 @@ mergeInto(LibraryManager.library, {
                 error: error.toString(),
                 phonemes: []
             });
-            // Get functions from window.uPiperOpenJTalk if available, otherwise use Module
-            var lengthBytesUTF8Func = (window.uPiperOpenJTalk && window.uPiperOpenJTalk.lengthBytesUTF8) || Module.lengthBytesUTF8;
-            var mallocFunc = (window.uPiperOpenJTalk && window.uPiperOpenJTalk._malloc) || Module._malloc;
-            var stringToUTF8Func = (window.uPiperOpenJTalk && window.uPiperOpenJTalk.stringToUTF8) || Module.stringToUTF8;
-            
-            var bufferSize = lengthBytesUTF8Func(errorResult) + 1;
-            var buffer = mallocFunc(bufferSize);
-            stringToUTF8Func(errorResult, buffer, bufferSize);
+            // Always use Unity's global functions for consistency
+            var bufferSize = lengthBytesUTF8(errorResult) + 1;
+            var buffer = _malloc(bufferSize);
+            stringToUTF8(errorResult, buffer, bufferSize);
             return buffer;
         }
     },
     
-    // Free allocated memory
-    FreeWebGLMemory: function(ptr) {
+    // Free allocated memory (OpenJTalk)
+    FreeOpenJTalkMemory: function(ptr) {
         if (ptr && window.uPiperOpenJTalk && window.uPiperOpenJTalk._free) {
             window.uPiperOpenJTalk._free(ptr);
         }
+    },
+    
+    // Free allocated memory (generic Unity)
+    FreeWebGLMemory: function(ptr) {
+        // Use Unity's global _free for memory allocated by Unity's Module
+        if (ptr && typeof _free !== 'undefined') {
+            _free(ptr);
+        }
     }
-});
+});// Cache buster: 1754584334

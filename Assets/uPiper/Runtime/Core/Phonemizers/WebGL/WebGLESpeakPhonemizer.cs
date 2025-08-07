@@ -107,10 +107,40 @@ namespace uPiper.Core.Phonemizers.WebGL
             try
             {
                 IntPtr resultPtr = WebGLInterop.GetESpeakSupportedLanguages();
-                var languages = JsonUtility.FromJson<string[]>(Marshal.PtrToStringUTF8(resultPtr));
-                WebGLInterop.FreeWebGLMemory(resultPtr);
-                
-                supportedLanguages = languages ?? Array.Empty<string>();
+                if (resultPtr != IntPtr.Zero)
+                {
+                    // Unity's .NET Standard 2.0 doesn't have PtrToStringUTF8
+                    string jsonString = Marshal.PtrToStringAnsi(resultPtr);
+                    WebGLInterop.FreeWebGLMemory(resultPtr);
+                    
+                    // Parse JSON array manually since JsonUtility doesn't support root arrays
+                    if (!string.IsNullOrEmpty(jsonString))
+                    {
+                        // Remove brackets and quotes, then split
+                        jsonString = jsonString.Trim('[', ']');
+                        var languageList = new System.Collections.Generic.List<string>();
+                        
+                        foreach (var lang in jsonString.Split(','))
+                        {
+                            var trimmedLang = lang.Trim().Trim('"');
+                            if (!string.IsNullOrEmpty(trimmedLang))
+                            {
+                                languageList.Add(trimmedLang);
+                            }
+                        }
+                        
+                        supportedLanguages = languageList.ToArray();
+                        Debug.Log($"[WebGLESpeakPhonemizer] Loaded {supportedLanguages.Length} languages");
+                    }
+                    else
+                    {
+                        throw new Exception("Empty language list returned");
+                    }
+                }
+                else
+                {
+                    throw new Exception("Null pointer returned from GetESpeakSupportedLanguages");
+                }
             }
             catch (Exception e)
             {
