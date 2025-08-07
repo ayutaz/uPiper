@@ -986,7 +986,7 @@ namespace uPiper.Demo
                 // Unity Editor with WebGL platform or other unsupported platforms
                 throw new Exception("Text-to-speech is not supported in Unity Editor with WebGL platform. Please build for WebGL to test.");
 #endif
-
+                // 以下のコードは、上記の条件でphonemes変数が初期化されている場合のみ実行される
                 timings["Phonemization"] = phonemeStopwatch.ElapsedMilliseconds;
 
                 // 音素をIDに変換
