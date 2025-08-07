@@ -111,7 +111,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
-        unityVersion: 6000.0.35f1
+        unityVersion: 6000.0.55f1
         targetPlatform: ${{ matrix.targetPlatform }}
         buildsPath: build
         buildMethod: UnityBuilderAction.BuildScript.Build
@@ -174,7 +174,7 @@ jobs:
         echo "" >> build-summary.md
         echo "## Build Configuration" >> build-summary.md
         echo "" >> build-summary.md
-        echo "- Unity Version: 6000.0.35f1" >> build-summary.md
+        echo "- Unity Version: 6000.0.55f1" >> build-summary.md
         echo "- link.xml: Present ✅" >> build-summary.md
         echo "- [Preserve] attributes: Applied ✅" >> build-summary.md
         echo "- Custom build script: UnityBuilderAction.BuildScript ✅" >> build-summary.md

@@ -104,7 +104,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
-        unityVersion: 6000.0.35f1
+        unityVersion: 6000.0.55f1
         targetPlatform: ${{ matrix.targetPlatform }}
         buildName: uPiper${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
         buildsPath: build
@@ -125,7 +125,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
-        unityVersion: 6000.0.35f1
+        unityVersion: 6000.0.55f1
         targetPlatform: ${{ matrix.targetPlatform }}
         buildName: uPiper${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
         buildsPath: build
@@ -196,7 +196,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
-        unityVersion: 6000.0.35f1
+        unityVersion: 6000.0.55f1
         targetPlatform: NoTarget
         buildMethod: uPiper.Editor.PackageExporter.ExportUnityPackageCI
         customParameters: -outputPath ./PackageExports/uPiper-${{ steps.version.outputs.version }}.unitypackage
