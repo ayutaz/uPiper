@@ -41,7 +41,8 @@ mergeInto(LibraryManager.library, {
                         console.log('[uPiper] OpenJTalkModule loaded, initializing...');
                         
                         // Initialize the module
-                        const module = await OpenJTalkModule({
+                        // Configure module with explicit runtime method exports
+                        const moduleConfig = {
                             locateFile: function(path) {
                                 if (path.endsWith('.wasm')) {
                                     return 'StreamingAssets/openjtalk.wasm';
@@ -53,26 +54,42 @@ mergeInto(LibraryManager.library, {
                             },
                             print: function(text) {
                                 console.log('[OpenJTalk]', text);
-                            }
-                        });
+                            },
+                            // Ensure runtime methods are available
+                            EXPORTED_RUNTIME_METHODS: ['ccall', 'cwrap', 'UTF8ToString', 'stringToUTF8', 'lengthBytesUTF8', 'allocateUTF8'],
+                            EXPORTED_FUNCTIONS: ['_malloc', '_free', '_openjtalk_initialize', '_openjtalk_synthesis_labels', '_openjtalk_free_string', '_openjtalk_clear']
+                        };
+                        
+                        const module = await OpenJTalkModule(moduleConfig);
+                        
+                        // Make HEAP arrays globally available if needed
+                        if (!module.HEAP8 && typeof HEAP8 !== 'undefined') module.HEAP8 = HEAP8;
+                        if (!module.HEAPU8 && typeof HEAPU8 !== 'undefined') module.HEAPU8 = HEAPU8;
+                        if (!module.HEAP32 && typeof HEAP32 !== 'undefined') module.HEAP32 = HEAP32;
+                        if (!module.HEAPU32 && typeof HEAPU32 !== 'undefined') module.HEAPU32 = HEAPU32;
                         
                         // Create required directories
                         module.FS.mkdir('/dict');
                         module.FS.mkdir('/voice');
                         
                         // Store module reference with all required functions
+                        // Access HEAP arrays and functions that might not be directly exported
                         window.uPiperOpenJTalk = {
                             initialized: false, // Will be set to true after dictionary load
                             module: module,
                             FS: module.FS,
-                            ccall: module.ccall,
-                            cwrap: module.cwrap,
-                            _malloc: module._malloc,
-                            _free: module._free,
-                            HEAPU8: module.HEAPU8,
-                            UTF8ToString: module.UTF8ToString,
-                            stringToUTF8: module.stringToUTF8,
-                            allocateUTF8: module.allocateUTF8,
+                            ccall: module.ccall || Module.ccall,
+                            cwrap: module.cwrap || Module.cwrap,
+                            _malloc: module._malloc || Module._malloc,
+                            _free: module._free || Module._free,
+                            HEAP8: module.HEAP8 || Module.HEAP8,
+                            HEAPU8: module.HEAPU8 || Module.HEAPU8,
+                            HEAP32: module.HEAP32 || Module.HEAP32,
+                            HEAPU32: module.HEAPU32 || Module.HEAPU32,
+                            UTF8ToString: module.UTF8ToString || Module.UTF8ToString,
+                            stringToUTF8: module.stringToUTF8 || Module.stringToUTF8,
+                            lengthBytesUTF8: module.lengthBytesUTF8 || Module.lengthBytesUTF8,
+                            allocateUTF8: module.allocateUTF8 || Module.allocateUTF8,
                             // Wrap OpenJTalk functions
                             _openjtalk_initialize: module._openjtalk_initialize,
                             _openjtalk_synthesis_labels: module._openjtalk_synthesis_labels,
@@ -153,13 +170,16 @@ mergeInto(LibraryManager.library, {
             // Wait for all files to load
             Promise.all(loadPromises).then(function() {
                 // Initialize OpenJTalk with the loaded dictionary
-                var dictPtr = module.allocateUTF8('/dict');
-                var voicePtr = module.allocateUTF8('/voice/voice.htsvoice');
+                var allocateUTF8 = window.uPiperOpenJTalk.allocateUTF8;
+                var _free = window.uPiperOpenJTalk._free;
+                
+                var dictPtr = allocateUTF8('/dict');
+                var voicePtr = allocateUTF8('/voice/voice.htsvoice');
                 
                 var result = module._openjtalk_initialize(dictPtr, voicePtr);
                 
-                module._free(dictPtr);
-                module._free(voicePtr);
+                _free(dictPtr);
+                _free(voicePtr);
                 
                 if (result === 0) {
                     window.uPiperOpenJTalk.initialized = true;
@@ -191,9 +211,10 @@ mergeInto(LibraryManager.library, {
                 error: 'OpenJTalk not initialized',
                 phonemes: []
             });
-            var bufferSize = lengthBytesUTF8(errorResult) + 1;
-            var buffer = _malloc(bufferSize);
-            stringToUTF8(errorResult, buffer, bufferSize);
+            // Use Unity's built-in functions for memory allocation when module not initialized
+            var bufferSize = Module.lengthBytesUTF8(errorResult) + 1;
+            var buffer = Module._malloc(bufferSize);
+            Module.stringToUTF8(errorResult, buffer, bufferSize);
             return buffer;
         }
         
@@ -204,6 +225,7 @@ mergeInto(LibraryManager.library, {
             var allocateUTF8 = window.uPiperOpenJTalk.allocateUTF8;
             var UTF8ToString = window.uPiperOpenJTalk.UTF8ToString;
             var stringToUTF8 = window.uPiperOpenJTalk.stringToUTF8;
+            var lengthBytesUTF8 = window.uPiperOpenJTalk.lengthBytesUTF8;
             
             // Call OpenJTalk synthesis_labels function
             var textMemPtr = allocateUTF8(text);
@@ -289,9 +311,14 @@ mergeInto(LibraryManager.library, {
                 error: error.toString(),
                 phonemes: []
             });
-            var bufferSize = lengthBytesUTF8(errorResult) + 1;
-            var buffer = _malloc(bufferSize);
-            stringToUTF8(errorResult, buffer, bufferSize);
+            // Get functions from window.uPiperOpenJTalk if available, otherwise use Module
+            var lengthBytesUTF8Func = (window.uPiperOpenJTalk && window.uPiperOpenJTalk.lengthBytesUTF8) || Module.lengthBytesUTF8;
+            var mallocFunc = (window.uPiperOpenJTalk && window.uPiperOpenJTalk._malloc) || Module._malloc;
+            var stringToUTF8Func = (window.uPiperOpenJTalk && window.uPiperOpenJTalk.stringToUTF8) || Module.stringToUTF8;
+            
+            var bufferSize = lengthBytesUTF8Func(errorResult) + 1;
+            var buffer = mallocFunc(bufferSize);
+            stringToUTF8Func(errorResult, buffer, bufferSize);
             return buffer;
         }
     },
