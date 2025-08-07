@@ -16,15 +16,15 @@ mergeInto(LibraryManager.library, {
                     try {
                         console.log('[uPiper] Loading OpenJTalk module...');
                         
-                        // First, load the OpenJTalk JavaScript module
-                        const scriptElement = document.createElement('script');
-                        scriptElement.src = 'StreamingAssets/openjtalk.js';
+                        // First, load the OpenJTalk loader
+                        const loaderScript = document.createElement('script');
+                        loaderScript.src = 'StreamingAssets/openjtalk-loader.js';
                         
-                        // Wait for script to load
+                        // Wait for loader to load
                         await new Promise((resolve, reject) => {
-                            scriptElement.onload = resolve;
-                            scriptElement.onerror = reject;
-                            document.head.appendChild(scriptElement);
+                            loaderScript.onload = resolve;
+                            loaderScript.onerror = reject;
+                            document.head.appendChild(loaderScript);
                         });
                         
                         // Wait for OpenJTalkModule to be available
