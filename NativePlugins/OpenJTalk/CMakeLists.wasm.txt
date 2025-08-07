@@ -1,0 +1,119 @@
+cmake_minimum_required(VERSION 3.10)
+project(openjtalk_wrapper VERSION 3.0.0)
+
+# C standard
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# Emscripten detection
+if(EMSCRIPTEN)
+    message(STATUS "Building for WebAssembly with Emscripten")
+    set(PLATFORM_NAME "wasm")
+    
+    # Disable features not needed for WebAssembly
+    set(BUILD_TESTS OFF)
+    set(BUILD_BENCHMARK OFF)
+endif()
+
+# Output directories
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+# Find OpenJTalk installation
+set(OPENJTALK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/install")
+set(OPENJTALK_INCLUDE_DIR "${OPENJTALK_ROOT}/include")
+set(OPENJTALK_LIB_DIR "${OPENJTALK_ROOT}/lib")
+
+# Source files
+set(SOURCES
+    src/openjtalk_full_wrapper.c
+)
+
+# Include directories
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${OPENJTALK_INCLUDE_DIR}
+)
+
+if(EMSCRIPTEN)
+    # Create executable for Emscripten (will generate .js and .wasm)
+    add_executable(openjtalk_wrapper ${SOURCES})
+    
+    # Set Emscripten-specific properties
+    set_target_properties(openjtalk_wrapper PROPERTIES
+        SUFFIX ".js"
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
+    )
+    
+    # Emscripten compile flags
+    target_compile_options(openjtalk_wrapper PRIVATE
+        -O3
+        -fno-exceptions
+        -fno-rtti
+    )
+    
+    # Emscripten link flags
+    target_link_options(openjtalk_wrapper PRIVATE
+        -sEXPORTED_RUNTIME_METHODS=['cwrap','ccall','getValue','setValue','allocate','allocateUTF8','UTF8ToString','lengthBytesUTF8','stringToUTF8','_malloc','_free']
+        -sEXPORTED_FUNCTIONS=['_malloc','_free','_openjtalk_initialize','_openjtalk_synthesis_labels','_openjtalk_free_string','_openjtalk_clear']
+        -sALLOW_MEMORY_GROWTH=1
+        -sINITIAL_MEMORY=67108864  # 64MB
+        -sSTACK_SIZE=16777216       # 16MB
+        -sMODULARIZE=1
+        -sEXPORT_NAME='OpenJTalkModule'
+        -sEXPORT_ES6=0              # Use ES5 format to avoid ES6 module issues
+        -sUSE_ES6_IMPORT_META=0
+        -sENVIRONMENT='web,worker'
+        -sFILESYSTEM=1
+        -sWASM=1
+        -sWASM_ASYNC_COMPILATION=1
+        -sNO_DISABLE_EXCEPTION_CATCHING
+        --pre-js ${CMAKE_CURRENT_SOURCE_DIR}/src/pre.js
+        --post-js ${CMAKE_CURRENT_SOURCE_DIR}/src/post.js
+    )
+else()
+    # Regular build for native platforms
+    add_library(openjtalk_wrapper SHARED ${SOURCES})
+endif()
+
+# Link OpenJTalk libraries
+set(OPENJTALK_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/open_jtalk-1.11")
+if(NOT EXISTS "${OPENJTALK_SRC_DIR}")
+    set(OPENJTALK_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/openjtalk_build/open_jtalk-1.11")
+endif()
+
+# OpenJTalk static libraries
+set(OPENJTALK_LIBS
+    ${OPENJTALK_SRC_DIR}/jpcommon/libjpcommon.a
+    ${OPENJTALK_SRC_DIR}/njd2jpcommon/libnjd2jpcommon.a
+    ${OPENJTALK_SRC_DIR}/njd_set_unvoiced_vowel/libnjd_set_unvoiced_vowel.a
+    ${OPENJTALK_SRC_DIR}/njd_set_pronunciation/libnjd_set_pronunciation.a
+    ${OPENJTALK_SRC_DIR}/njd_set_long_vowel/libnjd_set_long_vowel.a
+    ${OPENJTALK_SRC_DIR}/njd_set_digit/libnjd_set_digit.a
+    ${OPENJTALK_SRC_DIR}/njd_set_accent_type/libnjd_set_accent_type.a
+    ${OPENJTALK_SRC_DIR}/njd_set_accent_phrase/libnjd_set_accent_phrase.a
+    ${OPENJTALK_SRC_DIR}/njd/libnjd.a
+    ${OPENJTALK_SRC_DIR}/mecab2njd/libmecab2njd.a
+    ${OPENJTALK_SRC_DIR}/text2mecab/libtext2mecab.a
+    ${OPENJTALK_SRC_DIR}/mecab/src/libmecab.a
+)
+
+# Link libraries
+target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS})
+
+# Installation rules
+install(TARGETS openjtalk_wrapper
+    RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+)
+
+# Copy the generated files for Unity
+if(EMSCRIPTEN)
+    install(FILES 
+        ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/openjtalk_wrapper.js
+        ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/openjtalk_wrapper.wasm
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+    )
+endif()

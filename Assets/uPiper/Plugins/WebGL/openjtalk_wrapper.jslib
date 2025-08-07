@@ -16,45 +16,16 @@ mergeInto(LibraryManager.library, {
                     try {
                         console.log('[uPiper] Loading OpenJTalk module...');
                         
-                        // Unity WebGL provides Module object globally
-                        // Create a simple module loader that uses ES5 syntax
-                        const response = await fetch('StreamingAssets/openjtalk.js');
-                        const moduleText = await response.text();
+                        // Load the ES5 wrapper which handles ES6 module conversion
+                        const wrapperScript = document.createElement('script');
+                        wrapperScript.src = 'StreamingAssets/openjtalk-es5-wrapper.js';
                         
-                        // Replace ES6 module syntax with ES5
-                        const modifiedText = moduleText
-                            .replace(/import\.meta\.url/g, '"' + window.location.href + '"')
-                            .replace(/export\s+default\s+OpenJTalkModule\s*;?\s*$/m, 'window.OpenJTalkModule = OpenJTalkModule;');
-                        
-                        // Create a wrapper function that captures HEAP arrays
-                        const wrapperCode = `
-                        (function() {
-                            var originalModule;
-                            ${modifiedText}
-                            
-                            // Wrap OpenJTalkModule to capture HEAP arrays
-                            window.OpenJTalkModule = async function(moduleArg) {
-                                var module = await OpenJTalkModule(moduleArg);
-                                
-                                // After module is initialized, HEAP arrays should be available in the closure
-                                if (typeof HEAP8 !== 'undefined') {
-                                    module.HEAP8 = HEAP8;
-                                    module.HEAPU8 = HEAPU8;
-                                    module.HEAP16 = HEAP16;
-                                    module.HEAPU16 = HEAPU16;
-                                    module.HEAP32 = HEAP32;
-                                    module.HEAPU32 = HEAPU32;
-                                    module.HEAPF32 = HEAPF32;
-                                    module.HEAPF64 = HEAPF64;
-                                }
-                                
-                                return module;
-                            };
-                        })();
-                        `;
-                        
-                        // Execute the wrapped code
-                        eval(wrapperCode);
+                        // Wait for wrapper to load
+                        await new Promise((resolve, reject) => {
+                            wrapperScript.onload = resolve;
+                            wrapperScript.onerror = reject;
+                            document.head.appendChild(wrapperScript);
+                        });
                         
                         // Wait for OpenJTalkModule to be available
                         let attempts = 0;
@@ -110,8 +81,8 @@ mergeInto(LibraryManager.library, {
                             FS: module.FS,
                             ccall: module.ccall,
                             cwrap: module.cwrap,
-                            _malloc: module._malloc,
-                            _free: module._free,
+                            _malloc: module._malloc || module.malloc,
+                            _free: module._free || module.free,
                             HEAP8: module.HEAP8,
                             HEAPU8: module.HEAPU8,
                             HEAP32: module.HEAP32,
@@ -119,7 +90,9 @@ mergeInto(LibraryManager.library, {
                             UTF8ToString: module.UTF8ToString,
                             stringToUTF8: module.stringToUTF8,
                             lengthBytesUTF8: module.lengthBytesUTF8,
-                            allocateUTF8: module.allocateUTF8,
+                            allocateUTF8: module.allocateUTF8 || module.allocateString,
+                            getValue: module.getValue,
+                            setValue: module.setValue,
                             // Wrap OpenJTalk functions
                             _openjtalk_initialize: module._openjtalk_initialize,
                             _openjtalk_synthesis_labels: module._openjtalk_synthesis_labels,
