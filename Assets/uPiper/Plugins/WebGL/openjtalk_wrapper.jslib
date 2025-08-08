@@ -19,64 +19,88 @@ mergeInto(LibraryManager.library, {
                     try {
                         console.log('[uPiper] Loading OpenJTalk module...');
                         
-                        // Try to dynamically import the ES6 module
-                        const moduleScript = document.createElement('script');
-                        moduleScript.type = 'module';
-                        moduleScript.textContent = `
-                            (async function() {
-                                try {
-                                    // Set up global HEAP arrays that the module might expect
-                                    // These will be overwritten by the actual module
-                                    window.HEAP8 = new Int8Array(0);
-                                    window.HEAPU8 = new Uint8Array(0);
-                                    window.HEAP16 = new Int16Array(0);
-                                    window.HEAPU16 = new Uint16Array(0);
-                                    window.HEAP32 = new Int32Array(0);
-                                    window.HEAPU32 = new Uint32Array(0);
-                                    window.HEAPF32 = new Float32Array(0);
-                                    window.HEAPF64 = new Float64Array(0);
-                                    
-                                    // Dynamically import the OpenJTalk module
-                                    const response = await fetch('StreamingAssets/openjtalk.js');
-                                    const moduleText = await response.text();
-                                    
-                                    // Create a blob URL for the module
-                                    const blob = new Blob([moduleText], { type: 'application/javascript' });
-                                    const moduleUrl = URL.createObjectURL(blob);
-                                    
-                                    // Import the module
-                                    const module = await import(moduleUrl);
-                                    
-                                    // Get the function (it's the default export)
-                                    window.OpenJTalkModule = module.default || module.OpenJTalkModule || module;
-                                    
-                                    console.log('[uPiper] OpenJTalk module loaded via dynamic import');
-                                    
-                                    // Clean up temporary global HEAP arrays
-                                    // They should be replaced by the module's own versions
-                                    ['HEAP8', 'HEAPU8', 'HEAP16', 'HEAPU16', 'HEAP32', 'HEAPU32', 'HEAPF32', 'HEAPF64'].forEach(name => {
-                                        if (window[name] && window[name].length === 0) {
-                                            delete window[name];
-                                        }
-                                    });
-                                } catch (error) {
-                                    console.error('[uPiper] Failed to import OpenJTalk module:', error);
-                                    window.OpenJTalkModuleError = error;
+                        // Set up proxy for HEAP arrays before loading the module
+                        // This prevents "HEAP8 not exported" errors during module initialization
+                        const heapNames = ['HEAP8', 'HEAPU8', 'HEAP16', 'HEAPU16', 'HEAP32', 'HEAPU32', 'HEAPF32', 'HEAPF64'];
+                        const originalValues = {};
+                        
+                        heapNames.forEach(name => {
+                            if (typeof window[name] !== 'undefined') {
+                                originalValues[name] = window[name];
+                            }
+                            
+                            // Create a getter that returns a dummy array initially
+                            Object.defineProperty(window, name, {
+                                configurable: true,
+                                get: function() {
+                                    // Return a dummy array if the real one isn't available yet
+                                    if (window['_real_' + name]) {
+                                        return window['_real_' + name];
+                                    }
+                                    return new (name.includes('F') ? Float32Array : 
+                                           name.includes('U') ? Uint8Array : 
+                                           name.includes('16') ? Int16Array :
+                                           name.includes('32') ? Int32Array : Int8Array)(0);
+                                },
+                                set: function(value) {
+                                    window['_real_' + name] = value;
                                 }
-                            })();
-                        `;
-                        document.head.appendChild(moduleScript);
+                            });
+                        });
                         
-                        // Wait for OpenJTalkModule to be available
-                        let attempts = 0;
-                        while (typeof window.OpenJTalkModule === 'undefined' && !window.OpenJTalkModuleError && attempts < 100) {
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                            attempts++;
+                        // Load OpenJTalk module using a script tag directly
+                        const scriptTag = document.createElement('script');
+                        scriptTag.src = 'StreamingAssets/openjtalk.js';
+                        scriptTag.type = 'module';
+                        
+                        // Set up a promise to wait for the module to load
+                        const moduleLoadPromise = new Promise((resolve, reject) => {
+                            scriptTag.onload = () => {
+                                console.log('[uPiper] OpenJTalk script loaded');
+                                // The module should now be available as OpenJTalkModule
+                                // Wait a bit for it to initialize
+                                setTimeout(() => {
+                                    if (typeof OpenJTalkModule !== 'undefined') {
+                                        window.OpenJTalkModule = OpenJTalkModule;
+                                        resolve();
+                                    } else {
+                                        // Try to find it in different places
+                                        const possibleLocations = [
+                                            window.OpenJTalkModule,
+                                            window.Module,
+                                            window.OpenJTalk
+                                        ];
+                                        
+                                        for (const loc of possibleLocations) {
+                                            if (loc) {
+                                                window.OpenJTalkModule = loc;
+                                                resolve();
+                                                return;
+                                            }
+                                        }
+                                        
+                                        reject(new Error('OpenJTalkModule not found after script load'));
+                                    }
+                                }, 100);
+                            };
+                            
+                            scriptTag.onerror = (error) => {
+                                reject(new Error('Failed to load OpenJTalk script: ' + error));
+                            };
+                        });
+                        
+                        document.head.appendChild(scriptTag);
+                        
+                        try {
+                            await moduleLoadPromise;
+                            console.log('[uPiper] OpenJTalkModule is now available');
+                        } catch (error) {
+                            console.error('[uPiper] Failed to load OpenJTalk module:', error);
+                            window.OpenJTalkModuleError = error;
+                            throw error;
                         }
                         
-                        if (window.OpenJTalkModuleError) {
-                            throw window.OpenJTalkModuleError;
-                        }
+                        // Module should already be loaded at this point
                         
                         if (typeof window.OpenJTalkModule === 'undefined') {
                             throw new Error('OpenJTalkModule not found after dynamic import');
@@ -105,45 +129,21 @@ mergeInto(LibraryManager.library, {
                         };
                         
                         // Call the module function
+                        // OpenJTalkModule might be the module itself or a function to create the module
                         let module;
-                        try {
+                        if (typeof window.OpenJTalkModule === 'function') {
+                            console.log('[uPiper] OpenJTalkModule is a function, calling it...');
                             module = await window.OpenJTalkModule(moduleConfig);
-                        } catch (err) {
-                            // If there's an error about HEAP8, it might be because the module
-                            // expects it to be global. Let's try to provide it.
-                            if (err.toString().includes('HEAP8')) {
-                                console.log('[uPiper] Retrying with global HEAP workaround');
-                                
-                                // Create a temporary global scope for the module
-                                const tempGlobals = {};
-                                const originalGlobals = {};
-                                
-                                // Save and create temporary globals
-                                ['HEAP8', 'HEAPU8', 'HEAP16', 'HEAPU16', 'HEAP32', 'HEAPU32', 'HEAPF32', 'HEAPF64'].forEach(name => {
-                                    if (typeof window[name] !== 'undefined') {
-                                        originalGlobals[name] = window[name];
-                                    }
-                                    window[name] = null; // Placeholder
-                                });
-                                
-                                try {
-                                    module = await window.OpenJTalkModule(moduleConfig);
-                                } finally {
-                                    // Restore original globals
-                                    Object.keys(originalGlobals).forEach(name => {
-                                        window[name] = originalGlobals[name];
-                                    });
-                                    
-                                    // Clean up any placeholders
-                                    ['HEAP8', 'HEAPU8', 'HEAP16', 'HEAPU16', 'HEAP32', 'HEAPU32', 'HEAPF32', 'HEAPF64'].forEach(name => {
-                                        if (!(name in originalGlobals) && window[name] === null) {
-                                            delete window[name];
-                                        }
-                                    });
-                                }
+                        } else if (window.OpenJTalkModule && window.OpenJTalkModule.default) {
+                            console.log('[uPiper] OpenJTalkModule has default export, using it...');
+                            if (typeof window.OpenJTalkModule.default === 'function') {
+                                module = await window.OpenJTalkModule.default(moduleConfig);
                             } else {
-                                throw err;
+                                module = window.OpenJTalkModule.default;
                             }
+                        } else {
+                            console.log('[uPiper] OpenJTalkModule is already initialized');
+                            module = window.OpenJTalkModule;
                         }
                         
                         // Wait for runtime to be initialized
@@ -163,6 +163,24 @@ mergeInto(LibraryManager.library, {
                         console.log('[uPiper] HEAP8 available:', !!module.HEAP8);
                         console.log('[uPiper] _malloc available:', !!module._malloc);
                         console.log('[uPiper] UTF8ToString available:', !!module.UTF8ToString);
+                        
+                        // Clean up the proxy definitions and restore original values
+                        heapNames.forEach(name => {
+                            // Get the real value if it was set
+                            const realValue = window['_real_' + name];
+                            delete window['_real_' + name];
+                            
+                            // Remove the property descriptor
+                            delete window[name];
+                            
+                            // If there was a real value, set it directly
+                            if (realValue) {
+                                window[name] = realValue;
+                            } else if (originalValues[name]) {
+                                // Restore original value if there was one
+                                window[name] = originalValues[name];
+                            }
+                        });
                         
                         // Store module reference immediately after loading
                         window.uPiperOpenJTalk = {
