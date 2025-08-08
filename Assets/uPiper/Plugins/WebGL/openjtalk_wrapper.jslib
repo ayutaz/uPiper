@@ -140,8 +140,18 @@ mergeInto(LibraryManager.library, {
                         // We need to ensure HEAP arrays are accessible
                         const moduleConfig = {
                             locateFile: function(path) {
+                                console.log('[uPiper] locateFile called with:', path);
                                 if (path.endsWith('.wasm')) {
-                                    return 'StreamingAssets/openjtalk.wasm';
+                                    // Fix the path based on current location
+                                    // Check if we're already in StreamingAssets context
+                                    const currentPath = window.location.pathname;
+                                    if (currentPath.includes('/StreamingAssets/')) {
+                                        // We're in iframe context, use relative path
+                                        return 'openjtalk.wasm';
+                                    } else {
+                                        // We're in main context, use StreamingAssets path
+                                        return 'StreamingAssets/openjtalk.wasm';
+                                    }
                                 }
                                 return path;
                             },
