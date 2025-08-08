@@ -359,6 +359,7 @@ mergeInto(LibraryManager.library, {
             var buffer = _malloc(bufferSize);
             stringToUTF8(result, buffer, bufferSize);
             return buffer;
+            }
             
         } catch (error) {
             console.error('[uPiper] Phonemization failed:', error);
