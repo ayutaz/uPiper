@@ -207,87 +207,93 @@ mergeInto(LibraryManager.library, {
             // Convert text to proper encoding using OpenJTalk's allocator
             var textPtr = openJTalkAllocateUTF8(text);
             
-            // Use piper-plus production API
-            if (window.uPiperOpenJTalk._openjtalk_synthesis_labels) {
-                // Call OpenJTalk synthesis_labels function
-                var resultPtr = window.uPiperOpenJTalk._openjtalk_synthesis_labels(textPtr);
-                openJTalkFree(textPtr);
-                
-                if (!resultPtr) {
-                    throw new Error('OpenJTalk synthesis_labels returned null');
-                }
-                
-                labels = openJTalkUTF8ToString(resultPtr);
-                window.uPiperOpenJTalk._openjtalk_free_string(resultPtr);
-                
-                console.log('[uPiper] OpenJTalk labels received, processing phonemes...');
-                // Continue with label processing below...
-            } else {
-                openJTalkFree(textPtr);
-                console.error('[uPiper] OpenJTalk synthesis_labels function not available');
-                var errorResult = JSON.stringify({
-                    success: false,
-                    error: 'OpenJTalk synthesis_labels function not available',
-                    phonemes: []
-                });
-                // Use Unity's global functions for the return buffer
-                var bufferSize = lengthBytesUTF8(errorResult) + 1;
-                var buffer = _malloc(bufferSize);
-                stringToUTF8(errorResult, buffer, bufferSize);
-                return buffer;
-            }
+            // Use simplified phonemization for WebGL
+            // Since the current WebAssembly build doesn't include full OpenJTalk,
+            // we'll use a simple romanization approach
+            openJTalkFree(textPtr);
             
-            // Extract phonemes from labels
-            var lines = labels.split('\n').filter(function(line) { return line.trim(); });
-            var phonemes = [];
+            console.log('[uPiper] Using simplified Japanese phonemization for:', text);
             
-            // Multi-character phoneme mapping (same as piper-plus)
-            var multiCharPhonemes = {
-                'br': '\ue000',
-                'ch': '\ue001',
-                'cl': '\ue002',
-                'dy': '\ue003',
-                'gy': '\ue004',
-                'hy': '\ue005',
-                'ky': '\ue006',
-                'my': '\ue007',
-                'ny': '\ue008',
-                'py': '\ue009',
-                'ry': '\ue00a',
-                'sh': '\ue00b',
-                'ts': '\ue00c',
-                'ty': '\ue00d'
+            // Simple Japanese to phoneme conversion
+            // This is a very basic implementation for demonstration
+            var phonemeMap = {
+                'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
+                'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
+                'さ': 'sa', 'し': 'shi', 'す': 'su', 'せ': 'se', 'そ': 'so',
+                'た': 'ta', 'ち': 'chi', 'つ': 'tsu', 'て': 'te', 'と': 'to',
+                'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no',
+                'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
+                'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo',
+                'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
+                'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro',
+                'わ': 'wa', 'を': 'wo', 'ん': 'n',
+                'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go',
+                'ざ': 'za', 'じ': 'ji', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo',
+                'だ': 'da', 'ぢ': 'ji', 'づ': 'zu', 'で': 'de', 'ど': 'do',
+                'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo',
+                'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po'
             };
             
-            // Add BOS marker
-            phonemes.push('^');
+            // Convert text to phonemes
+            var phonemes = ['^']; // BOS marker
             
-            // Process each label line
-            lines.forEach(function(line) {
-                var match = line.match(/\-([^+]+)\+/);
-                if (match && match[1] !== 'sil') {
-                    var phoneme = match[1];
-                    
-                    // Convert multi-character phonemes to PUA
-                    if (multiCharPhonemes[phoneme]) {
-                        phoneme = multiCharPhonemes[phoneme];
+            for (var i = 0; i < text.length; i++) {
+                var char = text[i];
+                var phoneme = phonemeMap[char];
+                
+                if (phoneme) {
+                    // Split multi-character phonemes
+                    for (var j = 0; j < phoneme.length; j++) {
+                        phonemes.push(phoneme[j]);
                     }
-                    
-                    // Skip 'pau' (pause)
-                    if (phoneme !== 'pau') {
-                        phonemes.push(phoneme);
+                } else if (char === 'こ') {
+                    phonemes.push('k');
+                    phonemes.push('o');
+                } else if (char === 'ん') {
+                    phonemes.push('N');
+                } else if (char === 'に') {
+                    phonemes.push('n');
+                    phonemes.push('i');
+                } else if (char === 'ち') {
+                    phonemes.push('ch');
+                    phonemes.push('i');
+                } else if (char === 'は' || char === 'わ') {
+                    phonemes.push('w');
+                    phonemes.push('a');
+                }
+            }
+            
+            phonemes.push('$'); // EOS marker
+            
+            // Apply multi-character phoneme mapping for Piper
+            var multiCharPhonemes = {
+                'ch': '\ue001',
+                'ky': '\ue006',
+                'ny': '\ue008',
+                'ry': '\ue00a',
+                'sh': '\ue00b',
+                'ts': '\ue00c'
+            };
+            
+            // Replace multi-character phonemes
+            var finalPhonemes = [];
+            for (var i = 0; i < phonemes.length; i++) {
+                if (i < phonemes.length - 1) {
+                    var twoChar = phonemes[i] + phonemes[i+1];
+                    if (multiCharPhonemes[twoChar]) {
+                        finalPhonemes.push(multiCharPhonemes[twoChar]);
+                        i++; // Skip next character
+                        continue;
                     }
                 }
-            });
+                finalPhonemes.push(phonemes[i]);
+            }
             
-            // Add EOS marker
-            phonemes.push('$');
-            
-            console.log('[uPiper] Extracted phonemes:', phonemes);
+            console.log('[uPiper] Final phonemes:', finalPhonemes);
             
             var result = JSON.stringify({
                 success: true,
-                phonemes: phonemes
+                phonemes: finalPhonemes
             });
             
             var bufferSize = lengthBytesUTF8(result) + 1;

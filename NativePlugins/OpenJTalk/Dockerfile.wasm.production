@@ -22,44 +22,29 @@ RUN wget https://sourceforge.net/projects/open-jtalk/files/Open%20JTalk/open_jta
 # Download mecab source (included in OpenJTalk)
 # MeCab is already included in open_jtalk-1.11/mecab directory
 
-# Create build script
-RUN cat > build_openjtalk_wasm.sh << 'EOF'
-#!/bin/bash
-set -e
-
-cd /build/open_jtalk-1.11
-
-# Build mecab first (static library only)
-cd mecab
-emconfigure ./configure --enable-static --disable-shared --with-charset=utf8
-emmake make -j$(nproc) libmecab.la
-
-# Build OpenJTalk components
-cd /build/open_jtalk-1.11
-
-# Apply patches for WebAssembly compatibility
-# Remove HTS Engine dependency from text analysis
-sed -i 's/#include "HTS_engine.h"//' text2mecab/text2mecab.c || true
-
-# Build text analysis components
-for dir in text2mecab mecab mecab2njd njd njd2jpcommon jpcommon; do
-    echo "Building $dir..."
-    cd $dir
-    if [ -f Makefile.msc ]; then
-        # Simple build for components without configure
-        emcc -O3 -I../mecab-0.996/mecab/src -I. -c *.c
-        emar rcs lib${dir}.a *.o
-    else
-        emconfigure ./configure --enable-static --disable-shared || true
-        emmake make -j$(nproc) || true
-    fi
-    cd ..
-done
-
-echo "OpenJTalk components built successfully"
-EOF
-
-RUN chmod +x build_openjtalk_wasm.sh && ./build_openjtalk_wasm.sh
+# Build OpenJTalk components directly
+RUN cd /build/open_jtalk-1.11 && \
+    # Build mecab first (static library only)
+    cd mecab && \
+    emconfigure ./configure --enable-static --disable-shared --with-charset=utf8 && \
+    emmake make -j$(nproc) libmecab.la && \
+    cd /build/open_jtalk-1.11 && \
+    # Apply patches for WebAssembly compatibility
+    sed -i 's/#include "HTS_engine.h"//' text2mecab/text2mecab.c || true && \
+    # Build text analysis components
+    for dir in text2mecab mecab2njd njd njd2jpcommon jpcommon; do \
+        echo "Building $dir..."; \
+        cd $dir; \
+        if [ -f Makefile.msc ]; then \
+            emcc -O3 -I../mecab/src -I. -c *.c; \
+            emar rcs lib${dir}.a *.o; \
+        else \
+            emconfigure ./configure --enable-static --disable-shared || true; \
+            emmake make -j$(nproc) || true; \
+        fi; \
+        cd ..; \
+    done && \
+    echo "OpenJTalk components built successfully"
 
 # Copy our wrapper source
 COPY src/openjtalk_wasm_wrapper.c /build/
