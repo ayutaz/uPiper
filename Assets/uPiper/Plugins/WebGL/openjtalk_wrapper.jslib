@@ -207,12 +207,71 @@ mergeInto(LibraryManager.library, {
             // Convert text to proper encoding using OpenJTalk's allocator
             var textPtr = openJTalkAllocateUTF8(text);
             
-            // Use simplified phonemization for WebGL
-            // Since the current WebAssembly build doesn't include full OpenJTalk,
-            // we'll use a simple romanization approach
-            openJTalkFree(textPtr);
-            
-            console.log('[uPiper] Using simplified Japanese phonemization for:', text);
+            // Check if OpenJTalk synthesis_labels function is available
+            if (window.uPiperOpenJTalk._openjtalk_synthesis_labels) {
+                // Call OpenJTalk synthesis_labels function
+                var resultPtr = window.uPiperOpenJTalk._openjtalk_synthesis_labels(textPtr);
+                openJTalkFree(textPtr);
+                
+                if (!resultPtr) {
+                    throw new Error('OpenJTalk synthesis_labels returned null');
+                }
+                
+                labels = openJTalkUTF8ToString(resultPtr);
+                window.uPiperOpenJTalk._openjtalk_free_string(resultPtr);
+                
+                console.log('[uPiper] OpenJTalk synthesis_labels returned:', labels.substring(0, 200));
+                
+                // Process labels to extract phonemes
+                var lines = labels.split('\n').filter(function(line) { return line.trim(); });
+                var phonemes = ['^']; // BOS marker
+                
+                lines.forEach(function(line) {
+                    var match = line.match(/\-([^+]+)\+/);
+                    if (match && match[1] !== 'sil') {
+                        var phoneme = match[1];
+                        if (phoneme !== 'pau') {
+                            phonemes.push(phoneme);
+                        }
+                    }
+                });
+                
+                phonemes.push('$'); // EOS marker
+                console.log('[uPiper] Extracted phonemes from OpenJTalk:', phonemes);
+                
+                // Apply multi-character phoneme mapping
+                var multiCharPhonemes = {
+                    'ch': '\ue001',
+                    'ky': '\ue006',
+                    'ny': '\ue008',
+                    'ry': '\ue00a',
+                    'sh': '\ue00b',
+                    'ts': '\ue00c'
+                };
+                
+                var finalPhonemes = [];
+                for (var i = 0; i < phonemes.length; i++) {
+                    if (multiCharPhonemes[phonemes[i]]) {
+                        finalPhonemes.push(multiCharPhonemes[phonemes[i]]);
+                    } else {
+                        finalPhonemes.push(phonemes[i]);
+                    }
+                }
+                
+                var result = JSON.stringify({
+                    success: true,
+                    phonemes: finalPhonemes
+                });
+                
+                var bufferSize = lengthBytesUTF8(result) + 1;
+                var buffer = _malloc(bufferSize);
+                stringToUTF8(result, buffer, bufferSize);
+                return buffer;
+                
+            } else {
+                // Fallback: Use simplified phonemization  
+                openJTalkFree(textPtr);
+                console.log('[uPiper] Using simplified Japanese phonemization for:', text);
             
             // Simple Japanese to phoneme conversion
             // This is a very basic implementation for demonstration
