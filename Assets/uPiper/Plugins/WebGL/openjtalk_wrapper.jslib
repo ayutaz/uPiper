@@ -19,15 +19,15 @@ mergeInto(LibraryManager.library, {
                     try {
                         console.log('[uPiper] Loading OpenJTalk module...');
                         
-                        // Load openjtalk.js directly (it's already ES5)
-                        const moduleScript = document.createElement('script');
-                        moduleScript.src = 'StreamingAssets/openjtalk.js';
+                        // First load the loader script
+                        const loaderScript = document.createElement('script');
+                        loaderScript.src = 'StreamingAssets/openjtalk-loader.js';
                         
-                        // Wait for script to load
+                        // Wait for loader to load
                         await new Promise((resolve, reject) => {
-                            moduleScript.onload = resolve;
-                            moduleScript.onerror = reject;
-                            document.head.appendChild(moduleScript);
+                            loaderScript.onload = resolve;
+                            loaderScript.onerror = reject;
+                            document.head.appendChild(loaderScript);
                         });
                         
                         // Wait for OpenJTalkModule to be available
@@ -38,7 +38,7 @@ mergeInto(LibraryManager.library, {
                         }
                         
                         if (typeof window.OpenJTalkModule === 'undefined') {
-                            throw new Error('OpenJTalkModule not found');
+                            throw new Error('OpenJTalkModule loader not found');
                         }
                         
                         console.log('[uPiper] OpenJTalkModule loaded, initializing...');
