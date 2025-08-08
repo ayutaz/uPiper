@@ -48,37 +48,85 @@ mergeInto(LibraryManager.library, {
                             });
                         });
                         
-                        // Load OpenJTalk module - it's an ES6 module with export default
-                        // We need to fetch and modify it to expose it globally
+                        // Load OpenJTalk module safely using multiple strategies
                         console.log('[uPiper] Loading OpenJTalk ES6 module...');
                         
+                        // Strategy 1: Try using iframe to load ES6 module safely
+                        let moduleLoaded = false;
+                        
                         try {
-                            const response = await fetch('StreamingAssets/openjtalk.js');
-                            const jsText = await response.text();
-                            console.log('[uPiper] Fetched OpenJTalk module, size:', jsText.length);
+                            // Create hidden iframe to load the module
+                            const iframe = document.createElement('iframe');
+                            iframe.style.display = 'none';
+                            iframe.src = 'StreamingAssets/openjtalk-loader.html';
                             
-                            // The file starts with async function OpenJTalkModule and ends with export default OpenJTalkModule
-                            // We need to replace the export statement to make it available globally
-                            const modifiedJs = jsText.replace('export default OpenJTalkModule;', 'window.OpenJTalkModule = OpenJTalkModule;');
-                            
-                            // Create a script element and execute the modified JavaScript
-                            const scriptTag = document.createElement('script');
-                            scriptTag.textContent = modifiedJs;
-                            document.head.appendChild(scriptTag);
-                            
-                            // Wait a bit for the script to execute
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                            
-                            if (typeof window.OpenJTalkModule !== 'function') {
-                                throw new Error('OpenJTalkModule is not a function after loading: ' + typeof window.OpenJTalkModule);
-                            }
-                            
-                            console.log('[uPiper] OpenJTalkModule function loaded successfully');
-                        } catch (error) {
-                            console.error('[uPiper] Failed to load OpenJTalk module:', error);
-                            window.OpenJTalkModuleError = error;
-                            throw error;
+                            // Wait for the module to load in iframe
+                            await new Promise((resolve, reject) => {
+                                const timeout = setTimeout(() => {
+                                    reject(new Error('Iframe loading timeout'));
+                                }, 5000);
+                                
+                                window.addEventListener('message', function handler(e) {
+                                    if (e.data && e.data.type === 'openjtalk-loaded') {
+                                        clearTimeout(timeout);
+                                        window.removeEventListener('message', handler);
+                                        
+                                        // Get the module from iframe
+                                        if (iframe.contentWindow && iframe.contentWindow.OpenJTalkModule) {
+                                            window.OpenJTalkModule = iframe.contentWindow.OpenJTalkModule;
+                                            moduleLoaded = true;
+                                            console.log('[uPiper] OpenJTalk loaded via iframe');
+                                        }
+                                        resolve();
+                                    }
+                                });
+                                
+                                document.body.appendChild(iframe);
+                            });
+                        } catch (iframeError) {
+                            console.warn('[uPiper] Iframe loading failed:', iframeError);
                         }
+                        
+                        // Strategy 2: Fallback to fetch and modify (if iframe fails)
+                        if (!moduleLoaded) {
+                            try {
+                                const response = await fetch('StreamingAssets/openjtalk.js');
+                                let jsText = await response.text();
+                                console.log('[uPiper] Fetched OpenJTalk module, size:', jsText.length);
+                                
+                                // More robust replacement - handle both minified and formatted versions
+                                if (jsText.includes('export default OpenJTalkModule')) {
+                                    jsText = jsText.replace(/export\s+default\s+OpenJTalkModule[;\s]*$/, 'window.OpenJTalkModule = OpenJTalkModule;');
+                                } else if (jsText.includes('export{')) {
+                                    // Handle minified export format
+                                    jsText = jsText.replace(/export\{[^}]*OpenJTalkModule[^}]*\}/, 'window.OpenJTalkModule = OpenJTalkModule');
+                                }
+                                
+                                // Wrap in IIFE to avoid variable conflicts
+                                const wrappedJs = `(function() { ${jsText} })();`;
+                                
+                                // Create script element and execute
+                                const scriptTag = document.createElement('script');
+                                scriptTag.textContent = wrappedJs;
+                                document.head.appendChild(scriptTag);
+                                
+                                // Wait for execution
+                                await new Promise(resolve => setTimeout(resolve, 200));
+                                
+                                if (typeof window.OpenJTalkModule === 'function') {
+                                    moduleLoaded = true;
+                                    console.log('[uPiper] OpenJTalk loaded via script injection');
+                                }
+                            } catch (fetchError) {
+                                console.error('[uPiper] Fetch and modify failed:', fetchError);
+                            }
+                        }
+                        
+                        if (!moduleLoaded) {
+                            throw new Error('Failed to load OpenJTalk module with all strategies');
+                        }
+                        
+                        console.log('[uPiper] OpenJTalkModule function loaded successfully');
                         
                         // Module has been loaded and is available as window.OpenJTalkModule
                         

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script type="module">
+        // ES6モジュールを安全に読み込み、親ウィンドウに公開
+        import OpenJTalkModule from './openjtalk.js';
+        
+        // 親ウィンドウにモジュールを渡す
+        if (window.parent && window.parent !== window) {
+            window.parent.OpenJTalkModuleFromIframe = OpenJTalkModule;
+            window.parent.postMessage({type: 'openjtalk-loaded'}, '*');
+        }
+        
+        // グローバルにも公開（フォールバック）
+        window.OpenJTalkModule = OpenJTalkModule;
+    </script>
+</head>
+<body></body>
+</html>
