@@ -65,7 +65,7 @@ mergeInto(LibraryManager.library, {
                         
                         console.log('[uPiper] OpenJTalkModule loaded, initializing...');
                         
-                        // Initialize the module
+                        // Initialize the module with required exports
                         const module = await window.OpenJTalkModule({
                             locateFile: function(path) {
                                 if (path.endsWith('.wasm')) {
@@ -95,12 +95,19 @@ mergeInto(LibraryManager.library, {
                             });
                         }
                         
+                        // The module should already have HEAP arrays exposed
+                        // Check and log what's available
+                        console.log('[uPiper] Module exports available:', Object.keys(module).filter(k => !k.startsWith('_')).slice(0, 20));
+                        console.log('[uPiper] HEAP8 available:', !!module.HEAP8);
+                        console.log('[uPiper] _malloc available:', !!module._malloc);
+                        console.log('[uPiper] UTF8ToString available:', !!module.UTF8ToString);
+                        
                         // Store module reference immediately after loading
                         window.uPiperOpenJTalk = {
                             initialized: false, // Will be set to true after dictionary load
                             module: module,
                             FS: module.FS,
-                            ccall: module.ccall,
+                            ccall: module.ccall || module.cwrap,
                             cwrap: module.cwrap,
                             _malloc: module._malloc || module.malloc,
                             _free: module._free || module.free,
@@ -216,7 +223,18 @@ mergeInto(LibraryManager.library, {
             // Use OpenJTalk module functions for OpenJTalk operations
             var openJTalkMalloc = window.uPiperOpenJTalk._malloc;
             var openJTalkFree = window.uPiperOpenJTalk._free;
-            var openJTalkAllocateUTF8 = window.uPiperOpenJTalk.allocateUTF8 || function(str) {
+            var openJTalkAllocateUTF8 = function(str) {
+                if (!window.uPiperOpenJTalk.lengthBytesUTF8 || !window.uPiperOpenJTalk.stringToUTF8) {
+                    console.error('[uPiper] UTF8 functions not available in OpenJTalk module');
+                    // Fallback to simple ASCII encoding
+                    var len = str.length + 1;
+                    var ptr = openJTalkMalloc(len);
+                    for (var i = 0; i < str.length; i++) {
+                        window.uPiperOpenJTalk.HEAPU8[ptr + i] = str.charCodeAt(i) & 0xFF;
+                    }
+                    window.uPiperOpenJTalk.HEAPU8[ptr + str.length] = 0;
+                    return ptr;
+                }
                 var len = window.uPiperOpenJTalk.lengthBytesUTF8(str) + 1;
                 var ptr = openJTalkMalloc(len);
                 window.uPiperOpenJTalk.stringToUTF8(str, ptr, len);
@@ -239,7 +257,18 @@ mergeInto(LibraryManager.library, {
                     throw new Error('OpenJTalk synthesis_labels returned null');
                 }
                 
-                labels = openJTalkUTF8ToString(resultPtr);
+                if (!window.uPiperOpenJTalk.UTF8ToString) {
+                    console.error('[uPiper] UTF8ToString not available, using fallback');
+                    // Fallback to simple ASCII decoding
+                    var str = '';
+                    var i = resultPtr;
+                    while (window.uPiperOpenJTalk.HEAPU8[i]) {
+                        str += String.fromCharCode(window.uPiperOpenJTalk.HEAPU8[i++]);
+                    }
+                    labels = str;
+                } else {
+                    labels = openJTalkUTF8ToString(resultPtr);
+                }
                 window.uPiperOpenJTalk._openjtalk_free_string(resultPtr);
                 
                 console.log('[uPiper] OpenJTalk synthesis_labels returned:', labels.substring(0, 200));
