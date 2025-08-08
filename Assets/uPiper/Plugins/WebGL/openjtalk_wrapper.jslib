@@ -25,6 +25,17 @@ mergeInto(LibraryManager.library, {
                         moduleScript.textContent = `
                             (async function() {
                                 try {
+                                    // Set up global HEAP arrays that the module might expect
+                                    // These will be overwritten by the actual module
+                                    window.HEAP8 = new Int8Array(0);
+                                    window.HEAPU8 = new Uint8Array(0);
+                                    window.HEAP16 = new Int16Array(0);
+                                    window.HEAPU16 = new Uint16Array(0);
+                                    window.HEAP32 = new Int32Array(0);
+                                    window.HEAPU32 = new Uint32Array(0);
+                                    window.HEAPF32 = new Float32Array(0);
+                                    window.HEAPF64 = new Float64Array(0);
+                                    
                                     // Dynamically import the OpenJTalk module
                                     const response = await fetch('StreamingAssets/openjtalk.js');
                                     const moduleText = await response.text();
@@ -40,6 +51,14 @@ mergeInto(LibraryManager.library, {
                                     window.OpenJTalkModule = module.default || module.OpenJTalkModule || module;
                                     
                                     console.log('[uPiper] OpenJTalk module loaded via dynamic import');
+                                    
+                                    // Clean up temporary global HEAP arrays
+                                    // They should be replaced by the module's own versions
+                                    ['HEAP8', 'HEAPU8', 'HEAP16', 'HEAPU16', 'HEAP32', 'HEAPU32', 'HEAPF32', 'HEAPF64'].forEach(name => {
+                                        if (window[name] && window[name].length === 0) {
+                                            delete window[name];
+                                        }
+                                    });
                                 } catch (error) {
                                     console.error('[uPiper] Failed to import OpenJTalk module:', error);
                                     window.OpenJTalkModuleError = error;
@@ -66,7 +85,8 @@ mergeInto(LibraryManager.library, {
                         console.log('[uPiper] OpenJTalkModule loaded, initializing...');
                         
                         // Initialize the module with required exports
-                        const module = await window.OpenJTalkModule({
+                        // We need to ensure HEAP arrays are accessible
+                        const moduleConfig = {
                             locateFile: function(path) {
                                 if (path.endsWith('.wasm')) {
                                     return 'StreamingAssets/openjtalk.wasm';
@@ -82,7 +102,49 @@ mergeInto(LibraryManager.library, {
                             onRuntimeInitialized: function() {
                                 console.log('[uPiper] OpenJTalk runtime initialized');
                             }
-                        });
+                        };
+                        
+                        // Call the module function
+                        let module;
+                        try {
+                            module = await window.OpenJTalkModule(moduleConfig);
+                        } catch (err) {
+                            // If there's an error about HEAP8, it might be because the module
+                            // expects it to be global. Let's try to provide it.
+                            if (err.toString().includes('HEAP8')) {
+                                console.log('[uPiper] Retrying with global HEAP workaround');
+                                
+                                // Create a temporary global scope for the module
+                                const tempGlobals = {};
+                                const originalGlobals = {};
+                                
+                                // Save and create temporary globals
+                                ['HEAP8', 'HEAPU8', 'HEAP16', 'HEAPU16', 'HEAP32', 'HEAPU32', 'HEAPF32', 'HEAPF64'].forEach(name => {
+                                    if (typeof window[name] !== 'undefined') {
+                                        originalGlobals[name] = window[name];
+                                    }
+                                    window[name] = null; // Placeholder
+                                });
+                                
+                                try {
+                                    module = await window.OpenJTalkModule(moduleConfig);
+                                } finally {
+                                    // Restore original globals
+                                    Object.keys(originalGlobals).forEach(name => {
+                                        window[name] = originalGlobals[name];
+                                    });
+                                    
+                                    // Clean up any placeholders
+                                    ['HEAP8', 'HEAPU8', 'HEAP16', 'HEAPU16', 'HEAP32', 'HEAPU32', 'HEAPF32', 'HEAPF64'].forEach(name => {
+                                        if (!(name in originalGlobals) && window[name] === null) {
+                                            delete window[name];
+                                        }
+                                    });
+                                }
+                            } else {
+                                throw err;
+                            }
+                        }
                         
                         // Wait for runtime to be initialized
                         if (!module.calledRun) {
