@@ -2,7 +2,9 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using uPiper.Core;
+#if !UNITY_WEBGL
 using uPiper.Core.Phonemizers.Implementations;
+#endif
 
 namespace uPiper.Samples.AndroidDemo
 {
@@ -100,6 +102,7 @@ namespace uPiper.Samples.AndroidDemo
             // Step 2: Test OpenJTalk initialization
             AddLog("\n2. Testing OpenJTalk...");
 
+#if !UNITY_WEBGL
             OpenJTalkPhonemizer phonemizer = null;
             try
             {
@@ -128,6 +131,9 @@ namespace uPiper.Samples.AndroidDemo
             {
                 phonemizer?.Dispose();
             }
+#else
+            AddLog("OpenJTalk is not available in WebGL builds");
+#endif
 
             yield return new WaitForSeconds(1f);
 
