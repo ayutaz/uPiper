@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>OpenJTalk Path Verification Test</title>
+</head>
+<body>
+    <h1>OpenJTalk Path Issue Verification</h1>
+    <div id="status">Testing...</div>
+    <pre id="log"></pre>
+    
+    <script>
+        const log = (msg) => {
+            console.log(msg);
+            document.getElementById('log').textContent += msg + '\n';
+        };
+
+        // Test 1: Load the original openjtalk.js and check what it does
+        async function testOriginalModule() {
+            log('=== Test 1: Original Module Behavior ===');
+            
+            const response = await fetch('StreamingAssets/openjtalk.js');
+            const jsText = await response.text();
+            
+            // Check for problematic patterns
+            const patterns = [
+                /import\.meta\.url/g,
+                /new\s+URL\s*\([^)]+\)\.href/g,
+                /scriptDirectory.*=.*URL/g,
+            ];
+            
+            patterns.forEach((pattern, i) => {
+                const matches = jsText.match(pattern);
+                if (matches) {
+                    log(`Pattern ${i + 1} found: ${matches.length} occurrences`);
+                    log(`  Sample: ${matches[0].substring(0, 100)}`);
+                }
+            });
+            
+            // Extract how scriptDirectory is actually set
+            const scriptDirMatch = jsText.match(/scriptDirectory[^;]{0,200}/g);
+            if (scriptDirMatch) {
+                log('\nscriptDirectory assignments found:');
+                scriptDirMatch.slice(0, 3).forEach(m => {
+                    log(`  ${m.substring(0, 150)}`);
+                });
+            }
+        }
+
+        // Test 2: Test the wrapper's fetch interception
+        async function testFetchInterception() {
+            log('\n=== Test 2: Fetch Interception ===');
+            
+            // Load the wrapper
+            const script = document.createElement('script');
+            script.src = 'StreamingAssets/openjtalk-wrapper.js';
+            document.head.appendChild(script);
+            
+            await new Promise(resolve => {
+                script.onload = resolve;
+            });
+            
+            // Test if fetch is intercepted
+            log('Testing fetch interception...');
+            
+            // Create a fake fetch to openjtalk.wasm with wrong path
+            try {
+                const testUrl = 'StreamingAssets/StreamingAssets/openjtalk.wasm';
+                log(`Fetching: ${testUrl}`);
+                
+                // This should be intercepted and fixed
+                const response = await fetch(testUrl, { method: 'HEAD' });
+                log(`Response status: ${response.status}`);
+                log(`Response URL: ${response.url}`);
+            } catch (e) {
+                log(`Fetch error: ${e.message}`);
+            }
+        }
+
+        // Test 3: Try to load the module
+        async function testModuleLoading() {
+            log('\n=== Test 3: Module Loading ===');
+            
+            if (typeof window.OpenJTalkModule === 'function') {
+                log('OpenJTalkModule function found');
+                
+                try {
+                    log('Attempting to load module...');
+                    const module = await window.OpenJTalkModule({
+                        print: (text) => log(`[Module]: ${text}`),
+                        printErr: (text) => log(`[Module Error]: ${text}`)
+                    });
+                    
+                    log('Module loaded successfully!');
+                    log(`Module type: ${typeof module}`);
+                    log(`Has _malloc: ${!!module._malloc}`);
+                    log(`Has HEAP8: ${!!module.HEAP8}`);
+                    
+                    // Check for OpenJTalk functions
+                    const funcs = Object.keys(module).filter(k => k.includes('openjtalk'));
+                    log(`OpenJTalk functions: ${funcs.join(', ')}`);
+                    
+                } catch (e) {
+                    log(`Module loading failed: ${e.message}`);
+                    log(`Stack: ${e.stack}`);
+                }
+            } else {
+                log('OpenJTalkModule function not found!');
+            }
+        }
+
+        // Run tests
+        (async () => {
+            try {
+                await testOriginalModule();
+                await testFetchInterception();
+                await testModuleLoading();
+                
+                document.getElementById('status').textContent = 'Tests completed - check log';
+            } catch (e) {
+                log(`Test failed: ${e.message}`);
+                document.getElementById('status').textContent = 'Test failed';
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -1,120 +1,112 @@
 // OpenJTalk WebAssembly Wrapper for Unity WebGL
-// Complete path resolution fix
+// Complete rewrite using instantiateWasm approach
 
 (function() {
-    console.log('[OpenJTalkWrapper] Installing custom loader...');
+    console.log('[OpenJTalkWrapper] Installing complete override...');
     
-    // Store the original fetch
-    const originalFetch = window.fetch;
-    
-    // Override fetch to intercept openjtalk.wasm requests
-    window.fetch = function(url, ...args) {
-        // Check if this is a request for openjtalk.wasm
-        if (typeof url === 'string' && url.includes('openjtalk.wasm')) {
-            console.log('[OpenJTalkWrapper] Intercepting WASM fetch:', url);
-            // Fix the path - remove any duplicate StreamingAssets
-            const fixedUrl = url.replace(/StreamingAssets\/StreamingAssets\//g, 'StreamingAssets/')
-                               .replace(/\/StreamingAssets\/openjtalk\.wasm$/, '/StreamingAssets/openjtalk.wasm')
-                               .replace(/^.*StreamingAssets\/openjtalk\.wasm/, 'StreamingAssets/openjtalk.wasm');
-            console.log('[OpenJTalkWrapper] Fixed WASM URL:', fixedUrl);
-            return originalFetch.call(this, fixedUrl, ...args);
-        }
-        return originalFetch.call(this, url, ...args);
-    };
-    
-    // Create custom module loader
-    window.OpenJTalkModule = async function(config) {
-        console.log('[OpenJTalkWrapper] Loading OpenJTalk module with custom config');
+    window.OpenJTalkModule = async function(userConfig) {
+        console.log('[OpenJTalkWrapper] Creating OpenJTalk module with override');
         
-        // Load the original module code
+        // First, load and modify the JS
         const response = await fetch('StreamingAssets/openjtalk.js');
         let jsText = await response.text();
         
-        console.log('[OpenJTalkWrapper] Original JS size:', jsText.length);
+        // Critical fix: Replace the problematic patterns in the minified code
+        // These patterns are exact matches from the minified version
+        jsText = jsText.replace(
+            'var _scriptName=import.meta.url;',
+            'var _scriptName="StreamingAssets/openjtalk.js";'
+        );
         
-        // Apply multiple fixes to ensure all path issues are resolved
-        // Fix 1: Replace import.meta.url (minified version might have different patterns)
-        jsText = jsText.replace(/import\.meta\.url/gi, '"StreamingAssets/openjtalk.js"');
+        jsText = jsText.replace(
+            'scriptDirectory=new URL(".",_scriptName).href',
+            'scriptDirectory="StreamingAssets/"'
+        );
         
-        // Fix 2: Replace various forms of scriptDirectory assignment
-        // Pattern 1: scriptDirectory=new URL(".",something).href
-        jsText = jsText.replace(/scriptDirectory\s*=\s*new\s+URL\s*\([^)]+\)\.href/gi, 'scriptDirectory="StreamingAssets/"');
+        jsText = jsText.replace(
+            'return new URL("openjtalk.wasm",import.meta.url).href',
+            'return "StreamingAssets/openjtalk.wasm"'
+        );
         
-        // Pattern 2: scriptDirectory=something.href
-        jsText = jsText.replace(/scriptDirectory\s*=\s*[^;,\s]+\.href/gi, 'scriptDirectory="StreamingAssets/"');
+        // Remove export statement
+        jsText = jsText.replace('export default OpenJTalkModule;', '');
         
-        // Pattern 3: Any remaining scriptDirectory assignments that might cause issues
-        jsText = jsText.replace(/scriptDirectory\s*=\s*"[^"]*StreamingAssets\/StreamingAssets[^"]*"/gi, 'scriptDirectory="StreamingAssets/"');
+        // Make function available globally
+        jsText += '\n; window.__OpenJTalkModuleFunc = OpenJTalkModule;';
         
-        // Fix 3: Fix WASM file loading
-        // Pattern 1: new URL("openjtalk.wasm",something).href
-        jsText = jsText.replace(/new\s+URL\s*\(\s*["']openjtalk\.wasm["'][^)]*\)\.href/gi, '"StreamingAssets/openjtalk.wasm"');
+        console.log('[OpenJTalkWrapper] Code modifications applied');
         
-        // Pattern 2: scriptDirectory+"openjtalk.wasm" 
-        jsText = jsText.replace(/scriptDirectory\s*\+\s*["']openjtalk\.wasm["']/gi, '"StreamingAssets/openjtalk.wasm"');
-        
-        // Fix 4: Remove export statement
-        jsText = jsText.replace(/export\s+default\s+OpenJTalkModule[;\s]*/gi, '');
-        jsText = jsText.replace(/export\s*{\s*OpenJTalkModule\s*as\s*default\s*}[;\s]*/gi, '');
-        
-        // Fix 5: Add global assignment
-        jsText = jsText + '\n; window.__OpenJTalkModuleFunc = OpenJTalkModule;';
-        
-        console.log('[OpenJTalkWrapper] Applied text replacements');
-        
-        // Create and execute the script
+        // Execute the modified code
         const script = document.createElement('script');
         script.textContent = jsText;
         document.head.appendChild(script);
         
-        // Wait for script execution
+        // Wait for execution
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Check if module function is available
         if (typeof window.__OpenJTalkModuleFunc !== 'function') {
-            console.error('[OpenJTalkWrapper] Module function not found after script execution');
-            throw new Error('Failed to load OpenJTalkModule function');
+            throw new Error('[OpenJTalkWrapper] Failed to load module function');
         }
         
-        console.log('[OpenJTalkWrapper] Module function loaded, creating instance...');
-        
-        // Create final config with aggressive path overrides
-        const finalConfig = Object.assign({}, config || {}, {
+        // Create config with instantiateWasm override
+        const config = Object.assign({}, userConfig || {}, {
+            // Override the WebAssembly instantiation completely
+            instantiateWasm: async function(imports, receiveInstance) {
+                console.log('[OpenJTalkWrapper] Custom instantiateWasm called');
+                
+                try {
+                    // Fetch the WASM file directly with the correct path
+                    const wasmResponse = await fetch('StreamingAssets/openjtalk.wasm');
+                    if (!wasmResponse.ok) {
+                        throw new Error(`Failed to fetch WASM: ${wasmResponse.status}`);
+                    }
+                    
+                    const wasmArrayBuffer = await wasmResponse.arrayBuffer();
+                    console.log('[OpenJTalkWrapper] WASM loaded, size:', wasmArrayBuffer.byteLength);
+                    
+                    // Instantiate the WebAssembly module
+                    const wasmInstance = await WebAssembly.instantiate(wasmArrayBuffer, imports);
+                    
+                    console.log('[OpenJTalkWrapper] WASM instantiated successfully');
+                    
+                    // Call the callback with the instance
+                    receiveInstance(wasmInstance.instance, wasmInstance.module);
+                    
+                    return {}; // Return empty object as expected by Emscripten
+                } catch (error) {
+                    console.error('[OpenJTalkWrapper] WASM instantiation failed:', error);
+                    throw error;
+                }
+            },
+            
+            // Also override locateFile just in case
             locateFile: function(path) {
-                console.log('[OpenJTalkWrapper] locateFile called for:', path);
-                // Always return the correct path for WASM
-                if (path === 'openjtalk.wasm' || path.endsWith('.wasm')) {
+                console.log('[OpenJTalkWrapper] locateFile:', path);
+                if (path.endsWith('.wasm')) {
                     return 'StreamingAssets/openjtalk.wasm';
                 }
                 return 'StreamingAssets/' + path;
             },
-            // Override scriptDirectory if the module tries to use it
-            scriptDirectory: 'StreamingAssets/',
-            // Logging functions
-            print: config?.print || function(text) {
+            
+            print: userConfig?.print || function(text) {
                 console.log('[OpenJTalk]', text);
             },
-            printErr: config?.printErr || function(text) {
+            
+            printErr: userConfig?.printErr || function(text) {
                 console.error('[OpenJTalk]', text);
             }
         });
         
-        // Call the module function
-        console.log('[OpenJTalkWrapper] Initializing module instance...');
-        const moduleInstance = await window.__OpenJTalkModuleFunc(finalConfig);
+        // Initialize the module
+        console.log('[OpenJTalkWrapper] Initializing module with custom config');
+        const module = await window.__OpenJTalkModuleFunc(config);
         
         // Clean up
         delete window.__OpenJTalkModuleFunc;
         
-        console.log('[OpenJTalkWrapper] Module instance created successfully');
-        return moduleInstance;
+        console.log('[OpenJTalkWrapper] Module created successfully');
+        return module;
     };
     
-    // Also restore original fetch after a delay to avoid interfering with other code
-    setTimeout(() => {
-        console.log('[OpenJTalkWrapper] Restoring original fetch');
-        window.fetch = originalFetch;
-    }, 30000); // 30 seconds should be enough for module loading
-    
-    console.log('[OpenJTalkWrapper] Wrapper installed successfully');
+    console.log('[OpenJTalkWrapper] Override installed');
 })();
