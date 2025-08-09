@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>uPiper OpenJTalk WebGL Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #4a5568;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .header p {
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        #unity-container {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            background: #f7fafc;
+        }
+        
+        #unity-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: default;
+        }
+        
+        #unity-loading-bar {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+        
+        #unity-logo {
+            width: 154px;
+            height: 130px;
+            background: url('unity-logo-dark.png') no-repeat center;
+        }
+        
+        #unity-progress-bar-empty {
+            width: 141px;
+            height: 18px;
+            margin-top: 10px;
+            margin-left: 6.5px;
+            background: url('progress-bar-empty-dark.png') no-repeat center;
+        }
+        
+        #unity-progress-bar-full {
+            width: 0%;
+            height: 18px;
+            margin-top: 10px;
+            background: url('progress-bar-full-dark.png') no-repeat center;
+        }
+        
+        .info-panel {
+            padding: 20px;
+            background: #edf2f7;
+            border-top: 1px solid #cbd5e0;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .info-section {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .info-section h3 {
+            margin: 0 0 10px 0;
+            color: #4a5568;
+            font-size: 16px;
+        }
+        
+        .info-section pre {
+            margin: 0;
+            padding: 10px;
+            background: #f7fafc;
+            border-radius: 3px;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        .status.ready {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .status.loading {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .status.error {
+            background: #f56565;
+            color: white;
+        }
+        
+        .console-output {
+            background: #2d3748;
+            color: #68d391;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        
+        .console-line {
+            margin: 2px 0;
+        }
+        
+        .console-error {
+            color: #fc8181;
+        }
+        
+        .console-warn {
+            color: #f6e05e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 uPiper OpenJTalk WebGL Test</h1>
+            <p>Unity WebGL + OpenJTalk Integration (M5 Implementation)</p>
+        </div>
+        
+        <div id="unity-container">
+            <canvas id="unity-canvas" tabindex="-1"></canvas>
+            <div id="unity-loading-bar">
+                <div id="unity-logo"></div>
+                <div id="unity-progress-bar-empty">
+                    <div id="unity-progress-bar-full"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div class="info-grid">
+                <div class="info-section">
+                    <h3>📊 ステータス</h3>
+                    <div>
+                        <span class="status loading" id="unity-status">Loading Unity...</span>
+                        <span class="status loading" id="openjtalk-status">OpenJTalk Not Initialized</span>
+                    </div>
+                    <div class="console-output" id="console-output">
+                        <div class="console-line">Console output will appear here...</div>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <h3>🔧 デバッグコマンド</h3>
+                    <pre>// ブラウザコンソールで実行
+// OpenJTalk APIの確認
+window.OpenJTalkUnityAPI
+
+// 初期化状態の確認
+window.OpenJTalkUnityAPI._debug.isInitialized()
+
+// 音素化テスト
+window.OpenJTalkUnityAPI.phonemize('こんにちは')
+
+// Unityオブジェクトからテスト
+unityInstance.SendMessage('TestObject', 'TestPhonemize', 'テスト')</pre>
+                </div>
+            </div>
+            
+            <div class="info-section" style="margin-top: 20px;">
+                <h3>📝 実装詳細</h3>
+                <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
+                    <li>Unity互換OpenJTalkモジュール (openjtalk-unity.js/wasm)</li>
+                    <li>Unity統合ラッパー (openjtalk-unity-wrapper.js)</li>
+                    <li>Unity JSLib橋渡し (openjtalk_unity.jslib)</li>
+                    <li>WebGL音素化クラス (WebGLOpenJTalkUnityPhonemizer.cs)</li>
+                    <li>PUA文字マッピング対応（14種類のマルチ文字音素）</li>
+                    <li>GitHub Pages自動パス調整</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // コンソール出力のキャプチャ
+        const consoleOutput = document.getElementById('console-output');
+        const maxConsoleLines = 50;
+        let consoleLines = [];
+        
+        function addConsoleMessage(message, type = 'log') {
+            const line = document.createElement('div');
+            line.className = 'console-line';
+            
+            if (type === 'error') {
+                line.className += ' console-error';
+            } else if (type === 'warn') {
+                line.className += ' console-warn';
+            }
+            
+            const timestamp = new Date().toLocaleTimeString();
+            line.textContent = `[${timestamp}] ${message}`;
+            
+            consoleLines.push(line);
+            if (consoleLines.length > maxConsoleLines) {
+                consoleLines.shift();
+            }
+            
+            consoleOutput.innerHTML = '';
+            consoleLines.forEach(l => consoleOutput.appendChild(l));
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        // コンソールのオーバーライド
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addConsoleMessage(args.join(' '), 'log');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addConsoleMessage(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addConsoleMessage(args.join(' '), 'warn');
+        };
+        
+        // Unity WebGLローダー
+        var container = document.querySelector("#unity-container");
+        var canvas = document.querySelector("#unity-canvas");
+        var loadingBar = document.querySelector("#unity-loading-bar");
+        var progressBarFull = document.querySelector("#unity-progress-bar-full");
+        
+        var buildUrl = "Build";
+        var loaderUrl = buildUrl + "/{{{ LOADER_FILENAME }}}";
+        var config = {
+            dataUrl: buildUrl + "/{{{ DATA_FILENAME }}}",
+            frameworkUrl: buildUrl + "/{{{ FRAMEWORK_FILENAME }}}",
+            codeUrl: buildUrl + "/{{{ CODE_FILENAME }}}",
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "{{{ COMPANY_NAME }}}",
+            productName: "{{{ PRODUCT_NAME }}}",
+            productVersion: "{{{ PRODUCT_VERSION }}}",
+            showBanner: function(msg, type) {
+                if (type === 'error') {
+                    console.error(msg);
+                } else if (type === 'warning') {
+                    console.warn(msg);
+                } else {
+                    console.log(msg);
+                }
+            }
+        };
+        
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            container.className = "unity-mobile";
+            config.devicePixelRatio = 1;
+        }
+        
+        loadingBar.style.display = "block";
+        
+        var script = document.createElement("script");
+        script.src = loaderUrl;
+        script.onload = () => {
+            createUnityInstance(canvas, config, (progress) => {
+                progressBarFull.style.width = 100 * progress + "%";
+            }).then((unityInstance) => {
+                window.unityInstance = unityInstance;
+                loadingBar.style.display = "none";
+                document.getElementById('unity-status').className = 'status ready';
+                document.getElementById('unity-status').textContent = 'Unity Ready';
+                console.log('[Unity] WebGL instance created successfully');
+                
+                // OpenJTalk初期化状態の監視
+                let checkInterval = setInterval(() => {
+                    if (window.OpenJTalkUnityAPI && 
+                        window.OpenJTalkUnityAPI._debug && 
+                        window.OpenJTalkUnityAPI._debug.isInitialized()) {
+                        document.getElementById('openjtalk-status').className = 'status ready';
+                        document.getElementById('openjtalk-status').textContent = 'OpenJTalk Ready';
+                        console.log('[OpenJTalk] Initialization confirmed');
+                        clearInterval(checkInterval);
+                    }
+                }, 1000);
+                
+                // 30秒後にタイムアウト
+                setTimeout(() => {
+                    clearInterval(checkInterval);
+                    if (document.getElementById('openjtalk-status').className.includes('loading')) {
+                        document.getElementById('openjtalk-status').className = 'status error';
+                        document.getElementById('openjtalk-status').textContent = 'OpenJTalk Timeout';
+                        console.error('[OpenJTalk] Initialization timeout');
+                    }
+                }, 30000);
+                
+            }).catch((message) => {
+                console.error('[Unity] Failed to create instance:', message);
+                document.getElementById('unity-status').className = 'status error';
+                document.getElementById('unity-status').textContent = 'Unity Error';
+            });
+        };
+        document.body.appendChild(script);
+    </script>
+</body>
+</html>
