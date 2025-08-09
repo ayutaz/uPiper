@@ -1957,4 +1957,4 @@ console.log(OpenJTalkUnityAPI._debug.getModule())
 ---
 
 *このドキュメントは随時更新されます。*
-*最終更新: 2024年8月9日*
+*最終更新: 2025年8月9日（M2完了）*
