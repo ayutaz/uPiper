@@ -45,9 +45,6 @@ namespace uPiper.Core.Phonemizers.WebGL
         // Memory management
         [DllImport("__Internal")]
         public static extern void FreeWebGLMemory(IntPtr ptr);
-        
-        [DllImport("__Internal")]
-        public static extern void FreeOpenJTalkMemory(IntPtr ptr);
 
         /// <summary>
         /// Helper method to convert JavaScript result to managed object

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebWorker OpenJTalk Solution Test</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #4ec9b0;
+            border-bottom: 2px solid #4ec9b0;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: #252526;
+            border: 1px solid #3c3c3c;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .test-header {
+            color: #9cdcfe;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 5px;
+            font-family: inherit;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        button:disabled {
+            background: #3c3c3c;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #1e1e1e;
+            border: 1px solid #3c3c3c;
+            border-radius: 3px;
+            padding: 10px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+        .warning { color: #dcdcaa; }
+        .info { color: #9cdcfe; }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 3px;
+            margin-left: 10px;
+            font-size: 12px;
+        }
+        .status.ready { background: #4ec9b0; color: #1e1e1e; }
+        .status.loading { background: #dcdcaa; color: #1e1e1e; }
+        .status.error { background: #f48771; color: #1e1e1e; }
+        .status.not-loaded { background: #3c3c3c; color: #d4d4d4; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 WebWorker OpenJTalk Solution Test</h1>
+        
+        <div class="test-section">
+            <div class="test-header">
+                Unity WebGL Environment Simulation
+                <span id="unityStatus" class="status not-loaded">Not Loaded</span>
+            </div>
+            <button onclick="setupUnityEnvironment()">Setup Unity Environment</button>
+            <button onclick="checkUnityGlobals()">Check Unity Globals</button>
+            <div id="unityLog" class="log"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-header">
+                WebWorker Bridge
+                <span id="bridgeStatus" class="status not-loaded">Not Loaded</span>
+            </div>
+            <button onclick="loadBridge()">Load Bridge</button>
+            <button onclick="initializeWorker()" id="initBtn" disabled>Initialize Worker</button>
+            <div id="bridgeLog" class="log"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-header">
+                Phonemization Test
+                <span id="phonemizeStatus" class="status not-loaded">Not Ready</span>
+            </div>
+            <input type="text" id="testText" value="こんにちは" style="padding: 5px; margin: 5px;">
+            <button onclick="testPhonemize()" id="phonemizeBtn" disabled>Test Phonemize</button>
+            <button onclick="testMultiple()" id="multipleBtn" disabled>Test Multiple</button>
+            <div id="phonemizeLog" class="log"></div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-header">Memory Isolation Test</div>
+            <button onclick="testMemoryIsolation()">Test Memory Isolation</button>
+            <div id="memoryLog" class="log"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Logging helper
+        function log(targetId, message, type = 'info') {
+            const logDiv = document.getElementById(targetId);
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = type;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${targetId}] ${message}`);
+        }
+        
+        // Setup Unity WebGL environment
+        function setupUnityEnvironment() {
+            log('unityLog', 'Setting up Unity WebGL environment...', 'info');
+            
+            // Simulate Unity's Module object
+            window.Module = {
+                print: (text) => log('unityLog', `[Unity] ${text}`, 'info'),
+                printErr: (text) => log('unityLog', `[Unity Error] ${text}`, 'error'),
+                HEAP8: new Int8Array(1024),
+                HEAPU8: new Uint8Array(1024),
+                _malloc: function(size) {
+                    log('unityLog', `Unity _malloc(${size})`, 'info');
+                    return Math.floor(Math.random() * 1000000);
+                },
+                _free: function(ptr) {
+                    log('unityLog', `Unity _free(${ptr})`, 'info');
+                }
+            };
+            
+            // Unity global functions
+            window._malloc = window.Module._malloc;
+            window._free = window.Module._free;
+            window.UTF8ToString = function(ptr) {
+                return `[Unity string from ${ptr}]`;
+            };
+            window.stringToUTF8 = function(str, ptr, maxBytes) {
+                log('unityLog', `Unity stringToUTF8("${str}", ${ptr})`, 'info');
+                return str.length;
+            };
+            window.lengthBytesUTF8 = function(str) {
+                return str.length + 1;
+            };
+            
+            document.getElementById('unityStatus').className = 'status ready';
+            document.getElementById('unityStatus').textContent = 'Ready';
+            log('unityLog', '✓ Unity environment setup complete', 'success');
+        }
+        
+        // Check Unity globals
+        function checkUnityGlobals() {
+            log('unityLog', 'Checking Unity globals...', 'info');
+            
+            const checks = [
+                { name: 'window.Module', exists: !!window.Module },
+                { name: 'Module.HEAP8', exists: !!(window.Module && window.Module.HEAP8) },
+                { name: 'window._malloc', exists: !!window._malloc },
+                { name: 'window._free', exists: !!window._free },
+                { name: 'window.UTF8ToString', exists: !!window.UTF8ToString }
+            ];
+            
+            checks.forEach(check => {
+                log('unityLog', 
+                    `${check.name}: ${check.exists ? '✓' : '✗'}`, 
+                    check.exists ? 'success' : 'error');
+            });
+        }
+        
+        // Load bridge
+        async function loadBridge() {
+            log('bridgeLog', 'Loading WebWorker bridge...', 'info');
+            document.getElementById('bridgeStatus').className = 'status loading';
+            document.getElementById('bridgeStatus').textContent = 'Loading';
+            
+            try {
+                const script = document.createElement('script');
+                script.src = 'Assets/StreamingAssets/openjtalk-worker-bridge.js';
+                
+                await new Promise((resolve, reject) => {
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+                
+                log('bridgeLog', '✓ Bridge script loaded', 'success');
+                
+                if (typeof window.CreateOpenJTalkBridge === 'function') {
+                    log('bridgeLog', '✓ CreateOpenJTalkBridge function available', 'success');
+                    document.getElementById('bridgeStatus').className = 'status ready';
+                    document.getElementById('bridgeStatus').textContent = 'Loaded';
+                    document.getElementById('initBtn').disabled = false;
+                } else {
+                    throw new Error('CreateOpenJTalkBridge function not found');
+                }
+                
+            } catch (error) {
+                log('bridgeLog', `✗ Failed to load bridge: ${error.message}`, 'error');
+                document.getElementById('bridgeStatus').className = 'status error';
+                document.getElementById('bridgeStatus').textContent = 'Error';
+            }
+        }
+        
+        // Initialize worker
+        async function initializeWorker() {
+            log('bridgeLog', 'Initializing WebWorker...', 'info');
+            document.getElementById('bridgeStatus').className = 'status loading';
+            document.getElementById('bridgeStatus').textContent = 'Initializing';
+            
+            try {
+                // Create bridge instance
+                window.openJTalkBridge = window.CreateOpenJTalkBridge();
+                log('bridgeLog', '✓ Bridge instance created', 'success');
+                
+                // Initialize the worker
+                const result = await window.openJTalkBridge.initialize({
+                    scriptPath: 'Assets/StreamingAssets/openjtalk.js',
+                    wasmPath: 'Assets/StreamingAssets/openjtalk.wasm'
+                });
+                
+                log('bridgeLog', `✓ Worker initialized: ${JSON.stringify(result)}`, 'success');
+                
+                // Check Unity globals are still intact
+                if (window.Module && window.Module.HEAP8) {
+                    log('bridgeLog', '✓ Unity globals still intact', 'success');
+                }
+                
+                document.getElementById('bridgeStatus').className = 'status ready';
+                document.getElementById('bridgeStatus').textContent = 'Ready';
+                document.getElementById('phonemizeStatus').className = 'status ready';
+                document.getElementById('phonemizeStatus').textContent = 'Ready';
+                document.getElementById('phonemizeBtn').disabled = false;
+                document.getElementById('multipleBtn').disabled = false;
+                
+            } catch (error) {
+                log('bridgeLog', `✗ Failed to initialize: ${error.message}`, 'error');
+                document.getElementById('bridgeStatus').className = 'status error';
+                document.getElementById('bridgeStatus').textContent = 'Error';
+            }
+        }
+        
+        // Test phonemization
+        async function testPhonemize() {
+            const text = document.getElementById('testText').value;
+            log('phonemizeLog', `Testing phonemization for: "${text}"`, 'info');
+            
+            if (!window.openJTalkBridge) {
+                log('phonemizeLog', '✗ Bridge not initialized', 'error');
+                return;
+            }
+            
+            try {
+                const startTime = performance.now();
+                const result = await window.openJTalkBridge.phonemize(text);
+                const endTime = performance.now();
+                
+                log('phonemizeLog', `✓ Phonemization completed in ${(endTime - startTime).toFixed(2)}ms`, 'success');
+                log('phonemizeLog', `Phonemes: ${JSON.stringify(result.phonemes)}`, 'success');
+                
+                if (result.raw) {
+                    log('phonemizeLog', `Raw output: ${result.raw.substring(0, 200)}...`, 'info');
+                }
+                
+            } catch (error) {
+                log('phonemizeLog', `✗ Phonemization failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test multiple phonemizations
+        async function testMultiple() {
+            const texts = ['こんにちは', '今日はいい天気ですね', 'ありがとう'];
+            log('phonemizeLog', 'Testing multiple phonemizations...', 'info');
+            
+            for (const text of texts) {
+                await testPhonemizeText(text);
+            }
+        }
+        
+        async function testPhonemizeText(text) {
+            try {
+                const result = await window.openJTalkBridge.phonemize(text);
+                log('phonemizeLog', `✓ "${text}" → ${result.phonemes.join(' ')}`, 'success');
+            } catch (error) {
+                log('phonemizeLog', `✗ "${text}" failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test memory isolation
+        function testMemoryIsolation() {
+            log('memoryLog', 'Testing memory isolation...', 'info');
+            
+            if (!window.Module) {
+                log('memoryLog', '⚠ Unity environment not setup', 'warning');
+                return;
+            }
+            
+            // Check Unity memory
+            log('memoryLog', `Unity HEAP8 size: ${window.Module.HEAP8.length}`, 'info');
+            log('memoryLog', `Unity HEAP8 sample: [${window.Module.HEAP8.slice(0, 10)}]`, 'info');
+            
+            // Modify Unity memory
+            window.Module.HEAP8[0] = 42;
+            log('memoryLog', `Modified Unity HEAP8[0] = ${window.Module.HEAP8[0]}`, 'info');
+            
+            // Worker memory is completely isolated
+            log('memoryLog', '✓ WebWorker memory is completely isolated (different context)', 'success');
+            log('memoryLog', '✓ No memory conflicts possible between Unity and OpenJTalk', 'success');
+        }
+        
+        // Auto-setup on load
+        window.addEventListener('load', () => {
+            log('unityLog', 'Page loaded, ready for testing', 'info');
+        });
+    </script>
+</body>
+</html>

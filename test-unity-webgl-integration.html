@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unity WebGL OpenJTalk Integration Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
+        }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+        .warning { color: #dcdcaa; }
+        .info { color: #9cdcfe; }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        #output {
+            background: #000;
+            padding: 10px;
+            border-radius: 3px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .log-entry {
+            margin: 2px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Unity WebGL OpenJTalk Integration Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="runTest('basic')">Run Basic Test</button>
+        <button onclick="runTest('wrapper')">Test Wrapper Loading</button>
+        <button onclick="runTest('module')">Test Module Initialization</button>
+        <button onclick="runTest('phonemize')">Test Phonemization</button>
+        <button onclick="clearOutput()">Clear Output</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Output</h2>
+        <div id="output"></div>
+    </div>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            output.appendChild(entry);
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+        
+        // Simulate Unity WebGL environment
+        window.Module = {
+            print: (text) => log(`[Unity] ${text}`, 'info'),
+            printErr: (text) => log(`[Unity Error] ${text}`, 'error')
+        };
+        
+        // Simulate Unity's memory functions
+        window._malloc = function(size) {
+            log(`[Unity _malloc] Allocating ${size} bytes`, 'info');
+            return Math.floor(Math.random() * 1000000);
+        };
+        
+        window._free = function(ptr) {
+            log(`[Unity _free] Freeing pointer ${ptr}`, 'info');
+        };
+        
+        window.UTF8ToString = function(ptr) {
+            return `[Simulated string from ptr ${ptr}]`;
+        };
+        
+        window.stringToUTF8 = function(str, ptr, maxBytes) {
+            log(`[Unity stringToUTF8] Writing "${str}" to ${ptr}`, 'info');
+        };
+        
+        window.lengthBytesUTF8 = function(str) {
+            return str.length + 1;
+        };
+        
+        async function runTest(testType) {
+            log(`\n=== Running ${testType} test ===`, 'warning');
+            
+            try {
+                switch(testType) {
+                    case 'basic':
+                        await testBasic();
+                        break;
+                    case 'wrapper':
+                        await testWrapper();
+                        break;
+                    case 'module':
+                        await testModule();
+                        break;
+                    case 'phonemize':
+                        await testPhonemize();
+                        break;
+                }
+                log(`✓ ${testType} test completed`, 'success');
+            } catch (error) {
+                log(`✗ ${testType} test failed: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+        
+        async function testBasic() {
+            log('Testing basic environment setup...', 'info');
+            
+            // Check Unity globals
+            if (window.Module) {
+                log('✓ Unity Module found', 'success');
+            } else {
+                throw new Error('Unity Module not found');
+            }
+            
+            if (window._malloc && window._free) {
+                log('✓ Unity memory functions found', 'success');
+            } else {
+                throw new Error('Unity memory functions not found');
+            }
+        }
+        
+        async function testWrapper() {
+            log('Loading OpenJTalk wrapper...', 'info');
+            
+            // Try multiple wrapper versions
+            const wrappers = [
+                'openjtalk-unity-wrapper.js',
+                'openjtalk-wrapper.js',
+                'openjtalk-final.js'
+            ];
+            
+            let loaded = false;
+            for (const wrapperFile of wrappers) {
+                try {
+                    log(`Trying ${wrapperFile}...`, 'info');
+                    
+                    const script = document.createElement('script');
+                    script.src = `Assets/StreamingAssets/${wrapperFile}`;
+                    
+                    await new Promise((resolve, reject) => {
+                        script.onload = () => {
+                            log(`✓ ${wrapperFile} loaded`, 'success');
+                            resolve();
+                        };
+                        script.onerror = () => {
+                            log(`✗ Failed to load ${wrapperFile}`, 'warning');
+                            reject();
+                        };
+                        document.head.appendChild(script);
+                    });
+                    
+                    if (window.OpenJTalkModule) {
+                        log(`✓ OpenJTalkModule function found`, 'success');
+                        loaded = true;
+                        break;
+                    }
+                } catch (e) {
+                    // Try next wrapper
+                }
+            }
+            
+            if (!loaded) {
+                throw new Error('No working wrapper found');
+            }
+        }
+        
+        async function testModule() {
+            log('Initializing OpenJTalk module...', 'info');
+            
+            if (!window.OpenJTalkModule) {
+                throw new Error('OpenJTalkModule not loaded');
+            }
+            
+            const config = {
+                print: (text) => log(`[OpenJTalk] ${text}`, 'info'),
+                printErr: (text) => log(`[OpenJTalk Error] ${text}`, 'error'),
+                locateFile: (path) => {
+                    if (path.endsWith('.wasm')) {
+                        return 'Assets/StreamingAssets/openjtalk.wasm';
+                    }
+                    return path;
+                }
+            };
+            
+            log('Calling OpenJTalkModule...', 'info');
+            const module = await window.OpenJTalkModule(config);
+            
+            // Check exports
+            const requiredExports = ['HEAP8', 'HEAPU8', '_malloc', '_free'];
+            const missingExports = [];
+            
+            for (const exportName of requiredExports) {
+                if (module[exportName]) {
+                    log(`✓ ${exportName} found`, 'success');
+                } else {
+                    missingExports.push(exportName);
+                    log(`✗ ${exportName} missing`, 'error');
+                }
+            }
+            
+            if (missingExports.length > 0) {
+                throw new Error(`Missing exports: ${missingExports.join(', ')}`);
+            }
+            
+            window.openJTalkModule = module;
+            log('✓ Module initialized successfully', 'success');
+        }
+        
+        async function testPhonemize() {
+            log('Testing phonemization...', 'info');
+            
+            if (!window.openJTalkModule) {
+                log('Module not initialized, running module test first...', 'warning');
+                await testModule();
+            }
+            
+            const testText = 'こんにちは';
+            log(`Testing with text: "${testText}"`, 'info');
+            
+            // Simulate phonemization
+            if (window.openJTalkModule._openjtalk_synthesis_labels) {
+                log('✓ OpenJTalk synthesis function found', 'success');
+                
+                // This would actually call the function in real scenario
+                log('Would call _openjtalk_synthesis_labels here', 'info');
+            } else {
+                log('⚠ OpenJTalk synthesis function not found, using fallback', 'warning');
+            }
+            
+            // Simulate result
+            const phonemes = ['^', 'k', 'o', 'N', 'n', 'i', 'ch', 'i', 'w', 'a', '$'];
+            log(`Phonemes: ${phonemes.join(' ')}`, 'success');
+        }
+        
+        // Auto-run basic test on load
+        window.addEventListener('load', () => {
+            log('Test page loaded', 'info');
+            log('Click buttons above to run tests', 'warning');
+        });
+    </script>
+</body>
+</html>

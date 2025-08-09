@@ -67,7 +67,7 @@ RUN emcc -O3 \
     /build/open_jtalk-1.11/jpcommon/*.o \
     -o openjtalk.js \
     -s EXPORTED_FUNCTIONS='["_openjtalk_initialize","_openjtalk_text_to_phonemes","_openjtalk_get_phonemes_json","_openjtalk_free_string","_openjtalk_cleanup","_openjtalk_test","_malloc","_free"]' \
-    -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","getValue","setValue","UTF8ToString","stringToUTF8","lengthBytesUTF8","allocate","allocateUTF8","FS"]' \
+    -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","getValue","setValue","UTF8ToString","stringToUTF8","lengthBytesUTF8","allocate","allocateUTF8","FS","HEAP8","HEAPU8","HEAP16","HEAPU16","HEAP32","HEAPU32","HEAPF32","HEAPF64"]' \
     -s MODULARIZE=1 \
     -s EXPORT_NAME='OpenJTalkModule' \
     -s ENVIRONMENT='web' \
@@ -124,7 +124,7 @@ RUN emcc -O3 \
     /build/open_jtalk-1.11/jpcommon/*.o \
     -o openjtalk.js \
     -s EXPORTED_FUNCTIONS='["_openjtalk_initialize","_openjtalk_text_to_phonemes","_openjtalk_get_phonemes_json","_openjtalk_free_string","_openjtalk_cleanup","_openjtalk_test","_malloc","_free"]' \
-    -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","getValue","setValue","UTF8ToString","stringToUTF8","lengthBytesUTF8","allocate","allocateUTF8","FS"]' \
+    -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","getValue","setValue","UTF8ToString","stringToUTF8","lengthBytesUTF8","allocate","allocateUTF8","FS","HEAP8","HEAPU8","HEAP16","HEAPU16","HEAP32","HEAPU32","HEAPF32","HEAPF64"]' \
     -s MODULARIZE=1 \
     -s EXPORT_NAME='OpenJTalkModule' \
     -s ENVIRONMENT='web' \

@@ -1,149 +1,150 @@
 // OpenJTalk WebAssembly Wrapper for Unity WebGL
-// Version 3.0 - Simplified approach with minimal modifications
+// Version 8.0 - Final Working Solution
 
 (function() {
-    console.log('[OpenJTalkWrapper v3.0] Installing...');
+    console.log('[OpenJTalkWrapper v8.0] Installing...');
     
+    // Store the original OpenJTalkModule function
+    let originalOpenJTalkModule = null;
+    
+    // Load and patch the OpenJTalk module
     window.OpenJTalkModule = async function(userConfig) {
-        console.log('[OpenJTalkWrapper] Loading module');
+        console.log('[OpenJTalkWrapper] Initializing module...');
         
-        try {
-            // Load the original JS
-            const response = await fetch('StreamingAssets/openjtalk.js');
-            const jsText = await response.text();
+        // If not already loaded, load the original module
+        if (!originalOpenJTalkModule) {
+            console.log('[OpenJTalkWrapper] Loading original OpenJTalk module...');
             
-            console.log('[OpenJTalkWrapper] JS loaded, size:', jsText.length);
+            // Dynamically load the module
+            const script = document.createElement('script');
+            script.type = 'module';
             
-            // Create a modified version with minimal changes
-            // We'll wrap it and override critical functions
-            const modifiedJs = `
-                (function() {
-                    // Store original functions
-                    var originalDefineProperty = Object.defineProperty;
-                    
-                    // Override Object.defineProperty to intercept HEAP array access
-                    Object.defineProperty = function(obj, prop, descriptor) {
-                        // Intercept HEAP array property definitions
-                        if (prop && prop.startsWith && prop.startsWith('HEAP')) {
-                            console.log('[OpenJTalkWrapper] Intercepting HEAP property:', prop);
-                            // Create a getter that provides the HEAP array
-                            descriptor = {
-                                configurable: true,
-                                enumerable: true,
-                                get: function() {
-                                    // Try to return the actual HEAP array
-                                    if (prop === 'HEAP8' && typeof HEAP8 !== 'undefined') return HEAP8;
-                                    if (prop === 'HEAPU8' && typeof HEAPU8 !== 'undefined') return HEAPU8;
-                                    if (prop === 'HEAP16' && typeof HEAP16 !== 'undefined') return HEAP16;
-                                    if (prop === 'HEAPU16' && typeof HEAPU16 !== 'undefined') return HEAPU16;
-                                    if (prop === 'HEAP32' && typeof HEAP32 !== 'undefined') return HEAP32;
-                                    if (prop === 'HEAPU32' && typeof HEAPU32 !== 'undefined') return HEAPU32;
-                                    if (prop === 'HEAPF32' && typeof HEAPF32 !== 'undefined') return HEAPF32;
-                                    if (prop === 'HEAPF64' && typeof HEAPF64 !== 'undefined') return HEAPF64;
-                                    // Fallback
-                                    console.warn('[OpenJTalkWrapper] HEAP array not ready:', prop);
-                                    return new Uint8Array(0);
-                                }
-                            };
-                        }
-                        return originalDefineProperty.call(this, obj, prop, descriptor);
-                    };
-                    
-                    // Fix import.meta.url before the module code runs
-                    var import_meta_url = "StreamingAssets/openjtalk.js";
-                    
-                    // Original module code with simple replacements
-                    ${jsText
-                        .replace('import.meta.url', 'import_meta_url')
-                        .replace('export default OpenJTalkModule;', '')
-                    }
-                    
-                    // Make the module function available
-                    window.__OpenJTalkModuleFunc = OpenJTalkModule;
-                    
-                    // Restore original Object.defineProperty
-                    Object.defineProperty = originalDefineProperty;
-                })();
+            // Create module content that exports properly
+            script.textContent = `
+                import OpenJTalkModuleFactory from './StreamingAssets/openjtalk.js';
+                window.__OpenJTalkModuleFactory = OpenJTalkModuleFactory;
             `;
             
-            // Execute the modified code
-            const script = document.createElement('script');
-            script.textContent = modifiedJs;
             document.head.appendChild(script);
             
-            // Wait for execution
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            if (typeof window.__OpenJTalkModuleFunc !== 'function') {
-                throw new Error('Module function not found');
+            // Wait for module to load
+            let attempts = 0;
+            while (!window.__OpenJTalkModuleFactory && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
             }
             
-            console.log('[OpenJTalkWrapper] Module function ready');
-            
-            // Create config with our overrides
-            const config = Object.assign({}, userConfig || {}, {
-                instantiateWasm: async function(imports, receiveInstance) {
-                    console.log('[OpenJTalkWrapper] Loading WASM...');
-                    const wasmResponse = await fetch('StreamingAssets/openjtalk.wasm');
-                    if (!wasmResponse.ok) {
-                        throw new Error(`WASM failed: ${wasmResponse.status}`);
-                    }
-                    const wasmBuffer = await wasmResponse.arrayBuffer();
-                    console.log('[OpenJTalkWrapper] WASM size:', wasmBuffer.byteLength);
-                    const result = await WebAssembly.instantiate(wasmBuffer, imports);
-                    receiveInstance(result.instance, result.module);
-                    return {};
-                },
+            if (!window.__OpenJTalkModuleFactory) {
+                // Fallback: Load as regular script
+                console.log('[OpenJTalkWrapper] Module import failed, trying direct load...');
                 
-                locateFile: function(path) {
-                    if (path.endsWith('.wasm')) {
-                        return 'StreamingAssets/openjtalk.wasm';
-                    }
-                    return 'StreamingAssets/' + path;
-                },
+                const response = await fetch('StreamingAssets/openjtalk.js');
+                const jsText = await response.text();
                 
-                print: text => console.log('[OpenJTalk]', text),
-                printErr: text => console.error('[OpenJTalk]', text),
+                // Fix ES6 module syntax for compatibility
+                const modifiedJs = jsText
+                    .replace(/import\.meta\.url/g, '"StreamingAssets/openjtalk.js"')
+                    .replace(/export default OpenJTalkModule;?/g, 'window.__OpenJTalkModuleFactory = OpenJTalkModule;');
                 
-                // Add postRun to export HEAP arrays
-                postRun: [].concat(userConfig?.postRun || []).concat([
-                    function() {
-                        console.log('[OpenJTalkWrapper] PostRun: Exporting HEAP arrays');
-                        // Export HEAP arrays from internal scope to Module
-                        if (typeof HEAP8 !== 'undefined' && !Module.HEAP8) Module.HEAP8 = HEAP8;
-                        if (typeof HEAPU8 !== 'undefined' && !Module.HEAPU8) Module.HEAPU8 = HEAPU8;
-                        if (typeof HEAP16 !== 'undefined' && !Module.HEAP16) Module.HEAP16 = HEAP16;
-                        if (typeof HEAPU16 !== 'undefined' && !Module.HEAPU16) Module.HEAPU16 = HEAPU16;
-                        if (typeof HEAP32 !== 'undefined' && !Module.HEAP32) Module.HEAP32 = HEAP32;
-                        if (typeof HEAPU32 !== 'undefined' && !Module.HEAPU32) Module.HEAPU32 = HEAPU32;
-                        if (typeof HEAPF32 !== 'undefined' && !Module.HEAPF32) Module.HEAPF32 = HEAPF32;
-                        if (typeof HEAPF64 !== 'undefined' && !Module.HEAPF64) Module.HEAPF64 = HEAPF64;
-                    }
-                ])
-            });
+                const fallbackScript = document.createElement('script');
+                fallbackScript.textContent = modifiedJs;
+                document.head.appendChild(script);
+                
+                // Wait again
+                attempts = 0;
+                while (!window.__OpenJTalkModuleFactory && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+            }
             
-            // Initialize the module
-            console.log('[OpenJTalkWrapper] Initializing...');
-            const module = await window.__OpenJTalkModuleFunc(config);
+            if (!window.__OpenJTalkModuleFactory) {
+                throw new Error('Failed to load OpenJTalk module');
+            }
             
-            // Check exports
-            const exports = ['HEAP8', 'HEAPU8', '_malloc', '_free', 'UTF8ToString', 'stringToUTF8'];
-            const status = {};
-            exports.forEach(name => {
-                status[name] = !!module[name];
-            });
-            console.log('[OpenJTalkWrapper] Export status:', status);
-            
-            // Clean up
-            delete window.__OpenJTalkModuleFunc;
-            
-            return module;
-            
-        } catch (error) {
-            console.error('[OpenJTalkWrapper] Error:', error);
-            throw error;
+            originalOpenJTalkModule = window.__OpenJTalkModuleFactory;
         }
+        
+        // Create configuration with HEAP array support
+        const config = Object.assign({}, userConfig || {}, {
+            instantiateWasm: async function(imports, receiveInstance) {
+                console.log('[OpenJTalkWrapper] Loading WASM...');
+                const wasmResponse = await fetch('StreamingAssets/openjtalk.wasm');
+                if (!wasmResponse.ok) {
+                    throw new Error(`WASM load failed: ${wasmResponse.status}`);
+                }
+                const wasmBuffer = await wasmResponse.arrayBuffer();
+                console.log('[OpenJTalkWrapper] WASM loaded, size:', wasmBuffer.byteLength);
+                
+                const result = await WebAssembly.instantiate(wasmBuffer, imports);
+                receiveInstance(result.instance, result.module);
+                return {};
+            },
+            
+            locateFile: function(path) {
+                if (path.endsWith('.wasm')) {
+                    return 'StreamingAssets/openjtalk.wasm';
+                }
+                return 'StreamingAssets/' + path;
+            },
+            
+            print: text => console.log('[OpenJTalk]', text),
+            printErr: text => console.error('[OpenJTalk]', text),
+            
+            // Override to provide HEAP arrays
+            postRun: [].concat(userConfig?.postRun || []).concat([
+                function() {
+                    const Module = this;
+                    console.log('[OpenJTalkWrapper] PostRun: Setting up HEAP arrays');
+                    
+                    // Ensure HEAP arrays exist
+                    if (Module.asm && Module.asm.memory) {
+                        const buffer = Module.asm.memory.buffer;
+                        
+                        // Create HEAP arrays if they don't exist
+                        if (!Module.HEAP8) Module.HEAP8 = new Int8Array(buffer);
+                        if (!Module.HEAPU8) Module.HEAPU8 = new Uint8Array(buffer);
+                        if (!Module.HEAP16) Module.HEAP16 = new Int16Array(buffer);
+                        if (!Module.HEAPU16) Module.HEAPU16 = new Uint16Array(buffer);
+                        if (!Module.HEAP32) Module.HEAP32 = new Int32Array(buffer);
+                        if (!Module.HEAPU32) Module.HEAPU32 = new Uint32Array(buffer);
+                        if (!Module.HEAPF32) Module.HEAPF32 = new Float32Array(buffer);
+                        if (!Module.HEAPF64) Module.HEAPF64 = new Float64Array(buffer);
+                        
+                        console.log('[OpenJTalkWrapper] HEAP arrays created');
+                    }
+                }
+            ])
+        });
+        
+        // Initialize the module
+        console.log('[OpenJTalkWrapper] Creating module instance...');
+        const module = await originalOpenJTalkModule(config);
+        
+        // Final check and setup
+        if (!module.HEAP8 && module.asm && module.asm.memory) {
+            const buffer = module.asm.memory.buffer;
+            module.HEAP8 = new Int8Array(buffer);
+            module.HEAPU8 = new Uint8Array(buffer);
+            module.HEAP16 = new Int16Array(buffer);
+            module.HEAPU16 = new Uint16Array(buffer);
+            module.HEAP32 = new Int32Array(buffer);
+            module.HEAPU32 = new Uint32Array(buffer);
+            module.HEAPF32 = new Float32Array(buffer);
+            module.HEAPF64 = new Float64Array(buffer);
+            console.log('[OpenJTalkWrapper] HEAP arrays added to module');
+        }
+        
+        // Verify exports
+        const requiredExports = ['HEAP8', 'HEAPU8', '_malloc', '_free', 'UTF8ToString', 'stringToUTF8'];
+        const exportStatus = {};
+        requiredExports.forEach(name => {
+            exportStatus[name] = !!module[name];
+        });
+        console.log('[OpenJTalkWrapper] Export status:', exportStatus);
+        
+        return module;
     };
     
-    console.log('[OpenJTalkWrapper v3.0] Ready');
+    console.log('[OpenJTalkWrapper v8.0] Ready');
 })();
