@@ -4,7 +4,9 @@ using UnityEditor;
 using UnityEngine;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Backend;
+#if !UNITY_WEBGL
 using uPiper.Core.Phonemizers.Implementations;
+#endif
 
 namespace uPiper.Editor
 {
@@ -13,6 +15,7 @@ namespace uPiper.Editor
     /// </summary>
     public class OpenJTalkPhonemizerDemo : EditorWindow
     {
+#if !UNITY_WEBGL
         private IPhonemizer _phonemizer;
         private string _testText = "こんにちは、世界！今日は良い天気ですね。";
         private string _statusMessage = "Not initialized";
@@ -21,6 +24,7 @@ namespace uPiper.Editor
         // Results
         private PhonemeResult _lastResult;
         private Vector2 _scrollPosition;
+#endif
 
         [MenuItem("uPiper/Tools/OpenJTalk Phonemizer Test")]
         public static void ShowWindow()
@@ -31,7 +35,9 @@ namespace uPiper.Editor
 
         private void OnDisable()
         {
+#if !UNITY_WEBGL
             _phonemizer?.Dispose();
+#endif
         }
 
         private void OnGUI()
@@ -42,8 +48,7 @@ namespace uPiper.Editor
             // Platform check
 #if UNITY_WEBGL
             EditorGUILayout.HelpBox("OpenJTalk is not supported on WebGL platform.", MessageType.Warning);
-            return;
-#endif
+#else
 
             // Initialization section
             EditorGUILayout.LabelField("1. Initialization", EditorStyles.boldLabel);
@@ -196,8 +201,10 @@ namespace uPiper.Editor
                     DisposePhonemizer();
                 }
             }
+#endif  // !UNITY_WEBGL
         }
 
+#if !UNITY_WEBGL
         private void InitializePhonemizer()
         {
             try
@@ -279,5 +286,6 @@ namespace uPiper.Editor
             _statusMessage = "Disposed";
             Repaint();
         }
+#endif  // !UNITY_WEBGL
     }
 }

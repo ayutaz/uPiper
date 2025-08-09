@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -140,3 +141,4 @@ namespace uPiper.Core.Phonemizers.Backend
         }
     }
 }
+#endif

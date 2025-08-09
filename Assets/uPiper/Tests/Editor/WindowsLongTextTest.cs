@@ -1,4 +1,4 @@
-#if UNITY_EDITOR && UNITY_EDITOR_WIN
+#if UNITY_EDITOR && UNITY_EDITOR_WIN && !UNITY_WEBGL
 using System.Collections;
 using System.Linq;
 using NUnit.Framework;
