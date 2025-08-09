@@ -1,0 +1,13 @@
+{
+  "name": "upiper-tests",
+  "version": "1.0.0",
+  "description": "Test suite for uPiper WebGL integration",
+  "scripts": {
+    "test:openjtalk": "node test-openjtalk-cli.js",
+    "test": "npm run test:openjtalk"
+  },
+  "devDependencies": {
+    "jsdom": "^22.1.0",
+    "node-fetch": "^2.6.9"
+  }
+}
