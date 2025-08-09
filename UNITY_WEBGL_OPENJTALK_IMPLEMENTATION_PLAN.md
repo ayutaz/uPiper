@@ -2,13 +2,13 @@
 
 ## 📈 進捗状況
 
-**現在のステータス**: M1 完了 / M2 次実装予定
+**現在のステータス**: M2 完了 / M3 次実装予定
 
 | 進捗 | マイルストーン | 実装状態 |
 |------|--------------|----------|
 | ✅ | M1: ビルド環境構築とテスト基盤 | 完了 (32/32 テストパス) |
-| 🔄 | M2: Unity互換ビルドスクリプト作成 | 未実装 |
-| ⏳ | M3: Unity統合ラッパー実装 | 待機中 |
+| ✅ | M2: Unity互換ビルドスクリプト作成 | 完了 (31/31 テストパス) |
+| 🔄 | M3: Unity統合ラッパー実装 | 次実装予定 |
 | ⏳ | M4: Unity JSLib実装 | 待機中 |
 | ⏳ | M5: Unity WebGLビルドとローカルテスト | 待機中 |
 | ⏳ | M6: GitHub Pagesデプロイと本番テスト | 待機中 |
@@ -31,7 +31,7 @@ TDD（テスト駆動開発）の原則に基づき、各マイルストーン�
 | ID | マイルストーン | 所要時間 | 依存関係 | 優先度 | 状態 |
 |----|--------------|---------|----------|--------|------|
 | M1 | ビルド環境構築とテスト基盤 | 3-4時間 | なし | 必須 | ✅ 完了 |
-| M2 | Unity互換ビルドスクリプト作成 | 2-3時間 | M1 | 必須 | 🔄 次 |
+| M2 | Unity互換ビルドスクリプト作成 | 2-3時間 | M1 | 必須 | ✅ 完了 |
 | M3 | Unity統合ラッパー実装 | 3-4時間 | M2 | 必須 | ⏳ 待機 |
 | M4 | Unity JSLib実装 | 2-3時間 | M3 | 必須 | ⏳ 待機 |
 | M5 | Unity WebGLビルドとローカルテスト | 2-3時間 | M4 | 必須 | ⏳ 待機 |
@@ -212,7 +212,7 @@ echo "=== Build Test Complete ==="
 
 ---
 
-## Milestone 2: Unity互換ビルドスクリプト作成
+## Milestone 2: Unity互換ビルドスクリプト作成 ✅ 完了 (2025-08-09)
 
 ### ゴール
 - ✅ Unity互換のビルドスクリプトが動作すること
@@ -401,12 +401,39 @@ ls -lh "$DIST_DIR/openjtalk-unity.js" "$DIST_DIR/openjtalk-unity.wasm"
 npm test -- test/build-unity.test.js
 ```
 
+### 実装結果
+- **テスト**: 31/31 パス（Unity互換ビルドテスト）
+- **成果物**: 
+  - Unity互換ビルドスクリプト（Unix/Windows）
+  - OpenJTalkモジュール（JS/WASM）
+  - Node.js/ブラウザテスト環境
+- **ファイルサイズ**: JS 61KB, WASM 8KB（最小実装）
+
 ### 成果物チェックリスト
-- [ ] build-unity-compatible.sh
-- [ ] test/build-unity.test.js（全テストGreen）
-- [ ] dist/openjtalk-unity.js
-- [ ] dist/openjtalk-unity.wasm
-- [ ] ビルドログ
+- [x] build-unity.sh（Unixビルドスクリプト）
+- [x] build-unity.bat（Windowsビルドスクリプト）
+- [x] tests/build-unity.test.js（31テスト全パス）
+- [x] dist/openjtalk-unity.js（61KB）
+- [x] dist/openjtalk-unity.wasm（8KB）
+- [x] test-unity-node.js（Node.jsテスト）
+- [x] test-unity-integration.html（ブラウザテスト）
+
+### M2で実装された機能
+1. **Unity互換ビルド**
+   - MODULARIZEでOpenJTalkModule名前空間
+   - HEAP8-HEAPF64全配列の適切なエクスポート
+   - Unity Moduleとの名前空間分離
+
+2. **メモリ管理**
+   - ALLOW_MEMORY_GROWTH有効
+   - 16MB初期メモリ、256MB最大
+   - 適切なメモリ解放機能
+
+3. **テスト検証**
+   - HEAP配列アクセス確認
+   - OpenJTalk関数エクスポート確認
+   - メモリ操作テスト成功
+   - 簡易音素化（"こんにちは" → "k o n n i ch i w a"）
 
 ---
 
@@ -1846,6 +1873,34 @@ MIT License
 | パフォーマンス問題 | 中 | 段階的な最適化 |
 
 ## 付録
+
+### M2 完了成果物 (2025-08-09)
+
+#### 📦 piper-plusリポジトリに追加されたファイル（M2）
+- `build-unity.sh` - Unity互換ビルドスクリプト（Unix）
+- `build-unity.bat` - Unity互換ビルドスクリプト（Windows）
+- `tests/build-unity.test.js` - Unity互換ビルドテスト（31テスト）
+- `test-unity-node.js` - Node.js統合テスト
+- `test-unity-integration.html` - ブラウザ統合テストページ
+- `dist/openjtalk-unity.js` - Unity互換JavaScriptモジュール（61KB）
+- `dist/openjtalk-unity.wasm` - WebAssemblyバイナリ（8KB）
+
+#### 🧪 M2テスト結果
+- **ビルド出力テスト**: 3/3 パス
+- **モジュール形式テスト**: 3/3 パス
+- **HEAP配列エクスポート**: 8/8 パス
+- **OpenJTalk関数**: 6/6 パス
+- **ランタイムメソッド**: 8/8 パス
+- **Unity互換性**: 3/3 パス
+- **合計**: 31/31 テストパス
+
+#### 📊 M2成果指標
+- **ビルド時間**: < 10秒
+- **JSファイルサイズ**: 61KB（目標100KB以下達成）
+- **WASMファイルサイズ**: 8KB（最小実装）
+- **HEAP配列**: 8種類全てエクスポート成功
+- **メモリテスト**: Read/Write検証成功
+- **音素化テスト**: 簡易実装動作確認
 
 ### M1 完了成果物 (2025-08-09)
 
