@@ -1,5 +1,19 @@
 # Unity WebGL + piper-plus OpenJTalk 本番環境実装計画
 
+## 📈 進捗状況
+
+**現在のステータス**: M1 完了 / M2 次実装予定
+
+| 進捗 | マイルストーン | 実装状態 |
+|------|--------------|----------|
+| ✅ | M1: ビルド環境構築とテスト基盤 | 完了 (32/32 テストパス) |
+| 🔄 | M2: Unity互換ビルドスクリプト作成 | 未実装 |
+| ⏳ | M3: Unity統合ラッパー実装 | 待機中 |
+| ⏳ | M4: Unity JSLib実装 | 待機中 |
+| ⏳ | M5: Unity WebGLビルドとローカルテスト | 待機中 |
+| ⏳ | M6: GitHub Pagesデプロイと本番テスト | 待機中 |
+| ⏳ | M7: ドキュメントとCI/CD | 待機中 |
+
 ## 概要
 
 本ドキュメントは、Unity WebGLビルドにpiper-plus OpenJTalkを統合するための詳細な実装計画です。
@@ -14,28 +28,33 @@ TDD（テスト駆動開発）の原則に基づき、各マイルストーン�
 
 ## マイルストーン概要
 
-| ID | マイルストーン | 所要時間 | 依存関係 | 優先度 |
-|----|--------------|---------|----------|--------|
-| M1 | ビルド環境構築とテスト基盤 | 3-4時間 | なし | 必須 |
-| M2 | Unity互換ビルドスクリプト作成 | 2-3時間 | M1 | 必須 |
-| M3 | Unity統合ラッパー実装 | 3-4時間 | M2 | 必須 |
-| M4 | Unity JSLib実装 | 2-3時間 | M3 | 必須 |
-| M5 | Unity WebGLビルドとローカルテスト | 2-3時間 | M4 | 必須 |
-| M6 | GitHub Pagesデプロイと本番テスト | 2時間 | M5 | 必須 |
-| M7 | ドキュメントとCI/CD | 2時間 | M6 | 推奨 |
+| ID | マイルストーン | 所要時間 | 依存関係 | 優先度 | 状態 |
+|----|--------------|---------|----------|--------|------|
+| M1 | ビルド環境構築とテスト基盤 | 3-4時間 | なし | 必須 | ✅ 完了 |
+| M2 | Unity互換ビルドスクリプト作成 | 2-3時間 | M1 | 必須 | 🔄 次 |
+| M3 | Unity統合ラッパー実装 | 3-4時間 | M2 | 必須 | ⏳ 待機 |
+| M4 | Unity JSLib実装 | 2-3時間 | M3 | 必須 | ⏳ 待機 |
+| M5 | Unity WebGLビルドとローカルテスト | 2-3時間 | M4 | 必須 | ⏳ 待機 |
+| M6 | GitHub Pagesデプロイと本番テスト | 2時間 | M5 | 必須 | ⏳ 待機 |
+| M7 | ドキュメントとCI/CD | 2時間 | M6 | 推奨 | ⏳ 待機 |
 
 ---
 
-## Milestone 1: ビルド環境構築とテスト基盤
+## Milestone 1: ビルド環境構築とテスト基盤 ✅ 完了 (2025-08-09)
 
 ### ゴール
 - ✅ piper-plusのビルド環境が動作すること
 - ✅ JavaScriptテスト環境が構築されていること
 - ✅ 既存のpiper-plusビルドが成功すること
 
+### 実装結果
+- **テスト**: 32/32 パス（3つのテストスイート）
+- **成果物**: Docker環境、Jestテスト基盤、ビルド設定、ドキュメント
+- **リポジトリ**: piper-plus (commit: 41d4b8d)
+
 ### タスク詳細
 
-#### Task 1.1: Docker環境構築（1時間）
+#### Task 1.1: Docker環境構築（1時間） ✅ 完了
 
 **Dockerfile作成**
 ```dockerfile
@@ -73,7 +92,7 @@ services:
     command: /bin/bash
 ```
 
-#### Task 1.2: JavaScriptテスト環境構築（1時間）
+#### Task 1.2: JavaScriptテスト環境構築（1時間） ✅ 完了
 
 **package.json作成**
 ```json
@@ -116,7 +135,7 @@ services:
 }
 ```
 
-#### Task 1.3: 基本テストの作成（1時間）
+#### Task 1.3: 基本テストの作成（1時間） ✅ 完了
 
 **test/setup.test.js**
 ```javascript
@@ -161,7 +180,7 @@ describe('Build Environment', () => {
 });
 ```
 
-#### Task 1.4: 既存ビルドの動作確認（1時間）
+#### Task 1.4: 既存ビルドの動作確認（1時間） ✅ 完了
 
 **ビルド実行スクリプト**
 ```bash
@@ -1827,6 +1846,30 @@ MIT License
 | パフォーマンス問題 | 中 | 段階的な最適化 |
 
 ## 付録
+
+### M1 完了成果物 (2025-08-09)
+
+#### 📦 piper-plusリポジトリに追加されたファイル
+- `Dockerfile.unity` - Emscripten 3.1.39 Dockerイメージ
+- `docker-compose.unity.yml` - Docker Compose設定
+- `package.json` - Jestテスト設定
+- `build-unity-config.json` - Unity互換ビルド設定
+- `build-unity-compatible.sh` - Unixビルドスクリプト
+- `build-unity-compatible.bat` - Windowsビルドスクリプト
+- `test-unity-build.html` - ブラウザテストページ
+- `UNITY_BUILD_README.md` - 詳細ドキュメント
+
+#### 🧪 テストスイート
+- `tests/build-config.test.js` - ビルド設定テスト (10テスト)
+- `tests/heap-access.test.js` - HEAP配列アクセステスト (12テスト)
+- `tests/existing-build-check.test.js` - 既存ビルド確認テスト (10テスト)
+
+#### 📊M1 成果指標
+- **テスト**: 32/32 パス (100%)
+- **テストスイート**: 3個
+- **カバレッジ闾値**: 80%設定済み
+- **Dockerイメージ**: ビルド成功
+- **npmパッケージ**: 400個インストール済み
 
 ### チートシート
 
