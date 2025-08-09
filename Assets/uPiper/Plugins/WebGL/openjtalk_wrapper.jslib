@@ -94,6 +94,13 @@ mergeInto(LibraryManager.library, {
                                 let jsText = await response.text();
                                 console.log('[uPiper] Fetched OpenJTalk module, size:', jsText.length);
                                 
+                                // Fix the scriptDirectory issue first
+                                // Replace the problematic scriptDirectory assignment
+                                jsText = jsText.replace(
+                                    /scriptDirectory=new URL\("\.",_scriptName\)\.href/g,
+                                    'scriptDirectory=""'  // Empty string so it doesn't add extra path
+                                );
+                                
                                 // More robust replacement - handle both minified and formatted versions
                                 if (jsText.includes('export default OpenJTalkModule')) {
                                     jsText = jsText.replace(/export\s+default\s+OpenJTalkModule[;\s]*$/, 'window.OpenJTalkModule = OpenJTalkModule;');
@@ -102,8 +109,8 @@ mergeInto(LibraryManager.library, {
                                     jsText = jsText.replace(/export\{[^}]*OpenJTalkModule[^}]*\}/, 'window.OpenJTalkModule = OpenJTalkModule');
                                 }
                                 
-                                // Wrap in IIFE to avoid variable conflicts
-                                const wrappedJs = `(function() { ${jsText} })();`;
+                                // Don't wrap in IIFE as it might break import.meta references
+                                const wrappedJs = jsText;
                                 
                                 // Create script element and execute
                                 const scriptTag = document.createElement('script');
