@@ -100,11 +100,14 @@ namespace uPiper.Editor
                         htmlContent = htmlContent.Replace("</head>", adapterScript);
                     }
                     
-                    // OpenJTalkスクリプトを追加
-                    if (!htmlContent.Contains("openjtalk-unity.js"))
+                    // ONNX Runtime WebとOpenJTalkスクリプトを追加
+                    if (!htmlContent.Contains("onnxruntime-web"))
                     {
                         // </body>タグの前にスクリプトを追加
                         string scriptsToAdd = @"
+  <!-- ONNX Runtime Web -->
+  <script src=""https://cdn.jsdelivr.net/npm/onnxruntime-web@1.16.3/dist/ort.min.js""></script>
+  
   <!-- OpenJTalk WebGL Integration -->
   <script src=""StreamingAssets/openjtalk-unity.js""></script>
   <script src=""StreamingAssets/openjtalk-unity-wrapper.js""></script>

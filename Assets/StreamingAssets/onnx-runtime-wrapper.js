@@ -133,17 +133,19 @@ class UnityONNXRuntime {
     logModelInfo() {
         if (!this.session) return;
         
-        this.log('Model Input Names:', this.session.inputNames);
+        this.log('Model Input Names:', `(${this.session.inputNames.length})`, this.session.inputNames);
         this.log('Model Output Names:', this.session.outputNames);
         
-        // 詳細な入力情報
-        if (this.debug) {
-            this.session.inputNames.forEach(name => {
-                const info = this.session.inputs[name];
-                if (info) {
+        // 詳細な入力情報 - ONNX Runtime Webではhandler.inputMetadataを使用
+        if (this.debug && this.session.handler && this.session.handler.inputMetadata) {
+            try {
+                const metadata = this.session.handler.inputMetadata;
+                for (const [name, info] of Object.entries(metadata)) {
                     this.log(`Input '${name}':`, info);
                 }
-            });
+            } catch (e) {
+                this.log('Could not retrieve detailed input metadata');
+            }
         }
     }
     
