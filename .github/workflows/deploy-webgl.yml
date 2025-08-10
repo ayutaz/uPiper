@@ -1,0 +1,68 @@
+name: Deploy Unity WebGL to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - feature/webgl-implementation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Prepare WebGL Build
+        run: |
+          # ビルド済みファイルが存在する前提
+          # 実際のワークフローではUnity Builderアクションを使用
+          echo "Preparing WebGL build for GitHub Pages..."
+          
+          # Build/Web ディレクトリが存在することを確認
+          if [ -d "Build/Web" ]; then
+            echo "Found Unity WebGL build"
+            
+            # 大容量ファイルの分割
+            python split-large-files.py process Build/Web
+            
+            # GitHub Pages アダプターをコピー
+            cp Assets/StreamingAssets/github-pages-adapter.js Build/Web/StreamingAssets/
+            
+            # index.html にアダプターを追加
+            sed -i '/<\/head>/i <script src="StreamingAssets/github-pages-adapter.js"></script>' Build/Web/index.html
+          else
+            echo "No Unity WebGL build found. Please build first."
+            exit 1
+          fi
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: Build/Web
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

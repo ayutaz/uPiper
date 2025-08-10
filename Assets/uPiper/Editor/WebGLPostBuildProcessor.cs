@@ -3,6 +3,8 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using System.IO;
+using System.Diagnostics;
+using Debug = UnityEngine.Debug;
 
 namespace uPiper.Editor
 {
@@ -40,7 +42,12 @@ namespace uPiper.Editor
                 "openjtalk-unity.js",
                 "openjtalk-unity.wasm",
                 "openjtalk-unity.data",
-                "openjtalk-webgl-integration.js"
+                "openjtalk-webgl-integration.js",
+                "openjtalk-unity-wrapper.js",
+                "onnx-runtime-wrapper.js",
+                "github-pages-adapter.js",
+                "ja_JP-test-medium.onnx",
+                "ja_JP-test-medium.onnx.json"
             };
 
             int copiedCount = 0;
@@ -83,25 +90,30 @@ namespace uPiper.Editor
                 {
                     string htmlContent = File.ReadAllText(indexPath);
                     
-                    // すでに追加されていないか確認
+                    // GitHub Pagesアダプターを最初に追加
+                    if (!htmlContent.Contains("github-pages-adapter.js"))
+                    {
+                        string adapterScript = "  <script src=\"StreamingAssets/github-pages-adapter.js\"></script>\n</head>";
+                        htmlContent = htmlContent.Replace("</head>", adapterScript);
+                    }
+                    
+                    // OpenJTalkスクリプトを追加
                     if (!htmlContent.Contains("openjtalk-unity.js"))
                     {
                         // </body>タグの前にスクリプトを追加
                         string scriptsToAdd = @"
   <!-- OpenJTalk WebGL Integration -->
   <script src=""StreamingAssets/openjtalk-unity.js""></script>
-  <script src=""StreamingAssets/openjtalk-webgl-integration.js""></script>
+  <script src=""StreamingAssets/openjtalk-unity-wrapper.js""></script>
+  <script src=""StreamingAssets/onnx-runtime-wrapper.js""></script>
   <!-- End OpenJTalk -->
 </body>";
                         
                         htmlContent = htmlContent.Replace("</body>", scriptsToAdd);
-                        File.WriteAllText(indexPath, htmlContent);
-                        Debug.Log("[uPiper] Updated index.html with OpenJTalk scripts");
                     }
-                    else
-                    {
-                        Debug.Log("[uPiper] index.html already contains OpenJTalk scripts");
-                    }
+                    
+                    File.WriteAllText(indexPath, htmlContent);
+                    Debug.Log("[uPiper] Updated index.html with required scripts");
                 }
                 catch (System.Exception e)
                 {
@@ -115,10 +127,72 @@ namespace uPiper.Editor
             Debug.Log($"[uPiper] Copied {copiedCount} files, Total size: {totalSizeStr}");
             Debug.Log($"[uPiper] OpenJTalk is ready for WebGL deployment!");
             
+            // GitHub Pages用の処理
+            ProcessLargeFilesForGitHubPages(buildPath);
+            
             // ビルド完了後の手順を表示
             Debug.Log("[uPiper] Next steps:");
             Debug.Log("[uPiper] 1. Start local server: python -m http.server 8080");
             Debug.Log("[uPiper] 2. Open browser: http://localhost:8080");
+            Debug.Log("[uPiper] 3. For GitHub Pages: git push and enable Pages in repository settings");
+        }
+        
+        private void ProcessLargeFilesForGitHubPages(string buildPath)
+        {
+            Debug.Log("[uPiper] Processing large files for GitHub Pages (100MB limit)...");
+            
+            string pythonScript = Path.Combine(Application.dataPath, "..", "split-large-files.py");
+            
+            if (!File.Exists(pythonScript))
+            {
+                Debug.LogWarning($"[uPiper] split-large-files.py not found. Large files may not work on GitHub Pages.");
+                return;
+            }
+            
+            try
+            {
+                // Pythonスクリプトを実行してファイルを分割
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = "python",
+                    Arguments = $"\"{pythonScript}\" process \"{buildPath}\"",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
+                
+                using (Process process = Process.Start(psi))
+                {
+                    string output = process.StandardOutput.ReadToEnd();
+                    string error = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
+                    
+                    if (!string.IsNullOrEmpty(output))
+                    {
+                        Debug.Log($"[uPiper] File splitting output:\n{output}");
+                    }
+                    
+                    if (!string.IsNullOrEmpty(error))
+                    {
+                        Debug.LogError($"[uPiper] File splitting error:\n{error}");
+                    }
+                    
+                    if (process.ExitCode == 0)
+                    {
+                        Debug.Log("[uPiper] ✅ Large files processed for GitHub Pages deployment");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[uPiper] File splitting failed. You may need to manually split files > 100MB");
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[uPiper] Could not split large files: {ex.Message}");
+                Debug.Log("[uPiper] Install Python and run: python split-large-files.py process Build/Web");
+            }
         }
 
         private string GetFileSizeString(long bytes)
