@@ -92,7 +92,7 @@ audioSource.Play();
 ## 🛠️ 開発者向け情報
 
 ### 環境構築
-1. Unity 6000.0.35f1以降
+1. Unity 6000.0.55f1以降
 2. Unity AI Inference Engine 2.2.x
 3. Visual Studio 2022 / Rider
 

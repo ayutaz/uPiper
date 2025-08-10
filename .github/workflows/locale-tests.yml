@@ -180,9 +180,9 @@ jobs:
         # Add Unity Hub to current session PATH
         $env:PATH = "${env:ProgramFiles}\Unity Hub;$env:PATH"
         
-        # Install Unity 6000.0.35f1
-        Write-Host "Installing Unity 6000.0.35f1..."
-        & "${env:ProgramFiles}\Unity Hub\Unity Hub.exe" -- --headless install --version 6000.0.35f1 --changeset bb8081de9a21
+        # Install Unity 6000.0.55f1
+        Write-Host "Installing Unity 6000.0.55f1..."
+        & "${env:ProgramFiles}\Unity Hub\Unity Hub.exe" -- --headless install --version 6000.0.55f1 --changeset bb8081de9a21
         
         # Wait for installation with progress checking
         Write-Host "Waiting for Unity installation to complete..."
@@ -191,9 +191,9 @@ jobs:
         $elapsed = 0
         
         $unityPaths = @(
-          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
-          "${env:ProgramFiles}\Unity\6000.0.35f1\Editor\Unity.exe",
-          "C:\Program Files\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe"
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.55f1\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.55f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.55f1\Editor\Unity.exe"
         )
         
         $foundUnity = $false
@@ -225,9 +225,9 @@ jobs:
       run: |
         # Find Unity executable
         $unityPaths = @(
-          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
-          "${env:ProgramFiles}\Unity\6000.0.35f1\Editor\Unity.exe",
-          "C:\Program Files\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe"
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.55f1\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.55f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.55f1\Editor\Unity.exe"
         )
         
         $unityExe = $null
@@ -262,9 +262,9 @@ jobs:
         
         # Find Unity executable
         $unityPaths = @(
-          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe",
-          "${env:ProgramFiles}\Unity\6000.0.35f1\Editor\Unity.exe",
-          "C:\Program Files\Unity\Hub\Editor\6000.0.35f1\Editor\Unity.exe"
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.55f1\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.55f1\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.55f1\Editor\Unity.exe"
         )
         
         $unityExe = $null

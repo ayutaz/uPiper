@@ -87,7 +87,7 @@ audioSource.Play();
 ## 🛠️ Developer Information
 
 ### Development Environment
-1. Unity 6000.0.35f1 or later
+1. Unity 6000.0.55f1 or later
 2. Unity AI Inference Engine 2.2.x
 3. Visual Studio 2022 / Rider
 

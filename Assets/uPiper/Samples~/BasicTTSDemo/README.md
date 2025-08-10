@@ -22,7 +22,7 @@ This sample demonstrates text-to-speech functionality using uPiper with Japanese
 
 ## Requirements
 
-- Unity 6000.0.35f1 or later
+- Unity 6000.0.55f1 or later
 - Unity AI Inference Engine 2.2.x
 - Japanese ONNX model (ja_JP-test-medium.onnx)
 - OpenJTalk native libraries (included)
