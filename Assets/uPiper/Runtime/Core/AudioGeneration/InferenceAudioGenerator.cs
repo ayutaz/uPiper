@@ -11,6 +11,7 @@ namespace uPiper.Core.AudioGeneration
 {
     /// <summary>
     /// Unity.InferenceEngineを使用した音声生成の実装
+    /// WebGL環境ではONNX Runtime Webを使用
     /// </summary>
     public class InferenceAudioGenerator : IInferenceAudioGenerator
     {
@@ -23,6 +24,9 @@ namespace uPiper.Core.AudioGeneration
         private readonly object _lockObject = new();
         private bool _disposed;
         private BackendType _actualBackendType;
+#if UNITY_WEBGL && !UNITY_EDITOR
+        private ONNXRuntimeWebGL _webglImplementation;
+#endif
 
         /// <inheritdoc/>
         public bool IsInitialized => _isInitialized;
@@ -47,6 +51,22 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         public async Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig voiceConfig, PiperConfig piperConfig, CancellationToken cancellationToken = default)
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL環境ではONNX Runtime Webを使用
+            PiperLogger.LogInfo("[InferenceAudioGenerator] WebGL detected - delegating to ONNX Runtime Web");
+            
+            // ONNXRuntimeWebGLインスタンスを作成して委譲
+            var webglImplementation = new ONNXRuntimeWebGL();
+            await webglImplementation.InitializeAsync(modelAsset, voiceConfig, piperConfig, cancellationToken);
+            
+            // 内部的にWebGL実装を保持（GenerateAudioAsyncで使用）
+            _webglImplementation = webglImplementation;
+            _voiceConfig = voiceConfig;
+            _isInitialized = true;
+            
+            PiperLogger.LogInfo("[InferenceAudioGenerator] WebGL initialization complete with ONNX Runtime Web");
+            return;
+#else
             PiperLogger.LogDebug("[InferenceAudioGenerator] InitializeAsync started");
 
             if (_disposed)
@@ -142,6 +162,7 @@ namespace uPiper.Core.AudioGeneration
             }, cancellationToken);
 
             PiperLogger.LogDebug("[InferenceAudioGenerator] InitializeAsync completed");
+#endif
         }
 
         /// <inheritdoc/>
@@ -160,6 +181,19 @@ namespace uPiper.Core.AudioGeneration
 
             if (phonemeIds == null || phonemeIds.Length == 0)
                 throw new ArgumentException("Phoneme IDs cannot be null or empty.", nameof(phonemeIds));
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL環境ではONNX Runtime Webを使用
+            if (_webglImplementation != null)
+            {
+                PiperLogger.LogInfo("[InferenceAudioGenerator] Using ONNX Runtime Web for audio generation");
+                return await _webglImplementation.GenerateAudioAsync(phonemeIds, lengthScale, noiseScale, noiseW, cancellationToken);
+            }
+            else
+            {
+                throw new InvalidOperationException("WebGL implementation not initialized");
+            }
+#else
 
             // Unity.InferenceEngineの操作はメインスレッドで実行する必要がある
             return await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
@@ -421,6 +455,7 @@ namespace uPiper.Core.AudioGeneration
                     }
                 }
             });
+#endif
         }
 
         /// <inheritdoc/>
@@ -443,6 +478,10 @@ namespace uPiper.Core.AudioGeneration
                         _modelAsset = null;
                         _voiceConfig = null;
                         _piperConfig = null;
+#if UNITY_WEBGL && !UNITY_EDITOR
+                        _webglImplementation?.Dispose();
+                        _webglImplementation = null;
+#endif
                     }
                 }
                 _disposed = true;

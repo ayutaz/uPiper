@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unity WebGL ONNX Runtime Integration Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .test-section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .output {
+            background: #2d3748;
+            color: #68d391;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            min-height: 100px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .error {
+            color: #fc8181;
+        }
+        
+        .warning {
+            color: #f6e05e;
+        }
+        
+        .success {
+            color: #48bb78;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        
+        .status.ready {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .status.loading {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .status.error {
+            background: #f56565;
+            color: white;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        
+        audio {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .phoneme-display {
+            background: #edf2f7;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Unity WebGL × ONNX Runtime Web 統合テスト</h1>
+        <p>完全な辞書（NAIST Japanese Dictionary）を使用した高精度な日本語音声合成</p>
+        
+        <div class="test-section">
+            <h2>📊 システムステータス</h2>
+            <div>
+                <span id="openjtalk-status" class="status loading">OpenJTalk: Loading...</span>
+                <span id="onnx-status" class="status loading">ONNX Runtime: Not Loaded</span>
+                <span id="model-status" class="status loading">Model: Not Loaded</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔧 初期化</h2>
+            <button onclick="initializeSystem()">システム初期化</button>
+            <button onclick="loadONNXModel()">ONNXモデルロード</button>
+            <button onclick="testWarmUp()">ウォームアップ</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>📝 音素変換テスト</h2>
+            <input type="text" id="phoneme-test-input" value="こんにちは" placeholder="テキストを入力">
+            <button onclick="testPhonemize()">音素変換</button>
+            <div id="phoneme-output" class="phoneme-display">音素結果がここに表示されます</div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🎵 音声合成テスト</h2>
+            <input type="text" id="tts-input" value="こんにちは、今日はいい天気ですね" placeholder="合成するテキスト">
+            <button onclick="testTTS()">音声合成</button>
+            <button onclick="testProblematicPhrases()">問題フレーズテスト</button>
+            <audio id="audio-player" controls style="display:none;"></audio>
+        </div>
+        
+        <div class="test-section">
+            <h2>🧪 詳細テスト</h2>
+            <button onclick="testPhonemMapping()">音素マッピング検証</button>
+            <button onclick="testONNXInference()">ONNX推論テスト</button>
+            <button onclick="compareWithWindows()">Windows互換性チェック</button>
+            <button onclick="runFullTest()">完全テスト実行</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>📋 出力ログ</h2>
+            <div id="output" class="output"></div>
+        </div>
+    </div>
+    
+    <!-- OpenJTalk Unity モジュール -->
+    <script src="StreamingAssets/openjtalk-unity.js"></script>
+    <script src="StreamingAssets/openjtalk-unity-wrapper.js"></script>
+    
+    <!-- ONNX Runtime Web ラッパー -->
+    <script src="StreamingAssets/onnx-runtime-wrapper.js"></script>
+    
+    <script>
+        const output = document.getElementById('output');
+        let openjtalkReady = false;
+        let onnxReady = false;
+        
+        function log(message, type = 'log') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : '';
+            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+            console[type === 'error' ? 'error' : type === 'warning' ? 'warn' : 'log'](message);
+        }
+        
+        async function initializeSystem() {
+            log('システム初期化を開始...');
+            
+            try {
+                // OpenJTalk初期化
+                log('OpenJTalk を初期化中...');
+                await window.OpenJTalkUnityAPI.initialize();
+                openjtalkReady = true;
+                document.getElementById('openjtalk-status').className = 'status ready';
+                document.getElementById('openjtalk-status').textContent = 'OpenJTalk: Ready';
+                log('OpenJTalk 初期化完了', 'success');
+                
+                // 辞書情報を確認
+                const testText = 'テスト';
+                const phonemes = await window.OpenJTalkUnityAPI.phonemize(testText);
+                log(`辞書動作確認: "${testText}" → ${phonemes}`);
+                
+            } catch (error) {
+                log(`初期化エラー: ${error.message}`, 'error');
+                document.getElementById('openjtalk-status').className = 'status error';
+                document.getElementById('openjtalk-status').textContent = 'OpenJTalk: Error';
+            }
+        }
+        
+        async function loadONNXModel() {
+            log('ONNX モデルをロード中...');
+            document.getElementById('onnx-status').className = 'status loading';
+            document.getElementById('onnx-status').textContent = 'ONNX Runtime: Loading...';
+            
+            try {
+                // ONNX Runtime Web 初期化
+                const modelPath = 'StreamingAssets/ja_JP-test-medium.onnx';
+                const configPath = 'StreamingAssets/ja_JP-test-medium.onnx.json';
+                
+                await window.UnityONNX.initialize(modelPath, configPath);
+                
+                onnxReady = true;
+                document.getElementById('onnx-status').className = 'status ready';
+                document.getElementById('onnx-status').textContent = 'ONNX Runtime: Ready';
+                document.getElementById('model-status').className = 'status ready';
+                document.getElementById('model-status').textContent = 'Model: Loaded';
+                
+                log('ONNX Runtime Web 初期化完了', 'success');
+                log('日本語モデル (ja_JP-test-medium) ロード完了', 'success');
+                
+            } catch (error) {
+                log(`ONNX ロードエラー: ${error.message}`, 'error');
+                document.getElementById('onnx-status').className = 'status error';
+                document.getElementById('onnx-status').textContent = 'ONNX Runtime: Error';
+            }
+        }
+        
+        async function testWarmUp() {
+            if (!onnxReady) {
+                log('先にONNXモデルをロードしてください', 'warning');
+                return;
+            }
+            
+            log('ウォームアップ中...');
+            const dummyIds = [1, 7, 2]; // "^a$"
+            
+            try {
+                const result = await window.UnityONNX.synthesize(dummyIds);
+                if (result.success) {
+                    log('ウォームアップ完了', 'success');
+                } else {
+                    log('ウォームアップ失敗', 'error');
+                }
+            } catch (error) {
+                log(`ウォームアップエラー: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testPhonemize() {
+            if (!openjtalkReady) {
+                log('先にシステムを初期化してください', 'warning');
+                return;
+            }
+            
+            const text = document.getElementById('phoneme-test-input').value;
+            log(`音素変換テスト: "${text}"`);
+            
+            try {
+                const phonemes = await window.OpenJTalkUnityAPI.phonemize(text);
+                const phonemeIds = await window.OpenJTalkUnityAPI.phonemesToIds(phonemes);
+                
+                const output = document.getElementById('phoneme-output');
+                output.innerHTML = `テキスト: ${text}\n`;
+                output.innerHTML += `音素: ${phonemes}\n`;
+                output.innerHTML += `音素ID: [${phonemeIds.join(', ')}]\n`;
+                output.innerHTML += `音素数: ${phonemeIds.length}`;
+                
+                log(`音素変換成功: ${phonemes}`, 'success');
+                log(`音素ID: [${phonemeIds.join(', ')}]`);
+                
+            } catch (error) {
+                log(`音素変換エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testTTS() {
+            if (!openjtalkReady || !onnxReady) {
+                log('システムとONNXモデルを先に初期化してください', 'warning');
+                return;
+            }
+            
+            const text = document.getElementById('tts-input').value;
+            log(`音声合成開始: "${text}"`);
+            
+            try {
+                // 音素変換
+                const phonemes = await window.OpenJTalkUnityAPI.phonemize(text);
+                log(`音素: ${phonemes}`);
+                
+                // 音素IDに変換
+                const phonemeIds = await window.OpenJTalkUnityAPI.phonemesToIds(phonemes);
+                log(`音素ID (${phonemeIds.length}個): [${phonemeIds.join(', ')}]`);
+                
+                // ONNX推論
+                const startTime = performance.now();
+                const result = await window.UnityONNX.synthesize(phonemeIds);
+                const inferenceTime = performance.now() - startTime;
+                
+                if (result.success) {
+                    log(`推論完了 (${inferenceTime.toFixed(2)}ms)`, 'success');
+                    
+                    // 音声再生
+                    const audioData = result.data;
+                    log(`音声データ: ${audioData.length} サンプル (${(audioData.length/22050).toFixed(2)}秒)`);
+                    
+                    // WAVファイル作成
+                    const wav = createWAV(audioData, 22050);
+                    const url = URL.createObjectURL(wav);
+                    
+                    const player = document.getElementById('audio-player');
+                    player.src = url;
+                    player.style.display = 'block';
+                    player.play();
+                    
+                    log('音声再生開始', 'success');
+                } else {
+                    log(`推論失敗: ${result.error}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`音声合成エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testProblematicPhrases() {
+            const phrases = [
+                'こんにちは',
+                'ありがとうございます',
+                'お疲れ様でした',
+                '今日はいい天気ですね',
+                '私は東京に住んでいます'
+            ];
+            
+            log('問題のあるフレーズをテスト中...');
+            
+            for (const phrase of phrases) {
+                log(`テスト: "${phrase}"`);
+                document.getElementById('tts-input').value = phrase;
+                await testTTS();
+                await new Promise(resolve => setTimeout(resolve, 2000)); // 2秒待機
+            }
+        }
+        
+        async function testPhonemMapping() {
+            log('音素マッピングを検証中...');
+            
+            const testCases = [
+                { text: 'ち', expected: 'ch i' },
+                { text: 'つ', expected: 'ts u' },
+                { text: 'きゃ', expected: 'ky a' },
+                { text: 'しゃ', expected: 'sy a' },
+                { text: 'にゃ', expected: 'ny a' }
+            ];
+            
+            for (const test of testCases) {
+                try {
+                    const phonemes = await window.OpenJTalkUnityAPI.phonemize(test.text);
+                    const match = phonemes.includes(test.expected.replace(' ', ''));
+                    
+                    if (match) {
+                        log(`✓ "${test.text}" → ${phonemes}`, 'success');
+                    } else {
+                        log(`✗ "${test.text}" → ${phonemes} (期待: ${test.expected})`, 'error');
+                    }
+                } catch (error) {
+                    log(`エラー: ${test.text}: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        async function testONNXInference() {
+            if (!onnxReady) {
+                log('先にONNXモデルをロードしてください', 'warning');
+                return;
+            }
+            
+            log('ONNX推論をテスト中...');
+            
+            // Windows と同じ音素IDでテスト
+            const testIds = [0, 23, 30, 8, 4, 28, 9, 4, 32, 9, 4, 18, 1, 0];
+            log(`テストID: [${testIds.join(', ')}]`);
+            
+            try {
+                const result = await window.UnityONNX.synthesize(testIds);
+                if (result.success) {
+                    log(`推論成功: ${result.data.length} サンプル生成`, 'success');
+                    
+                    // 統計情報
+                    const min = Math.min(...result.data);
+                    const max = Math.max(...result.data);
+                    const avg = result.data.reduce((a, b) => a + b, 0) / result.data.length;
+                    
+                    log(`統計: Min=${min.toFixed(4)}, Max=${max.toFixed(4)}, Avg=${avg.toFixed(4)}`);
+                } else {
+                    log(`推論失敗: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                log(`推論エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        async function compareWithWindows() {
+            log('Windows互換性をチェック中...');
+            
+            const testText = 'こんにちは';
+            const expectedIds = [0, 23, 30, 8, 4, 28, 9, 4, 32, 9, 4, 18, 1, 0];
+            
+            try {
+                const phonemes = await window.OpenJTalkUnityAPI.phonemize(testText);
+                const actualIds = await window.OpenJTalkUnityAPI.phonemesToIds(phonemes);
+                
+                log(`期待ID: [${expectedIds.join(', ')}]`);
+                log(`実際ID: [${actualIds.join(', ')}]`);
+                
+                const match = JSON.stringify(expectedIds) === JSON.stringify(actualIds);
+                
+                if (match) {
+                    log('✓ Windows と完全一致！', 'success');
+                } else {
+                    log('✗ Windows と不一致', 'error');
+                }
+                
+            } catch (error) {
+                log(`比較エラー: ${error.message}`, 'error');
+            }
+        }
+        
+        async function runFullTest() {
+            log('===== 完全テスト開始 =====');
+            
+            await initializeSystem();
+            await new Promise(r => setTimeout(r, 1000));
+            
+            await loadONNXModel();
+            await new Promise(r => setTimeout(r, 1000));
+            
+            await testWarmUp();
+            await new Promise(r => setTimeout(r, 1000));
+            
+            await testPhonemMapping();
+            await new Promise(r => setTimeout(r, 1000));
+            
+            await compareWithWindows();
+            await new Promise(r => setTimeout(r, 1000));
+            
+            await testProblematicPhrases();
+            
+            log('===== 完全テスト終了 =====', 'success');
+        }
+        
+        // WAVファイル作成ヘルパー
+        function createWAV(audioData, sampleRate) {
+            const length = audioData.length;
+            const arrayBuffer = new ArrayBuffer(44 + length * 2);
+            const view = new DataView(arrayBuffer);
+            
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + length * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, length * 2, true);
+            
+            const pcmData = floatTo16BitPCM(audioData);
+            const offset = 44;
+            for (let i = 0; i < length; i++) {
+                view.setInt16(offset + i * 2, pcmData[i], true);
+            }
+            
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
+        }
+        
+        function floatTo16BitPCM(float32Array) {
+            const int16Array = new Int16Array(float32Array.length);
+            for (let i = 0; i < float32Array.length; i++) {
+                const val = Math.max(-1, Math.min(1, float32Array[i]));
+                int16Array[i] = val < 0 ? val * 0x8000 : val * 0x7FFF;
+            }
+            return int16Array;
+        }
+        
+        // ページロード時に自動初期化
+        window.addEventListener('load', () => {
+            log('ページロード完了');
+            log('「システム初期化」ボタンをクリックして開始してください');
+        });
+    </script>
+</body>
+</html>
