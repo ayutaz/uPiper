@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  openjtalk-wasm-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace/openjtalk-wasm
+      - ./output:/output
+    environment:
+      - EMCC_DEBUG=0
+    command: |
+      bash -c "
+        cd /workspace/openjtalk-wasm && 
+        ./build_wasm_docker.sh &&
+        cp openjtalk-unity.* /output/ &&
+        echo 'Files copied to output directory'
+      "

@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 #if UNITY_WEBGL && !UNITY_EDITOR
 using uPiper.Core.Phonemizers.WebGL;
+using uPiper.Core.Phonemizers.Backend;
 #endif
 
 namespace uPiper.Samples.WebGL
@@ -54,37 +55,52 @@ namespace uPiper.Samples.WebGL
 #if UNITY_WEBGL && !UNITY_EDITOR
             Debug.Log("[OpenJTalkTest] Initializing WebGL phonemizer...");
             
-            try
+            phonemizer = WebGLOpenJTalkUnityPhonemizer.GetInstance();
+            
+            Debug.Log("[OpenJTalkTest] Created phonemizer instance");
+            
+            // 非同期初期化をコルーチンで待つ
+            var initTask = phonemizer.InitializeAsync();
+            
+            Debug.Log("[OpenJTalkTest] Started async initialization, waiting for completion...");
+            
+            // 進行状況を定期的に報告
+            float startTime = Time.time;
+            float lastReportTime = startTime;
+            
+            // try-catch の外で yield return を使用
+            while (!initTask.IsCompleted)
             {
-                phonemizer = new WebGLOpenJTalkUnityPhonemizer();
-                
-                // 非同期初期化をコルーチンで待つ
-                var initTask = phonemizer.InitializeAsync();
-                
-                while (!initTask.IsCompleted)
+                float currentTime = Time.time;
+                if (currentTime - lastReportTime >= 1.0f) // 1秒ごとに報告
                 {
-                    yield return null;
+                    float elapsedTime = currentTime - startTime;
+                    Debug.Log($"[OpenJTalkTest] Still initializing... ({elapsedTime:F1}s elapsed)");
+                    UpdateStatus($"初期化中... ({elapsedTime:F0}s)");
+                    lastReportTime = currentTime;
                 }
-                
-                if (initTask.IsFaulted)
-                {
-                    throw initTask.Exception.InnerException;
-                }
-                
+                yield return null;
+            }
+            
+            Debug.Log($"[OpenJTalkTest] Initialization task completed. IsCompleted: {initTask.IsCompleted}, IsFaulted: {initTask.IsFaulted}");
+            
+            if (initTask.IsFaulted)
+            {
+                var exception = initTask.Exception?.InnerException ?? initTask.Exception;
+                Debug.LogError($"[OpenJTalkTest] Initialization failed: {exception?.Message}");
+                Debug.LogError($"[OpenJTalkTest] Full exception: {exception}");
+                UpdateStatus($"✗ 初期化失敗: {exception?.Message}");
+            }
+            else
+            {
                 isInitialized = true;
+                Debug.Log("[OpenJTalkTest] Initialization completed successfully");
                 UpdateStatus("✓ 初期化完了");
                 
                 if (phonemizeButton != null)
                 {
                     phonemizeButton.interactable = true;
                 }
-                
-                Debug.Log("[OpenJTalkTest] Initialization complete");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[OpenJTalkTest] Initialization failed: {ex.Message}");
-                UpdateStatus($"✗ 初期化失敗: {ex.Message}");
             }
 #else
             Debug.LogWarning("[OpenJTalkTest] Not in WebGL build, using dummy mode");
@@ -128,29 +144,26 @@ namespace uPiper.Samples.WebGL
 #if UNITY_WEBGL && !UNITY_EDITOR
             if (phonemizer != null)
             {
-                try
+                // PhonemizeAsync を使用（TextToPhonemesAsync ではない）
+                var phonemizeTask = phonemizer.PhonemizeAsync(text);
+                
+                // try-catch の外で yield return を使用
+                while (!phonemizeTask.IsCompleted)
                 {
-                    var phonemizeTask = phonemizer.TextToPhonemesAsync(text);
-                    
-                    while (!phonemizeTask.IsCompleted)
-                    {
-                        yield return null;
-                    }
-                    
-                    if (phonemizeTask.IsFaulted)
-                    {
-                        throw phonemizeTask.Exception.InnerException;
-                    }
-                    
-                    var phonemes = phonemizeTask.Result;
-                    DisplayPhonemes(phonemes);
-                    UpdateStatus("✓ 音素化完了");
+                    yield return null;
                 }
-                catch (Exception ex)
+                
+                if (phonemizeTask.IsFaulted)
                 {
-                    Debug.LogError($"[OpenJTalkTest] Phonemization failed: {ex.Message}");
-                    UpdateResult($"エラー: {ex.Message}");
+                    Debug.LogError($"[OpenJTalkTest] Phonemization failed: {phonemizeTask.Exception.InnerException?.Message}");
+                    UpdateResult($"エラー: {phonemizeTask.Exception.InnerException?.Message}");
                     UpdateStatus("✗ 音素化失敗");
+                }
+                else
+                {
+                    var result = phonemizeTask.Result;
+                    DisplayPhonemes(result.Phonemes);
+                    UpdateStatus("✓ 音素化完了");
                 }
             }
 #else

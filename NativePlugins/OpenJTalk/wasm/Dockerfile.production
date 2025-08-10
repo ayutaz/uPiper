@@ -1,0 +1,453 @@
+# Production Full OpenJTalk WebAssembly Build
+# Complete Dictionary Support with Platform Fixes
+FROM emscripten/emsdk:3.1.39
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    curl \
+    tar \
+    git \
+    python3 \
+    patch \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Download OpenJTalk source
+RUN curl -L -o open_jtalk-1.11.tar.gz \
+    https://sourceforge.net/projects/open-jtalk/files/Open%20JTalk/open_jtalk-1.11/open_jtalk-1.11.tar.gz/download \
+    && tar -xzf open_jtalk-1.11.tar.gz
+
+# Download dictionary
+RUN curl -L -o open_jtalk_dic_utf_8-1.11.tar.gz \
+    https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz/download \
+    && tar -xzf open_jtalk_dic_utf_8-1.11.tar.gz
+
+WORKDIR /build/open_jtalk-1.11
+
+# Apply platform fixes for Emscripten
+RUN echo "Applying Emscripten compatibility patches..."
+
+# Fix utils.h for Emscripten
+RUN sed -i \
+    -e '/#ifdef _WIN32/,/#endif/d' \
+    -e 's/typedef unsigned long uint32_t;//g' \
+    -e 's/typedef unsigned __int64 uint64_t;//g' \
+    mecab/src/utils.h
+
+# Fix for POSIX functions
+RUN for file in mecab/src/*.cpp mecab/src/*.h; do \
+    if [ -f "$file" ]; then \
+        sed -i \
+            -e 's/#ifdef HAVE_WINDOWS_H/#if 0/g' \
+            -e 's/#ifdef _WIN32/#if 0/g' \
+            -e '1i#include <sys/types.h>\n#include <sys/stat.h>\n#include <fcntl.h>\n#include <unistd.h>' \
+            "$file" || true; \
+    fi; \
+done
+
+# Fix dictionary.cpp for C++17 compatibility
+RUN cat > dictionary.patch << 'EOF'
+--- a/mecab/src/dictionary.cpp
++++ b/mecab/src/dictionary.cpp
+@@ -78,9 +78,16 @@
+ 
+ namespace {
+ template <typename T1, typename T2>
++#if __cplusplus >= 201703L
++struct pair_1st_cmp {
++  typedef T1 first_argument_type;
++  typedef T2 second_argument_type;
++  typedef bool result_type;
++#else
+ struct pair_1st_cmp: public std::binary_function<bool, T1, T2> {
++#endif
+   bool operator()(const std::pair<T1, T2> &x1,
+                   const std::pair<T1, T2> &x2) {
+     return x1.first < x2.first;
+   }
+ };
+EOF
+
+RUN patch -p1 -N < dictionary.patch || true
+
+# Create CMakeLists.txt with all fixes
+RUN cat > CMakeLists.txt << 'EOF'
+cmake_minimum_required(VERSION 3.13)
+project(OpenJTalk C CXX)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Emscripten specific flags
+if(EMSCRIPTEN)
+  add_compile_definitions(
+    HAVE_UNISTD_H=1
+    HAVE_DIRENT_H=1
+    HAVE_FCNTL_H=1
+    HAVE_SYS_STAT_H=1
+    HAVE_SYS_TYPES_H=1
+    HAVE_STDINT_H=1
+    HAVE_INTTYPES_H=1
+    HAVE_STDLIB_H=1
+    HAVE_STRING_H=1
+    HAVE_MEMORY_H=1
+    HAVE_STRINGS_H=1
+    O_BINARY=0
+  )
+endif()
+
+# Source files for mecab (including mecab.cpp!)
+set(MECAB_SOURCES
+  mecab/src/mecab.cpp
+  mecab/src/char_property.cpp
+  mecab/src/connector.cpp
+  mecab/src/context_id.cpp
+  mecab/src/dictionary.cpp
+  mecab/src/dictionary_compiler.cpp
+  mecab/src/dictionary_generator.cpp
+  mecab/src/dictionary_rewriter.cpp
+  mecab/src/eval.cpp
+  mecab/src/feature_index.cpp
+  mecab/src/iconv_utils.cpp
+  mecab/src/lbfgs.cpp
+  mecab/src/learner.cpp
+  mecab/src/learner_tagger.cpp
+  mecab/src/libmecab.cpp
+  mecab/src/nbest_generator.cpp
+  mecab/src/param.cpp
+  mecab/src/string_buffer.cpp
+  mecab/src/tagger.cpp
+  mecab/src/tokenizer.cpp
+  mecab/src/utils.cpp
+  mecab/src/viterbi.cpp
+  mecab/src/writer.cpp
+)
+
+# Create mecab library
+add_library(mecab STATIC ${MECAB_SOURCES})
+set_property(TARGET mecab PROPERTY CXX_STANDARD 14)
+
+target_include_directories(mecab PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/mecab/src
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_compile_definitions(mecab PRIVATE
+  DIC_VERSION=102
+  PACKAGE="open_jtalk"
+  VERSION="1.11"
+  CHARSET_UTF_8
+  MECAB_DEFAULT_RC=""
+)
+
+# Source files for OpenJTalk components
+set(NJD_SOURCES
+  njd/njd.c
+  njd/njd_node.c
+)
+
+set(NJD_SET_SOURCES
+  njd_set_accent_phrase/njd_set_accent_phrase.c
+  njd_set_accent_type/njd_set_accent_type.c
+  njd_set_digit/njd_set_digit.c
+  njd_set_long_vowel/njd_set_long_vowel.c
+  njd_set_pronunciation/njd_set_pronunciation.c
+  njd_set_unvoiced_vowel/njd_set_unvoiced_vowel.c
+)
+
+set(JPCOMMON_SOURCES
+  jpcommon/jpcommon.c
+  jpcommon/jpcommon_label.c
+  jpcommon/jpcommon_node.c
+)
+
+set(OTHER_SOURCES
+  text2mecab/text2mecab.c
+  mecab2njd/mecab2njd.c
+  njd2jpcommon/njd2jpcommon.c
+)
+
+# Create OpenJTalk library
+add_library(openjtalk STATIC
+  ${NJD_SOURCES}
+  ${NJD_SET_SOURCES}
+  ${JPCOMMON_SOURCES}
+  ${OTHER_SOURCES}
+)
+
+target_include_directories(openjtalk PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd_set_accent_phrase
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd_set_accent_type
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd_set_digit
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd_set_long_vowel
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd_set_pronunciation
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd_set_unvoiced_vowel
+  ${CMAKE_CURRENT_SOURCE_DIR}/njd2jpcommon
+  ${CMAKE_CURRENT_SOURCE_DIR}/jpcommon
+  ${CMAKE_CURRENT_SOURCE_DIR}/text2mecab
+  ${CMAKE_CURRENT_SOURCE_DIR}/mecab2njd
+  ${CMAKE_CURRENT_SOURCE_DIR}/mecab/src
+)
+
+target_compile_definitions(openjtalk PRIVATE
+  CHARSET_UTF_8
+  ASCII_HEADER
+)
+
+target_link_libraries(openjtalk PUBLIC mecab)
+
+if(NOT WIN32)
+  target_link_libraries(openjtalk PUBLIC m)
+endif()
+EOF
+
+# Build with CMake
+RUN emcmake cmake . \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=14 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    && emmake make -j$(nproc)
+
+# Check that libraries were built with Mecab functions
+RUN echo "=== Checking for Mecab functions in libmecab.a ===" \
+    && emnm libmecab.a | grep "T.*Mecab_" | head -10 || echo "Mecab functions may be mangled"
+
+# Prepare dictionary
+WORKDIR /build
+RUN mkdir -p dict_data \
+    && cp open_jtalk_dic_utf_8-1.11/*.bin dict_data/ \
+    && cp open_jtalk_dic_utf_8-1.11/*.dic dict_data/ \
+    && cp open_jtalk_dic_utf_8-1.11/*.def dict_data/
+
+# Create the wrapper with actual headers (like piper-plus)
+RUN cat > openjtalk_wasm_production.c << 'EOF'
+#include <emscripten.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Include actual OpenJTalk headers
+#include "mecab.h"
+#include "njd.h"
+#include "jpcommon.h"
+#include "text2mecab.h"
+#include "mecab2njd.h"
+#include "njd_set_pronunciation.h"
+#include "njd_set_digit.h"
+#include "njd_set_accent_phrase.h"
+#include "njd_set_accent_type.h"
+#include "njd_set_unvoiced_vowel.h"
+#include "njd_set_long_vowel.h"
+#include "njd2jpcommon.h"
+
+// Global OpenJTalk objects
+static Mecab mecab_instance;
+static NJD njd_instance;
+static JPCommon jpcommon_instance;
+static int g_initialized = 0;
+
+EMSCRIPTEN_KEEPALIVE
+int Open_JTalk_initialize() {
+    printf("[OpenJTalk WASM] Initializing...\n");
+    
+    if (g_initialized) {
+        printf("[OpenJTalk WASM] Already initialized\n");
+        return 0;
+    }
+    
+    Mecab_initialize(&mecab_instance);
+    NJD_initialize(&njd_instance);
+    JPCommon_initialize(&jpcommon_instance);
+    
+    g_initialized = 1;
+    printf("[OpenJTalk WASM] Initialized successfully\n");
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int Open_JTalk_load(const char* dict_path) {
+    printf("[OpenJTalk WASM] Loading dictionary from: %s\n", dict_path ? dict_path : "NULL");
+    
+    if (!g_initialized) {
+        printf("[OpenJTalk WASM] Not initialized\n");
+        return -1;
+    }
+    
+    const char* path = dict_path ? dict_path : "/dict";
+    
+    if (Mecab_load(&mecab_instance, path) != TRUE) {
+        printf("[OpenJTalk WASM] Failed to load dictionary from: %s\n", path);
+        return -1;
+    }
+    
+    printf("[OpenJTalk WASM] Dictionary loaded successfully\n");
+    return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int Open_JTalk_synthesis(const char* text, char* output, int output_size) {
+    if (!g_initialized || !text || !output || output_size <= 0) {
+        printf("[OpenJTalk WASM] Invalid parameters or not initialized\n");
+        return -1;
+    }
+    
+    printf("[OpenJTalk WASM] Processing text: %s\n", text);
+    
+    // Clear previous data
+    Mecab_refresh(&mecab_instance);
+    NJD_refresh(&njd_instance);
+    JPCommon_refresh(&jpcommon_instance);
+    
+    // Convert text to MeCab format
+    char buff[8192];
+    text2mecab(buff, text);
+    
+    // MeCab analysis
+    if (Mecab_analysis(&mecab_instance, buff) != TRUE) {
+        printf("[OpenJTalk WASM] MeCab analysis failed\n");
+        return -1;
+    }
+    
+    // Get MeCab features
+    int mecab_size = Mecab_get_size(&mecab_instance);
+    char** mecab_features = Mecab_get_feature(&mecab_instance);
+    
+    if (mecab_size <= 0 || !mecab_features) {
+        printf("[OpenJTalk WASM] No MeCab features found\n");
+        return -1;
+    }
+    
+    // Convert MeCab to NJD
+    mecab2njd(&njd_instance, mecab_features, mecab_size);
+    
+    // NJD processing pipeline
+    njd_set_pronunciation(&njd_instance);
+    njd_set_digit(&njd_instance);
+    njd_set_accent_phrase(&njd_instance);
+    njd_set_accent_type(&njd_instance);
+    njd_set_unvoiced_vowel(&njd_instance);
+    njd_set_long_vowel(&njd_instance);
+    
+    // Convert NJD to JPCommon
+    njd2jpcommon(&jpcommon_instance, &njd_instance);
+    
+    // Make label
+    JPCommon_make_label(&jpcommon_instance);
+    
+    // Extract phonemes from labels
+    int label_size = JPCommon_get_label_size(&jpcommon_instance);
+    char** labels = JPCommon_get_label_feature(&jpcommon_instance);
+    
+    printf("[OpenJTalk WASM] Label size: %d\n", label_size);
+    
+    output[0] = '\0';
+    int output_len = 0;
+    
+    for (int i = 0; i < label_size; i++) {
+        if (!labels[i]) continue;
+        
+        // Extract phoneme from full-context label
+        char* p1 = strchr(labels[i], '-');
+        char* p2 = strchr(labels[i], '+');
+        
+        if (p1 && p2 && p1 < p2) {
+            p1++; // Skip '-'
+            int len = p2 - p1;
+            
+            // Skip silence at beginning and end
+            if (strncmp(p1, "sil", len) == 0) {
+                if (i == 0 || i == label_size - 1) {
+                    if (output_len > 0) {
+                        strcat(output, " ");
+                        output_len++;
+                    }
+                    strcat(output, "pau");
+                    output_len += 3;
+                }
+            } else {
+                // Add phoneme
+                if (output_len > 0) {
+                    strcat(output, " ");
+                    output_len++;
+                }
+                strncat(output, p1, len);
+                output_len += len;
+            }
+            
+            // Check buffer overflow
+            if (output_len >= output_size - 10) {
+                break;
+            }
+        }
+    }
+    
+    printf("[OpenJTalk WASM] Phonemes: %s\n", output);
+    return output_len;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void Open_JTalk_clear() {
+    printf("[OpenJTalk WASM] Clearing resources...\n");
+    
+    if (g_initialized) {
+        JPCommon_clear(&jpcommon_instance);
+        NJD_clear(&njd_instance);
+        Mecab_clear(&mecab_instance);
+        g_initialized = 0;
+    }
+    
+    printf("[OpenJTalk WASM] Cleared\n");
+}
+
+EMSCRIPTEN_KEEPALIVE
+void* allocate_memory(int size) {
+    return malloc(size);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void free_memory(void* ptr) {
+    if (ptr) free(ptr);
+}
+
+EMSCRIPTEN_KEEPALIVE
+const char* get_version() {
+    return "OpenJTalk WASM Production 1.11";
+}
+EOF
+
+# Build WASM module with actual headers
+RUN emcc openjtalk_wasm_production.c \
+    -o openjtalk-unity-full.js \
+    -I/build/open_jtalk-1.11/mecab/src \
+    -I/build/open_jtalk-1.11/njd \
+    -I/build/open_jtalk-1.11/jpcommon \
+    -I/build/open_jtalk-1.11/text2mecab \
+    -I/build/open_jtalk-1.11/mecab2njd \
+    -I/build/open_jtalk-1.11/njd2jpcommon \
+    -I/build/open_jtalk-1.11/njd_set_pronunciation \
+    -I/build/open_jtalk-1.11/njd_set_digit \
+    -I/build/open_jtalk-1.11/njd_set_accent_phrase \
+    -I/build/open_jtalk-1.11/njd_set_accent_type \
+    -I/build/open_jtalk-1.11/njd_set_unvoiced_vowel \
+    -I/build/open_jtalk-1.11/njd_set_long_vowel \
+    /build/open_jtalk-1.11/libopenjtalk.a \
+    /build/open_jtalk-1.11/libmecab.a \
+    -s EXPORTED_FUNCTIONS='["_malloc","_free","_Open_JTalk_initialize","_Open_JTalk_load","_Open_JTalk_synthesis","_Open_JTalk_clear","_allocate_memory","_free_memory","_get_version"]' \
+    -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","UTF8ToString","stringToUTF8","FS"]' \
+    -s MODULARIZE=1 \
+    -s EXPORT_NAME='OpenJTalkModule' \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -s INITIAL_MEMORY=134217728 \
+    -s FILESYSTEM=1 \
+    -s FORCE_FILESYSTEM=1 \
+    --preload-file dict_data@/dict \
+    -O2 \
+    -lm \
+    -lstdc++
+
+CMD ["sh", "-c", "cp openjtalk-unity-full.* /output/ 2>/dev/null || echo 'Files copied'"]

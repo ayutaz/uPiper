@@ -1,0 +1,127 @@
+# Full OpenJTalk WebAssembly Build with MeCab Dictionary
+FROM emscripten/emsdk:3.1.39
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    curl \
+    tar \
+    git \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Download OpenJTalk source
+RUN curl -L -o open_jtalk-1.11.tar.gz \
+    https://sourceforge.net/projects/open-jtalk/files/Open%20JTalk/open_jtalk-1.11/open_jtalk-1.11.tar.gz/download \
+    && tar -xzf open_jtalk-1.11.tar.gz
+
+# Download HTS Engine API
+RUN curl -L -o hts_engine_API-1.10.tar.gz \
+    https://sourceforge.net/projects/hts-engine/files/hts_engine%20API/hts_engine_API-1.10/hts_engine_API-1.10.tar.gz/download \
+    && tar -xzf hts_engine_API-1.10.tar.gz
+
+# Download dictionary
+RUN curl -L -o open_jtalk_dic_utf_8-1.11.tar.gz \
+    https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz/download \
+    && tar -xzf open_jtalk_dic_utf_8-1.11.tar.gz
+
+# Build HTS Engine API for WebAssembly
+WORKDIR /build/hts_engine_API-1.10
+
+# Fix the __pos issue in HTS_misc.c for Emscripten
+RUN sed -i 's/return (size_t) pos.__pos;/return (size_t) ftell(fp);/g' lib/HTS_misc.c
+
+RUN emconfigure ./configure --disable-shared --enable-static \
+    && emmake make -j$(nproc)
+
+# Apply patches for OpenJTalk to work with Emscripten
+WORKDIR /build/open_jtalk-1.11
+
+# Fix C++ compatibility issues for Emscripten
+RUN find . -name "*.h" -o -name "*.cpp" | xargs sed -i \
+    -e 's/std::binary_function</std::function</g' \
+    -e 's/#include <functional>/#include <functional>\n#include <algorithm>/' \
+    -e 's/using namespace std;//' \
+    -e 's/std::make_pair/make_pair/g'
+
+# Additional fixes for MeCab compilation with Emscripten
+RUN sed -i 's/binary_function/function/g' mecab/src/*.h mecab/src/*.cpp || true
+RUN sed -i 's/unary_function/function/g' mecab/src/*.h mecab/src/*.cpp || true
+
+# Configure and build OpenJTalk with C++98 compatibility
+RUN emconfigure ./configure \
+    --with-hts-engine-header-path=/build/hts_engine_API-1.10/include \
+    --with-hts-engine-library-path=/build/hts_engine_API-1.10/lib \
+    --disable-shared \
+    --enable-static \
+    CFLAGS="-O2" \
+    CXXFLAGS="-O2 -std=c++98 -Wno-deprecated-declarations"
+
+# Build OpenJTalk libraries one by one
+RUN cd mecab && emmake make -j1 || (cat config.log && false)
+RUN cd text2mecab && emmake make -j1
+RUN cd mecab2njd && emmake make -j1
+RUN cd njd && emmake make -j1
+RUN cd njd_set_pronunciation && emmake make -j1
+RUN cd njd_set_digit && emmake make -j1
+RUN cd njd_set_accent_phrase && emmake make -j1
+RUN cd njd_set_accent_type && emmake make -j1
+RUN cd njd_set_unvoiced_vowel && emmake make -j1
+RUN cd njd_set_long_vowel && emmake make -j1
+RUN cd njd2jpcommon && emmake make -j1
+RUN cd jpcommon && emmake make -j1
+
+# Create wrapper source
+COPY openjtalk_wasm_full.c /build/
+
+# Prepare dictionary for embedding
+WORKDIR /build
+RUN mkdir -p dict_data
+RUN cp open_jtalk_dic_utf_8-1.11/*.bin dict_data/
+RUN cp open_jtalk_dic_utf_8-1.11/*.dic dict_data/
+RUN cp open_jtalk_dic_utf_8-1.11/*.def dict_data/
+
+# Build the WebAssembly module
+RUN emcc openjtalk_wasm_full.c \
+    -o openjtalk-unity-full.js \
+    -I/build/open_jtalk-1.11/jpcommon \
+    -I/build/open_jtalk-1.11/mecab/src \
+    -I/build/open_jtalk-1.11/mecab2njd \
+    -I/build/open_jtalk-1.11/njd \
+    -I/build/open_jtalk-1.11/njd2jpcommon \
+    -I/build/open_jtalk-1.11/njd_set_accent_phrase \
+    -I/build/open_jtalk-1.11/njd_set_accent_type \
+    -I/build/open_jtalk-1.11/njd_set_digit \
+    -I/build/open_jtalk-1.11/njd_set_long_vowel \
+    -I/build/open_jtalk-1.11/njd_set_pronunciation \
+    -I/build/open_jtalk-1.11/njd_set_unvoiced_vowel \
+    -I/build/open_jtalk-1.11/text2mecab \
+    -I/build/hts_engine_API-1.10/include \
+    /build/open_jtalk-1.11/mecab/src/.libs/libmecab.a \
+    /build/open_jtalk-1.11/text2mecab/.libs/libtext2mecab.a \
+    /build/open_jtalk-1.11/mecab2njd/.libs/libmecab2njd.a \
+    /build/open_jtalk-1.11/njd/.libs/libnjd.a \
+    /build/open_jtalk-1.11/njd_set_pronunciation/.libs/libnjd_set_pronunciation.a \
+    /build/open_jtalk-1.11/njd_set_digit/.libs/libnjd_set_digit.a \
+    /build/open_jtalk-1.11/njd_set_accent_phrase/.libs/libnjd_set_accent_phrase.a \
+    /build/open_jtalk-1.11/njd_set_accent_type/.libs/libnjd_set_accent_type.a \
+    /build/open_jtalk-1.11/njd_set_unvoiced_vowel/.libs/libnjd_set_unvoiced_vowel.a \
+    /build/open_jtalk-1.11/njd_set_long_vowel/.libs/libnjd_set_long_vowel.a \
+    /build/open_jtalk-1.11/njd2jpcommon/.libs/libnjd2jpcommon.a \
+    /build/open_jtalk-1.11/jpcommon/.libs/libjpcommon.a \
+    -s EXPORTED_FUNCTIONS='["_malloc","_free","_Open_JTalk_initialize","_Open_JTalk_load","_Open_JTalk_synthesis","_Open_JTalk_clear","_allocate_memory","_free_memory","_get_string_length"]' \
+    -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","UTF8ToString","stringToUTF8","FS"]' \
+    -s MODULARIZE=1 \
+    -s EXPORT_NAME='OpenJTalkModule' \
+    -s ALLOW_MEMORY_GROWTH=1 \
+    -s INITIAL_MEMORY=67108864 \
+    -s FILESYSTEM=1 \
+    -s FORCE_FILESYSTEM=1 \
+    --preload-file dict_data@/dict \
+    -O2 \
+    -DCHARSET_UTF_8
+
+CMD ["sh", "-c", "cp openjtalk-unity-full.* /output/"]

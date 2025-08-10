@@ -15,6 +15,8 @@ using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
 #if !UNITY_WEBGL
 using uPiper.Core.Phonemizers.Implementations;
+#elif UNITY_WEBGL && !UNITY_EDITOR
+using uPiper.Core.Phonemizers.WebGL;
 #endif
 
 namespace uPiper.Demo
@@ -925,10 +927,85 @@ namespace uPiper.Demo
                     PiperLogger.LogInfo($"Fallback phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                 }
 #else
-                // WebGL is not supported for Japanese
+                // WebGL platform
+#if UNITY_WEBGL && !UNITY_EDITOR
                 if (language == "ja")
                 {
-                    throw new Exception("Japanese text-to-speech is not supported on WebGL platform. OpenJTalk native library is required.");
+                    // Use WebGL OpenJTalk phonemizer for Japanese
+                    PiperLogger.LogDebug("[InferenceEngineDemo] Using WebGL OpenJTalk for Japanese text");
+                    PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
+                    
+                    try
+                    {
+                        // Create and initialize WebGL phonemizer
+                        var webglPhonemizer = WebGLOpenJTalkUnityPhonemizer.GetInstance();
+                        await webglPhonemizer.InitializeAsync();
+                        
+                        var webglStopwatch = Stopwatch.StartNew();
+                        var phonemeResult = await webglPhonemizer.PhonemizeAsync(_inputField.text, language);
+                        timings["WebGLOpenJTalk"] = webglStopwatch.ElapsedMilliseconds;
+                        var openJTalkPhonemes = phonemeResult.Phonemes;
+                        
+                        PiperLogger.LogInfo($"[WebGL OpenJTalk] Raw phonemes ({openJTalkPhonemes.Length}): {string.Join(" ", openJTalkPhonemes)}");
+                        
+                        // Special debug for 'こんにちは'
+                        if (_inputField.text == "こんにちは")
+                        {
+                            PiperLogger.LogInfo($"=== Special debug for 'こんにちは' ===");
+                            for (int i = 0; i < openJTalkPhonemes.Length; i++)
+                            {
+                                var p = openJTalkPhonemes[i];
+                                PiperLogger.LogInfo($"  Phoneme[{i}]: '{p}' (length: {p.Length})");
+                                if (p == "__chi__")
+                                {
+                                    PiperLogger.LogInfo($"    -> Found __chi__ marker at index {i}");
+                                }
+                                else if (i > 0 && openJTalkPhonemes[i-1] == "__chi__" && p == "i")
+                                {
+                                    PiperLogger.LogInfo($"    -> This is the 'i' after __chi__");
+                                }
+                                else if (p == "i" && i < openJTalkPhonemes.Length - 1)
+                                {
+                                    PiperLogger.LogInfo($"    -> This is the 'chi' sound component");
+                                }
+                            }
+                        }
+                        
+                        // Convert OpenJTalk phonemes to Piper phonemes
+                        phonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(openJTalkPhonemes);
+                        PiperLogger.LogInfo($"[WebGL OpenJTalk] Converted to Piper phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+                        
+                        // Show phoneme details in UI
+                        if (_phonemeDetailsText != null)
+                        {
+                            _phonemeDetailsText.text = $"WebGL OpenJTalk: {string.Join(" ", openJTalkPhonemes)}\nPiper: {string.Join(" ", phonemes)}";
+                        }
+                        
+                        // シングルトンパターンを使用しているため、Disposeは呼び出さない
+                        // webglPhonemizer.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        PiperLogger.LogError($"[WebGL OpenJTalk] Failed: {ex.Message}");
+                        throw new Exception($"WebGL OpenJTalk phonemization failed: {ex.Message}", ex);
+                    }
+                }
+                else
+                {
+                    // For non-Japanese languages, use basic phoneme splitting
+                    phonemes = _inputField.text.ToLower()
+                        .Replace(",", " _")
+                        .Replace(".", " _")
+                        .Replace("!", " _")
+                        .Replace("?", " _")
+                        .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    PiperLogger.LogInfo($"Fallback phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+                }
+#else
+                // Unity Editor or other platforms without OpenJTalk
+                if (language == "ja")
+                {
+                    throw new Exception("Japanese text-to-speech is not supported on this platform. OpenJTalk native library is required.");
                 }
                 else
                 {
@@ -941,6 +1018,7 @@ namespace uPiper.Demo
                         .Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     PiperLogger.LogInfo($"English phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                 }
+#endif
 #endif
 
                 // 音素変換の詳細をログ出力

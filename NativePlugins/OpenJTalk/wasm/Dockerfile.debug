@@ -1,0 +1,37 @@
+# Debug Dockerfile to check what symbols are available in the built libraries
+FROM emscripten/emsdk:3.1.39
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    curl \
+    tar \
+    git \
+    python3 \
+    patch \
+    file \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Download OpenJTalk source
+RUN curl -L -o open_jtalk-1.11.tar.gz \
+    https://sourceforge.net/projects/open-jtalk/files/Open%20JTalk/open_jtalk-1.11/open_jtalk-1.11.tar.gz/download \
+    && tar -xzf open_jtalk-1.11.tar.gz
+
+# Check the actual source structure
+RUN echo "=== Checking OpenJTalk source structure ===" \
+    && ls -la open_jtalk-1.11/ \
+    && echo "=== mecab directory ===" \
+    && ls -la open_jtalk-1.11/mecab/src/ | head -20 \
+    && echo "=== Checking for Mecab functions ===" \
+    && grep -r "Mecab_initialize" open_jtalk-1.11/ --include="*.c" --include="*.cpp" | head -5 || echo "Not found in .c/.cpp" \
+    && grep -r "Mecab_initialize" open_jtalk-1.11/ --include="*.h" | head -5 || echo "Not found in .h"
+
+# Look for actual function names
+RUN echo "=== Looking for actual Mecab function names ===" \
+    && grep -r "void.*Mecab" open_jtalk-1.11/mecab/src/*.cpp | head -20 || true \
+    && echo "=== Check mecab.h for actual API ===" \
+    && cat open_jtalk-1.11/mecab/src/mecab.h | grep -A2 -B2 "Mecab" | head -40 || true
+
+CMD ["echo", "Debug check complete"]

@@ -1,0 +1,95 @@
+# Check what's actually in the built libraries
+FROM emscripten/emsdk:3.1.39
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    curl \
+    tar \
+    git \
+    python3 \
+    patch \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Download OpenJTalk source
+RUN curl -L -o open_jtalk-1.11.tar.gz \
+    https://sourceforge.net/projects/open-jtalk/files/Open%20JTalk/open_jtalk-1.11/open_jtalk-1.11.tar.gz/download \
+    && tar -xzf open_jtalk-1.11.tar.gz
+
+# Create CMakeLists.txt
+RUN cat > /build/open_jtalk-1.11/CMakeLists.txt << 'EOF'
+cmake_minimum_required(VERSION 3.13)
+project(OpenJTalk C CXX)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Add mecab.cpp directly 
+set(MECAB_SOURCES
+  mecab/src/mecab.cpp
+  mecab/src/char_property.cpp
+  mecab/src/connector.cpp
+  mecab/src/context_id.cpp
+  mecab/src/dictionary.cpp
+  mecab/src/dictionary_compiler.cpp
+  mecab/src/dictionary_generator.cpp
+  mecab/src/dictionary_rewriter.cpp
+  mecab/src/eval.cpp
+  mecab/src/feature_index.cpp
+  mecab/src/iconv_utils.cpp
+  mecab/src/lbfgs.cpp
+  mecab/src/learner.cpp
+  mecab/src/learner_tagger.cpp
+  mecab/src/libmecab.cpp
+  mecab/src/nbest_generator.cpp
+  mecab/src/param.cpp
+  mecab/src/string_buffer.cpp
+  mecab/src/tagger.cpp
+  mecab/src/tokenizer.cpp
+  mecab/src/utils.cpp
+  mecab/src/viterbi.cpp
+  mecab/src/writer.cpp
+)
+
+add_library(mecab STATIC ${MECAB_SOURCES})
+set_property(TARGET mecab PROPERTY CXX_STANDARD 14)
+
+target_include_directories(mecab PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/mecab/src
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_compile_definitions(mecab PRIVATE
+  DIC_VERSION=102
+  PACKAGE="open_jtalk"
+  VERSION="1.11"
+  CHARSET_UTF_8
+  HAVE_UNISTD_H
+  HAVE_DIRENT_H
+  HAVE_FCNTL_H
+  HAVE_SYS_STAT_H
+  HAVE_SYS_TYPES_H
+  HAVE_STDINT_H
+  HAVE_INTTYPES_H
+  MECAB_DEFAULT_RC=""
+)
+EOF
+
+# Build and check
+WORKDIR /build/open_jtalk-1.11
+RUN emcmake cmake . -DCMAKE_BUILD_TYPE=Release \
+    && emmake make mecab -j$(nproc)
+
+# Check what symbols are in the library
+RUN echo "=== Checking libmecab.a contents ===" \
+    && emar t libmecab.a | head -20 \
+    && echo "=== Checking for Mecab symbols ===" \
+    && emnm libmecab.a | grep "Mecab_" | head -20 || echo "No Mecab_ symbols found" \
+    && echo "=== Check mecab.cpp ===" \
+    && ls -la mecab/src/mecab.cpp \
+    && grep "Mecab_initialize" mecab/src/mecab.cpp | head -5
+
+CMD ["echo", "Check complete"]

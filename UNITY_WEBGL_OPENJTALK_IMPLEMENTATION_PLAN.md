@@ -1,23 +1,41 @@
-# Unity WebGL + piper-plus OpenJTalk 本番環境実装計画
+# Unity WebGL + OpenJTalk 辞書ベース完全実装計画
 
-## 📈 進捗状況
+## 📈 現在の状況と問題点
 
-**現在のステータス**: M5 実装中 / WebGLビルド準備完了
+**最終更新**: 2024-12-19
+**現在のステータス**: M5 要修正 / 辞書ベース実装が必要
 
-| 進捗 | マイルストーン | 実装状態 |
-|------|--------------|----------|
-| ✅ | M1: ビルド環境構築とテスト基盤 | 完了 (32/32 テストパス) |
-| ✅ | M2: Unity互換ビルドスクリプト作成 | 完了 (31/31 テストパス) |
-| ✅ | M3: Unity統合ラッパー実装 | 完了 (7/7 テストパス) |
-| ✅ | M4: Unity JSLib実装 | M3に統合済み |
-| 🔄 | M5: Unity WebGLビルドとローカルテスト | 実装中（テスト環境準備完了） |
-| ⏳ | M6: GitHub Pagesデプロイと本番テスト | 待機中 |
-| ⏳ | M7: ドキュメントとCI/CD | 待機中 |
+### 🚨 重大な問題の発見
+
+現在のWASM実装（`openjtalk_wasm.c`）は**ルックアップテーブル方式**であり、以下の致命的な問題があります：
+
+1. **辞書を使用していない** - 約70単語のハードコードされたテーブルのみ
+2. **MeCab形態素解析が含まれていない** - 任意の日本語テキストを解析できない
+3. **未知の単語は全て "t e s u t o" になる** - 実用性がない
+
+**これは計画書では「本番実装」となっているにも関わらず、実際には簡易的なスタブ実装です。**
+
+## 📊 進捗状況（改訂版）
+
+| フェーズ | マイルストーン | 計画状態 | 実際の状態 | 問題点 |
+|---------|--------------|----------|-----------|--------|
+| **Phase 1** | 環境構築 | | | |
+| | M1: ビルド環境構築 | ✅ 完了 | ✅ 完了 (32/32 テストパス) | なし |
+| | M2: Unity互換ビルド | ✅ 完了 | ✅ 完了 (31/31 テストパス) | なし |
+| **Phase 2** | 統合層実装 | | | |
+| | M3: Unity統合ラッパー | ✅ 完了 | ✅ 完了 (7/7 テストパス) | なし |
+| | M4: Unity JSLib | ✅ 完了 | ✅ M3に統合済み | なし |
+| **Phase 3** | WASM実装 | | | |
+| | M5: WASM音素化エンジン | 🔄 実装中 | ❌ **不完全** | **辞書なし、スタブ実装** |
+| **Phase 4** | デプロイ | | | |
+| | M6: Unity WebGLビルド | ⏳ 待機中 | ⚠️ 部分的 | WASM が不完全 |
+| | M7: GitHub Pages | ⏳ 待機中 | ❌ 未実装 | - |
+| | M8: ドキュメント | ⏳ 待機中 | ⚠️ 部分的 | - |
 
 ## 概要
 
-本ドキュメントは、Unity WebGLビルドにpiper-plus OpenJTalkを統合するための詳細な実装計画です。
-TDD（テスト駆動開発）の原則に基づき、各マイルストーンで動作確認可能な成果物を作成します。
+本ドキュメントは、Unity WebGLビルドにOpenJTalkの**辞書ベース完全実装**を統合するための詳細な実装計画です。
+当初の計画では「本番実装」とされていたM5が実際にはスタブ実装になっていたため、修正版実装計画を策定しました。
 
 ## 実装方針
 
@@ -1317,16 +1335,83 @@ mergeInto(LibraryManager.library, {
 
 ---
 
-## Milestone 5: Unity WebGLビルドとローカルテスト
+## Milestone 5: WASM音素化エンジン（要修正）
+
+### ⚠️ 現在の問題
+
+現在の`openjtalk_wasm.c`実装は以下の問題があります：
+
+```c
+// 現在の実装（問題あり）
+static const PhonemeEntry phoneme_table[] = {
+    {"こんにちは", "k o N n i ch i w a"},
+    {"テスト", "t e s u t o"},
+    // ... 約70単語のみ
+};
+
+// 未知の単語への対応
+strncpy(output, "t e s u t o", output_size - 1);  // 全て同じ音素になる！
+```
+
+### 🎯 修正版実装計画（M5-R）
+
+#### M5-R: 辞書ベースWASM実装
 
 ### ゴール
-- ✅ Unity WebGLビルドが成功すること
-- ✅ ローカルサーバーで動作すること
-- ✅ 音素化が正しく実行されること
+- ❌ **任意の日本語テキストを音素化できること**（ルックアップテーブルではない）
+- ✅ Windows/Android版と同等の音素化品質
+- ✅ GitHub Pagesで動作すること
 
 ### タスク詳細
 
-#### Task 5.1: Unity C#実装（1時間）
+#### Task 5-R.1: OpenJTalkフルビルド環境構築（2時間）
+
+**Dockerfile.openjtalk-full**
+```dockerfile
+FROM emscripten/emsdk:3.1.39
+
+# 依存関係インストール
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    curl \
+    python3
+
+WORKDIR /build
+
+# OpenJTalk 1.11 ダウンロード
+RUN curl -L -o open_jtalk-1.11.tar.gz \
+    https://sourceforge.net/projects/open-jtalk/files/Open%20JTalk/open_jtalk-1.11/open_jtalk-1.11.tar.gz/download \
+    && tar -xzf open_jtalk-1.11.tar.gz
+
+# HTS Engine API 1.10 ダウンロード
+RUN curl -L -o hts_engine_API-1.10.tar.gz \
+    https://sourceforge.net/projects/hts-engine/files/hts_engine%20API/hts_engine_API-1.10/hts_engine_API-1.10.tar.gz/download \
+    && tar -xzf hts_engine_API-1.10.tar.gz
+
+# NAIST Japanese Dictionary ダウンロード
+RUN curl -L -o open_jtalk_dic_utf_8-1.11.tar.gz \
+    https://sourceforge.net/projects/open-jtalk/files/Dictionary/open_jtalk_dic-1.11/open_jtalk_dic_utf_8-1.11.tar.gz/download \
+    && tar -xzf open_jtalk_dic_utf_8-1.11.tar.gz
+
+# HTS Engine ビルド
+WORKDIR /build/hts_engine_API-1.10
+RUN emconfigure ./configure --enable-static --disable-shared \
+    && emmake make -j$(nproc)
+
+# OpenJTalk ビルド（MeCab含む）
+WORKDIR /build/open_jtalk-1.11
+RUN emconfigure ./configure \
+    --with-hts-engine-header-path=/build/hts_engine_API-1.10/include \
+    --with-hts-engine-library-path=/build/hts_engine_API-1.10/lib \
+    --enable-static --disable-shared \
+    && emmake make -j$(nproc)
+
+WORKDIR /build
+```
+
+#### Task 5-R.2: 辞書統合WASM実装（2時間）
 
 **Assets/uPiper/Runtime/Core/Phonemizers/WebGL/WebGLOpenJTalkUnityPhonemizer.cs**
 ```csharp
@@ -1571,7 +1656,14 @@ describe('Unity WebGL E2E Tests', () => {
 
 ---
 
-## Milestone 6: GitHub Pagesデプロイと本番テスト
+## Milestone 6: Unity WebGLビルド（修正版）
+
+### ゴール
+- ✅ 辞書ベースWASMを使用したUnity WebGLビルド
+- ✅ ローカルサーバーで動作すること
+- ✅ 任意の日本語テキストが音素化できること
+
+## Milestone 7: GitHub Pagesデプロイと本番テスト
 
 ### ゴール
 - ✅ GitHub Pagesで動作すること
@@ -1724,7 +1816,7 @@ describe('Performance Tests', () => {
 
 ---
 
-## Milestone 7: ドキュメントとCI/CD
+## Milestone 8: ドキュメントとCI/CD
 
 ### ゴール
 - ✅ 完全なドキュメントが作成されること
@@ -1883,24 +1975,31 @@ MIT License
 
 ---
 
-## 実装完了基準
+## 実装完了基準（修正版）
 
-### 全体の成功基準
+### 必須要件
+- ✅ **任意の日本語テキストを音素化できる**（ルックアップテーブルではない）
+- ✅ Windows/Android版と同等の音素化品質
+- ✅ GitHub Pagesで動作
+- ✅ Unity WebGLビルドで動作
 
-- ✅ 全マイルストーンの完了
-- ✅ GitHub Pagesで「こんにちは」が正しく音素化される
-- ✅ Unity Moduleとの競合なし
-- ✅ メモリリークなし
-- ✅ 初期化時間5秒以内
-- ✅ テストカバレッジ80%以上
+### パフォーマンス要件
+- 初期化: 10秒以内（辞書ロード含む）
+- 音素化: 100ms以内
+- メモリ使用量: 256MB以内
 
-### リスク管理
+### ファイルサイズ目標
+- WASM: 5-10MB
+- 辞書データ: 15-20MB（圧縮時）
+- 合計: 30MB以内
 
-| リスク | 影響度 | 対策 |
-|--------|--------|------|
-| ビルド環境構築の遅延 | 中 | Dockerイメージの事前準備 |
-| Unity互換性問題 | 高 | 早期のUnity統合テスト |
-| パフォーマンス問題 | 中 | 段階的な最適化 |
+### リスクと対策
+
+| リスク | 影響 | 対策 |
+|--------|------|------|
+| 辞書ファイルサイズが大きすぎる | 初回ロードが遅い | 圧縮、CDN利用、プログレス表示 |
+| メモリ不足 | ブラウザクラッシュ | メモリ上限設定、段階的ロード |
+| CORS問題 | GitHub Pagesで動作しない | 適切なヘッダー設定、同一オリジン配置 |
 
 ## 付録
 
@@ -2064,5 +2163,30 @@ window.OpenJTalkUnityAPI.phonemize('こんにちは')
 
 ---
 
-*このドキュメントは随時更新されます。*
-*最終更新: 2025年8月9日（M3完了・M4統合済み）*
+## 📝 修正版スケジュール
+
+| 日程 | タスク | 見積時間 |
+|------|--------|----------|
+| Day 1 | M5-R: 辞書ベースWASM実装 | 4時間 |
+| Day 1 | M6-R: Unity統合修正 | 2時間 |
+| Day 2 | M7-R: GitHub Pagesデプロイ | 1時間 |
+| Day 2 | テスト・デバッグ | 2時間 |
+| Day 2 | M8: 最適化（オプション） | 2時間 |
+
+**合計**: 11時間（1.5日）
+
+## 🔍 現在の問題の根本原因
+
+計画書では「本番実装」と記載しながら、実際には：
+
+1. **時間短縮のため簡易実装を選択** - テストを通すことを優先
+2. **辞書統合の複雑さを過小評価** - Emscriptenでの辞書ファイル扱いが想定より困難
+3. **piper-plusの実装を十分に参考にしなかった** - 既に解決済みの問題を再発明
+
+これらの問題を修正し、**本来の計画通りの完全な実装**を行います。
+
+---
+
+*最終更新: 2024-12-19*
+*作成者: Claude + User*
+*状態: 実装修正が必要*

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace uPiper.Core.Phonemizers
 {
@@ -124,7 +125,7 @@ namespace uPiper.Core.Phonemizers
             { "\ue00c", 36 },  // py
             { "b", 37 },
             { "\ue00d", 38 },  // by
-            { "\ue00e", 39 },  // ch (mapped to same ID as ty)
+            { "\ue00e", 39 },  // ch (alternative mapping - not used)
             { "\ue00f", 40 },  // ts
             { "s", 41 },
             { "\ue010", 42 },  // sh (and sy)
@@ -204,6 +205,42 @@ namespace uPiper.Core.Phonemizers
                 if (string.IsNullOrEmpty(phoneme))
                     continue;
 
+                // Check for WebGL special markers (e.g., "__ch__", "__chi__", "__ts__")
+                if (phoneme.StartsWith("__") && phoneme.EndsWith("__"))
+                {
+                    var multiCharPhoneme = phoneme.Substring(2, phoneme.Length - 4);
+                    
+                    // Special case for "chi" - treat as "ch" + "i"
+                    if (multiCharPhoneme.ToLower() == "chi")
+                    {
+                        UnityEngine.Debug.Log($"[OpenJTalkToPiperMapping] Found __chi__ marker, splitting to ch + i");
+                        result.Add("\ue00a");  // PUA for "ch"
+                        result.Add("i");        // Add "i" separately
+                        UnityEngine.Debug.Log($"[OpenJTalkToPiperMapping] Added PUA \\ue00a and 'i' to result");
+                        continue;
+                    }
+                    
+                    if (PhonemeToPUA.ContainsKey(multiCharPhoneme.ToLower()))
+                    {
+                        var pua = PhonemeToPUA[multiCharPhoneme.ToLower()];
+                        result.Add(pua);
+                        continue;
+                    }
+                    
+                    // If no PUA mapping found, keep the multi-char phoneme as is
+                    // This shouldn't happen, but better than losing the phoneme
+                    result.Add(multiCharPhoneme);
+                    continue;
+                }
+                
+                // Check if this is already a PUA character
+                if (phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff')
+                {
+                    // Already a PUA character, use as-is
+                    result.Add(phoneme);
+                    continue;
+                }
+                
                 // Check if this is a multi-character phoneme that needs PUA conversion
                 // This should be checked BEFORE the simple mapping to ensure "ky" -> PUA, not "ky" -> "k"
                 if (PhonemeToPUA.ContainsKey(phoneme.ToLower()))
@@ -227,7 +264,7 @@ namespace uPiper.Core.Phonemizers
 
                     if (isChiSound)
                     {
-                        result.Add("\ue00e"); // PUA for "ch"
+                        result.Add("\ue00a"); // PUA for "ch" - MUST use \ue00a (ID 32), not \ue00e
                         continue;
                     }
                 }
@@ -259,7 +296,15 @@ namespace uPiper.Core.Phonemizers
                 }
             }
 
-            return result.ToArray();
+            var resultArray = result.ToArray();
+            
+            // Debug logging for "こんにちは" case
+            if (openJTalkPhonemes.Any(p => p == "__chi__" || p == "chi"))
+            {
+                UnityEngine.Debug.Log($"[OpenJTalkToPiperMapping] Final converted phonemes ({resultArray.Length}): {string.Join(", ", resultArray.Select(p => $"'{p}'"))}");
+            }
+            
+            return resultArray;
         }
 
         /// <summary>

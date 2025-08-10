@@ -175,7 +175,35 @@ namespace uPiper.Core.AudioGeneration
 
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Preparing model inputs...");
                         PiperLogger.LogInfo($"  Phoneme IDs: {string.Join(", ", phonemeIds.Take(Math.Min(10, phonemeIds.Length)))}... (length: {phonemeIds.Length})");
+                        
+#if UNITY_WEBGL && !UNITY_EDITOR
+                        // WebGL での精度問題を軽減するパラメータ調整
+                        // より小さい値で精度誤差の影響を減らす
+                        var webglNoiseScale = noiseScale * 0.75f;  // 0.667 → 0.5
+                        var webglLengthScale = lengthScale * 0.95f; // 1.0 → 0.95
+                        var webglNoiseW = noiseW * 0.75f;           // 0.8 → 0.6
+                        
+                        // 特定パターンの検出と追加調整（InferenceAudioGeneratorには inputText へのアクセスがないため、音素IDから推測）
+                        // 音素ID 32 は「ch」のPUA、これが含まれる場合は追加調整
+                        bool hasProblematicPattern = phonemeIds.Contains(32);
+                        if (hasProblematicPattern)
+                        {
+                            PiperLogger.LogInfo($"[InferenceAudioGenerator] Detected 'ch' phoneme (ID 32), applying additional adjustment");
+                            webglNoiseScale *= 0.8f;
+                            webglLengthScale *= 0.9f;
+                            webglNoiseW *= 0.8f;
+                        }
+                        
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] WebGL adjustment applied:");
+                        PiperLogger.LogInfo($"  Original: noise={noiseScale}, length={lengthScale}, noise_w={noiseW}");
+                        PiperLogger.LogInfo($"  Adjusted: noise={webglNoiseScale}, length={webglLengthScale}, noise_w={webglNoiseW}");
+                        
+                        noiseScale = webglNoiseScale;
+                        lengthScale = webglLengthScale;
+                        noiseW = webglNoiseW;
+#else
                         PiperLogger.LogInfo($"  Length scale: {lengthScale}, Noise scale: {noiseScale}, Noise W: {noiseW}");
+#endif
 
                         // 入力テンソルを作成
                         var inputTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
@@ -296,6 +324,49 @@ namespace uPiper.Core.AudioGeneration
                         }
 
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Copied {audioData.Length} samples");
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+                        // WebGL での出力補正処理
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Applying WebGL output correction...");
+                        
+                        // 異常なサンプル数を検出して補正
+                        const int expectedSamplesPerSecond = 22050;
+                        const float minExpectedDuration = 1.5f;
+                        const float maxExpectedDuration = 5.0f;
+                        float actualDuration = audioData.Length / (float)expectedSamplesPerSecond;
+                        
+                        if (actualDuration < minExpectedDuration || actualDuration > maxExpectedDuration)
+                        {
+                            PiperLogger.LogWarning($"[InferenceAudioGenerator] Unusual audio duration: {actualDuration:F2}s (expected {minExpectedDuration}-{maxExpectedDuration}s)");
+                        }
+                        
+                        // 振幅の正規化
+                        var maxAbs = audioData.Select(Math.Abs).Max();
+                        if (maxAbs > 0.3f)
+                        {
+                            PiperLogger.LogInfo($"[InferenceAudioGenerator] Normalizing amplitude from {maxAbs:F4} to 0.3");
+                            var scaleFactor = 0.3f / maxAbs;
+                            for (int i = 0; i < audioData.Length; i++)
+                            {
+                                audioData[i] *= scaleFactor;
+                            }
+                        }
+                        
+                        // NaN/Inf チェック
+                        int correctedCount = 0;
+                        for (int i = 0; i < audioData.Length; i++)
+                        {
+                            if (float.IsNaN(audioData[i]) || float.IsInfinity(audioData[i]))
+                            {
+                                audioData[i] = 0f;
+                                correctedCount++;
+                            }
+                        }
+                        if (correctedCount > 0)
+                        {
+                            PiperLogger.LogWarning($"[InferenceAudioGenerator] Corrected {correctedCount} NaN/Inf values");
+                        }
+#endif
 
                         // デバッグ用：最初の10サンプルの値を表示
                         var sampleDebug = string.Join(", ", audioData.Take(10).Select(x => x.ToString("F4", System.Globalization.CultureInfo.InvariantCulture)));
