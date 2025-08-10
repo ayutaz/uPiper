@@ -1,0 +1,19 @@
+{
+  "original_filename": "openjtalk-unity.data",
+  "original_size": 107298948,
+  "original_hash": "909a8b126c79f7abfabbd27f552217bcba40fe51bedc0df69b653ecd85271df5",
+  "chunk_size": 94371840,
+  "chunks": [
+    {
+      "filename": "openjtalk-unity.data.part000",
+      "size": 94371840,
+      "hash": "a9422acc6cad86504025eb9c72889af315447161154f2300243389695a3bdd0b"
+    },
+    {
+      "filename": "openjtalk-unity.data.part001",
+      "size": 12927108,
+      "hash": "7011b6921385a53624244f813808fd1998a961f7026274ec0944d01d6d8ca118"
+    }
+  ],
+  "split_for_github_pages": true
+}

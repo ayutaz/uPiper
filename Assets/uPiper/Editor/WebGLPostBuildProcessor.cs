@@ -41,7 +41,10 @@ namespace uPiper.Editor
             {
                 "openjtalk-unity.js",
                 "openjtalk-unity.wasm",
-                "openjtalk-unity.data",
+                "openjtalk-unity.data",  // オリジナルファイル（ローカルテスト用）
+                "openjtalk-unity.data.part000",  // GitHub Pages用分割ファイル1
+                "openjtalk-unity.data.part001",  // GitHub Pages用分割ファイル2
+                "openjtalk-unity.data.manifest.json",  // 分割ファイルのマニフェスト
                 "openjtalk-webgl-integration.js",
                 "openjtalk-unity-wrapper.js",
                 "onnx-runtime-wrapper.js",
@@ -127,72 +130,15 @@ namespace uPiper.Editor
             Debug.Log($"[uPiper] Copied {copiedCount} files, Total size: {totalSizeStr}");
             Debug.Log($"[uPiper] OpenJTalk is ready for WebGL deployment!");
             
-            // GitHub Pages用の処理
-            ProcessLargeFilesForGitHubPages(buildPath);
+            // Note: ファイル分割は事前に実行済み（openjtalk-unity.data.part000, part001）
+            // GitHub Pagesデプロイ時はgithub-pages-adapter.jsが自動的に分割ファイルを再構築
             
             // ビルド完了後の手順を表示
             Debug.Log("[uPiper] Next steps:");
             Debug.Log("[uPiper] 1. Start local server: python -m http.server 8080");
             Debug.Log("[uPiper] 2. Open browser: http://localhost:8080");
             Debug.Log("[uPiper] 3. For GitHub Pages: git push and enable Pages in repository settings");
-        }
-        
-        private void ProcessLargeFilesForGitHubPages(string buildPath)
-        {
-            Debug.Log("[uPiper] Processing large files for GitHub Pages (100MB limit)...");
-            
-            string pythonScript = Path.Combine(Application.dataPath, "..", "split-large-files.py");
-            
-            if (!File.Exists(pythonScript))
-            {
-                Debug.LogWarning($"[uPiper] split-large-files.py not found. Large files may not work on GitHub Pages.");
-                return;
-            }
-            
-            try
-            {
-                // Pythonスクリプトを実行してファイルを分割
-                ProcessStartInfo psi = new ProcessStartInfo
-                {
-                    FileName = "python",
-                    Arguments = $"\"{pythonScript}\" process \"{buildPath}\"",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true
-                };
-                
-                using (Process process = Process.Start(psi))
-                {
-                    string output = process.StandardOutput.ReadToEnd();
-                    string error = process.StandardError.ReadToEnd();
-                    process.WaitForExit();
-                    
-                    if (!string.IsNullOrEmpty(output))
-                    {
-                        Debug.Log($"[uPiper] File splitting output:\n{output}");
-                    }
-                    
-                    if (!string.IsNullOrEmpty(error))
-                    {
-                        Debug.LogError($"[uPiper] File splitting error:\n{error}");
-                    }
-                    
-                    if (process.ExitCode == 0)
-                    {
-                        Debug.Log("[uPiper] ✅ Large files processed for GitHub Pages deployment");
-                    }
-                    else
-                    {
-                        Debug.LogWarning("[uPiper] File splitting failed. You may need to manually split files > 100MB");
-                    }
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"[uPiper] Could not split large files: {ex.Message}");
-                Debug.Log("[uPiper] Install Python and run: python split-large-files.py process Build/Web");
-            }
+            Debug.Log("[uPiper] Note: Large files are pre-split for GitHub Pages compatibility");
         }
 
         private string GetFileSizeString(long bytes)
