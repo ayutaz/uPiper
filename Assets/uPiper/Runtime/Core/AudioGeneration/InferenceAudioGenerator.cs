@@ -57,7 +57,7 @@ namespace uPiper.Core.AudioGeneration
             
             // ONNXRuntimeWebGLインスタンスを作成して委譲
             var webglImplementation = new ONNXRuntimeWebGL();
-            await webglImplementation.InitializeAsync(modelAsset, voiceConfig, piperConfig, cancellationToken);
+            await webglImplementation.InitializeAsync(modelAsset, voiceConfig, cancellationToken);
             
             // 内部的にWebGL実装を保持（GenerateAudioAsyncで使用）
             _webglImplementation = webglImplementation;

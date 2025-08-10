@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using Unity.InferenceEngine;
 using uPiper.Core.Logging;
 
 namespace uPiper.Core.AudioGeneration
@@ -50,17 +51,17 @@ namespace uPiper.Core.AudioGeneration
         public int SampleRate => _voiceConfig?.SampleRate ?? 22050;
         
         /// <summary>
-        /// Initialize with ONNX Runtime Web
+        /// Initialize with ONNX Runtime Web using PiperConfig
         /// </summary>
-        public async Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig voiceConfig, PiperConfig piperConfig, CancellationToken cancellationToken = default)
+        public async Task InitializeAsync(string modelName, PiperVoiceConfig voiceConfig, PiperConfig piperConfig, CancellationToken cancellationToken = default)
         {
             PiperLogger.LogInfo("[ONNXRuntimeWebGL] Starting initialization...");
             
             if (_disposed)
                 throw new ObjectDisposedException(nameof(ONNXRuntimeWebGL));
             
-            if (modelAsset == null)
-                throw new ArgumentNullException(nameof(modelAsset));
+            if (string.IsNullOrEmpty(modelName))
+                throw new ArgumentNullException(nameof(modelName));
             
             if (voiceConfig == null)
                 throw new ArgumentNullException(nameof(voiceConfig));
@@ -78,8 +79,8 @@ namespace uPiper.Core.AudioGeneration
                 }
                 
                 // Step 2: Initialize ONNX Runtime with model
-                string modelPath = GetStreamingAssetsPath(modelAsset.name + ".onnx");
-                string configPath = GetStreamingAssetsPath(modelAsset.name + ".onnx.json");
+                string modelPath = GetStreamingAssetsPath(modelName + ".onnx");
+                string configPath = GetStreamingAssetsPath(modelName + ".onnx.json");
                 
                 PiperLogger.LogInfo($"[ONNXRuntimeWebGL] Initializing with model: {modelPath}");
                 
@@ -108,7 +109,9 @@ namespace uPiper.Core.AudioGeneration
         /// <inheritdoc/>
         public async Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig voiceConfig, CancellationToken cancellationToken = default)
         {
-            await InitializeAsync(modelAsset, voiceConfig, PiperConfig.CreateDefault(), cancellationToken);
+            // Extract model name from ModelAsset
+            string modelName = modelAsset?.name ?? throw new ArgumentNullException(nameof(modelAsset));
+            await InitializeAsync(modelName, voiceConfig, PiperConfig.CreateDefault(), cancellationToken);
         }
         
         /// <summary>
