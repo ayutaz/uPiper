@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Unity.InferenceEngine;
 using uPiper.Core.Logging;
+using AOT;
 
 namespace uPiper.Core.AudioGeneration
 {
@@ -16,14 +17,17 @@ namespace uPiper.Core.AudioGeneration
     {
         #region P/Invoke Declarations
         
-        [DllImport("__Internal")]
-        private static extern void ONNXRuntime_LoadWrapper(Action<int> callback);
+        public delegate void IntCallback(int value);
+        public delegate void DataCallback(int success, IntPtr dataPtr, int dataLength);
         
         [DllImport("__Internal")]
-        private static extern void ONNXRuntime_Initialize(string modelPath, string configPath, Action<int> callback);
+        private static extern void ONNXRuntime_LoadWrapper(IntCallback callback);
         
         [DllImport("__Internal")]
-        private static extern void ONNXRuntime_Synthesize(int[] phonemeIds, int length, Action<int, IntPtr, int> callback);
+        private static extern void ONNXRuntime_Initialize(string modelPath, string configPath, IntCallback callback);
+        
+        [DllImport("__Internal")]
+        private static extern void ONNXRuntime_Synthesize(int[] phonemeIds, int length, DataCallback callback);
         
         [DllImport("__Internal")]
         private static extern void ONNXRuntime_FreeMemory(IntPtr ptr);
@@ -43,6 +47,11 @@ namespace uPiper.Core.AudioGeneration
         private PiperVoiceConfig _voiceConfig;
         private bool _disposed;
         private readonly object _lockObject = new object();
+        
+        // Static fields for callbacks
+        private static TaskCompletionSource<bool> _loadWrapperTcs;
+        private static TaskCompletionSource<bool> _initializeTcs;
+        private static TaskCompletionSource<float[]> _synthesizeTcs;
         
         /// <inheritdoc/>
         public bool IsInitialized => _isInitialized;
@@ -115,25 +124,39 @@ namespace uPiper.Core.AudioGeneration
         }
         
         /// <summary>
+        /// Static callback for wrapper loading
+        /// </summary>
+        [MonoPInvokeCallback(typeof(IntCallback))]
+        private static void OnWrapperLoaded(int success)
+        {
+            PiperLogger.LogInfo($"[ONNXRuntimeWebGL] Wrapper load callback: {success}");
+            _loadWrapperTcs?.TrySetResult(success != 0);
+        }
+        
+        /// <summary>
         /// Load the ONNX Runtime wrapper script
         /// </summary>
         private Task<bool> LoadWrapperAsync(CancellationToken cancellationToken)
         {
-            var tcs = new TaskCompletionSource<bool>();
-            
-            Action<int> callback = (success) =>
-            {
-                PiperLogger.LogInfo($"[ONNXRuntimeWebGL] Wrapper load callback: {success}");
-                tcs.TrySetResult(success != 0);
-            };
+            _loadWrapperTcs = new TaskCompletionSource<bool>();
             
             // Register cancellation
-            cancellationToken.Register(() => tcs.TrySetCanceled());
+            cancellationToken.Register(() => _loadWrapperTcs.TrySetCanceled());
             
-            // Call JavaScript
-            ONNXRuntime_LoadWrapper(callback);
+            // Call JavaScript with static callback
+            ONNXRuntime_LoadWrapper(OnWrapperLoaded);
             
-            return tcs.Task;
+            return _loadWrapperTcs.Task;
+        }
+        
+        /// <summary>
+        /// Static callback for initialization
+        /// </summary>
+        [MonoPInvokeCallback(typeof(IntCallback))]
+        private static void OnInitialized(int success)
+        {
+            PiperLogger.LogInfo($"[ONNXRuntimeWebGL] Initialize callback: {success}");
+            _initializeTcs?.TrySetResult(success != 0);
         }
         
         /// <summary>
@@ -141,21 +164,15 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         private Task<bool> InitializeONNXAsync(string modelPath, string configPath, CancellationToken cancellationToken)
         {
-            var tcs = new TaskCompletionSource<bool>();
-            
-            Action<int> callback = (success) =>
-            {
-                PiperLogger.LogInfo($"[ONNXRuntimeWebGL] Initialize callback: {success}");
-                tcs.TrySetResult(success != 0);
-            };
+            _initializeTcs = new TaskCompletionSource<bool>();
             
             // Register cancellation
-            cancellationToken.Register(() => tcs.TrySetCanceled());
+            cancellationToken.Register(() => _initializeTcs.TrySetCanceled());
             
-            // Call JavaScript
-            ONNXRuntime_Initialize(modelPath, configPath, callback);
+            // Call JavaScript with static callback
+            ONNXRuntime_Initialize(modelPath, configPath, OnInitialized);
             
-            return tcs.Task;
+            return _initializeTcs.Task;
         }
         
         /// <inheritdoc/>
@@ -181,54 +198,58 @@ namespace uPiper.Core.AudioGeneration
             // Note: lengthScale, noiseScale, noiseW are currently hardcoded in JavaScript
             // TODO: Pass these parameters to JavaScript for dynamic control
             
-            var tcs = new TaskCompletionSource<float[]>();
-            
-            Action<int, IntPtr, int> callback = (success, dataPtr, dataLength) =>
-            {
-                try
-                {
-                    if (success != 0 && dataPtr != IntPtr.Zero && dataLength > 0)
-                    {
-                        PiperLogger.LogInfo($"[ONNXRuntimeWebGL] Synthesis successful, received {dataLength} samples");
-                        
-                        // Copy data from JavaScript memory
-                        float[] audioData = new float[dataLength];
-                        Marshal.Copy(dataPtr, audioData, 0, dataLength);
-                        
-                        // Free JavaScript memory
-                        ONNXRuntime_FreeMemory(dataPtr);
-                        
-                        // Log audio statistics
-                        LogAudioStats(audioData);
-                        
-                        tcs.TrySetResult(audioData);
-                    }
-                    else
-                    {
-                        PiperLogger.LogError("[ONNXRuntimeWebGL] Synthesis failed");
-                        tcs.TrySetException(new InvalidOperationException("Audio synthesis failed"));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    PiperLogger.LogError($"[ONNXRuntimeWebGL] Callback error: {ex.Message}");
-                    tcs.TrySetException(ex);
-                }
-            };
+            _synthesizeTcs = new TaskCompletionSource<float[]>();
             
             // Register cancellation
-            cancellationToken.Register(() => tcs.TrySetCanceled());
+            cancellationToken.Register(() => _synthesizeTcs.TrySetCanceled());
             
-            // Call JavaScript
-            ONNXRuntime_Synthesize(phonemeIds, phonemeIds.Length, callback);
+            // Call JavaScript with static callback
+            ONNXRuntime_Synthesize(phonemeIds, phonemeIds.Length, OnSynthesized);
             
-            return await tcs.Task;
+            return await _synthesizeTcs.Task;
+        }
+        
+        /// <summary>
+        /// Static callback for synthesis
+        /// </summary>
+        [MonoPInvokeCallback(typeof(DataCallback))]
+        private static void OnSynthesized(int success, IntPtr dataPtr, int dataLength)
+        {
+            try
+            {
+                if (success != 0 && dataPtr != IntPtr.Zero && dataLength > 0)
+                {
+                    PiperLogger.LogInfo($"[ONNXRuntimeWebGL] Synthesis successful, received {dataLength} samples");
+                    
+                    // Copy data from JavaScript memory
+                    float[] audioData = new float[dataLength];
+                    Marshal.Copy(dataPtr, audioData, 0, dataLength);
+                    
+                    // Free JavaScript memory
+                    ONNXRuntime_FreeMemory(dataPtr);
+                    
+                    // Log audio statistics
+                    LogAudioStats(audioData);
+                    
+                    _synthesizeTcs?.TrySetResult(audioData);
+                }
+                else
+                {
+                    PiperLogger.LogError("[ONNXRuntimeWebGL] Synthesis failed");
+                    _synthesizeTcs?.TrySetException(new InvalidOperationException("Audio synthesis failed"));
+                }
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogError($"[ONNXRuntimeWebGL] Callback error: {ex.Message}");
+                _synthesizeTcs?.TrySetException(ex);
+            }
         }
         
         /// <summary>
         /// Log audio statistics for debugging
         /// </summary>
-        private void LogAudioStats(float[] audioData)
+        private static void LogAudioStats(float[] audioData)
         {
             if (audioData == null || audioData.Length == 0) return;
             
