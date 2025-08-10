@@ -1323,6 +1323,7 @@ mergeInto(LibraryManager.library, {
     if (window.OpenJTalkUnityAPI && window.OpenJTalkUnityAPI.dispose) {
       window.OpenJTalkUnityAPI.dispose();
     }
+    }
   }
 });
 ```
