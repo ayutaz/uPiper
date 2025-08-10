@@ -28,8 +28,9 @@
 - 🎤 高品質な音声合成（piper-plusベース）
 - 🌍 多言語対応（日本語、英語、中国語、韓国語など）
 - 🚀 Unity AI Inference Engineによる高速推論
-- 📱 マルチプラットフォーム対応
-- 🔧 OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux/Android）
+- 📱 マルチプラットフォーム対応（WebGL含む）
+- 🔧 OpenJTalkによる高精度な日本語音素化（全プラットフォーム対応）
+- 🌐 WebGL完全対応 - ONNX Runtime Web統合、GitHub Pages展開可能
 - 🇨🇳 中国語音声合成対応（eSpeak-NG音素化、ピンイン変換）※音素精度に改善の余地あり
 - ⚡ GPU推論サポート（GPUCompute/GPUPixel）
 - 🎭 高度なサンプル（ストリーミング、複数音声、リアルタイム）
@@ -77,10 +78,10 @@
 - ✅ macOS (Apple Silicon/Intel)
 - ✅ Linux (x64)
 - ✅ Android (ARM64)
+- ✅ WebGL - ONNX Runtime Web統合による完全対応（GitHub Pages対応）
 
-### 未対応
-- ❌ WebGL - 技術調査中（piper-plus連携により将来対応予定）
-- ❌ iOS - Phase 5で対応予定
+### 開発中
+- 🚧 iOS - Phase 5で対応予定
 
 ## ビルドとパッケージ作成
 
@@ -117,6 +118,7 @@ var config = new PiperConfig
 ## 詳細ドキュメント
 
 - [アーキテクチャ](docs/ja/ARCHITECTURE.md) - 設計と技術的な詳細
+- [WebGL実装](docs/ja/guides/webgl/README.md) - WebGL/ONNX Runtime Web統合の詳細
 - [開発ログ](docs/DEVELOPMENT_LOG.md) - 開発進捗と変更履歴
 - [技術ドキュメント](docs/ja/guides/technical/) - 詳細な技術情報
 

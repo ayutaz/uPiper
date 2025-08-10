@@ -28,8 +28,9 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 - 🎤 High-quality speech synthesis (piper-plus based)
 - 🌍 Multi-language support (Japanese, English, Chinese, Korean, etc.)
 - 🚀 Fast inference with Unity AI Inference Engine
-- 📱 Multi-platform support
-- 🔧 High-precision Japanese phonemization with OpenJTalk (Windows/macOS/Linux/Android)
+- 📱 Multi-platform support (including WebGL)
+- 🔧 High-precision Japanese phonemization with OpenJTalk (all platforms)
+- 🌐 Full WebGL support - ONNX Runtime Web integration, GitHub Pages deployable
 - 🇨🇳 Chinese speech synthesis support (eSpeak-NG phonemization, Pinyin conversion) *Note: Phoneme accuracy needs improvement
 - ⚡ GPU inference support (GPUCompute/GPUPixel)
 - 🎭 Advanced samples (streaming, multi-voice, real-time)
@@ -77,10 +78,10 @@ Download the latest package from [Releases](https://github.com/ayutaz/uPiper/rel
 - ✅ macOS (Apple Silicon/Intel)
 - ✅ Linux (x64)
 - ✅ Android (ARM64)
+- ✅ WebGL - Full support with ONNX Runtime Web integration (GitHub Pages compatible)
 
-### Not Supported
-- ❌ WebGL - Under investigation (future support planned via piper-plus integration)
-- ❌ iOS - Planned for Phase 5
+### In Development
+- 🚧 iOS - Planned for Phase 5
 
 ## Build and Package Creation
 
@@ -117,6 +118,7 @@ See the [GPU Inference Guide](docs/en/guides/technical/gpu-inference.md) for det
 ## Documentation
 
 - [Architecture](docs/en/ARCHITECTURE.md) - Design and technical details
+- [WebGL Implementation](docs/en/guides/webgl/README.md) - WebGL/ONNX Runtime Web integration details
 - [Development Log](docs/DEVELOPMENT_LOG.md) - Development progress and change history
 - [Technical Documentation](docs/en/guides/technical/) - Detailed technical information
 
