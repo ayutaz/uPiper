@@ -98,13 +98,7 @@ class UnityONNXRuntime {
             
             this.session = await ort.InferenceSession.create(modelPath, {
                 executionProviders: ['wasm'],
-                graphOptimizationLevel: 'all',
-                enableCpuMemArena: true,
-                enableMemPattern: true,
-                // WebGL specific optimizations
-                interOpNumThreads: 1,
-                intraOpNumThreads: 1,
-                executionMode: 'sequential'
+                graphOptimizationLevel: 'all'
             });
             
             const loadTime = performance.now() - startTime;
@@ -174,6 +168,10 @@ class UnityONNXRuntime {
             throw new Error('ONNX Runtime not initialized. Call initialize() first.');
         }
         
+        // デバッグ用：キャッシュを一時的に無効化
+        // TODO: 問題が解決したら useCache = true に戻す
+        useCache = false;
+        
         // キャッシュチェック
         const cacheKey = JSON.stringify(phonemeIds);
         if (useCache && this.audioCache.has(cacheKey)) {
@@ -182,6 +180,14 @@ class UnityONNXRuntime {
         }
         
         this.log('Synthesizing audio for phoneme IDs:', phonemeIds);
+        
+        // 「こんにちは」のデバッグ
+        // Expected IDs: [0, 25, 11, 22, 50, 8, 39, 8, 56, 7, 0]
+        if (phonemeIds.length === 11 && phonemeIds[6] === 39) {
+            this.log('✓ Detected correct "konnichiwa" pattern with ID 39 for "ch"');
+        } else if (phonemeIds.length === 11 && phonemeIds[6] === 32) {
+            this.error('✗ Wrong ID for "ch" in "konnichiwa"! Got ID 32 (ty) instead of 39 (ch)');
+        }
         const startTime = performance.now();
         
         try {
@@ -229,13 +235,81 @@ class UnityONNXRuntime {
             
             // 出力テンソルから音声データを取得
             const audioTensor = results['output'] || results[Object.keys(results)[0]];
-            let audioData = new Float32Array(audioTensor.data);
             
-            // 多次元テンソルの場合、フラット化
-            if (audioTensor.dims.length > 1) {
-                const audioLength = audioTensor.dims[audioTensor.dims.length - 1];
-                audioData = audioData.slice(0, audioLength);
+            // デバッグ: テンソルの次元を確認
+            this.log(`Output tensor dims: [${audioTensor.dims.join(', ')}]`);
+            
+            // 4次元テンソル [1, 1, 1, N] の特殊ケースを処理
+            // Unity WebGLのEmscripten経由で余分な次元が追加される場合がある
+            let audioData;
+            if (audioTensor.dims.length === 4 && 
+                audioTensor.dims[0] === 1 && 
+                audioTensor.dims[1] === 1 && 
+                audioTensor.dims[2] === 1) {
+                this.log('WARNING: Detected 4D tensor [1,1,1,N] - Unity WebGL specific issue');
+                this.log('Extracting audio data from 4D tensor...');
+                
+                // 4次元テンソルの場合、最後の次元だけを取得
+                const lastDimSize = audioTensor.dims[3];
+                this.log(`4D tensor last dimension size: ${lastDimSize}`);
+                
+                // デバッグ: データの最初の部分を確認
+                const rawData = audioTensor.data;
+                this.log(`Raw data type: ${typeof rawData}, length: ${rawData.length}`);
+                
+                // Float32Arrayに変換
+                audioData = new Float32Array(rawData);
+                
+                // サンプル数が異常に多い場合の警告
+                if (audioData.length > 50000) {
+                    this.error(`WARNING: Audio data length (${audioData.length}) is unusually large!`);
+                    this.error('Expected around 18000-20000 samples for "konnichiwa"');
+                    
+                    // デバッグ: 音声データの分析
+                    let silenceCount = 0;
+                    let nonSilenceStart = -1;
+                    let nonSilenceEnd = -1;
+                    
+                    // 無音でない部分を探す
+                    for (let i = 0; i < audioData.length; i++) {
+                        if (Math.abs(audioData[i]) < 0.001) {
+                            silenceCount++;
+                        } else {
+                            if (nonSilenceStart === -1) nonSilenceStart = i;
+                            nonSilenceEnd = i;
+                        }
+                    }
+                    
+                    this.log(`Silence samples: ${silenceCount}/${audioData.length}`);
+                    this.log(`Non-silence range: ${nonSilenceStart} to ${nonSilenceEnd}`);
+                    
+                    if (nonSilenceEnd > 0 && nonSilenceEnd < audioData.length * 0.5) {
+                        this.log('Detected that actual audio might be in first half of data');
+                        this.log('Attempting to extract first portion as actual audio...');
+                        
+                        // 実際の音声部分だけを抽出（最初の20000サンプル程度）
+                        const estimatedLength = Math.min(nonSilenceEnd + 1000, 20000);
+                        const trimmedAudio = new Float32Array(estimatedLength);
+                        for (let i = 0; i < estimatedLength; i++) {
+                            trimmedAudio[i] = audioData[i];
+                        }
+                        
+                        this.log(`Trimmed audio to ${estimatedLength} samples`);
+                        audioData = trimmedAudio;
+                    }
+                }
+                
+            } else if (audioTensor.dims.length === 3) {
+                // 期待される3次元形式 [batch_size, 1, audio_length]
+                this.log('Detected expected 3D tensor format');
+                audioData = new Float32Array(audioTensor.data);
+            } else {
+                // その他の形式（念のため）
+                this.log(`Unexpected tensor dimensions: ${audioTensor.dims.length}D`);
+                audioData = new Float32Array(audioTensor.data);
             }
+            
+            this.log(`Output data length: ${audioData.length}`);
             
             // 音声統計情報
             this.logAudioStats(audioData);
@@ -326,6 +400,12 @@ class UnityONNXRuntime {
 
 // グローバルインスタンスを作成
 window.UnityONNXRuntime = new UnityONNXRuntime();
+
+// デバッグ用：コンソールからキャッシュをクリアできるようにする
+window.clearAudioCache = function() {
+    window.UnityONNXRuntime.clearCache();
+    console.log('[Debug] Audio cache cleared');
+};
 
 // Unity からアクセス可能な簡易API
 window.UnityONNX = {

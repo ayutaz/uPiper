@@ -189,7 +189,7 @@ namespace uPiper.Core.Phonemizers
             { "ry", "\ue015" },  // りゃ、りゅ、りょ
             
             // Other multi-character phonemes
-            { "ch", "\ue00a" },  // ち - maps to PUA (represents entire "chi" sound)
+            { "ch", "\ue00e" },  // ち - maps to PUA (represents entire "chi" sound)
             { "ts", "\ue00f" },  // つ - maps to PUA
             { "sh", "\ue010" },  // し - maps to PUA (same as "sy")
             { "cl", "\ue005" }   // っ（促音）- maps to PUA
@@ -209,6 +209,73 @@ namespace uPiper.Core.Phonemizers
                 var phoneme = openJTalkPhonemes[i];
                 if (string.IsNullOrEmpty(phoneme))
                     continue;
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+                // WebGL環境では PUA文字が正しく処理されないため、特殊マーカーを使用
+                // この問題は Unity と JavaScript 間の文字エンコーディングの違いによる
+                if (phoneme.ToLower() == "ch")
+                {
+                    result.Add("__CH__");  // PUA文字 \ue00e の代替マーカー
+                    UnityEngine.Debug.Log($"[WebGL] Converted 'ch' to '__CH__' marker to avoid PUA character issues");
+                    // NOTE: "ch"の後の"i"はスキップしない - "ch"は子音部分のみ、"i"は母音部分
+                    continue;
+                }
+                else if (phoneme.ToLower() == "ts")
+                {
+                    result.Add("__TS__");  // PUA文字 \ue00f の代替マーカー
+                    continue;
+                }
+                else if (phoneme.ToLower() == "sh" || phoneme.ToLower() == "sy")
+                {
+                    result.Add("__SH__");  // PUA文字 \ue010 の代替マーカー
+                    continue;
+                }
+                else if (phoneme.ToLower() == "ky")
+                {
+                    result.Add("__KY__");  // PUA文字 \ue006 の代替マーカー
+                    continue;
+                }
+                else if (phoneme.ToLower() == "gy")
+                {
+                    result.Add("__GY__");  // PUA文字 \ue008 の代替マーカー
+                    continue;
+                }
+                else if (phoneme.ToLower() == "ny")
+                {
+                    result.Add("__NY__");  // PUA文字 \ue013 の代替マーカー
+                    continue;
+                }
+                else if (phoneme.ToLower() == "hy")
+                {
+                    result.Add("__HY__");  // PUA文字 \ue012 の代替マーカー
+                    continue;
+                }
+                else if (phoneme.ToLower() == "ry")
+                {
+                    result.Add("__RY__");  // PUA文字 \ue015 の代替マーカー
+                    continue;
+                }
+                else if (phoneme.ToLower() == "my")
+                {
+                    result.Add("__MY__");  // PUA文字 \ue014 の代替マーカー
+                    continue;
+                }
+                else if (phoneme.ToLower() == "py")
+                {
+                    result.Add("__PY__");  // PUA文字 \ue00c の代替マーカー
+                    continue;
+                }
+                else if (phoneme.ToLower() == "by")
+                {
+                    result.Add("__BY__");  // PUA文字 \ue00d の代替マーカー
+                    continue;
+                }
+                else if (phoneme.ToLower() == "cl")
+                {
+                    result.Add("__CL__");  // PUA文字 \ue005 の代替マーカー
+                    continue;
+                }
+#endif
 
                 // Removed WebGL special markers - treat all platforms the same way
                 // "ch", "ts", "sh" will be handled by the normal PUA mapping below
@@ -230,26 +297,7 @@ namespace uPiper.Core.Phonemizers
                     continue;
                 }
 
-                // Special handling for "t i" sequence -> "ch i" (for ち)
-                // NOTE: This special case handling is disabled as OpenJTalk outputs "ch i" directly
-                if (false && phoneme.ToLower() == "t" && i + 1 < openJTalkPhonemes.Length && openJTalkPhonemes[i + 1].ToLower() == "i")
-                {
-                    // Check if this is actually "ち" sound
-                    // Look at the previous phoneme to determine context
-                    var isChiSound = true;
-
-                    // If preceded by "t" (like in "tti"), it's not "chi"
-                    if (i > 0 && openJTalkPhonemes[i - 1].ToLower() == "t")
-                    {
-                        isChiSound = false;
-                    }
-
-                    if (isChiSound)
-                    {
-                        result.Add("\ue00a"); // PUA for "ch" - MUST use \ue00a (ID 32), not \ue00e
-                        continue;
-                    }
-                }
+                // NOTE: OpenJTalk outputs "ch i" directly for "ち", no special handling needed
 
                 // Handle pause/silence
                 if (phoneme.ToLower() == "pau")

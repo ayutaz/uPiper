@@ -56,7 +56,7 @@ namespace uPiper.Core.AudioGeneration
             ["dy"] = "\ue00b",
             ["py"] = "\ue00c",
             ["by"] = "\ue00d",
-            ["ch"] = "\ue00a",  // Same as ty in ja_JP-test-medium model
+            ["ch"] = "\ue00e",  // ch phoneme for ち
             ["ts"] = "\ue00f",
             ["sh"] = "\ue010",
             ["zy"] = "\ue011",
@@ -104,6 +104,74 @@ namespace uPiper.Core.AudioGeneration
             {
                 if (string.IsNullOrEmpty(phoneme))
                     continue;
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+                // WebGL環境での特殊マーカー処理
+                // PUA文字が正しく処理されないため、マーカーを直接IDにマップ
+                if (phoneme == "__CH__")
+                {
+                    ids.Add(39);  // \ue00e (ch) のID
+                    PiperLogger.LogInfo($"[WebGL PhonemeEncoder] Converted '__CH__' marker to ID 39 (correct 'ch' sound)");
+                    continue;
+                }
+                else if (phoneme == "__TS__")
+                {
+                    ids.Add(40);  // \ue00f (ts) のID
+                    PiperLogger.LogInfo($"[WebGL] Converted '__TS__' marker to ID 40");
+                    continue;
+                }
+                else if (phoneme == "__SH__")
+                {
+                    ids.Add(42);  // \ue010 (sh/sy) のID
+                    PiperLogger.LogInfo($"[WebGL] Converted '__SH__' marker to ID 42");
+                    continue;
+                }
+                else if (phoneme == "__KY__")
+                {
+                    ids.Add(26);  // \ue006 (ky) のID
+                    continue;
+                }
+                else if (phoneme == "__GY__")
+                {
+                    ids.Add(29);  // \ue008 (gy) のID
+                    continue;
+                }
+                else if (phoneme == "__NY__")
+                {
+                    ids.Add(51);  // \ue013 (ny) のID
+                    continue;
+                }
+                else if (phoneme == "__HY__")
+                {
+                    ids.Add(48);  // \ue012 (hy) のID
+                    continue;
+                }
+                else if (phoneme == "__RY__")
+                {
+                    ids.Add(55);  // \ue015 (ry) のID
+                    continue;
+                }
+                else if (phoneme == "__MY__")
+                {
+                    ids.Add(53);  // \ue014 (my) のID
+                    continue;
+                }
+                else if (phoneme == "__PY__")
+                {
+                    ids.Add(36);  // \ue00c (py) のID
+                    continue;
+                }
+                else if (phoneme == "__BY__")
+                {
+                    ids.Add(38);  // \ue00d (by) のID
+                    continue;
+                }
+                else if (phoneme == "__CL__")
+                {
+                    ids.Add(23);  // \ue005 (cl) のID
+                    continue;
+                }
+#endif
 
                 var phonemeToLookup = phoneme;
 

@@ -1040,6 +1040,22 @@ namespace uPiper.Demo
                     for (var i = 0; i < phonemes.Length; i++)
                     {
                         PiperLogger.LogInfo($"  Phoneme[{i}]: '{phonemes[i]}' (length: {phonemes[i].Length})");
+                        
+                        // WebGL環境でのマーカー確認
+#if UNITY_WEBGL && !UNITY_EDITOR
+                        if (phonemes[i] == "__CH__")
+                        {
+                            PiperLogger.LogInfo($"    -> WebGL: __CH__ marker detected at position {i}");
+                        }
+#endif
+                        
+                        // PUA文字の確認
+                        if (phonemes[i].Length == 1 && phonemes[i][0] >= '\ue000' && phonemes[i][0] <= '\uf8ff')
+                        {
+                            var puaCode = ((int)phonemes[i][0]).ToString("X4", System.Globalization.CultureInfo.InvariantCulture);
+                            PiperLogger.LogInfo($"    -> PUA character detected: U+{puaCode}");
+                        }
+                        
                         if (phonemes[i] == "ch" || phonemes[i] == "t" || phonemes[i] == "ty" || phonemes[i] == "i")
                         {
                             PiperLogger.LogInfo($"    -> This is the 'chi' sound component");
@@ -1053,6 +1069,27 @@ namespace uPiper.Demo
                 var encodeStopwatch = Stopwatch.StartNew();
                 var phonemeIds = _encoder.Encode(phonemes);
                 PiperLogger.LogInfo($"Phoneme IDs ({phonemeIds.Length}): {string.Join(", ", phonemeIds)}");
+                
+                // WebGL環境での詳細デバッグ
+#if UNITY_WEBGL && !UNITY_EDITOR
+                if (_inputField.text == konnichiwa)
+                {
+                    PiperLogger.LogInfo("[WebGL] === Phoneme ID Debug ===");
+                    PiperLogger.LogInfo($"[WebGL] Expected 'ch' ID: 39");
+                    for (var i = 0; i < phonemeIds.Length; i++)
+                    {
+                        if (phonemeIds[i] == 39)
+                        {
+                            PiperLogger.LogInfo($"[WebGL] Found ID 39 at position {i} (this should be 'ch')");
+                        }
+                        else if (phonemeIds[i] == 32)
+                        {
+                            PiperLogger.LogWarning($"[WebGL] Found ID 32 at position {i} (wrong! this is 'ty', not 'ch')");
+                        }
+                    }
+                }
+#endif
+                
                 timings["Encoding"] = encodeStopwatch.ElapsedMilliseconds;
 
                 // Log phoneme to ID mapping for debugging

@@ -106,7 +106,7 @@ namespace uPiper.Editor
                         // </body>タグの前にスクリプトを追加
                         string scriptsToAdd = @"
   <!-- ONNX Runtime Web -->
-  <script src=""https://cdn.jsdelivr.net/npm/onnxruntime-web@1.16.3/dist/ort.min.js""></script>
+  <script src=""https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/ort.min.js""></script>
   
   <!-- OpenJTalk WebGL Integration -->
   <script src=""StreamingAssets/openjtalk-unity.js""></script>
