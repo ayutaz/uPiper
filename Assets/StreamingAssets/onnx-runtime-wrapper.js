@@ -280,6 +280,20 @@ class UnityONNXRuntime {
                     this.log('1. Sampling rate mismatch in ONNX Runtime Web');
                     this.log('2. length_scale parameter not being applied correctly');
                     this.log('3. ONNX Runtime Web version incompatibility');
+                    
+                    // 実験的修正: 5分の1にリサンプリング
+                    // WebGLでは何らかの理由で5倍のサンプルが生成される
+                    this.log('Applying experimental fix: downsampling by factor of 5');
+                    const downsampleFactor = 5;
+                    const newLength = Math.floor(audioData.length / downsampleFactor);
+                    const resampledAudio = new Float32Array(newLength);
+                    
+                    for (let i = 0; i < newLength; i++) {
+                        resampledAudio[i] = audioData[i * downsampleFactor];
+                    }
+                    
+                    this.log(`Resampled from ${audioData.length} to ${newLength} samples`);
+                    audioData = resampledAudio;
                 }
                 
                 // サンプル数が異常に多い場合の警告
