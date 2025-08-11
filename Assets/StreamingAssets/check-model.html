@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Model Check</title>
+</head>
+<body>
+    <h1>モデルファイルのチェック</h1>
+    <button onclick="checkModel()">Check Model</button>
+    <pre id="output"></pre>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg) {
+            output.textContent += msg + '\n';
+            console.log(msg);
+        }
+        
+        async function checkModel() {
+            try {
+                log('=== Model File Check ===');
+                
+                // モデルファイルのサイズを確認
+                const modelResponse = await fetch('ja_JP-test-medium.onnx');
+                const modelBlob = await modelResponse.blob();
+                log(`Model size: ${(modelBlob.size / 1024 / 1024).toFixed(2)} MB`);
+                
+                // MD5ハッシュを計算（簡易的なチェックサム）
+                const modelBuffer = await modelBlob.arrayBuffer();
+                const modelBytes = new Uint8Array(modelBuffer);
+                
+                // 最初と最後の1000バイトでチェックサム
+                let checksum = 0;
+                for (let i = 0; i < Math.min(1000, modelBytes.length); i++) {
+                    checksum = (checksum + modelBytes[i]) % 0xFFFFFFFF;
+                }
+                for (let i = Math.max(0, modelBytes.length - 1000); i < modelBytes.length; i++) {
+                    checksum = (checksum + modelBytes[i]) % 0xFFFFFFFF;
+                }
+                log(`Model checksum: ${checksum}`);
+                
+                // Config確認
+                const configResponse = await fetch('ja_JP-test-medium.onnx.json');
+                const config = await configResponse.json();
+                log('\n=== Config Check ===');
+                log(`Sample rate: ${config.audio.sample_rate}`);
+                log(`Length scale: ${config.inference.length_scale}`);
+                log(`Noise scale: ${config.inference.noise_scale}`);
+                log(`Noise W: ${config.inference.noise_w}`);
+                
+                // piper-plusのGitHubから直接モデルをロードしてテスト
+                log('\n=== Testing with different model sources ===');
+                log('1. ローカルモデル: 103,680サンプル (5.8x)');
+                log('2. piper-plusオンラインデモで確認が必要');
+                
+                log('\n=== Possible Solutions ===');
+                log('1. モデルファイルを再ダウンロード');
+                log('2. ONNX Runtime Webの異なるバージョンを試す');
+                log('3. length_scale = 0.17 (1/5.8) で調整');
+                
+            } catch (error) {
+                log('Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

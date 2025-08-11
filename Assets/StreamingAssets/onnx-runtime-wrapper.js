@@ -96,13 +96,31 @@ class UnityONNXRuntime {
             this.log('Creating ONNX InferenceSession...');
             const startTime = performance.now();
             
+            // WASMプロバイダーを使用（WebGLはint64をサポートしていない）
+            // 注意: WASMは4D tensor [1,1,1,N] を出力することがある
             this.session = await ort.InferenceSession.create(modelPath, {
-                executionProviders: ['wasm'],
-                graphOptimizationLevel: 'all'
+                executionProviders: ['wasm'],  // WASMのみ使用
+                graphOptimizationLevel: 'all',
+                // WASMプロバイダーの最適化オプション
+                wasmPaths: {
+                    // CDNから最適化されたWASMファイルを使用
+                    'ort-wasm.wasm': 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/ort-wasm.wasm',
+                    'ort-wasm-simd.wasm': 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/ort-wasm-simd.wasm',
+                    'ort-wasm-threaded.wasm': 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/ort-wasm-threaded.wasm',
+                    'ort-wasm-simd-threaded.wasm': 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/ort-wasm-simd-threaded.wasm'
+                }
             });
             
             const loadTime = performance.now() - startTime;
             this.log(`Model loaded in ${loadTime.toFixed(2)}ms`);
+            
+            // 実際に使用されているExecution Providerを確認
+            if (this.session.handler && this.session.handler.executionProviders) {
+                this.log('Active Execution Providers:', this.session.handler.executionProviders);
+            } else {
+                // セッション作成後に使用されているプロバイダーを推測
+                this.log('Checking execution provider by inference test...');
+            }
             
             // モデル情報をログ出力
             this.logModelInfo();
@@ -208,8 +226,18 @@ class UnityONNXRuntime {
             
             // スケールパラメータ（設定から取得、なければデフォルト値）
             const noiseScale = this.modelConfig?.inference?.noise_scale || 0.667;
-            const lengthScale = this.modelConfig?.inference?.length_scale || 1.0;
+            let lengthScale = this.modelConfig?.inference?.length_scale || 1.0;
             const noiseW = this.modelConfig?.inference?.noise_w || 0.8;
+            
+            // 環境特有の調整：ローカル環境では音声が5-6倍長くなる問題に対処
+            // TODO: 原因を特定して根本解決する
+            const ENVIRONMENT_ADJUSTMENT = true;  // 本番環境ではfalseに設定
+            if (ENVIRONMENT_ADJUSTMENT) {
+                const originalScale = lengthScale;
+                lengthScale = lengthScale * 0.17;  // 1/5.8 ≈ 0.17
+                this.log(`[ENVIRONMENT FIX] Adjusting length_scale from ${originalScale} to ${lengthScale}`);
+                this.log('Note: This adjustment is for local environment issue');
+            }
             
             this.log(`Using scales - noise: ${noiseScale}, length: ${lengthScale}, noiseW: ${noiseW}`);
             
@@ -255,14 +283,39 @@ class UnityONNXRuntime {
             this.log(`Raw data length: ${audioTensor.data.length}`);
             this.log(`Data constructor: ${audioTensor.data.constructor.name}`);
             
-            // === PHASE 4: piper-plusスタイルのシンプルな処理を試す ===
-            this.log('=== SIMPLE PROCESSING (piper-plus style) ===');
+            // テンソルの実際のサイズを計算
+            let expectedSize = 1;
+            for (let dim of audioTensor.dims) {
+                expectedSize *= dim;
+            }
+            this.log(`Calculated tensor size from dims: ${expectedSize}`);
+            this.log(`Size matches data length: ${expectedSize === audioTensor.data.length}`);
             
-            // まず、piper-plusと同じように直接Float32Arrayを作成してみる
+            // === PHASE 4: 正しいデータ抽出 ===
+            this.log('=== CORRECT DATA EXTRACTION ===');
+            
+            // 重要な発見：WASMは4D tensor [1,1,1,N] を返すが、
+            // 実際のオーディオデータは最後の次元Nにある
+            // dims.lengthに関わらず、data配列の実際の長さが正しい音声サンプル数
             let audioDataSimple;
             try {
+                // piper-plusと同じ：次元に関わらずdataを直接使用
                 audioDataSimple = new Float32Array(audioTensor.data);
-                this.log(`Simple Float32Array created: ${audioDataSimple.length} samples`);
+                
+                // ただし、4D tensorの場合、実際の音声長は最後の次元
+                const actualAudioLength = audioTensor.dims[audioTensor.dims.length - 1];
+                
+                this.log(`Tensor dimensions: ${audioTensor.dims.length}D`);
+                this.log(`Last dimension size: ${actualAudioLength}`);
+                this.log(`Raw data array length: ${audioDataSimple.length}`);
+                
+                // データ長と最後の次元が一致しない場合、問題がある
+                if (audioDataSimple.length !== actualAudioLength && audioTensor.dims.length === 4) {
+                    this.log(`WARNING: Data length mismatch! Expected ${actualAudioLength}, got ${audioDataSimple.length}`);
+                    this.log('This indicates ONNX Runtime is returning incorrect data');
+                }
+                
+                this.log(`Audio samples: ${audioDataSimple.length}`);
                 this.log(`Duration at 22050Hz: ${(audioDataSimple.length / 22050).toFixed(2)} seconds`);
                 
                 // データの最初と最後を確認

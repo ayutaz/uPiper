@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CLI Test</title>
+</head>
+<body>
+    <h1>自動テスト実行中...</h1>
+    <pre id="output"></pre>
+    
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/ort.min.js"></script>
+    <script src="onnx-runtime-wrapper.js"></script>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg) {
+            output.textContent += msg + '\n';
+            console.log(msg);
+        }
+        
+        async function runAutomatedTest() {
+            log('========================================');
+            log('ONNX Runtime WebGL 自動テスト');
+            log('========================================\n');
+            
+            try {
+                // 1. 初期化
+                log('[1] ONNX Runtime初期化中...');
+                const initResult = await window.UnityONNX.initialize(
+                    'ja_JP-test-medium.onnx',
+                    'ja_JP-test-medium.onnx.json'
+                );
+                
+                if (!initResult.success) {
+                    throw new Error('初期化失敗: ' + initResult.error);
+                }
+                log('✓ 初期化成功\n');
+                
+                // 2. 最小テスト
+                log('[2] 最小テストケース実行中...');
+                const testResult = await window.UnityONNX.runMinimalTest();
+                
+                if (testResult.success) {
+                    log(`✓ 単一音素 "あ": ${testResult.minimal} samples`);
+                    log(`✓ "こんにちは": ${testResult.konnichiwa} samples`);
+                    
+                    const ratio = testResult.konnichiwa / 18000;
+                    if (ratio > 3) {
+                        log(`\n⚠️ 警告: 音声が${ratio.toFixed(1)}倍長い！`);
+                        log('これがUnity WebGLの問題です。');
+                    } else if (ratio > 1.5) {
+                        log(`\n⚠️ 音声がやや長い: ${ratio.toFixed(1)}倍`);
+                    } else {
+                        log('\n✓ 音声長は正常範囲内');
+                    }
+                } else {
+                    throw new Error('テスト失敗: ' + testResult.error);
+                }
+                
+                // 3. 詳細テスト
+                log('\n[3] 詳細な音素テスト...');
+                const testPatterns = [
+                    { name: '短い: "あ"', ids: [1, 7, 2], expected: 3000 },
+                    { name: '中: "ありがとう"', ids: [1, 7, 54, 8, 28, 7, 31, 11, 9, 2], expected: 15000 },
+                    { name: '長い: "こんにちは"', ids: [1, 25, 11, 22, 50, 8, 39, 8, 56, 7, 2], expected: 18000 }
+                ];
+                
+                for (const pattern of testPatterns) {
+                    const result = await window.UnityONNX.synthesize(pattern.ids);
+                    if (result.success) {
+                        const samples = result.data.length;
+                        const ratio = samples / pattern.expected;
+                        const status = ratio > 3 ? '❌' : ratio > 1.5 ? '⚠️' : '✓';
+                        log(`${status} ${pattern.name}: ${samples} samples (${ratio.toFixed(1)}x expected)`);
+                    }
+                }
+                
+                log('\n========================================');
+                log('テスト完了');
+                log('========================================');
+                
+                // 4. 結論
+                log('\n📊 診断結果:');
+                if (testResult.konnichiwa / 18000 > 3) {
+                    log('問題: 音声データが5-8倍に伸長されています');
+                    log('原因: Unity WebGLとONNX Runtime Webの統合問題の可能性');
+                    log('推奨: シンプル処理（piper-plusスタイル）を使用');
+                } else {
+                    log('✓ 音声生成は正常に動作しています');
+                }
+                
+            } catch (error) {
+                log('\n❌ エラー: ' + error.message);
+                console.error(error);
+            }
+        }
+        
+        // ページロード後に自動実行
+        window.addEventListener('load', () => {
+            setTimeout(runAutomatedTest, 1000);
+        });
+    </script>
+</body>
+</html>

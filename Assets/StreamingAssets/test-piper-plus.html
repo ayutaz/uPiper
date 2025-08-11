@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Piper-Plus Test</title>
+</head>
+<body>
+    <h1>piper-plusのコードで直接テスト</h1>
+    <button onclick="testPiperPlus()">Test with Piper-Plus Code</button>
+    <pre id="output"></pre>
+    
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/ort.min.js"></script>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg) {
+            output.textContent += msg + '\n';
+            console.log(msg);
+        }
+        
+        async function testPiperPlus() {
+            log('=== Piper-Plus Style Test ===');
+            
+            try {
+                // piper-plusと完全に同じコード
+                const modelPath = 'ja_JP-test-medium.onnx';
+                const configPath = 'ja_JP-test-medium.onnx.json';
+                
+                // Config load
+                const configResponse = await fetch(configPath);
+                const config = await configResponse.json();
+                log('Config loaded');
+                
+                // Create session (piper-plusと同じ)
+                const session = await ort.InferenceSession.create(modelPath, {
+                    executionProviders: ['wasm'],
+                    graphOptimizationLevel: 'all'
+                });
+                log('Session created');
+                
+                // Test "こんにちは" - piper-plusと同じphoneme IDs
+                const phonemeIds = [1, 25, 11, 22, 50, 8, 39, 8, 56, 7, 2];
+                
+                // Create tensors (piper-plusと同じ)
+                const inputTensor = new ort.Tensor('int64', 
+                    new BigInt64Array(phonemeIds.map(id => BigInt(id))), 
+                    [1, phonemeIds.length]
+                );
+                
+                const lengthTensor = new ort.Tensor('int64', 
+                    new BigInt64Array([BigInt(phonemeIds.length)]), 
+                    [1]
+                );
+                
+                const scalesTensor = new ort.Tensor('float32', 
+                    new Float32Array([
+                        config.inference.noise_scale || 0.667,
+                        config.inference.length_scale || 1.0,
+                        config.inference.noise_w || 0.8
+                    ]), 
+                    [3]
+                );
+                
+                const feeds = {
+                    'input': inputTensor,
+                    'input_lengths': lengthTensor,
+                    'scales': scalesTensor
+                };
+                
+                log('Running inference...');
+                const startTime = performance.now();
+                const results = await session.run(feeds);
+                const inferenceTime = performance.now() - startTime;
+                
+                const audioTensor = results['output'] || results[Object.keys(results)[0]];
+                const audioData = new Float32Array(audioTensor.data);
+                
+                log('=== Results ===');
+                log(`Tensor dims: [${audioTensor.dims.join(', ')}]`);
+                log(`Audio length: ${audioData.length} samples`);
+                log(`Duration: ${(audioData.length / 22050).toFixed(2)} seconds`);
+                log(`Inference time: ${inferenceTime.toFixed(0)}ms`);
+                
+                // Expected vs Actual
+                const expected = 18000;
+                const ratio = audioData.length / expected;
+                log(`Expected: ~${expected} samples`);
+                log(`Ratio: ${ratio.toFixed(1)}x`);
+                
+                if (ratio > 3) {
+                    log('❌ Audio is too long!');
+                } else if (ratio > 1.5) {
+                    log('⚠️ Audio is slightly long');
+                } else {
+                    log('✓ Audio length is normal');
+                }
+                
+            } catch (error) {
+                log('Error: ' + error.message);
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
