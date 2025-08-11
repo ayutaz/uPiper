@@ -204,13 +204,10 @@ class UnityONNXRuntime {
             
             // スケールパラメータ（設定から取得、なければデフォルト値）
             const noiseScale = this.modelConfig?.inference?.noise_scale || 0.667;
-            // WebGL環境では length_scale を調整（音声が長すぎる問題への対処）
-            // Windows/Androidでは1.0で正常だが、WebGLでは約5倍長くなるため0.2に調整
-            const lengthScale = this.modelConfig?.inference?.length_scale || 0.2;
+            const lengthScale = this.modelConfig?.inference?.length_scale || 1.0;
             const noiseW = this.modelConfig?.inference?.noise_w || 0.8;
             
             this.log(`Using scales - noise: ${noiseScale}, length: ${lengthScale}, noiseW: ${noiseW}`);
-            this.log('Note: length_scale adjusted to 0.2 for WebGL (from default 1.0) to fix audio length issue');
             
             const scalesTensor = new ort.Tensor('float32', 
                 new Float32Array([noiseScale, lengthScale, noiseW]), 
@@ -258,6 +255,13 @@ class UnityONNXRuntime {
                 const lastDimSize = audioTensor.dims[3];
                 this.log(`4D tensor last dimension size: ${lastDimSize}`);
                 
+                // 問題の根本原因を調査
+                // ONNX Runtime Webが間違ったshapeで出力している可能性
+                // 本来は [1, 1, audio_length] であるべきが [1, 1, 1, audio_length] になっている
+                this.log('Investigating tensor shape issue...');
+                this.log(`Expected shape: [1, 1, ~18000] for "konnichiwa"`);
+                this.log(`Actual shape: [${audioTensor.dims.join(', ')}]`);
+                
                 // デバッグ: データの最初の部分を確認
                 const rawData = audioTensor.data;
                 this.log(`Raw data type: ${typeof rawData}, length: ${rawData.length}`);
@@ -265,34 +269,17 @@ class UnityONNXRuntime {
                 // Float32Arrayに変換
                 audioData = new Float32Array(rawData);
                 
-                // WebGLでの音声長さ問題の追加対処
-                // length_scaleで調整しても長い場合は、データを直接トリミング
-                const expectedMaxLength = 30000; // 「こんにちは」の期待される最大長
-                if (phonemeIds.length === 11 && audioData.length > expectedMaxLength * 2) {
-                    this.log(`WebGL: Audio too long for 'konnichiwa' (${audioData.length} samples), applying additional trimming`);
-                    // 実際の音声部分を検出してトリミング
-                    let actualEnd = audioData.length;
-                    for (let i = expectedMaxLength; i < audioData.length; i++) {
-                        if (Math.abs(audioData[i]) < 0.0001) {
-                            // 静音が続く場合は終了とみなす
-                            let silenceCount = 0;
-                            for (let j = i; j < Math.min(i + 1000, audioData.length); j++) {
-                                if (Math.abs(audioData[j]) < 0.0001) silenceCount++;
-                            }
-                            if (silenceCount > 900) {
-                                actualEnd = i;
-                                break;
-                            }
-                        }
-                    }
-                    if (actualEnd < audioData.length) {
-                        const trimmedData = new Float32Array(actualEnd);
-                        for (let i = 0; i < actualEnd; i++) {
-                            trimmedData[i] = audioData[i];
-                        }
-                        this.log(`Trimmed audio from ${audioData.length} to ${actualEnd} samples`);
-                        audioData = trimmedData;
-                    }
+                // 問題: 音声が5倍長い
+                // 可能性1: サンプリングレートの不一致 (22050Hz vs 4410Hz?)
+                // 可能性2: モデルの length_scale パラメータが正しく適用されていない
+                // 可能性3: ONNX Runtime Webのバグ
+                if (audioData.length > 50000 && phonemeIds.length === 11) {
+                    this.log('Detected length issue specific to "konnichiwa" (11 phonemes)');
+                    this.log(`Audio is ${(audioData.length / 18000).toFixed(1)}x longer than expected`);
+                    this.log('Possible causes:');
+                    this.log('1. Sampling rate mismatch in ONNX Runtime Web');
+                    this.log('2. length_scale parameter not being applied correctly');
+                    this.log('3. ONNX Runtime Web version incompatibility');
                 }
                 
                 // サンプル数が異常に多い場合の警告
@@ -318,20 +305,10 @@ class UnityONNXRuntime {
                     this.log(`Silence samples: ${silenceCount}/${audioData.length}`);
                     this.log(`Non-silence range: ${nonSilenceStart} to ${nonSilenceEnd}`);
                     
-                    if (nonSilenceEnd > 0 && nonSilenceEnd < audioData.length * 0.5) {
-                        this.log('Detected that actual audio might be in first half of data');
-                        this.log('Attempting to extract first portion as actual audio...');
-                        
-                        // 実際の音声部分だけを抽出（最初の20000サンプル程度）
-                        const estimatedLength = Math.min(nonSilenceEnd + 1000, 20000);
-                        const trimmedAudio = new Float32Array(estimatedLength);
-                        for (let i = 0; i < estimatedLength; i++) {
-                            trimmedAudio[i] = audioData[i];
-                        }
-                        
-                        this.log(`Trimmed audio to ${estimatedLength} samples`);
-                        audioData = trimmedAudio;
-                    }
+                    // トリミングは行わない - 音声が途切れてしまうため
+                    // 代わりに、モデルのパラメータやテンソル形状の問題を調査
+                    this.log('Note: Audio length issue detected but NOT trimming to preserve full audio');
+                    this.log('This needs to be fixed at the model inference level, not by trimming');
                 }
                 
             } else if (audioTensor.dims.length === 3) {
