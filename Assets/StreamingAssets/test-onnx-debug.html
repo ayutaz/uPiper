@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ONNX Runtime Debug Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #00ff00;
+        }
+        button {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #444;
+        }
+        #output {
+            background: #000;
+            padding: 10px;
+            margin-top: 20px;
+            border: 1px solid #00ff00;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 2px 0;
+        }
+        .error { color: #ff0000; }
+        .warning { color: #ffff00; }
+        .success { color: #00ff00; }
+        .info { color: #00ffff; }
+    </style>
+</head>
+<body>
+    <h1>ONNX Runtime WebGL Debug Test</h1>
+    <p>このページでONNX Runtime Webの動作を直接テストできます</p>
+    
+    <div>
+        <button onclick="initializeONNX()">1. Initialize ONNX Runtime</button>
+        <button onclick="runMinimalTest()">2. Run Minimal Test</button>
+        <button onclick="testKonnichiwa()">3. Test こんにちは</button>
+        <button onclick="compareImplementations()">4. Compare Implementations</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <div id="output"></div>
+    
+    <!-- Load ONNX Runtime Web -->
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/ort.min.js"></script>
+    
+    <!-- Load our wrapper -->
+    <script src="onnx-runtime-wrapper.js"></script>
+    
+    <script>
+        let initialized = false;
+        
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            output.appendChild(entry);
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLog() {
+            document.getElementById('output').innerHTML = '';
+        }
+        
+        async function initializeONNX() {
+            try {
+                log('Initializing ONNX Runtime...', 'info');
+                
+                const result = await window.UnityONNX.initialize(
+                    'ja_JP-test-medium.onnx',
+                    'ja_JP-test-medium.onnx.json'
+                );
+                
+                if (result.success) {
+                    initialized = true;
+                    log('ONNX Runtime initialized successfully!', 'success');
+                } else {
+                    log(`Failed to initialize: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function runMinimalTest() {
+            if (!initialized) {
+                log('Please initialize ONNX Runtime first!', 'warning');
+                return;
+            }
+            
+            try {
+                log('Running minimal test...', 'info');
+                
+                const result = await window.UnityONNX.runMinimalTest();
+                
+                if (result.success) {
+                    log(`Minimal test: ${result.minimal} samples`, 'success');
+                    log(`Konnichiwa test: ${result.konnichiwa} samples`, 'success');
+                    
+                    // Check if results are reasonable
+                    if (result.konnichiwa > 50000) {
+                        log('WARNING: Audio is too long! Expected ~18000 samples', 'warning');
+                        log(`Ratio: ${(result.konnichiwa / 18000).toFixed(1)}x expected`, 'warning');
+                    } else if (result.konnichiwa < 10000) {
+                        log('WARNING: Audio is too short! Expected ~18000 samples', 'warning');
+                    } else {
+                        log('Audio length seems reasonable', 'success');
+                    }
+                } else {
+                    log(`Test failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testKonnichiwa() {
+            if (!initialized) {
+                log('Please initialize ONNX Runtime first!', 'warning');
+                return;
+            }
+            
+            try {
+                log('Testing "こんにちは" synthesis...', 'info');
+                
+                // Phoneme IDs for "こんにちは"
+                const phonemeIds = [1, 25, 11, 22, 50, 8, 39, 8, 56, 7, 2];
+                log(`Phoneme IDs: [${phonemeIds.join(', ')}]`, 'info');
+                
+                const result = await window.UnityONNX.synthesize(phonemeIds);
+                
+                if (result.success) {
+                    const audioData = result.data;
+                    log(`Generated ${audioData.length} samples`, 'success');
+                    log(`Duration: ${(audioData.length / 22050).toFixed(3)} seconds`, 'info');
+                    
+                    // Analyze audio
+                    let min = Infinity, max = -Infinity, sum = 0;
+                    for (let i = 0; i < audioData.length; i++) {
+                        min = Math.min(min, audioData[i]);
+                        max = Math.max(max, audioData[i]);
+                        sum += Math.abs(audioData[i]);
+                    }
+                    const avg = sum / audioData.length;
+                    
+                    log(`Audio stats: min=${min.toFixed(4)}, max=${max.toFixed(4)}, avg_abs=${avg.toFixed(4)}`, 'info');
+                    
+                    // Play audio
+                    playAudio(audioData, 22050);
+                } else {
+                    log(`Synthesis failed: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function compareImplementations() {
+            if (!initialized) {
+                log('Please initialize ONNX Runtime first!', 'warning');
+                return;
+            }
+            
+            log('=== Comparing Simple vs Complex Processing ===', 'info');
+            
+            // Test with different phoneme sequences
+            const tests = [
+                { name: 'Single "a"', ids: [1, 7, 2] },
+                { name: 'こんにちは', ids: [1, 25, 11, 22, 50, 8, 39, 8, 56, 7, 2] },
+                { name: 'ありがとう', ids: [1, 7, 54, 8, 28, 7, 31, 11, 9, 2] }
+            ];
+            
+            for (const test of tests) {
+                log(`Testing: ${test.name}`, 'info');
+                
+                const result = await window.UnityONNX.synthesize(test.ids);
+                if (result.success) {
+                    const samples = result.data.length;
+                    const duration = samples / 22050;
+                    log(`  Result: ${samples} samples (${duration.toFixed(2)}s)`, 
+                        samples > 50000 ? 'warning' : 'success');
+                }
+            }
+        }
+        
+        function playAudio(audioData, sampleRate) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const buffer = audioContext.createBuffer(1, audioData.length, sampleRate);
+            const channelData = buffer.getChannelData(0);
+            
+            for (let i = 0; i < audioData.length; i++) {
+                channelData[i] = audioData[i];
+            }
+            
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            source.start();
+            
+            log('Playing audio...', 'info');
+        }
+        
+        // Auto-initialize on load
+        window.addEventListener('load', () => {
+            log('Page loaded. Click "Initialize ONNX Runtime" to start.', 'info');
+        });
+    </script>
+</body>
+</html>
