@@ -179,12 +179,16 @@ class UnityONNXRuntime {
             return this.audioCache.get(cacheKey);
         }
         
-        this.log('Synthesizing audio for phoneme IDs:', phonemeIds);
+        // === PHASE 1: 入力データの詳細ログ ===
+        this.log('=== SYNTHESIS START ===');
+        this.log('Input phoneme IDs:', phonemeIds);
+        this.log('Input length:', phonemeIds.length);
         
         // 「こんにちは」のデバッグ
         // Expected IDs: [0, 25, 11, 22, 50, 8, 39, 8, 56, 7, 0]
         if (phonemeIds.length === 11 && phonemeIds[6] === 39) {
             this.log('✓ Detected correct "konnichiwa" pattern with ID 39 for "ch"');
+            this.log('Expected output: ~18,000 samples at 22050Hz (~0.8 seconds)');
         } else if (phonemeIds.length === 11 && phonemeIds[6] === 32) {
             this.error('✗ Wrong ID for "ch" in "konnichiwa"! Got ID 32 (ty) instead of 39 (ch)');
         }
@@ -229,7 +233,12 @@ class UnityONNXRuntime {
                 );
             }
             
-            // 推論実行
+            // === PHASE 2: 推論実行とデータ取得 ===
+            this.log('=== INFERENCE START ===');
+            this.log('Input tensor shape:', inputTensor.dims);
+            this.log('Length tensor:', lengthTensor.data);
+            this.log('Scales tensor:', scalesTensor.data);
+            
             const results = await this.session.run(feeds);
             
             const inferenceTime = performance.now() - startTime;
@@ -238,10 +247,34 @@ class UnityONNXRuntime {
             // 出力テンソルから音声データを取得
             const audioTensor = results['output'] || results[Object.keys(results)[0]];
             
-            // デバッグ: テンソルの詳細情報
+            // === PHASE 3: テンソル詳細分析 ===
+            this.log('=== TENSOR ANALYSIS ===');
             this.log(`Output tensor dims: [${audioTensor.dims.join(', ')}]`);
             this.log(`Output tensor type: ${audioTensor.type}`);
             this.log(`Output tensor size: ${audioTensor.size}`);
+            this.log(`Raw data length: ${audioTensor.data.length}`);
+            this.log(`Data constructor: ${audioTensor.data.constructor.name}`);
+            
+            // === PHASE 4: piper-plusスタイルのシンプルな処理を試す ===
+            this.log('=== SIMPLE PROCESSING (piper-plus style) ===');
+            
+            // まず、piper-plusと同じように直接Float32Arrayを作成してみる
+            let audioDataSimple;
+            try {
+                audioDataSimple = new Float32Array(audioTensor.data);
+                this.log(`Simple Float32Array created: ${audioDataSimple.length} samples`);
+                this.log(`Duration at 22050Hz: ${(audioDataSimple.length / 22050).toFixed(2)} seconds`);
+                
+                // データの最初と最後を確認
+                if (audioDataSimple.length > 0) {
+                    const first10 = Array.from(audioDataSimple.slice(0, 10));
+                    const last10 = Array.from(audioDataSimple.slice(-10));
+                    this.log('First 10 samples:', first10.map(v => v.toFixed(4)));
+                    this.log('Last 10 samples:', last10.map(v => v.toFixed(4)));
+                }
+            } catch (e) {
+                this.error('Failed to create simple Float32Array:', e);
+            }
             
             // テンソルの形状を確認して正しく処理
             const expectedDims = 3; // [batch_size, 1, audio_length]
@@ -249,11 +282,10 @@ class UnityONNXRuntime {
             
             if (actualDims !== expectedDims) {
                 this.log(`WARNING: Expected ${expectedDims}D tensor, got ${actualDims}D`);
-                this.log('This is a Unity WebGL specific issue - the model outputs correctly in piper-plus web demo');
+                this.log('Tensor shape mismatch - investigating further...');
             }
             
-            // Unity WebGL特有の問題: 4次元テンソル [1, 1, 1, N] が返される
-            // 正常な場合: 3次元テンソル [1, 1, N] が返されるべき
+            // === PHASE 5: 従来の複雑な処理（比較のため） ===
             let audioData;
             if (audioTensor.dims.length === 4 && 
                 audioTensor.dims[0] === 1 && 
@@ -368,31 +400,9 @@ class UnityONNXRuntime {
                 
                 // サンプル数が異常に多い場合の警告
                 if (audioData.length > 50000) {
-                    this.error(`WARNING: Audio data length (${audioData.length}) is unusually large!`);
-                    this.error('Expected around 18000-20000 samples for "konnichiwa"');
-                    
-                    // デバッグ: 音声データの分析
-                    let silenceCount = 0;
-                    let nonSilenceStart = -1;
-                    let nonSilenceEnd = -1;
-                    
-                    // 無音でない部分を探す
-                    for (let i = 0; i < audioData.length; i++) {
-                        if (Math.abs(audioData[i]) < 0.001) {
-                            silenceCount++;
-                        } else {
-                            if (nonSilenceStart === -1) nonSilenceStart = i;
-                            nonSilenceEnd = i;
-                        }
-                    }
-                    
-                    this.log(`Silence samples: ${silenceCount}/${audioData.length}`);
-                    this.log(`Non-silence range: ${nonSilenceStart} to ${nonSilenceEnd}`);
-                    
-                    // トリミングは行わない - 音声が途切れてしまうため
-                    // 代わりに、モデルのパラメータやテンソル形状の問題を調査
-                    this.log('Note: Audio length issue detected but NOT trimming to preserve full audio');
-                    this.log('This needs to be fixed at the model inference level, not by trimming');
+                    this.error(`WARNING: Complex processing resulted in ${audioData.length} samples!`);
+                    this.error('This is likely a Unity WebGL marshalling issue');
+                    this.log('Using simple processing instead...');
                 }
                 
             } else if (audioTensor.dims.length === 3) {
@@ -405,7 +415,25 @@ class UnityONNXRuntime {
                 audioData = new Float32Array(audioTensor.data);
             }
             
-            this.log(`Output data length: ${audioData.length}`);
+            // === PHASE 6: 比較と最終決定 ===
+            this.log('=== COMPARISON ===');
+            this.log(`Complex processing: ${audioData.length} samples`);
+            this.log(`Simple processing: ${audioDataSimple ? audioDataSimple.length : 'N/A'} samples`);
+            
+            // シンプルな処理の結果を使用（piper-plusと同じアプローチ）
+            if (audioDataSimple && audioDataSimple.length > 0 && audioDataSimple.length < 50000) {
+                this.log('✓ Using simple processing result (piper-plus style)');
+                audioData = audioDataSimple;
+            } else if (audioData.length > 50000 && audioDataSimple) {
+                this.log('✓ Complex processing produced too many samples, using simple result');
+                audioData = audioDataSimple;
+            } else {
+                this.log('⚠ Using complex processing result (fallback)');
+            }
+            
+            this.log(`=== FINAL OUTPUT ===`);
+            this.log(`Final data length: ${audioData.length} samples`);
+            this.log(`Duration at 22050Hz: ${(audioData.length / 22050).toFixed(2)} seconds`);
             
             // 音声統計情報
             this.logAudioStats(audioData);
@@ -525,6 +553,47 @@ window.UnityONNX = {
             const audioData = await window.UnityONNXRuntime.synthesize(phonemeIds);
             return { success: true, data: audioData };
         } catch (error) {
+            return { success: false, error: error.message };
+        }
+    },
+    
+    /**
+     * 最小テストケース実行
+     */
+    runMinimalTest: async function() {
+        console.log('[MINIMAL TEST] Starting minimal test case...');
+        try {
+            // 最小のテストケース: "あ" (a) の音
+            const testIds = [1, 7, 2]; // ^a$
+            console.log('[MINIMAL TEST] Test IDs:', testIds);
+            console.log('[MINIMAL TEST] Expected: ~2000-4000 samples for single phoneme');
+            
+            const audioData = await window.UnityONNXRuntime.synthesize(testIds);
+            console.log('[MINIMAL TEST] Result:', {
+                samples: audioData.length,
+                duration: (audioData.length / 22050).toFixed(3) + ' seconds',
+                ratio: (audioData.length / 3000).toFixed(1) + 'x expected'
+            });
+            
+            // 「こんにちは」のテスト
+            const konnichiwaIds = [1, 25, 11, 22, 50, 8, 39, 8, 56, 7, 2];
+            console.log('[MINIMAL TEST] Konnichiwa IDs:', konnichiwaIds);
+            console.log('[MINIMAL TEST] Expected: ~18000 samples');
+            
+            const konnichiwaData = await window.UnityONNXRuntime.synthesize(konnichiwaIds);
+            console.log('[MINIMAL TEST] Konnichiwa result:', {
+                samples: konnichiwaData.length,
+                duration: (konnichiwaData.length / 22050).toFixed(3) + ' seconds',
+                ratio: (konnichiwaData.length / 18000).toFixed(1) + 'x expected'
+            });
+            
+            return { 
+                success: true, 
+                minimal: audioData.length,
+                konnichiwa: konnichiwaData.length 
+            };
+        } catch (error) {
+            console.error('[MINIMAL TEST] Error:', error);
             return { success: false, error: error.message };
         }
     },
