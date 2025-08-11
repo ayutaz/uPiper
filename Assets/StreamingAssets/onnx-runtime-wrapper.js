@@ -286,21 +286,43 @@ class UnityONNXRuntime {
                     this.log('Unity WebGL specific issue detected');
                     this.log('Note: Same model works correctly in piper-plus web demo');
                     
-                    // 一時的な対処: 5分の1にダウンサンプリング
-                    // 注意: これは音質を低下させるが、正しい長さになる
-                    this.log('Applying temporary workaround: downsampling by factor of 5');
-                    const downsampleFactor = 5;
-                    const newLength = Math.floor(audioData.length / downsampleFactor);
-                    const resampledAudio = new Float32Array(newLength);
+                    // Unity WebGLでのみ生成される余分なサンプルを削除
+                    // 問題: UnityのFloat32Array処理がデータを拡張している
+                    this.log('Applying Unity WebGL specific fix');
                     
-                    // Simple downsampling (takes every 5th sample)
-                    for (let i = 0; i < newLength; i++) {
-                        resampledAudio[i] = audioData[i * downsampleFactor];
+                    // 実際の音声長さを推定（約 0.8-1.0秒 = 17,600-22,050サンプル）
+                    const expectedLength = 18000; // 「こんにちは」の期待される長さ
+                    const ratio = audioData.length / expectedLength;
+                    this.log(`Audio is ${ratio.toFixed(1)}x longer than expected`);
+                    
+                    // 整数倍率の場合は単純に間引き
+                    if (ratio > 6 && ratio < 9) {
+                        // 7-8倍長い場合はょ7個おきにサンプリング
+                        const skipFactor = Math.round(ratio);
+                        const targetLength = Math.floor(audioData.length / skipFactor);
+                        const fixedAudio = new Float32Array(targetLength);
+                        
+                        for (let i = 0; i < targetLength; i++) {
+                            fixedAudio[i] = audioData[i * skipFactor];
+                        }
+                        
+                        this.log(`Applied ${skipFactor}x downsampling: ${audioData.length} -> ${targetLength} samples`);
+                        audioData = fixedAudio;
+                    } else if (ratio > 4.5 && ratio < 6) {
+                        // 5倍長い場合は5個おきにサンプリング
+                        const skipFactor = 5;
+                        const targetLength = Math.floor(audioData.length / skipFactor);
+                        const fixedAudio = new Float32Array(targetLength);
+                        
+                        for (let i = 0; i < targetLength; i++) {
+                            fixedAudio[i] = audioData[i * skipFactor];
+                        }
+                        
+                        this.log(`Applied ${skipFactor}x downsampling: ${audioData.length} -> ${targetLength} samples`);
+                        audioData = fixedAudio;
+                    } else {
+                        this.log('Unexpected ratio, not applying fix');
                     }
-                    
-                    this.log(`Downsampled from ${audioData.length} to ${newLength} samples`);
-                    this.log('Warning: This reduces audio quality but fixes the length issue');
-                    audioData = resampledAudio;
                 }
                 
                 // サンプル数が異常に多い場合の警告
