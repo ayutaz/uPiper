@@ -351,7 +351,14 @@ int Open_JTalk_synthesis(const char* text, char* output, int output_size) {
     for (int i = 0; i < label_size; i++) {
         if (!labels[i]) continue;
         
+        // Debug: Print full label
+        if (i < 3 || i >= label_size - 3) {
+            printf("[OpenJTalk WASM] Label[%d]: %s\n", i, labels[i]);
+        }
+        
         // Extract phoneme from full-context label
+        // Format: p0^p1-c+n0=n1/...
+        // Where: p1=previous phoneme, c=current phoneme, n0=next phoneme
         char* p1 = strchr(labels[i], '-');
         char* p2 = strchr(labels[i], '+');
         
@@ -359,8 +366,22 @@ int Open_JTalk_synthesis(const char* text, char* output, int output_size) {
             p1++; // Skip '-'
             int len = p2 - p1;
             
-            // Skip silence at beginning and end
+            // Debug: show extracted phoneme
+            char phoneme_buf[32];
+            strncpy(phoneme_buf, p1, len);
+            phoneme_buf[len] = '\0';
+            if (i < 5) {
+                printf("[OpenJTalk WASM]   -> Extracted: '%s' (len=%d)\n", phoneme_buf, len);
+            }
+            
+            // Skip "xx" (undefined) phonemes
+            if (len == 2 && strncmp(p1, "xx", 2) == 0) {
+                continue;
+            }
+            
+            // Handle silence
             if (strncmp(p1, "sil", len) == 0) {
+                // Only add pau at the very beginning or end
                 if (i == 0 || i == label_size - 1) {
                     if (output_len > 0) {
                         strcat(output, " ");
