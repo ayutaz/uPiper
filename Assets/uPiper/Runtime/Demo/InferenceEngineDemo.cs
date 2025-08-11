@@ -267,8 +267,8 @@ namespace uPiper.Demo
                     _phonemizer = null;
                 }
             });
-#elif !UNITY_WEBGL
-            // Initialize OpenJTalk phonemizer for Japanese
+#else
+            // Initialize OpenJTalk phonemizer for Japanese (non-WebGL)
             try
             {
                 var openJTalk = new OpenJTalkPhonemizer();
@@ -284,7 +284,6 @@ namespace uPiper.Demo
                 PiperLogger.LogError("[InferenceEngineDemo]   2. Run ./build.sh (macOS/Linux) or build.bat (Windows)");
                 _phonemizer = null;
             }
-#endif
 
             // Initialize Chinese phonemizer
             Task.Run(async () =>
