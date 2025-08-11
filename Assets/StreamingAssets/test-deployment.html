@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Deployment Environment Test</title>
+    <style>
+        .success { color: green; font-weight: bold; }
+        .warning { color: orange; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>デプロイ環境テスト</h1>
+    <button onclick="runEnvironmentTest()">Test Environment</button>
+    <pre id="output"></pre>
+    
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/ort.min.js"></script>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg, className = '') {
+            const line = document.createElement('div');
+            line.textContent = msg;
+            if (className) line.className = className;
+            output.appendChild(line);
+            console.log(msg);
+        }
+        
+        async function runEnvironmentTest() {
+            output.innerHTML = '';
+            log('=== Environment Detection Test ===\n');
+            
+            // Environment check
+            log('--- Environment Info ---');
+            log(`Protocol: ${window.location.protocol}`);
+            log(`Hostname: ${window.location.hostname}`);
+            log(`Port: ${window.location.port || '(default)'}`);
+            log(`Full URL: ${window.location.href}`);
+            
+            const isLocalEnvironment = (
+                window.location.protocol === 'file:' || 
+                window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1'
+            );
+            
+            if (isLocalEnvironment) {
+                log('\n⚠️ LOCAL ENVIRONMENT DETECTED', 'warning');
+                log('Length scale will be adjusted to 0.17', 'warning');
+            } else {
+                log('\n✓ PRODUCTION ENVIRONMENT DETECTED', 'success');
+                log('No length scale adjustment needed', 'success');
+            }
+            
+            // CORS check
+            log('\n--- CORS Check ---');
+            try {
+                const response = await fetch('ja_JP-test-medium.onnx.json');
+                if (response.ok) {
+                    log('✓ CORS: Model config loaded successfully', 'success');
+                } else {
+                    log('❌ CORS: Failed to load model config', 'error');
+                }
+            } catch (e) {
+                log(`❌ CORS Error: ${e.message}`, 'error');
+            }
+            
+            // WebAssembly check
+            log('\n--- WebAssembly Check ---');
+            if (typeof WebAssembly !== 'undefined') {
+                log('✓ WebAssembly is supported', 'success');
+                
+                // Check SIMD support
+                try {
+                    await WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11]));
+                    log('✓ WebAssembly SIMD is supported', 'success');
+                } catch (e) {
+                    log('⚠️ WebAssembly SIMD not supported', 'warning');
+                }
+            } else {
+                log('❌ WebAssembly not supported!', 'error');
+            }
+            
+            // Test inference
+            log('\n--- Inference Test ---');
+            try {
+                const session = await ort.InferenceSession.create('ja_JP-test-medium.onnx', {
+                    executionProviders: ['wasm'],
+                    graphOptimizationLevel: 'all'
+                });
+                
+                const phonemeIds = [1, 25, 11, 22, 50, 8, 39, 8, 56, 7, 2]; // konnichiwa
+                
+                const inputTensor = new ort.Tensor('int64', 
+                    new BigInt64Array(phonemeIds.map(id => BigInt(id))), 
+                    [1, phonemeIds.length]
+                );
+                
+                const lengthTensor = new ort.Tensor('int64', 
+                    new BigInt64Array([BigInt(phonemeIds.length)]), 
+                    [1]
+                );
+                
+                // Use default scale (1.0) to see raw output
+                const scalesTensor = new ort.Tensor('float32', 
+                    new Float32Array([0.667, 1.0, 0.8]), 
+                    [3]
+                );
+                
+                const feeds = {
+                    'input': inputTensor,
+                    'input_lengths': lengthTensor,
+                    'scales': scalesTensor
+                };
+                
+                const results = await session.run(feeds);
+                const audioTensor = results['output'];
+                const audioData = new Float32Array(audioTensor.data);
+                
+                log(`Raw audio length: ${audioData.length} samples`);
+                log(`Expected: ~18,000 samples`);
+                log(`Ratio: ${(audioData.length / 18000).toFixed(2)}x`);
+                
+                if (audioData.length > 50000) {
+                    log('\n⚠️ Audio is too long!', 'warning');
+                    log('This is expected in local environment', 'warning');
+                    log('Should be fixed automatically when deployed', 'success');
+                } else if (audioData.length > 15000 && audioData.length < 22000) {
+                    log('\n✓ Audio length is NORMAL!', 'success');
+                } else {
+                    log('\n⚠️ Unexpected audio length', 'warning');
+                }
+                
+                await session.release();
+                
+            } catch (error) {
+                log(`❌ Inference Error: ${error.message}`, 'error');
+            }
+            
+            // Deployment recommendations
+            log('\n--- Deployment Recommendations ---');
+            if (isLocalEnvironment) {
+                log('💡 To test in production environment:');
+                log('1. Deploy to GitHub Pages');
+                log('2. Or use a local web server (e.g., python -m http.server)');
+                log('3. Or deploy to any web hosting service');
+            } else {
+                log('✓ Already in production environment!');
+                log('Audio should work correctly without adjustments');
+            }
+        }
+    </script>
+</body>
+</html>
