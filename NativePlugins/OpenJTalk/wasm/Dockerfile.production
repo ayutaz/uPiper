@@ -380,7 +380,7 @@ int Open_JTalk_synthesis(const char* text, char* output, int output_size) {
             }
             
             // Handle silence
-            if (strncmp(p1, "sil", len) == 0) {
+            if (len == 3 && strncmp(p1, "sil", 3) == 0) {
                 // Only add pau at the very beginning or end
                 if (i == 0 || i == label_size - 1) {
                     if (output_len > 0) {
@@ -390,6 +390,8 @@ int Open_JTalk_synthesis(const char* text, char* output, int output_size) {
                     strcat(output, "pau");
                     output_len += 3;
                 }
+                // Skip sil phoneme
+                continue;
             } else {
                 // Add phoneme
                 if (output_len > 0) {
