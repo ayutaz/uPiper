@@ -230,13 +230,22 @@ class UnityONNXRuntime {
             const noiseW = this.modelConfig?.inference?.noise_w || 0.8;
             
             // 環境特有の調整：ローカル環境では音声が5-6倍長くなる問題に対処
-            // TODO: 原因を特定して根本解決する
-            const ENVIRONMENT_ADJUSTMENT = true;  // 本番環境ではfalseに設定
-            if (ENVIRONMENT_ADJUSTMENT) {
+            // file://プロトコルまたはlocalhostの場合のみ適用
+            const isLocalEnvironment = (
+                window.location.protocol === 'file:' || 
+                window.location.hostname === 'localhost' || 
+                window.location.hostname === '127.0.0.1'
+            );
+            
+            if (isLocalEnvironment) {
                 const originalScale = lengthScale;
                 lengthScale = lengthScale * 0.17;  // 1/5.8 ≈ 0.17
-                this.log(`[ENVIRONMENT FIX] Adjusting length_scale from ${originalScale} to ${lengthScale}`);
-                this.log('Note: This adjustment is for local environment issue');
+                this.log(`[LOCAL ENV FIX] Detected local environment (${window.location.protocol}//${window.location.hostname})`);
+                this.log(`[LOCAL ENV FIX] Adjusting length_scale from ${originalScale} to ${lengthScale}`);
+                this.log('Note: This adjustment is only for local file:// or localhost environments');
+            } else {
+                this.log(`[PRODUCTION] Running in production environment (${window.location.hostname})`);
+                this.log('No length_scale adjustment needed');
             }
             
             this.log(`Using scales - noise: ${noiseScale}, length: ${lengthScale}, noiseW: ${noiseW}`);

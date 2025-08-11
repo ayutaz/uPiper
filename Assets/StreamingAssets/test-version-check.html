@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ONNX Runtime Version Investigation</title>
+</head>
+<body>
+    <h1>ONNX Runtime バージョン差異調査</h1>
+    <button onclick="runTests()">Run All Tests</button>
+    <pre id="output"></pre>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg) {
+            output.textContent += msg + '\n';
+            console.log(msg);
+        }
+        
+        async function runTests() {
+            log('=== ONNX Runtime Version Investigation ===\n');
+            
+            // Test different ONNX Runtime versions
+            const versions = [
+                '1.17.1',  // Current version
+                '1.16.3',  // Previous stable
+                '1.15.1',  // Older stable
+                '1.14.0'   // Much older
+            ];
+            
+            for (const version of versions) {
+                await testVersion(version);
+            }
+        }
+        
+        async function testVersion(version) {
+            log(`\n=== Testing ONNX Runtime ${version} ===`);
+            
+            try {
+                // Remove existing script if any
+                const existingScript = document.getElementById('ort-script');
+                if (existingScript) {
+                    existingScript.remove();
+                    delete window.ort;
+                }
+                
+                // Load specific version
+                await loadScript(`https://cdn.jsdelivr.net/npm/onnxruntime-web@${version}/dist/ort.min.js`, 'ort-script');
+                
+                log(`Loaded ONNX Runtime ${version}`);
+                log(`ort.env.wasm.numThreads: ${ort.env.wasm.numThreads}`);
+                log(`ort.env.wasm.simd: ${ort.env.wasm.simd}`);
+                
+                // Create session
+                const session = await ort.InferenceSession.create('ja_JP-test-medium.onnx', {
+                    executionProviders: ['wasm'],
+                    graphOptimizationLevel: 'all'
+                });
+                
+                // Test inference
+                const phonemeIds = [1, 25, 11, 22, 50, 8, 39, 8, 56, 7, 2]; // konnichiwa
+                
+                const inputTensor = new ort.Tensor('int64', 
+                    new BigInt64Array(phonemeIds.map(id => BigInt(id))), 
+                    [1, phonemeIds.length]
+                );
+                
+                const lengthTensor = new ort.Tensor('int64', 
+                    new BigInt64Array([BigInt(phonemeIds.length)]), 
+                    [1]
+                );
+                
+                const scalesTensor = new ort.Tensor('float32', 
+                    new Float32Array([0.667, 1.0, 0.8]), 
+                    [3]
+                );
+                
+                const feeds = {
+                    'input': inputTensor,
+                    'input_lengths': lengthTensor,
+                    'scales': scalesTensor
+                };
+                
+                const startTime = performance.now();
+                const results = await session.run(feeds);
+                const inferenceTime = performance.now() - startTime;
+                
+                const audioTensor = results['output'] || results[Object.keys(results)[0]];
+                const audioData = new Float32Array(audioTensor.data);
+                
+                log(`Version ${version} Results:`);
+                log(`  Tensor dims: [${audioTensor.dims.join(', ')}]`);
+                log(`  Audio length: ${audioData.length} samples`);
+                log(`  Expected: ~18,000 samples`);
+                log(`  Ratio: ${(audioData.length / 18000).toFixed(2)}x`);
+                log(`  Inference time: ${inferenceTime.toFixed(0)}ms`);
+                
+                // Check for abnormality
+                if (audioData.length > 50000) {
+                    log(`  ❌ ABNORMAL: Audio is ${(audioData.length / 18000).toFixed(1)}x longer than expected!`);
+                } else {
+                    log(`  ✓ Normal length`);
+                }
+                
+                await session.release();
+                
+            } catch (error) {
+                log(`Error with version ${version}: ${error.message}`);
+            }
+        }
+        
+        function loadScript(src, id) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.id = id;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+    </script>
+</body>
+</html>

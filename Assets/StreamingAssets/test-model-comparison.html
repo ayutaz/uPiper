@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Model File Comparison</title>
+</head>
+<body>
+    <h1>モデルファイル比較</h1>
+    <button onclick="compareModels()">Compare Models</button>
+    <pre id="output"></pre>
+    
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/ort.min.js"></script>
+    
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg) {
+            output.textContent += msg + '\n';
+            console.log(msg);
+        }
+        
+        async function compareModels() {
+            log('=== Model File Comparison ===\n');
+            
+            // Local model
+            await analyzeModel('Local Model', 'ja_JP-test-medium.onnx');
+            
+            // Try to fetch from piper-plus GitHub
+            log('\n=== Attempting to fetch piper-plus model ===');
+            const piperPlusUrls = [
+                'https://github.com/piperplus/piper-plus/raw/main/models/ja_JP-test-medium.onnx',
+                'https://raw.githubusercontent.com/rhasspy/piper/master/models/ja_JP-test-medium.onnx',
+                'https://huggingface.co/rhasspy/piper-voices/resolve/main/ja/ja_JP/test/medium/ja_JP-test-medium.onnx'
+            ];
+            
+            for (const url of piperPlusUrls) {
+                try {
+                    log(`Trying: ${url}`);
+                    const response = await fetch(url, { mode: 'cors' });
+                    if (response.ok) {
+                        log('Successfully fetched!');
+                        const blob = await response.blob();
+                        log(`Size: ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
+                        break;
+                    }
+                } catch (e) {
+                    log(`Failed: ${e.message}`);
+                }
+            }
+            
+            // Test with different length_scale values
+            log('\n=== Testing different length_scale values ===');
+            await testLengthScales();
+        }
+        
+        async function analyzeModel(name, path) {
+            log(`\n=== ${name} ===`);
+            
+            try {
+                // Fetch model
+                const response = await fetch(path);
+                const blob = await response.blob();
+                const arrayBuffer = await blob.arrayBuffer();
+                const bytes = new Uint8Array(arrayBuffer);
+                
+                log(`File size: ${(blob.size / 1024 / 1024).toFixed(2)} MB (${blob.size} bytes)`);
+                
+                // Calculate simple checksum
+                let checksum = 0;
+                for (let i = 0; i < Math.min(10000, bytes.length); i++) {
+                    checksum = (checksum + bytes[i] * (i + 1)) % 0xFFFFFFFF;
+                }
+                log(`Checksum (first 10KB): ${checksum.toString(16)}`);
+                
+                // Check ONNX header
+                const header = new TextDecoder().decode(bytes.slice(0, 8));
+                log(`File header: ${header}`);
+                
+                // Check specific bytes for ONNX format
+                log(`Magic bytes: ${bytes[0].toString(16)} ${bytes[1].toString(16)} ${bytes[2].toString(16)} ${bytes[3].toString(16)}`);
+                
+            } catch (error) {
+                log(`Error analyzing ${name}: ${error.message}`);
+            }
+        }
+        
+        async function testLengthScales() {
+            const scales = [0.1, 0.17, 0.2, 0.5, 1.0, 2.0];
+            const session = await ort.InferenceSession.create('ja_JP-test-medium.onnx', {
+                executionProviders: ['wasm'],
+                graphOptimizationLevel: 'all'
+            });
+            
+            const phonemeIds = [1, 25, 11, 22, 50, 8, 39, 8, 56, 7, 2]; // konnichiwa
+            
+            for (const scale of scales) {
+                const inputTensor = new ort.Tensor('int64', 
+                    new BigInt64Array(phonemeIds.map(id => BigInt(id))), 
+                    [1, phonemeIds.length]
+                );
+                
+                const lengthTensor = new ort.Tensor('int64', 
+                    new BigInt64Array([BigInt(phonemeIds.length)]), 
+                    [1]
+                );
+                
+                const scalesTensor = new ort.Tensor('float32', 
+                    new Float32Array([0.667, scale, 0.8]),  // length_scale is the middle value
+                    [3]
+                );
+                
+                const feeds = {
+                    'input': inputTensor,
+                    'input_lengths': lengthTensor,
+                    'scales': scalesTensor
+                };
+                
+                const results = await session.run(feeds);
+                const audioTensor = results['output'];
+                const audioData = new Float32Array(audioTensor.data);
+                
+                log(`length_scale=${scale}: ${audioData.length} samples (${(audioData.length / 18000).toFixed(2)}x)`);
+            }
+            
+            await session.release();
+        }
+    </script>
+</body>
+</html>
