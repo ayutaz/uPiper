@@ -281,18 +281,25 @@ class UnityONNXRuntime {
                     this.log('2. length_scale parameter not being applied correctly');
                     this.log('3. ONNX Runtime Web version incompatibility');
                     
-                    // 実験的修正: 5分の1にリサンプリング
-                    // WebGLでは何らかの理由で5倍のサンプルが生成される
-                    this.log('Applying experimental fix: downsampling by factor of 5');
+                    // Unity WebGL環境でのみ発生する問題
+                    // piper-plusのWebデモでは同じモデル・同じONNX Runtime Webで正常動作
+                    this.log('Unity WebGL specific issue detected');
+                    this.log('Note: Same model works correctly in piper-plus web demo');
+                    
+                    // 一時的な対処: 5分の1にダウンサンプリング
+                    // 注意: これは音質を低下させるが、正しい長さになる
+                    this.log('Applying temporary workaround: downsampling by factor of 5');
                     const downsampleFactor = 5;
                     const newLength = Math.floor(audioData.length / downsampleFactor);
                     const resampledAudio = new Float32Array(newLength);
                     
+                    // Simple downsampling (takes every 5th sample)
                     for (let i = 0; i < newLength; i++) {
                         resampledAudio[i] = audioData[i * downsampleFactor];
                     }
                     
-                    this.log(`Resampled from ${audioData.length} to ${newLength} samples`);
+                    this.log(`Downsampled from ${audioData.length} to ${newLength} samples`);
+                    this.log('Warning: This reduces audio quality but fixes the length issue');
                     audioData = resampledAudio;
                 }
                 
