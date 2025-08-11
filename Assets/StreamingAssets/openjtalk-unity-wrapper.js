@@ -289,7 +289,8 @@
       // スペースで分割
       const parts = phonemeString.trim().split(/\s+/);
       
-      // 各音素を処理（インデックスでループして先読み可能に）
+      // 各音素を処理 - 特殊処理なしでそのまま送信
+      // Windows/Android/piper-plusと同じ処理にする
       for (let i = 0; i < parts.length; i++) {
         const phoneme = parts[i];
         
@@ -297,20 +298,8 @@
           continue;
         }
         
-        // "ch i" のシーケンスを検出して単一の "chi" として処理
-        if (phoneme === 'ch' && i + 1 < parts.length && parts[i + 1] === 'i') {
-          console.log('[OpenJTalkUnity] Detected "ch i" sequence, merging to "chi"');
-          phonemes.push('__chi__');  // 特別なマーカーとして保持
-          i++; // 次の 'i' をスキップ
-        }
-        // その他のマルチ文字音素
-        else if (MULTI_CHAR_PHONEMES[phoneme]) {
-          // マルチ文字音素は特別なマーカーとして保持
-          phonemes.push('__' + phoneme + '__');
-        } else {
-          // 単一文字音素として処理
-          phonemes.push(phoneme);
-        }
+        // 通常の音素として処理（特殊処理なし）
+        phonemes.push(phoneme);
       }
 
       phonemes.push('$'); // EOS marker

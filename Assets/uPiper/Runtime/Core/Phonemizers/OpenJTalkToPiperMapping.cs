@@ -45,7 +45,7 @@ namespace uPiper.Core.Phonemizers
             
             // Special consonants
             { "N", "N" },    // ん
-            { "cl", "t" },   // Closure for っ (small tsu) - map to t
+            { "cl", "cl" },   // Closure for っ (small tsu) - keep as-is for PUA mapping
             { "ts", "ts" },  // つ -> Will be mapped to PUA by PhonemeEncoder
             { "ch", "ch" },  // ち -> Will be mapped to PUA by PhonemeEncoder
             { "sh", "sh" },  // し -> Will be mapped to PUA by PhonemeEncoder
@@ -56,12 +56,9 @@ namespace uPiper.Core.Phonemizers
             { "ry", "r" },   // りゃ行 - simplified to r (less common)
             { "ty", "ch" },  // てぃ -> ち (OpenJTalk may output ty for ち)
             
-            // Long vowels (map to regular vowels for simplicity)
-            { "a:", "a" },
-            { "i:", "i" },
-            { "u:", "u" },
-            { "e:", "e" },
-            { "o:", "o" },
+            // Long vowels - DO NOT map to regular vowels
+            // These should be handled as special phonemes and mapped to PUA
+            // Removed from here as they need special handling
             
             // Question mark (rising intonation)
             { "?", "_" }
@@ -170,6 +167,13 @@ namespace uPiper.Core.Phonemizers
         /// </summary>
         private static readonly Dictionary<string, string> PhonemeToPUA = new()
         {
+            // Long vowels (must be mapped to PUA)
+            { "a:", "\ue000" },  // 長音「あー」
+            { "i:", "\ue001" },  // 長音「いー」
+            { "u:", "\ue002" },  // 長音「うー」
+            { "e:", "\ue003" },  // 長音「えー」
+            { "o:", "\ue004" },  // 長音「おー」
+            
             // Palatalized consonants (拗音 - youon)
             { "ky", "\ue006" },  // きゃ、きゅ、きょ
             { "gy", "\ue008" },  // ぎゃ、ぎゅ、ぎょ
@@ -185,9 +189,10 @@ namespace uPiper.Core.Phonemizers
             { "ry", "\ue015" },  // りゃ、りゅ、りょ
             
             // Other multi-character phonemes
-            { "ch", "\ue00a" },  // ち、ちゃ、ちゅ、ちょ (maps to same as ty in model)
-            { "ts", "\ue00f" },  // つ
-            { "sh", "\ue010" }   // し、しゃ、しゅ、しょ (same as "sy")
+            { "ch", "\ue00a" },  // ち - maps to PUA (represents entire "chi" sound)
+            { "ts", "\ue00f" },  // つ - maps to PUA
+            { "sh", "\ue010" },  // し - maps to PUA (same as "sy")
+            { "cl", "\ue005" }   // っ（促音）- maps to PUA
         };
 
         /// <summary>
@@ -205,33 +210,8 @@ namespace uPiper.Core.Phonemizers
                 if (string.IsNullOrEmpty(phoneme))
                     continue;
 
-                // Check for WebGL special markers (e.g., "__ch__", "__chi__", "__ts__")
-                if (phoneme.StartsWith("__") && phoneme.EndsWith("__"))
-                {
-                    var multiCharPhoneme = phoneme.Substring(2, phoneme.Length - 4);
-                    
-                    // Special case for "chi" - treat as "ch" + "i"
-                    if (multiCharPhoneme.ToLower() == "chi")
-                    {
-                        UnityEngine.Debug.Log($"[OpenJTalkToPiperMapping] Found __chi__ marker, splitting to ch + i");
-                        result.Add("\ue00a");  // PUA for "ch"
-                        result.Add("i");        // Add "i" separately
-                        UnityEngine.Debug.Log($"[OpenJTalkToPiperMapping] Added PUA \\ue00a and 'i' to result");
-                        continue;
-                    }
-                    
-                    if (PhonemeToPUA.ContainsKey(multiCharPhoneme.ToLower()))
-                    {
-                        var pua = PhonemeToPUA[multiCharPhoneme.ToLower()];
-                        result.Add(pua);
-                        continue;
-                    }
-                    
-                    // If no PUA mapping found, keep the multi-char phoneme as is
-                    // This shouldn't happen, but better than losing the phoneme
-                    result.Add(multiCharPhoneme);
-                    continue;
-                }
+                // Removed WebGL special markers - treat all platforms the same way
+                // "ch", "ts", "sh" will be handled by the normal PUA mapping below
                 
                 // Check if this is already a PUA character
                 if (phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff')
@@ -243,6 +223,7 @@ namespace uPiper.Core.Phonemizers
                 
                 // Check if this is a multi-character phoneme that needs PUA conversion
                 // This should be checked BEFORE the simple mapping to ensure "ky" -> PUA, not "ky" -> "k"
+                // NOTE: Multi-char phonemes are always lowercase in Japanese
                 if (PhonemeToPUA.ContainsKey(phoneme.ToLower()))
                 {
                     result.Add(PhonemeToPUA[phoneme.ToLower()]);
@@ -250,7 +231,8 @@ namespace uPiper.Core.Phonemizers
                 }
 
                 // Special handling for "t i" sequence -> "ch i" (for ち)
-                if (phoneme.ToLower() == "t" && i + 1 < openJTalkPhonemes.Length && openJTalkPhonemes[i + 1].ToLower() == "i")
+                // NOTE: This special case handling is disabled as OpenJTalk outputs "ch i" directly
+                if (false && phoneme.ToLower() == "t" && i + 1 < openJTalkPhonemes.Length && openJTalkPhonemes[i + 1].ToLower() == "i")
                 {
                     // Check if this is actually "ち" sound
                     // Look at the previous phoneme to determine context
@@ -275,6 +257,15 @@ namespace uPiper.Core.Phonemizers
                     result.Add("_");
                     continue;
                 }
+                
+                // IMPORTANT: Special handling for case-sensitive phonemes
+                // "N" (ん) must remain uppercase as it represents a different phoneme from "n" (な行)
+                // "I", "U", "E", "O", "A" are unvoiced vowels and must remain uppercase
+                if (phoneme == "N" || phoneme == "I" || phoneme == "U" || phoneme == "E" || phoneme == "O" || phoneme == "A")
+                {
+                    result.Add(phoneme);
+                    continue;
+                }
 
                 // Try to map the phoneme
                 if (OpenJTalkToPiperPhoneme.TryGetValue(phoneme.ToLower(), out var piperPhoneme))
@@ -284,15 +275,8 @@ namespace uPiper.Core.Phonemizers
                 else
                 {
                     // If no mapping exists, use the original phoneme
-                    // IMPORTANT: Preserve case for unvoiced vowels (U, I, E, O, A)
-                    if (phoneme.Length == 1 && "UIEOA".Contains(phoneme))
-                    {
-                        result.Add(phoneme); // Keep uppercase for unvoiced vowels
-                    }
-                    else
-                    {
-                        result.Add(phoneme.ToLower());
-                    }
+                    // Already handled case-sensitive phonemes above, so lowercase others
+                    result.Add(phoneme.ToLower());
                 }
             }
 

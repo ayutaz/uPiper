@@ -15,15 +15,17 @@ namespace uPiper.Core.AudioGeneration
     /// </summary>
     public class InferenceAudioGenerator : IInferenceAudioGenerator
     {
+#if !UNITY_WEBGL || UNITY_EDITOR
         private Worker _worker;
         private Model _model;
         private ModelAsset _modelAsset;
-        private PiperVoiceConfig _voiceConfig;
         private PiperConfig _piperConfig;
+        private BackendType _actualBackendType;
+#endif
+        private PiperVoiceConfig _voiceConfig;
         private bool _isInitialized;
         private readonly object _lockObject = new();
         private bool _disposed;
-        private BackendType _actualBackendType;
 #if UNITY_WEBGL && !UNITY_EDITOR
         private ONNXRuntimeWebGL _webglImplementation;
 #endif
@@ -37,7 +39,17 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// Get the actual backend type being used
         /// </summary>
-        public BackendType ActualBackendType => _actualBackendType;
+        public BackendType ActualBackendType
+        {
+            get
+            {
+#if UNITY_WEBGL && !UNITY_EDITOR
+                return BackendType.CPU; // WebGL always uses CPU-like behavior
+#else
+                return _actualBackendType;
+#endif
+            }
+        }
 
         /// <inheritdoc/>
         public async Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config, CancellationToken cancellationToken = default)
@@ -209,35 +221,7 @@ namespace uPiper.Core.AudioGeneration
 
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Preparing model inputs...");
                         PiperLogger.LogInfo($"  Phoneme IDs: {string.Join(", ", phonemeIds.Take(Math.Min(10, phonemeIds.Length)))}... (length: {phonemeIds.Length})");
-                        
-#if UNITY_WEBGL && !UNITY_EDITOR
-                        // WebGL での精度問題を軽減するパラメータ調整
-                        // より小さい値で精度誤差の影響を減らす
-                        var webglNoiseScale = noiseScale * 0.75f;  // 0.667 → 0.5
-                        var webglLengthScale = lengthScale * 0.95f; // 1.0 → 0.95
-                        var webglNoiseW = noiseW * 0.75f;           // 0.8 → 0.6
-                        
-                        // 特定パターンの検出と追加調整（InferenceAudioGeneratorには inputText へのアクセスがないため、音素IDから推測）
-                        // 音素ID 32 は「ch」のPUA、これが含まれる場合は追加調整
-                        bool hasProblematicPattern = phonemeIds.Contains(32);
-                        if (hasProblematicPattern)
-                        {
-                            PiperLogger.LogInfo($"[InferenceAudioGenerator] Detected 'ch' phoneme (ID 32), applying additional adjustment");
-                            webglNoiseScale *= 0.8f;
-                            webglLengthScale *= 0.9f;
-                            webglNoiseW *= 0.8f;
-                        }
-                        
-                        PiperLogger.LogInfo($"[InferenceAudioGenerator] WebGL adjustment applied:");
-                        PiperLogger.LogInfo($"  Original: noise={noiseScale}, length={lengthScale}, noise_w={noiseW}");
-                        PiperLogger.LogInfo($"  Adjusted: noise={webglNoiseScale}, length={webglLengthScale}, noise_w={webglNoiseW}");
-                        
-                        noiseScale = webglNoiseScale;
-                        lengthScale = webglLengthScale;
-                        noiseW = webglNoiseW;
-#else
                         PiperLogger.LogInfo($"  Length scale: {lengthScale}, Noise scale: {noiseScale}, Noise W: {noiseW}");
-#endif
 
                         // 入力テンソルを作成
                         var inputTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
@@ -473,11 +457,13 @@ namespace uPiper.Core.AudioGeneration
                 {
                     lock (_lockObject)
                     {
+#if !UNITY_WEBGL || UNITY_EDITOR
                         DisposeWorker();
                         _model = null;
                         _modelAsset = null;
-                        _voiceConfig = null;
                         _piperConfig = null;
+#endif
+                        _voiceConfig = null;
 #if UNITY_WEBGL && !UNITY_EDITOR
                         _webglImplementation?.Dispose();
                         _webglImplementation = null;
@@ -490,6 +476,7 @@ namespace uPiper.Core.AudioGeneration
 
         private void DisposeWorker()
         {
+#if !UNITY_WEBGL || UNITY_EDITOR
             if (_worker != null)
             {
                 _worker.Dispose();
@@ -497,6 +484,7 @@ namespace uPiper.Core.AudioGeneration
                 _isInitialized = false;
                 PiperLogger.LogDebug("InferenceAudioGenerator worker disposed");
             }
+#endif
         }
 
         /// <summary>

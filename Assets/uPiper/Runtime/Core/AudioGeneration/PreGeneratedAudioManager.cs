@@ -29,7 +29,7 @@ namespace uPiper.Core.AudioGeneration
             {
                 if (_instance == null)
                 {
-                    _instance = FindObjectOfType<PreGeneratedAudioManager>();
+                    _instance = FindFirstObjectByType<PreGeneratedAudioManager>();
                     if (_instance == null)
                     {
                         var go = new GameObject("PreGeneratedAudioManager");

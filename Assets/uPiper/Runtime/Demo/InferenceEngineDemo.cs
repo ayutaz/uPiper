@@ -13,9 +13,8 @@ using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
-#if !UNITY_WEBGL
 using uPiper.Core.Phonemizers.Implementations;
-#elif UNITY_WEBGL && !UNITY_EDITOR
+#if UNITY_WEBGL && !UNITY_EDITOR
 using uPiper.Core.Phonemizers.WebGL;
 #endif
 
@@ -147,8 +146,8 @@ namespace uPiper.Demo
         private bool _isGenerating;
         private InferenceBackend _selectedBackend = InferenceBackend.CPU;
         private GPUInferenceSettings _gpuSettings;
-#if !UNITY_WEBGL
         private ITextPhonemizer _phonemizer;
+#if !UNITY_WEBGL
         private Core.Phonemizers.Backend.ChinesePhonemizer _chinesePhonemizer;
         private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
 #endif
@@ -243,36 +242,20 @@ namespace uPiper.Demo
 #endif
 
 #if UNITY_WEBGL && !UNITY_EDITOR
-            // Initialize WebGL OpenJTalk phonemizer
-            Task.Run(async () =>
-            {
-                try
-                {
-                    var webglOpenJTalk = new Core.Phonemizers.WebGL.WebGLOpenJTalkPhonemizer();
-                    bool initialized = await webglOpenJTalk.InitializeAsync();
-                    if (initialized)
-                    {
-                        _phonemizer = new TextPhonemizerAdapter(webglOpenJTalk);
-                        PiperLogger.LogInfo("[InferenceEngineDemo] WebGL OpenJTalk phonemizer initialized successfully");
-                    }
-                    else
-                    {
-                        PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize WebGL OpenJTalk phonemizer");
-                        _phonemizer = null;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize WebGL OpenJTalk: {ex.Message}");
-                    _phonemizer = null;
-                }
-            });
+            // WebGL環境では直接WebGLOpenJTalkUnityPhonemizerを使用
+            // _phonemizerは使わず、音声生成時に直接インスタンスを取得する
+            PiperLogger.LogInfo("[InferenceEngineDemo] WebGL mode - will use WebGLOpenJTalkUnityPhonemizer on demand");
+            _phonemizer = null;
 #else
             // Initialize OpenJTalk phonemizer for Japanese (non-WebGL)
             try
             {
-                var openJTalk = new OpenJTalkPhonemizer();
+#if !UNITY_WEBGL
+                var openJTalk = new Core.Phonemizers.Implementations.OpenJTalkPhonemizer();
                 _phonemizer = new TextPhonemizerAdapter(openJTalk);
+#else
+                _phonemizer = null; // OpenJTalk not available in WebGL non-editor mode
+#endif
                 PiperLogger.LogInfo("[InferenceEngineDemo] OpenJTalk phonemizer initialized successfully");
             }
             catch (Exception ex)
@@ -285,6 +268,7 @@ namespace uPiper.Demo
                 _phonemizer = null;
             }
 
+#if !UNITY_WEBGL
             // Initialize Chinese phonemizer
             Task.Run(async () =>
             {
@@ -332,6 +316,7 @@ namespace uPiper.Demo
                     _englishPhonemizer = null;
                 }
             });
+#endif
 #endif
 
             SetupUI();
@@ -962,8 +947,10 @@ namespace uPiper.Demo
                     
                     try
                     {
-                        // Create and initialize WebGL phonemizer
+                        // WebGLOpenJTalkUnityPhonemizerのシングルトンインスタンスを取得
                         var webglPhonemizer = WebGLOpenJTalkUnityPhonemizer.GetInstance();
+                        
+                        // 初期化（すでに初期化済みの場合はスキップされる）
                         await webglPhonemizer.InitializeAsync();
                         
                         var webglStopwatch = Stopwatch.StartNew();
@@ -1005,9 +992,6 @@ namespace uPiper.Demo
                         {
                             _phonemeDetailsText.text = $"WebGL OpenJTalk: {string.Join(" ", openJTalkPhonemes)}\nPiper: {string.Join(" ", phonemes)}";
                         }
-                        
-                        // シングルトンパターンを使用しているため、Disposeは呼び出さない
-                        // webglPhonemizer.Dispose();
                     }
                     catch (Exception ex)
                     {

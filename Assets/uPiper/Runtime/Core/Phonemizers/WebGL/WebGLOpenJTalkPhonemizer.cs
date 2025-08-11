@@ -3,14 +3,16 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core;
 using uPiper.Core.Logging;
+using uPiper.Core.Phonemizers.Backend;
 
 namespace uPiper.Core.Phonemizers.WebGL
 {
     /// <summary>
     /// WebGL環境でOpenJTalk WASMを使用する音素化器
     /// </summary>
-    public class WebGLOpenJTalkPhonemizer : IPhonmizer
+    public class WebGLOpenJTalkPhonemizer : IPhonemizer
     {
         #region P/Invoke Declarations
         
@@ -30,6 +32,12 @@ namespace uPiper.Core.Phonemizers.WebGL
         private static TaskCompletionSource<PhonemeResult> _phonemizeTcs;
         
         public bool IsInitialized => _isInitialized;
+        
+        // IPhonemizer interface properties
+        public string Name => "OpenJTalk WebGL";
+        public string Version => "1.0.0";
+        public string[] SupportedLanguages => new[] { "ja", "ja_JP" };
+        public bool UseCache { get; set; } = false; // WebGL doesn't support caching yet
         
         /// <summary>
         /// Initialize OpenJTalk WASM
@@ -137,6 +145,72 @@ namespace uPiper.Core.Phonemizers.WebGL
         {
             PiperLogger.LogError("[WebGLOpenJTalkPhonemizer] Synchronous phonemization not supported in WebGL");
             return new PhonemeResult { Phonemes = new string[0] };
+        }
+        
+        /// <summary>
+        /// Batch phonemization
+        /// </summary>
+        public async Task<PhonemeResult[]> PhonemizeBatchAsync(string[] texts, string language = "ja", CancellationToken cancellationToken = default)
+        {
+            var results = new PhonemeResult[texts.Length];
+            for (int i = 0; i < texts.Length; i++)
+            {
+                results[i] = await PhonemizeAsync(texts[i], language, cancellationToken);
+            }
+            return results;
+        }
+        
+        /// <summary>
+        /// Clear cache (not implemented in WebGL)
+        /// </summary>
+        public void ClearCache()
+        {
+            // Cache not supported in WebGL
+        }
+        
+        /// <summary>
+        /// Get cache statistics
+        /// </summary>
+        public CacheStatistics GetCacheStatistics()
+        {
+            return new CacheStatistics
+            {
+                EntryCount = 0,
+                TotalSizeBytes = 0,
+                MaxSizeBytes = 0,
+                HitCount = 0,
+                MissCount = 0,
+                EvictionCount = 0
+            };
+        }
+        
+        /// <summary>
+        /// Check if language is supported
+        /// </summary>
+        public bool IsLanguageSupported(string language)
+        {
+            return language == "ja" || language == "ja_JP";
+        }
+        
+        /// <summary>
+        /// Get language info
+        /// </summary>
+        public LanguageInfo GetLanguageInfo(string language)
+        {
+            if (IsLanguageSupported(language))
+            {
+                return new LanguageInfo
+                {
+                    Code = language,
+                    Name = "Japanese",
+                    NativeName = "日本語",
+                    PhonemeSetType = "OpenJTalk",
+                    SupportsAccent = true,
+                    RequiresPreprocessing = true,
+                    Direction = TextDirection.LeftToRight
+                };
+            }
+            return null;
         }
         
         /// <summary>
