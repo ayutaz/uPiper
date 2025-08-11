@@ -242,7 +242,32 @@ namespace uPiper.Demo
 #endif
 #endif
 
-#if !UNITY_WEBGL
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // Initialize WebGL OpenJTalk phonemizer
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var webglOpenJTalk = new Core.Phonemizers.WebGL.WebGLOpenJTalkPhonemizer();
+                    bool initialized = await webglOpenJTalk.InitializeAsync();
+                    if (initialized)
+                    {
+                        _phonemizer = new TextPhonemizerAdapter(webglOpenJTalk);
+                        PiperLogger.LogInfo("[InferenceEngineDemo] WebGL OpenJTalk phonemizer initialized successfully");
+                    }
+                    else
+                    {
+                        PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize WebGL OpenJTalk phonemizer");
+                        _phonemizer = null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize WebGL OpenJTalk: {ex.Message}");
+                    _phonemizer = null;
+                }
+            });
+#elif !UNITY_WEBGL
             // Initialize OpenJTalk phonemizer for Japanese
             try
             {
@@ -259,6 +284,7 @@ namespace uPiper.Demo
                 PiperLogger.LogError("[InferenceEngineDemo]   2. Run ./build.sh (macOS/Linux) or build.bat (Windows)");
                 _phonemizer = null;
             }
+#endif
 
             // Initialize Chinese phonemizer
             Task.Run(async () =>
