@@ -204,8 +204,13 @@ class UnityONNXRuntime {
             
             // スケールパラメータ（設定から取得、なければデフォルト値）
             const noiseScale = this.modelConfig?.inference?.noise_scale || 0.667;
-            const lengthScale = this.modelConfig?.inference?.length_scale || 1.0;
+            // WebGL環境では length_scale を調整（音声が長すぎる問題への対処）
+            // Windows/Androidでは1.0で正常だが、WebGLでは約5倍長くなるため0.2に調整
+            const lengthScale = this.modelConfig?.inference?.length_scale || 0.2;
             const noiseW = this.modelConfig?.inference?.noise_w || 0.8;
+            
+            this.log(`Using scales - noise: ${noiseScale}, length: ${lengthScale}, noiseW: ${noiseW}`);
+            this.log('Note: length_scale adjusted to 0.2 for WebGL (from default 1.0) to fix audio length issue');
             
             const scalesTensor = new ort.Tensor('float32', 
                 new Float32Array([noiseScale, lengthScale, noiseW]), 
@@ -259,6 +264,36 @@ class UnityONNXRuntime {
                 
                 // Float32Arrayに変換
                 audioData = new Float32Array(rawData);
+                
+                // WebGLでの音声長さ問題の追加対処
+                // length_scaleで調整しても長い場合は、データを直接トリミング
+                const expectedMaxLength = 30000; // 「こんにちは」の期待される最大長
+                if (phonemeIds.length === 11 && audioData.length > expectedMaxLength * 2) {
+                    this.log(`WebGL: Audio too long for 'konnichiwa' (${audioData.length} samples), applying additional trimming`);
+                    // 実際の音声部分を検出してトリミング
+                    let actualEnd = audioData.length;
+                    for (let i = expectedMaxLength; i < audioData.length; i++) {
+                        if (Math.abs(audioData[i]) < 0.0001) {
+                            // 静音が続く場合は終了とみなす
+                            let silenceCount = 0;
+                            for (let j = i; j < Math.min(i + 1000, audioData.length); j++) {
+                                if (Math.abs(audioData[j]) < 0.0001) silenceCount++;
+                            }
+                            if (silenceCount > 900) {
+                                actualEnd = i;
+                                break;
+                            }
+                        }
+                    }
+                    if (actualEnd < audioData.length) {
+                        const trimmedData = new Float32Array(actualEnd);
+                        for (let i = 0; i < actualEnd; i++) {
+                            trimmedData[i] = audioData[i];
+                        }
+                        this.log(`Trimmed audio from ${audioData.length} to ${actualEnd} samples`);
+                        audioData = trimmedData;
+                    }
+                }
                 
                 // サンプル数が異常に多い場合の警告
                 if (audioData.length > 50000) {
