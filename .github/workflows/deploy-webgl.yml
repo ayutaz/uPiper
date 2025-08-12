@@ -133,6 +133,22 @@ jobs:
             fi
           done
           
+          # StreamingAssetsディレクトリの確認と修正
+          echo "Checking StreamingAssets directory..."
+          if [ -d "./public/StreamingAssets" ]; then
+            echo "StreamingAssets found at root level"
+            ls -la ./public/StreamingAssets/ | head -10
+          elif [ -d "./public/Build/StreamingAssets" ]; then
+            echo "StreamingAssets found in Build directory" 
+            ls -la ./public/Build/StreamingAssets/ | head -10
+          else
+            echo "WARNING: StreamingAssets directory not found!"
+            # ディレクトリ構造を調査
+            echo "Directory structure:"
+            find ./public -type d -name "*Stream*" 2>/dev/null || true
+            find ./public -name "*.onnx*" -o -name "*.json" | head -20
+          fi
+          
           # index.htmlを修正して.gzを削除
           if [ -f "./public/index.html" ]; then
             echo "Updating index.html to use uncompressed files..."
