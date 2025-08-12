@@ -72,27 +72,18 @@ jobs:
       
       - name: Process large files for GitHub Pages
         run: |
-          # 大容量ファイル（>90MB）を分割
-          echo "Processing large files for GitHub Pages..."
+          # 大容量ファイル（>90MB）のチェック
+          echo "Checking for large files..."
           
-          # Build/WebGL/Web内の90MB以上のファイルを分割
           if [ -d "build/WebGL/Web" ]; then
-            find build/WebGL/Web -type f -size +90M | while read file; do
-              echo "Splitting large file: $file"
-              # 90MBごとに分割
-              split -b 90M "$file" "${file}.part"
-              
-              # 元のファイルを削除
-              rm "$file"
-              
-              # 分割ローダースクリプトを作成
-              echo "Creating loader script for split file: ${file##*/}"
-              
-              # index.htmlにローダーを追加
-              if [ -f "build/WebGL/Web/index.html" ]; then
-                sed -i "/<\/head>/i <script src=\"${file##*/}.loader.js\"></script>" build/WebGL/Web/index.html
-              fi
-            done
+            echo "Files larger than 90MB:"
+            find build/WebGL/Web -type f -size +90M -exec ls -lh {} \;
+            
+            # 90MBを超えるファイルがある場合は警告（GitHub Pagesは100MB制限）
+            if find build/WebGL/Web -type f -size +90M | grep -q .; then
+              echo "WARNING: Large files detected. These may fail on GitHub Pages (100MB limit)."
+              echo "Consider using Git LFS or splitting the files in a future update."
+            fi
           fi
       
       - name: Add CORS and compatibility fixes
