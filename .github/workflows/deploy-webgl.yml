@@ -1,4 +1,4 @@
-name: Build and Deploy Unity WebGL
+name: "Build and Deploy Unity WebGL"
 
 on:
   push:
