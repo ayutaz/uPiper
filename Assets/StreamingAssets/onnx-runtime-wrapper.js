@@ -411,60 +411,13 @@ class UnityONNXRuntime {
                 this.log('3. The model itself outputs correctly (proven by piper-plus demo)');
                 this.log('4. The issue is in Unity->JavaScript data bridge');
                 
-                // 問題: 音声が5倍長い
-                // 可能性1: サンプリングレートの不一致 (22050Hz vs 4410Hz?)
-                // 可能性2: モデルの length_scale パラメータが正しく適用されていない
-                // 可能性3: ONNX Runtime Webのバグ
-                if (audioData.length > 50000 && phonemeIds.length === 11) {
-                    this.log('Detected length issue specific to "konnichiwa" (11 phonemes)');
-                    this.log(`Audio is ${(audioData.length / 18000).toFixed(1)}x longer than expected`);
-                    this.log('Possible causes:');
-                    this.log('1. Sampling rate mismatch in ONNX Runtime Web');
-                    this.log('2. length_scale parameter not being applied correctly');
-                    this.log('3. ONNX Runtime Web version incompatibility');
-                    
-                    // Unity WebGL環境でのみ発生する問題
-                    // piper-plusのWebデモでは同じモデル・同じONNX Runtime Webで正常動作
-                    this.log('Unity WebGL specific issue detected');
-                    this.log('Note: Same model works correctly in piper-plus web demo');
-                    
-                    // Unity WebGLでのみ生成される余分なサンプルを削除
-                    // 問題: UnityのFloat32Array処理がデータを拡張している
-                    this.log('Applying Unity WebGL specific fix');
-                    
-                    // 実際の音声長さを推定（約 0.8-1.0秒 = 17,600-22,050サンプル）
-                    const expectedLength = 18000; // 「こんにちは」の期待される長さ
-                    const ratio = audioData.length / expectedLength;
-                    this.log(`Audio is ${ratio.toFixed(1)}x longer than expected`);
-                    
-                    // 整数倍率の場合は単純に間引き
-                    if (ratio > 6 && ratio < 9) {
-                        // 7-8倍長い場合はょ7個おきにサンプリング
-                        const skipFactor = Math.round(ratio);
-                        const targetLength = Math.floor(audioData.length / skipFactor);
-                        const fixedAudio = new Float32Array(targetLength);
-                        
-                        for (let i = 0; i < targetLength; i++) {
-                            fixedAudio[i] = audioData[i * skipFactor];
-                        }
-                        
-                        this.log(`Applied ${skipFactor}x downsampling: ${audioData.length} -> ${targetLength} samples`);
-                        audioData = fixedAudio;
-                    } else if (ratio > 4.5 && ratio < 6) {
-                        // 5倍長い場合は5個おきにサンプリング
-                        const skipFactor = 5;
-                        const targetLength = Math.floor(audioData.length / skipFactor);
-                        const fixedAudio = new Float32Array(targetLength);
-                        
-                        for (let i = 0; i < targetLength; i++) {
-                            fixedAudio[i] = audioData[i * skipFactor];
-                        }
-                        
-                        this.log(`Applied ${skipFactor}x downsampling: ${audioData.length} -> ${targetLength} samples`);
-                        audioData = fixedAudio;
-                    } else {
-                        this.log('Unexpected ratio, not applying fix');
-                    }
+                // 注意: length_scale調整により、この問題は解決済み
+                // 以下の処理は不要になったため、スキップ
+                // Unity WebGL環境では length_scale = 0.17 の調整で正しい長さの音声が生成される
+                if (false && audioData.length > 50000 && phonemeIds.length === 11) {
+                    // このブロックは無効化されています
+                    // length_scale パラメータの調整により、音声長の問題は根本的に解決されました
+                    this.log('(DISABLED) Old downsampling logic - no longer needed');
                 }
                 
                 // サンプル数が異常に多い場合の警告
