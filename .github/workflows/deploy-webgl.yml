@@ -86,15 +86,17 @@ jobs:
             fi
           fi
       
-      - name: Add GitHub Pages compatibility
+      - name: Check build permissions
         run: |
-          # .nojekyll ファイルを作成（_で始まるファイルを正しく配信）
-          echo "Creating .nojekyll file for GitHub Pages..."
-          echo "" > build/WebGL/Web/.nojekyll
+          # ビルドディレクトリの権限を確認
+          echo "Checking build directory permissions..."
+          ls -ld build/WebGL/Web/ || true
+          echo "Directory owner and permissions:"
+          stat -c "%U:%G %a" build/WebGL/Web/ || true
           
           # ファイル一覧を確認
           echo "Build output directory contents:"
-          ls -la build/WebGL/Web/ || true
+          ls -la build/WebGL/Web/ | head -20 || true
       
       - name: Upload WebGL Build
         uses: actions/upload-artifact@v4
