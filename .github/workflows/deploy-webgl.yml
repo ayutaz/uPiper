@@ -137,16 +137,23 @@ jobs:
           echo "Checking StreamingAssets directory..."
           if [ -d "./public/StreamingAssets" ]; then
             echo "StreamingAssets found at root level"
-            ls -la ./public/StreamingAssets/ | head -10
+            # Build/StreamingAssetsにコピー（Unityが期待する場所）
+            if [ ! -d "./public/Build/StreamingAssets" ]; then
+              echo "Copying StreamingAssets to Build directory..."
+              cp -r ./public/StreamingAssets ./public/Build/
+            fi
           elif [ -d "./public/Build/StreamingAssets" ]; then
-            echo "StreamingAssets found in Build directory" 
-            ls -la ./public/Build/StreamingAssets/ | head -10
+            echo "StreamingAssets already in Build directory" 
           else
             echo "WARNING: StreamingAssets directory not found!"
-            # ディレクトリ構造を調査
-            echo "Directory structure:"
-            find ./public -type d -name "*Stream*" 2>/dev/null || true
-            find ./public -name "*.onnx*" -o -name "*.json" | head -20
+          fi
+          
+          # ONNXファイルの確認
+          if [ -f "./public/Build/StreamingAssets/ja_JP-test-medium.onnx" ]; then
+            echo "✓ ONNX model file found"
+            ls -lh ./public/Build/StreamingAssets/*.onnx*
+          else
+            echo "WARNING: ONNX model file not found in expected location"
           fi
           
           # index.htmlを修正して.gzを削除
