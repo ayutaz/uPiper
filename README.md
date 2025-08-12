@@ -119,6 +119,8 @@ var config = new PiperConfig
 
 - [アーキテクチャ](docs/ja/ARCHITECTURE.md) - 設計と技術的な詳細
 - [WebGL実装](docs/ja/guides/webgl/README.md) - WebGL/ONNX Runtime Web統合の詳細
+- [WebGL問題調査記録](docs/ja/guides/webgl/unity-webgl-audio-issue-complete-investigation.md) - Unity WebGL音声合成問題の完全な調査記録
+- [WebGLトラブルシューティング](docs/WEBGL_TROUBLESHOOTING_GUIDE.md) - WebGL環境での問題解決ガイド
 - [開発ログ](docs/DEVELOPMENT_LOG.md) - 開発進捗と変更履歴
 - [技術ドキュメント](docs/ja/guides/technical/) - 詳細な技術情報
 

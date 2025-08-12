@@ -195,6 +195,8 @@ public async Task<float[]> GenerateAudioAsync(int[] phonemeIds)
 
 ## 関連ドキュメント
 
+- [Unity WebGL音声合成問題 - 完全調査記録](unity-webgl-audio-issue-complete-investigation.md)
+- [WebGLトラブルシューティングガイド](../../../WEBGL_TROUBLESHOOTING_GUIDE.md)
 - [ONNX Runtime Webアーキテクチャ](../../../ONNX_RUNTIME_WEB_ARCHITECTURE.md)
 - [WebGLビルドチェックリスト](../../../../WEBGL_BUILD_CHECKLIST.md)
 - [Unity WebGL実装計画](../../../../UNITY_WEBGL_OPENJTALK_IMPLEMENTATION_PLAN.md)
