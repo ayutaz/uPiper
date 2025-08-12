@@ -2,12 +2,16 @@
 (function() {
     console.log('[SplitFileLoader] Initializing for OpenJTalk data...');
     
+    // Define OpenJTalkUnityModule early if not exists
+    window.OpenJTalkUnityModule = window.OpenJTalkUnityModule || {};
+    
     // Override OpenJTalk module locateFile
     if (window.OpenJTalkUnityModule) {
         const originalLocateFile = window.OpenJTalkUnityModule.locateFile;
         
         window.OpenJTalkUnityModule.locateFile = async function(path) {
-            if (path === 'openjtalk-unity.data') {
+            // Handle both openjtalk-unity.data and openjtalk-unity-full.data
+            if (path === 'openjtalk-unity.data' || path === 'openjtalk-unity-full.data') {
                 console.log('[SplitFileLoader] Loading split OpenJTalk data files...');
                 
                 try {
@@ -65,7 +69,9 @@
     // Also patch fetch for direct requests
     const originalFetch = window.fetch;
     window.fetch = async function(input, init) {
-        if (typeof input === 'string' && input.includes('openjtalk-unity.data') && !input.includes('.part')) {
+        if (typeof input === 'string' && 
+            (input.includes('openjtalk-unity.data') || input.includes('openjtalk-unity-full.data')) && 
+            !input.includes('.part')) {
             console.log('[SplitFileLoader] Intercepting direct fetch for OpenJTalk data');
             
             try {

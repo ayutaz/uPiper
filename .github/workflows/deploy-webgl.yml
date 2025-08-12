@@ -148,14 +148,21 @@ jobs:
             echo "WARNING: StreamingAssets directory not found!"
           fi
           
-          # OpenJTalkデータファイルのコピー
+          # OpenJTalkデータファイルのコピー（分割ファイル対応）
           echo "Checking for OpenJTalk data files..."
-          if [ -f "./public/StreamingAssets/openjtalk-unity.data" ]; then
+          
+          # 分割ファイルをコピー
+          if [ -f "./public/StreamingAssets/openjtalk-unity.data.partaa" ]; then
+            echo "Copying split OpenJTalk data files to Build directory..."
+            cp ./public/StreamingAssets/openjtalk-unity.data.part* ./public/Build/StreamingAssets/ 2>/dev/null || true
+            cp ./public/StreamingAssets/openjtalk-unity.js ./public/Build/StreamingAssets/ 2>/dev/null || true
+            cp ./public/StreamingAssets/openjtalk-unity.wasm ./public/Build/StreamingAssets/ 2>/dev/null || true
+            cp ./public/StreamingAssets/openjtalk-unity-wrapper.js ./public/Build/StreamingAssets/ 2>/dev/null || true
+            cp ./public/StreamingAssets/split-file-loader.js ./public/Build/StreamingAssets/ 2>/dev/null || true
+            echo "Split files copied successfully"
+          elif [ -f "./public/StreamingAssets/openjtalk-unity.data" ]; then
             echo "Copying OpenJTalk data to Build directory..."
             cp ./public/StreamingAssets/openjtalk-unity.* ./public/Build/StreamingAssets/ 2>/dev/null || true
-          elif [ -f "./public/openjtalk-unity.data" ]; then
-            echo "Copying OpenJTalk data from root to StreamingAssets..."
-            cp ./public/openjtalk-unity.* ./public/Build/StreamingAssets/ 2>/dev/null || true
           else
             echo "WARNING: OpenJTalk data files not found!"
             # OpenJTalkディレクトリを確認
@@ -185,10 +192,16 @@ jobs:
             sed -i 's/\.framework\.js\.gz/\.framework\.js/g' ./public/index.html
             sed -i 's/\.wasm\.gz/\.wasm/g' ./public/index.html
             
-            # パスリゾルバーを最初に読み込むように追加
+            # split-file-loaderとパスリゾルバーを最初に読み込むように追加
+            if [ -f "./public/Build/StreamingAssets/split-file-loader.js" ]; then
+              echo "Adding split-file-loader to index.html..."
+              # <head>タグの最後に追加
+              sed -i '/<\/head>/i <script src="StreamingAssets/split-file-loader.js"></script>' ./public/index.html
+            fi
+            
             if [ -f "./public/Build/StreamingAssets/unity-path-resolver.js" ]; then
               echo "Adding path resolver to index.html..."
-              sed -i '/<script src="Build\/Web.loader.js"><\/script>/i <script src="Build/StreamingAssets/unity-path-resolver.js"></script>' ./public/index.html
+              sed -i '/<\/head>/i <script src="StreamingAssets/unity-path-resolver.js"></script>' ./public/index.html
             fi
           fi
           

@@ -41,14 +41,16 @@ namespace uPiper.Editor
             {
                 "openjtalk-unity.js",
                 "openjtalk-unity.wasm",
-                "openjtalk-unity.data",  // オリジナルファイル（ローカルテスト用）
-                "openjtalk-unity.data.part000",  // GitHub Pages用分割ファイル1
-                "openjtalk-unity.data.part001",  // GitHub Pages用分割ファイル2
+                // 分割ファイル（GitHub Pages用）
+                "openjtalk-unity.data.partaa",  
+                "openjtalk-unity.data.partab",
                 "openjtalk-unity.data.manifest.json",  // 分割ファイルのマニフェスト
+                "split-file-loader.js",  // 分割ファイルローダー
                 "openjtalk-webgl-integration.js",
                 "openjtalk-unity-wrapper.js",
                 "onnx-runtime-wrapper.js",
                 "github-pages-adapter.js",
+                "unity-path-resolver.js",
                 "ja_JP-test-medium.onnx",
                 "ja_JP-test-medium.onnx.json"
             };
@@ -93,7 +95,15 @@ namespace uPiper.Editor
                 {
                     string htmlContent = File.ReadAllText(indexPath);
                     
-                    // GitHub Pagesアダプターを最初に追加
+                    // split-file-loaderを最初に追加（OpenJTalkより前に読み込む必要がある）
+                    if (!htmlContent.Contains("split-file-loader.js"))
+                    {
+                        string splitLoaderScript = "  <script src=\"StreamingAssets/split-file-loader.js\"></script>\n";
+                        // <head>タグの最後に追加
+                        htmlContent = htmlContent.Replace("</head>", splitLoaderScript + "</head>");
+                    }
+                    
+                    // GitHub Pagesアダプターを追加
                     if (!htmlContent.Contains("github-pages-adapter.js"))
                     {
                         string adapterScript = "  <script src=\"StreamingAssets/github-pages-adapter.js\"></script>\n</head>";
