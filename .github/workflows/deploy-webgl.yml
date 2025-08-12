@@ -1,10 +1,13 @@
-name: Deploy Unity WebGL to GitHub Pages
+name: Build and Deploy Unity WebGL
 
 on:
   push:
     branches:
       - main
       - feature/webgl-implementation
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -17,52 +20,193 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  build-webgl:
+    name: Build Unity WebGL
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           lfs: true
       
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Cache Library
+        uses: actions/cache@v4
         with:
-          python-version: '3.10'
+          path: Library
+          key: Library-WebGL-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-WebGL-
+            Library-
       
-      - name: Prepare WebGL Build
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+      
+      - name: Build Unity WebGL
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: 6000.0.55f1
+          targetPlatform: WebGL
+          buildsPath: build
+          buildName: Web
+      
+      - name: List build output
         run: |
-          # ビルド済みファイルが存在する前提
-          # 実際のワークフローではUnity Builderアクションを使用
-          echo "Preparing WebGL build for GitHub Pages..."
+          echo "Build complete. Listing output files:"
+          ls -la build/WebGL/Web/ || echo "Build directory not found"
           
-          # Build/Web ディレクトリが存在することを確認
-          if [ -d "Build/Web" ]; then
-            echo "Found Unity WebGL build"
-            
-            # 大容量ファイルの分割
-            python split-large-files.py process Build/Web
-            
-            # GitHub Pages アダプターをコピー
-            cp Assets/StreamingAssets/github-pages-adapter.js Build/Web/StreamingAssets/
-            
-            # index.html にアダプターを追加
-            sed -i '/<\/head>/i <script src="StreamingAssets/github-pages-adapter.js"></script>' Build/Web/index.html
-          else
-            echo "No Unity WebGL build found. Please build first."
-            exit 1
+          # ファイルサイズチェック
+          echo "Checking for large files (>50MB):"
+          find build/WebGL/Web -type f -size +50M -exec ls -lh {} \; 2>/dev/null || echo "No large files found"
+      
+      - name: Process large files for GitHub Pages
+        run: |
+          # 大容量ファイル（>90MB）を分割
+          echo "Processing large files for GitHub Pages..."
+          
+          # Build/WebGL/Web内の90MB以上のファイルを分割
+          if [ -d "build/WebGL/Web" ]; then
+            find build/WebGL/Web -type f -size +90M | while read file; do
+              echo "Splitting large file: $file"
+              # 90MBごとに分割
+              split -b 90M "$file" "${file}.part"
+              
+              # 元のファイルを削除
+              rm "$file"
+              
+              # 分割ローダースクリプトを作成
+              cat > "${file}.loader.js" << 'EOF'
+(function() {
+  const fileName = document.currentScript.src.replace('.loader.js', '');
+  const parts = [];
+  let partIndex = 0;
+  
+  async function loadParts() {
+    const partNames = [];
+    // パートファイルを探す (partaa, partab, ...)
+    for (let i = 0; i < 26; i++) {
+      const suffix = String.fromCharCode(97 + Math.floor(i / 26)) + String.fromCharCode(97 + (i % 26));
+      partNames.push(fileName + '.part' + suffix);
+    }
+    
+    for (const partName of partNames) {
+      try {
+        const response = await fetch(partName);
+        if (!response.ok) break;
+        const data = await response.arrayBuffer();
+        parts.push(data);
+      } catch (e) {
+        break;
+      }
+    }
+    
+    // すべてのパーツを結合
+    const totalSize = parts.reduce((sum, part) => sum + part.byteLength, 0);
+    const combined = new Uint8Array(totalSize);
+    let offset = 0;
+    
+    parts.forEach(part => {
+      combined.set(new Uint8Array(part), offset);
+      offset += part.byteLength;
+    });
+    
+    return combined;
+  }
+  
+  loadParts().then(data => {
+    console.log('Loaded split file:', fileName);
+    // 結合したデータを利用可能にする
+    window.splitFileData = window.splitFileData || {};
+    window.splitFileData[fileName] = data;
+  });
+})();
+EOF
+              
+              # index.htmlにローダーを追加
+              if [ -f "build/WebGL/Web/index.html" ]; then
+                sed -i "/<\/head>/i <script src=\"${file##*/}.loader.js\"></script>" build/WebGL/Web/index.html
+              fi
+            done
           fi
+      
+      - name: Add CORS and compatibility fixes
+        run: |
+          # GitHub Pages用の設定を追加
+          if [ -f "build/WebGL/Web/index.html" ]; then
+            # CORS設定
+            sed -i '/<head>/a <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">' build/WebGL/Web/index.html
+            sed -i '/<head>/a <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">' build/WebGL/Web/index.html
+          fi
+          
+          # .nojekyll ファイルを作成（_で始まるファイルを正しく配信）
+          touch build/WebGL/Web/.nojekyll
+      
+      - name: Upload WebGL Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: WebGL-Build
+          path: build/WebGL/Web
+          retention-days: 7
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build-webgl
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download WebGL Build
+        uses: actions/download-artifact@v4
+        with:
+          name: WebGL-Build
+          path: ./public
       
       - name: Setup Pages
         uses: actions/configure-pages@v5
       
-      - name: Upload artifact
+      - name: Upload to GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: Build/Web
+          path: ./public
       
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+
+  test-deployment:
+    name: Test Deployment
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Wait for deployment
+        run: sleep 30
+      
+      - name: Test deployed site
+        run: |
+          # デプロイされたサイトをテスト
+          DEPLOY_URL="https://ayutaz.github.io/uPiper/"
+          
+          echo "Testing deployment at: $DEPLOY_URL"
+          
+          # HTTPステータスコードをチェック
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" "$DEPLOY_URL")
+          
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Deployment successful! Site is accessible."
+          else
+            echo "⚠️ Site returned status code: $STATUS"
+            echo "This might be normal if it's the first deployment."
+          fi
