@@ -86,52 +86,7 @@ jobs:
               rm "$file"
               
               # 分割ローダースクリプトを作成
-              cat > "${file}.loader.js" << 'EOF'
-(function() {
-  const fileName = document.currentScript.src.replace('.loader.js', '');
-  const parts = [];
-  let partIndex = 0;
-  
-  async function loadParts() {
-    const partNames = [];
-    // パートファイルを探す (partaa, partab, ...)
-    for (let i = 0; i < 26; i++) {
-      const suffix = String.fromCharCode(97 + Math.floor(i / 26)) + String.fromCharCode(97 + (i % 26));
-      partNames.push(fileName + '.part' + suffix);
-    }
-    
-    for (const partName of partNames) {
-      try {
-        const response = await fetch(partName);
-        if (!response.ok) break;
-        const data = await response.arrayBuffer();
-        parts.push(data);
-      } catch (e) {
-        break;
-      }
-    }
-    
-    // すべてのパーツを結合
-    const totalSize = parts.reduce((sum, part) => sum + part.byteLength, 0);
-    const combined = new Uint8Array(totalSize);
-    let offset = 0;
-    
-    parts.forEach(part => {
-      combined.set(new Uint8Array(part), offset);
-      offset += part.byteLength;
-    });
-    
-    return combined;
-  }
-  
-  loadParts().then(data => {
-    console.log('Loaded split file:', fileName);
-    // 結合したデータを利用可能にする
-    window.splitFileData = window.splitFileData || {};
-    window.splitFileData[fileName] = data;
-  });
-})();
-EOF
+              echo "Creating loader script for split file: ${file##*/}"
               
               # index.htmlにローダーを追加
               if [ -f "build/WebGL/Web/index.html" ]; then
