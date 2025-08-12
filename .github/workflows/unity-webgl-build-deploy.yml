@@ -1,0 +1,247 @@
+name: Unity WebGL Build and Deploy
+
+on:
+  push:
+    branches:
+      - feature/webgl-implementation
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-webgl:
+    name: Build Unity WebGL
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        lfs: true
+        
+    - name: Cache Library
+      uses: actions/cache@v4
+      with:
+        path: Library
+        key: Library-WebGL-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+        restore-keys: |
+          Library-WebGL-
+          Library-
+          
+    - name: Free Disk Space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
+        swap-storage: true
+        
+    - name: Build Unity WebGL
+      uses: game-ci/unity-builder@v4
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      with:
+        targetPlatform: WebGL
+        unityVersion: 6000.0.55f1
+        buildName: uPiper
+        versioning: Semantic
+        
+    - name: List build output
+      run: |
+        echo "=== Build output structure ==="
+        ls -la build/
+        if [ -d "build/WebGL" ]; then
+          echo "=== WebGL build contents ==="
+          ls -la build/WebGL/
+          if [ -d "build/WebGL/uPiper" ]; then
+            echo "=== uPiper build contents ==="
+            ls -la build/WebGL/uPiper/
+            if [ -d "build/WebGL/uPiper/Build" ]; then
+              echo "=== Build directory contents ==="
+              ls -lh build/WebGL/uPiper/Build/
+            fi
+          fi
+        fi
+        
+    - name: Check for large files
+      run: |
+        echo "=== Checking for files over 100MB ==="
+        find build/WebGL -type f -size +100M -exec ls -lh {} \; || echo "No large files found"
+        
+    - name: Split large files if needed
+      run: |
+        if [ -d "build/WebGL/uPiper" ]; then
+          cd build/WebGL/uPiper
+          
+          # Check if Web.data.gz exceeds 100MB
+          if [ -f "Build/Web.data.gz" ]; then
+            FILE_SIZE=$(stat -c%s "Build/Web.data.gz" 2>/dev/null || stat -f%z "Build/Web.data.gz" 2>/dev/null || echo 0)
+            if [ "$FILE_SIZE" -gt 104857600 ]; then
+              echo "Splitting Web.data.gz ($(($FILE_SIZE / 1024 / 1024))MB)..."
+              split -b 90m "Build/Web.data.gz" "Build/Web.data.gz.part"
+              
+              # Create split-loader.js
+              cat > split-loader.js << 'EOF'
+// Split file loader for GitHub Pages deployment
+(function() {
+    console.log('[SplitLoader] Initializing...');
+    const originalFetch = window.fetch;
+    
+    window.fetch = async function(...args) {
+        const url = args[0];
+        
+        if (typeof url === 'string' && url.includes('Web.data.gz') && !url.includes('.part')) {
+            console.log('[SplitLoader] Intercepting data file request');
+            
+            // Check if split files exist
+            try {
+                const testResponse = await originalFetch('Build/Web.data.gz.partaa');
+                if (!testResponse.ok) {
+                    return originalFetch.apply(this, args);
+                }
+            } catch (e) {
+                return originalFetch.apply(this, args);
+            }
+            
+            // Load split files
+            const parts = [];
+            for (let i = 0; i < 26; i++) {
+                const suffix = String.fromCharCode(97 + Math.floor(i / 26)) + String.fromCharCode(97 + (i % 26));
+                try {
+                    const response = await originalFetch(`Build/Web.data.gz.part${suffix}`);
+                    if (!response.ok) break;
+                    const data = await response.arrayBuffer();
+                    parts.push(new Uint8Array(data));
+                    console.log(`[SplitLoader] Loaded part${suffix}: ${data.byteLength} bytes`);
+                } catch (e) {
+                    break;
+                }
+            }
+            
+            // Combine parts
+            const totalLength = parts.reduce((sum, part) => sum + part.length, 0);
+            const combined = new Uint8Array(totalLength);
+            let offset = 0;
+            
+            for (const part of parts) {
+                combined.set(part, offset);
+                offset += part.length;
+            }
+            
+            console.log(`[SplitLoader] Combined ${totalLength} bytes`);
+            
+            // Return as Response
+            const blob = new Blob([combined], { type: 'application/gzip' });
+            return new Response(blob, {
+                status: 200,
+                statusText: 'OK',
+                headers: {
+                    'Content-Type': 'application/gzip',
+                    'Content-Length': totalLength.toString()
+                }
+            });
+        }
+        
+        return originalFetch.apply(this, args);
+    };
+    
+    console.log('[SplitLoader] Ready');
+})();
+EOF
+              
+              # Modify index.html to include split-loader
+              if [ -f "index.html" ]; then
+                sed -i '/<head>/a <script src="split-loader.js"></script>' index.html
+                echo "Modified index.html to include split-loader.js"
+              fi
+              
+              # Remove original large file
+              rm "Build/Web.data.gz"
+              echo "Removed original Web.data.gz"
+            fi
+          fi
+        fi
+        
+    - name: Upload WebGL Build Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: webgl-build
+        path: build/WebGL
+        retention-days: 7
+
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    needs: build-webgl
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/feature/webgl-implementation' || github.ref == 'refs/heads/main'
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    steps:
+    - name: Download WebGL Build
+      uses: actions/download-artifact@v3
+      with:
+        name: webgl-build
+        path: webgl-build
+        
+    - name: Prepare deployment
+      run: |
+        mkdir -p public
+        
+        # Find the actual build directory
+        if [ -d "webgl-build/uPiper" ]; then
+          echo "Found build in webgl-build/uPiper"
+          cp -r webgl-build/uPiper/* public/
+        elif [ -d "webgl-build/WebGL/uPiper" ]; then
+          echo "Found build in webgl-build/WebGL/uPiper"
+          cp -r webgl-build/WebGL/uPiper/* public/
+        else
+          echo "Searching for index.html..."
+          find webgl-build -name "index.html" -exec dirname {} \; | head -1 | while read dir; do
+            echo "Found build in $dir"
+            cp -r "$dir"/* public/
+          done
+        fi
+        
+        # Create .nojekyll file
+        touch public/.nojekyll
+        
+        # List deployment contents
+        echo "=== Deployment contents ==="
+        ls -la public/
+        
+        # Check for critical files
+        if [ ! -f "public/index.html" ]; then
+          echo "ERROR: index.html not found!"
+          exit 1
+        fi
+        
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+      
+    - name: Upload to GitHub Pages
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: public
+        
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2
