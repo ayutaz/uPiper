@@ -229,22 +229,29 @@ class UnityONNXRuntime {
             let lengthScale = this.modelConfig?.inference?.length_scale || 1.0;
             const noiseW = this.modelConfig?.inference?.noise_w || 0.8;
             
-            // 環境特有の調整：ローカル環境では音声が5-6倍長くなる問題に対処
-            // file://プロトコルまたはlocalhostの場合のみ適用
-            const isLocalEnvironment = (
-                window.location.protocol === 'file:' || 
-                window.location.hostname === 'localhost' || 
-                window.location.hostname === '127.0.0.1'
+            // Unity WebGL環境の検出：Unity WebGLでは音声が5-6倍長くなる問題があるため調整が必要
+            const isUnityWebGL = (
+                // Unity特有のグローバル変数をチェック
+                typeof unityInstance !== 'undefined' ||
+                // Unityビルドのパスパターンをチェック
+                window.location.pathname.includes('/Build/') ||
+                window.location.pathname.includes('/uPiper/') ||  // GitHub Pagesのパス
+                // Unity WebGLモジュールの存在をチェック
+                (typeof Module !== 'undefined' && (Module.SystemInfo || Module.unityVersion)) ||
+                // Unity WebGLのCanvasをチェック
+                (document.querySelector('#unity-canvas') !== null) ||
+                // github-pages-adapter.jsが読み込まれているかチェック
+                (typeof window.GitHubPagesAdapter !== 'undefined')
             );
             
-            if (isLocalEnvironment) {
+            if (isUnityWebGL) {
                 const originalScale = lengthScale;
                 lengthScale = lengthScale * 0.17;  // 1/5.8 ≈ 0.17
-                this.log(`[LOCAL ENV FIX] Detected local environment (${window.location.protocol}//${window.location.hostname})`);
-                this.log(`[LOCAL ENV FIX] Adjusting length_scale from ${originalScale} to ${lengthScale}`);
-                this.log('Note: This adjustment is only for local file:// or localhost environments');
+                this.log(`[UNITY WEBGL FIX] Detected Unity WebGL environment`);
+                this.log(`[UNITY WEBGL FIX] Adjusting length_scale from ${originalScale} to ${lengthScale}`);
+                this.log('Note: This adjustment is required for all Unity WebGL deployments');
             } else {
-                this.log(`[PRODUCTION] Running in production environment (${window.location.hostname})`);
+                this.log(`[NON-UNITY] Running in non-Unity environment`);
                 this.log('No length_scale adjustment needed');
             }
             
