@@ -246,10 +246,12 @@ class UnityONNXRuntime {
             
             if (isUnityWebGL) {
                 const originalScale = lengthScale;
-                lengthScale = lengthScale * 0.17;  // 1/5.8 ≈ 0.17
+                // 実際の出力を見ると、22016サンプル vs 期待18000サンプル = 約1.22倍
+                // そのため、0.82の調整で正しい長さになるはず
+                lengthScale = lengthScale * 0.82;  // 18000/22016 ≈ 0.82
                 this.log(`[UNITY WEBGL FIX] Detected Unity WebGL environment`);
                 this.log(`[UNITY WEBGL FIX] Adjusting length_scale from ${originalScale} to ${lengthScale}`);
-                this.log('Note: This adjustment is required for all Unity WebGL deployments');
+                this.log('Note: Adjustment based on actual output ratio (22016/18000)');
             } else {
                 this.log(`[NON-UNITY] Running in non-Unity environment`);
                 this.log('No length_scale adjustment needed');
