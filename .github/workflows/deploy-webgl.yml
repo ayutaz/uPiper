@@ -192,16 +192,23 @@ jobs:
             sed -i 's/\.framework\.js\.gz/\.framework\.js/g' ./public/index.html
             sed -i 's/\.wasm\.gz/\.wasm/g' ./public/index.html
             
+            # split-loader.js を split-file-loader.js に修正
+            sed -i 's|"split-loader\.js"|"StreamingAssets/split-file-loader.js"|g' ./public/index.html
+            
             # split-file-loaderとパスリゾルバーを最初に読み込むように追加
             if [ -f "./public/Build/StreamingAssets/split-file-loader.js" ]; then
               echo "Adding split-file-loader to index.html..."
-              # <head>タグの最後に追加
-              sed -i '/<\/head>/i <script src="StreamingAssets/split-file-loader.js"></script>' ./public/index.html
+              # <head>タグの最後に追加（まだ追加されていない場合）
+              if ! grep -q "split-file-loader.js" ./public/index.html; then
+                sed -i '/<\/head>/i <script src="StreamingAssets/split-file-loader.js"></script>' ./public/index.html
+              fi
             fi
             
             if [ -f "./public/Build/StreamingAssets/unity-path-resolver.js" ]; then
               echo "Adding path resolver to index.html..."
-              sed -i '/<\/head>/i <script src="StreamingAssets/unity-path-resolver.js"></script>' ./public/index.html
+              if ! grep -q "unity-path-resolver.js" ./public/index.html; then
+                sed -i '/<\/head>/i <script src="StreamingAssets/unity-path-resolver.js"></script>' ./public/index.html
+              fi
             fi
           fi
           
