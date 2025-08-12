@@ -148,6 +148,23 @@ jobs:
             echo "WARNING: StreamingAssets directory not found!"
           fi
           
+          # OpenJTalkデータファイルのコピー
+          echo "Checking for OpenJTalk data files..."
+          if [ -f "./public/StreamingAssets/openjtalk-unity.data" ]; then
+            echo "Copying OpenJTalk data to Build directory..."
+            cp ./public/StreamingAssets/openjtalk-unity.* ./public/Build/StreamingAssets/ 2>/dev/null || true
+          elif [ -f "./public/openjtalk-unity.data" ]; then
+            echo "Copying OpenJTalk data from root to StreamingAssets..."
+            cp ./public/openjtalk-unity.* ./public/Build/StreamingAssets/ 2>/dev/null || true
+          else
+            echo "WARNING: OpenJTalk data files not found!"
+            # OpenJTalkディレクトリを確認
+            if [ -d "./public/StreamingAssets/uPiper/OpenJTalk" ]; then
+              echo "Found OpenJTalk directory, ensuring it's in Build..."
+              cp -r ./public/StreamingAssets/uPiper ./public/Build/StreamingAssets/ 2>/dev/null || true
+            fi
+          fi
+          
           # ONNXファイルの確認
           if [ -f "./public/Build/StreamingAssets/ja_JP-test-medium.onnx" ]; then
             echo "✓ ONNX model file found"
@@ -156,12 +173,23 @@ jobs:
             echo "WARNING: ONNX model file not found in expected location"
           fi
           
-          # index.htmlを修正して.gzを削除
+          # 最終的なStreamingAssetsの内容確認
+          echo "Final StreamingAssets contents:"
+          ls -la ./public/Build/StreamingAssets/ | head -20
+          
+          # index.htmlを修正
           if [ -f "./public/index.html" ]; then
-            echo "Updating index.html to use uncompressed files..."
+            echo "Updating index.html..."
+            # .gzを削除
             sed -i 's/\.data\.gz/\.data/g' ./public/index.html
             sed -i 's/\.framework\.js\.gz/\.framework\.js/g' ./public/index.html
             sed -i 's/\.wasm\.gz/\.wasm/g' ./public/index.html
+            
+            # パスリゾルバーを最初に読み込むように追加
+            if [ -f "./public/Build/StreamingAssets/unity-path-resolver.js" ]; then
+              echo "Adding path resolver to index.html..."
+              sed -i '/<script src="Build\/Web.loader.js"><\/script>/i <script src="Build/StreamingAssets/unity-path-resolver.js"></script>' ./public/index.html
+            fi
           fi
           
           # ファイルサイズ確認
