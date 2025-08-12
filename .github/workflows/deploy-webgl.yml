@@ -124,6 +124,23 @@ jobs:
           # .nojekyll ファイルを作成（_で始まるファイルを正しく配信）
           touch ./public/.nojekyll
           
+          # gzipファイルを解凍（GitHub Pagesは.gzファイルを正しく配信できない）
+          echo "Decompressing gzip files for GitHub Pages..."
+          for file in ./public/Build/*.gz; do
+            if [ -f "$file" ]; then
+              echo "Decompressing: $file"
+              gunzip -k "$file" || true  # -k: keep original file
+            fi
+          done
+          
+          # index.htmlを修正して.gzを削除
+          if [ -f "./public/index.html" ]; then
+            echo "Updating index.html to use uncompressed files..."
+            sed -i 's/\.data\.gz/\.data/g' ./public/index.html
+            sed -i 's/\.framework\.js\.gz/\.framework\.js/g' ./public/index.html
+            sed -i 's/\.wasm\.gz/\.wasm/g' ./public/index.html
+          fi
+          
           # ファイルサイズ確認
           echo "Checking file sizes in deployment..."
           find ./public -type f -size +50M -exec ls -lh {} \; || echo "No large files found"
