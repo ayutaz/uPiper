@@ -119,6 +119,15 @@ jobs:
           name: WebGL-Build
           path: ./public
       
+      - name: Prepare for GitHub Pages
+        run: |
+          # .nojekyll ファイルを作成（_で始まるファイルを正しく配信）
+          touch ./public/.nojekyll
+          
+          # ファイルサイズ確認
+          echo "Checking file sizes in deployment..."
+          find ./public -type f -size +50M -exec ls -lh {} \; || echo "No large files found"
+      
       - name: Setup Pages
         uses: actions/configure-pages@v5
       
