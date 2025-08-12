@@ -86,21 +86,15 @@ jobs:
             fi
           fi
       
-      - name: Add CORS and compatibility fixes
+      - name: Add GitHub Pages compatibility
         run: |
-          # GitHub Pages用の設定を追加
-          if [ -f "build/WebGL/Web/index.html" ]; then
-            echo "Adding CORS headers to index.html..."
-            # 一時ファイルを使用してsedエラーを回避
-            cp build/WebGL/Web/index.html build/WebGL/Web/index.html.tmp
-            sed '/<head>/a <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">' build/WebGL/Web/index.html.tmp > build/WebGL/Web/index.html.tmp2
-            sed '/<head>/a <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">' build/WebGL/Web/index.html.tmp2 > build/WebGL/Web/index.html.new
-            mv build/WebGL/Web/index.html.new build/WebGL/Web/index.html
-            rm -f build/WebGL/Web/index.html.tmp build/WebGL/Web/index.html.tmp2
-          fi
-          
           # .nojekyll ファイルを作成（_で始まるファイルを正しく配信）
-          touch build/WebGL/Web/.nojekyll
+          echo "Creating .nojekyll file for GitHub Pages..."
+          echo "" > build/WebGL/Web/.nojekyll
+          
+          # ファイル一覧を確認
+          echo "Build output directory contents:"
+          ls -la build/WebGL/Web/ || true
       
       - name: Upload WebGL Build
         uses: actions/upload-artifact@v4
