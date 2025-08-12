@@ -90,9 +90,13 @@ jobs:
         run: |
           # GitHub Pages用の設定を追加
           if [ -f "build/WebGL/Web/index.html" ]; then
-            # CORS設定
-            sed -i '/<head>/a <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">' build/WebGL/Web/index.html
-            sed -i '/<head>/a <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">' build/WebGL/Web/index.html
+            echo "Adding CORS headers to index.html..."
+            # 一時ファイルを使用してsedエラーを回避
+            cp build/WebGL/Web/index.html build/WebGL/Web/index.html.tmp
+            sed '/<head>/a <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">' build/WebGL/Web/index.html.tmp > build/WebGL/Web/index.html.tmp2
+            sed '/<head>/a <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">' build/WebGL/Web/index.html.tmp2 > build/WebGL/Web/index.html.new
+            mv build/WebGL/Web/index.html.new build/WebGL/Web/index.html
+            rm -f build/WebGL/Web/index.html.tmp build/WebGL/Web/index.html.tmp2
           fi
           
           # .nojekyll ファイルを作成（_で始まるファイルを正しく配信）
