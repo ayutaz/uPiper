@@ -62,10 +62,7 @@
 1. Package Managerで uPiper を選択
 2. `Samples` タブを開く
 3. 利用可能なサンプル：
-   - `Basic TTS Demo` - 基本的な音声生成
-   - `Streaming TTS Demo` - リアルタイムストリーミング音声生成
-   - `Multi-Voice Demo` - 複数音声の同時処理
-   - `Realtime TTS Demo` - 低レイテンシ音声生成
+   - `Basic TTS Demo` - 日本語・英語の音声生成デモ（InferenceEngineDemoシーンを使用）
 4. インポートしたいサンプルの `Import` をクリック
 
 ## サポートプラットフォーム

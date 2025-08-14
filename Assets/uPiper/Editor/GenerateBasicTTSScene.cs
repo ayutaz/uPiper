@@ -4,11 +4,11 @@ using UnityEngine;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 
-namespace uPiper.Samples.BasicTTSDemo.Editor
+namespace uPiper.Editor
 {
-    public static class GenerateSceneFile
+    public static class GenerateBasicTTSScene
     {
-        [MenuItem("uPiper/Internal/Generate BasicTTSDemo Scene File")]
+        [MenuItem("uPiper/Samples/Generate BasicTTSDemo Scene")]
         public static void GenerateAndSaveScene()
         {
             // Create new scene
@@ -84,12 +84,56 @@ namespace uPiper.Samples.BasicTTSDemo.Editor
             phraseDropdownRect.offsetMin = new Vector2(-200, -20);
             phraseDropdownRect.offsetMax = new Vector2(200, 20);
 
-            // Create input field
+            // Create input field with text area
             var inputFieldGO = new GameObject("InputField");
             inputFieldGO.transform.SetParent(panelGO.transform, false);
+            
+            // Add the background image for the input field
+            var inputFieldImage = inputFieldGO.AddComponent<Image>();
+            inputFieldImage.color = new Color(1f, 1f, 1f, 0.1f);
+            
             var inputField = inputFieldGO.AddComponent<TMP_InputField>();
+            
+            // Create the text area for the input field
+            var textAreaGO = new GameObject("Text Area");
+            textAreaGO.transform.SetParent(inputFieldGO.transform, false);
+            var textAreaRect = textAreaGO.AddComponent<RectTransform>();
+            textAreaRect.anchorMin = Vector2.zero;
+            textAreaRect.anchorMax = Vector2.one;
+            textAreaRect.offsetMin = new Vector2(10, 6);
+            textAreaRect.offsetMax = new Vector2(-10, -7);
+            
+            // Create placeholder
+            var placeholderGO = new GameObject("Placeholder");
+            placeholderGO.transform.SetParent(textAreaGO.transform, false);
+            var placeholderText = placeholderGO.AddComponent<TextMeshProUGUI>();
+            placeholderText.text = "Enter text here...";
+            placeholderText.color = new Color(1f, 1f, 1f, 0.5f);
+            var placeholderRect = placeholderGO.GetComponent<RectTransform>();
+            placeholderRect.anchorMin = Vector2.zero;
+            placeholderRect.anchorMax = Vector2.one;
+            placeholderRect.offsetMin = Vector2.zero;
+            placeholderRect.offsetMax = Vector2.zero;
+            
+            // Create text component
+            var textGO = new GameObject("Text");
+            textGO.transform.SetParent(textAreaGO.transform, false);
+            var textComponent = textGO.AddComponent<TextMeshProUGUI>();
+            textComponent.text = "こんにちは、これはuPiperのテストです。";
+            textComponent.color = Color.white;
+            var textRect = textGO.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+            
+            // Configure input field
+            inputField.textViewport = textAreaRect;
+            inputField.textComponent = textComponent;
+            inputField.placeholder = placeholderText;
             inputField.text = "こんにちは、これはuPiperのテストです。";
             inputField.lineType = TMP_InputField.LineType.MultiLineNewline;
+            
             var inputFieldRect = inputFieldGO.GetComponent<RectTransform>();
             inputFieldRect.anchorMin = new Vector2(0.5f, 0.4f);
             inputFieldRect.anchorMax = new Vector2(0.5f, 0.6f);
@@ -134,34 +178,23 @@ namespace uPiper.Samples.BasicTTSDemo.Editor
             statusTextRect.offsetMin = new Vector2(-400, -30);
             statusTextRect.offsetMax = new Vector2(400, 30);
 
-            // Create demo controller
+            // Create demo controller GameObject
             var controllerGO = new GameObject("BasicTTSDemo");
             var audioSource = controllerGO.AddComponent<AudioSource>();
             audioSource.playOnAwake = false;
-            var demo = controllerGO.AddComponent<BasicTTSDemo>();
-
-            // Set references via reflection (since we're in Editor)
-            var demoType = demo.GetType();
-            var inputFieldProp = demoType.GetField("_inputField", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var generateButtonProp = demoType.GetField("_generateButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var statusTextProp = demoType.GetField("_statusText", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var audioSourceProp = demoType.GetField("_audioSource", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var modelDropdownProp = demoType.GetField("_modelDropdown", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var phraseDropdownProp = demoType.GetField("_phraseDropdown", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            if (inputFieldProp != null) inputFieldProp.SetValue(demo, inputField);
-            if (generateButtonProp != null) generateButtonProp.SetValue(demo, generateButton);
-            if (statusTextProp != null) statusTextProp.SetValue(demo, statusText);
-            if (audioSourceProp != null) audioSourceProp.SetValue(demo, audioSource);
-            if (modelDropdownProp != null) modelDropdownProp.SetValue(demo, modelDropdown);
-            if (phraseDropdownProp != null) phraseDropdownProp.SetValue(demo, phraseDropdown);
+            
+            // Note: The BasicTTSDemo component will need to be added manually after import
+            // or via dynamic type loading if the sample is already imported
 
             // Save scene
             string scenePath = "Assets/uPiper/Samples~/BasicTTSDemo/BasicTTSDemo.unity";
             UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, scenePath);
             
             Debug.Log($"BasicTTSDemo scene generated and saved to: {scenePath}");
-            Debug.Log("IMPORTANT: The generated scene references need to be manually verified in Unity Editor.");
+            Debug.Log("Note: Please add the BasicTTSDemo component to the BasicTTSDemo GameObject and connect the UI references.");
+            
+            // Open the saved scene
+            UnityEditor.SceneManagement.EditorSceneManager.OpenScene(scenePath);
         }
     }
 }

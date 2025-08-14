@@ -62,10 +62,7 @@ Download the latest package from [Releases](https://github.com/ayutaz/uPiper/rel
 1. Select uPiper in Package Manager
 2. Open the `Samples` tab
 3. Available samples:
-   - `Basic TTS Demo` - Basic speech generation
-   - `Streaming TTS Demo` - Real-time streaming speech generation
-   - `Multi-Voice Demo` - Simultaneous multi-voice processing
-   - `Realtime TTS Demo` - Low-latency speech generation
+   - `Basic TTS Demo` - Japanese/English speech generation demo (uses InferenceEngineDemo scene)
 4. Click `Import` for the sample you want
 
 ## Supported Platforms

@@ -38,6 +38,6 @@ The demo uses the complete TTS pipeline:
 
 ## Scripts
 
-- `BasicTTSDemo.cs` - Main demo controller for the sample
-- `CreateBasicTTSDemoScene.cs` - Editor script to create the demo scene
-- Located in the scene on the `BasicTTSDemo` GameObject
+- Uses `InferenceEngineDemo.cs` from the main package
+- Scene is a copy of the main InferenceEngineDemo scene
+- All functionality is identical to the main demo
