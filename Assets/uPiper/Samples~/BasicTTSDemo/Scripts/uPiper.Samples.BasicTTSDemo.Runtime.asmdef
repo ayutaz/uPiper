@@ -2,11 +2,9 @@
     "name": "uPiper.Samples.BasicTTSDemo.Runtime",
     "rootNamespace": "uPiper.Samples.BasicTTSDemo",
     "references": [
-        "GUID:75469ad4d38634e559750d17036d5f7c",
-        "GUID:6055be8ebefd69e48b49212b09b47b2f",
-        "GUID:14c2cc96dc594421a8b4e6e9e9e088ea",
-        "GUID:3c4f0e4a9e0e4452a9f1e9e9e9e088ea",
-        "GUID:4e29b1a8efbd4b44bb3f3716e73f07ff"
+        "uPiper.Runtime",
+        "Unity.InferenceEngine",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
