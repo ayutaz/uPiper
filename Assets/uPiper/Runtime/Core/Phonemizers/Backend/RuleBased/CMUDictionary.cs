@@ -38,15 +38,44 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             {
                 var dict = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 
+                // Try to find the file in package installation if needed
+                var actualFilePath = filePath;
+                if (!File.Exists(actualFilePath))
+                {
+                    // Check if we're in a package manager installation
+                    var assemblyPath = typeof(CMUDictionary).Assembly.Location;
+                    if (!string.IsNullOrEmpty(assemblyPath) && assemblyPath.Contains("PackageCache"))
+                    {
+                        // Extract package path from assembly location
+                        var packageCacheIndex = assemblyPath.IndexOf("PackageCache");
+                        if (packageCacheIndex > 0)
+                        {
+                            var pathAfterCache = assemblyPath.Substring(packageCacheIndex + "PackageCache".Length + 1);
+                            var packageNameEnd = pathAfterCache.IndexOf(Path.DirectorySeparatorChar);
+                            if (packageNameEnd > 0)
+                            {
+                                var packageName = pathAfterCache.Substring(0, packageNameEnd);
+                                var packagePath = Path.Combine(Application.dataPath, "..", "Library", "PackageCache", packageName);
+                                var packageFilePath = Path.Combine(packagePath, "StreamingAssets", "uPiper", "Phonemizers", Path.GetFileName(filePath));
+                                if (File.Exists(packageFilePath))
+                                {
+                                    actualFilePath = packageFilePath;
+                                    Debug.Log($"[CMUDictionary] Found file in package: {packageFilePath}");
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Debug path information
-                Debug.Log($"[CMUDictionary] Attempting to load from: {filePath}");
-                Debug.Log($"[CMUDictionary] File exists: {File.Exists(filePath)}");
-                Debug.Log($"[CMUDictionary] Directory exists: {Directory.Exists(Path.GetDirectoryName(filePath))}");
+                Debug.Log($"[CMUDictionary] Attempting to load from: {actualFilePath}");
+                Debug.Log($"[CMUDictionary] File exists: {File.Exists(actualFilePath)}");
+                Debug.Log($"[CMUDictionary] Directory exists: {Directory.Exists(Path.GetDirectoryName(actualFilePath))}");
 
                 // Check if file exists
-                if (!File.Exists(filePath))
+                if (!File.Exists(actualFilePath))
                 {
-                    Debug.LogWarning($"CMU dictionary file not found at: {filePath}. Using minimal built-in dictionary.");
+                    Debug.LogWarning($"CMU dictionary file not found at: {actualFilePath}. Using minimal built-in dictionary.");
 
                     // Try to list files in the directory for debugging
                     var dir = Path.GetDirectoryName(filePath);
@@ -66,11 +95,11 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 }
 
                 // Check if we need to extract from StreamingAssets
-                var actualPath = filePath;
-                if (filePath.Contains("StreamingAssets") && Application.platform == RuntimePlatform.Android)
+                var actualPath = actualFilePath;
+                if (actualFilePath.Contains("StreamingAssets") && Application.platform == RuntimePlatform.Android)
                 {
                     // On Android, we need to copy from StreamingAssets
-                    actualPath = await CopyFromStreamingAssets(filePath, cancellationToken);
+                    actualPath = await CopyFromStreamingAssets(actualFilePath, cancellationToken);
                 }
 
                 // Read the dictionary file with timeout

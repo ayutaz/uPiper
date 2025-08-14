@@ -294,6 +294,11 @@ namespace uPiper.Demo
                     _defaultFontAsset.fallbackFontAssetTable.Add(_japaneseFontAsset);
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Added Japanese font as fallback to default font");
                 }
+                else if (_japaneseFontAsset == null)
+                {
+                    Debug.LogWarning("[InferenceEngineDemo] Japanese font asset is not assigned. Japanese text may not display correctly.");
+                    Debug.LogWarning("[InferenceEngineDemo] To fix this, please assign a Japanese-compatible TMP font asset (e.g., NotoSansCJK-Regular SDF) to the InferenceEngineDemo component.");
+                }
 
             }
 
