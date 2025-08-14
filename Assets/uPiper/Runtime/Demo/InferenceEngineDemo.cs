@@ -134,7 +134,6 @@ namespace uPiper.Demo
         [SerializeField] private string _defaultEnglishText = "Hello world";
 
         [Header("Font Settings")]
-        [SerializeField] private TMP_FontAsset _chineseFontAsset;
         [SerializeField] private TMP_FontAsset _japaneseFontAsset;
         [SerializeField] private TMP_FontAsset _defaultFontAsset;
 
@@ -147,20 +146,17 @@ namespace uPiper.Demo
         private GPUInferenceSettings _gpuSettings;
 #if !UNITY_WEBGL
         private ITextPhonemizer _phonemizer;
-        private Core.Phonemizers.Backend.ChinesePhonemizer _chinesePhonemizer;
         private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
 #endif
 
         private Dictionary<string, string> _modelLanguages = new()
         {
             { "ja_JP-test-medium", "ja" },
-            { "en_US-ljspeech-medium", "en" },
-            { "zh_CN-huayan-medium", "zh" }
+            { "en_US-ljspeech-medium", "en" }
         };
 
         // テスト用の定型文 - will be initialized in Start() to avoid encoding issues
         private List<string> _japaneseTestPhrases;
-        private List<string> _chineseTestPhrases;
 
         private List<string> _englishTestPhrases = new()
         {
@@ -181,8 +177,8 @@ namespace uPiper.Demo
             var konnichiwaBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
             _defaultJapaneseText = System.Text.Encoding.UTF8.GetString(konnichiwaBytes);
 
-            // Setup Chinese font as fallback
-            SetupChineseFontFallback();
+            // Font setup
+            SetupFontFallback();
 
             // Initialize Japanese test phrases from UTF-8 bytes
             _japaneseTestPhrases = new List<string>
@@ -200,21 +196,6 @@ namespace uPiper.Demo
                 System.Text.Encoding.UTF8.GetString(new byte[] { 0xE3, 0x81, 0x99, 0xE3, 0x81, 0xBF, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x9B, 0xE3, 0x82, 0x93, 0xE3, 0x80, 0x81, 0xE3, 0x81, 0xA1, 0xE3, 0x82, 0x87, 0xE3, 0x81, 0xA3, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x8A, 0xE8, 0x81, 0x9E, 0xE3, 0x81, 0x8D, 0xE3, 0x81, 0x97, 0xE3, 0x81, 0x9F, 0xE3, 0x81, 0x84, 0xE3, 0x81, 0x93, 0xE3, 0x81, 0xA8, 0xE3, 0x81, 0x8C, 0xE3, 0x81, 0x82, 0xE3, 0x82, 0x8A, 0xE3, 0x81, 0xBE, 0xE3, 0x81, 0x99 }) // すみません、ちょっとお聞きしたいことがあります
             };
 
-            // Initialize Chinese test phrases
-            _chineseTestPhrases = new List<string>
-            {
-                "自定义输入",  // Custom input option
-                "你好",
-                "你好，世界！",
-                "谢谢你",
-                "欢迎使用Unity推理引擎",
-                "今天天气真好",
-                "这是一个语音合成测试",
-                "中文语音合成效果如何？",
-                "我们正在测试中文语音合成",
-                "Unity中文语音合成已经实现了",
-                "早上好，今天也要加油啊"
-            };
 
             _generator = new InferenceAudioGenerator();
             _audioBuilder = new AudioClipBuilder();
@@ -258,29 +239,6 @@ namespace uPiper.Demo
                 _phonemizer = null;
             }
 
-            // Initialize Chinese phonemizer
-            Task.Run(async () =>
-            {
-                try
-                {
-                    _chinesePhonemizer = new Core.Phonemizers.Backend.ChinesePhonemizer();
-                    var initialized = await _chinesePhonemizer.InitializeAsync(new Core.Phonemizers.Backend.PhonemizerBackendOptions());
-                    if (initialized)
-                    {
-                        PiperLogger.LogInfo("[InferenceEngineDemo] Chinese phonemizer initialized successfully");
-                    }
-                    else
-                    {
-                        PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize Chinese phonemizer");
-                        _chinesePhonemizer = null;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize Chinese phonemizer: {ex.Message}");
-                    _chinesePhonemizer = null;
-                }
-            });
 
             // Initialize English phonemizer (Flite LTS)
             Task.Run(async () =>
@@ -311,7 +269,7 @@ namespace uPiper.Demo
             SetStatus("準備完了");
         }
 
-        private void SetupChineseFontFallback()
+        private void SetupFontFallback()
         {
             // Store default font if not set
             if (_defaultFontAsset == null && _inputField != null)
@@ -325,7 +283,7 @@ namespace uPiper.Demo
 
         private void SetupFontFallbackChain()
         {
-            // Create a fallback chain: Default -> Japanese -> Chinese
+            // Create a fallback chain: Default -> Japanese
             if (_defaultFontAsset != null)
             {
                 if (_defaultFontAsset.fallbackFontAssetTable == null)
@@ -340,34 +298,12 @@ namespace uPiper.Demo
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Added Japanese font as fallback to default font");
                 }
 
-                // Add Chinese font as fallback if available and not already present
-                if (_chineseFontAsset != null && !_defaultFontAsset.fallbackFontAssetTable.Contains(_chineseFontAsset))
-                {
-                    _defaultFontAsset.fallbackFontAssetTable.Add(_chineseFontAsset);
-                    PiperLogger.LogInfo($"[InferenceEngineDemo] Added Chinese font as fallback to default font");
-                }
             }
 
-            // Also setup Japanese font to have Chinese as fallback
-            if (_japaneseFontAsset != null && _chineseFontAsset != null)
-            {
-                if (_japaneseFontAsset.fallbackFontAssetTable == null)
-                {
-                    _japaneseFontAsset.fallbackFontAssetTable = new List<TMP_FontAsset>();
-                }
-
-                if (!_japaneseFontAsset.fallbackFontAssetTable.Contains(_chineseFontAsset))
-                {
-                    _japaneseFontAsset.fallbackFontAssetTable.Add(_chineseFontAsset);
-                    PiperLogger.LogInfo($"[InferenceEngineDemo] Added Chinese font as fallback to Japanese font");
-                }
-            }
+            // Japanese font setup
+            // No additional fallback needed
         }
 
-        private void ApplyChineseFont()
-        {
-            ApplyLanguageFont("zh");
-        }
 
         private void ApplyLanguageFont(string language)
         {
@@ -378,9 +314,6 @@ namespace uPiper.Demo
             {
                 case "ja":
                     targetFont = _japaneseFontAsset ?? _defaultFontAsset;
-                    break;
-                case "zh":
-                    targetFont = _chineseFontAsset ?? _defaultFontAsset;
                     break;
                 case "en":
                 default:
@@ -452,7 +385,6 @@ namespace uPiper.Demo
                     disposable.Dispose();
                 }
             }
-            _chinesePhonemizer?.Dispose();
             _englishPhonemizer?.Dispose();
 #endif
         }
@@ -461,7 +393,6 @@ namespace uPiper.Demo
         {
             PiperLogger.LogInfo($"[SetupUI] Starting UI setup");
             PiperLogger.LogInfo($"[SetupUI] _japaneseTestPhrases count: {_japaneseTestPhrases?.Count ?? 0}");
-            PiperLogger.LogInfo($"[SetupUI] _chineseTestPhrases count: {_chineseTestPhrases?.Count ?? 0}");
             PiperLogger.LogInfo($"[SetupUI] _englishTestPhrases count: {_englishTestPhrases?.Count ?? 0}");
             PiperLogger.LogInfo($"[SetupUI] _phraseDropdown is null: {_phraseDropdown == null}");
 
@@ -555,25 +486,6 @@ namespace uPiper.Demo
                     // Apply Japanese font
                     ApplyLanguageFont("ja");
                 }
-                else if (language == "zh")
-                {
-                    if (_chineseTestPhrases != null && _chineseTestPhrases.Count > 0)
-                    {
-                        PiperLogger.LogInfo($"[OnModelChanged] Adding {_chineseTestPhrases.Count} Chinese phrases");
-                        _phraseDropdown.AddOptions(_chineseTestPhrases);
-                    }
-                    else
-                    {
-                        PiperLogger.LogWarning("[OnModelChanged] Chinese phrases not available, using fallback");
-                        _phraseDropdown.AddOptions(new List<string> { "Custom Input", "你好" });
-                    }
-
-                    if (_inputField != null)
-                        _inputField.text = "你好";
-
-                    // Apply Chinese font to UI elements if available
-                    ApplyLanguageFont("zh");
-                }
                 else
                 {
                     if (_englishTestPhrases != null && _englishTestPhrases.Count > 0)
@@ -612,8 +524,6 @@ namespace uPiper.Demo
             var modelIndex = _modelDropdown?.value ?? 0;
             if (modelIndex == 0)  // Japanese
                 phrases = _japaneseTestPhrases;
-            else if (modelIndex == 2)  // Chinese
-                phrases = _chineseTestPhrases;
             else  // English
                 phrases = _englishTestPhrases;
 
@@ -834,31 +744,6 @@ namespace uPiper.Demo
                     {
                         PiperLogger.LogDebug($"[OpenJTalk] Total duration: {phonemeResult.Durations.Sum():F3}s");
                     }
-                }
-                else if (language == "zh" && _chinesePhonemizer != null)
-                {
-                    PiperLogger.LogDebug("[InferenceEngineDemo] Using Chinese phonemizer for Chinese text");
-                    PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
-
-                    var chineseStopwatch = Stopwatch.StartNew();
-                    var phonemeResult = await _chinesePhonemizer.PhonemizeAsync(_inputField.text, "zh");
-                    timings["ChinesePhonemizer"] = chineseStopwatch.ElapsedMilliseconds;
-
-                    phonemes = phonemeResult.Phonemes;
-                    PiperLogger.LogInfo($"[Chinese] Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
-
-                    // Show phoneme details in UI
-                    if (_phonemeDetailsText != null)
-                    {
-                        _phonemeDetailsText.text = $"Chinese: {string.Join(" ", phonemes)}";
-                    }
-                }
-                else if (language == "zh")
-                {
-                    // Chinese phonemizer is required for Chinese text
-                    var errorMsg = "Chinese phonemizer is required for Chinese text but is not available.\n" +
-                                  "This should not happen as it's built into the plugin.";
-                    throw new Exception(errorMsg);
                 }
                 else if (language == "ja")
                 {
@@ -1363,7 +1248,6 @@ namespace uPiper.Demo
             return language switch
             {
                 "ja" => _defaultJapaneseText,
-                "zh" => "你好",
                 "en" => _defaultEnglishText,
                 _ => _defaultEnglishText
             };

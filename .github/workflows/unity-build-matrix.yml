@@ -128,7 +128,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
-        unityVersion: 6000.0.35f1
+        unityVersion: 6000.0.55f1
         targetPlatform: ${{ matrix.platform }}
         buildMethod: UnityBuilderAction.BuildScript.Build
         customParameters: -scriptingBackend ${{ matrix.backend }}
