@@ -1,45 +1,80 @@
-# uPiper Documentation / uPiper ドキュメント
+# uPiper Documentation
 
-<div align="center">
+## 📚 ドキュメント構造
 
-## 🌐 Select Language / 言語を選択
+### 🎯 platforms/ - プラットフォーム別実装
+- **android/** - Android実装ガイド
+  - build-settings.md - ビルド設定
+  - implementation-guide.md - 実装ガイド
+  - performance-optimization.md - パフォーマンス最適化
+  - technical-report.md - 技術レポート
+- **ios/** - iOS実装（Phase 5）
+  - phase5-ios-detailed-implementation-plan.md - 詳細実装計画
+  - phase5-ios-implementation-plan.md - 実装計画
+  - phase5-ios-technical-research.md - 技術調査
+- **webgl/** - WebGL対応
+  - webgl-investigation.md - 技術調査報告書
 
-### [🇯🇵 日本語](./ja/README.md)
-日本語話者向けのメインドキュメント
+### 🚀 features/ - 機能別ドキュメント
+- **phonemization/** - 音素化システム
+  - implementation-summary.md - 実装サマリー
+  - license-evaluation-report.md - ライセンス評価
+  - technical-specification.md - 技術仕様
+- **chinese-support/** - 中国語サポート
+  - current-state-analysis.md - 現状分析
+  - implementation-plan.md - 実装計画
+  - phase1-implementation-report.md - Phase1実装レポート
+  - technical-research.md - 技術調査
+- **gpu/** - GPU推論
+  - gpu-inference.md - GPU推論ガイド
+- asian-language-support.md - アジア言語サポート概要
 
-### [🇬🇧 English](./en/README.md)
-Documentation for English speakers
+### 🔧 development/ - 開発者向け
+- **il2cpp/** - IL2CPP関連
+  - il2cpp.md - IL2CPP基本ガイド
+  - il2cpp-compatibility.md - 互換性ガイド
+  - il2cpp-solutions.md - ソリューション集
+- **setup/** - セットアップガイド
+  - additional-language-support.md - 追加言語サポート
+  - cmu-dictionary-setup.md - CMU辞書セットアップ
+  - flite-build-guide.md - Fliteビルドガイド
+- **usage/** - 使用ガイド
+  - phonemization-guide.md - 音素化ガイド
+  - test-execution-guide.md - テスト実行ガイド
+- **ci-cd/** - CI/CD
+  - README.md - CI/CDガイド
 
-</div>
+### 📋 ルートドキュメント
+- ARCHITECTURE_ja.md - アーキテクチャ（日本語）
+- ARCHITECTURE_en.md - アーキテクチャ（英語）
+- DEVELOPMENT_LOG.md - 開発ログ
 
----
+### 📦 archives/ - アーカイブ
+旧言語別構造（ja/en）のバックアップ
 
-## About / このドキュメントについて
+## 🔍 ドキュメントの探し方
 
-This documentation provides comprehensive guides for using uPiper, a high-quality text-to-speech plugin for Unity using Piper TTS engine.
+### プラットフォーム対応を調べたい
+→ `platforms/` フォルダを確認
 
-このドキュメントは、Piper TTSエンジンを使用したUnity向け高品質音声合成プラグイン「uPiper」の包括的なガイドを提供します。
+### 特定機能の実装詳細を知りたい
+→ `features/` フォルダを確認
 
-### Main Features / 主な機能
+### 開発・ビルド方法を知りたい
+→ `development/` フォルダを確認
 
-- 🎤 High-quality neural voice synthesis / 高品質なニューラル音声合成
-- 🌍 Multi-language support / 多言語対応
-- 🚀 Fast inference with Unity AI Inference Engine / Unity AI Inference Engineによる高速推論
-- 📱 Cross-platform support / マルチプラットフォーム対応
+### 全体アーキテクチャを理解したい
+→ `ARCHITECTURE_ja.md` または `ARCHITECTURE_en.md` を確認
 
-### Documentation Structure / ドキュメント構成
+## 📝 ドキュメント更新ガイドライン
 
-```
-docs/
-├── ja/                     # 日本語ドキュメント
-│   ├── README.md          # プロジェクト概要
-│   ├── ARCHITECTURE.md    # アーキテクチャ説明
-│   └── guides/           # 各種ガイド
-│
-├── en/                     # English documentation
-│   ├── README.md          # Project overview
-│   ├── ARCHITECTURE.md    # Architecture guide
-│   └── guides/           # Various guides
-│
-└── README.md              # This file (language selection)
-```
+1. **言語**: 基本的に日本語で記述（必要に応じて英語版も作成）
+2. **配置**: トピックに応じて適切なフォルダに配置
+3. **命名**: わかりやすく一貫性のあるファイル名を使用
+4. **更新**: 実装変更時は関連ドキュメントも更新
+
+## 🔗 関連リンク
+
+- [メインREADME](../README.md)
+- [GitHub リポジトリ](https://github.com/ayutaz/uPiper)
+- [piper-plus](https://github.com/ayutaz/piper-plus)
