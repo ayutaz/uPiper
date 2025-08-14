@@ -1,17 +1,14 @@
 {
-  "name": "com.yousan.upiper",
+  "name": "com.ayutaz.upiper",
   "version": "0.1.0",
-  "displayName": "uPiper - Unity Piper TTS",
-  "description": "Text-to-Speech plugin for Unity using Piper TTS engine. Supports Japanese and multiple languages with high-quality neural voice synthesis.",
+  "displayName": "uPiper",
+  "description": "Text-to-Speech plugin for Unity using Piper TTS engine. Supports Japanese and English with high-quality neural voice synthesis.",
   "unity": "6000.0",
-  "unityRelease": "35f1",
-  "documentationUrl": "https://github.com/ayutaz/uPiper/wiki",
+  "unityRelease": "55f1",
   "changelogUrl": "https://github.com/ayutaz/uPiper/blob/main/CHANGELOG.md",
   "licensesUrl": "https://github.com/ayutaz/uPiper/blob/main/LICENSE",
   "dependencies": {
-    "com.unity.ai.inference": "2.2.1",
-    "com.unity.burst": "1.8.20",
-    "com.unity.nuget.newtonsoft-json": "3.2.1"
+    "com.unity.ai.inference": "2.2.1"
   },
   "keywords": [
     "tts",
@@ -21,6 +18,7 @@
     "voice",
     "speech-synthesis",
     "japanese-tts",
+    "english-tts",
     "openjtalk"
   ],
   "author": {
@@ -33,28 +31,8 @@
   "samples": [
     {
       "displayName": "Basic TTS Demo",
-      "description": "A simple demo scene showing how to use uPiper for text-to-speech synthesis with Japanese text.",
+      "description": "A simple demo scene showing how to use uPiper for text-to-speech synthesis with Japanese and English text.",
       "path": "Samples~/BasicTTSDemo"
-    },
-    {
-      "displayName": "Advanced Integration",
-      "description": "Advanced examples showing streaming, multiple voices, and custom phonemizer usage.",
-      "path": "Samples~/AdvancedIntegration"
-    },
-    {
-      "displayName": "Streaming TTS Demo",
-      "description": "Real-time streaming audio generation with chunk-based processing and crossfading.",
-      "path": "Samples~/StreamingTTS"
-    },
-    {
-      "displayName": "Multi-Voice Demo",
-      "description": "Simultaneous generation of multiple voices with GPU acceleration.",
-      "path": "Samples~/MultiVoiceTTS"
-    },
-    {
-      "displayName": "Realtime TTS Demo",
-      "description": "Low-latency text-to-speech for interactive applications and games.",
-      "path": "Samples~/RealtimeTTS"
     }
   ]
 }

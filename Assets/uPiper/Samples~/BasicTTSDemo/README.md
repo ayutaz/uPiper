@@ -4,12 +4,13 @@ This sample demonstrates text-to-speech functionality using uPiper with Japanese
 
 ## Getting Started
 
-1. Import this sample through Unity Package Manager (or copy manually if in development)
+1. Import this sample through Unity Package Manager
 2. Open the `BasicTTSDemo.unity` scene
-3. Select a model from the dropdown (ja_JP for Japanese, test_voice for English)
-4. Choose a preset phrase or enter custom text
-5. Click "Generate" to synthesize audio
-6. The generated audio will play automatically
+3. Press Play to run the demo
+4. Select a model from the dropdown (ja_JP for Japanese, en_US for English)
+5. Choose a preset phrase or enter custom text
+6. Click "Generate Speech" to synthesize audio
+7. The generated audio will play automatically
 
 ## Features
 
@@ -27,6 +28,17 @@ This sample demonstrates text-to-speech functionality using uPiper with Japanese
 - Japanese ONNX model (ja_JP-test-medium.onnx)
 - OpenJTalk native libraries (included)
 
+## Included Assets
+
+このサンプルには以下のアセットが含まれています：
+
+- **日本語フォント (NotoSansJP-Regular)**: 日本語テキスト表示用
+  - SIL Open Font License v1.1
+  - TextMeshPro用SDFアセット付属
+- **英語フォント (LiberationSans)**: 英語テキスト表示用
+  - SIL Open Font License v1.1
+  - TextMeshPro用SDFアセット付属
+
 ## Architecture
 
 The demo uses the complete TTS pipeline:
@@ -37,5 +49,6 @@ The demo uses the complete TTS pipeline:
 
 ## Scripts
 
-- `InferenceEngineDemo.cs` - Main controller with full pipeline implementation
-- Located in the scene on the `InferenceEngineDemo` GameObject
+- Uses `InferenceEngineDemo.cs` from the main package
+- Scene is a copy of the main InferenceEngineDemo scene
+- All functionality is identical to the main demo

@@ -15,6 +15,7 @@ namespace uPiper.Editor
         [DllImport("openjtalk_wrapper", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_get_version();
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Tools/Check OpenJTalk Library", false, 320)]
         public static void CheckLibrary()
         {
@@ -98,5 +99,6 @@ namespace uPiper.Editor
                 Debug.LogError($"Test dictionary not found at: {dictPath}");
             }
         }
+#endif
     }
 }

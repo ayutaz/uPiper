@@ -14,13 +14,14 @@ namespace uPiper.Editor
     {
         private const string ScenePath = "Assets/uPiper/Scenes/InferenceEngineDemo.unity";
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Demo/Open Inference Demo Scene", false, 100)]
         public static void OpenDemoScene()
         {
-            // シーンが存在しない場合は作成
+            // シーンが存在しない場合はエラー
             if (!System.IO.File.Exists(ScenePath))
             {
-                CreateDemoScene();
+                Debug.LogError($"Inference Demo シーンが見つかりません: {ScenePath}");
                 return;
             }
 
@@ -31,9 +32,10 @@ namespace uPiper.Editor
                 Debug.Log("Inference Demo シーンを開きました。Playモードで実行してください。");
             }
         }
+#endif
 
-        [MenuItem("uPiper/Demo/Create Inference Demo Scene", false, 101)]
-        public static void CreateDemoScene()
+        // Create メニューは削除（UIが手動調整されているため上書きを防ぐ）
+        private static void CreateDemoScene()
         {
             // 新しいシーンを作成
             var scene = UnityEditor.SceneManagement.EditorSceneManager.NewScene(
@@ -268,7 +270,7 @@ namespace uPiper.Editor
 
             // オプションを設定
             dropdown.ClearOptions();
-            dropdown.AddOptions(new System.Collections.Generic.List<string> { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" });
+            dropdown.AddOptions(new System.Collections.Generic.List<string> { "ja_JP-test-medium", "en_US-ljspeech-medium" });
 
             // Template を非表示
             templateGO.SetActive(false);

@@ -16,12 +16,14 @@ namespace uPiper.Editor
         private readonly StringBuilder _results = new();
         private Vector2 _scrollPosition;
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Tools/IL2CPP Benchmark Runner", false, 320)]
         public static void ShowWindow()
         {
             var window = GetWindow<IL2CPPBenchmarkRunner>("IL2CPP Benchmark");
             window.minSize = new Vector2(600, 400);
         }
+#endif
 
         private void OnGUI()
         {

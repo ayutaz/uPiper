@@ -18,6 +18,7 @@ namespace uPiper.Editor
             public uint e_lfanew;     // File address of new exe header
         }
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Tools/Check DLL Architecture", false, 330)]
         private static void CheckArchitecture()
         {
@@ -151,6 +152,7 @@ namespace uPiper.Editor
             Debug.Log("  2. Consider rebuilding with MSVC for better compatibility");
             Debug.Log("  3. Or ensure all MinGW runtime DLLs are in the same directory");
         }
+#endif
     }
 }
 #endif
