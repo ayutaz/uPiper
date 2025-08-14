@@ -12,8 +12,6 @@
   - phase5-ios-detailed-implementation-plan.md - 詳細実装計画
   - phase5-ios-implementation-plan.md - 実装計画
   - phase5-ios-technical-research.md - 技術調査
-- **webgl/** - WebGL対応
-  - webgl-investigation.md - 技術調査報告書
 
 ### 🚀 features/ - 機能別ドキュメント
 - **phonemization/** - 音素化システム
