@@ -37,7 +37,7 @@ namespace uPiper.Editor
                 switch (result)
                 {
                     case 0: // 作成する
-                        CreateInferenceDemoScene.CreateDemoScene();
+                        Debug.LogError("デモシーンの自動作成は無効化されました。シーンは手動で管理してください。");
                         EditorPrefs.SetBool(CheckedKey, true);
                         break;
                     case 1: // 後で
