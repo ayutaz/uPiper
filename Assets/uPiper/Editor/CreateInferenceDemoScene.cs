@@ -684,7 +684,6 @@ namespace uPiper.Editor
             TMP_FontAsset defaultFont = null;
             TMP_FontAsset defaultFallbackFont = null;
             TMP_FontAsset japaneseFont = null;
-            TMP_FontAsset chineseFont = null;
 
             foreach (var guid in fontAssets)
             {
@@ -713,12 +712,6 @@ namespace uPiper.Editor
                 {
                     japaneseFont = fontAsset;
                 }
-                // 中国語フォントの検出
-                else if (fontName.Contains("notosanssc") || fontName.Contains("chinese") ||
-                         fontName.Contains("cn") || fontName.Contains("sc"))
-                {
-                    chineseFont = fontAsset;
-                }
             }
 
             // フォールバック付きフォントがある場合は、それをデフォルトとして使用
@@ -742,16 +735,6 @@ namespace uPiper.Editor
             else
             {
                 Debug.LogWarning("[CreateInferenceDemoScene] Japanese font not found. Please set manually.");
-            }
-
-            if (chineseFont != null)
-            {
-                serializedObject.FindProperty("_chineseFontAsset").objectReferenceValue = chineseFont;
-                Debug.Log($"[CreateInferenceDemoScene] Chinese font set to: {chineseFont.name}");
-            }
-            else
-            {
-                Debug.LogWarning("[CreateInferenceDemoScene] Chinese font not found. Please set manually.");
             }
 
             // デフォルトフォントが見つからない場合の警告
