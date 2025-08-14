@@ -49,9 +49,6 @@
 - ARCHITECTURE_en.md - アーキテクチャ（英語）
 - DEVELOPMENT_LOG.md - 開発ログ
 
-### 📦 archives/ - アーカイブ
-旧言語別構造（ja/en）のバックアップ
-
 ## 🔍 ドキュメントの探し方
 
 ### プラットフォーム対応を調べたい
