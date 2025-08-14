@@ -34,7 +34,7 @@
 - 🎭 高度なサンプル（ストリーミング、複数音声、リアルタイム）
 
 ## Requirements
-* Unity 6000.0.35f1
+* Unity 6000.0.55f1
 * Unity AI Interface (Inference Engine) 2.2.x
 
 ## ビルド要件

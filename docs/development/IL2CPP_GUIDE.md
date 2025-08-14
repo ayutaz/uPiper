@@ -284,7 +284,7 @@ IL2CPPサポートにより、uPiperは：
 このドキュメントは、uPiperプロジェクトのIL2CPP互換性検証結果をまとめたものです。
 
 検証日: 2025年1月22日
-Unity バージョン: 6000.0.35f1
+Unity バージョン: 6000.0.55f1
 対象プラットフォーム: Windows, Linux, macOS, Android, iOS, WebGL
 
 ## 1. P/Invoke宣言の検証

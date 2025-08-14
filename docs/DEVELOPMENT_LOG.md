@@ -126,7 +126,7 @@ This document records the development progress and milestones achieved during th
   - Event system for state changes
 
 #### Changed
-- Updated to Unity 6000.0.35f1
+- Updated to Unity 6000.0.55f1
 - Migrated from deprecated Unity APIs (BuildTargetGroup → NamedBuildTarget)
 - Enhanced error handling with custom exception hierarchy
 
