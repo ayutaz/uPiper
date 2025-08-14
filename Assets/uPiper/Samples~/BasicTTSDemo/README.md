@@ -28,6 +28,14 @@ This sample demonstrates text-to-speech functionality using uPiper with Japanese
 - Japanese ONNX model (ja_JP-test-medium.onnx)
 - OpenJTalk native libraries (included)
 
+## Included Assets
+
+このサンプルには以下のアセットが含まれています：
+
+- **日本語フォント (NotoSansJP-Regular)**: 日本語テキスト表示用
+  - SIL Open Font License v1.1
+  - TextMeshPro用SDFアセット付属
+
 ## Architecture
 
 The demo uses the complete TTS pipeline:
