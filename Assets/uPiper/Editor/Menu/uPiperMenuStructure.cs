@@ -31,17 +31,6 @@ namespace uPiper.Editor.Menu
             UnityEngine.Application.OpenURL("https://github.com/ayutaz/uPiper/issues");
         }
 
-        [MenuItem("uPiper/About uPiper", false, PRIORITY_HELP + 10)]
-        private static void ShowAbout()
-        {
-            EditorUtility.DisplayDialog(
-                "About uPiper",
-                "uPiper - Unity Piper TTS Plugin\n\n" +
-                "Version: 1.10.0\n" +
-                "License: MIT\n\n" +
-                "High-quality text-to-speech synthesis using Piper TTS and Unity AI Inference Engine.",
-                "OK"
-            );
-        }
+        // About menu removed - version information available in package.json
     }
 }
