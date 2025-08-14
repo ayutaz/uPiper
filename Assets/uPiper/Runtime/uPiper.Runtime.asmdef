@@ -3,8 +3,6 @@
     "rootNamespace": "uPiper",
     "references": [
         "Unity.InferenceEngine",
-        "Unity.Burst",
-        "Newtonsoft.Json",
         "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
