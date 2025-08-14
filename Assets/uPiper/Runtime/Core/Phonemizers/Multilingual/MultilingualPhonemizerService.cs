@@ -74,29 +74,8 @@ namespace uPiper.Core.Phonemizers.Multilingual
             {
                 try
                 {
-                    // Spanish
-                    var spanishBackend = new SpanishPhonemizer();
-                    await spanishBackend.InitializeAsync(new PhonemizerBackendOptions());
-                    foreach (var lang in spanishBackend.SupportedLanguages)
-                    {
-                        AddBackend(lang, spanishBackend);
-                    }
-
-                    // Chinese
-                    var chineseBackend = new ChinesePhonemizer();
-                    await chineseBackend.InitializeAsync(new PhonemizerBackendOptions());
-                    foreach (var lang in chineseBackend.SupportedLanguages)
-                    {
-                        AddBackend(lang, chineseBackend);
-                    }
-
-                    // Korean
-                    var koreanBackend = new KoreanPhonemizer();
-                    await koreanBackend.InitializeAsync(new PhonemizerBackendOptions());
-                    foreach (var lang in koreanBackend.SupportedLanguages)
-                    {
-                        AddBackend(lang, koreanBackend);
-                    }
+                    // Currently only Japanese (via OpenJTalk) and English are supported
+                    // Additional language backends can be added here in the future
                 }
                 catch (Exception ex)
                 {
