@@ -35,6 +35,9 @@ This sample demonstrates text-to-speech functionality using uPiper with Japanese
 - **日本語フォント (NotoSansJP-Regular)**: 日本語テキスト表示用
   - SIL Open Font License v1.1
   - TextMeshPro用SDFアセット付属
+- **英語フォント (LiberationSans)**: 英語テキスト表示用
+  - SIL Open Font License v1.1
+  - TextMeshPro用SDFアセット付属
 
 ## Architecture
 
