@@ -129,7 +129,7 @@ namespace uPiper.Editor.BuildSettings
         {
             // プロダクト名の設定
             PlayerSettings.productName = "uPiper Demo";
-            PlayerSettings.companyName = "com.yousan";
+            PlayerSettings.companyName = "ayutaz";
 
             // 全般的な設定
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;
