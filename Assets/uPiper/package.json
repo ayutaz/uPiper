@@ -1,11 +1,10 @@
 {
-  "name": "com.yousan.upiper",
+  "name": "com.ayutaz.upiper",
   "version": "0.1.0",
-  "displayName": "uPiper - Unity Piper TTS",
+  "displayName": "uPiper",
   "description": "Text-to-Speech plugin for Unity using Piper TTS engine. Supports Japanese and multiple languages with high-quality neural voice synthesis.",
   "unity": "6000.0",
   "unityRelease": "35f1",
-  "documentationUrl": "https://github.com/ayutaz/uPiper/wiki",
   "changelogUrl": "https://github.com/ayutaz/uPiper/blob/main/CHANGELOG.md",
   "licensesUrl": "https://github.com/ayutaz/uPiper/blob/main/LICENSE",
   "dependencies": {
