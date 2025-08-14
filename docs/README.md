@@ -28,19 +28,13 @@
 - asian-language-support.md - アジア言語サポート概要
 
 ### 🔧 development/ - 開発者向け
-- **il2cpp/** - IL2CPP関連
-  - il2cpp.md - IL2CPP基本ガイド
-  - il2cpp-compatibility.md - 互換性ガイド
-  - il2cpp-solutions.md - ソリューション集
-- **setup/** - セットアップガイド
-  - additional-language-support.md - 追加言語サポート
-  - cmu-dictionary-setup.md - CMU辞書セットアップ
-  - flite-build-guide.md - Fliteビルドガイド
-- **usage/** - 使用ガイド
-  - phonemization-guide.md - 音素化ガイド
-  - test-execution-guide.md - テスト実行ガイド
-- **ci-cd/** - CI/CD
-  - README.md - CI/CDガイド
+- IL2CPP_GUIDE.md - IL2CPP統合ガイド
+- CI_CD_GUIDE.md - CI/CDガイド
+- additional-language-support.md - 追加言語サポート
+- cmu-dictionary-setup.md - CMU辞書セットアップ
+- flite-build-guide.md - Fliteビルドガイド
+- phonemization-guide.md - 音素化ガイド
+- test-execution-guide.md - テスト実行ガイド
 
 ### 📋 ルートドキュメント
 - ARCHITECTURE_ja.md - アーキテクチャ（日本語）
