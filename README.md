@@ -40,7 +40,7 @@
 
 ## ビルド要件
 
-- **Windows**: Visual Studio 2019以降
+- **Windows**: Visual Studio 2022以降
 - **macOS**: Xcode 14以降
 - **Linux**: GCC 9以降
 - **Android**: NDK r21以降

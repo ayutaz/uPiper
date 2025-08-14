@@ -40,7 +40,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 
 ## Build Requirements
 
-- **Windows**: Visual Studio 2019 or later
+- **Windows**: Visual Studio 2022 or later
 - **macOS**: Xcode 14 or later
 - **Linux**: GCC 9 or later
 - **Android**: NDK r21 or later
