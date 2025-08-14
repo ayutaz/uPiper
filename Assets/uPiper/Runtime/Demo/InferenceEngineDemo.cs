@@ -385,7 +385,6 @@ namespace uPiper.Demo
                     disposable.Dispose();
                 }
             }
-            _chinesePhonemizer?.Dispose();
             _englishPhonemizer?.Dispose();
 #endif
         }
@@ -394,7 +393,6 @@ namespace uPiper.Demo
         {
             PiperLogger.LogInfo($"[SetupUI] Starting UI setup");
             PiperLogger.LogInfo($"[SetupUI] _japaneseTestPhrases count: {_japaneseTestPhrases?.Count ?? 0}");
-            PiperLogger.LogInfo($"[SetupUI] _chineseTestPhrases count: {_chineseTestPhrases?.Count ?? 0}");
             PiperLogger.LogInfo($"[SetupUI] _englishTestPhrases count: {_englishTestPhrases?.Count ?? 0}");
             PiperLogger.LogInfo($"[SetupUI] _phraseDropdown is null: {_phraseDropdown == null}");
 
