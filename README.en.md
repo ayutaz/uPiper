@@ -112,13 +112,13 @@ var config = new PiperConfig
 };
 ```
 
-See the [GPU Inference Guide](docs/en/guides/technical/gpu-inference.md) for details.
+See the [GPU Inference Guide](docs/features/gpu/gpu-inference.md) for details.
 
 ## Documentation
 
-- [Architecture](docs/en/ARCHITECTURE.md) - Design and technical details
+- [Architecture](docs/ARCHITECTURE_en.md) - Design and technical details
 - [Development Log](docs/DEVELOPMENT_LOG.md) - Development progress and change history
-- [Technical Documentation](docs/en/guides/technical/) - Detailed technical information
+- [Documentation Index](docs/) - Technical documentation, guides, and specifications
 
 ## License
 

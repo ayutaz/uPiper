@@ -112,13 +112,13 @@ var config = new PiperConfig
 };
 ```
 
-詳細は[GPU推論ガイド](docs/ja/guides/technical/gpu-inference.md)を参照してください。
+詳細は[GPU推論ガイド](docs/features/gpu/gpu-inference.md)を参照してください。
 
 ## 詳細ドキュメント
 
-- [アーキテクチャ](docs/ja/ARCHITECTURE.md) - 設計と技術的な詳細
+- [アーキテクチャ](docs/ARCHITECTURE_ja.md) - 設計と技術的な詳細
 - [開発ログ](docs/DEVELOPMENT_LOG.md) - 開発進捗と変更履歴
-- [技術ドキュメント](docs/ja/guides/technical/) - 詳細な技術情報
+- [ドキュメント一覧](docs/) - 技術ドキュメント、ガイド、仕様書
 
 ## ライセンス
 
