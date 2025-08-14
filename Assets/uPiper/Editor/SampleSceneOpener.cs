@@ -12,8 +12,9 @@ namespace uPiper.Editor
     {
         private const string WEBGL_DEMO_SCENE_PATH = "Assets/uPiper/Samples~/WebGLDemo/WebGLDemoScene.unity";
 
-        [MenuItem("uPiper/Demo/Open WebGL Demo Scene", false, 110)]
-        public static void OpenWebGLDemoScene()
+        // WebGL is not currently supported - menu item removed
+        // [MenuItem("uPiper/Demo/Open WebGL Demo Scene", false, 110)]
+        // public static void OpenWebGLDemoScene()
         {
             // 現在のシーンに変更がある場合は保存を促す
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
@@ -215,8 +216,9 @@ namespace uPiper.Editor
             }
         }
 
-        [MenuItem("uPiper/Demo/Copy All Samples to Assets", false, 120)]
-        public static void CopySamplesToAssets()
+        // WebGL samples not currently available - menu item removed
+        // [MenuItem("uPiper/Demo/Copy All Samples to Assets", false, 120)]
+        // public static void CopySamplesToAssets()
         {
             var sourcePath = "Assets/uPiper/Samples~";
             var targetPath = "Assets/Samples/uPiper";
@@ -264,8 +266,9 @@ namespace uPiper.Editor
             }
         }
 
-        [MenuItem("uPiper/Demo/Add All Scenes to Build Settings", false, 121)]
-        public static void AddWebGLDemoToBuildSettings()
+        // WebGL demo not currently available - menu item removed
+        // [MenuItem("uPiper/Demo/Add All Scenes to Build Settings", false, 121)]
+        // public static void AddWebGLDemoToBuildSettings()
         {
             var currentScenes = new System.Collections.Generic.List<EditorBuildSettingsScene>(
                 EditorBuildSettings.scenes
