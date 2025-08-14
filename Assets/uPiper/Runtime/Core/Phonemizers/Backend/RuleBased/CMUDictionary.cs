@@ -38,32 +38,53 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             {
                 var dict = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 
-                // Try to find the file in package installation if needed
+                // Try multiple paths in priority order
                 var actualFilePath = filePath;
-                if (!File.Exists(actualFilePath))
+                var fileName = Path.GetFileName(filePath);
+                
+                // Build list of paths to check
+                var pathsToCheck = new List<string>();
+                
+                // 1. Original path (might be from StreamingAssets)
+                pathsToCheck.Add(filePath);
+                
+                // 2. Unity Package installation (Assets/StreamingAssets/)
+                pathsToCheck.Add(Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "Phonemizers", fileName));
+                
+                // 3. Package Manager installation
+                var assemblyPath = typeof(CMUDictionary).Assembly.Location;
+                if (!string.IsNullOrEmpty(assemblyPath) && assemblyPath.Contains("PackageCache"))
                 {
-                    // Check if we're in a package manager installation
-                    var assemblyPath = typeof(CMUDictionary).Assembly.Location;
-                    if (!string.IsNullOrEmpty(assemblyPath) && assemblyPath.Contains("PackageCache"))
+                    var packageCacheIndex = assemblyPath.IndexOf("PackageCache");
+                    if (packageCacheIndex > 0)
                     {
-                        // Extract package path from assembly location
-                        var packageCacheIndex = assemblyPath.IndexOf("PackageCache");
-                        if (packageCacheIndex > 0)
+                        var pathAfterCache = assemblyPath.Substring(packageCacheIndex + "PackageCache".Length + 1);
+                        var packageNameEnd = pathAfterCache.IndexOf(Path.DirectorySeparatorChar);
+                        if (packageNameEnd > 0)
                         {
-                            var pathAfterCache = assemblyPath.Substring(packageCacheIndex + "PackageCache".Length + 1);
-                            var packageNameEnd = pathAfterCache.IndexOf(Path.DirectorySeparatorChar);
-                            if (packageNameEnd > 0)
-                            {
-                                var packageName = pathAfterCache.Substring(0, packageNameEnd);
-                                var packagePath = Path.Combine(Application.dataPath, "..", "Library", "PackageCache", packageName);
-                                var packageFilePath = Path.Combine(packagePath, "StreamingAssets", "uPiper", "Phonemizers", Path.GetFileName(filePath));
-                                if (File.Exists(packageFilePath))
-                                {
-                                    actualFilePath = packageFilePath;
-                                    Debug.Log($"[CMUDictionary] Found file in package: {packageFilePath}");
-                                }
-                            }
+                            var packageName = pathAfterCache.Substring(0, packageNameEnd);
+                            var packagePath = Path.Combine(Application.dataPath, "..", "Library", "PackageCache", packageName);
+                            pathsToCheck.Add(Path.Combine(packagePath, "StreamingAssets", "uPiper", "Phonemizers", fileName));
                         }
+                    }
+                }
+                
+                // Find the first existing file
+                foreach (var path in pathsToCheck)
+                {
+                    if (File.Exists(path))
+                    {
+                        actualFilePath = path;
+                        string source = "";
+                        if (path.Contains("Assets/StreamingAssets"))
+                            source = " (Unity Package)";
+                        else if (path.Contains("PackageCache"))
+                            source = " (Package Manager)";
+                        else if (path == filePath)
+                            source = " (Original path)";
+                            
+                        Debug.Log($"[CMUDictionary] Found dictionary at: {path}{source}");
+                        break;
                     }
                 }
 

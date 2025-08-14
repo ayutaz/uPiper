@@ -559,27 +559,27 @@ namespace uPiper.Core.Phonemizers.Implementations
             // On Android, use the persistent data path where we extract the dictionary
             return AndroidPathResolver.GetOpenJTalkDictionaryPath();
 #else
-            // Check if we're in a package manager installation
-            var packagePath = GetPackagePath();
             List<string> possiblePaths = new List<string>();
             
+            // Priority order for dictionary search:
+            // 1. Unity Package installation (Assets/StreamingAssets/)
+            possiblePaths.Add(Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11"));
+            possiblePaths.Add(Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "dictionary"));
+            
+            // 2. General StreamingAssets path
+            possiblePaths.Add(Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11"));
+            possiblePaths.Add(Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "dictionary"));
+            
+            // 3. Package Manager installation (Packages/.../StreamingAssets/)
+            var packagePath = GetPackagePath();
             if (!string.IsNullOrEmpty(packagePath))
             {
-                // Package installation - add package paths
                 possiblePaths.Add(Path.Combine(packagePath, "StreamingAssets", "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11"));
                 possiblePaths.Add(Path.Combine(packagePath, "StreamingAssets", "uPiper", "OpenJTalk", "dictionary"));
             }
             
-            // Add standard paths
-            possiblePaths.AddRange(new[]
-            {
-                // NAIST dictionary path in StreamingAssets (priority)
-                Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11"),
-                // Legacy dictionary paths
-                Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "dictionary"),
-                Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "dictionary"),
-                Path.Combine(PlatformHelper.GetNativeLibraryDirectory(), "OpenJTalk", "dictionary"),
-            });
+            // 4. Legacy paths (backward compatibility)
+            possiblePaths.Add(Path.Combine(PlatformHelper.GetNativeLibraryDirectory(), "OpenJTalk", "dictionary"));
 
             foreach (var path in possiblePaths)
             {
@@ -598,7 +598,16 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                     if (allFilesExist)
                     {
-                        Debug.Log($"[OpenJTalkPhonemizer] Found complete dictionary at: {path}");
+                        // Determine the source of the dictionary
+                        string source = "";
+                        if (path.Contains("Assets/StreamingAssets"))
+                            source = " (Unity Package)";
+                        else if (path.Contains("Packages/"))
+                            source = " (Package Manager)";
+                        else if (path.Contains("Application.streamingAssetsPath"))
+                            source = " (StreamingAssets)";
+                            
+                        Debug.Log($"[OpenJTalkPhonemizer] Found complete dictionary at: {path}{source}");
                         return path;
                     }
                     else
@@ -766,68 +775,83 @@ namespace uPiper.Core.Phonemizers.Implementations
 
             // In Unity Editor
 #if UNITY_EDITOR
-            // Check if we're in a package manager installation
-            var packagePath = GetPackagePath();
-            if (!string.IsNullOrEmpty(packagePath))
-            {
-                // Package installation - use package path
-                if (PlatformHelper.IsWindows)
-                {
-                    return Path.Combine(packagePath, "Plugins", "Windows", "x86_64", "openjtalk_wrapper.dll");
-                }
-                else if (PlatformHelper.IsMacOS)
-                {
-                    // Check for bundle format first
-                    var bundlePath = Path.Combine(packagePath, "Plugins", "macOS", "openjtalk_wrapper.bundle");
-                    if (Directory.Exists(bundlePath)) return bundlePath;
-                    // Fallback to dylib
-                    return Path.Combine(packagePath, "Plugins", "macOS", "libopenjtalk_wrapper.dylib");
-                }
-                else if (PlatformHelper.IsLinux)
-                {
-                    return Path.Combine(packagePath, "Plugins", "Linux", "x86_64", "libopenjtalk_wrapper.so");
-                }
-            }
+            // Define library file name based on platform
+            string libraryFileName = "";
+            string platformFolder = "";
             
-            // Local installation in Assets folder
-            var uPiperPluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins");
-
             if (PlatformHelper.IsWindows)
             {
-                var windowsPath = Path.Combine(uPiperPluginsPath, "Windows", "x86_64", "openjtalk_wrapper.dll");
-                if (File.Exists(windowsPath)) return windowsPath;
-
-                // Fallback to old path
-                var fallbackPath = Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll");
-                if (File.Exists(fallbackPath)) return fallbackPath;
-                
-                // Return the expected path even if not found (for error messages)
-                return windowsPath;
+                libraryFileName = "openjtalk_wrapper.dll";
+                platformFolder = Path.Combine("Windows", "x86_64");
             }
             else if (PlatformHelper.IsMacOS)
             {
-                // Check for bundle format first (Unity's preferred format for macOS)
-                var bundlePath = Path.Combine(uPiperPluginsPath, "macOS", "openjtalk_wrapper.bundle");
-                if (Directory.Exists(bundlePath)) return bundlePath;
-
-                // Check for dylib format
-                var dylibPath = Path.Combine(uPiperPluginsPath, "macOS", "libopenjtalk_wrapper.dylib");
-                if (File.Exists(dylibPath)) return dylibPath;
-
-                // Fallback to old paths
-                var oldBundlePath = Path.Combine(Application.dataPath, "Plugins", "macOS", "openjtalk_wrapper.bundle");
-                if (Directory.Exists(oldBundlePath)) return oldBundlePath;
-
-                return Path.Combine(Application.dataPath, "Plugins", "macOS", "libopenjtalk_wrapper.dylib");
+                libraryFileName = "openjtalk_wrapper.bundle";
+                platformFolder = "macOS";
             }
             else if (PlatformHelper.IsLinux)
             {
-                var linuxPath = Path.Combine(uPiperPluginsPath, "Linux", "x86_64", "libopenjtalk_wrapper.so");
-                if (File.Exists(linuxPath)) return linuxPath;
-
-                // Fallback to old path
-                return Path.Combine(Application.dataPath, "Plugins", "x86_64", "libopenjtalk_wrapper.so");
+                libraryFileName = "libopenjtalk_wrapper.so";
+                platformFolder = Path.Combine("Linux", "x86_64");
             }
+            
+            // Priority order for library search:
+            // 1. Unity Package installation (Assets/uPiper/Plugins/)
+            var unityPackagePath = Path.Combine(Application.dataPath, "uPiper", "Plugins", platformFolder, libraryFileName);
+            if (PlatformHelper.IsMacOS && libraryFileName.EndsWith(".bundle"))
+            {
+                if (Directory.Exists(unityPackagePath)) 
+                {
+                    Debug.Log($"[OpenJTalkPhonemizer] Found library in Unity Package: {unityPackagePath}");
+                    return unityPackagePath;
+                }
+            }
+            else if (File.Exists(unityPackagePath))
+            {
+                Debug.Log($"[OpenJTalkPhonemizer] Found library in Unity Package: {unityPackagePath}");
+                return unityPackagePath;
+            }
+            
+            // 2. Package Manager installation (Packages/.../Plugins/)
+            var packagePath = GetPackagePath();
+            if (!string.IsNullOrEmpty(packagePath))
+            {
+                var packageLibraryPath = Path.Combine(packagePath, "Plugins", platformFolder, libraryFileName);
+                if (PlatformHelper.IsMacOS && libraryFileName.EndsWith(".bundle"))
+                {
+                    if (Directory.Exists(packageLibraryPath))
+                    {
+                        Debug.Log($"[OpenJTalkPhonemizer] Found library in Package Manager: {packageLibraryPath}");
+                        return packageLibraryPath;
+                    }
+                    // Try dylib format as fallback for macOS
+                    var dylibPath = Path.Combine(packagePath, "Plugins", platformFolder, "libopenjtalk_wrapper.dylib");
+                    if (File.Exists(dylibPath))
+                    {
+                        Debug.Log($"[OpenJTalkPhonemizer] Found library in Package Manager (dylib): {dylibPath}");
+                        return dylibPath;
+                    }
+                }
+                else if (File.Exists(packageLibraryPath))
+                {
+                    Debug.Log($"[OpenJTalkPhonemizer] Found library in Package Manager: {packageLibraryPath}");
+                    return packageLibraryPath;
+                }
+            }
+            
+            // 3. Legacy paths (backward compatibility)
+            if (PlatformHelper.IsWindows)
+            {
+                var legacyPath = Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll");
+                if (File.Exists(legacyPath))
+                {
+                    Debug.Log($"[OpenJTalkPhonemizer] Found library in legacy location: {legacyPath}");
+                    return legacyPath;
+                }
+            }
+            
+            // Return expected path for error messages
+            return unityPackagePath;
 #else
             // In built application, Unity automatically loads native plugins
             // We just need to verify if the library was loaded successfully
