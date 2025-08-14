@@ -12,7 +12,7 @@ namespace uPiper.Editor
     public static class SampleSceneOpener
     {
         // WebGL関連の定数とメソッドは将来の実装のために保持（コメントアウト）
-        
+
         /*
         private const string WEBGL_DEMO_SCENE_PATH = "Assets/uPiper/Samples~/WebGLDemo/WebGLDemoScene.unity";
 
