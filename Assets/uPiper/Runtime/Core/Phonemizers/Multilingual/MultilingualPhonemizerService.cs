@@ -70,7 +70,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             });
 
             // Add other language backends
-            Task.Run(async () =>
+            Task.Run(() =>
             {
                 try
                 {

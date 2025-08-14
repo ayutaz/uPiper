@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using TMPro;
 using Unity.InferenceEngine;
@@ -1014,8 +1013,6 @@ namespace uPiper.Demo
         private PiperVoiceConfig ParseConfig(string json, string modelName)
         {
             PiperLogger.LogDebug("[ParseConfig] Starting JSON parsing");
-            using var jsonDoc = JsonDocument.Parse(json);
-            var root = jsonDoc.RootElement;
 
             var config = new PiperVoiceConfig
             {
@@ -1026,45 +1023,56 @@ namespace uPiper.Demo
                 PhonemeIdMap = new Dictionary<string, int>()
             };
 
-            // Parse language
-            if (root.TryGetProperty("language", out var langElement) && 
-                langElement.TryGetProperty("code", out var codeElement))
+            try
             {
-                config.Language = codeElement.GetString() ?? "ja";
-            }
-
-            // Parse sample rate
-            if (root.TryGetProperty("audio", out var audioElement) && 
-                audioElement.TryGetProperty("sample_rate", out var sampleRateElement))
-            {
-                config.SampleRate = sampleRateElement.GetInt32();
-            }
-
-            PiperLogger.LogDebug($"[ParseConfig] Language: {config.Language}, SampleRate: {config.SampleRate}");
-
-            // Parse phoneme_id_map
-            if (root.TryGetProperty("phoneme_id_map", out var phonemeMapElement))
-            {
-                var phonemeCount = 0;
-                foreach (var kvp in phonemeMapElement.EnumerateObject())
+                // Simple JSON parsing using string manipulation
+                // This is a basic implementation - consider using Newtonsoft.Json if more complex parsing is needed
+                
+                // Extract language code
+                var langMatch = System.Text.RegularExpressions.Regex.Match(json, @"""language"":\s*\{\s*""code"":\s*""([^""]+)""");
+                if (langMatch.Success)
                 {
-                    phonemeCount++;
-                    if (kvp.Value.ValueKind == JsonValueKind.Array)
-                    {
-                        var array = kvp.Value.EnumerateArray().ToList();
-                        if (array.Count > 0)
-                        {
-                            config.PhonemeIdMap[kvp.Name] = array[0].GetInt32();
-                        }
-                    }
+                    config.Language = langMatch.Groups[1].Value;
                 }
 
-                PiperLogger.LogDebug($"[ParseConfig] Found phoneme_id_map with {phonemeCount} entries");
-                PiperLogger.LogDebug($"[ParseConfig] Parsed {config.PhonemeIdMap.Count} phoneme mappings");
+                // Extract sample rate
+                var sampleRateMatch = System.Text.RegularExpressions.Regex.Match(json, @"""sample_rate"":\s*(\d+)");
+                if (sampleRateMatch.Success)
+                {
+                    config.SampleRate = int.Parse(sampleRateMatch.Groups[1].Value);
+                }
+
+                PiperLogger.LogDebug($"[ParseConfig] Language: {config.Language}, SampleRate: {config.SampleRate}");
+
+                // Extract phoneme_id_map
+                var phonemeMapMatch = System.Text.RegularExpressions.Regex.Match(json, @"""phoneme_id_map"":\s*\{([^}]+)\}");
+                if (phonemeMapMatch.Success)
+                {
+                    var phonemeMapContent = phonemeMapMatch.Groups[1].Value;
+                    var phonemeMatches = System.Text.RegularExpressions.Regex.Matches(phonemeMapContent, @"""([^""]+)"":\s*\[(\d+)[^\]]*\]");
+                    
+                    PiperLogger.LogDebug($"[ParseConfig] Found phoneme_id_map with {phonemeMatches.Count} entries");
+                    
+                    foreach (System.Text.RegularExpressions.Match match in phonemeMatches)
+                    {
+                        if (match.Success && match.Groups.Count >= 3)
+                        {
+                            var key = match.Groups[1].Value;
+                            var value = int.Parse(match.Groups[2].Value);
+                            config.PhonemeIdMap[key] = value;
+                        }
+                    }
+                    
+                    PiperLogger.LogDebug($"[ParseConfig] Parsed {config.PhonemeIdMap.Count} phoneme mappings");
+                }
+                else
+                {
+                    PiperLogger.LogWarning("[ParseConfig] No phoneme_id_map found in JSON");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                PiperLogger.LogWarning("[ParseConfig] No phoneme_id_map found in JSON");
+                PiperLogger.LogError($"[ParseConfig] Error parsing JSON: {ex.Message}");
             }
 
             return config;
