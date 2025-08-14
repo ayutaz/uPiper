@@ -187,5 +187,20 @@ namespace uPiper.Samples.BasicTTSDemo.Editor
 
             Debug.Log("Basic TTS Demo scene created. Don't forget to save the scene!");
         }
+
+        [MenuItem("uPiper/Samples/Create and Save Basic TTS Demo Scene")]
+        public static void CreateAndSaveScene()
+        {
+            CreateScene();
+            
+            // Save the scene
+            string scenePath = "Assets/uPiper/Samples~/BasicTTSDemo/BasicTTSDemo.unity";
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(
+                UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene(),
+                scenePath
+            );
+            
+            Debug.Log($"Basic TTS Demo scene saved to: {scenePath}");
+        }
     }
 }
