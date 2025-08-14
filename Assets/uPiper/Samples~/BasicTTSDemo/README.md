@@ -6,10 +6,10 @@ This sample demonstrates text-to-speech functionality using uPiper with Japanese
 
 1. Import this sample through Unity Package Manager
 2. Open the `BasicTTSDemo.unity` scene
-3. The scene is empty by default - use the menu: `uPiper/Samples/Create Basic TTS Demo Scene` to populate it with UI
-4. Select a model from the dropdown (ja_JP for Japanese, test_voice for English)
+3. Press Play to run the demo
+4. Select a model from the dropdown (ja_JP for Japanese, en_US for English)
 5. Choose a preset phrase or enter custom text
-6. Click "Generate" to synthesize audio
+6. Click "Generate Speech" to synthesize audio
 7. The generated audio will play automatically
 
 ## Features
