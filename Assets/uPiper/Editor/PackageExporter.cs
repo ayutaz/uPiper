@@ -64,6 +64,7 @@ namespace uPiper.Editor
             }
         }
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Package/Export UPM Package (.tgz)", false, Menu.uPiperMenuStructure.PRIORITY_BUILD + 51)]
         public static void ExportUPMPackage()
         {
@@ -108,7 +109,9 @@ namespace uPiper.Editor
                     $"Failed to export UPM Package:\n{ex.Message}", "OK");
             }
         }
+#endif
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Package/Export Unity Package (No Dependencies)", false, Menu.uPiperMenuStructure.PRIORITY_BUILD + 53)]
         public static void ExportUnityPackageNoDependencies()
         {
@@ -154,7 +157,9 @@ namespace uPiper.Editor
                     $"Failed to export Unity Package:\n{ex.Message}", "OK");
             }
         }
+#endif
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Package/Export Both Formats", false, Menu.uPiperMenuStructure.PRIORITY_BUILD + 54)]
         public static void ExportBothFormats()
         {
@@ -209,7 +214,9 @@ namespace uPiper.Editor
                     $"Failed to export packages:\n{ex.Message}", "OK");
             }
         }
+#endif
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Package/Open Export Directory", false, Menu.uPiperMenuStructure.PRIORITY_BUILD + 70)]
         public static void OpenExportDirectory()
         {
@@ -223,6 +230,7 @@ namespace uPiper.Editor
 
             EditorUtility.RevealInFinder(exportPath);
         }
+#endif
 
         private static PackageInfo ReadPackageInfo()
         {

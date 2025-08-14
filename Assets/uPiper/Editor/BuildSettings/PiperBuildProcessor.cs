@@ -124,7 +124,9 @@ namespace uPiper.Editor.BuildSettings
     /// </summary>
     public static class PiperBuildMenu
     {
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Build/Configure Build Settings")]
+#endif
         public static void ConfigureBuildSettings()
         {
             // プロダクト名の設定
@@ -149,7 +151,9 @@ namespace uPiper.Editor.BuildSettings
             EditorUtility.DisplayDialog("uPiper", "ビルド設定が完了しました", "OK");
         }
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Build/Build All Platforms")]
+#endif
         public static void BuildAllPlatforms()
         {
             if (!EditorUtility.DisplayDialog("uPiper", "全プラットフォームのビルドを開始しますか？", "はい", "いいえ"))

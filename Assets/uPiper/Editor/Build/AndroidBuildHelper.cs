@@ -9,6 +9,7 @@ namespace uPiper.Editor.Build
     /// </summary>
     public static class AndroidBuildHelper
     {
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Android/Setup Android Libraries")]
         public static void SetupAndroidLibraries()
         {
@@ -111,7 +112,9 @@ namespace uPiper.Editor.Build
                 _ => "AnyCPU",
             };
         }
+#endif
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Android/Verify Android Setup")]
         public static void VerifyAndroidSetup()
         {
@@ -178,5 +181,6 @@ namespace uPiper.Editor.Build
                 Debug.LogError("[uPiper] Android setup has issues. Please fix them before building.");
             }
         }
+#endif
     }
 }

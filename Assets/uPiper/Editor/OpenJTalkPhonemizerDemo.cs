@@ -26,12 +26,14 @@ namespace uPiper.Editor
         private Vector2 _scrollPosition;
 #endif
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Tools/OpenJTalk Phonemizer Test")]
         public static void ShowWindow()
         {
             var window = GetWindow<OpenJTalkPhonemizerDemo>("OpenJTalk Phonemizer");
             window.minSize = new Vector2(500, 600);
         }
+#endif
 
         private void OnDisable()
         {

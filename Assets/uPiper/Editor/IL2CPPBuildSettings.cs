@@ -10,7 +10,9 @@ namespace uPiper.Editor
     /// </summary>
     public static class IL2CPPBuildSettings
     {
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Build/Configure IL2CPP Settings", false, 210)]
+#endif
         public static void ConfigureIL2CPPSettings()
         {
             Debug.Log("Configuring IL2CPP settings for uPiper...");
@@ -119,7 +121,9 @@ namespace uPiper.Editor
             Debug.Log($"Standalone IL2CPP settings configured for: {architecture}");
         }
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Build/Verify IL2CPP Configuration", false, 211)]
+#endif
         public static void VerifyIL2CPPConfiguration()
         {
             var targetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;

@@ -14,6 +14,7 @@ namespace uPiper.Editor
     {
         private const string ScenePath = "Assets/uPiper/Scenes/InferenceEngineDemo.unity";
 
+#if UPIPER_DEVELOPMENT
         [MenuItem("uPiper/Demo/Open Inference Demo Scene", false, 100)]
         public static void OpenDemoScene()
         {
@@ -31,6 +32,7 @@ namespace uPiper.Editor
                 Debug.Log("Inference Demo シーンを開きました。Playモードで実行してください。");
             }
         }
+#endif
 
         // Create メニューは削除（UIが手動調整されているため上書きを防ぐ）
         private static void CreateDemoScene()

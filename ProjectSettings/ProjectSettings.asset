@@ -672,7 +672,11 @@ PlayerSettings:
   webGLWebAssemblyBigInt: 0
   webGLCloseOnQuit: 0
   webWasm2023: 0
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    Standalone: UPIPER_DEVELOPMENT
+    Android: UPIPER_DEVELOPMENT
+    WebGL: UPIPER_DEVELOPMENT
+    iOS: UPIPER_DEVELOPMENT
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
