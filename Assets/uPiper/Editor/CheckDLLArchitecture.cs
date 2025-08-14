@@ -18,7 +18,7 @@ namespace uPiper.Editor
             public uint e_lfanew;     // File address of new exe header
         }
 
-        [MenuItem("uPiper/Debug/DLL/Check Architecture")]
+        [MenuItem("uPiper/Tools/Check DLL Architecture", false, 330)]
         private static void CheckArchitecture()
         {
             var dllPath = Path.Combine(Application.dataPath, "uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll");
