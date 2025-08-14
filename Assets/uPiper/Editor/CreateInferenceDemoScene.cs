@@ -17,10 +17,10 @@ namespace uPiper.Editor
         [MenuItem("uPiper/Demo/Open Inference Demo Scene", false, 100)]
         public static void OpenDemoScene()
         {
-            // シーンが存在しない場合は作成
+            // シーンが存在しない場合はエラー
             if (!System.IO.File.Exists(ScenePath))
             {
-                CreateDemoScene();
+                Debug.LogError($"Inference Demo シーンが見つかりません: {ScenePath}");
                 return;
             }
 
@@ -32,8 +32,8 @@ namespace uPiper.Editor
             }
         }
 
-        [MenuItem("uPiper/Demo/Create Inference Demo Scene", false, 101)]
-        public static void CreateDemoScene()
+        // Create メニューは削除（UIが手動調整されているため上書きを防ぐ）
+        private static void CreateDemoScene()
         {
             // 新しいシーンを作成
             var scene = UnityEditor.SceneManagement.EditorSceneManager.NewScene(
