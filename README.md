@@ -4,7 +4,6 @@
 
 [![Unity Tests](https://github.com/ayutaz/uPiper/actions/workflows/unity-tests.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-tests.yml)
 [![Unity Build](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml)
-[![codecov](https://codecov.io/github/ayutaz/uPiper/graph/badge.svg?token=348eb741-4320-4368-89fa-3eee5188bd3f)](https://codecov.io/github/ayutaz/uPiper)
 
 [piper-plus](https://github.com/ayutaz/piper-plus)のUnityプラグイン - 高品質なニューラル音声合成エンジン
 
@@ -40,7 +39,7 @@
 
 ## ビルド要件
 
-- **Windows**: Visual Studio 2019以降
+- **Windows**: Visual Studio 2022以降
 - **macOS**: Xcode 14以降
 - **Linux**: GCC 9以降
 - **Android**: NDK r21以降
@@ -112,13 +111,13 @@ var config = new PiperConfig
 };
 ```
 
-詳細は[GPU推論ガイド](docs/ja/guides/technical/gpu-inference.md)を参照してください。
+詳細は[GPU推論ガイド](docs/features/gpu/gpu-inference.md)を参照してください。
 
 ## 詳細ドキュメント
 
-- [アーキテクチャ](docs/ja/ARCHITECTURE.md) - 設計と技術的な詳細
+- [アーキテクチャ](docs/ARCHITECTURE_ja.md) - 設計と技術的な詳細
 - [開発ログ](docs/DEVELOPMENT_LOG.md) - 開発進捗と変更履歴
-- [技術ドキュメント](docs/ja/guides/technical/) - 詳細な技術情報
+- [ドキュメント一覧](docs/) - 技術ドキュメント、ガイド、仕様書
 
 ## ライセンス
 

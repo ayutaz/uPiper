@@ -4,7 +4,6 @@ English | [日本語](README.md)
 
 [![Unity Tests](https://github.com/ayutaz/uPiper/actions/workflows/unity-tests.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-tests.yml)
 [![Unity Build](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml)
-[![codecov](https://codecov.io/github/ayutaz/uPiper/graph/badge.svg?token=348eb741-4320-4368-89fa-3eee5188bd3f)](https://codecov.io/github/ayutaz/uPiper)
 
 A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-quality neural speech synthesis engine
 
@@ -40,7 +39,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 
 ## Build Requirements
 
-- **Windows**: Visual Studio 2019 or later
+- **Windows**: Visual Studio 2022 or later
 - **macOS**: Xcode 14 or later
 - **Linux**: GCC 9 or later
 - **Android**: NDK r21 or later
@@ -112,13 +111,13 @@ var config = new PiperConfig
 };
 ```
 
-See the [GPU Inference Guide](docs/en/guides/technical/gpu-inference.md) for details.
+See the [GPU Inference Guide](docs/features/gpu/gpu-inference.md) for details.
 
 ## Documentation
 
-- [Architecture](docs/en/ARCHITECTURE.md) - Design and technical details
+- [Architecture](docs/ARCHITECTURE_en.md) - Design and technical details
 - [Development Log](docs/DEVELOPMENT_LOG.md) - Development progress and change history
-- [Technical Documentation](docs/en/guides/technical/) - Detailed technical information
+- [Documentation Index](docs/) - Technical documentation, guides, and specifications
 
 ## License
 
