@@ -268,7 +268,7 @@ namespace uPiper.Editor
 
             // オプションを設定
             dropdown.ClearOptions();
-            dropdown.AddOptions(new System.Collections.Generic.List<string> { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" });
+            dropdown.AddOptions(new System.Collections.Generic.List<string> { "ja_JP-test-medium", "en_US-ljspeech-medium" });
 
             // Template を非表示
             templateGO.SetActive(false);

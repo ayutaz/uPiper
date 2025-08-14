@@ -399,7 +399,7 @@ namespace uPiper.Demo
             if (_modelDropdown != null)
             {
                 _modelDropdown.ClearOptions();
-                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" });
+                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "en_US-ljspeech-medium" });
                 _modelDropdown.onValueChanged.AddListener(OnModelChanged);
             }
 
@@ -457,7 +457,7 @@ namespace uPiper.Demo
 
         private void OnModelChanged(int index)
         {
-            var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" };
+            var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium" };
             var modelName = modelNames[index];
             var language = _modelLanguages[modelName];
 
@@ -609,7 +609,7 @@ namespace uPiper.Demo
             try
             {
                 // モデル名を取得
-                var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" };
+                var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium" };
                 var modelName = modelNames[_modelDropdown?.value ?? 0];
                 PiperLogger.LogDebug($"Selected model: {modelName}");
 
@@ -1264,7 +1264,7 @@ namespace uPiper.Demo
         /// </summary>
         private string GetModelNameForIndex(int index)
         {
-            var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium", "zh_CN-huayan-medium" };
+            var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium" };
             return index >= 0 && index < modelNames.Length ? modelNames[index] : modelNames[0];
         }
 
