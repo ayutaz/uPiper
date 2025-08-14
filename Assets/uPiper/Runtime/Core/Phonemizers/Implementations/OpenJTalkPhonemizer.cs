@@ -625,10 +625,10 @@ namespace uPiper.Core.Phonemizers.Implementations
             }
             
             // Check if this is a package installation
-            var packagePath = GetPackagePath();
-            if (!string.IsNullOrEmpty(packagePath))
+            var pkgPath = GetPackagePath();
+            if (!string.IsNullOrEmpty(pkgPath))
             {
-                Debug.LogWarning($"[OpenJTalkPhonemizer] Note: Package installation detected. Dictionary should be in: {Path.Combine(packagePath, "StreamingAssets", "uPiper", "OpenJTalk")}");
+                Debug.LogWarning($"[OpenJTalkPhonemizer] Note: Package installation detected. Dictionary should be in: {Path.Combine(pkgPath, "StreamingAssets", "uPiper", "OpenJTalk")}");
             }
             
             // Return first path as default (will fail later if not found)

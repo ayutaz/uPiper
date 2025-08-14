@@ -296,8 +296,8 @@ namespace uPiper.Demo
                 }
                 else if (_japaneseFontAsset == null)
                 {
-                    Debug.LogWarning("[InferenceEngineDemo] Japanese font asset is not assigned. Japanese text may not display correctly.");
-                    Debug.LogWarning("[InferenceEngineDemo] To fix this, please assign a Japanese-compatible TMP font asset (e.g., NotoSansCJK-Regular SDF) to the InferenceEngineDemo component.");
+                    UnityEngine.Debug.LogWarning("[InferenceEngineDemo] Japanese font asset is not assigned. Japanese text may not display correctly.");
+                    UnityEngine.Debug.LogWarning("[InferenceEngineDemo] To fix this, please assign a Japanese-compatible TMP font asset (e.g., NotoSansCJK-Regular SDF) to the InferenceEngineDemo component.");
                 }
 
             }
