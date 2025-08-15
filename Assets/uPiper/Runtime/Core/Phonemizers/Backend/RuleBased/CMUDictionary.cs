@@ -38,54 +38,29 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             {
                 var dict = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 
-                // Try multiple paths in priority order
+                // After initial setup, files should be in fixed location
                 var actualFilePath = filePath;
                 var fileName = Path.GetFileName(filePath);
                 
-                // Build list of paths to check
-                var pathsToCheck = new List<string>();
+                // Primary path after setup
+                var primaryPath = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "Phonemizers", fileName);
                 
-                // 1. Original path (might be from StreamingAssets)
-                pathsToCheck.Add(filePath);
-                
-                // 2. Unity Package installation (Assets/StreamingAssets/)
-                pathsToCheck.Add(Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "Phonemizers", fileName));
-                
-                // 3. Package Manager installation
-                var assemblyPath = typeof(CMUDictionary).Assembly.Location;
-                if (!string.IsNullOrEmpty(assemblyPath) && assemblyPath.Contains("PackageCache"))
+                // Check primary path first
+                if (File.Exists(primaryPath))
                 {
-                    var packageCacheIndex = assemblyPath.IndexOf("PackageCache");
-                    if (packageCacheIndex > 0)
-                    {
-                        var pathAfterCache = assemblyPath.Substring(packageCacheIndex + "PackageCache".Length + 1);
-                        var packageNameEnd = pathAfterCache.IndexOf(Path.DirectorySeparatorChar);
-                        if (packageNameEnd > 0)
-                        {
-                            var packageName = pathAfterCache.Substring(0, packageNameEnd);
-                            var packagePath = Path.Combine(Application.dataPath, "..", "Library", "PackageCache", packageName);
-                            pathsToCheck.Add(Path.Combine(packagePath, "StreamingAssets", "uPiper", "Phonemizers", fileName));
-                        }
-                    }
+                    actualFilePath = primaryPath;
+                    Debug.Log($"[CMUDictionary] Found dictionary at: {primaryPath}");
                 }
-                
-                // Find the first existing file
-                foreach (var path in pathsToCheck)
+                else if (File.Exists(filePath))
                 {
-                    if (File.Exists(path))
-                    {
-                        actualFilePath = path;
-                        string source = "";
-                        if (path.Contains("Assets/StreamingAssets"))
-                            source = " (Unity Package)";
-                        else if (path.Contains("PackageCache"))
-                            source = " (Package Manager)";
-                        else if (path == filePath)
-                            source = " (Original path)";
-                            
-                        Debug.Log($"[CMUDictionary] Found dictionary at: {path}{source}");
-                        break;
-                    }
+                    // Use original path if it exists
+                    actualFilePath = filePath;
+                    Debug.Log($"[CMUDictionary] Found dictionary at original path: {filePath}");
+                }
+                else
+                {
+                    Debug.LogError($"[CMUDictionary] Dictionary file not found at: {primaryPath}");
+                    Debug.LogError($"[CMUDictionary] Please run 'uPiper/Setup/Run Initial Setup' from the menu.");
                 }
 
                 // Debug path information
