@@ -71,23 +71,16 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 // Check if file exists
                 if (!File.Exists(actualFilePath))
                 {
-                    Debug.LogWarning($"CMU dictionary file not found at: {actualFilePath}. Using minimal built-in dictionary.");
-
-                    // Try to list files in the directory for debugging
-                    var dir = Path.GetDirectoryName(filePath);
-                    if (Directory.Exists(dir))
-                    {
-                        var files = Directory.GetFiles(dir, "*.txt");
-                        var fileNames = new List<string>();
-                        foreach (var file in files)
-                        {
-                            fileNames.Add(Path.GetFileName(file));
-                        }
-                        Debug.Log($"[CMUDictionary] Files in {dir}: {string.Join(", ", fileNames)}");
-                    }
-
-                    LoadMinimalDictionary();
-                    return;
+                    Debug.LogError($"[CMUDictionary] Dictionary file not found at: {actualFilePath}");
+                    Debug.LogError($"[CMUDictionary] Please import the CMU Dictionary from Package Manager:");
+                    Debug.LogError($"[CMUDictionary] 1. Open Window > Package Manager");
+                    Debug.LogError($"[CMUDictionary] 2. Select 'uPiper' package");
+                    Debug.LogError($"[CMUDictionary] 3. Import 'CMU Pronouncing Dictionary' sample");
+                    Debug.LogError($"[CMUDictionary] 4. Run 'uPiper/Setup/Install from Samples'");
+                    
+                    throw new FileNotFoundException(
+                        $"CMU dictionary not found. Please import from Package Manager Samples and run setup.",
+                        actualFilePath);
                 }
 
                 // Check if we need to extract from StreamingAssets
@@ -156,29 +149,16 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             }
             catch (OperationCanceledException)
             {
-                Debug.LogWarning("CMU dictionary loading was cancelled. Using minimal dictionary.");
-                LoadMinimalDictionary();
+                Debug.LogError("CMU dictionary loading was cancelled.");
+                throw;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Failed to load CMU dictionary: {ex.Message}. Using minimal dictionary.");
-                LoadMinimalDictionary();
+                Debug.LogError($"Failed to load CMU dictionary: {ex.Message}");
+                throw;
             }
         }
 
-        /// <summary>
-        /// Load a minimal built-in dictionary for basic functionality
-        /// </summary>
-        private void LoadMinimalDictionary()
-        {
-            var minimal = CreateMinimal();
-            lock (lockObject)
-            {
-                pronunciations = minimal.pronunciations;
-                isLoaded = true;
-            }
-            Debug.Log($"Loaded minimal dictionary with {pronunciations.Count} words");
-        }
 
         /// <summary>
         /// Tries to get the pronunciation for a word.
@@ -257,24 +237,6 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             }
         }
 
-        /// <summary>
-        /// Creates a minimal dictionary for testing.
-        /// </summary>
-        public static CMUDictionary CreateMinimal()
-        {
-            var dict = new CMUDictionary
-            {
-                pronunciations = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["HELLO"] = new[] { "HH", "AH0", "L", "OW1" },
-                    ["WORLD"] = new[] { "W", "ER1", "L", "D" },
-                    ["TEST"] = new[] { "T", "EH1", "S", "T" },
-                    ["UNITY"] = new[] { "Y", "UW1", "N", "AH0", "T", "IY0" }
-                },
-                isLoaded = true
-            };
-            return dict;
-        }
 
         private string ExtractBaseWord(string word)
         {

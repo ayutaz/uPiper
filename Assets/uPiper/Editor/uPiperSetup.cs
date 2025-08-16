@@ -31,18 +31,45 @@ namespace uPiper.Editor
             {
                 if (!IsSetupComplete() && IsPackageInstalled())
                 {
-                    if (EditorUtility.DisplayDialog(
-                        "uPiper Initial Setup Required",
-                        "uPiper needs to copy required files to your project.\n\n" +
-                        "This will copy:\n" +
-                        "• Native plugins (OpenJTalk)\n" +
-                        "• OpenJTalk dictionary files\n" +
-                        "• Phonemizer data (CMU dictionary)\n\n" +
-                        "This is required for the package to work correctly.\n\n" +
-                        "Continue with setup?",
-                        "Setup Now", "Later"))
+                    var samplesStatus = CheckImportedSamples();
+                    
+                    if (samplesStatus.hasAnyImportedSamples)
                     {
-                        RunInitialSetup();
+                        // Samples are imported, offer to install them
+                        if (EditorUtility.DisplayDialog(
+                            "uPiper Setup - Samples Detected",
+                            "uPiper samples have been imported but not installed.\n\n" +
+                            "Detected samples:\n" +
+                            (samplesStatus.hasOpenJTalkSample ? "• OpenJTalk Dictionary\n" : "") +
+                            (samplesStatus.hasCMUSample ? "• CMU Dictionary\n" : "") +
+                            (samplesStatus.hasModelsSample ? "• Voice Models\n" : "") +
+                            "\nWould you like to install them now?",
+                            "Install Now", "Later"))
+                        {
+                            InstallSamplesData();
+                        }
+                    }
+                    else
+                    {
+                        // No samples imported, show instructions
+                        if (EditorUtility.DisplayDialog(
+                            "uPiper Initial Setup Required",
+                            "Welcome to uPiper!\n\n" +
+                            "To use uPiper, you need to import the required data:\n\n" +
+                            "1. Open Window > Package Manager\n" +
+                            "2. Select 'In Project' from the dropdown\n" +
+                            "3. Find and select 'uPiper'\n" +
+                            "4. In the package details, find 'Samples'\n" +
+                            "5. Import the following:\n" +
+                            "   • OpenJTalk Dictionary Data (Required for Japanese)\n" +
+                            "   • CMU Pronouncing Dictionary (Required for English)\n" +
+                            "   • Voice Models (Optional - for high quality voices)\n" +
+                            "6. After importing, run 'uPiper/Setup/Install from Samples'\n\n" +
+                            "Note: Basic functionality is available with minimal built-in dictionaries.",
+                            "Open Package Manager", "Later"))
+                        {
+                            UnityEditor.PackageManager.UI.Window.Open("com.ayutaz.upiper");
+                        }
                     }
                 }
             };
@@ -84,18 +111,85 @@ namespace uPiper.Editor
             message += $"• Plugins: {(status.pluginsExist ? "✓ Installed" : "✗ Not found")}\n";
             message += $"• OpenJTalk Dictionary: {(status.dictionaryExists ? "✓ Installed" : "✗ Not found")}\n";
             message += $"• CMU Dictionary: {(status.cmuDictExists ? "✓ Installed" : "✗ Not found")}\n";
+            message += $"• Voice Models: {(status.modelsExist ? "✓ Installed" : "✗ Not found")}\n";
             message += $"• Setup Complete: {(status.isComplete ? "✓ Yes" : "✗ No")}\n";
+            
+            // Check for imported samples
+            var samplesStatus = CheckImportedSamples();
+            if (samplesStatus.hasAnyImportedSamples)
+            {
+                message += "\n\nImported Samples detected:\n";
+                if (samplesStatus.hasOpenJTalkSample)
+                    message += "• OpenJTalk Dictionary (from Samples)\n";
+                if (samplesStatus.hasCMUSample)
+                    message += "• CMU Dictionary (from Samples)\n";
+                if (samplesStatus.hasModelsSample)
+                    message += "• Voice Models (from Samples)\n";
+                    
+                if (!status.isComplete)
+                {
+                    message += "\n⚠️ Samples imported but not installed to project.\n";
+                    message += "Run 'uPiper/Setup/Install from Samples' to complete setup.";
+                }
+            }
             
 #if UPIPER_DEVELOPMENT
             message += "\n[Development Mode - Setup not required]";
 #else
-            if (!status.isComplete)
+            if (!status.isComplete && !samplesStatus.hasAnyImportedSamples)
             {
-                message += "\nSome files are missing. Run 'uPiper/Setup/Run Initial Setup' to fix.";
+                message += "\n⚠️ Some files are missing. Import samples from Package Manager:\n";
+                message += "1. Open Package Manager\n";
+                message += "2. Select uPiper package\n";
+                message += "3. Import required samples (Dictionary Data, Voice Models)\n";
+                message += "4. Run 'uPiper/Setup/Install from Samples'";
             }
 #endif
             
             EditorUtility.DisplayDialog("uPiper Setup Status", message, "OK");
+        }
+        
+        [MenuItem("uPiper/Setup/Install from Samples", false, 3)]
+        public static void InstallFromSamples()
+        {
+#if UPIPER_DEVELOPMENT
+            EditorUtility.DisplayDialog(
+                "Development Mode",
+                "Setup is not required in development mode.",
+                "OK");
+            return;
+#else
+            var samplesStatus = CheckImportedSamples();
+            
+            if (!samplesStatus.hasAnyImportedSamples)
+            {
+                EditorUtility.DisplayDialog(
+                    "No Samples Found",
+                    "No imported samples detected.\n\n" +
+                    "Please import samples from Package Manager first:\n" +
+                    "1. Open Package Manager\n" +
+                    "2. Select uPiper package\n" +
+                    "3. Import required samples\n" +
+                    "4. Run this command again",
+                    "OK");
+                return;
+            }
+            
+            if (EditorUtility.DisplayDialog(
+                "Install from Samples",
+                "This will copy data from imported samples to your project:\n\n" +
+                (samplesStatus.hasOpenJTalkSample ? "• OpenJTalk Dictionary\n" : "") +
+                (samplesStatus.hasCMUSample ? "• CMU Dictionary\n" : "") +
+                (samplesStatus.hasModelsSample ? "• Voice Models\n" : "") +
+                "\nFiles will be copied to:\n" +
+                "• Assets/StreamingAssets/uPiper/\n" +
+                "• Assets/uPiper/Resources/Models/\n\n" +
+                "Continue?",
+                "Install", "Cancel"))
+            {
+                InstallSamplesData();
+            }
+#endif
         }
         
         public static void RunInitialSetup()
@@ -178,11 +272,34 @@ namespace uPiper.Editor
                     MarkSetupComplete();
                     AssetDatabase.Refresh();
                     
-                    EditorUtility.DisplayDialog("Setup Complete", 
-                        $"uPiper setup completed successfully!\n\n" +
-                        $"Copied {copiedFiles} files to your project.\n\n" +
-                        $"The package is now ready to use.",
-                        "OK");
+                    // Check if dictionary files need to be downloaded
+                    bool needsDictionary = !Directory.Exists(Path.Combine(TARGET_STREAMING_ASSETS_PATH, "OpenJTalk", "naist_jdic"));
+                    bool needsCMU = !File.Exists(Path.Combine(TARGET_STREAMING_ASSETS_PATH, "Phonemizers", "cmudict-0.7b.txt"));
+                    
+                    string message = $"uPiper setup completed!\n\n" +
+                                   $"Copied {copiedFiles} plugin files to your project.\n\n";
+                    
+                    if (needsDictionary || needsCMU)
+                    {
+                        message += "⚠️ Additional files required:\n\n";
+                        if (needsDictionary)
+                        {
+                            message += "• OpenJTalk dictionary files\n";
+                        }
+                        if (needsCMU)
+                        {
+                            message += "• CMU dictionary files\n";
+                        }
+                        message += "\nPlease download these from:\n" +
+                                 "https://github.com/ayutaz/uPiper/releases\n\n" +
+                                 "Extract to Assets/StreamingAssets/uPiper/";
+                    }
+                    else
+                    {
+                        message += "The package is now ready to use.";
+                    }
+                    
+                    EditorUtility.DisplayDialog("Setup Complete", message, "OK");
                     
                     Debug.Log($"[uPiper Setup] Setup completed. Copied {copiedFiles} files.");
                 }
@@ -257,38 +374,20 @@ namespace uPiper.Editor
                 }
             }
             
-            // For Package Manager installations, files should be in the package
+            // For Package Manager installations, StreamingAssets are not included in the package
+            // They need to be downloaded separately or included in the project
             if (!string.IsNullOrEmpty(packagePath))
             {
-                // Try multiple possible paths for StreamingAssets location
-                var possiblePaths = new[]
-                {
-                    Path.Combine(packagePath, "Assets", "StreamingAssets", "uPiper", "OpenJTalk"),
-                    Path.Combine(packagePath, "Runtime", "StreamingAssets", "uPiper", "OpenJTalk"),
-                    Path.Combine(packagePath, "StreamingAssets", "uPiper", "OpenJTalk"),
-                };
+                // Package Manager packages don't include StreamingAssets
+                // Display message to guide user
+                Debug.LogWarning("[uPiper Setup] OpenJTalk dictionary files are not included in Package Manager packages.");
+                Debug.LogWarning("[uPiper Setup] Please download the dictionary files from:");
+                Debug.LogWarning("[uPiper Setup]   https://github.com/ayutaz/uPiper/releases");
+                Debug.LogWarning($"[uPiper Setup] Extract them to: {targetPath}");
                 
-                string sourcePath = null;
-                foreach (var path in possiblePaths)
-                {
-                    if (Directory.Exists(path))
-                    {
-                        sourcePath = path;
-                        Debug.Log($"[uPiper Setup] Found OpenJTalk dictionary in package at: {path}");
-                        break;
-                    }
-                }
-                
-                if (sourcePath != null)
-                {
-                    return CopyDirectory(sourcePath, targetPath, "OpenJTalk Dictionary");
-                }
-                
-                Debug.LogWarning($"[uPiper Setup] OpenJTalk dictionary not found in package. Checked paths:");
-                foreach (var path in possiblePaths)
-                {
-                    Debug.LogWarning($"  - {path}");
-                }
+                // Return success with 0 files to continue setup
+                // The dictionary will be downloaded separately
+                return (true, 0);
             }
             
             // For local installations, StreamingAssets should already be in place
@@ -317,38 +416,20 @@ namespace uPiper.Editor
                 }
             }
             
-            // For Package Manager installations, files should be in the package
+            // For Package Manager installations, StreamingAssets are not included in the package
+            // They need to be downloaded separately or included in the project
             if (!string.IsNullOrEmpty(packagePath))
             {
-                // Try multiple possible paths for StreamingAssets location
-                var possiblePaths = new[]
-                {
-                    Path.Combine(packagePath, "Assets", "StreamingAssets", "uPiper", "Phonemizers"),
-                    Path.Combine(packagePath, "Runtime", "StreamingAssets", "uPiper", "Phonemizers"),
-                    Path.Combine(packagePath, "StreamingAssets", "uPiper", "Phonemizers"),
-                };
+                // Package Manager packages don't include StreamingAssets
+                // Display message to guide user
+                Debug.LogWarning("[uPiper Setup] Phonemizer data files are not included in Package Manager packages.");
+                Debug.LogWarning("[uPiper Setup] Please download the CMU dictionary files from:");
+                Debug.LogWarning("[uPiper Setup]   https://github.com/ayutaz/uPiper/releases");
+                Debug.LogWarning($"[uPiper Setup] Extract them to: {targetPath}");
                 
-                string sourcePath = null;
-                foreach (var path in possiblePaths)
-                {
-                    if (Directory.Exists(path))
-                    {
-                        sourcePath = path;
-                        Debug.Log($"[uPiper Setup] Found Phonemizer data in package at: {path}");
-                        break;
-                    }
-                }
-                
-                if (sourcePath != null)
-                {
-                    return CopyDirectory(sourcePath, targetPath, "Phonemizer Data");
-                }
-                
-                Debug.LogWarning($"[uPiper Setup] Phonemizer data not found in package. Checked paths:");
-                foreach (var path in possiblePaths)
-                {
-                    Debug.LogWarning($"  - {path}");
-                }
+                // Return success with 0 files to continue setup
+                // The dictionary will be downloaded separately
+                return (true, 0);
             }
             
             // For local installations, StreamingAssets should already be in place
@@ -533,7 +614,13 @@ namespace uPiper.Editor
             var cmuPath = Path.Combine(TARGET_STREAMING_ASSETS_PATH, "Phonemizers", "cmudict-0.7b.txt");
             status.cmuDictExists = File.Exists(cmuPath);
             
-            status.isComplete = status.pluginsExist && status.dictionaryExists && status.cmuDictExists;
+            // Check voice models
+            var modelPath1 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "ja_JP-test-medium.onnx");
+            var modelPath2 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "en_US-ljspeech-medium.onnx");
+            status.modelsExist = File.Exists(modelPath1) || File.Exists(modelPath2);
+            
+            // Complete if we have plugins and at least minimal dictionary support
+            status.isComplete = status.pluginsExist && (status.dictionaryExists || status.cmuDictExists);
             
             return status;
         }
@@ -543,7 +630,185 @@ namespace uPiper.Editor
             public bool pluginsExist;
             public bool dictionaryExists;
             public bool cmuDictExists;
+            public bool modelsExist;
             public bool isComplete;
+        }
+        
+        private struct SamplesStatus
+        {
+            public bool hasOpenJTalkSample;
+            public bool hasCMUSample;
+            public bool hasModelsSample;
+            public bool hasAnyImportedSamples => hasOpenJTalkSample || hasCMUSample || hasModelsSample;
+        }
+        
+        private static SamplesStatus CheckImportedSamples()
+        {
+            var status = new SamplesStatus();
+            
+            // Check for imported OpenJTalk sample
+            var openJTalkSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "OpenJTalk Dictionary Data");
+            if (!Directory.Exists(openJTalkSamplePath))
+            {
+                // Try without version number
+                openJTalkSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "OpenJTalk Dictionary Data");
+            }
+            status.hasOpenJTalkSample = Directory.Exists(openJTalkSamplePath) && 
+                Directory.Exists(Path.Combine(openJTalkSamplePath, "naist_jdic"));
+            
+            // Check for imported CMU sample
+            var cmuSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "CMU Pronouncing Dictionary");
+            if (!Directory.Exists(cmuSamplePath))
+            {
+                // Try without version number
+                cmuSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "CMU Pronouncing Dictionary");
+            }
+            status.hasCMUSample = Directory.Exists(cmuSamplePath) && 
+                File.Exists(Path.Combine(cmuSamplePath, "cmudict-0.7b.txt"));
+            
+            // Check for imported voice models sample
+            var modelsSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "Voice Models (Optional)");
+            if (!Directory.Exists(modelsSamplePath))
+            {
+                // Try without version number
+                modelsSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "Voice Models (Optional)");
+            }
+            status.hasModelsSample = Directory.Exists(modelsSamplePath) && 
+                (File.Exists(Path.Combine(modelsSamplePath, "ja_JP-test-medium.onnx")) ||
+                 File.Exists(Path.Combine(modelsSamplePath, "en_US-ljspeech-medium.onnx")));
+            
+            return status;
+        }
+        
+        private static void InstallSamplesData()
+        {
+            try
+            {
+                var samplesStatus = CheckImportedSamples();
+                var installedCount = 0;
+                
+                // Install OpenJTalk dictionary
+                if (samplesStatus.hasOpenJTalkSample)
+                {
+                    var sourcePaths = new[]
+                    {
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "OpenJTalk Dictionary Data"),
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", "OpenJTalk Dictionary Data")
+                    };
+                    
+                    string sourcePath = null;
+                    foreach (var path in sourcePaths)
+                    {
+                        if (Directory.Exists(path))
+                        {
+                            sourcePath = path;
+                            break;
+                        }
+                    }
+                    
+                    if (sourcePath != null)
+                    {
+                        var targetPath = Path.Combine(TARGET_STREAMING_ASSETS_PATH, "OpenJTalk");
+                        var result = CopyDirectory(sourcePath, targetPath, "OpenJTalk Dictionary");
+                        if (result.success)
+                        {
+                            installedCount += result.fileCount;
+                            Debug.Log($"[uPiper Setup] Installed OpenJTalk dictionary ({result.fileCount} files)");
+                        }
+                    }
+                }
+                
+                // Install CMU dictionary
+                if (samplesStatus.hasCMUSample)
+                {
+                    var sourcePaths = new[]
+                    {
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "CMU Pronouncing Dictionary"),
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", "CMU Pronouncing Dictionary")
+                    };
+                    
+                    string sourcePath = null;
+                    foreach (var path in sourcePaths)
+                    {
+                        if (Directory.Exists(path))
+                        {
+                            sourcePath = path;
+                            break;
+                        }
+                    }
+                    
+                    if (sourcePath != null)
+                    {
+                        var targetPath = Path.Combine(TARGET_STREAMING_ASSETS_PATH, "Phonemizers");
+                        var result = CopyDirectory(sourcePath, targetPath, "CMU Dictionary");
+                        if (result.success)
+                        {
+                            installedCount += result.fileCount;
+                            Debug.Log($"[uPiper Setup] Installed CMU dictionary ({result.fileCount} files)");
+                        }
+                    }
+                }
+                
+                // Install voice models
+                if (samplesStatus.hasModelsSample)
+                {
+                    var sourcePaths = new[]
+                    {
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "Voice Models (Optional)"),
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", "Voice Models (Optional)")
+                    };
+                    
+                    string sourcePath = null;
+                    foreach (var path in sourcePaths)
+                    {
+                        if (Directory.Exists(path))
+                        {
+                            sourcePath = path;
+                            break;
+                        }
+                    }
+                    
+                    if (sourcePath != null)
+                    {
+                        var targetPath = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models");
+                        var result = CopyDirectory(sourcePath, targetPath, "Voice Models");
+                        if (result.success)
+                        {
+                            installedCount += result.fileCount;
+                            Debug.Log($"[uPiper Setup] Installed voice models ({result.fileCount} files)");
+                        }
+                    }
+                }
+                
+                if (installedCount > 0)
+                {
+                    MarkSetupComplete();
+                    AssetDatabase.Refresh();
+                    
+                    EditorUtility.DisplayDialog(
+                        "Installation Complete",
+                        $"Successfully installed {installedCount} files from samples.\\n\\n" +
+                        "uPiper is now ready to use!",
+                        "OK");
+                    
+                    Debug.Log($"[uPiper Setup] Installation from samples completed. Total files: {installedCount}");
+                }
+                else
+                {
+                    EditorUtility.DisplayDialog(
+                        "No Files Installed",
+                        "No files were installed. Please check that samples are properly imported.",
+                        "OK");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[uPiper Setup] Failed to install from samples: {ex.Message}\\n{ex.StackTrace}");
+                EditorUtility.DisplayDialog(
+                    "Installation Error",
+                    $"An error occurred during installation:\\n{ex.Message}",
+                    "OK");
+            }
         }
     }
 }

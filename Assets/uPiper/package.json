@@ -33,6 +33,21 @@
       "displayName": "Basic TTS Demo",
       "description": "A simple demo scene showing how to use uPiper for text-to-speech synthesis with Japanese and English text.",
       "path": "Samples~/BasicTTSDemo"
+    },
+    {
+      "displayName": "OpenJTalk Dictionary Data",
+      "description": "NAIST Japanese Dictionary for OpenJTalk (103MB). Required for Japanese text-to-speech functionality.",
+      "path": "Samples~/DictionaryData/OpenJTalk"
+    },
+    {
+      "displayName": "CMU Pronouncing Dictionary",
+      "description": "CMU Pronouncing Dictionary for English phonemization (3.5MB). Required for English text-to-speech functionality.",
+      "path": "Samples~/DictionaryData/Phonemizers"
+    },
+    {
+      "displayName": "Voice Models (Optional)",
+      "description": "Pre-trained ONNX voice models for Japanese and English (127MB). Can be downloaded separately if needed.",
+      "path": "Samples~/VoiceModels"
     }
   ]
 }
