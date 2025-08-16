@@ -103,15 +103,57 @@ namespace uPiper.Editor
             try
             {
                 var packagePath = GetPackagePath();
-                if (string.IsNullOrEmpty(packagePath))
+                
+                // Check if this is a local installation
+                if (packagePath == null)
                 {
-                    EditorUtility.DisplayDialog("Error", 
-                        "Could not find uPiper package. Please ensure it's properly installed via Package Manager.", 
-                        "OK");
-                    return;
+                    // Local installation - files should already be in place
+                    var localPath = Path.Combine(Application.dataPath, "uPiper");
+                    if (Directory.Exists(localPath))
+                    {
+                        Debug.Log("[uPiper Setup] Local installation detected. Files should already be in place.");
+                        
+                        // Check if files exist
+                        var status = GetSetupStatus();
+                        if (status.isComplete)
+                        {
+                            MarkSetupComplete();
+                            EditorUtility.DisplayDialog("Setup Complete", 
+                                "uPiper is already properly installed in your project.", 
+                                "OK");
+                        }
+                        else
+                        {
+                            EditorUtility.DisplayDialog("Setup Required", 
+                                "Some files are missing. Please check:\n" +
+                                "• Assets/uPiper/Plugins/\n" +
+                                "• Assets/StreamingAssets/uPiper/\n\n" +
+                                "For local installation, these files should be included in the project.",
+                                "OK");
+                        }
+                        return;
+                    }
+                    else
+                    {
+                        EditorUtility.DisplayDialog("Error", 
+                            "Could not find uPiper package. Please ensure it's properly installed.", 
+                            "OK");
+                        return;
+                    }
                 }
                 
                 Debug.Log($"[uPiper Setup] Starting setup from package: {packagePath}");
+                
+                // Debug: List package structure
+                if (Directory.Exists(packagePath))
+                {
+                    Debug.Log($"[uPiper Setup] Package directory contents:");
+                    var directories = Directory.GetDirectories(packagePath);
+                    foreach (var dir in directories)
+                    {
+                        Debug.Log($"  - {Path.GetFileName(dir)}/");
+                    }
+                }
                 
                 var success = true;
                 var copiedFiles = 0;
@@ -162,20 +204,36 @@ namespace uPiper.Editor
         
         private static (bool success, int fileCount) CopyPlugins(string packagePath)
         {
-            var sourcePath = Path.Combine(packagePath, "Assets", "uPiper", "Plugins");
-            var targetPath = TARGET_PLUGINS_PATH;
-            
-            if (!Directory.Exists(sourcePath))
+            // Try multiple possible paths for Plugins location
+            var possiblePaths = new[]
             {
-                // Try alternate path
-                sourcePath = Path.Combine(packagePath, "Plugins");
-                if (!Directory.Exists(sourcePath))
+                Path.Combine(packagePath, "Assets", "uPiper", "Plugins"),
+                Path.Combine(packagePath, "Runtime", "Plugins"),  
+                Path.Combine(packagePath, "Plugins"),
+            };
+            
+            string sourcePath = null;
+            foreach (var path in possiblePaths)
+            {
+                if (Directory.Exists(path))
                 {
-                    Debug.LogError($"[uPiper Setup] Plugins source not found at: {sourcePath}");
-                    return (false, 0);
+                    sourcePath = path;
+                    Debug.Log($"[uPiper Setup] Found Plugins at: {path}");
+                    break;
                 }
             }
             
+            if (sourcePath == null)
+            {
+                Debug.LogError($"[uPiper Setup] Plugins source not found. Checked paths:");
+                foreach (var path in possiblePaths)
+                {
+                    Debug.LogError($"  - {path}");
+                }
+                return (false, 0);
+            }
+            
+            var targetPath = TARGET_PLUGINS_PATH;
             return CopyDirectory(sourcePath, targetPath, "Plugins");
         }
         
@@ -341,8 +399,9 @@ namespace uPiper.Editor
             var localPath = Path.Combine(Application.dataPath, "uPiper");
             if (Directory.Exists(localPath))
             {
-                // Local installation - return the Assets path for finding StreamingAssets
-                return Application.dataPath;
+                // Local installation - files are already in the project
+                // Return null to indicate no package copy is needed
+                return null;
             }
             
             // Search in PackageCache
