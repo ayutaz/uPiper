@@ -10,6 +10,9 @@ namespace uPiper.Editor
     /// <summary>
     /// Initial setup wizard for uPiper package
     /// Copies required files from package to project Assets
+    /// 
+    /// Note: This setup is disabled when UPIPER_DEVELOPMENT define is set,
+    /// as development environment already has files in correct locations.
     /// </summary>
     public static class uPiperSetup
     {
@@ -23,6 +26,7 @@ namespace uPiper.Editor
         [InitializeOnLoadMethod]
         static void CheckFirstTimeSetup()
         {
+#if !UPIPER_DEVELOPMENT
             EditorApplication.delayCall += () =>
             {
                 if (!IsSetupComplete() && IsPackageInstalled())
@@ -42,11 +46,20 @@ namespace uPiper.Editor
                     }
                 }
             };
+#endif
         }
         
         [MenuItem("uPiper/Setup/Run Initial Setup", false, 1)]
         public static void RunInitialSetupMenu()
         {
+#if UPIPER_DEVELOPMENT
+            EditorUtility.DisplayDialog(
+                "Development Mode",
+                "Setup is not required in development mode.\n\n" +
+                "Files are already in the correct locations.",
+                "OK");
+            return;
+#else
             if (EditorUtility.DisplayDialog(
                 "uPiper Setup",
                 "This will copy required files from the package to your project.\n\n" +
@@ -59,6 +72,7 @@ namespace uPiper.Editor
             {
                 RunInitialSetup();
             }
+#endif
         }
         
         [MenuItem("uPiper/Setup/Check Setup Status", false, 2)]
@@ -72,10 +86,14 @@ namespace uPiper.Editor
             message += $"• CMU Dictionary: {(status.cmuDictExists ? "✓ Installed" : "✗ Not found")}\n";
             message += $"• Setup Complete: {(status.isComplete ? "✓ Yes" : "✗ No")}\n";
             
+#if UPIPER_DEVELOPMENT
+            message += "\n[Development Mode - Setup not required]";
+#else
             if (!status.isComplete)
             {
                 message += "\nSome files are missing. Run 'uPiper/Setup/Run Initial Setup' to fix.";
             }
+#endif
             
             EditorUtility.DisplayDialog("uPiper Setup Status", message, "OK");
         }
@@ -363,6 +381,10 @@ namespace uPiper.Editor
         
         private static bool IsSetupComplete()
         {
+#if UPIPER_DEVELOPMENT
+            // In development mode, setup is not required
+            return true;
+#else
             // Check if marked as complete
             if (!EditorPrefs.GetBool(SETUP_COMPLETE_KEY, false))
                 return false;
@@ -370,6 +392,7 @@ namespace uPiper.Editor
             // Verify files actually exist
             var status = GetSetupStatus();
             return status.isComplete;
+#endif
         }
         
         private static void MarkSetupComplete()
