@@ -163,39 +163,93 @@ namespace uPiper.Editor
         
         private static (bool success, int fileCount) CopyOpenJTalkDictionary(string packagePath)
         {
-            var sourcePath = Path.Combine(packagePath, "Assets", "StreamingAssets", "uPiper", "OpenJTalk");
-            var targetPath = Path.Combine(TARGET_STREAMING_ASSETS_PATH, "OpenJTalk");
-            
-            if (!Directory.Exists(sourcePath))
+            // Try multiple possible paths for StreamingAssets location
+            var possiblePaths = new[]
             {
-                // Try alternate path
-                sourcePath = Path.Combine(packagePath, "StreamingAssets", "uPiper", "OpenJTalk");
-                if (!Directory.Exists(sourcePath))
+                Path.Combine(packagePath, "Assets", "StreamingAssets", "uPiper", "OpenJTalk"),
+                Path.Combine(packagePath, "Runtime", "StreamingAssets", "uPiper", "OpenJTalk"),
+                Path.Combine(packagePath, "StreamingAssets", "uPiper", "OpenJTalk"),
+            };
+            
+            string sourcePath = null;
+            foreach (var path in possiblePaths)
+            {
+                if (Directory.Exists(path))
                 {
-                    Debug.LogError($"[uPiper Setup] OpenJTalk dictionary source not found at: {sourcePath}");
-                    return (false, 0);
+                    sourcePath = path;
+                    Debug.Log($"[uPiper Setup] Found OpenJTalk dictionary at: {path}");
+                    break;
                 }
             }
             
+            if (sourcePath == null)
+            {
+                // If not found in package, check if it's already in the project's StreamingAssets
+                var projectStreamingAssetsPath = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk");
+                if (Directory.Exists(projectStreamingAssetsPath))
+                {
+                    Debug.Log($"[uPiper Setup] OpenJTalk dictionary already exists in project at: {projectStreamingAssetsPath}");
+                    // Count files for reporting
+                    var fileCount = Directory.GetFiles(projectStreamingAssetsPath, "*", SearchOption.AllDirectories)
+                        .Where(f => !f.EndsWith(".meta")).Count();
+                    return (true, fileCount);
+                }
+                
+                Debug.LogError($"[uPiper Setup] OpenJTalk dictionary source not found. Checked paths:");
+                foreach (var path in possiblePaths)
+                {
+                    Debug.LogError($"  - {path}");
+                }
+                return (false, 0);
+            }
+            
+            var targetPath = Path.Combine(TARGET_STREAMING_ASSETS_PATH, "OpenJTalk");
             return CopyDirectory(sourcePath, targetPath, "OpenJTalk Dictionary");
         }
         
         private static (bool success, int fileCount) CopyPhonemizerData(string packagePath)
         {
-            var sourcePath = Path.Combine(packagePath, "Assets", "StreamingAssets", "uPiper", "Phonemizers");
-            var targetPath = Path.Combine(TARGET_STREAMING_ASSETS_PATH, "Phonemizers");
-            
-            if (!Directory.Exists(sourcePath))
+            // Try multiple possible paths for StreamingAssets location
+            var possiblePaths = new[]
             {
-                // Try alternate path
-                sourcePath = Path.Combine(packagePath, "StreamingAssets", "uPiper", "Phonemizers");
-                if (!Directory.Exists(sourcePath))
+                Path.Combine(packagePath, "Assets", "StreamingAssets", "uPiper", "Phonemizers"),
+                Path.Combine(packagePath, "Runtime", "StreamingAssets", "uPiper", "Phonemizers"),
+                Path.Combine(packagePath, "StreamingAssets", "uPiper", "Phonemizers"),
+            };
+            
+            string sourcePath = null;
+            foreach (var path in possiblePaths)
+            {
+                if (Directory.Exists(path))
                 {
-                    Debug.LogError($"[uPiper Setup] Phonemizer data source not found at: {sourcePath}");
-                    return (false, 0);
+                    sourcePath = path;
+                    Debug.Log($"[uPiper Setup] Found Phonemizer data at: {path}");
+                    break;
                 }
             }
             
+            if (sourcePath == null)
+            {
+                // If not found in package, check if it's already in the project's StreamingAssets
+                var projectStreamingAssetsPath = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "Phonemizers");
+                if (Directory.Exists(projectStreamingAssetsPath))
+                {
+                    Debug.Log($"[uPiper Setup] Phonemizer data already exists in project at: {projectStreamingAssetsPath}");
+                    // Count files for reporting
+                    var fileCount = Directory.GetFiles(projectStreamingAssetsPath, "*", SearchOption.AllDirectories)
+                        .Where(f => !f.EndsWith(".meta")).Count();
+                    return (true, fileCount);
+                }
+                
+                Debug.LogError($"[uPiper Setup] Phonemizer data source not found. Checked paths:");
+                foreach (var path in possiblePaths)
+                {
+                    Debug.LogError($"  - {path}");
+                }
+                return (false, 0);
+            }
+            
+            var targetPath = Path.Combine(TARGET_STREAMING_ASSETS_PATH, "Phonemizers");
             return CopyDirectory(sourcePath, targetPath, "Phonemizer Data");
         }
         
@@ -259,7 +313,8 @@ namespace uPiper.Editor
         
         private static bool IsPackageInstalled()
         {
-            return !string.IsNullOrEmpty(GetPackagePath());
+            // Always return true since we need to setup regardless of installation method
+            return true;
         }
         
         private static string GetPackagePath()
@@ -268,8 +323,8 @@ namespace uPiper.Editor
             var localPath = Path.Combine(Application.dataPath, "uPiper");
             if (Directory.Exists(localPath))
             {
-                // Local installation, files should already be in place
-                return null;
+                // Local installation - return the Assets path for finding StreamingAssets
+                return Application.dataPath;
             }
             
             // Search in PackageCache
