@@ -64,8 +64,7 @@ namespace uPiper.Editor
                             "   • OpenJTalk Dictionary Data (Required for Japanese)\n" +
                             "   • CMU Pronouncing Dictionary (Required for English)\n" +
                             "   • Voice Models (Optional - for high quality voices)\n" +
-                            "6. After importing, run 'uPiper/Setup/Install from Samples'\n\n" +
-                            "Note: Basic functionality is available with minimal built-in dictionaries.",
+                            "6. After importing, run 'uPiper/Setup/Install from Samples'",
                             "Open Package Manager", "Later"))
                         {
                             UnityEditor.PackageManager.UI.Window.Open("com.ayutaz.upiper");
