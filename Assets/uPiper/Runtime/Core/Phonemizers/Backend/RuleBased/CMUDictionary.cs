@@ -59,7 +59,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 }
                 else
                 {
-                    Debug.LogError($"[CMUDictionary] Dictionary file not found at: {primaryPath}");
+                    Debug.LogError($"[CMUDictionary] Dictionary file not found at: {streamingAssetsPath}");
                     Debug.LogError($"[CMUDictionary] Please run 'uPiper/Setup/Run Initial Setup' from the menu.");
                 }
 
