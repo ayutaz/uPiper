@@ -612,7 +612,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             // On Android, use the persistent data path where we extract the dictionary
             return AndroidPathResolver.GetOpenJTalkDictionaryPath();
 #else
-            // After setup, files should always be in fixed locations
+            // After setup, files should always be in fixed locations - using consistent path structure
             var primaryPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
 
             // Check primary path first

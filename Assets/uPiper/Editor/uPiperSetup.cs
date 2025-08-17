@@ -19,9 +19,9 @@ namespace uPiper.Editor
         private const string SETUP_COMPLETE_KEY = "uPiper_InitialSetupComplete_v1";
         private const string PACKAGE_NAME = "com.ayutaz.upiper";
 
-        // Target paths in Assets
-        private const string TARGET_PLUGINS_PATH = "Assets/uPiper/Plugins";
-        private const string TARGET_STREAMING_ASSETS_PATH = "Assets/StreamingAssets/uPiper";
+        // Target paths in Assets (made public for shared use)
+        public const string TARGET_PLUGINS_PATH = "Assets/uPiper/Plugins";
+        public const string TARGET_STREAMING_ASSETS_PATH = "Assets/StreamingAssets/uPiper";
 
         [InitializeOnLoadMethod]
         static void CheckFirstTimeSetup()
@@ -786,7 +786,7 @@ namespace uPiper.Editor
 
                     EditorUtility.DisplayDialog(
                         "Installation Complete",
-                        $"Successfully installed {installedCount} files from samples.\\n\\n" +
+                        $"Successfully installed {installedCount} files from samples.\n\n" +
                         "uPiper is now ready to use!",
                         "OK");
 
@@ -802,10 +802,10 @@ namespace uPiper.Editor
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[uPiper Setup] Failed to install from samples: {ex.Message}\\n{ex.StackTrace}");
+                Debug.LogError($"[uPiper Setup] Failed to install from samples: {ex.Message}\n{ex.StackTrace}");
                 EditorUtility.DisplayDialog(
                     "Installation Error",
-                    $"An error occurred during installation:\\n{ex.Message}",
+                    $"An error occurred during installation:\n{ex.Message}",
                     "OK");
             }
         }

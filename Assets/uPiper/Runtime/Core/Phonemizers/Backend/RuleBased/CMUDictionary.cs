@@ -42,14 +42,14 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 var actualFilePath = filePath;
                 var fileName = Path.GetFileName(filePath);
 
-                // Primary path after setup
-                var primaryPath = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "Phonemizers", fileName);
+                // Primary path after setup - using shared constant for consistency
+                var streamingAssetsPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "Phonemizers", fileName);
 
                 // Check primary path first
-                if (File.Exists(primaryPath))
+                if (File.Exists(streamingAssetsPath))
                 {
-                    actualFilePath = primaryPath;
-                    Debug.Log($"[CMUDictionary] Found dictionary at: {primaryPath}");
+                    actualFilePath = streamingAssetsPath;
+                    Debug.Log($"[CMUDictionary] Found dictionary at: {streamingAssetsPath}");
                 }
                 else if (File.Exists(filePath))
                 {
