@@ -568,11 +568,11 @@ namespace uPiper.Core.Phonemizers.Implementations
 #endif
             return null;
         }
-        
+
         private List<string> GetAlternativeLibraryPaths()
         {
             var paths = new List<string>();
-            
+
 #if UNITY_EDITOR
             string libraryFileName = "";
             string platformFolder = "";
@@ -602,7 +602,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 paths.Add(Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll"));
             }
 #endif
-            
+
             return paths;
         }
 
@@ -614,7 +614,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 #else
             // After setup, files should always be in fixed locations
             var primaryPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
-            
+
             // Check primary path first
             if (Directory.Exists(primaryPath))
             {
@@ -628,14 +628,14 @@ namespace uPiper.Core.Phonemizers.Implementations
                         break;
                     }
                 }
-                
+
                 if (allFilesExist)
                 {
                     Debug.Log($"[OpenJTalkPhonemizer] Found dictionary at: {primaryPath}");
                     return primaryPath;
                 }
             }
-            
+
             // Fallback to legacy path
             var legacyPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "dictionary");
             if (Directory.Exists(legacyPath))
@@ -643,7 +643,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 Debug.Log($"[OpenJTalkPhonemizer] Found dictionary at legacy path: {legacyPath}");
                 return legacyPath;
             }
-            
+
             Debug.LogError($"[OpenJTalkPhonemizer] Dictionary not found. Please run 'uPiper/Setup/Run Initial Setup' from the menu.");
             return primaryPath; // Return expected path for error messages
 #endif

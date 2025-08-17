@@ -41,10 +41,10 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 // After initial setup, files should be in fixed location
                 var actualFilePath = filePath;
                 var fileName = Path.GetFileName(filePath);
-                
+
                 // Primary path after setup
                 var primaryPath = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "Phonemizers", fileName);
-                
+
                 // Check primary path first
                 if (File.Exists(primaryPath))
                 {
@@ -77,7 +77,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                     Debug.LogError($"[CMUDictionary] 2. Select 'uPiper' package");
                     Debug.LogError($"[CMUDictionary] 3. Import 'CMU Pronouncing Dictionary' sample");
                     Debug.LogError($"[CMUDictionary] 4. Run 'uPiper/Setup/Install from Samples'");
-                    
+
                     throw new FileNotFoundException(
                         $"CMU dictionary not found. Please import from Package Manager Samples and run setup.",
                         actualFilePath);

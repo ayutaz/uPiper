@@ -50,7 +50,7 @@ namespace uPiper.Tests.TestUtilities
         public static async Task<CMUDictionary> CreateTestDictionaryAsync()
         {
             var dict = new CMUDictionary();
-            
+
             // Try to load the sample dictionary for testing
             var testPath = GetTestDictionaryPath();
             if (System.IO.File.Exists(testPath))
@@ -65,7 +65,7 @@ namespace uPiper.Tests.TestUtilities
                     "Test dictionary not found. Please ensure sample dictionary is available.",
                     testPath);
             }
-            
+
             return dict;
         }
 
