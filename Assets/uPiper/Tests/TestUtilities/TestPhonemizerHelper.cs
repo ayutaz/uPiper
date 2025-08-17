@@ -45,30 +45,41 @@ namespace uPiper.Tests.TestUtilities
         }
 
         /// <summary>
-        /// Create a minimal CMU dictionary for testing
+        /// Create a test CMU dictionary
         /// </summary>
-        public static CMUDictionary CreateTestDictionary()
+        public static async Task<CMUDictionary> CreateTestDictionaryAsync()
         {
-            return CMUDictionary.CreateMinimal();
+            var dict = new CMUDictionary();
+
+            // Try to load the sample dictionary for testing
+            var testPath = GetTestDictionaryPath();
+            if (System.IO.File.Exists(testPath))
+            {
+                await dict.LoadAsync(testPath);
+            }
+            else
+            {
+                // If sample dictionary doesn't exist, tests should fail
+                // This ensures tests run with proper data
+                throw new System.IO.FileNotFoundException(
+                    "Test dictionary not found. Please ensure sample dictionary is available.",
+                    testPath);
+            }
+
+            return dict;
         }
 
         /// <summary>
-        /// Initialize RuleBasedPhonemizer with minimal dictionary
+        /// Initialize RuleBasedPhonemizer with test dictionary
         /// </summary>
         public static async Task<RuleBasedPhonemizer> CreateTestRuleBasedPhonemizerAsync()
         {
             var phonemizer = new RuleBasedPhonemizer();
 
-            // Use reflection to inject minimal dictionary
-            var dictField = typeof(RuleBasedPhonemizer)
-                .GetField("cmuDictionary", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            dictField?.SetValue(phonemizer, CreateTestDictionary());
-
-            // Initialize with minimal settings
+            // Initialize with test dictionary path
             var options = new PhonemizerBackendOptions
             {
-                DataPath = null, // Will trigger minimal dictionary
+                DataPath = GetTestDictionaryPath(),
                 MaxMemoryUsage = 1024 * 1024 // 1MB
             };
 

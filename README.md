@@ -46,6 +46,8 @@
 ## インストール
 
 ### Unity Package Manager経由（推奨）
+
+#### ステップ1: パッケージのインストール
 1. Unity Editorで `Window > Package Manager` を開く
 2. `+` ボタンから `Add package from git URL...` を選択
 3. 以下のURLを入力：
@@ -53,17 +55,52 @@
    https://github.com/ayutaz/uPiper.git?path=Assets/uPiper
    ```
 
+#### ステップ2: 必要なデータのインポート
+
+Package Managerからインストール後、**必ず以下の手順でデータをインポートしてください**：
+
+1. **Package Managerで「In Project」を選択**
+2. **「uPiper」パッケージを選択**
+3. **「Samples」セクションを展開**
+4. **以下のサンプルをインポート**：
+   - 📚 **OpenJTalk Dictionary Data** (必須) - 日本語音声合成用辞書
+   - 📚 **CMU Pronouncing Dictionary** (必須) - 英語音声合成用辞書
+   - 🎤 **Voice Models** (推奨) - 高品質音声モデル
+   - 🎮 **Basic TTS Demo** (オプション) - デモシーン
+
+#### ステップ3: データのセットアップ
+
+サンプルをインポートした後：
+
+1. **メニューから `uPiper > Setup > Install from Samples` を実行**
+2. インストールダイアログで「Install」をクリック
+3. セットアップが完了するまで待つ
+
+#### ステップ4: 動作確認
+
+1. **メニューから `uPiper > Setup > Check Setup Status` を実行**
+2. すべての項目が「✓ Installed」になっていることを確認
+3. Basic TTS Demoシーンを開いて動作確認
+
+> ⚠️ **重要**: 辞書データをインポートしないとTTS機能は動作しません
+
 ### パッケージファイルからのインストール
 [Releases](https://github.com/ayutaz/uPiper/releases)から最新のパッケージファイルをダウンロード：
 - **Unity Package (.unitypackage)**: レガシー形式、全てのUnityバージョンで使用可能
 - **UPM Package (.tgz)**: Unity Package Manager用、Unity 2019.3以降
 
-### サンプルのインポート
-1. Package Managerで uPiper を選択
-2. `Samples` タブを開く
-3. 利用可能なサンプル：
-   - `Basic TTS Demo` - 日本語・英語の音声生成デモ（InferenceEngineDemoシーンを使用）
-4. インポートしたいサンプルの `Import` をクリック
+### トラブルシューティング
+
+#### Samplesが1つしか表示されない場合
+- Unity Editorを再起動
+- Package Managerで「Refresh」ボタンをクリック
+
+#### 辞書ファイルが見つからないエラー
+- `uPiper > Setup > Install from Samples` を実行したか確認
+- `uPiper > Setup > Check Setup Status` で状態を確認
+
+#### 日本語が文字化けする場合
+- Basic TTS Demoに含まれるNotoSansJP-Regular SDFフォントを使用
 
 ## サポートプラットフォーム
 

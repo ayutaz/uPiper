@@ -38,39 +38,57 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             {
                 var dict = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
 
+                // After initial setup, files should be in fixed location
+                var actualFilePath = filePath;
+                var fileName = Path.GetFileName(filePath);
+
+                // Primary path after setup - using shared constant for consistency
+                var streamingAssetsPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "Phonemizers", fileName);
+
+                // Check primary path first
+                if (File.Exists(streamingAssetsPath))
+                {
+                    actualFilePath = streamingAssetsPath;
+                    Debug.Log($"[CMUDictionary] Found dictionary at: {streamingAssetsPath}");
+                }
+                else if (File.Exists(filePath))
+                {
+                    // Use original path if it exists
+                    actualFilePath = filePath;
+                    Debug.Log($"[CMUDictionary] Found dictionary at original path: {filePath}");
+                }
+                else
+                {
+                    Debug.LogError($"[CMUDictionary] Dictionary file not found at: {streamingAssetsPath}");
+                    Debug.LogError($"[CMUDictionary] Please run 'uPiper/Setup/Run Initial Setup' from the menu.");
+                }
+
                 // Debug path information
-                Debug.Log($"[CMUDictionary] Attempting to load from: {filePath}");
-                Debug.Log($"[CMUDictionary] File exists: {File.Exists(filePath)}");
-                Debug.Log($"[CMUDictionary] Directory exists: {Directory.Exists(Path.GetDirectoryName(filePath))}");
+                Debug.Log($"[CMUDictionary] Attempting to load from: {actualFilePath}");
+                Debug.Log($"[CMUDictionary] File exists: {File.Exists(actualFilePath)}");
+                Debug.Log($"[CMUDictionary] Directory exists: {Directory.Exists(Path.GetDirectoryName(actualFilePath))}");
 
                 // Check if file exists
-                if (!File.Exists(filePath))
+                if (!File.Exists(actualFilePath))
                 {
-                    Debug.LogWarning($"CMU dictionary file not found at: {filePath}. Using minimal built-in dictionary.");
+                    Debug.LogError($"[CMUDictionary] Dictionary file not found at: {actualFilePath}");
+                    Debug.LogError($"[CMUDictionary] Please import the CMU Dictionary from Package Manager:");
+                    Debug.LogError($"[CMUDictionary] 1. Open Window > Package Manager");
+                    Debug.LogError($"[CMUDictionary] 2. Select 'uPiper' package");
+                    Debug.LogError($"[CMUDictionary] 3. Import 'CMU Pronouncing Dictionary' sample");
+                    Debug.LogError($"[CMUDictionary] 4. Run 'uPiper/Setup/Install from Samples'");
 
-                    // Try to list files in the directory for debugging
-                    var dir = Path.GetDirectoryName(filePath);
-                    if (Directory.Exists(dir))
-                    {
-                        var files = Directory.GetFiles(dir, "*.txt");
-                        var fileNames = new List<string>();
-                        foreach (var file in files)
-                        {
-                            fileNames.Add(Path.GetFileName(file));
-                        }
-                        Debug.Log($"[CMUDictionary] Files in {dir}: {string.Join(", ", fileNames)}");
-                    }
-
-                    LoadMinimalDictionary();
-                    return;
+                    throw new FileNotFoundException(
+                        $"CMU dictionary not found. Please import from Package Manager Samples and run setup.",
+                        actualFilePath);
                 }
 
                 // Check if we need to extract from StreamingAssets
-                var actualPath = filePath;
-                if (filePath.Contains("StreamingAssets") && Application.platform == RuntimePlatform.Android)
+                var actualPath = actualFilePath;
+                if (actualFilePath.Contains("StreamingAssets") && Application.platform == RuntimePlatform.Android)
                 {
                     // On Android, we need to copy from StreamingAssets
-                    actualPath = await CopyFromStreamingAssets(filePath, cancellationToken);
+                    actualPath = await CopyFromStreamingAssets(actualFilePath, cancellationToken);
                 }
 
                 // Read the dictionary file with timeout
@@ -131,29 +149,16 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             }
             catch (OperationCanceledException)
             {
-                Debug.LogWarning("CMU dictionary loading was cancelled. Using minimal dictionary.");
-                LoadMinimalDictionary();
+                Debug.LogError("CMU dictionary loading was cancelled.");
+                throw;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Failed to load CMU dictionary: {ex.Message}. Using minimal dictionary.");
-                LoadMinimalDictionary();
+                Debug.LogError($"Failed to load CMU dictionary: {ex.Message}");
+                throw;
             }
         }
 
-        /// <summary>
-        /// Load a minimal built-in dictionary for basic functionality
-        /// </summary>
-        private void LoadMinimalDictionary()
-        {
-            var minimal = CreateMinimal();
-            lock (lockObject)
-            {
-                pronunciations = minimal.pronunciations;
-                isLoaded = true;
-            }
-            Debug.Log($"Loaded minimal dictionary with {pronunciations.Count} words");
-        }
 
         /// <summary>
         /// Tries to get the pronunciation for a word.
@@ -232,24 +237,6 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             }
         }
 
-        /// <summary>
-        /// Creates a minimal dictionary for testing.
-        /// </summary>
-        public static CMUDictionary CreateMinimal()
-        {
-            var dict = new CMUDictionary
-            {
-                pronunciations = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["HELLO"] = new[] { "HH", "AH0", "L", "OW1" },
-                    ["WORLD"] = new[] { "W", "ER1", "L", "D" },
-                    ["TEST"] = new[] { "T", "EH1", "S", "T" },
-                    ["UNITY"] = new[] { "Y", "UW1", "N", "AH0", "T", "IY0" }
-                },
-                isLoaded = true
-            };
-            return dict;
-        }
 
         private string ExtractBaseWord(string word)
         {

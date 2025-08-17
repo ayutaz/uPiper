@@ -2,7 +2,7 @@
   "name": "com.ayutaz.upiper",
   "version": "0.1.0",
   "displayName": "uPiper",
-  "description": "Text-to-Speech plugin for Unity using Piper TTS engine. Supports Japanese and English with high-quality neural voice synthesis.",
+  "description": "Text-to-Speech plugin for Unity using Piper-Plus TTS engine. Supports Japanese and English with high-quality neural voice synthesis.",
   "unity": "6000.0",
   "unityRelease": "55f1",
   "changelogUrl": "https://github.com/ayutaz/uPiper/blob/main/CHANGELOG.md",
@@ -33,6 +33,21 @@
       "displayName": "Basic TTS Demo",
       "description": "A simple demo scene showing how to use uPiper for text-to-speech synthesis with Japanese and English text.",
       "path": "Samples~/BasicTTSDemo"
+    },
+    {
+      "displayName": "OpenJTalk Dictionary Data",
+      "description": "NAIST Japanese Dictionary for OpenJTalk (103MB). Required for Japanese text-to-speech functionality.",
+      "path": "Samples~/OpenJTalk Dictionary Data"
+    },
+    {
+      "displayName": "CMU Pronouncing Dictionary",
+      "description": "CMU Pronouncing Dictionary for English phonemization (3.5MB). Required for English text-to-speech functionality.",
+      "path": "Samples~/CMU Pronouncing Dictionary"
+    },
+    {
+      "displayName": "Voice Models",
+      "description": "Pre-trained ONNX voice models for Japanese and English (127MB). Can be downloaded separately if needed.",
+      "path": "Samples~/Voice Models"
     }
   ]
 }

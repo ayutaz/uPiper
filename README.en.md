@@ -46,6 +46,8 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 ## Installation
 
 ### Via Unity Package Manager (Recommended)
+
+#### Step 1: Install Package
 1. Open `Window > Package Manager` in Unity Editor
 2. Click `+` button and select `Add package from git URL...`
 3. Enter the following URL:
@@ -53,17 +55,52 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
    https://github.com/ayutaz/uPiper.git?path=Assets/uPiper
    ```
 
+#### Step 2: Import Required Data
+
+After installing from Package Manager, **you must import the data following these steps**:
+
+1. **Select "In Project" in Package Manager**
+2. **Select the "uPiper" package**
+3. **Expand the "Samples" section**
+4. **Import the following samples**:
+   - 📚 **OpenJTalk Dictionary Data** (Required) - Dictionary for Japanese speech synthesis
+   - 📚 **CMU Pronouncing Dictionary** (Required) - Dictionary for English speech synthesis
+   - 🎤 **Voice Models** (Recommended) - High-quality voice models
+   - 🎮 **Basic TTS Demo** (Optional) - Demo scene
+
+#### Step 3: Setup Data
+
+After importing samples:
+
+1. **Run `uPiper > Setup > Install from Samples` from the menu**
+2. Click "Install" in the installation dialog
+3. Wait for setup to complete
+
+#### Step 4: Verify Installation
+
+1. **Run `uPiper > Setup > Check Setup Status` from the menu**
+2. Confirm all items show "✓ Installed"
+3. Open the Basic TTS Demo scene to verify functionality
+
+> ⚠️ **Important**: TTS functionality will not work without importing the dictionary data
+
 ### From Package Files
 Download the latest package from [Releases](https://github.com/ayutaz/uPiper/releases):
 - **Unity Package (.unitypackage)**: Legacy format, compatible with all Unity versions
 - **UPM Package (.tgz)**: For Unity Package Manager, Unity 2019.3+
 
-### Importing Samples
-1. Select uPiper in Package Manager
-2. Open the `Samples` tab
-3. Available samples:
-   - `Basic TTS Demo` - Japanese/English speech generation demo (uses InferenceEngineDemo scene)
-4. Click `Import` for the sample you want
+### Troubleshooting
+
+#### Only One Sample Appears
+- Restart Unity Editor
+- Click "Refresh" button in Package Manager
+
+#### Dictionary Files Not Found Error
+- Confirm `uPiper > Setup > Install from Samples` was executed
+- Check status with `uPiper > Setup > Check Setup Status`
+
+#### Japanese Text Garbled
+- Use the NotoSansJP-Regular SDF font included in Basic TTS Demo
 
 ## Supported Platforms
 
