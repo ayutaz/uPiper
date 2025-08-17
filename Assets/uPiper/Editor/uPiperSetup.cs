@@ -666,11 +666,11 @@ namespace uPiper.Editor
                 File.Exists(Path.Combine(cmuSamplePath, "cmudict-0.7b.txt"));
             
             // Check for imported voice models sample
-            var modelsSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "Voice Models (Optional)");
+            var modelsSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "Voice Models");
             if (!Directory.Exists(modelsSamplePath))
             {
                 // Try without version number
-                modelsSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "Voice Models (Optional)");
+                modelsSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "Voice Models");
             }
             status.hasModelsSample = Directory.Exists(modelsSamplePath) && 
                 (File.Exists(Path.Combine(modelsSamplePath, "ja_JP-test-medium.onnx")) ||
@@ -753,8 +753,8 @@ namespace uPiper.Editor
                 {
                     var sourcePaths = new[]
                     {
-                        Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "Voice Models (Optional)"),
-                        Path.Combine(Application.dataPath, "Samples", "uPiper", "Voice Models (Optional)")
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "Voice Models"),
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", "Voice Models")
                     };
                     
                     string sourcePath = null;
