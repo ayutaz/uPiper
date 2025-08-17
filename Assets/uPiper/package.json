@@ -37,17 +37,17 @@
     {
       "displayName": "OpenJTalk Dictionary Data",
       "description": "NAIST Japanese Dictionary for OpenJTalk (103MB). Required for Japanese text-to-speech functionality.",
-      "path": "Samples~/DictionaryData/OpenJTalk"
+      "path": "Samples~/OpenJTalk Dictionary Data"
     },
     {
       "displayName": "CMU Pronouncing Dictionary",
       "description": "CMU Pronouncing Dictionary for English phonemization (3.5MB). Required for English text-to-speech functionality.",
-      "path": "Samples~/DictionaryData/Phonemizers"
+      "path": "Samples~/CMU Pronouncing Dictionary"
     },
     {
-      "displayName": "Voice Models (Optional)",
+      "displayName": "Voice Models",
       "description": "Pre-trained ONNX voice models for Japanese and English (127MB). Can be downloaded separately if needed.",
-      "path": "Samples~/VoiceModels"
+      "path": "Samples~/Voice Models"
     }
   ]
 }
