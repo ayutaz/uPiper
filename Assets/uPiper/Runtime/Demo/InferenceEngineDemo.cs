@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 using TMPro;
 using Unity.InferenceEngine;
 using UnityEngine;
@@ -1021,41 +1022,49 @@ namespace uPiper.Demo
 
             try
             {
-                // Simple JSON parsing using string manipulation
-                // This is a basic implementation - consider using Newtonsoft.Json if more complex parsing is needed
+                // Parse JSON using Newtonsoft.Json for accurate parsing
+                var jsonObj = JObject.Parse(json);
 
                 // Extract language code
-                var langMatch = System.Text.RegularExpressions.Regex.Match(json, @"""language"":\s*\{\s*""code"":\s*""([^""]+)""");
-                if (langMatch.Success)
+                if (jsonObj["language"]?["code"] != null)
                 {
-                    config.Language = langMatch.Groups[1].Value;
+                    config.Language = jsonObj["language"]["code"].ToString();
                 }
 
                 // Extract sample rate
-                var sampleRateMatch = System.Text.RegularExpressions.Regex.Match(json, @"""sample_rate"":\s*(\d+)");
-                if (sampleRateMatch.Success)
+                if (jsonObj["audio"]?["sample_rate"] != null)
                 {
-                    config.SampleRate = int.Parse(sampleRateMatch.Groups[1].Value);
+                    config.SampleRate = jsonObj["audio"]["sample_rate"].ToObject<int>();
+                }
+
+                // Extract inference parameters
+                if (jsonObj["inference"]?["noise_scale"] != null)
+                {
+                    config.NoiseScale = jsonObj["inference"]["noise_scale"].ToObject<float>();
+                }
+
+                if (jsonObj["inference"]?["length_scale"] != null)
+                {
+                    config.LengthScale = jsonObj["inference"]["length_scale"].ToObject<float>();
+                }
+
+                if (jsonObj["inference"]?["noise_w"] != null)
+                {
+                    config.NoiseW = jsonObj["inference"]["noise_w"].ToObject<float>();
                 }
 
                 PiperLogger.LogDebug($"[ParseConfig] Language: {config.Language}, SampleRate: {config.SampleRate}");
 
                 // Extract phoneme_id_map
-                var phonemeMapMatch = System.Text.RegularExpressions.Regex.Match(json, @"""phoneme_id_map"":\s*\{([^}]+)\}");
-                if (phonemeMapMatch.Success)
+                if (jsonObj["phoneme_id_map"] is JObject phonemeIdMap)
                 {
-                    var phonemeMapContent = phonemeMapMatch.Groups[1].Value;
-                    var phonemeMatches = System.Text.RegularExpressions.Regex.Matches(phonemeMapContent, @"""([^""]+)"":\s*\[(\d+)[^\]]*\]");
+                    PiperLogger.LogDebug($"[ParseConfig] Found phoneme_id_map with {phonemeIdMap.Count} entries");
 
-                    PiperLogger.LogDebug($"[ParseConfig] Found phoneme_id_map with {phonemeMatches.Count} entries");
-
-                    foreach (System.Text.RegularExpressions.Match match in phonemeMatches)
+                    foreach (var kvp in phonemeIdMap)
                     {
-                        if (match.Success && match.Groups.Count >= 3)
+                        if (kvp.Value is JArray idArray && idArray.Count > 0)
                         {
-                            var key = match.Groups[1].Value;
-                            var value = int.Parse(match.Groups[2].Value);
-                            config.PhonemeIdMap[key] = value;
+                            config.PhonemeIdMap[kvp.Key] = idArray[0].ToObject<int>();
                         }
                     }
 

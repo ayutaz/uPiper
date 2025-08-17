@@ -200,7 +200,11 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                     // Android向け最適化: 非同期で辞書パスを取得
                     string dictPath;
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_EDITOR && UPIPER_DEVELOPMENT
+                    // Development environment: Load directly from Samples~
+                    dictPath = Path.Combine(Application.dataPath, "uPiper", "Samples~", "OpenJTalk Dictionary Data", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
+                    Debug.Log($"[OptimizedOpenJTalk] Development mode: Loading from Samples~: {dictPath}");
+#elif UNITY_ANDROID && !UNITY_EDITOR
                     dictPath = await OptimizedAndroidPathResolver.GetDictionaryPathAsync();
 #else
                     // 非Android環境ではStreamingAssetsからパスを取得
