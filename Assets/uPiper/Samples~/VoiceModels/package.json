@@ -1,0 +1,7 @@
+{
+  "name": "com.ayutaz.upiper.samples.voicemodels",
+  "displayName": "Voice Models",
+  "version": "0.1.0",
+  "type": "sample",
+  "description": "Pre-trained ONNX voice models for Japanese and English. Optional but recommended for high-quality voice synthesis."
+}
