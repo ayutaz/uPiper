@@ -117,7 +117,7 @@ namespace uPiper.Editor
                 message += "3. Import required samples (Dictionary Data, Voice Models)\n";
                 message += "4. Run 'uPiper/Setup/Install from Samples'";
             }
-            
+
             // Add note about plugins if missing
             if (!status.pluginsExist)
             {
@@ -353,7 +353,7 @@ namespace uPiper.Editor
             var modelPath2 = Path.Combine(Application.dataPath, "Resources", "uPiper", "Models", "en_US-ljspeech-medium.onnx");
             var oldModelPath1 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "ja_JP-test-medium.onnx");
             var oldModelPath2 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "en_US-ljspeech-medium.onnx");
-            status.modelsExist = File.Exists(modelPath1) || File.Exists(modelPath2) || 
+            status.modelsExist = File.Exists(modelPath1) || File.Exists(modelPath2) ||
                                  File.Exists(oldModelPath1) || File.Exists(oldModelPath2);
 
             // Complete if we have plugins and at least minimal dictionary support

@@ -623,8 +623,8 @@ namespace uPiper.Demo
                 PiperLogger.LogDebug($"Loading model asset: Models/{modelName}");
 
                 // Try loading from both possible paths (new location first, then old location)
-                var modelAsset = Resources.Load<ModelAsset>($"uPiper/Models/{modelName}") ?? 
-                                Resources.Load<ModelAsset>($"Models/{modelName}") ?? 
+                var modelAsset = Resources.Load<ModelAsset>($"uPiper/Models/{modelName}") ??
+                                Resources.Load<ModelAsset>($"Models/{modelName}") ??
                                 throw new Exception($"モデルが見つかりません: {modelName}");
                 PiperLogger.LogDebug($"Model asset loaded successfully");
                 timings["ModelLoad"] = loadStopwatch.ElapsedMilliseconds;
