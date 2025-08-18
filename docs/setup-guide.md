@@ -52,6 +52,8 @@ After importing the samples:
 2. The setup wizard will automatically copy the imported data to the correct locations
 3. Wait for the installation to complete
 
+> **Note**: The previous "Run Initial Setup" menu option has been removed. "Install from Samples" is now the only setup method.
+
 ### Step 3: Verify Installation
 
 Check that everything is installed correctly:
