@@ -342,10 +342,13 @@ namespace uPiper.Editor
             var cmuPath = Path.Combine(TARGET_STREAMING_ASSETS_PATH, "Phonemizers", "cmudict-0.7b.txt");
             status.cmuDictExists = File.Exists(cmuPath);
 
-            // Check voice models
-            var modelPath1 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "ja_JP-test-medium.onnx");
-            var modelPath2 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "en_US-ljspeech-medium.onnx");
-            status.modelsExist = File.Exists(modelPath1) || File.Exists(modelPath2);
+            // Check voice models (check both old and new locations)
+            var modelPath1 = Path.Combine(Application.dataPath, "Resources", "uPiper", "Models", "ja_JP-test-medium.onnx");
+            var modelPath2 = Path.Combine(Application.dataPath, "Resources", "uPiper", "Models", "en_US-ljspeech-medium.onnx");
+            var oldModelPath1 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "ja_JP-test-medium.onnx");
+            var oldModelPath2 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "en_US-ljspeech-medium.onnx");
+            status.modelsExist = File.Exists(modelPath1) || File.Exists(modelPath2) || 
+                                 File.Exists(oldModelPath1) || File.Exists(oldModelPath2);
 
             // Complete if we have plugins and at least minimal dictionary support
             status.isComplete = status.pluginsExist && (status.dictionaryExists || status.cmuDictExists);
@@ -498,12 +501,13 @@ namespace uPiper.Editor
 
                     if (sourcePath != null)
                     {
-                        var targetPath = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models");
+                        // Copy to project Assets instead of package folder to avoid immutable package warnings
+                        var targetPath = Path.Combine(Application.dataPath, "Resources", "uPiper", "Models");
                         var result = CopyDirectory(sourcePath, targetPath, "Voice Models");
                         if (result.success)
                         {
                             installedCount += result.fileCount;
-                            Debug.Log($"[uPiper Setup] Installed voice models ({result.fileCount} files)");
+                            Debug.Log($"[uPiper Setup] Installed voice models ({result.fileCount} files) to Assets/Resources/uPiper/Models/");
                         }
                     }
                 }

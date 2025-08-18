@@ -77,6 +77,8 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 3. セットアップが完了するまで待つ
 
 > 💡 **注**: 以前の「Run Initial Setup」メニューは削除されました。「Install from Samples」が唯一のセットアップ方法です。
+> 
+> 📁 **モデルファイルの保存場所**: 音声モデルは `Assets/Resources/uPiper/Models/` に保存されます（パッケージの外側）。
 
 #### ステップ4: 動作確認
 

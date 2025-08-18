@@ -622,7 +622,10 @@ namespace uPiper.Demo
                 var loadStopwatch = Stopwatch.StartNew();
                 PiperLogger.LogDebug($"Loading model asset: Models/{modelName}");
 
-                var modelAsset = Resources.Load<ModelAsset>($"Models/{modelName}") ?? throw new Exception($"モデルが見つかりません: {modelName}");
+                // Try loading from both possible paths (new location first, then old location)
+                var modelAsset = Resources.Load<ModelAsset>($"uPiper/Models/{modelName}") ?? 
+                                Resources.Load<ModelAsset>($"Models/{modelName}") ?? 
+                                throw new Exception($"モデルが見つかりません: {modelName}");
                 PiperLogger.LogDebug($"Model asset loaded successfully");
                 timings["ModelLoad"] = loadStopwatch.ElapsedMilliseconds;
 
@@ -630,19 +633,26 @@ namespace uPiper.Demo
                 PiperLogger.LogDebug($"Loading config: Models/{modelName}.onnx.json");
 
                 // デバッグ: 利用可能なTextAssetをリスト
-                var allTextAssets = Resources.LoadAll<TextAsset>("Models");
-                PiperLogger.LogInfo($"Available TextAssets in Resources/Models: {allTextAssets.Length}");
+                var allTextAssets = Resources.LoadAll<TextAsset>("uPiper/Models");
+                if (allTextAssets.Length == 0)
+                {
+                    allTextAssets = Resources.LoadAll<TextAsset>("Models");
+                }
+                PiperLogger.LogInfo($"Available TextAssets in Resources: {allTextAssets.Length}");
                 foreach (var asset in allTextAssets)
                 {
                     PiperLogger.LogInfo($"  - {asset.name}");
                 }
 
-                var jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx.json");
+                // Try loading from both possible paths (new location first, then old location)
+                var jsonAsset = Resources.Load<TextAsset>($"uPiper/Models/{modelName}.onnx.json") ??
+                               Resources.Load<TextAsset>($"Models/{modelName}.onnx.json");
                 if (jsonAsset == null)
                 {
                     // 拡張子なしで試す
-                    PiperLogger.LogDebug($"Trying without extension: Models/{modelName}.onnx");
-                    jsonAsset = Resources.Load<TextAsset>($"Models/{modelName}.onnx");
+                    PiperLogger.LogDebug($"Trying without extension: {modelName}.onnx");
+                    jsonAsset = Resources.Load<TextAsset>($"uPiper/Models/{modelName}.onnx") ??
+                               Resources.Load<TextAsset>($"Models/{modelName}.onnx");
                 }
 
                 if (jsonAsset == null)
