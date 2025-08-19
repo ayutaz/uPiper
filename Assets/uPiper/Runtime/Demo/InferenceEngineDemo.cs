@@ -214,8 +214,6 @@ namespace uPiper.Demo
             DebugAndroidSetup();
             // Preload dictionary asynchronously for better performance
             uPiper.Core.Platform.OptimizedAndroidPathResolver.PreloadDictionaryAsync();
-            // Auto-test TTS generation after 2 seconds
-            StartCoroutine(AutoTestTTSGeneration());
 #endif
 #endif
 
@@ -1343,36 +1341,6 @@ namespace uPiper.Demo
             PiperLogger.LogInfo("[Android Debug] === End Android Setup Debug ===");
         }
 
-        private System.Collections.IEnumerator AutoTestTTSGeneration()
-        {
-            PiperLogger.LogInfo("[uPiper] Waiting 2 seconds before auto-testing TTS...");
-            yield return new WaitForSeconds(2f);
-
-            PiperLogger.LogInfo("[uPiper] Starting auto TTS test...");
-
-            // Set Japanese text
-            if (_inputField != null)
-            {
-                _inputField.text = "こんにちは";
-                PiperLogger.LogInfo($"[uPiper] Set input text: {_inputField.text}");
-            }
-
-            // Try to generate TTS
-            if (_generateButton != null && _generateButton.isActiveAndEnabled)
-            {
-                PiperLogger.LogInfo("[uPiper] Clicking generate button programmatically...");
-                _ = GenerateAudioAsync();
-
-                // Wait for generation
-                yield return new WaitForSeconds(5f);
-
-                PiperLogger.LogInfo("[uPiper] Auto test completed. Check if audio was generated.");
-            }
-            else
-            {
-                PiperLogger.LogError("[uPiper] Generate button not available for auto test");
-            }
-        }
 #endif
 
         /// <summary>
