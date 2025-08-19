@@ -20,10 +20,8 @@ CLAUDE.md
 nul
 nul.meta
 
-# Development environment temporary StreamingAssets
-# Created automatically during build by DevelopmentBuildProcessor
-Assets/StreamingAssets/
-Assets/StreamingAssets.meta
+# StreamingAssets now tracked in Git for development environment
+# (Dictionary files are included for clone-and-run development)
 
 # User-specific stuff
 .idea/**/workspace.xml
