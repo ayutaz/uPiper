@@ -14,7 +14,7 @@ namespace uPiper.Demo
     {
         // Input System UIモジュールの型名（リフレクション用）
         private const string INPUT_SYSTEM_MODULE_TYPENAME = "UnityEngine.InputSystem.UI.InputSystemUIInputModule";
-        
+
         private void Awake()
         {
             SetupInputModule();
@@ -31,11 +31,11 @@ namespace uPiper.Demo
 
             // StandaloneInputModuleを取得
             var standaloneModule = GetComponent<StandaloneInputModule>();
-            
+
             // Input System UIモジュールを動的に検索（存在する場合）
             Component inputSystemModule = null;
             Type inputSystemModuleType = null;
-            
+
             try
             {
                 // Input Systemパッケージが存在する場合、型を取得
@@ -60,7 +60,7 @@ namespace uPiper.Demo
             if (inputSystemModule != null && inputSystemModule.GetType() == inputSystemModuleType)
             {
                 bool useInputSystem = false;
-                
+
                 // Active Input Handlingの設定を確認
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
                 // Input System のみ有効
@@ -115,7 +115,7 @@ namespace uPiper.Demo
         private void SetComponentEnabled(Component component, bool enabled)
         {
             if (component == null) return;
-            
+
             var behaviour = component as Behaviour;
             if (behaviour != null)
             {
@@ -143,14 +143,14 @@ namespace uPiper.Demo
         {
             // デバッグ情報を出力
             Debug.Log($"[EventSystemAutoSetup] Input configuration: {GetCurrentInputSystemInfo()}");
-            
+
             // 現在有効なモジュールを確認
             var standaloneModule = GetComponent<StandaloneInputModule>();
             if (standaloneModule != null && standaloneModule.enabled)
             {
                 Debug.Log("[EventSystemAutoSetup] Active module: StandaloneInputModule");
             }
-            
+
             // Input Systemモジュールの確認
             try
             {

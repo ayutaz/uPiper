@@ -105,7 +105,7 @@ namespace uPiper.Core.Platform
                                 File.SetAttributes(file, FileAttributes.Normal);
                                 File.Delete(file);
                             }
-                            
+
                             var dirs = Directory.GetDirectories(destPath, "*", SearchOption.AllDirectories);
                             // 深い階層から削除
                             Array.Reverse(dirs);
@@ -113,7 +113,7 @@ namespace uPiper.Core.Platform
                             {
                                 Directory.Delete(dir, false);
                             }
-                            
+
                             Directory.Delete(destPath, false);
                         }
                         catch (Exception deleteEx)
@@ -121,7 +121,7 @@ namespace uPiper.Core.Platform
                             PiperLogger.LogWarning($"[OptimizedAndroid] Failed to clean directory: {deleteEx.Message}. Attempting to continue...");
                         }
                     }
-                    
+
                     if (!Directory.Exists(destPath))
                     {
                         Directory.CreateDirectory(destPath);
@@ -134,13 +134,13 @@ namespace uPiper.Core.Platform
                     var zipPath = Path.Combine(streamingAssetsPath, "uPiper", "OpenJTalk", DICT_ZIP_NAME);
 
                     byte[] zipData = null;
-                    
+
                     // Unity 2022互換: TaskCompletionSourceを使用
                     var tcs = new TaskCompletionSource<byte[]>();
                     using (var request = UnityWebRequest.Get(zipPath))
                     {
                         var operation = request.SendWebRequest();
-                        
+
                         // コルーチンの代わりにタスクで待機
                         operation.completed += _ =>
                         {
@@ -153,7 +153,7 @@ namespace uPiper.Core.Platform
                                 tcs.SetException(new Exception($"Failed to load dictionary ZIP: {request.error}"));
                             }
                         };
-                        
+
                         try
                         {
                             zipData = await tcs.Task;

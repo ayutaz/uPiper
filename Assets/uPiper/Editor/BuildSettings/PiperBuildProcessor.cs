@@ -108,10 +108,10 @@ namespace uPiper.Editor.BuildSettings
 
             // Android固有の設定
             PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.Android, ApiCompatibilityLevel.NET_Standard);
-            
+
             // 最小APIレベルの設定（Android 7.0以上）
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
-            
+
             // ターゲットAPIレベルの設定
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
         }
@@ -128,7 +128,7 @@ namespace uPiper.Editor.BuildSettings
             // OpenJTalk辞書のコピー
             var openJTalkSource = "Assets/uPiper/Samples~/OpenJTalk Dictionary Data/openjtalk_dict.zip";
             var openJTalkTarget = Path.Combine(streamingAssetsPath, "OpenJTalk", "naist_jdic.zip");
-            
+
             if (File.Exists(openJTalkSource))
             {
                 File.Copy(openJTalkSource, openJTalkTarget, true);
@@ -142,7 +142,7 @@ namespace uPiper.Editor.BuildSettings
             // CMU辞書のコピー
             var cmuSource = "Assets/uPiper/Samples~/CMU Pronouncing Dictionary/cmudict-0.7b.txt";
             var cmuTarget = Path.Combine(streamingAssetsPath, "Phonemizers", "cmudict-0.7b.txt");
-            
+
             if (File.Exists(cmuSource))
             {
                 File.Copy(cmuSource, cmuTarget, true);
@@ -162,21 +162,21 @@ namespace uPiper.Editor.BuildSettings
 #if UPIPER_DEVELOPMENT
             // 開発環境でのみ、ビルド後にStreamingAssetsをクリーンアップ
             PiperLogger.LogInfo("[PiperBuildProcessor] Cleaning up temporary StreamingAssets");
-            
+
             var streamingAssetsPath = "Assets/StreamingAssets/uPiper";
             if (Directory.Exists(streamingAssetsPath))
             {
                 try
                 {
                     Directory.Delete(streamingAssetsPath, true);
-                    
+
                     // StreamingAssetsフォルダが空の場合は削除
                     var parentPath = "Assets/StreamingAssets";
                     if (Directory.Exists(parentPath) && Directory.GetFileSystemEntries(parentPath).Length == 0)
                     {
                         Directory.Delete(parentPath);
                     }
-                    
+
                     PiperLogger.LogInfo("[PiperBuildProcessor] Temporary StreamingAssets cleaned up");
                 }
                 catch (Exception ex)

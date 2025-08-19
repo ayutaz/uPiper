@@ -295,7 +295,7 @@ namespace uPiper.Demo
 #if UNITY_EDITOR
             // In Editor, try to load from Samples folder if not found
             var samplesPath = System.IO.Path.Combine(Application.dataPath, "Samples", "uPiper");
-            
+
             if (_japaneseFontAsset == null && System.IO.Directory.Exists(samplesPath))
             {
                 var fontPaths = System.IO.Directory.GetFiles(samplesPath, "NotoSansJP-Regular SDF.asset", System.IO.SearchOption.AllDirectories);
@@ -1198,7 +1198,7 @@ namespace uPiper.Demo
             try
             {
                 _englishPhonemizer = new Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer();
-                
+
                 // Get path on main thread before initialization
                 string dictPath;
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -1253,12 +1253,12 @@ namespace uPiper.Demo
                     "cmudict-0.7b.txt"
                 );
 #endif
-                
+
                 var options = new Core.Phonemizers.Backend.PhonemizerBackendOptions
                 {
                     DataPath = dictPath
                 };
-                
+
                 var initialized = await _englishPhonemizer.InitializeAsync(options);
                 if (initialized)
                 {
