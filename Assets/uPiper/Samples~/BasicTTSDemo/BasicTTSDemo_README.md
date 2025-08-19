@@ -9,36 +9,22 @@ Unity向けのテキスト読み上げ（TTS）機能の基本的なデモシー
 
 ### 入力システムについて
 
-このデモシーンはUIの操作にUnityのEventSystemを使用しています。
+**重要**: このデモシーンはUnity Input Systemを使用しています。
 
-**重要**: デモシーンにはInput System用のコンポーネントが含まれていますが、EventSystemAutoSetupによって自動的に適切な入力モジュールが選択されるため、**Input Systemは必須ではありません**。
+正常に動作させるには、プロジェクトにInput Systemパッケージがインストールされ、Active Input HandlingがInput System（またはBoth）に設定されている必要があります。
 
-対応している入力システム：
+#### セットアップ手順
 
-- **Input System** - Unity 6のデフォルト（シーンのデフォルト設定）
-- **Input Manager** - レガシー入力システム（自動的にフォールバック）
-- **Both** - ハイブリッドモード（Input Managerを優先）
-
-#### Input Managerを使用する場合
-
-プロジェクト設定で「Active Input Handling」を「Input Manager」に設定している場合、自動的にInput Manager用の設定が適用されます。
-
-1. Edit > Project Settings > Player
-2. Active Input Handling を "Input Manager" に設定
-3. Unityを再起動（設定変更後に必要）
+1. Window > Package ManagerでInput Systemパッケージをインストール
+2. Edit > Project Settings > Player
+3. Active Input Handling を "Input System" または "Both" に設定
+4. Unityを再起動（設定変更後に必要）
 
 #### トラブルシューティング
 
 **UIボタンがクリックできない場合：**
 
-1. シーン内のEventSystemオブジェクトを選択
-2. EventSystemAutoSetupコンポーネントを追加（まだ追加されていない場合）
-3. シーンを再生して、コンソールログで以下を確認：
-   - `[EventSystemAutoSetup] Input configuration: ...` - 現在の入力設定
-   - `[EventSystemAutoSetup] Active module: ...` - 有効なモジュール
-4. それでも動作しない場合は、手動で調整：
-   - Input System使用時: InputSystemUIInputModuleを有効化、StandaloneInputModuleを無効化
-   - Input Manager使用時: StandaloneInputModuleを有効化、InputSystemUIInputModuleを無効化（存在する場合）
+Input Systemが正しくセットアップされていることを確認してください。Input Manager（レガシー）のみの環境では、このデモシーンは動作しません。
 
 ## デモの機能
 
@@ -74,6 +60,7 @@ Unity向けのテキスト読み上げ（TTS）機能の基本的なデモシー
 
 - uPiperコアライブラリ
 - Unity AI Inference Engine
+- Unity Input System
 - TextMeshPro（日本語フォント表示用）
 
 ## ライセンス
