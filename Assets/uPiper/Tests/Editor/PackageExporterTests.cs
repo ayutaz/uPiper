@@ -1,8 +1,8 @@
-using NUnit.Framework;
 using System.IO;
-using UnityEngine;
-using UnityEditor;
 using System.Linq;
+using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
 
 namespace uPiper.Tests.Editor
 {

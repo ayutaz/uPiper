@@ -269,6 +269,9 @@ namespace uPiper.Demo
 
         private void SetupFontFallback()
         {
+            // Auto-detect fonts from loaded assets
+            AutoDetectFonts();
+
             // Store default font if not set
             if (_defaultFontAsset == null && _inputField != null)
             {
@@ -277,6 +280,73 @@ namespace uPiper.Demo
 
             // Setup font fallback chain for multi-language support
             SetupFontFallbackChain();
+        }
+
+        private void AutoDetectFonts()
+        {
+            // Resources.FindObjectsOfTypeAll doesn't have a new API in Unity 2023.1+
+            var allFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+
+            // Auto-detect default/English font if not assigned
+            if (_defaultFontAsset == null)
+            {
+                foreach (var font in allFonts)
+                {
+                    if (font.name.Contains("LiberationSans"))
+                    {
+                        _defaultFontAsset = font;
+                        PiperLogger.LogInfo($"[InferenceEngineDemo] Auto-detected default font: {font.name}");
+                        break;
+                    }
+                }
+            }
+
+            // Auto-detect Japanese font if not assigned
+            if (_japaneseFontAsset == null)
+            {
+                foreach (var font in allFonts)
+                {
+                    if (font.name.Contains("NotoSans") && (font.name.Contains("JP") || font.name.Contains("CJK")))
+                    {
+                        _japaneseFontAsset = font;
+                        PiperLogger.LogInfo($"[InferenceEngineDemo] Auto-detected Japanese font: {font.name}");
+                        break;
+                    }
+                }
+            }
+
+#if UNITY_EDITOR
+            // In Editor, try to load from Samples folder if not found
+            var samplesPath = System.IO.Path.Combine(Application.dataPath, "Samples", "uPiper");
+            
+            if (_japaneseFontAsset == null && System.IO.Directory.Exists(samplesPath))
+            {
+                var fontPaths = System.IO.Directory.GetFiles(samplesPath, "NotoSansJP-Regular SDF.asset", System.IO.SearchOption.AllDirectories);
+                if (fontPaths.Length > 0)
+                {
+                    var relativePath = "Assets" + fontPaths[0].Replace(Application.dataPath, "").Replace('\\', '/');
+                    _japaneseFontAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(relativePath);
+                    if (_japaneseFontAsset != null)
+                    {
+                        PiperLogger.LogInfo($"[InferenceEngineDemo] Loaded Japanese font from Samples: {relativePath}");
+                    }
+                }
+            }
+
+            if (_defaultFontAsset == null && System.IO.Directory.Exists(samplesPath))
+            {
+                var fontPaths = System.IO.Directory.GetFiles(samplesPath, "LiberationSans SDF.asset", System.IO.SearchOption.AllDirectories);
+                if (fontPaths.Length > 0)
+                {
+                    var relativePath = "Assets" + fontPaths[0].Replace(Application.dataPath, "").Replace('\\', '/');
+                    _defaultFontAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(relativePath);
+                    if (_defaultFontAsset != null)
+                    {
+                        PiperLogger.LogInfo($"[InferenceEngineDemo] Loaded default font from Samples: {relativePath}");
+                    }
+                }
+            }
+#endif
         }
 
         private void SetupFontFallbackChain()
@@ -294,6 +364,9 @@ namespace uPiper.Demo
                 {
                     _defaultFontAsset.fallbackFontAssetTable.Add(_japaneseFontAsset);
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Added Japanese font as fallback to default font");
+
+                    // Apply fallback to all TextMeshProUGUI components in the scene
+                    ApplyFontFallbackToAllTextComponents();
                 }
                 else if (_japaneseFontAsset == null)
                 {
@@ -305,6 +378,37 @@ namespace uPiper.Demo
 
             // Japanese font setup
             // No additional fallback needed
+        }
+
+        private void ApplyFontFallbackToAllTextComponents()
+        {
+            // Find all TextMeshProUGUI components in the scene
+#if UNITY_2023_1_OR_NEWER
+            var allTextComponents = FindObjectsByType<TextMeshProUGUI>(FindObjectsSortMode.None);
+#else
+            var allTextComponents = FindObjectsOfType<TextMeshProUGUI>();
+#endif
+            foreach (var textComponent in allTextComponents)
+            {
+                if (textComponent.font != null && textComponent.font != _japaneseFontAsset)
+                {
+                    var fontAsset = textComponent.font as TMP_FontAsset;
+                    if (fontAsset != null)
+                    {
+                        if (fontAsset.fallbackFontAssetTable == null)
+                        {
+                            fontAsset.fallbackFontAssetTable = new List<TMP_FontAsset>();
+                        }
+
+                        if (!fontAsset.fallbackFontAssetTable.Contains(_japaneseFontAsset))
+                        {
+                            fontAsset.fallbackFontAssetTable.Add(_japaneseFontAsset);
+                        }
+                    }
+                }
+            }
+
+            PiperLogger.LogInfo($"[InferenceEngineDemo] Applied Japanese font fallback to {allTextComponents.Length} text components");
         }
 
 
