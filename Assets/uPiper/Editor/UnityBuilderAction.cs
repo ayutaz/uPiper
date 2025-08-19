@@ -111,7 +111,7 @@ namespace UnityBuilderAction
         {
             // Try to get from command line arguments first
             var buildPath = GetArgument(Environment.GetCommandLineArgs(), "-customBuildPath", "");
-            
+
             // If not found in arguments, try environment variable (Unity Builder v4 compatibility)
             if (string.IsNullOrEmpty(buildPath))
             {
@@ -121,7 +121,7 @@ namespace UnityBuilderAction
                     Debug.Log($"Using BUILD_PATH from environment variable: {buildPath}");
                 }
             }
-            
+
             // If still not found, use default
             if (string.IsNullOrEmpty(buildPath))
             {
@@ -131,7 +131,7 @@ namespace UnityBuilderAction
 
             // Try to get build name from arguments first
             var buildName = GetArgument(Environment.GetCommandLineArgs(), "-customBuildName", "");
-            
+
             // If not found, try environment variable
             if (string.IsNullOrEmpty(buildName))
             {
@@ -141,7 +141,7 @@ namespace UnityBuilderAction
                     Debug.Log($"Using BUILD_NAME from environment variable: {buildName}");
                 }
             }
-            
+
             // If still not found, use default
             if (string.IsNullOrEmpty(buildName))
             {
