@@ -96,9 +96,36 @@ namespace uPiper.Core.Platform
                     // ディレクトリを準備
                     if (Directory.Exists(destPath))
                     {
-                        Directory.Delete(destPath, true);
+                        try
+                        {
+                            // Androidでは削除に失敗することがあるため、ファイルを個別に削除
+                            var files = Directory.GetFiles(destPath, "*", SearchOption.AllDirectories);
+                            foreach (var file in files)
+                            {
+                                File.SetAttributes(file, FileAttributes.Normal);
+                                File.Delete(file);
+                            }
+                            
+                            var dirs = Directory.GetDirectories(destPath, "*", SearchOption.AllDirectories);
+                            // 深い階層から削除
+                            Array.Reverse(dirs);
+                            foreach (var dir in dirs)
+                            {
+                                Directory.Delete(dir, false);
+                            }
+                            
+                            Directory.Delete(destPath, false);
+                        }
+                        catch (Exception deleteEx)
+                        {
+                            PiperLogger.LogWarning($"[OptimizedAndroid] Failed to clean directory: {deleteEx.Message}. Attempting to continue...");
+                        }
                     }
-                    Directory.CreateDirectory(destPath);
+                    
+                    if (!Directory.Exists(destPath))
+                    {
+                        Directory.CreateDirectory(destPath);
+                    }
 
                     AndroidPerformanceProfiler.LogMemoryUsage("Before Extraction");
 

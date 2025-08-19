@@ -1198,7 +1198,68 @@ namespace uPiper.Demo
             try
             {
                 _englishPhonemizer = new Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer();
-                var initialized = await _englishPhonemizer.InitializeAsync(new Core.Phonemizers.Backend.PhonemizerBackendOptions());
+                
+                // Get path on main thread before initialization
+                string dictPath;
+#if UNITY_ANDROID && !UNITY_EDITOR
+                // On Android, extract dictionary to persistent data path
+                dictPath = System.IO.Path.Combine(
+                    Application.persistentDataPath,
+                    "uPiper",
+                    "Phonemizers",
+                    "cmudict-0.7b.txt"
+                );
+                
+                // Check if extraction is needed
+                if (!System.IO.File.Exists(dictPath))
+                {
+                    // Extract from StreamingAssets
+                    var sourcePath = System.IO.Path.Combine(
+                        Application.streamingAssetsPath,
+                        "uPiper",
+                        "Phonemizers",
+                        "cmudict-0.7b.txt"
+                    );
+                    
+                    // Ensure directory exists
+                    var dictDir = System.IO.Path.GetDirectoryName(dictPath);
+                    if (!System.IO.Directory.Exists(dictDir))
+                    {
+                        System.IO.Directory.CreateDirectory(dictDir);
+                    }
+                    
+                    // Extract using UnityWebRequest
+                    using (var www = UnityEngine.Networking.UnityWebRequest.Get(sourcePath))
+                    {
+                        await www.SendWebRequest();
+                        if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+                        {
+                            System.IO.File.WriteAllBytes(dictPath, www.downloadHandler.data);
+                            PiperLogger.LogInfo($"[InferenceEngineDemo] Extracted CMU dictionary to {dictPath}");
+                        }
+                        else
+                        {
+                            PiperLogger.LogError($"[InferenceEngineDemo] Failed to extract CMU dictionary: {www.error}");
+                            _englishPhonemizer = null;
+                            return;
+                        }
+                    }
+                }
+#else
+                dictPath = System.IO.Path.Combine(
+                    Application.streamingAssetsPath,
+                    "uPiper",
+                    "Phonemizers",
+                    "cmudict-0.7b.txt"
+                );
+#endif
+                
+                var options = new Core.Phonemizers.Backend.PhonemizerBackendOptions
+                {
+                    DataPath = dictPath
+                };
+                
+                var initialized = await _englishPhonemizer.InitializeAsync(options);
                 if (initialized)
                 {
                     PiperLogger.LogInfo("[InferenceEngineDemo] Flite LTS phonemizer initialized successfully");
