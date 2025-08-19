@@ -125,7 +125,7 @@ namespace UnityBuilderAction
                 case BuildTarget.StandaloneLinux64:
                 case BuildTarget.StandaloneOSX:
                     // Desktop IL2CPP settings
-                    PlayerSettings.SetApiCompatibilityLevel(namedTarget, ApiCompatibilityLevel.NET_Standard_2_1);
+                    PlayerSettings.SetApiCompatibilityLevel(namedTarget, ApiCompatibilityLevel.NET_Standard);
                     break;
 
                 case BuildTarget.WebGL:
@@ -154,7 +154,7 @@ namespace UnityBuilderAction
                 case BuildTarget.StandaloneLinux64:
                 case BuildTarget.StandaloneOSX:
                     // Desktop IL2CPP settings
-                    PlayerSettings.SetApiCompatibilityLevel(targetGroup, ApiCompatibilityLevel.NET_Standard_2_1);
+                    PlayerSettings.SetApiCompatibilityLevel(targetGroup, ApiCompatibilityLevel.NET_Standard);
                     break;
 
                 case BuildTarget.WebGL:
