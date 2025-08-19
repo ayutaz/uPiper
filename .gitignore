@@ -264,7 +264,7 @@ Assets/uPiper/Resources/Models/*.onnx.meta
 Assets/uPiper/Resources/Models/*.onnx.json.meta
 
 # Development environment - test scenes (should be in Samples~)
-Assets/uPiper/Scenes/
+Assets/uPiper/Samples/
 
 # Development environment - platform specific plugins
 Assets/uPiper/Plugins/macOS/
