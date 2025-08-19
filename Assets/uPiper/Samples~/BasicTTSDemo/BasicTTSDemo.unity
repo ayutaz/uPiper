@@ -3874,7 +3874,7 @@ MonoBehaviour:
   _defaultJapaneseText: 
   _defaultEnglishText: Hello world
   _japaneseFontAsset: {fileID: 0}
-  _defaultFontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  _defaultFontAsset: {fileID: 0}
 --- !u!82 &1475177959
 AudioSource:
   m_ObjectHideFlags: 0

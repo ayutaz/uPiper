@@ -269,17 +269,55 @@ namespace uPiper.Demo
 
         private void SetupFontFallback()
         {
+            // Auto-detect fonts from loaded assets
+            AutoDetectFonts();
+            
             // Store default font if not set
             if (_defaultFontAsset == null && _inputField != null)
             {
                 _defaultFontAsset = _inputField.fontAsset;
             }
 
-            // Try to find Japanese font if not assigned
+            // Setup font fallback chain for multi-language support
+            SetupFontFallbackChain();
+        }
+        
+        private void AutoDetectFonts()
+        {
+            var allFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+            
+            // Auto-detect default/English font if not assigned
+            if (_defaultFontAsset == null)
+            {
+                foreach (var font in allFonts)
+                {
+                    if (font.name.Contains("LiberationSans"))
+                    {
+                        _defaultFontAsset = font;
+                        PiperLogger.LogInfo($"[InferenceEngineDemo] Auto-detected default font: {font.name}");
+                        break;
+                    }
+                }
+            }
+            
+            // Auto-detect Japanese font if not assigned
             if (_japaneseFontAsset == null)
             {
+                foreach (var font in allFonts)
+                {
+                    if (font.name.Contains("NotoSans") && (font.name.Contains("JP") || font.name.Contains("CJK")))
+                    {
+                        _japaneseFontAsset = font;
+                        PiperLogger.LogInfo($"[InferenceEngineDemo] Auto-detected Japanese font: {font.name}");
+                        break;
+                    }
+                }
+            }
+            
 #if UNITY_EDITOR
-                // In Editor, try to load from Samples folder (Package Manager installation)
+            // In Editor, try to load from Samples folder if not found
+            if (_japaneseFontAsset == null)
+            {
                 var samplesPath = Application.dataPath + "/Samples/uPiper";
                 if (System.IO.Directory.Exists(samplesPath))
                 {
@@ -294,26 +332,26 @@ namespace uPiper.Demo
                         }
                     }
                 }
-#endif
-                
-                // Fallback: Try to find in loaded assets
-                if (_japaneseFontAsset == null)
+            }
+            
+            if (_defaultFontAsset == null)
+            {
+                var samplesPath = Application.dataPath + "/Samples/uPiper";
+                if (System.IO.Directory.Exists(samplesPath))
                 {
-                    var allFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
-                    foreach (var font in allFonts)
+                    var fontPaths = System.IO.Directory.GetFiles(samplesPath, "LiberationSans SDF.asset", System.IO.SearchOption.AllDirectories);
+                    if (fontPaths.Length > 0)
                     {
-                        if (font.name.Contains("NotoSans") && (font.name.Contains("JP") || font.name.Contains("CJK")))
+                        var relativePath = fontPaths[0].Replace('\\', '/').Replace(Application.dataPath, "Assets");
+                        _defaultFontAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(relativePath);
+                        if (_defaultFontAsset != null)
                         {
-                            _japaneseFontAsset = font;
-                            PiperLogger.LogInfo($"[InferenceEngineDemo] Found Japanese font automatically: {font.name}");
-                            break;
+                            PiperLogger.LogInfo($"[InferenceEngineDemo] Loaded default font from Samples: {relativePath}");
                         }
                     }
                 }
             }
-
-            // Setup font fallback chain for multi-language support
-            SetupFontFallbackChain();
+#endif
         }
 
         private void SetupFontFallbackChain()
