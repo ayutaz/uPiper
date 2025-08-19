@@ -127,7 +127,8 @@ namespace uPiper.Core.Platform
                         Directory.CreateDirectory(destPath);
                     }
 
-                    AndroidPerformanceProfiler.LogMemoryUsage("Before Extraction");
+                    // Note: AndroidPerformanceProfiler.LogMemoryUsage cannot be called from background thread
+                    // AndroidPerformanceProfiler.LogMemoryUsage("Before Extraction");
 
                     // ZIPファイルをStreamingAssetsから読み込み
                     var zipPath = Path.Combine(streamingAssetsPath, "uPiper", "OpenJTalk", DICT_ZIP_NAME);
@@ -189,7 +190,8 @@ namespace uPiper.Core.Platform
                     // 展開完了マーカーを作成
                     File.WriteAllText(markerPath, DICT_VERSION);
 
-                    AndroidPerformanceProfiler.LogMemoryUsage("After Extraction");
+                    // Note: AndroidPerformanceProfiler.LogMemoryUsage cannot be called from background thread
+                    // AndroidPerformanceProfiler.LogMemoryUsage("After Extraction");
 
                     // 最終的なGC
                     GC.Collect();
