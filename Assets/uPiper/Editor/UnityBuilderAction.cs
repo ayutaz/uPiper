@@ -1,46 +1,47 @@
 using System;
 using System.Linq;
+using System.IO;
 using UnityEditor;
-using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 namespace UnityBuilderAction
 {
-    /// <summary>
-    /// Build script for Unity Builder GitHub Action with IL2CPP support
-    /// </summary>
     public static class BuildScript
     {
-        private static string[] GetScenes()
-        {
-            return EditorBuildSettings.scenes
-                .Where(scene => scene.enabled)
-                .Select(scene => scene.path)
-                .ToArray();
-        }
+        private static readonly string[] Scenes = FindEnabledEditorScenes();
 
         public static void Build()
         {
-            // Get build parameters from command line
-            var args = Environment.GetCommandLineArgs();
-            var scriptingBackend = GetArgument(args, "-scriptingBackend", "Mono2x");
+            // Get build target from environment or command line
+            var buildTarget = GetBuildTarget();
+            var namedBuildTarget = GetNamedBuildTarget(buildTarget);
 
-            // Parse target platform
-            var buildTarget = EditorUserBuildSettings.activeBuildTarget;
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
-            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+            // Get scripting backend from custom parameters
+            var scriptingBackend = GetScriptingBackend();
 
-            // Configure scripting backend
-            if (scriptingBackend.ToLower() == "il2cpp")
+            // Log build configuration
+            Debug.Log($"=== uPiper Build Configuration ===");
+            Debug.Log($"Target: {buildTarget}");
+            Debug.Log($"Scripting Backend: {scriptingBackend}");
+            Debug.Log($"Scenes: {string.Join(", ", Scenes)}");
+
+            // Configure player settings based on scripting backend
+            if (scriptingBackend.Contains("IL2CPP"))
             {
                 Debug.Log("Configuring IL2CPP build...");
                 PlayerSettings.SetScriptingBackend(namedBuildTarget, ScriptingImplementation.IL2CPP);
 
-                // Configure IL2CPP specific settings
+                // Configure IL2CPP settings
                 PlayerSettings.SetIl2CppCompilerConfiguration(namedBuildTarget, Il2CppCompilerConfiguration.Release);
-                PlayerSettings.SetManagedStrippingLevel(namedBuildTarget, ManagedStrippingLevel.Low);
-                PlayerSettings.gcIncremental = true;
+                PlayerSettings.SetIl2CppCodeGeneration(namedBuildTarget, Il2CppCodeGeneration.OptimizeSpeed);
+
+                // Platform-specific IL2CPP optimizations
+                if (buildTarget == BuildTarget.WebGL)
+                {
+                    PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.None;
+                    PlayerSettings.WebGL.dataCaching = false;
+                }
 
                 // Platform specific IL2CPP settings
                 ConfigurePlatformSpecificIL2CPP(buildTarget, namedBuildTarget);
@@ -67,23 +68,19 @@ namespace UnityBuilderAction
             // Perform build
             var buildReport = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {
-                scenes = GetScenes(),
+                scenes = Scenes,
                 locationPathName = buildLocation,
                 target = buildTarget,
                 options = buildOptions
             });
 
             // Check build result
-            if (buildReport.summary.result == BuildResult.Succeeded)
+            if (buildReport.summary.result != BuildResult.Succeeded)
             {
-                Debug.Log($"Build succeeded: {buildReport.summary.totalSize} bytes");
-                EditorApplication.Exit(0);
+                throw new Exception($"Build failed with {buildReport.summary.totalErrors} errors");
             }
-            else
-            {
-                Debug.LogError($"Build failed with {buildReport.summary.totalErrors} errors");
-                EditorApplication.Exit(1);
-            }
+
+            Debug.Log($"Build succeeded: {buildLocation}");
         }
 
         private static void ConfigurePlatformSpecificIL2CPP(BuildTarget target, NamedBuildTarget namedTarget)
@@ -91,16 +88,24 @@ namespace UnityBuilderAction
             switch (target)
             {
                 case BuildTarget.Android:
+                    // Android IL2CPP specific settings
                     PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
-                    PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
                     break;
 
                 case BuildTarget.iOS:
-                    PlayerSettings.SetArchitecture(namedTarget, 2); // Universal
-                    PlayerSettings.iOS.targetOSVersionString = "11.0";
+                    // iOS IL2CPP specific settings
+                    PlayerSettings.iOS.scriptCallOptimization = ScriptCallOptimizationLevel.FastButNoExceptions;
+                    break;
+
+                case BuildTarget.StandaloneWindows64:
+                case BuildTarget.StandaloneLinux64:
+                case BuildTarget.StandaloneOSX:
+                    // Desktop IL2CPP settings
+                    PlayerSettings.SetApiCompatibilityLevel(namedTarget, ApiCompatibilityLevel.NET_Standard_2_1);
                     break;
 
                 case BuildTarget.WebGL:
+                    // WebGL specific IL2CPP settings
                     PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Wasm;
                     PlayerSettings.WebGL.memorySize = 512;
                     break;
@@ -111,55 +116,42 @@ namespace UnityBuilderAction
         {
             // Try to get from command line arguments first
             var buildPath = GetArgument(Environment.GetCommandLineArgs(), "-customBuildPath", "");
+            bool isFromCommandLine = !string.IsNullOrEmpty(buildPath);
 
             // If not found in arguments, try environment variable (Unity Builder v4 compatibility)
-            if (string.IsNullOrEmpty(buildPath))
+            if (!isFromCommandLine)
             {
                 buildPath = Environment.GetEnvironmentVariable("BUILD_PATH");
                 if (!string.IsNullOrEmpty(buildPath))
                 {
-                    // BUILD_PATH might include the file name, extract just the directory
-                    if (buildPath.Contains(".exe") || buildPath.Contains(".app") || Path.HasExtension(buildPath))
-                    {
-                        buildPath = Path.GetDirectoryName(buildPath);
-                    }
                     Debug.Log($"Using BUILD_PATH from environment variable: {buildPath}");
                 }
             }
 
-            // If still not found, use default
+            // If still not found, throw exception as in original
             if (string.IsNullOrEmpty(buildPath))
             {
-                buildPath = $"build/{target}";
-                Debug.LogWarning($"No build path specified, using default: {buildPath}");
+                throw new Exception("customBuildPath not specified");
             }
 
-            // Try to get build name from arguments first
+            // Get build name - first try command line, then environment variables
             var buildName = GetArgument(Environment.GetCommandLineArgs(), "-customBuildName", "");
-
-            // If not found, try environment variable
             if (string.IsNullOrEmpty(buildName))
             {
-                // Try BUILD_FILE first (it might be more specific)
+                // Try BUILD_FILE first (Unity Builder might set this)
                 buildName = Environment.GetEnvironmentVariable("BUILD_FILE");
                 if (!string.IsNullOrEmpty(buildName))
                 {
-                    // Remove extension from BUILD_FILE
                     buildName = Path.GetFileNameWithoutExtension(buildName);
-                    Debug.Log($"Using BUILD_FILE from environment variable: {buildName}");
                 }
                 else
                 {
                     // Fallback to BUILD_NAME
                     buildName = Environment.GetEnvironmentVariable("BUILD_NAME");
-                    if (!string.IsNullOrEmpty(buildName))
-                    {
-                        Debug.Log($"Using BUILD_NAME from environment variable: {buildName}");
-                    }
                 }
             }
-
-            // If still not found, use default
+            
+            // Default if still not found
             if (string.IsNullOrEmpty(buildName))
             {
                 buildName = "uPiper";
@@ -171,16 +163,40 @@ namespace UnityBuilderAction
                 buildName = $"{buildName}-{scriptingBackend}";
             }
 
-            return target switch
+            // If from command line, buildPath already contains the base file name
+            // We need to append the build name with scripting backend
+            if (isFromCommandLine)
             {
-                BuildTarget.StandaloneWindows64 => $"{buildPath}/{buildName}.exe",
-                BuildTarget.StandaloneOSX => $"{buildPath}/{buildName}.app",
-                BuildTarget.StandaloneLinux64 => $"{buildPath}/{buildName}",
-                BuildTarget.Android => $"{buildPath}/{buildName}.apk",
-                BuildTarget.iOS => $"{buildPath}/{buildName}",
-                BuildTarget.WebGL => $"{buildPath}/{buildName}",
-                _ => throw new Exception($"Unsupported build target: {target}"),
-            };
+                // buildPath is like: /path/to/build/StandaloneWindows64/uPiper.exe
+                // or /path/to/build/StandaloneLinux64/uPiper
+                // We need to create: /path/to/build/StandaloneWindows64/uPiper.exe/uPiper-Mono2x.exe
+                
+                // For all platforms, we append directory and then the full name with extension
+                return target switch
+                {
+                    BuildTarget.StandaloneWindows64 => $"{buildPath}/{buildName}.exe",
+                    BuildTarget.StandaloneOSX => $"{buildPath}/{buildName}.app",
+                    BuildTarget.StandaloneLinux64 => $"{buildPath}/{buildName}",
+                    BuildTarget.Android => $"{buildPath}/{buildName}.apk",
+                    BuildTarget.iOS => $"{buildPath}/{buildName}",
+                    BuildTarget.WebGL => $"{buildPath}/{buildName}",
+                    _ => throw new Exception($"Unsupported build target: {target}"),
+                };
+            }
+            else
+            {
+                // From environment variable, construct full path
+                return target switch
+                {
+                    BuildTarget.StandaloneWindows64 => $"{buildPath}/{buildName}.exe",
+                    BuildTarget.StandaloneOSX => $"{buildPath}/{buildName}.app",
+                    BuildTarget.StandaloneLinux64 => $"{buildPath}/{buildName}",
+                    BuildTarget.Android => $"{buildPath}/{buildName}.apk",
+                    BuildTarget.iOS => $"{buildPath}/{buildName}",
+                    BuildTarget.WebGL => $"{buildPath}/{buildName}",
+                    _ => throw new Exception($"Unsupported build target: {target}"),
+                };
+            }
         }
 
         private static string GetArgument(string[] args, string name, string defaultValue = "")
@@ -193,6 +209,61 @@ namespace UnityBuilderAction
                 }
             }
             return defaultValue;
+        }
+
+        private static BuildTarget GetBuildTarget()
+        {
+            var targetName = Environment.GetEnvironmentVariable("BUILD_TARGET");
+            if (string.IsNullOrEmpty(targetName))
+            {
+                targetName = GetArgument(Environment.GetCommandLineArgs(), "-buildTarget", "StandaloneWindows64");
+            }
+
+            if (Enum.TryParse<BuildTarget>(targetName, out var target))
+            {
+                return target;
+            }
+
+            Debug.LogWarning($"Unknown build target: {targetName}, defaulting to StandaloneWindows64");
+            return BuildTarget.StandaloneWindows64;
+        }
+
+        private static NamedBuildTarget GetNamedBuildTarget(BuildTarget target)
+        {
+            return target switch
+            {
+                BuildTarget.StandaloneWindows64 => NamedBuildTarget.Standalone,
+                BuildTarget.StandaloneLinux64 => NamedBuildTarget.Standalone,
+                BuildTarget.StandaloneOSX => NamedBuildTarget.Standalone,
+                BuildTarget.Android => NamedBuildTarget.Android,
+                BuildTarget.iOS => NamedBuildTarget.iOS,
+                BuildTarget.WebGL => NamedBuildTarget.WebGL,
+                _ => NamedBuildTarget.Standalone,
+            };
+        }
+
+        private static string GetScriptingBackend()
+        {
+            var customParams = Environment.GetEnvironmentVariable("CUSTOM_PARAMETERS");
+            if (string.IsNullOrEmpty(customParams))
+            {
+                customParams = string.Join(" ", Environment.GetCommandLineArgs());
+            }
+
+            if (customParams.Contains("-scriptingBackend IL2CPP", StringComparison.OrdinalIgnoreCase))
+            {
+                return "IL2CPP";
+            }
+
+            return "Mono2x";
+        }
+
+        private static string[] FindEnabledEditorScenes()
+        {
+            return EditorBuildSettings.scenes
+                .Where(scene => scene.enabled)
+                .Select(scene => scene.path)
+                .ToArray();
         }
     }
 }
