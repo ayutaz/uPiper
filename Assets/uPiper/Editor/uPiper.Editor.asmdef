@@ -4,8 +4,7 @@
     "references": [
         "uPiper.Runtime",
         "Unity.InferenceEngine",
-        "Unity.TextMeshPro",
-        "Unity.InputSystem"
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [
         "Editor"
