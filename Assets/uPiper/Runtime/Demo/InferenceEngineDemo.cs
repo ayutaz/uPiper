@@ -278,15 +278,36 @@ namespace uPiper.Demo
             // Try to find Japanese font if not assigned
             if (_japaneseFontAsset == null)
             {
-                // Try to load NotoSansJP-Regular SDF from Resources or find it in loaded assets
-                var allFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
-                foreach (var font in allFonts)
+#if UNITY_EDITOR
+                // In Editor, try to load from Samples folder (Package Manager installation)
+                var samplesPath = Application.dataPath + "/Samples/uPiper";
+                if (System.IO.Directory.Exists(samplesPath))
                 {
-                    if (font.name.Contains("NotoSans") && (font.name.Contains("JP") || font.name.Contains("CJK")))
+                    var fontPaths = System.IO.Directory.GetFiles(samplesPath, "NotoSansJP-Regular SDF.asset", System.IO.SearchOption.AllDirectories);
+                    if (fontPaths.Length > 0)
                     {
-                        _japaneseFontAsset = font;
-                        PiperLogger.LogInfo($"[InferenceEngineDemo] Found Japanese font automatically: {font.name}");
-                        break;
+                        var relativePath = fontPaths[0].Replace('\\', '/').Replace(Application.dataPath, "Assets");
+                        _japaneseFontAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(relativePath);
+                        if (_japaneseFontAsset != null)
+                        {
+                            PiperLogger.LogInfo($"[InferenceEngineDemo] Loaded Japanese font from Samples: {relativePath}");
+                        }
+                    }
+                }
+#endif
+                
+                // Fallback: Try to find in loaded assets
+                if (_japaneseFontAsset == null)
+                {
+                    var allFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+                    foreach (var font in allFonts)
+                    {
+                        if (font.name.Contains("NotoSans") && (font.name.Contains("JP") || font.name.Contains("CJK")))
+                        {
+                            _japaneseFontAsset = font;
+                            PiperLogger.LogInfo($"[InferenceEngineDemo] Found Japanese font automatically: {font.name}");
+                            break;
+                        }
                     }
                 }
             }
