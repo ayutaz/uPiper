@@ -27,10 +27,10 @@ namespace uPiper.Core.Platform
         public static async void PreloadDictionaryAsync()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
-            // メインスレッドでパスを取得してから非同期処理を開始
+            // メインスレッドで実行（UnityWebRequestを使用するため）
             var persistentPath = Application.persistentDataPath;
             var streamingPath = Application.streamingAssetsPath;
-            await Task.Run(async () => await ExtractDictionaryIfNeededInternalAsync(persistentPath, streamingPath));
+            await ExtractDictionaryIfNeededInternalAsync(persistentPath, streamingPath);
 #else
             await Task.CompletedTask;
 #endif
@@ -133,59 +133,74 @@ namespace uPiper.Core.Platform
                     // ZIPファイルをStreamingAssetsから読み込み
                     var zipPath = Path.Combine(streamingAssetsPath, "uPiper", "OpenJTalk", DICT_ZIP_NAME);
 
+                    byte[] zipData = null;
+                    
+                    // Unity 2022互換: TaskCompletionSourceを使用
+                    var tcs = new TaskCompletionSource<byte[]>();
                     using (var request = UnityWebRequest.Get(zipPath))
                     {
                         var operation = request.SendWebRequest();
-
-                        // 非同期で完了を待つ
-                        while (!operation.isDone)
+                        
+                        // コルーチンの代わりにタスクで待機
+                        operation.completed += _ =>
                         {
-                            await Task.Delay(10);
+                            if (request.result == UnityWebRequest.Result.Success)
+                            {
+                                tcs.SetResult(request.downloadHandler.data);
+                            }
+                            else
+                            {
+                                tcs.SetException(new Exception($"Failed to load dictionary ZIP: {request.error}"));
+                            }
+                        };
+                        
+                        try
+                        {
+                            zipData = await tcs.Task;
                         }
-
-                        if (request.result != UnityWebRequest.Result.Success)
+                        catch (Exception ex)
                         {
-                            PiperLogger.LogError($"[OptimizedAndroid] Failed to load dictionary ZIP: {request.error}");
+                            PiperLogger.LogError($"[OptimizedAndroid] {ex.Message}");
                             return false;
                         }
+                    }
 
-                        // メモリ効率的な展開
-                        using var zipStream = new MemoryStream(request.downloadHandler.data);
-                        using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read);
-                        PiperLogger.LogInfo($"[OptimizedAndroid] Extracting {archive.Entries.Count} files...");
+                    // メモリ効率的な展開
+                    using var zipStream = new MemoryStream(zipData);
+                    using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read);
+                    PiperLogger.LogInfo($"[OptimizedAndroid] Extracting {archive.Entries.Count} files...");
 
-                        var extracted = 0;
-                        foreach (var entry in archive.Entries)
+                    var extracted = 0;
+                    foreach (var entry in archive.Entries)
+                    {
+                        if (string.IsNullOrEmpty(entry.Name))
+                            continue; // ディレクトリエントリをスキップ
+
+                        var targetPath = Path.Combine(destPath, entry.FullName);
+                        var targetDir = Path.GetDirectoryName(targetPath);
+
+                        if (!Directory.Exists(targetDir))
                         {
-                            if (string.IsNullOrEmpty(entry.Name))
-                                continue; // ディレクトリエントリをスキップ
-
-                            var targetPath = Path.Combine(destPath, entry.FullName);
-                            var targetDir = Path.GetDirectoryName(targetPath);
-
-                            if (!Directory.Exists(targetDir))
-                            {
-                                Directory.CreateDirectory(targetDir);
-                            }
-
-                            using (var entryStream = entry.Open())
-                            using (var fileStream = File.Create(targetPath))
-                            {
-                                await entryStream.CopyToAsync(fileStream);
-                            }
-
-                            extracted++;
-
-                            // 定期的にGCを実行してメモリ使用量を抑える
-                            if (extracted % 100 == 0)
-                            {
-                                GC.Collect();
-                                await Task.Yield();
-                            }
+                            Directory.CreateDirectory(targetDir);
                         }
 
-                        PiperLogger.LogInfo($"[OptimizedAndroid] Extracted {extracted} files");
+                        using (var entryStream = entry.Open())
+                        using (var fileStream = File.Create(targetPath))
+                        {
+                            await entryStream.CopyToAsync(fileStream);
+                        }
+
+                        extracted++;
+
+                        // 定期的にGCを実行してメモリ使用量を抑える
+                        if (extracted % 100 == 0)
+                        {
+                            GC.Collect();
+                            await Task.Yield();
+                        }
                     }
+
+                    PiperLogger.LogInfo($"[OptimizedAndroid] Extracted {extracted} files");
 
                     // 展開完了マーカーを作成
                     File.WriteAllText(markerPath, DICT_VERSION);
