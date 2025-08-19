@@ -236,29 +236,8 @@ namespace uPiper.Demo
             }
 
 
-            // Initialize English phonemizer (Flite LTS)
-            Task.Run(async () =>
-            {
-                try
-                {
-                    _englishPhonemizer = new Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer();
-                    var initialized = await _englishPhonemizer.InitializeAsync(new Core.Phonemizers.Backend.PhonemizerBackendOptions());
-                    if (initialized)
-                    {
-                        PiperLogger.LogInfo("[InferenceEngineDemo] Flite LTS phonemizer initialized successfully");
-                    }
-                    else
-                    {
-                        PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer");
-                        _englishPhonemizer = null;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer: {ex.Message}");
-                    _englishPhonemizer = null;
-                }
-            });
+            // Initialize English phonemizer (Flite LTS) - use Unity's main thread
+            InitializeEnglishPhonemizerAsync();
 #endif
 
             SetupUI();
@@ -1212,6 +1191,31 @@ namespace uPiper.Demo
                 _phonemeDetailsText.text = "";
             }
         }
+
+#if !UNITY_WEBGL
+        private async void InitializeEnglishPhonemizerAsync()
+        {
+            try
+            {
+                _englishPhonemizer = new Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer();
+                var initialized = await _englishPhonemizer.InitializeAsync(new Core.Phonemizers.Backend.PhonemizerBackendOptions());
+                if (initialized)
+                {
+                    PiperLogger.LogInfo("[InferenceEngineDemo] Flite LTS phonemizer initialized successfully");
+                }
+                else
+                {
+                    PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer");
+                    _englishPhonemizer = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer: {ex.Message}");
+                _englishPhonemizer = null;
+            }
+        }
+#endif
 
 #if UNITY_ANDROID && !UNITY_EDITOR
         private void DebugAndroidSetup()

@@ -24,10 +24,15 @@ namespace uPiper.Core.Platform
         /// <summary>
         /// アプリ起動時に非同期で辞書展開を開始
         /// </summary>
-        public static void PreloadDictionaryAsync()
+        public static async void PreloadDictionaryAsync()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
-            Task.Run(async () => await ExtractDictionaryIfNeededAsync());
+            // メインスレッドでパスを取得してから非同期処理を開始
+            var persistentPath = Application.persistentDataPath;
+            var streamingPath = Application.streamingAssetsPath;
+            await Task.Run(async () => await ExtractDictionaryIfNeededInternalAsync(persistentPath, streamingPath));
+#else
+            await Task.CompletedTask;
 #endif
         }
 
@@ -37,7 +42,10 @@ namespace uPiper.Core.Platform
         public static async Task<string> GetDictionaryPathAsync()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
-            var dictPath = Path.Combine(Application.persistentDataPath, "uPiper", "OpenJTalk", "naist_jdic");
+            // メインスレッドでパスを取得
+            var persistentPath = Application.persistentDataPath;
+            var streamingPath = Application.streamingAssetsPath;
+            var dictPath = Path.Combine(persistentPath, "uPiper", "OpenJTalk", "naist_jdic");
             
             // 既に展開済みかチェック
             var markerPath = Path.Combine(dictPath, DICT_EXTRACTED_MARKER);
@@ -51,7 +59,7 @@ namespace uPiper.Core.Platform
             }
             
             // まだ展開されていない場合は展開
-            await ExtractDictionaryIfNeededAsync();
+            await ExtractDictionaryIfNeededInternalAsync(persistentPath, streamingPath);
             
             return dictPath;
 #else
@@ -61,9 +69,9 @@ namespace uPiper.Core.Platform
         }
 
         /// <summary>
-        /// 辞書データを圧縮形式から展開
+        /// 辞書データを圧縮形式から展開（内部メソッド、パスを引数で受け取る）
         /// </summary>
-        private static async Task<bool> ExtractDictionaryIfNeededAsync()
+        private static async Task<bool> ExtractDictionaryIfNeededInternalAsync(string persistentDataPath, string streamingAssetsPath)
         {
             var profiler = new AndroidPerformanceProfiler();
 
@@ -71,7 +79,7 @@ namespace uPiper.Core.Platform
             {
                 try
                 {
-                    var destPath = Path.Combine(Application.persistentDataPath, "uPiper", "OpenJTalk", "naist_jdic");
+                    var destPath = Path.Combine(persistentDataPath, "uPiper", "OpenJTalk", "naist_jdic");
                     var markerPath = Path.Combine(destPath, DICT_EXTRACTED_MARKER);
 
                     // 既に展開済みかチェック
@@ -95,7 +103,7 @@ namespace uPiper.Core.Platform
                     AndroidPerformanceProfiler.LogMemoryUsage("Before Extraction");
 
                     // ZIPファイルをStreamingAssetsから読み込み
-                    var zipPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", DICT_ZIP_NAME);
+                    var zipPath = Path.Combine(streamingAssetsPath, "uPiper", "OpenJTalk", DICT_ZIP_NAME);
 
                     using (var request = UnityWebRequest.Get(zipPath))
                     {
