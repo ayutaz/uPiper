@@ -106,6 +106,12 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 #### 日本語が文字化けする場合
 - Basic TTS Demoに含まれるNotoSansJP-Regular SDFフォントを使用
 
+#### UIボタンがクリックできない場合（Input Manager使用時）
+- プロジェクト設定で「Active Input Handling」を確認
+- Edit > Project Settings > Player > Active Input Handling
+- 「Input Manager」に設定されている場合、EventSystemAutoSetupコンポーネントが自動的に対応
+- 詳細は `Samples~/BasicTTSDemo/BasicTTSDemo_README.md` を参照
+
 ## サポートプラットフォーム
 
 ### 現在サポート中
