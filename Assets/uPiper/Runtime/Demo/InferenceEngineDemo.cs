@@ -284,7 +284,12 @@ namespace uPiper.Demo
         
         private void AutoDetectFonts()
         {
+#if UNITY_2023_1_OR_NEWER
+            // Resources.FindObjectsOfTypeAll doesn't have the new API, so we keep using it
             var allFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+#else
+            var allFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+#endif
             
             // Auto-detect default/English font if not assigned
             if (_defaultFontAsset == null)
@@ -388,7 +393,11 @@ namespace uPiper.Demo
         private void ApplyFontFallbackToAllTextComponents()
         {
             // Find all TextMeshProUGUI components in the scene
+#if UNITY_2023_1_OR_NEWER
+            var allTextComponents = FindObjectsByType<TextMeshProUGUI>(FindObjectsSortMode.None);
+#else
             var allTextComponents = FindObjectsOfType<TextMeshProUGUI>();
+#endif
             foreach (var textComponent in allTextComponents)
             {
                 if (textComponent.font != null && textComponent.font != _japaneseFontAsset)
