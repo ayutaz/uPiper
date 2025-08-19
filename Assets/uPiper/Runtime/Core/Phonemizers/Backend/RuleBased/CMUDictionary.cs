@@ -57,6 +57,10 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                     // Fall back to StreamingAssets path
                     actualFilePath = uPiperPaths.GetRuntimeCMUPath(fileName);
                 }
+#elif UNITY_ANDROID && !UNITY_EDITOR
+                // Android platform: Extract from APK to persistent storage
+                actualFilePath = Platform.AndroidPathResolver.GetCMUDictionaryPath();
+                Debug.Log($"[CMUDictionary] Android platform: Using persistent path: {actualFilePath}");
 #else
                 // Primary path after setup - using shared constant for consistency
                 var streamingAssetsPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "Phonemizers", fileName);
@@ -100,18 +104,10 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                         actualFilePath);
                 }
 
-                // Check if we need to extract from StreamingAssets
-                var actualPath = actualFilePath;
-                if (actualFilePath.Contains("StreamingAssets") && Application.platform == RuntimePlatform.Android)
-                {
-                    // On Android, we need to copy from StreamingAssets
-                    actualPath = await CopyFromStreamingAssets(actualFilePath, cancellationToken);
-                }
-
                 // Read the dictionary file with timeout
                 var readTask = Task.Run(async () =>
                 {
-                    using (var reader = new StreamReader(actualPath))
+                    using (var reader = new StreamReader(actualFilePath))
                     {
                         string line;
                         while ((line = await reader.ReadLineAsync()) != null)
@@ -262,39 +258,6 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             return parenIndex > 0 ? word[..parenIndex] : word;
         }
 
-        private async Task<string> CopyFromStreamingAssets(string streamingPath, CancellationToken cancellationToken)
-        {
-            // For Android, we need to use UnityWebRequest to access StreamingAssets
-            var fileName = Path.GetFileName(streamingPath);
-            var persistentPath = Path.Combine(Application.persistentDataPath, "Dictionaries", fileName);
-
-            // Create directory if needed
-            var dir = Path.GetDirectoryName(persistentPath);
-            if (!Directory.Exists(dir))
-            {
-                Directory.CreateDirectory(dir);
-            }
-
-            // Check if already copied
-            if (File.Exists(persistentPath))
-            {
-                return persistentPath;
-            }
-
-            // Copy file (platform-specific implementation needed)
-            using var www = UnityEngine.Networking.UnityWebRequest.Get(streamingPath);
-            await www.SendWebRequest();
-
-            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
-            {
-                File.WriteAllBytes(persistentPath, www.downloadHandler.data);
-                return persistentPath;
-            }
-            else
-            {
-                throw new IOException($"Failed to load dictionary from StreamingAssets: {www.error}");
-            }
-        }
 
         public void Dispose()
         {

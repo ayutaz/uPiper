@@ -112,14 +112,48 @@ namespace uPiper.Editor.Build
             var sourceFile = Path.Combine(SAMPLES_PATH, CMU_SOURCE, "cmudict-0.7b.txt");
             var targetFile = Path.Combine(STREAMING_ASSETS_PATH, PHONEMIZERS_TARGET, "cmudict-0.7b.txt");
             
+            Debug.Log($"[DevelopmentBuildProcessor] CMU dictionary source: {sourceFile}");
+            Debug.Log($"[DevelopmentBuildProcessor] CMU dictionary target: {targetFile}");
+            Debug.Log($"[DevelopmentBuildProcessor] Source file exists: {File.Exists(sourceFile)}");
+            
             if (!File.Exists(sourceFile))
             {
+                // Try to find the file
+                var samplesDir = Path.Combine(SAMPLES_PATH, CMU_SOURCE);
+                if (Directory.Exists(samplesDir))
+                {
+                    var files = Directory.GetFiles(samplesDir, "*.txt");
+                    Debug.LogError($"[DevelopmentBuildProcessor] CMU dictionary not found at: {sourceFile}");
+                    Debug.LogError($"[DevelopmentBuildProcessor] Available files in {samplesDir}:");
+                    foreach (var file in files)
+                    {
+                        Debug.LogError($"  - {Path.GetFileName(file)}");
+                    }
+                }
                 throw new FileNotFoundException($"CMU dictionary not found at: {sourceFile}");
             }
             
-            Directory.CreateDirectory(Path.GetDirectoryName(targetFile));
+            // Ensure target directory exists
+            var targetDir = Path.GetDirectoryName(targetFile);
+            if (!Directory.Exists(targetDir))
+            {
+                Directory.CreateDirectory(targetDir);
+                Debug.Log($"[DevelopmentBuildProcessor] Created directory: {targetDir}");
+            }
+            
+            // Copy the file
             File.Copy(sourceFile, targetFile, true);
-            Debug.Log($"[DevelopmentBuildProcessor] Copied CMU dictionary from {sourceFile} to {targetFile}");
+            
+            // Verify the copy
+            if (File.Exists(targetFile))
+            {
+                var fileInfo = new FileInfo(targetFile);
+                Debug.Log($"[DevelopmentBuildProcessor] Successfully copied CMU dictionary to {targetFile} (size: {fileInfo.Length} bytes)");
+            }
+            else
+            {
+                throw new IOException($"Failed to copy CMU dictionary to {targetFile}");
+            }
         }
 
         private void CopyDirectory(string sourceDir, string targetDir)

@@ -108,6 +108,40 @@ namespace uPiper.Core.Platform
 
             return persistentPath;
         }
+
+        /// <summary>
+        /// Get the path to the CMU Pronouncing Dictionary
+        /// </summary>
+        public static string GetCMUDictionaryPath()
+        {
+            Debug.Log("[AndroidPathResolver] Getting CMU dictionary path for Android");
+            
+            string cmuRelativePath = Path.Combine("uPiper", "Phonemizers", "cmudict-0.7b.txt");
+            string persistentPath = GetPersistentPath(cmuRelativePath);
+
+            // Check if dictionary needs extraction
+            if (NeedsExtraction(persistentPath))
+            {
+                Debug.Log("[AndroidPathResolver] Extracting CMU dictionary from APK...");
+                ExtractFromStreamingAssets(cmuRelativePath);
+                
+                if (File.Exists(persistentPath))
+                {
+                    var fileInfo = new FileInfo(persistentPath);
+                    Debug.Log($"[AndroidPathResolver] Extracted CMU dictionary to {persistentPath} (size: {fileInfo.Length} bytes)");
+                }
+                else
+                {
+                    Debug.LogError($"[AndroidPathResolver] Failed to extract CMU dictionary to {persistentPath}");
+                }
+            }
+            else
+            {
+                Debug.Log($"[AndroidPathResolver] CMU dictionary already exists at {persistentPath}");
+            }
+
+            return persistentPath;
+        }
     }
 }
 
