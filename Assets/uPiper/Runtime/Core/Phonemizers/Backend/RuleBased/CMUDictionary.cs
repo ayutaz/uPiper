@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core;
 
 namespace uPiper.Core.Phonemizers.Backend.RuleBased
 {
@@ -44,7 +45,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
 
 #if UNITY_EDITOR && UPIPER_DEVELOPMENT
                 // Development environment: Load directly from Samples~
-                var developmentPath = Path.Combine(Application.dataPath, "uPiper", "Samples~", "CMU Pronouncing Dictionary", fileName);
+                var developmentPath = uPiperPaths.GetDevelopmentCMUPath(fileName);
                 if (File.Exists(developmentPath))
                 {
                     actualFilePath = developmentPath;

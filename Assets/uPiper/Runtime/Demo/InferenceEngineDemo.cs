@@ -644,15 +644,13 @@ namespace uPiper.Demo
                     PiperLogger.LogInfo($"  - {asset.name}");
                 }
 
-                // Try loading from both possible paths (new location first, then old location)
-                var jsonAsset = Resources.Load<TextAsset>($"uPiper/Models/{modelName}.onnx.json") ??
-                               Resources.Load<TextAsset>($"Models/{modelName}.onnx.json");
+                // Try loading JSON configuration with fallback
+                var jsonAsset = LoadTextAssetWithFallback($"{modelName}.onnx.json");
                 if (jsonAsset == null)
                 {
                     // 拡張子なしで試す
                     PiperLogger.LogDebug($"Trying without extension: {modelName}.onnx");
-                    jsonAsset = Resources.Load<TextAsset>($"uPiper/Models/{modelName}.onnx") ??
-                               Resources.Load<TextAsset>($"Models/{modelName}.onnx");
+                    jsonAsset = LoadTextAssetWithFallback($"{modelName}.onnx");
                 }
 
                 if (jsonAsset == null)
@@ -1272,6 +1270,32 @@ namespace uPiper.Demo
             }
         }
 #endif
+
+        /// <summary>
+        /// Load model asset with fallback paths
+        /// </summary>
+        private ModelAsset LoadModelAssetWithFallback(string modelName)
+        {
+            // Try new location first
+            var asset = Resources.Load<ModelAsset>($"{uPiperPaths.RESOURCES_MODELS_PATH}/{modelName}");
+            if (asset != null) return asset;
+
+            // Fallback to legacy location
+            return Resources.Load<ModelAsset>($"{uPiperPaths.LEGACY_MODELS_PATH}/{modelName}");
+        }
+
+        /// <summary>
+        /// Load text asset with fallback paths
+        /// </summary>
+        private TextAsset LoadTextAssetWithFallback(string fileName)
+        {
+            // Try new location first
+            var asset = Resources.Load<TextAsset>($"{uPiperPaths.RESOURCES_MODELS_PATH}/{fileName}");
+            if (asset != null) return asset;
+
+            // Fallback to legacy location
+            return Resources.Load<TextAsset>($"{uPiperPaths.LEGACY_MODELS_PATH}/{fileName}");
+        }
 
         /// <summary>
         /// モデルのインデックスからモデル名を取得

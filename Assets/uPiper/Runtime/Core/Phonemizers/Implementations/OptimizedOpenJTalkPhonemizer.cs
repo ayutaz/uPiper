@@ -10,6 +10,7 @@ using uPiper.Core.Logging;
 using uPiper.Core.Performance;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Platform;
+using uPiper.Core;
 
 namespace uPiper.Core.Phonemizers.Implementations
 {
@@ -202,7 +203,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     string dictPath;
 #if UNITY_EDITOR && UPIPER_DEVELOPMENT
                     // Development environment: Load directly from Samples~
-                    dictPath = Path.Combine(Application.dataPath, "uPiper", "Samples~", "OpenJTalk Dictionary Data", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
+                    dictPath = uPiperPaths.GetDevelopmentOpenJTalkPath();
                     Debug.Log($"[OptimizedOpenJTalk] Development mode: Loading from Samples~: {dictPath}");
 #elif UNITY_ANDROID && !UNITY_EDITOR
                     dictPath = await OptimizedAndroidPathResolver.GetDictionaryPathAsync();

@@ -18,6 +18,7 @@ using UnityEngine.Scripting;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Platform;
+using uPiper.Core;
 
 namespace uPiper.Core.Phonemizers.Implementations
 {
@@ -613,7 +614,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             return AndroidPathResolver.GetOpenJTalkDictionaryPath();
 #elif UNITY_EDITOR && UPIPER_DEVELOPMENT
             // Development environment: Load directly from Samples~
-            var developmentPath = Path.Combine(Application.dataPath, "uPiper", "Samples~", "OpenJTalk Dictionary Data", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
+            var developmentPath = uPiperPaths.GetDevelopmentOpenJTalkPath();
             if (Directory.Exists(developmentPath))
             {
                 Debug.Log($"[OpenJTalkPhonemizer] Development mode: Loading from Samples~: {developmentPath}");
