@@ -118,6 +118,11 @@ namespace UnityBuilderAction
                 buildPath = Environment.GetEnvironmentVariable("BUILD_PATH");
                 if (!string.IsNullOrEmpty(buildPath))
                 {
+                    // BUILD_PATH might include the file name, extract just the directory
+                    if (buildPath.Contains(".exe") || buildPath.Contains(".app") || Path.HasExtension(buildPath))
+                    {
+                        buildPath = Path.GetDirectoryName(buildPath);
+                    }
                     Debug.Log($"Using BUILD_PATH from environment variable: {buildPath}");
                 }
             }
@@ -135,10 +140,22 @@ namespace UnityBuilderAction
             // If not found, try environment variable
             if (string.IsNullOrEmpty(buildName))
             {
-                buildName = Environment.GetEnvironmentVariable("BUILD_NAME");
+                // Try BUILD_FILE first (it might be more specific)
+                buildName = Environment.GetEnvironmentVariable("BUILD_FILE");
                 if (!string.IsNullOrEmpty(buildName))
                 {
-                    Debug.Log($"Using BUILD_NAME from environment variable: {buildName}");
+                    // Remove extension from BUILD_FILE
+                    buildName = Path.GetFileNameWithoutExtension(buildName);
+                    Debug.Log($"Using BUILD_FILE from environment variable: {buildName}");
+                }
+                else
+                {
+                    // Fallback to BUILD_NAME
+                    buildName = Environment.GetEnvironmentVariable("BUILD_NAME");
+                    if (!string.IsNullOrEmpty(buildName))
+                    {
+                        Debug.Log($"Using BUILD_NAME from environment variable: {buildName}");
+                    }
                 }
             }
 
