@@ -275,6 +275,22 @@ namespace uPiper.Demo
                 _defaultFontAsset = _inputField.fontAsset;
             }
 
+            // Try to find Japanese font if not assigned
+            if (_japaneseFontAsset == null)
+            {
+                // Try to load NotoSansJP-Regular SDF from Resources or find it in loaded assets
+                var allFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+                foreach (var font in allFonts)
+                {
+                    if (font.name.Contains("NotoSans") && (font.name.Contains("JP") || font.name.Contains("CJK")))
+                    {
+                        _japaneseFontAsset = font;
+                        PiperLogger.LogInfo($"[InferenceEngineDemo] Found Japanese font automatically: {font.name}");
+                        break;
+                    }
+                }
+            }
+
             // Setup font fallback chain for multi-language support
             SetupFontFallbackChain();
         }
@@ -294,6 +310,9 @@ namespace uPiper.Demo
                 {
                     _defaultFontAsset.fallbackFontAssetTable.Add(_japaneseFontAsset);
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Added Japanese font as fallback to default font");
+                    
+                    // Apply fallback to all TextMeshProUGUI components in the scene
+                    ApplyFontFallbackToAllTextComponents();
                 }
                 else if (_japaneseFontAsset == null)
                 {
@@ -305,6 +324,29 @@ namespace uPiper.Demo
 
             // Japanese font setup
             // No additional fallback needed
+        }
+        
+        private void ApplyFontFallbackToAllTextComponents()
+        {
+            // Find all TextMeshProUGUI components in the scene
+            var allTextComponents = FindObjectsOfType<TextMeshProUGUI>();
+            foreach (var textComponent in allTextComponents)
+            {
+                if (textComponent.fontAsset != null && textComponent.fontAsset != _japaneseFontAsset)
+                {
+                    if (textComponent.fontAsset.fallbackFontAssetTable == null)
+                    {
+                        textComponent.fontAsset.fallbackFontAssetTable = new List<TMP_FontAsset>();
+                    }
+                    
+                    if (!textComponent.fontAsset.fallbackFontAssetTable.Contains(_japaneseFontAsset))
+                    {
+                        textComponent.fontAsset.fallbackFontAssetTable.Add(_japaneseFontAsset);
+                    }
+                }
+            }
+            
+            PiperLogger.LogInfo($"[InferenceEngineDemo] Applied Japanese font fallback to {allTextComponents.Length} text components");
         }
 
 
