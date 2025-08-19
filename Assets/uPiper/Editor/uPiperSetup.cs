@@ -24,7 +24,7 @@ namespace uPiper.Editor
         public const string TARGET_STREAMING_ASSETS_PATH = "Assets/StreamingAssets/uPiper";
 
         [InitializeOnLoadMethod]
-        static void CheckFirstTimeSetup()
+        private static void CheckFirstTimeSetup()
         {
 #if !UPIPER_DEVELOPMENT
             EditorApplication.delayCall += () =>

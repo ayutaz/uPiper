@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
@@ -7,7 +8,6 @@ using UnityEngine.TestTools;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers.Backend.Flite;
-using System.Linq;
 
 namespace uPiper.Tests.Runtime
 {

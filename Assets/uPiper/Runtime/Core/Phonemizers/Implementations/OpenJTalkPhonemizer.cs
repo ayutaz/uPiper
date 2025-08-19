@@ -15,10 +15,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Scripting;
+using uPiper.Core;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Platform;
-using uPiper.Core;
 
 namespace uPiper.Core.Phonemizers.Implementations
 {
@@ -146,7 +146,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 if (Application.isBatchMode || Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null)
                 {
                     Debug.Log("[OpenJTalkPhonemizer] CI environment detected, setting DLL search paths...");
-                    
+
                     // Try multiple DLL directories
                     var dllPaths = new[]
                     {
@@ -155,7 +155,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                         Path.Combine(Application.dataPath, "Plugins", "x86_64"),
                         Path.Combine(Directory.GetCurrentDirectory(), "Library", "ScriptAssemblies")
                     };
-                    
+
                     foreach (var dllPath in dllPaths)
                     {
                         if (Directory.Exists(dllPath))
@@ -540,7 +540,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     }
                 }
             }
-            
+
             // Method 2: Try using UnityEditor.PackageManager (if available)
             try
             {
@@ -549,7 +549,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 {
                     System.Threading.Thread.Sleep(10);
                 }
-                
+
                 if (packageListRequest.Status == UnityEditor.PackageManager.StatusCode.Success)
                 {
                     foreach (var package in packageListRequest.Result)
@@ -577,7 +577,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 #if UNITY_EDITOR
             string libraryFileName = "";
             string platformFolder = "";
-            
+
             if (PlatformHelper.IsWindows)
             {
                 libraryFileName = "openjtalk_wrapper.dll";
@@ -593,10 +593,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                 libraryFileName = "libopenjtalk_wrapper.so";
                 platformFolder = Path.Combine("Linux", "x86_64");
             }
-            
+
             // After initial setup, files should be in fixed location
             paths.Add(Path.Combine(Application.dataPath, "uPiper", "Plugins", platformFolder, libraryFileName));
-            
+
             // Legacy paths for backward compatibility
             if (PlatformHelper.IsWindows)
             {
@@ -724,7 +724,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                             return true;
                         }
                     }
-                    
+
                     // Library not found - provide helpful error message
                     Debug.LogError($"[OpenJTalkPhonemizer] Native library not found. Searched locations:");
                     Debug.LogError($"  Primary: {libraryPath}");
@@ -732,7 +732,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     {
                         Debug.LogError($"  - {altPath}");
                     }
-                    
+
                     Debug.LogError($"[OpenJTalkPhonemizer] Please run 'uPiper/Setup/Run Initial Setup' from the menu to copy required files.");
 
                     return false;
@@ -811,7 +811,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             // Define library file name based on platform
             string libraryFileName = "";
             string platformFolder = "";
-            
+
             if (PlatformHelper.IsWindows)
             {
                 libraryFileName = "openjtalk_wrapper.dll";
@@ -827,10 +827,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                 libraryFileName = "libopenjtalk_wrapper.so";
                 platformFolder = Path.Combine("Linux", "x86_64");
             }
-            
+
             // After initial setup, files should be in fixed location
             var primaryPath = Path.Combine(Application.dataPath, "uPiper", "Plugins", platformFolder, libraryFileName);
-            
+
             // Check primary path first
             if (PlatformHelper.IsMacOS && libraryFileName.EndsWith(".bundle"))
             {
@@ -850,7 +850,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 Debug.Log($"[OpenJTalkPhonemizer] Found library at: {primaryPath}");
                 return primaryPath;
             }
-            
+
             // Check legacy paths for backward compatibility
             if (PlatformHelper.IsWindows)
             {
@@ -861,11 +861,11 @@ namespace uPiper.Core.Phonemizers.Implementations
                     return legacyPath;
                 }
             }
-            
+
             // Library not found - provide helpful error message
             Debug.LogError($"[OpenJTalkPhonemizer] Native library not found at: {primaryPath}");
             Debug.LogError($"[OpenJTalkPhonemizer] Please run 'uPiper/Setup/Run Initial Setup' from the menu.");
-            
+
             return primaryPath; // Return expected path for error messages
 #else
             // In built application, Unity automatically loads native plugins

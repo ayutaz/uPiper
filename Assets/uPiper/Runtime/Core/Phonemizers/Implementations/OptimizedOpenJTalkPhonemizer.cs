@@ -6,11 +6,11 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core;
 using uPiper.Core.Logging;
 using uPiper.Core.Performance;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Platform;
-using uPiper.Core;
 
 namespace uPiper.Core.Phonemizers.Implementations
 {
