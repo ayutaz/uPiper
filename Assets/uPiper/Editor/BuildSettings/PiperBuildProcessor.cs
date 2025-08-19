@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -18,6 +19,9 @@ namespace uPiper.Editor.BuildSettings
         {
             PiperLogger.LogInfo($"[PiperBuildProcessor] Starting build for {report.summary.platform}");
 
+            // すべてのプラットフォームで必要なStreamingAssetsをセットアップ
+            SetupStreamingAssets();
+
             // ビルドプラットフォームごとの設定
             switch (report.summary.platform)
             {
@@ -32,6 +36,9 @@ namespace uPiper.Editor.BuildSettings
                     break;
                 case BuildTarget.StandaloneLinux64:
                     ConfigureLinuxBuild();
+                    break;
+                case BuildTarget.Android:
+                    ConfigureAndroidBuild();
                     break;
             }
 
@@ -51,6 +58,9 @@ namespace uPiper.Editor.BuildSettings
             {
                 PiperLogger.LogWarning($"[PiperBuildProcessor] Build result: {report.summary.result}");
             }
+
+            // ビルド後のクリーンアップ（開発環境のみ）
+            CleanupStreamingAssets();
         }
 
         private void ConfigureWebGLBuild()
@@ -90,6 +100,91 @@ namespace uPiper.Editor.BuildSettings
 
             // Linux固有の設定
             PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.Standalone, ApiCompatibilityLevel.NET_Standard);
+        }
+
+        private void ConfigureAndroidBuild()
+        {
+            PiperLogger.LogInfo("[PiperBuildProcessor] Configuring Android build settings");
+
+            // Android固有の設定
+            PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.Android, ApiCompatibilityLevel.NET_Standard);
+
+            // 最小APIレベルの設定（Android 7.0以上）
+            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
+
+            // ターゲットAPIレベルの設定
+            PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
+        }
+
+        private void SetupStreamingAssets()
+        {
+            PiperLogger.LogInfo("[PiperBuildProcessor] Setting up StreamingAssets for build");
+
+            // StreamingAssetsディレクトリの作成
+            var streamingAssetsPath = "Assets/StreamingAssets/uPiper";
+            Directory.CreateDirectory(Path.Combine(streamingAssetsPath, "OpenJTalk"));
+            Directory.CreateDirectory(Path.Combine(streamingAssetsPath, "Phonemizers"));
+
+            // OpenJTalk辞書のコピー
+            var openJTalkSource = "Assets/uPiper/Samples~/OpenJTalk Dictionary Data/openjtalk_dict.zip";
+            var openJTalkTarget = Path.Combine(streamingAssetsPath, "OpenJTalk", "naist_jdic.zip");
+
+            if (File.Exists(openJTalkSource))
+            {
+                File.Copy(openJTalkSource, openJTalkTarget, true);
+                PiperLogger.LogInfo($"[PiperBuildProcessor] Copied OpenJTalk dictionary to StreamingAssets");
+            }
+            else
+            {
+                PiperLogger.LogWarning($"[PiperBuildProcessor] OpenJTalk dictionary not found at: {openJTalkSource}");
+            }
+
+            // CMU辞書のコピー
+            var cmuSource = "Assets/uPiper/Samples~/CMU Pronouncing Dictionary/cmudict-0.7b.txt";
+            var cmuTarget = Path.Combine(streamingAssetsPath, "Phonemizers", "cmudict-0.7b.txt");
+
+            if (File.Exists(cmuSource))
+            {
+                File.Copy(cmuSource, cmuTarget, true);
+                PiperLogger.LogInfo($"[PiperBuildProcessor] Copied CMU dictionary to StreamingAssets");
+            }
+            else
+            {
+                PiperLogger.LogWarning($"[PiperBuildProcessor] CMU dictionary not found at: {cmuSource}");
+            }
+
+            // StreamingAssets.metaファイルの生成を確実にする
+            AssetDatabase.Refresh();
+        }
+
+        private void CleanupStreamingAssets()
+        {
+#if UPIPER_DEVELOPMENT
+            // 開発環境でのみ、ビルド後にStreamingAssetsをクリーンアップ
+            PiperLogger.LogInfo("[PiperBuildProcessor] Cleaning up temporary StreamingAssets");
+
+            var streamingAssetsPath = "Assets/StreamingAssets/uPiper";
+            if (Directory.Exists(streamingAssetsPath))
+            {
+                try
+                {
+                    Directory.Delete(streamingAssetsPath, true);
+
+                    // StreamingAssetsフォルダが空の場合は削除
+                    var parentPath = "Assets/StreamingAssets";
+                    if (Directory.Exists(parentPath) && Directory.GetFileSystemEntries(parentPath).Length == 0)
+                    {
+                        Directory.Delete(parentPath);
+                    }
+
+                    PiperLogger.LogInfo("[PiperBuildProcessor] Temporary StreamingAssets cleaned up");
+                }
+                catch (Exception ex)
+                {
+                    PiperLogger.LogWarning($"[PiperBuildProcessor] Failed to cleanup StreamingAssets: {ex.Message}");
+                }
+            }
+#endif
         }
 
         private void ValidateONNXModels()

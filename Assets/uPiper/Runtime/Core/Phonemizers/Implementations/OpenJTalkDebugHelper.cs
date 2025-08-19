@@ -24,8 +24,8 @@ namespace uPiper.Core.Phonemizers.Implementations
             Debug.Log($"[OpenJTalkDebug] Data path: {Application.dataPath}");
             Debug.Log($"[OpenJTalkDebug] Persistent data path: {Application.persistentDataPath}");
 
-            // Check Plugins directory
-#if !UNITY_EDITOR
+            // Check Plugins directory (not applicable for Android)
+#if !UNITY_EDITOR && !UNITY_ANDROID
             string pluginsPath;
             if (Application.platform == RuntimePlatform.WindowsPlayer)
             {
@@ -60,6 +60,8 @@ namespace uPiper.Core.Phonemizers.Implementations
             {
                 Debug.LogError($"[OpenJTalkDebug] Plugins directory not found: {pluginsPath}");
             }
+#elif UNITY_ANDROID && !UNITY_EDITOR
+            Debug.Log("[OpenJTalkDebug] Android platform - native libraries are loaded automatically from APK");
 #endif
 
             // Try to load the library

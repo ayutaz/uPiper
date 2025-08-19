@@ -214,8 +214,6 @@ namespace uPiper.Demo
             DebugAndroidSetup();
             // Preload dictionary asynchronously for better performance
             uPiper.Core.Platform.OptimizedAndroidPathResolver.PreloadDictionaryAsync();
-            // Auto-test TTS generation after 2 seconds
-            StartCoroutine(AutoTestTTSGeneration());
 #endif
 #endif
 
@@ -238,29 +236,8 @@ namespace uPiper.Demo
             }
 
 
-            // Initialize English phonemizer (Flite LTS)
-            Task.Run(async () =>
-            {
-                try
-                {
-                    _englishPhonemizer = new Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer();
-                    var initialized = await _englishPhonemizer.InitializeAsync(new Core.Phonemizers.Backend.PhonemizerBackendOptions());
-                    if (initialized)
-                    {
-                        PiperLogger.LogInfo("[InferenceEngineDemo] Flite LTS phonemizer initialized successfully");
-                    }
-                    else
-                    {
-                        PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer");
-                        _englishPhonemizer = null;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer: {ex.Message}");
-                    _englishPhonemizer = null;
-                }
-            });
+            // Initialize English phonemizer (Flite LTS) - use Unity's main thread
+            InitializeEnglishPhonemizerAsync();
 #endif
 
             SetupUI();
@@ -318,7 +295,7 @@ namespace uPiper.Demo
 #if UNITY_EDITOR
             // In Editor, try to load from Samples folder if not found
             var samplesPath = System.IO.Path.Combine(Application.dataPath, "Samples", "uPiper");
-            
+
             if (_japaneseFontAsset == null && System.IO.Directory.Exists(samplesPath))
             {
                 var fontPaths = System.IO.Directory.GetFiles(samplesPath, "NotoSansJP-Regular SDF.asset", System.IO.SearchOption.AllDirectories);
@@ -1215,6 +1192,92 @@ namespace uPiper.Demo
             }
         }
 
+#if !UNITY_WEBGL
+        private async void InitializeEnglishPhonemizerAsync()
+        {
+            try
+            {
+                _englishPhonemizer = new Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer();
+
+                // Get path on main thread before initialization
+                string dictPath;
+#if UNITY_ANDROID && !UNITY_EDITOR
+                // On Android, extract dictionary to persistent data path
+                dictPath = System.IO.Path.Combine(
+                    Application.persistentDataPath,
+                    "uPiper",
+                    "Phonemizers",
+                    "cmudict-0.7b.txt"
+                );
+                
+                // Check if extraction is needed
+                if (!System.IO.File.Exists(dictPath))
+                {
+                    // Extract from StreamingAssets
+                    var sourcePath = System.IO.Path.Combine(
+                        Application.streamingAssetsPath,
+                        "uPiper",
+                        "Phonemizers",
+                        "cmudict-0.7b.txt"
+                    );
+                    
+                    // Ensure directory exists
+                    var dictDir = System.IO.Path.GetDirectoryName(dictPath);
+                    if (!System.IO.Directory.Exists(dictDir))
+                    {
+                        System.IO.Directory.CreateDirectory(dictDir);
+                    }
+                    
+                    // Extract using UnityWebRequest
+                    using (var www = UnityEngine.Networking.UnityWebRequest.Get(sourcePath))
+                    {
+                        await www.SendWebRequest();
+                        if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+                        {
+                            System.IO.File.WriteAllBytes(dictPath, www.downloadHandler.data);
+                            PiperLogger.LogInfo($"[InferenceEngineDemo] Extracted CMU dictionary to {dictPath}");
+                        }
+                        else
+                        {
+                            PiperLogger.LogError($"[InferenceEngineDemo] Failed to extract CMU dictionary: {www.error}");
+                            _englishPhonemizer = null;
+                            return;
+                        }
+                    }
+                }
+#else
+                dictPath = System.IO.Path.Combine(
+                    Application.streamingAssetsPath,
+                    "uPiper",
+                    "Phonemizers",
+                    "cmudict-0.7b.txt"
+                );
+#endif
+
+                var options = new Core.Phonemizers.Backend.PhonemizerBackendOptions
+                {
+                    DataPath = dictPath
+                };
+
+                var initialized = await _englishPhonemizer.InitializeAsync(options);
+                if (initialized)
+                {
+                    PiperLogger.LogInfo("[InferenceEngineDemo] Flite LTS phonemizer initialized successfully");
+                }
+                else
+                {
+                    PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer");
+                    _englishPhonemizer = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer: {ex.Message}");
+                _englishPhonemizer = null;
+            }
+        }
+#endif
+
 #if UNITY_ANDROID && !UNITY_EDITOR
         private void DebugAndroidSetup()
         {
@@ -1343,36 +1406,6 @@ namespace uPiper.Demo
             PiperLogger.LogInfo("[Android Debug] === End Android Setup Debug ===");
         }
 
-        private System.Collections.IEnumerator AutoTestTTSGeneration()
-        {
-            PiperLogger.LogInfo("[uPiper] Waiting 2 seconds before auto-testing TTS...");
-            yield return new WaitForSeconds(2f);
-
-            PiperLogger.LogInfo("[uPiper] Starting auto TTS test...");
-
-            // Set Japanese text
-            if (_inputField != null)
-            {
-                _inputField.text = "こんにちは";
-                PiperLogger.LogInfo($"[uPiper] Set input text: {_inputField.text}");
-            }
-
-            // Try to generate TTS
-            if (_generateButton != null && _generateButton.isActiveAndEnabled)
-            {
-                PiperLogger.LogInfo("[uPiper] Clicking generate button programmatically...");
-                _ = GenerateAudioAsync();
-
-                // Wait for generation
-                yield return new WaitForSeconds(5f);
-
-                PiperLogger.LogInfo("[uPiper] Auto test completed. Check if audio was generated.");
-            }
-            else
-            {
-                PiperLogger.LogError("[uPiper] Generate button not available for auto test");
-            }
-        }
 #endif
 
         /// <summary>

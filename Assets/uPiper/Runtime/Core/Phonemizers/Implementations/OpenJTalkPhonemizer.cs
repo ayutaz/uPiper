@@ -676,8 +676,8 @@ namespace uPiper.Core.Phonemizers.Implementations
                     return false;
                 }
 
-#if UNITY_EDITOR || UNITY_STANDALONE
-                // In Editor or standalone builds, check if the library file exists
+#if UNITY_EDITOR
+                // In Editor, check if the library file exists
 
                 // For bundle format on macOS, check if directory exists
                 var libraryExists = false;
