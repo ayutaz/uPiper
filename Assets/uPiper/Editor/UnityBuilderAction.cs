@@ -109,13 +109,44 @@ namespace UnityBuilderAction
 
         private static string GetBuildLocation(BuildTarget target, string scriptingBackend)
         {
+            // Try to get from command line arguments first
             var buildPath = GetArgument(Environment.GetCommandLineArgs(), "-customBuildPath", "");
+            
+            // If not found in arguments, try environment variable (Unity Builder v4 compatibility)
             if (string.IsNullOrEmpty(buildPath))
             {
-                throw new Exception("customBuildPath not specified");
+                buildPath = Environment.GetEnvironmentVariable("BUILD_PATH");
+                if (!string.IsNullOrEmpty(buildPath))
+                {
+                    Debug.Log($"Using BUILD_PATH from environment variable: {buildPath}");
+                }
+            }
+            
+            // If still not found, use default
+            if (string.IsNullOrEmpty(buildPath))
+            {
+                buildPath = $"build/{target}";
+                Debug.LogWarning($"No build path specified, using default: {buildPath}");
             }
 
-            var buildName = GetArgument(Environment.GetCommandLineArgs(), "-customBuildName", "uPiper");
+            // Try to get build name from arguments first
+            var buildName = GetArgument(Environment.GetCommandLineArgs(), "-customBuildName", "");
+            
+            // If not found, try environment variable
+            if (string.IsNullOrEmpty(buildName))
+            {
+                buildName = Environment.GetEnvironmentVariable("BUILD_NAME");
+                if (!string.IsNullOrEmpty(buildName))
+                {
+                    Debug.Log($"Using BUILD_NAME from environment variable: {buildName}");
+                }
+            }
+            
+            // If still not found, use default
+            if (string.IsNullOrEmpty(buildName))
+            {
+                buildName = "uPiper";
+            }
 
             // Append scripting backend to build name if not already included
             if (!buildName.Contains(scriptingBackend))
