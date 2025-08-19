@@ -1,8 +1,6 @@
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem.UI;
-#endif
 
 namespace uPiper.Demo
 {
@@ -14,6 +12,9 @@ namespace uPiper.Demo
     [DefaultExecutionOrder(-100)] // 他のスクリプトより先に実行
     public class EventSystemAutoSetup : MonoBehaviour
     {
+        // Input System UIモジュールの型名（リフレクション用）
+        private const string INPUT_SYSTEM_MODULE_TYPENAME = "UnityEngine.InputSystem.UI.InputSystemUIInputModule";
+        
         private void Awake()
         {
             SetupInputModule();
@@ -28,38 +29,77 @@ namespace uPiper.Demo
                 return;
             }
 
-            // 各入力モジュールを取得
+            // StandaloneInputModuleを取得
             var standaloneModule = GetComponent<StandaloneInputModule>();
-#if ENABLE_INPUT_SYSTEM
-            var inputSystemModule = GetComponent<InputSystemUIInputModule>();
+            
+            // Input System UIモジュールを動的に検索（存在する場合）
+            Component inputSystemModule = null;
+            Type inputSystemModuleType = null;
+            
+            try
+            {
+                // Input Systemパッケージが存在する場合、型を取得
+                inputSystemModuleType = Type.GetType(INPUT_SYSTEM_MODULE_TYPENAME + ", Unity.InputSystem");
+                if (inputSystemModuleType != null)
+                {
+                    inputSystemModule = GetComponent(inputSystemModuleType);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.Log($"[EventSystemAutoSetup] Input System not found: {e.Message}");
+            }
+
+            // 入力システムの設定を判定して適切なモジュールを有効化
+            ConfigureInputModules(standaloneModule, inputSystemModule, inputSystemModuleType);
+        }
+
+        private void ConfigureInputModules(StandaloneInputModule standaloneModule, Component inputSystemModule, Type inputSystemModuleType)
+        {
+            // Input Systemモジュールが存在し、StandaloneModuleが無効または存在しない場合
+            if (inputSystemModule != null && inputSystemModule.GetType() == inputSystemModuleType)
+            {
+                bool useInputSystem = false;
+                
+                // Active Input Handlingの設定を確認
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+                // Input System のみ有効
+                useInputSystem = true;
+                Debug.Log("[EventSystemAutoSetup] Using Input System only mode");
+#elif ENABLE_LEGACY_INPUT_MANAGER && !ENABLE_INPUT_SYSTEM
+                // Input Manager のみ有効
+                useInputSystem = false;
+                Debug.Log("[EventSystemAutoSetup] Using Input Manager only mode");
+#else
+                // 両方有効、または判定できない場合はInput Managerを優先
+                useInputSystem = false;
+                Debug.Log("[EventSystemAutoSetup] Using compatibility mode (Input Manager preferred)");
 #endif
 
-            // プロジェクトの設定に基づいて適切なモジュールを有効化
-#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-            // Input System のみ有効
-            Debug.Log("[EventSystemAutoSetup] Using Input System only mode");
-            
-            if (standaloneModule != null)
-                standaloneModule.enabled = false;
-                
-            if (inputSystemModule != null)
-            {
-                inputSystemModule.enabled = true;
+                if (useInputSystem)
+                {
+                    // Input Systemを使用
+                    SetComponentEnabled(inputSystemModule, true);
+                    if (standaloneModule != null)
+                        standaloneModule.enabled = false;
+                }
+                else
+                {
+                    // Input Managerを使用
+                    SetComponentEnabled(inputSystemModule, false);
+                    EnsureStandaloneModule(standaloneModule);
+                }
             }
             else
             {
-                Debug.LogWarning("[EventSystemAutoSetup] InputSystemUIInputModule not found. UI input may not work correctly.");
+                // Input Systemモジュールが存在しない場合は、StandaloneModuleを使用
+                Debug.Log("[EventSystemAutoSetup] Input System module not found, using StandaloneInputModule");
+                EnsureStandaloneModule(standaloneModule);
             }
-            
-#elif ENABLE_LEGACY_INPUT_MANAGER && !ENABLE_INPUT_SYSTEM
-            // Input Manager のみ有効
-            Debug.Log("[EventSystemAutoSetup] Using Input Manager only mode");
-            
-            #if ENABLE_INPUT_SYSTEM
-            if (inputSystemModule != null)
-                inputSystemModule.enabled = false;
-            #endif
-            
+        }
+
+        private void EnsureStandaloneModule(StandaloneInputModule standaloneModule)
+        {
             if (standaloneModule != null)
             {
                 standaloneModule.enabled = true;
@@ -70,27 +110,17 @@ namespace uPiper.Demo
                 standaloneModule = gameObject.AddComponent<StandaloneInputModule>();
                 Debug.Log("[EventSystemAutoSetup] Added StandaloneInputModule");
             }
+        }
+
+        private void SetComponentEnabled(Component component, bool enabled)
+        {
+            if (component == null) return;
             
-#else
-            // 両方有効、または判定できない場合
-            // Input Managerを優先（より互換性が高いため）
-            Debug.Log("[EventSystemAutoSetup] Using compatibility mode (Input Manager preferred)");
-            
-            #if ENABLE_INPUT_SYSTEM
-            if (inputSystemModule != null)
-                inputSystemModule.enabled = false;
-            #endif
-            
-            if (standaloneModule != null)
+            var behaviour = component as Behaviour;
+            if (behaviour != null)
             {
-                standaloneModule.enabled = true;
+                behaviour.enabled = enabled;
             }
-            else
-            {
-                standaloneModule = gameObject.AddComponent<StandaloneInputModule>();
-                Debug.Log("[EventSystemAutoSetup] Added StandaloneInputModule for compatibility");
-            }
-#endif
         }
 
         /// <summary>
@@ -113,6 +143,31 @@ namespace uPiper.Demo
         {
             // デバッグ情報を出力
             Debug.Log($"[EventSystemAutoSetup] Input configuration: {GetCurrentInputSystemInfo()}");
+            
+            // 現在有効なモジュールを確認
+            var standaloneModule = GetComponent<StandaloneInputModule>();
+            if (standaloneModule != null && standaloneModule.enabled)
+            {
+                Debug.Log("[EventSystemAutoSetup] Active module: StandaloneInputModule");
+            }
+            
+            // Input Systemモジュールの確認
+            try
+            {
+                var inputSystemModuleType = Type.GetType(INPUT_SYSTEM_MODULE_TYPENAME + ", Unity.InputSystem");
+                if (inputSystemModuleType != null)
+                {
+                    var inputSystemModule = GetComponent(inputSystemModuleType) as Behaviour;
+                    if (inputSystemModule != null && inputSystemModule.enabled)
+                    {
+                        Debug.Log("[EventSystemAutoSetup] Active module: InputSystemUIInputModule");
+                    }
+                }
+            }
+            catch
+            {
+                // Input Systemが存在しない場合は無視
+            }
         }
     }
 }
