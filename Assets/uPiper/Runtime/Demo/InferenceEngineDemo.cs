@@ -391,16 +391,20 @@ namespace uPiper.Demo
             var allTextComponents = FindObjectsOfType<TextMeshProUGUI>();
             foreach (var textComponent in allTextComponents)
             {
-                if (textComponent.fontAsset != null && textComponent.fontAsset != _japaneseFontAsset)
+                if (textComponent.font != null && textComponent.font != _japaneseFontAsset)
                 {
-                    if (textComponent.fontAsset.fallbackFontAssetTable == null)
+                    var fontAsset = textComponent.font as TMP_FontAsset;
+                    if (fontAsset != null)
                     {
-                        textComponent.fontAsset.fallbackFontAssetTable = new List<TMP_FontAsset>();
-                    }
-                    
-                    if (!textComponent.fontAsset.fallbackFontAssetTable.Contains(_japaneseFontAsset))
-                    {
-                        textComponent.fontAsset.fallbackFontAssetTable.Add(_japaneseFontAsset);
+                        if (fontAsset.fallbackFontAssetTable == null)
+                        {
+                            fontAsset.fallbackFontAssetTable = new List<TMP_FontAsset>();
+                        }
+                        
+                        if (!fontAsset.fallbackFontAssetTable.Contains(_japaneseFontAsset))
+                        {
+                            fontAsset.fallbackFontAssetTable.Add(_japaneseFontAsset);
+                        }
                     }
                 }
             }
