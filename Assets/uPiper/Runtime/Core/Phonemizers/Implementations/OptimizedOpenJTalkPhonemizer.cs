@@ -204,7 +204,15 @@ namespace uPiper.Core.Phonemizers.Implementations
 #if UNITY_EDITOR && UPIPER_DEVELOPMENT
                     // Development environment: Load directly from Samples~
                     dictPath = uPiperPaths.GetDevelopmentOpenJTalkPath();
-                    Debug.Log($"[OptimizedOpenJTalk] Development mode: Loading from Samples~: {dictPath}");
+                    if (!Directory.Exists(dictPath))
+                    {
+                        Debug.LogWarning($"[OptimizedOpenJTalk] Development mode: Dictionary not found at: {dictPath}, falling back to StreamingAssets");
+                        dictPath = uPiperPaths.GetRuntimeOpenJTalkPath();
+                    }
+                    else
+                    {
+                        Debug.Log($"[OptimizedOpenJTalk] Development mode: Loading from Samples~: {dictPath}");
+                    }
 #elif UNITY_ANDROID && !UNITY_EDITOR
                     dictPath = await OptimizedAndroidPathResolver.GetDictionaryPathAsync();
 #else

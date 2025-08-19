@@ -53,7 +53,9 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 }
                 else
                 {
-                    Debug.LogError($"[CMUDictionary] Development mode: Dictionary not found at: {developmentPath}");
+                    Debug.LogWarning($"[CMUDictionary] Development mode: Dictionary not found at: {developmentPath}, falling back to StreamingAssets");
+                    // Fall back to StreamingAssets path
+                    actualFilePath = uPiperPaths.GetRuntimeCMUPath(fileName);
                 }
 #else
                 // Primary path after setup - using shared constant for consistency

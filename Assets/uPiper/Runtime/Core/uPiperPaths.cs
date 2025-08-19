@@ -25,8 +25,13 @@ namespace uPiper.Core
         /// </summary>
         public static string GetDevelopmentOpenJTalkPath()
         {
+#if UNITY_EDITOR && UPIPER_DEVELOPMENT
             return Path.Combine(Application.dataPath, "uPiper", SAMPLES_FOLDER,
                 OPENJTALK_DICT_FOLDER, "naist_jdic", OPENJTALK_DICT_NAME);
+#else
+            // CI環境やPackage Manager環境では通常のStreamingAssetsパスを返す
+            return GetRuntimeOpenJTalkPath();
+#endif
         }
 
         /// <summary>
@@ -34,8 +39,13 @@ namespace uPiper.Core
         /// </summary>
         public static string GetDevelopmentCMUPath(string fileName)
         {
+#if UNITY_EDITOR && UPIPER_DEVELOPMENT
             return Path.Combine(Application.dataPath, "uPiper", SAMPLES_FOLDER,
                 CMU_DICT_FOLDER, fileName);
+#else
+            // CI環境やPackage Manager環境では通常のStreamingAssetsパスを返す
+            return GetRuntimeCMUPath(fileName);
+#endif
         }
 
         /// <summary>
