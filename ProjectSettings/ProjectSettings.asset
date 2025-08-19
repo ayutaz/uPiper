@@ -673,8 +673,8 @@ PlayerSettings:
   webGLCloseOnQuit: 0
   webWasm2023: 0
   scriptingDefineSymbols:
-    Standalone: UPIPER_DEVELOPMENT
     Android: UPIPER_DEVELOPMENT
+    Standalone: UPIPER_DEVELOPMENT
     WebGL: UPIPER_DEVELOPMENT
     iOS: UPIPER_DEVELOPMENT
   additionalCompilerArguments: {}

@@ -256,3 +256,15 @@ TestMeCabOutput.cs.meta
 
 # Unity Temporary files
 .utmp/
+
+# Development environment - models in Resources (duplicated from Samples~)
+Assets/uPiper/Resources/Models/*.onnx
+Assets/uPiper/Resources/Models/*.onnx.json
+Assets/uPiper/Resources/Models/*.onnx.meta
+Assets/uPiper/Resources/Models/*.onnx.json.meta
+
+# Development environment - test scenes (should be in Samples~)
+Assets/uPiper/Samples/
+
+# Development environment - platform specific plugins
+Assets/uPiper/Plugins/macOS/

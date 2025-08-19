@@ -10,6 +10,7 @@ using uPiper.Core.Logging;
 using uPiper.Core.Performance;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Platform;
+using uPiper.Core;
 
 namespace uPiper.Core.Phonemizers.Implementations
 {
@@ -200,7 +201,19 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                     // Android向け最適化: 非同期で辞書パスを取得
                     string dictPath;
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_EDITOR && UPIPER_DEVELOPMENT
+                    // Development environment: Load directly from Samples~
+                    dictPath = uPiperPaths.GetDevelopmentOpenJTalkPath();
+                    if (!Directory.Exists(dictPath))
+                    {
+                        Debug.LogWarning($"[OptimizedOpenJTalk] Development mode: Dictionary not found at: {dictPath}, falling back to StreamingAssets");
+                        dictPath = uPiperPaths.GetRuntimeOpenJTalkPath();
+                    }
+                    else
+                    {
+                        Debug.Log($"[OptimizedOpenJTalk] Development mode: Loading from Samples~: {dictPath}");
+                    }
+#elif UNITY_ANDROID && !UNITY_EDITOR
                     dictPath = await OptimizedAndroidPathResolver.GetDictionaryPathAsync();
 #else
                     // 非Android環境ではStreamingAssetsからパスを取得

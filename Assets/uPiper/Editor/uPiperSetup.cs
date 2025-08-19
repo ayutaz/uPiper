@@ -75,32 +75,6 @@ namespace uPiper.Editor
 #endif
         }
 
-        [MenuItem("uPiper/Setup/Run Initial Setup", false, 1)]
-        public static void RunInitialSetupMenu()
-        {
-#if UPIPER_DEVELOPMENT
-            EditorUtility.DisplayDialog(
-                "Development Mode",
-                "Setup is not required in development mode.\n\n" +
-                "Files are already in the correct locations.",
-                "OK");
-            return;
-#else
-            if (EditorUtility.DisplayDialog(
-                "uPiper Setup",
-                "This will copy required files from the package to your project.\n\n" +
-                "Files will be copied to:\n" +
-                "• Assets/uPiper/Plugins/\n" +
-                "• Assets/StreamingAssets/uPiper/\n\n" +
-                "Existing files will be overwritten.\n\n" +
-                "Continue?",
-                "Setup", "Cancel"))
-            {
-                RunInitialSetup();
-            }
-#endif
-        }
-
         [MenuItem("uPiper/Setup/Check Setup Status", false, 2)]
         public static void CheckSetupStatus()
         {
@@ -143,12 +117,18 @@ namespace uPiper.Editor
                 message += "3. Import required samples (Dictionary Data, Voice Models)\n";
                 message += "4. Run 'uPiper/Setup/Install from Samples'";
             }
+
+            // Add note about plugins if missing
+            if (!status.pluginsExist)
+            {
+                message += "\n⚠️ Native plugins not found. Run 'Install from Samples' to install them.";
+            }
 #endif
 
             EditorUtility.DisplayDialog("uPiper Setup Status", message, "OK");
         }
 
-        [MenuItem("uPiper/Setup/Install from Samples", false, 3)]
+        [MenuItem("uPiper/Setup/Install from Samples", false, 1)]
         public static void InstallFromSamples()
         {
 #if UPIPER_DEVELOPMENT
@@ -191,251 +171,6 @@ namespace uPiper.Editor
 #endif
         }
 
-        public static void RunInitialSetup()
-        {
-            try
-            {
-                var packagePath = GetPackagePath();
-
-                // Check if this is a local installation
-                if (packagePath == null)
-                {
-                    // Local installation - files should already be in place
-                    var localPath = Path.Combine(Application.dataPath, "uPiper");
-                    if (Directory.Exists(localPath))
-                    {
-                        Debug.Log("[uPiper Setup] Local installation detected. Files should already be in place.");
-
-                        // Check if files exist
-                        var status = GetSetupStatus();
-                        if (status.isComplete)
-                        {
-                            MarkSetupComplete();
-                            EditorUtility.DisplayDialog("Setup Complete",
-                                "uPiper is already properly installed in your project.",
-                                "OK");
-                        }
-                        else
-                        {
-                            EditorUtility.DisplayDialog("Setup Required",
-                                "Some files are missing. Please check:\n" +
-                                "• Assets/uPiper/Plugins/\n" +
-                                "• Assets/StreamingAssets/uPiper/\n\n" +
-                                "For local installation, these files should be included in the project.",
-                                "OK");
-                        }
-                        return;
-                    }
-                    else
-                    {
-                        EditorUtility.DisplayDialog("Error",
-                            "Could not find uPiper package. Please ensure it's properly installed.",
-                            "OK");
-                        return;
-                    }
-                }
-
-                Debug.Log($"[uPiper Setup] Starting setup from package: {packagePath}");
-
-                // Debug: List package structure
-                if (Directory.Exists(packagePath))
-                {
-                    Debug.Log($"[uPiper Setup] Package directory contents:");
-                    var directories = Directory.GetDirectories(packagePath);
-                    foreach (var dir in directories)
-                    {
-                        Debug.Log($"  - {Path.GetFileName(dir)}/");
-                    }
-                }
-
-                var success = true;
-                var copiedFiles = 0;
-
-                // Copy plugins
-                var pluginsResult = CopyPlugins(packagePath);
-                success &= pluginsResult.success;
-                copiedFiles += pluginsResult.fileCount;
-
-                // Copy OpenJTalk dictionary
-                var dictResult = CopyOpenJTalkDictionary(packagePath);
-                success &= dictResult.success;
-                copiedFiles += dictResult.fileCount;
-
-                // Copy phonemizer data
-                var phonemizerResult = CopyPhonemizerData(packagePath);
-                success &= phonemizerResult.success;
-                copiedFiles += phonemizerResult.fileCount;
-
-                if (success)
-                {
-                    MarkSetupComplete();
-                    AssetDatabase.Refresh();
-
-                    // Check if dictionary files need to be downloaded
-                    bool needsDictionary = !Directory.Exists(Path.Combine(TARGET_STREAMING_ASSETS_PATH, "OpenJTalk", "naist_jdic"));
-                    bool needsCMU = !File.Exists(Path.Combine(TARGET_STREAMING_ASSETS_PATH, "Phonemizers", "cmudict-0.7b.txt"));
-
-                    string message = $"uPiper setup completed!\n\n" +
-                                   $"Copied {copiedFiles} plugin files to your project.\n\n";
-
-                    if (needsDictionary || needsCMU)
-                    {
-                        message += "⚠️ Additional files required:\n\n";
-                        if (needsDictionary)
-                        {
-                            message += "• OpenJTalk dictionary files\n";
-                        }
-                        if (needsCMU)
-                        {
-                            message += "• CMU dictionary files\n";
-                        }
-                        message += "\nPlease download these from:\n" +
-                                 "https://github.com/ayutaz/uPiper/releases\n\n" +
-                                 "Extract to Assets/StreamingAssets/uPiper/";
-                    }
-                    else
-                    {
-                        message += "The package is now ready to use.";
-                    }
-
-                    EditorUtility.DisplayDialog("Setup Complete", message, "OK");
-
-                    Debug.Log($"[uPiper Setup] Setup completed. Copied {copiedFiles} files.");
-                }
-                else
-                {
-                    EditorUtility.DisplayDialog("Setup Failed",
-                        "Some files could not be copied. Check the Console for details.",
-                        "OK");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[uPiper Setup] Setup failed: {ex.Message}\n{ex.StackTrace}");
-                EditorUtility.DisplayDialog("Setup Error",
-                    $"An error occurred during setup:\n{ex.Message}",
-                    "OK");
-            }
-        }
-
-        private static (bool success, int fileCount) CopyPlugins(string packagePath)
-        {
-            // Try multiple possible paths for Plugins location
-            var possiblePaths = new[]
-            {
-                Path.Combine(packagePath, "Assets", "uPiper", "Plugins"),
-                Path.Combine(packagePath, "Runtime", "Plugins"),
-                Path.Combine(packagePath, "Plugins"),
-            };
-
-            string sourcePath = null;
-            foreach (var path in possiblePaths)
-            {
-                if (Directory.Exists(path))
-                {
-                    sourcePath = path;
-                    Debug.Log($"[uPiper Setup] Found Plugins at: {path}");
-                    break;
-                }
-            }
-
-            if (sourcePath == null)
-            {
-                Debug.LogError($"[uPiper Setup] Plugins source not found. Checked paths:");
-                foreach (var path in possiblePaths)
-                {
-                    Debug.LogError($"  - {path}");
-                }
-                return (false, 0);
-            }
-
-            var targetPath = TARGET_PLUGINS_PATH;
-            return CopyDirectory(sourcePath, targetPath, "Plugins");
-        }
-
-        private static (bool success, int fileCount) CopyOpenJTalkDictionary(string packagePath)
-        {
-            // First check if files already exist in the project
-            var targetPath = Path.Combine(TARGET_STREAMING_ASSETS_PATH, "OpenJTalk");
-            if (Directory.Exists(targetPath))
-            {
-                // Check if dictionary files exist
-                var dictPath = Path.Combine(targetPath, "naist_jdic", "open_jtalk_dic_utf_8-1.11");
-                if (Directory.Exists(dictPath))
-                {
-                    var fileCount = Directory.GetFiles(dictPath, "*", SearchOption.AllDirectories)
-                        .Where(f => !f.EndsWith(".meta")).Count();
-                    if (fileCount > 0)
-                    {
-                        Debug.Log($"[uPiper Setup] OpenJTalk dictionary already exists in project with {fileCount} files.");
-                        return (true, fileCount);
-                    }
-                }
-            }
-
-            // For Package Manager installations, StreamingAssets are not included in the package
-            // They need to be downloaded separately or included in the project
-            if (!string.IsNullOrEmpty(packagePath))
-            {
-                // Package Manager packages don't include StreamingAssets
-                // Display message to guide user
-                Debug.LogWarning("[uPiper Setup] OpenJTalk dictionary files are not included in Package Manager packages.");
-                Debug.LogWarning("[uPiper Setup] Please download the dictionary files from:");
-                Debug.LogWarning("[uPiper Setup]   https://github.com/ayutaz/uPiper/releases");
-                Debug.LogWarning($"[uPiper Setup] Extract them to: {targetPath}");
-
-                // Return success with 0 files to continue setup
-                // The dictionary will be downloaded separately
-                return (true, 0);
-            }
-
-            // For local installations, StreamingAssets should already be in place
-            Debug.LogWarning($"[uPiper Setup] OpenJTalk dictionary files should be in: {targetPath}");
-            Debug.LogWarning($"[uPiper Setup] Please ensure the dictionary files are included in your project.");
-            return (false, 0);
-        }
-
-        private static (bool success, int fileCount) CopyPhonemizerData(string packagePath)
-        {
-            // First check if files already exist in the project
-            var targetPath = Path.Combine(TARGET_STREAMING_ASSETS_PATH, "Phonemizers");
-            if (Directory.Exists(targetPath))
-            {
-                // Check if CMU dictionary exists
-                var cmuDictPath = Path.Combine(targetPath, "cmudict-0.7b.txt");
-                if (File.Exists(cmuDictPath))
-                {
-                    var fileCount = Directory.GetFiles(targetPath, "*", SearchOption.AllDirectories)
-                        .Where(f => !f.EndsWith(".meta")).Count();
-                    if (fileCount > 0)
-                    {
-                        Debug.Log($"[uPiper Setup] Phonemizer data already exists in project with {fileCount} files.");
-                        return (true, fileCount);
-                    }
-                }
-            }
-
-            // For Package Manager installations, StreamingAssets are not included in the package
-            // They need to be downloaded separately or included in the project
-            if (!string.IsNullOrEmpty(packagePath))
-            {
-                // Package Manager packages don't include StreamingAssets
-                // Display message to guide user
-                Debug.LogWarning("[uPiper Setup] Phonemizer data files are not included in Package Manager packages.");
-                Debug.LogWarning("[uPiper Setup] Please download the CMU dictionary files from:");
-                Debug.LogWarning("[uPiper Setup]   https://github.com/ayutaz/uPiper/releases");
-                Debug.LogWarning($"[uPiper Setup] Extract them to: {targetPath}");
-
-                // Return success with 0 files to continue setup
-                // The dictionary will be downloaded separately
-                return (true, 0);
-            }
-
-            // For local installations, StreamingAssets should already be in place
-            Debug.LogWarning($"[uPiper Setup] Phonemizer data files should be in: {targetPath}");
-            Debug.LogWarning($"[uPiper Setup] Please ensure the CMU dictionary files are included in your project.");
-            return (false, 0);
-        }
 
         private static (bool success, int fileCount) CopyDirectory(string sourcePath, string targetPath, string description)
         {
@@ -613,13 +348,16 @@ namespace uPiper.Editor
             var cmuPath = Path.Combine(TARGET_STREAMING_ASSETS_PATH, "Phonemizers", "cmudict-0.7b.txt");
             status.cmuDictExists = File.Exists(cmuPath);
 
-            // Check voice models
-            var modelPath1 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "ja_JP-test-medium.onnx");
-            var modelPath2 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "en_US-ljspeech-medium.onnx");
-            status.modelsExist = File.Exists(modelPath1) || File.Exists(modelPath2);
+            // Check voice models (check both old and new locations)
+            var modelPath1 = Path.Combine(Application.dataPath, "Resources", "uPiper", "Models", "ja_JP-test-medium.onnx");
+            var modelPath2 = Path.Combine(Application.dataPath, "Resources", "uPiper", "Models", "en_US-ljspeech-medium.onnx");
+            var oldModelPath1 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "ja_JP-test-medium.onnx");
+            var oldModelPath2 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "en_US-ljspeech-medium.onnx");
+            status.modelsExist = File.Exists(modelPath1) || File.Exists(modelPath2) ||
+                                 File.Exists(oldModelPath1) || File.Exists(oldModelPath2);
 
             // Complete if we have plugins and at least minimal dictionary support
-            status.isComplete = status.pluginsExist && (status.dictionaryExists || status.cmuDictExists);
+            status.isComplete = status.pluginsExist && (status.dictionaryExists || status.cmuDictExists) && status.modelsExist;
 
             return status;
         }
@@ -769,14 +507,23 @@ namespace uPiper.Editor
 
                     if (sourcePath != null)
                     {
-                        var targetPath = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models");
+                        // Copy to project Assets instead of package folder to avoid immutable package warnings
+                        var targetPath = Path.Combine(Application.dataPath, "Resources", "uPiper", "Models");
                         var result = CopyDirectory(sourcePath, targetPath, "Voice Models");
                         if (result.success)
                         {
                             installedCount += result.fileCount;
-                            Debug.Log($"[uPiper Setup] Installed voice models ({result.fileCount} files)");
+                            Debug.Log($"[uPiper Setup] Installed voice models ({result.fileCount} files) to Assets/Resources/uPiper/Models/");
                         }
                     }
+                }
+
+                // Install plugins from package (for Package Manager installations)
+                var pluginsResult = InstallPluginsFromPackage();
+                if (pluginsResult.success)
+                {
+                    installedCount += pluginsResult.fileCount;
+                    Debug.Log($"[uPiper Setup] Installed plugins ({pluginsResult.fileCount} files)");
                 }
 
                 if (installedCount > 0)
@@ -807,6 +554,56 @@ namespace uPiper.Editor
                     "Installation Error",
                     $"An error occurred during installation:\n{ex.Message}",
                     "OK");
+            }
+        }
+
+        private static (bool success, int fileCount) InstallPluginsFromPackage()
+        {
+            try
+            {
+                // Check if plugins already exist
+                var targetPath = TARGET_PLUGINS_PATH;
+                if (Directory.Exists(targetPath))
+                {
+                    // Check if we already have plugins
+                    var existingFiles = Directory.GetFiles(targetPath, "*.*", SearchOption.AllDirectories)
+                        .Where(f => !f.EndsWith(".meta"))
+                        .ToArray();
+                    if (existingFiles.Length > 0)
+                    {
+                        Debug.Log($"[uPiper Setup] Plugins already exist ({existingFiles.Length} files), skipping installation");
+                        return (true, 0);
+                    }
+                }
+
+                // Find package path
+                var packagePath = GetPackagePath();
+                if (string.IsNullOrEmpty(packagePath))
+                {
+                    Debug.LogWarning("[uPiper Setup] Could not find package path, skipping plugin installation");
+                    return (false, 0);
+                }
+
+                // Check for plugins in package
+                var packagePluginsPath = Path.Combine(packagePath, "Plugins");
+                if (!Directory.Exists(packagePluginsPath))
+                {
+                    Debug.LogWarning($"[uPiper Setup] Plugins not found in package at: {packagePluginsPath}");
+                    return (false, 0);
+                }
+
+                // Copy plugins
+                var result = CopyDirectory(packagePluginsPath, targetPath, "Native Plugins");
+                if (result.success)
+                {
+                    Debug.Log($"[uPiper Setup] Successfully copied plugins from package");
+                }
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[uPiper Setup] Failed to install plugins: {ex.Message}");
+                return (false, 0);
             }
         }
     }

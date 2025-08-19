@@ -76,6 +76,10 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 2. インストールダイアログで「Install」をクリック
 3. セットアップが完了するまで待つ
 
+> 💡 **注**: 以前の「Run Initial Setup」メニューは削除されました。「Install from Samples」が唯一のセットアップ方法です。
+> 
+> 📁 **モデルファイルの保存場所**: 音声モデルは `Assets/Resources/uPiper/Models/` に保存されます（パッケージの外側）。
+
 #### ステップ4: 動作確認
 
 1. **メニューから `uPiper > Setup > Check Setup Status` を実行**
@@ -145,6 +149,44 @@ var config = new PiperConfig
 ```
 
 詳細は[GPU推論ガイド](docs/features/gpu/gpu-inference.md)を参照してください。
+
+## 開発者向け情報
+
+### プロジェクト構造
+
+開発環境では以下の構造で辞書データを管理しています：
+
+```
+Assets/
+├── uPiper/
+│   ├── Samples~/                         # Package Manager配布用データ（Unity Editorからは非表示）
+│   │   ├── OpenJTalk Dictionary Data/    # 日本語音声合成用辞書（約50MB）
+│   │   │   └── naist_jdic/              # OpenJTalk辞書本体
+│   │   │       └── open_jtalk_dic_utf_8-1.11/
+│   │   ├── CMU Pronouncing Dictionary/   # 英語音声合成用辞書（約3MB）
+│   │   │   └── cmudict-0.7b.txt         # CMU辞書本体
+│   │   └── Voice Models/                 # 音声モデル（ONNX形式）
+│   │       ├── ja_JP-test-medium.onnx   # 日本語音声モデル
+│   │       └── en_US-ljspeech-medium.onnx # 英語音声モデル
+│   ├── Runtime/                          # ランタイムコード
+│   ├── Editor/                           # エディタ拡張
+│   └── Plugins/                          # ネイティブプラグイン
+└── StreamingAssets/                      # 実行時データ（Package Manager版のみ）
+```
+
+#### 注意事項
+
+- **Samples~フォルダ**: Unity Editorからは見えません（Unityの仕様）
+- **開発環境判定**: `UPIPER_DEVELOPMENT`プリプロセッサディレクティブが定義されています
+- **辞書の読み込み**: 開発環境では`Samples~`から直接読み込み、Package Manager版では`StreamingAssets`から読み込みます
+- **セットアップ不要**: 開発環境では初回セットアップは不要で、クローン後すぐに動作します
+
+### Package Manager配布時の動作
+
+Package Manager経由で配布される場合：
+1. ユーザーがPackage Managerから辞書サンプルをインポート
+2. `uPiper/Setup/Install from Samples`メニューを実行
+3. 辞書データが`StreamingAssets/uPiper/`にコピーされる
 
 ## 詳細ドキュメント
 

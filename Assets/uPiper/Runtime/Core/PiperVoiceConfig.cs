@@ -112,6 +112,32 @@ namespace uPiper.Core
         public Dictionary<string, int> PhonemeIdMap;
 
         /// <summary>
+        /// Inference parameters
+        /// </summary>
+        [Header("Inference Parameters")]
+
+        /// <summary>
+        /// Noise scale for inference
+        /// </summary>
+        [Tooltip("Controls the randomness/variation in the generated speech")]
+        [Range(0.0f, 2.0f)]
+        public float NoiseScale = 0.667f;
+
+        /// <summary>
+        /// Length scale for inference
+        /// </summary>
+        [Tooltip("Controls the speaking speed (1.0 = normal, <1.0 = faster, >1.0 = slower)")]
+        [Range(0.1f, 2.0f)]
+        public float LengthScale = 1.0f;
+
+        /// <summary>
+        /// Noise W parameter for inference
+        /// </summary>
+        [Tooltip("Additional noise parameter for variation")]
+        [Range(0.0f, 2.0f)]
+        public float NoiseW = 0.8f;
+
+        /// <summary>
         /// Key for voice identification (alias for VoiceId)
         /// </summary>
         public string Key => VoiceId;

@@ -18,6 +18,7 @@ using UnityEngine.Scripting;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Platform;
+using uPiper.Core;
 
 namespace uPiper.Core.Phonemizers.Implementations
 {
@@ -611,6 +612,19 @@ namespace uPiper.Core.Phonemizers.Implementations
 #if UNITY_ANDROID && !UNITY_EDITOR
             // On Android, use the persistent data path where we extract the dictionary
             return AndroidPathResolver.GetOpenJTalkDictionaryPath();
+#elif UNITY_EDITOR && UPIPER_DEVELOPMENT
+            // Development environment: Load directly from Samples~
+            var developmentPath = uPiperPaths.GetDevelopmentOpenJTalkPath();
+            if (Directory.Exists(developmentPath))
+            {
+                Debug.Log($"[OpenJTalkPhonemizer] Development mode: Loading from Samples~: {developmentPath}");
+                return developmentPath;
+            }
+            else
+            {
+                Debug.LogError($"[OpenJTalkPhonemizer] Development mode: Dictionary not found at: {developmentPath}");
+                return developmentPath; // Return expected path for error messages
+            }
 #else
             // After setup, files should always be in fixed locations - using consistent path structure
             var primaryPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");

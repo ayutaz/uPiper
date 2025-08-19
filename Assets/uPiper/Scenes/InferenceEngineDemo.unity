@@ -3870,7 +3870,6 @@ MonoBehaviour:
   _modelDropdown: {fileID: 2006794012}
   _phraseDropdown: {fileID: 1081943954}
   _phonemeDetailsText: {fileID: 929973098}
-  _backendInfoText: {fileID: 0}
   _backendDropdown: {fileID: 1682351233}
   _defaultJapaneseText: 
   _defaultEnglishText: Hello world

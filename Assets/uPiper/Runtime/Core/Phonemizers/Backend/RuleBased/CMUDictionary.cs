@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core;
 
 namespace uPiper.Core.Phonemizers.Backend.RuleBased
 {
@@ -42,6 +43,21 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 var actualFilePath = filePath;
                 var fileName = Path.GetFileName(filePath);
 
+#if UNITY_EDITOR && UPIPER_DEVELOPMENT
+                // Development environment: Load directly from Samples~
+                var developmentPath = uPiperPaths.GetDevelopmentCMUPath(fileName);
+                if (File.Exists(developmentPath))
+                {
+                    actualFilePath = developmentPath;
+                    Debug.Log($"[CMUDictionary] Development mode: Loading from Samples~: {developmentPath}");
+                }
+                else
+                {
+                    Debug.LogWarning($"[CMUDictionary] Development mode: Dictionary not found at: {developmentPath}, falling back to StreamingAssets");
+                    // Fall back to StreamingAssets path
+                    actualFilePath = uPiperPaths.GetRuntimeCMUPath(fileName);
+                }
+#else
                 // Primary path after setup - using shared constant for consistency
                 var streamingAssetsPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "Phonemizers", fileName);
 
@@ -62,6 +78,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                     Debug.LogError($"[CMUDictionary] Dictionary file not found at: {streamingAssetsPath}");
                     Debug.LogError($"[CMUDictionary] Please run 'uPiper/Setup/Run Initial Setup' from the menu.");
                 }
+#endif
 
                 // Debug path information
                 Debug.Log($"[CMUDictionary] Attempting to load from: {actualFilePath}");
