@@ -284,12 +284,8 @@ namespace uPiper.Demo
 
         private void AutoDetectFonts()
         {
-#if UNITY_2023_1_OR_NEWER
-            // Resources.FindObjectsOfTypeAll doesn't have the new API, so we keep using it
+            // Resources.FindObjectsOfTypeAll doesn't have a new API in Unity 2023.1+
             var allFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
-#else
-            var allFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
-#endif
 
             // Auto-detect default/English font if not assigned
             if (_defaultFontAsset == null)
@@ -321,38 +317,32 @@ namespace uPiper.Demo
 
 #if UNITY_EDITOR
             // In Editor, try to load from Samples folder if not found
-            if (_japaneseFontAsset == null)
+            var samplesPath = System.IO.Path.Combine(Application.dataPath, "Samples", "uPiper");
+            
+            if (_japaneseFontAsset == null && System.IO.Directory.Exists(samplesPath))
             {
-                var samplesPath = Application.dataPath + "/Samples/uPiper";
-                if (System.IO.Directory.Exists(samplesPath))
+                var fontPaths = System.IO.Directory.GetFiles(samplesPath, "NotoSansJP-Regular SDF.asset", System.IO.SearchOption.AllDirectories);
+                if (fontPaths.Length > 0)
                 {
-                    var fontPaths = System.IO.Directory.GetFiles(samplesPath, "NotoSansJP-Regular SDF.asset", System.IO.SearchOption.AllDirectories);
-                    if (fontPaths.Length > 0)
+                    var relativePath = "Assets" + fontPaths[0].Replace(Application.dataPath, "").Replace('\\', '/');
+                    _japaneseFontAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(relativePath);
+                    if (_japaneseFontAsset != null)
                     {
-                        var relativePath = fontPaths[0].Replace('\\', '/').Replace(Application.dataPath, "Assets");
-                        _japaneseFontAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(relativePath);
-                        if (_japaneseFontAsset != null)
-                        {
-                            PiperLogger.LogInfo($"[InferenceEngineDemo] Loaded Japanese font from Samples: {relativePath}");
-                        }
+                        PiperLogger.LogInfo($"[InferenceEngineDemo] Loaded Japanese font from Samples: {relativePath}");
                     }
                 }
             }
 
-            if (_defaultFontAsset == null)
+            if (_defaultFontAsset == null && System.IO.Directory.Exists(samplesPath))
             {
-                var samplesPath = Application.dataPath + "/Samples/uPiper";
-                if (System.IO.Directory.Exists(samplesPath))
+                var fontPaths = System.IO.Directory.GetFiles(samplesPath, "LiberationSans SDF.asset", System.IO.SearchOption.AllDirectories);
+                if (fontPaths.Length > 0)
                 {
-                    var fontPaths = System.IO.Directory.GetFiles(samplesPath, "LiberationSans SDF.asset", System.IO.SearchOption.AllDirectories);
-                    if (fontPaths.Length > 0)
+                    var relativePath = "Assets" + fontPaths[0].Replace(Application.dataPath, "").Replace('\\', '/');
+                    _defaultFontAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(relativePath);
+                    if (_defaultFontAsset != null)
                     {
-                        var relativePath = fontPaths[0].Replace('\\', '/').Replace(Application.dataPath, "Assets");
-                        _defaultFontAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(relativePath);
-                        if (_defaultFontAsset != null)
-                        {
-                            PiperLogger.LogInfo($"[InferenceEngineDemo] Loaded default font from Samples: {relativePath}");
-                        }
+                        PiperLogger.LogInfo($"[InferenceEngineDemo] Loaded default font from Samples: {relativePath}");
                     }
                 }
             }
