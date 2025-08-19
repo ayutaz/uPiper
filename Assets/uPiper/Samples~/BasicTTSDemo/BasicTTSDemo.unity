@@ -3873,7 +3873,7 @@ MonoBehaviour:
   _backendDropdown: {fileID: 1682351233}
   _defaultJapaneseText: 
   _defaultEnglishText: Hello world
-  _japaneseFontAsset: {fileID: 11400000, guid: 5ed2cc6b6a0e84ed5af3aa945d2d2218, type: 2}
+  _japaneseFontAsset: {fileID: 0}
   _defaultFontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
 --- !u!82 &1475177959
 AudioSource:
