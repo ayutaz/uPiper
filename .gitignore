@@ -267,4 +267,4 @@ TestMeCabOutput.cs.meta
 Assets/uPiper/Samples/
 
 # Development environment - platform specific plugins
-Assets/uPiper/Plugins/macOS/
+# Assets/uPiper/Plugins/macOS/  # Commented out to include macOS plugin in repository
