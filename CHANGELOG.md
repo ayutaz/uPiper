@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - 2025-01-02
+## [0.1.0] - 2025-09-02
 
 ### 🎉 Initial Release
 
@@ -23,8 +23,6 @@ uPiper is a Unity plugin for high-quality text-to-speech synthesis using the pip
   - macOS (Intel/Apple Silicon)
   - Linux (x64)
   - Android (ARMv7/ARM64)
-  - WebGL
-  - iOS
 
 ### 📦 Package Contents
 
