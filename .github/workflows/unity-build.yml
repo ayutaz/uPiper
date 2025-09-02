@@ -189,17 +189,22 @@ jobs:
           Library-PackageExport-
           Library-
           
-    - name: Create Unity Package (.unitypackage)
-      uses: game-ci/unity-builder@v4
-      env:
-        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-      with:
-        unityVersion: 6000.0.55f1
-        targetPlatform: NoTarget
-        buildMethod: uPiper.Editor.PackageExporter.ExportUnityPackageCI
-        customParameters: -outputPath ./PackageExports/uPiper-${{ steps.version.outputs.version }}.unitypackage
+    # Unity Package作成をスキップ (Unity 6000.0.55f1のDockerイメージが利用不可のため手動対応)
+    # - name: Create Unity Package (.unitypackage)
+    #   uses: game-ci/unity-builder@v4
+    #   env:
+    #     UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+    #     UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+    #     UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+    #   with:
+    #     unityVersion: 6000.0.55f1
+    #     targetPlatform: NoTarget
+    #     buildMethod: uPiper.Editor.PackageExporter.ExportUnityPackageCI
+    #     customParameters: -outputPath ./PackageExports/uPiper-${{ steps.version.outputs.version }}.unitypackage
+    
+    # Unity Packageは手動で作成するため、ディレクトリのみ作成
+    - name: Create PackageExports directory
+      run: mkdir -p ./PackageExports
         
     - name: Create UPM Package (.tgz)
       run: |
