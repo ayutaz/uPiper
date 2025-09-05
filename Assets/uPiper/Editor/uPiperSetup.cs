@@ -20,7 +20,6 @@ namespace uPiper.Editor
         private const string PACKAGE_NAME = "com.ayutaz.upiper";
 
         // Target paths in Assets (made public for shared use)
-        public const string TARGET_PLUGINS_PATH = "Assets/uPiper/Plugins";
         public const string TARGET_STREAMING_ASSETS_PATH = "Assets/StreamingAssets/uPiper";
 
         [InitializeOnLoadMethod]
@@ -81,7 +80,7 @@ namespace uPiper.Editor
             var status = GetSetupStatus();
 
             var message = "uPiper Setup Status:\n\n";
-            message += $"• Plugins: {(status.pluginsExist ? "✓ Installed" : "✗ Not found")}\n";
+            message += $"• Native Plugins: {(status.pluginsExist ? "✓ Available (from package)" : "✗ Not found in package")}\n";
             message += $"• OpenJTalk Dictionary: {(status.dictionaryExists ? "✓ Installed" : "✗ Not found")}\n";
             message += $"• CMU Dictionary: {(status.cmuDictExists ? "✓ Installed" : "✗ Not found")}\n";
             message += $"• Voice Models: {(status.modelsExist ? "✓ Installed" : "✗ Not found")}\n";
@@ -118,11 +117,6 @@ namespace uPiper.Editor
                 message += "4. Run 'uPiper/Setup/Install from Samples'";
             }
 
-            // Add note about plugins if missing
-            if (!status.pluginsExist)
-            {
-                message += "\n⚠️ Native plugins not found. Run 'Install from Samples' to install them.";
-            }
 #endif
 
             EditorUtility.DisplayDialog("uPiper Setup Status", message, "OK");
@@ -334,11 +328,8 @@ namespace uPiper.Editor
         {
             var status = new SetupStatus();
 
-            // Check plugins
-            var windowsPlugin = Path.Combine(TARGET_PLUGINS_PATH, "Windows", "x86_64", "openjtalk_wrapper.dll");
-            var macPlugin = Path.Combine(TARGET_PLUGINS_PATH, "macOS", "openjtalk_wrapper.bundle");
-            var linuxPlugin = Path.Combine(TARGET_PLUGINS_PATH, "Linux", "x86_64", "libopenjtalk_wrapper.so");
-            status.pluginsExist = File.Exists(windowsPlugin) || Directory.Exists(macPlugin) || File.Exists(linuxPlugin);
+            // Check if plugins exist in the package
+            status.pluginsExist = CheckPackagePluginsExist();
 
             // Check OpenJTalk dictionary
             var dictPath = Path.Combine(TARGET_STREAMING_ASSETS_PATH, "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
@@ -356,7 +347,7 @@ namespace uPiper.Editor
             status.modelsExist = File.Exists(modelPath1) || File.Exists(modelPath2) ||
                                  File.Exists(oldModelPath1) || File.Exists(oldModelPath2);
 
-            // Complete if we have plugins and at least minimal dictionary support
+            // Complete if we have plugins in package and at least minimal dictionary support and models
             status.isComplete = status.pluginsExist && (status.dictionaryExists || status.cmuDictExists) && status.modelsExist;
 
             return status;
@@ -518,14 +509,6 @@ namespace uPiper.Editor
                     }
                 }
 
-                // Install plugins from package (for Package Manager installations)
-                var pluginsResult = InstallPluginsFromPackage();
-                if (pluginsResult.success)
-                {
-                    installedCount += pluginsResult.fileCount;
-                    Debug.Log($"[uPiper Setup] Installed plugins ({pluginsResult.fileCount} files)");
-                }
-
                 if (installedCount > 0)
                 {
                     MarkSetupComplete();
@@ -557,54 +540,37 @@ namespace uPiper.Editor
             }
         }
 
-        private static (bool success, int fileCount) InstallPluginsFromPackage()
+        private static bool CheckPackagePluginsExist()
         {
-            try
+            // For local development installations
+            var localPluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins");
+            if (Directory.Exists(localPluginsPath))
             {
-                // Check if plugins already exist
-                var targetPath = TARGET_PLUGINS_PATH;
-                if (Directory.Exists(targetPath))
-                {
-                    // Check if we already have plugins
-                    var existingFiles = Directory.GetFiles(targetPath, "*.*", SearchOption.AllDirectories)
-                        .Where(f => !f.EndsWith(".meta"))
-                        .ToArray();
-                    if (existingFiles.Length > 0)
-                    {
-                        Debug.Log($"[uPiper Setup] Plugins already exist ({existingFiles.Length} files), skipping installation");
-                        return (true, 0);
-                    }
-                }
+                var pluginFiles = Directory.GetFiles(localPluginsPath, "*.*", SearchOption.AllDirectories)
+                    .Where(f => f.EndsWith(".dll") || f.EndsWith(".so") || f.EndsWith(".bundle") || f.EndsWith(".dylib"))
+                    .ToArray();
+                if (pluginFiles.Length > 0)
+                    return true;
+            }
 
-                // Find package path
-                var packagePath = GetPackagePath();
-                if (string.IsNullOrEmpty(packagePath))
-                {
-                    Debug.LogWarning("[uPiper Setup] Could not find package path, skipping plugin installation");
-                    return (false, 0);
-                }
-
-                // Check for plugins in package
+            // For Package Manager installations
+            var packagePath = GetPackagePath();
+            if (!string.IsNullOrEmpty(packagePath))
+            {
                 var packagePluginsPath = Path.Combine(packagePath, "Plugins");
-                if (!Directory.Exists(packagePluginsPath))
+                if (Directory.Exists(packagePluginsPath))
                 {
-                    Debug.LogWarning($"[uPiper Setup] Plugins not found in package at: {packagePluginsPath}");
-                    return (false, 0);
-                }
+                    // Check for at least one platform plugin
+                    var windowsPlugin = Path.Combine(packagePluginsPath, "Windows", "x86_64", "openjtalk_wrapper.dll");
+                    var macPlugin = Path.Combine(packagePluginsPath, "macOS", "openjtalk_wrapper.bundle");
+                    var linuxPlugin = Path.Combine(packagePluginsPath, "Linux", "x86_64", "libopenjtalk_wrapper.so");
 
-                // Copy plugins
-                var result = CopyDirectory(packagePluginsPath, targetPath, "Native Plugins");
-                if (result.success)
-                {
-                    Debug.Log($"[uPiper Setup] Successfully copied plugins from package");
+                    return File.Exists(windowsPlugin) || Directory.Exists(macPlugin) || File.Exists(linuxPlugin);
                 }
-                return result;
             }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[uPiper Setup] Failed to install plugins: {ex.Message}");
-                return (false, 0);
-            }
+
+            return false;
         }
+
     }
 }
