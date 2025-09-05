@@ -564,7 +564,7 @@ namespace uPiper.Editor
                     var windowsPlugin = Path.Combine(packagePluginsPath, "Windows", "x86_64", "openjtalk_wrapper.dll");
                     var macPlugin = Path.Combine(packagePluginsPath, "macOS", "openjtalk_wrapper.bundle");
                     var linuxPlugin = Path.Combine(packagePluginsPath, "Linux", "x86_64", "libopenjtalk_wrapper.so");
-                    
+
                     return File.Exists(windowsPlugin) || Directory.Exists(macPlugin) || File.Exists(linuxPlugin);
                 }
             }
