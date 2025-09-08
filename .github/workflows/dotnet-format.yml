@@ -33,7 +33,7 @@ jobs:
       uses: actions/checkout@v5
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 6.0.x  # Unity 6 uses .NET Standard 2.1 which is supported by .NET 6
 
