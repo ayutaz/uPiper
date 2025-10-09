@@ -19,8 +19,6 @@ if [ ! -f "$TOOLCHAIN_FILE" ]; then
     exit 1
 fi
 
-cd "$BUILD_DIR"
-
 # iOS specific settings
 export PLATFORM="OS64"
 export DEPLOYMENT_TARGET="11.0"
@@ -49,8 +47,8 @@ export LDFLAGS="-arch arm64 -isysroot $SDK_PATH -mios-version-min=$DEPLOYMENT_TA
 
 # Build hts_engine
 echo "=== Building hts_engine for iOS ==="
-if [ -d "hts_engine_API-1.10" ]; then
-    cd hts_engine_API-1.10
+if [ -d "$SCRIPT_DIR/external/hts_engine_API-1.10" ]; then
+    cd "$SCRIPT_DIR/external/hts_engine_API-1.10"
     
     # Clean previous builds
     if [ -f "Makefile" ]; then
@@ -86,8 +84,8 @@ fi
 
 # Build OpenJTalk
 echo "=== Building OpenJTalk for iOS ==="
-if [ -d "open_jtalk-1.11" ]; then
-    cd open_jtalk-1.11
+if [ -d "$SCRIPT_DIR/external/open_jtalk-1.11" ]; then
+    cd "$SCRIPT_DIR/external/open_jtalk-1.11"
     
     # Copy dictionary files if they exist in the repo
     if [ -d "$SCRIPT_DIR/dictionary" ]; then
@@ -138,7 +136,7 @@ fi
 
 echo "=== iOS Dependencies built successfully ==="
 echo "Library structure:"
-find "$BUILD_DIR/open_jtalk-1.11" -name "*.a" -type f
+find "$SCRIPT_DIR/external/open_jtalk-1.11" -name "*.a" -type f
 echo ""
 echo "HTSEngine library:"
 find "$INSTALL_DIR" -name "*.a" -type f
