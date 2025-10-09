@@ -5,11 +5,11 @@ empty:=
 space:= $(empty) $(empty)
 spaceplus:= $(empty)\ $(empty)
 
-TARGETS += $(subst $(space),$(spaceplus),$(wildcard /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt))
-TARGETS += $(subst $(space),$(spaceplus),$(wildcard /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/4.0.3/CMakeCCompiler.cmake))
-TARGETS += $(subst $(space),$(spaceplus),$(wildcard /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/4.0.3/CMakeCXXCompiler.cmake))
-TARGETS += $(subst $(space),$(spaceplus),$(wildcard /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/4.0.3/CMakeSystem.cmake))
-TARGETS += $(subst $(space),$(spaceplus),$(wildcard /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/ios.toolchain.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/4.1.2/CMakeCCompiler.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/4.1.2/CMakeCXXCompiler.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/4.1.2/CMakeSystem.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/ios.toolchain.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/CMakeCCompiler.cmake.in))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/CMakeCInformation.cmake))
@@ -54,6 +54,7 @@ TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Mo
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/Cray-DetermineCompiler.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/CrayClang-DetermineCompiler.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/Diab-DetermineCompiler.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/Embarcadero-DetermineCompiler.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/Fujitsu-DetermineCompiler.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake))
@@ -79,6 +80,7 @@ TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Mo
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/OrangeC-DetermineCompiler.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/PGI-DetermineCompiler.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/PathScale-DetermineCompiler.cmake))
+TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/Renesas-DetermineCompiler.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/SCO-DetermineCompiler.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/SDCC-C-DetermineCompiler.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Compiler/SunPro-C-DetermineCompiler.cmake))
@@ -122,5 +124,5 @@ TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Mo
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Platform/iOS-Initialize.cmake))
 TARGETS += $(subst $(space),$(spaceplus),$(wildcard /opt/homebrew/share/cmake/Modules/Platform/iOS.cmake))
 
-/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/cmake.check_cache: $(TARGETS)
-	/opt/homebrew/bin/cmake -S/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk -B/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/cmake.check_cache: $(TARGETS)
+	/opt/homebrew/bin/cmake -S/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk -B/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64

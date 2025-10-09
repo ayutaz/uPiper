@@ -7,122 +7,122 @@
 	objects = {
 
 /* Begin PBXAggregateTarget section */
-		5F5324D19B4FE395E952B058 /* ALL_BUILD */ = {
+		2C57A36DF42B4924B228FCEE /* ZERO_CHECK */ = {
 			isa = PBXAggregateTarget;
-			buildConfigurationList = 384C46D91061442B941D133D /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */;
+			buildConfigurationList = AFEBD3B4E58F47F4AE1080CD /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */;
 			buildPhases = (
-				59F4F21BFBBAAF2B63356BA7 /* Generate CMakeFiles/ALL_BUILD */,
-			);
-			dependencies = (
-				43AB8A46EDCA48789398040B /* PBXTargetDependency */,
-				F966076CED324EFA9B3AFD23 /* PBXTargetDependency */,
-			);
-			name = ALL_BUILD;
-			productName = ALL_BUILD;
-		};
-		A6308DBBCF6150EDC24B3348 /* install */ = {
-			isa = PBXAggregateTarget;
-			buildConfigurationList = 9636904107694C04B69DF826 /* Build configuration list for PBXAggregateTarget "install" */;
-			buildPhases = (
-				93426DA6A4AC2C2AC9CE883C /* CMake PostBuild Rules */,
-			);
-			dependencies = (
-				F74921BB32764232A93F355E /* PBXTargetDependency */,
-			);
-			name = install;
-			productName = install;
-		};
-		E97D4832CE90743E2E0221A7 /* ZERO_CHECK */ = {
-			isa = PBXAggregateTarget;
-			buildConfigurationList = 606A183B1A1B441B80934305 /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */;
-			buildPhases = (
-				5F776C5BF744588D9DA1FDA6 /* Generate CMakeFiles/ZERO_CHECK */,
+				C0A6D1ACE4B83EBF45F1B655 /* Generate CMakeFiles/ZERO_CHECK */,
 			);
 			dependencies = (
 			);
 			name = ZERO_CHECK;
 			productName = ZERO_CHECK;
 		};
+		2DB4852B46E0144527D4271E /* install */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = C1529947CAE64C40A7259C7F /* Build configuration list for PBXAggregateTarget "install" */;
+			buildPhases = (
+				93426DA6A4AC2C2AC9CE883C /* CMake PostBuild Rules */,
+			);
+			dependencies = (
+				538D84CB6AAB4EAC998EE1A8 /* PBXTargetDependency */,
+			);
+			name = install;
+			productName = install;
+		};
+		E328588718949265F5F45E13 /* ALL_BUILD */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 376381E1DF0543969B4FF521 /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */;
+			buildPhases = (
+				E3ABF6769256216A19787052 /* Generate CMakeFiles/ALL_BUILD */,
+			);
+			dependencies = (
+				06D282D743EB41ABBB8C970B /* PBXTargetDependency */,
+				DF556FE3254942B1BA51ECE0 /* PBXTargetDependency */,
+			);
+			name = ALL_BUILD;
+			productName = ALL_BUILD;
+		};
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		2EB6605413DE4B87ADFA0308 /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/openjtalk_wrapper.dir/Info.plist */ = {isa = PBXBuildFile; fileRef = 44CA471360CB484CB202DFB7 /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/openjtalk_wrapper.dir/Info.plist */; };
-		754954F3ABBE4E76BA5CBD9A /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 4108B372A4C74FF3AD7EE24A /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt */; };
-		E0C879F98355466FB899A4C8 /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/src/openjtalk_full_wrapper.c */ = {isa = PBXBuildFile; fileRef = E41D7753AD1A4DCEA94DF4F4 /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/src/openjtalk_full_wrapper.c */; };
+		08F31C9772344DA3B87BDC55 /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/src/openjtalk_full_wrapper.c */ = {isa = PBXBuildFile; fileRef = 00D107A97FE5414893F7DC9A /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/src/openjtalk_full_wrapper.c */; };
+		1AB21C4BC1574196AB890CFA /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/openjtalk_wrapper.dir/Info.plist */ = {isa = PBXBuildFile; fileRef = 725E7EBB233549AB99C3D7E6 /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/openjtalk_wrapper.dir/Info.plist */; };
+		75E7963029E641BFB71FB33B /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 19F0696074AB4117A2B45BE9 /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildStyle section */
-		5CBD56FD86F845AE95176082 /* Debug */ = {
+		2BB7B43DA0E4478ABD97D2ED /* Debug */ = {
 			isa = PBXBuildStyle;
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
 			};
 			name = Debug;
 		};
-		BB531FACA30443338D82C4DC /* MinSizeRel */ = {
-			isa = PBXBuildStyle;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-			};
-			name = MinSizeRel;
-		};
-		CF357B4A3FAF4383ADABC1E8 /* Release */ = {
+		653D010BB03F49839E1D068C /* Release */ = {
 			isa = PBXBuildStyle;
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
 			};
 			name = Release;
 		};
-		D9D66EE983A84566AA1459DF /* RelWithDebInfo */ = {
+		6BE54A2E155E4765BA4BFADC /* RelWithDebInfo */ = {
 			isa = PBXBuildStyle;
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
 			};
 			name = RelWithDebInfo;
 		};
+		D219EDF2DD634910A2371DA7 /* MinSizeRel */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = MinSizeRel;
+		};
 /* End PBXBuildStyle section */
 
 /* Begin PBXContainerItemProxy section */
-		26DF3A21898F488FBA198CA4 /* PBXContainerItemProxy */ = {
+		17FDC1EB9F3D46F88B47F697 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = A721331040C947CBA056CEB9 /* Project object */;
+			containerPortal = 8007075165734F08B52CE024 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 5F5324D19B4FE395E952B058;
+			remoteGlobalIDString = 2C57A36DF42B4924B228FCEE;
+			remoteInfo = ZERO_CHECK;
+		};
+		2A81C49A86DA49198A55A089 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8007075165734F08B52CE024 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2C57A36DF42B4924B228FCEE;
+			remoteInfo = ZERO_CHECK;
+		};
+		6D71F4FED7424820AA290A3D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8007075165734F08B52CE024 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E328588718949265F5F45E13;
 			remoteInfo = ALL_BUILD;
 		};
-		7944CFD79AF140BF94159C13 /* PBXContainerItemProxy */ = {
+		81B229BEAB244806B75AA253 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = A721331040C947CBA056CEB9 /* Project object */;
+			containerPortal = 8007075165734F08B52CE024 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = FDCFA901BE623BF7CDBFE697;
 			remoteInfo = openjtalk_wrapper;
 		};
-		C1A40EBCD9344D1EB7DAF6F2 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A721331040C947CBA056CEB9 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = E97D4832CE90743E2E0221A7;
-			remoteInfo = ZERO_CHECK;
-		};
-		D7628E55227449B0B422D64B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A721331040C947CBA056CEB9 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = E97D4832CE90743E2E0221A7;
-			remoteInfo = ZERO_CHECK;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		24EF82A4051D4047B35FA0A2 /* openjtalk_wrapper */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libopenjtalk_wrapper.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
-		4108B372A4C74FF3AD7EE24A /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
-		44CA471360CB484CB202DFB7 /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/openjtalk_wrapper.dir/Info.plist */ = {isa = PBXFileReference; explicitFileType = sourcecode.text.plist; fileEncoding = 4; name = Info.plist; path = build_ios/OS64/CMakeFiles/openjtalk_wrapper.dir/Info.plist; sourceTree = SOURCE_ROOT; };
-		8A9FB7956F334F38A753BF76 /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
-		E41D7753AD1A4DCEA94DF4F4 /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/src/openjtalk_full_wrapper.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.c; fileEncoding = 4; name = openjtalk_full_wrapper.c; path = src/openjtalk_full_wrapper.c; sourceTree = SOURCE_ROOT; };
+		00D107A97FE5414893F7DC9A /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/src/openjtalk_full_wrapper.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.c; fileEncoding = 4; name = openjtalk_full_wrapper.c; path = src/openjtalk_full_wrapper.c; sourceTree = SOURCE_ROOT; };
+		19F0696074AB4117A2B45BE9 /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		3B49D63A17B44613B5B24B7C /* openjtalk_wrapper */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libopenjtalk_wrapper.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		725E7EBB233549AB99C3D7E6 /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/openjtalk_wrapper.dir/Info.plist */ = {isa = PBXFileReference; explicitFileType = sourcecode.text.plist; fileEncoding = 4; name = Info.plist; path = build_ios/OS64/CMakeFiles/openjtalk_wrapper.dir/Info.plist; sourceTree = SOURCE_ROOT; };
+		F514C7E2C3474FA2B2061D23 /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		0479B0AC95DE44A698934CD3 /* Frameworks */ = {
+		EF1D888124014656A77BC3D8 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -132,79 +132,79 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		283B20FA46B5476F9FCF63AD /* CMake Rules */ = {
+		043CB10806BB42308D55B44F /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				3B49D63A17B44613B5B24B7C /* openjtalk_wrapper */,
 			);
-			name = "CMake Rules";
+			name = Products;
 			sourceTree = "<group>";
 		};
-		428BD14758CB4830A19179AE = {
-			isa = PBXGroup;
-			children = (
-				D165D67A7B3E414394E4B0DB /* openjtalk_wrapper */,
-				F8A3802F956044FBA0F848A1 /* ALL_BUILD */,
-				B2F0D9E0AD964AC7B86EC97C /* Products */,
-				5B3EA5F89E32427A8144212C /* Frameworks */,
-				CE3129EF648447EF9392AAB5 /* Resources */,
-			);
-			sourceTree = "<group>";
-		};
-		5B3EA5F89E32427A8144212C /* Frameworks */ = {
+		468EAA32433344D99F555FD8 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		803F5C5E5F224A98A3768D04 /* Source Files */ = {
+		4982F8422A9849EFAC224968 /* ALL_BUILD */ = {
 			isa = PBXGroup;
 			children = (
-				E41D7753AD1A4DCEA94DF4F4 /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/src/openjtalk_full_wrapper.c */,
+				697B430590B147FAAA942C9D /* CMake Rules */,
+				F514C7E2C3474FA2B2061D23 /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt */,
+			);
+			name = ALL_BUILD;
+			sourceTree = "<group>";
+		};
+		697B430590B147FAAA942C9D /* CMake Rules */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "CMake Rules";
+			sourceTree = "<group>";
+		};
+		836B274D6E8A404B9B7B7AE8 = {
+			isa = PBXGroup;
+			children = (
+				F7F6024D27644102B7F76F51 /* openjtalk_wrapper */,
+				4982F8422A9849EFAC224968 /* ALL_BUILD */,
+				043CB10806BB42308D55B44F /* Products */,
+				468EAA32433344D99F555FD8 /* Frameworks */,
+				8D72319113BD4298830E8595 /* Resources */,
+			);
+			sourceTree = "<group>";
+		};
+		8D72319113BD4298830E8595 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		A9048EFA485F48F288529679 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				00D107A97FE5414893F7DC9A /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/src/openjtalk_full_wrapper.c */,
 			);
 			name = "Source Files";
 			sourceTree = "<group>";
 		};
-		8B520A3C4570476E9DF84334 /* Resources */ = {
+		F7F6024D27644102B7F76F51 /* openjtalk_wrapper */ = {
 			isa = PBXGroup;
 			children = (
-				44CA471360CB484CB202DFB7 /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/openjtalk_wrapper.dir/Info.plist */,
-			);
-			name = Resources;
-			sourceTree = "<group>";
-		};
-		B2F0D9E0AD964AC7B86EC97C /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				24EF82A4051D4047B35FA0A2 /* openjtalk_wrapper */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		CE3129EF648447EF9392AAB5 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Resources;
-			sourceTree = "<group>";
-		};
-		D165D67A7B3E414394E4B0DB /* openjtalk_wrapper */ = {
-			isa = PBXGroup;
-			children = (
-				803F5C5E5F224A98A3768D04 /* Source Files */,
-				8B520A3C4570476E9DF84334 /* Resources */,
-				4108B372A4C74FF3AD7EE24A /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt */,
+				A9048EFA485F48F288529679 /* Source Files */,
+				FE132197A16948CEB330CDD6 /* Resources */,
+				19F0696074AB4117A2B45BE9 /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt */,
 			);
 			name = openjtalk_wrapper;
 			sourceTree = "<group>";
 		};
-		F8A3802F956044FBA0F848A1 /* ALL_BUILD */ = {
+		FE132197A16948CEB330CDD6 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				283B20FA46B5476F9FCF63AD /* CMake Rules */,
-				8A9FB7956F334F38A753BF76 /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/CMakeLists.txt */,
+				725E7EBB233549AB99C3D7E6 /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/openjtalk_wrapper.dir/Info.plist */,
 			);
-			name = ALL_BUILD;
+			name = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -212,49 +212,49 @@
 /* Begin PBXNativeTarget section */
 		FDCFA901BE623BF7CDBFE697 /* openjtalk_wrapper */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 4F32443B2BB342B4AB65D0CA /* Build configuration list for PBXNativeTarget "openjtalk_wrapper" */;
+			buildConfigurationList = C458DF6BB5A9432BA3359122 /* Build configuration list for PBXNativeTarget "openjtalk_wrapper" */;
 			buildPhases = (
-				4EB0FE3D390540FFAFA0AA17 /* Sources */,
-				0479B0AC95DE44A698934CD3 /* Frameworks */,
+				95584E02389F49B1BD6C38B8 /* Sources */,
+				EF1D888124014656A77BC3D8 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				E2F0A659568944808B262BFE /* PBXTargetDependency */,
+				2B145061F566415488E029D1 /* PBXTargetDependency */,
 			);
 			name = openjtalk_wrapper;
 			productName = openjtalk_wrapper;
-			productReference = 24EF82A4051D4047B35FA0A2 /* openjtalk_wrapper */;
+			productReference = 3B49D63A17B44613B5B24B7C /* openjtalk_wrapper */;
 			productType = "com.apple.product-type.library.static";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A721331040C947CBA056CEB9 /* Project object */ = {
+		8007075165734F08B52CE024 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1640;
+				LastUpgradeCheck = 2600;
 			};
-			buildConfigurationList = F1ECBFE2E3AE456FA13D9C98 /* Build configuration list for PBXProject "openjtalk_wrapper" */;
+			buildConfigurationList = A6A469981282478F8ED4462B /* Build configuration list for PBXProject "openjtalk_wrapper" */;
 			buildSettings = {
 			};
 			buildStyles = (
-				5CBD56FD86F845AE95176082 /* Debug */,
-				CF357B4A3FAF4383ADABC1E8 /* Release */,
-				BB531FACA30443338D82C4DC /* MinSizeRel */,
-				D9D66EE983A84566AA1459DF /* RelWithDebInfo */,
+				2BB7B43DA0E4478ABD97D2ED /* Debug */,
+				653D010BB03F49839E1D068C /* Release */,
+				D219EDF2DD634910A2371DA7 /* MinSizeRel */,
+				6BE54A2E155E4765BA4BFADC /* RelWithDebInfo */,
 			);
 			compatibilityVersion = "Xcode 3.2";
 			hasScannedForEncodings = 0;
-			mainGroup = 428BD14758CB4830A19179AE;
-			projectDirPath = /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk;
+			mainGroup = 836B274D6E8A404B9B7B7AE8;
+			projectDirPath = /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk;
 			projectRoot = "";
 			targets = (
-				5F5324D19B4FE395E952B058 /* ALL_BUILD */,
-				A6308DBBCF6150EDC24B3348 /* install */,
+				E328588718949265F5F45E13 /* ALL_BUILD */,
+				2DB4852B46E0144527D4271E /* install */,
 				FDCFA901BE623BF7CDBFE697 /* openjtalk_wrapper */,
-				E97D4832CE90743E2E0221A7 /* ZERO_CHECK */,
+				2C57A36DF42B4924B228FCEE /* ZERO_CHECK */,
 			);
 		};
 /* End PBXProject section */
@@ -273,72 +273,6 @@
 			shellPath = /bin/sh;
 			shellScript = "# shell script goes here
 exit 0";
-			showEnvVarsInLog = 0;
-		};
-		59F4F21BFBBAAF2B63356BA7 /* Generate CMakeFiles/ALL_BUILD */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Generate CMakeFiles/ALL_BUILD";
-			outputPaths = (
-/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/ALL_BUILD			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e
-if test \"$CONFIGURATION\" = \"Debug\"; then :
-  cd /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
-  echo Build\\ all\\ projects
-fi
-if test \"$CONFIGURATION\" = \"Release\"; then :
-  cd /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
-  echo Build\\ all\\ projects
-fi
-if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
-  cd /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
-  echo Build\\ all\\ projects
-fi
-if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
-  cd /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
-  echo Build\\ all\\ projects
-fi
-";
-			showEnvVarsInLog = 0;
-		};
-		5F776C5BF744588D9DA1FDA6 /* Generate CMakeFiles/ZERO_CHECK */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Generate CMakeFiles/ZERO_CHECK";
-			outputPaths = (
-/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/ZERO_CHECK			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e
-if test \"$CONFIGURATION\" = \"Debug\"; then :
-  cd /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
-  make -f /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeScripts/ReRunCMake.make
-fi
-if test \"$CONFIGURATION\" = \"Release\"; then :
-  cd /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
-  make -f /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeScripts/ReRunCMake.make
-fi
-if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
-  cd /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
-  make -f /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeScripts/ReRunCMake.make
-fi
-if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
-  cd /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
-  make -f /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeScripts/ReRunCMake.make
-fi
-";
 			showEnvVarsInLog = 0;
 		};
 		87AF4882E018677E2624B544 = {
@@ -362,6 +296,8 @@ exit 0";
 			buildActionMask = 2147483647;
 			files = (
 			);
+			inputPaths = (
+			);
 			name = "CMake PostBuild Rules";
 			outputPaths = (
 			);
@@ -369,19 +305,19 @@ exit 0";
 			shellPath = /bin/sh;
 			shellScript = "set -e
 if test \"$CONFIGURATION\" = \"Debug\"; then :
-  cd /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+  cd /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
   /opt/homebrew/bin/cmake -DBUILD_TYPE=$CONFIGURATION -DEFFECTIVE_PLATFORM_NAME=$EFFECTIVE_PLATFORM_NAME -P cmake_install.cmake
 fi
 if test \"$CONFIGURATION\" = \"Release\"; then :
-  cd /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+  cd /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
   /opt/homebrew/bin/cmake -DBUILD_TYPE=$CONFIGURATION -DEFFECTIVE_PLATFORM_NAME=$EFFECTIVE_PLATFORM_NAME -P cmake_install.cmake
 fi
 if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
-  cd /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+  cd /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
   /opt/homebrew/bin/cmake -DBUILD_TYPE=$CONFIGURATION -DEFFECTIVE_PLATFORM_NAME=$EFFECTIVE_PLATFORM_NAME -P cmake_install.cmake
 fi
 if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
-  cd /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+  cd /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
   /opt/homebrew/bin/cmake -DBUILD_TYPE=$CONFIGURATION -DEFFECTIVE_PLATFORM_NAME=$EFFECTIVE_PLATFORM_NAME -P cmake_install.cmake
 fi
 ";
@@ -402,44 +338,110 @@ fi
 exit 0";
 			showEnvVarsInLog = 0;
 		};
+		C0A6D1ACE4B83EBF45F1B655 /* Generate CMakeFiles/ZERO_CHECK */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate CMakeFiles/ZERO_CHECK";
+			outputPaths = (
+/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/ZERO_CHECK			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+  make -f /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeScripts/ReRunCMake.make
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+  make -f /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeScripts/ReRunCMake.make
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+  make -f /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeScripts/ReRunCMake.make
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+  make -f /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeScripts/ReRunCMake.make
+fi
+";
+			showEnvVarsInLog = 0;
+		};
+		E3ABF6769256216A19787052 /* Generate CMakeFiles/ALL_BUILD */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate CMakeFiles/ALL_BUILD";
+			outputPaths = (
+/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/CMakeFiles/ALL_BUILD			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+  echo Build\\ all\\ projects
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+  echo Build\\ all\\ projects
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+  echo Build\\ all\\ projects
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64
+  echo Build\\ all\\ projects
+fi
+";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		4EB0FE3D390540FFAFA0AA17 /* Sources */ = {
+		95584E02389F49B1BD6C38B8 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E0C879F98355466FB899A4C8 /* /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/src/openjtalk_full_wrapper.c */,
+				08F31C9772344DA3B87BDC55 /* /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/src/openjtalk_full_wrapper.c */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		43AB8A46EDCA48789398040B /* PBXTargetDependency */ = {
+		06D282D743EB41ABBB8C970B /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = FDCFA901BE623BF7CDBFE697 /* openjtalk_wrapper */;
-			targetProxy = 7944CFD79AF140BF94159C13 /* PBXContainerItemProxy */;
+			targetProxy = 81B229BEAB244806B75AA253 /* PBXContainerItemProxy */;
 		};
-		E2F0A659568944808B262BFE /* PBXTargetDependency */ = {
+		2B145061F566415488E029D1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = E97D4832CE90743E2E0221A7 /* ZERO_CHECK */;
-			targetProxy = C1A40EBCD9344D1EB7DAF6F2 /* PBXContainerItemProxy */;
+			target = 2C57A36DF42B4924B228FCEE /* ZERO_CHECK */;
+			targetProxy = 2A81C49A86DA49198A55A089 /* PBXContainerItemProxy */;
 		};
-		F74921BB32764232A93F355E /* PBXTargetDependency */ = {
+		538D84CB6AAB4EAC998EE1A8 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 5F5324D19B4FE395E952B058 /* ALL_BUILD */;
-			targetProxy = 26DF3A21898F488FBA198CA4 /* PBXContainerItemProxy */;
+			target = E328588718949265F5F45E13 /* ALL_BUILD */;
+			targetProxy = 6D71F4FED7424820AA290A3D /* PBXContainerItemProxy */;
 		};
-		F966076CED324EFA9B3AFD23 /* PBXTargetDependency */ = {
+		DF556FE3254942B1BA51ECE0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = E97D4832CE90743E2E0221A7 /* ZERO_CHECK */;
-			targetProxy = D7628E55227449B0B422D64B /* PBXContainerItemProxy */;
+			target = 2C57A36DF42B4924B228FCEE /* ZERO_CHECK */;
+			targetProxy = 17FDC1EB9F3D46F88B47F697 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		0CBE87D912254C2F897161F1 /* RelWithDebInfo */ = {
+		02C67F3E86FF4CBD92AA393A /* RelWithDebInfo */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -459,27 +461,7 @@ exit 0";
 			};
 			name = RelWithDebInfo;
 		};
-		11B92C78D03743D38D5733EE /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				COMBINE_HIDPI_IMAGES = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				INSTALL_PATH = "";
-				OTHER_LDFLAGS = ("","$(inherited)");
-				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = install;
-				SECTORDER_FLAGS = "";
-				USE_HEADERMAP = NO;
-				WARNING_CFLAGS = ("$(inherited)");
-			};
-			name = Release;
-		};
-		1B630503CA38459885408414 /* Debug */ = {
+		2755AAA63277443F9D61B5CB /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = arm64;
@@ -492,13 +474,44 @@ exit 0";
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				ONLY_ACTIVE_ARCH = NO;
-				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk;
-				SYMROOT = /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SYMROOT = /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build;
 				"VALID_ARCHS[sdk=iphoneos*]" = arm64;
 			};
-			name = Debug;
+			name = Release;
 		};
-		26FA6E1563E94B0AA1CFA113 /* MinSizeRel */ = {
+		2D28B0457C5B4A22AAD5395A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/lib/Release;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .dylib;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",IOS,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/include,/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/install/include,"/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/jpcommon","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab/src","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/text2mecab","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab2njd","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_pronunciation","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_digit","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_phrase","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_type","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_unvoiced_vowel","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_long_vowel","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd2jpcommon","$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (" -fembed-bitcode     -DNDEBUG '-std=gnu99' -fPIC -Wall     ","$(inherited)");
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = openjtalk_wrapper;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build/openjtalk_wrapper.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				VALID_ARCHS = arm64;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		2F4BA3BF4438461D9A1E273B /* MinSizeRel */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -518,77 +531,7 @@ exit 0";
 			};
 			name = MinSizeRel;
 		};
-		2A3D9F5FE77B49D2B9F94068 /* RelWithDebInfo */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = arm64;
-				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/lib/RelWithDebInfo;
-				EXECUTABLE_PREFIX = lib;
-				EXECUTABLE_SUFFIX = .dylib;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",IOS,"$(inherited)");
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				HEADER_SEARCH_PATHS = (/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/include,/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/install/include,"/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/jpcommon","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab/src","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/text2mecab","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab2njd","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_pronunciation","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_digit","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_phrase","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_type","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_unvoiced_vowel","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_long_vowel","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd2jpcommon","$(inherited)");
-				INSTALL_PATH = "";
-				LIBRARY_STYLE = STATIC;
-				ONLY_ACTIVE_ARCH = NO;
-				OTHER_CFLAGS = (" -fembed-bitcode        -DNDEBUG '-std=gnu99' -fPIC -Wall     ","$(inherited)");
-				OTHER_LIBTOOLFLAGS = ("");
-				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = openjtalk_wrapper;
-				SECTORDER_FLAGS = "";
-				TARGET_TEMP_DIR = "/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build/openjtalk_wrapper.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
-				USE_HEADERMAP = NO;
-				VALID_ARCHS = arm64;
-				WARNING_CFLAGS = ("$(inherited)");
-			};
-			name = RelWithDebInfo;
-		};
-		2C0DFB56603E45DDBA764207 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				COMBINE_HIDPI_IMAGES = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				INSTALL_PATH = "";
-				OTHER_LDFLAGS = ("","$(inherited)");
-				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = ZERO_CHECK;
-				SECTORDER_FLAGS = "";
-				USE_HEADERMAP = NO;
-				WARNING_CFLAGS = ("$(inherited)");
-			};
-			name = Release;
-		};
-		3C3408F85B934AB4A24FD216 /* RelWithDebInfo */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = arm64;
-				"ARCHS[sdk=iphoneos*]" = arm64;
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGNING_REQUIRED = NO;
-				ENABLE_BITCODE = NO;
-				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				ONLY_ACTIVE_ARCH = NO;
-				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SYMROOT = /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build;
-				"VALID_ARCHS[sdk=iphoneos*]" = arm64;
-			};
-			name = RelWithDebInfo;
-		};
-		4A12BA165D6C4F5682FAE8B7 /* RelWithDebInfo */ = {
+		4660DDFFA5404128AE60D4C1 /* RelWithDebInfo */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -608,13 +551,13 @@ exit 0";
 			};
 			name = RelWithDebInfo;
 		};
-		4F8A3254B40F41328538171C /* Debug */ = {
+		49A4A612943244B5ADE0EAFD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
 				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/lib/Debug;
+				CONFIGURATION_BUILD_DIR = /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/lib/Debug;
 				EXECUTABLE_PREFIX = lib;
 				EXECUTABLE_SUFFIX = .dylib;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
@@ -622,7 +565,7 @@ exit 0";
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",IOS,"$(inherited)");
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				HEADER_SEARCH_PATHS = (/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/include,/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/install/include,"/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/jpcommon","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab/src","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/text2mecab","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab2njd","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_pronunciation","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_digit","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_phrase","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_type","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_unvoiced_vowel","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_long_vowel","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd2jpcommon","$(inherited)");
+				HEADER_SEARCH_PATHS = (/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/include,/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/install/include,"/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/jpcommon","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab/src","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/text2mecab","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab2njd","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_pronunciation","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_digit","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_phrase","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_type","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_unvoiced_vowel","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_long_vowel","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd2jpcommon","$(inherited)");
 				INSTALL_PATH = "";
 				LIBRARY_STYLE = STATIC;
 				ONLY_ACTIVE_ARCH = NO;
@@ -631,14 +574,14 @@ exit 0";
 				OTHER_REZFLAGS = "";
 				PRODUCT_NAME = openjtalk_wrapper;
 				SECTORDER_FLAGS = "";
-				TARGET_TEMP_DIR = "/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build/openjtalk_wrapper.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				TARGET_TEMP_DIR = "/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build/openjtalk_wrapper.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
 				USE_HEADERMAP = NO;
 				VALID_ARCHS = arm64;
 				WARNING_CFLAGS = ("$(inherited)");
 			};
 			name = Debug;
 		};
-		68DE29D321224A70B93E1C86 /* MinSizeRel */ = {
+		5A4859B70CBC4CCA91DFABE7 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -651,104 +594,14 @@ exit 0";
 				INSTALL_PATH = "";
 				OTHER_LDFLAGS = ("","$(inherited)");
 				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = ALL_BUILD;
+				PRODUCT_NAME = install;
 				SECTORDER_FLAGS = "";
 				USE_HEADERMAP = NO;
 				WARNING_CFLAGS = ("$(inherited)");
 			};
-			name = MinSizeRel;
+			name = Release;
 		};
-		69453639F93E4B1A9CA1D6C2 /* MinSizeRel */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = arm64;
-				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/lib/MinSizeRel;
-				EXECUTABLE_PREFIX = lib;
-				EXECUTABLE_SUFFIX = .dylib;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_OPTIMIZATION_LEVEL = 3;
-				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",IOS,"$(inherited)");
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				HEADER_SEARCH_PATHS = (/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/include,/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/install/include,"/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/jpcommon","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab/src","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/text2mecab","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab2njd","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_pronunciation","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_digit","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_phrase","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_type","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_unvoiced_vowel","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_long_vowel","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd2jpcommon","$(inherited)");
-				INSTALL_PATH = "";
-				LIBRARY_STYLE = STATIC;
-				ONLY_ACTIVE_ARCH = NO;
-				OTHER_CFLAGS = (" -fembed-bitcode     -DNDEBUG '-std=gnu99' -fPIC -Wall     ","$(inherited)");
-				OTHER_LIBTOOLFLAGS = ("");
-				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = openjtalk_wrapper;
-				SECTORDER_FLAGS = "";
-				TARGET_TEMP_DIR = "/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build/openjtalk_wrapper.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
-				USE_HEADERMAP = NO;
-				VALID_ARCHS = arm64;
-				WARNING_CFLAGS = ("$(inherited)");
-			};
-			name = MinSizeRel;
-		};
-		8864AA48492A4BAC9839501E /* MinSizeRel */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				COMBINE_HIDPI_IMAGES = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				INSTALL_PATH = "";
-				OTHER_LDFLAGS = ("","$(inherited)");
-				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = ZERO_CHECK;
-				SECTORDER_FLAGS = "";
-				USE_HEADERMAP = NO;
-				WARNING_CFLAGS = ("$(inherited)");
-			};
-			name = MinSizeRel;
-		};
-		979CFB566B694B9DBABA04DB /* MinSizeRel */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = arm64;
-				"ARCHS[sdk=iphoneos*]" = arm64;
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGNING_REQUIRED = NO;
-				ENABLE_BITCODE = NO;
-				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				ONLY_ACTIVE_ARCH = NO;
-				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SYMROOT = /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build;
-				"VALID_ARCHS[sdk=iphoneos*]" = arm64;
-			};
-			name = MinSizeRel;
-		};
-		9A0620DB2B0847EBA3501F48 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				COMBINE_HIDPI_IMAGES = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				INSTALL_PATH = "";
-				OTHER_LDFLAGS = ("","$(inherited)");
-				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = ZERO_CHECK;
-				SECTORDER_FLAGS = "";
-				USE_HEADERMAP = NO;
-				WARNING_CFLAGS = ("$(inherited)");
-			};
-			name = Debug;
-		};
-		A1D060D0028B46E7824B9C56 /* RelWithDebInfo */ = {
+		5B9066D150434E389A581437 /* RelWithDebInfo */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -768,27 +621,7 @@ exit 0";
 			};
 			name = RelWithDebInfo;
 		};
-		A2DD2D8B8AFA43B08CE23755 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				COMBINE_HIDPI_IMAGES = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				INSTALL_PATH = "";
-				OTHER_LDFLAGS = ("","$(inherited)");
-				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = ALL_BUILD;
-				SECTORDER_FLAGS = "";
-				USE_HEADERMAP = NO;
-				WARNING_CFLAGS = ("$(inherited)");
-			};
-			name = Release;
-		};
-		C2035619BAF146C38124E875 /* Debug */ = {
+		6EE3AA6FE36A49EAB94D90DD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -808,33 +641,13 @@ exit 0";
 			};
 			name = Debug;
 		};
-		C9B21E40997345CD82022F05 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = arm64;
-				"ARCHS[sdk=iphoneos*]" = arm64;
-				CLANG_CXX_LIBRARY = "libc++";
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGNING_REQUIRED = NO;
-				ENABLE_BITCODE = NO;
-				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
-				ONLY_ACTIVE_ARCH = NO;
-				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.5.sdk;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SYMROOT = /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build;
-				"VALID_ARCHS[sdk=iphoneos*]" = arm64;
-			};
-			name = Release;
-		};
-		D0A5345FE4C94ED1BD987C17 /* Release */ = {
+		745C7FE423EF4CC59F04B118 /* MinSizeRel */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
 				COMBINE_HIDPI_IMAGES = YES;
-				CONFIGURATION_BUILD_DIR = /Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/lib/Release;
+				CONFIGURATION_BUILD_DIR = /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/lib/MinSizeRel;
 				EXECUTABLE_PREFIX = lib;
 				EXECUTABLE_SUFFIX = .dylib;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
@@ -842,7 +655,7 @@ exit 0";
 				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",IOS,"$(inherited)");
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				HEADER_SEARCH_PATHS = (/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/include,/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/install/include,"/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/jpcommon","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab/src","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/text2mecab","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab2njd","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_pronunciation","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_digit","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_phrase","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_type","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_unvoiced_vowel","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_long_vowel","/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd2jpcommon","$(inherited)");
+				HEADER_SEARCH_PATHS = (/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/include,/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/install/include,"/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/jpcommon","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab/src","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/text2mecab","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab2njd","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_pronunciation","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_digit","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_phrase","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_type","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_unvoiced_vowel","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_long_vowel","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd2jpcommon","$(inherited)");
 				INSTALL_PATH = "";
 				LIBRARY_STYLE = STATIC;
 				ONLY_ACTIVE_ARCH = NO;
@@ -851,14 +664,14 @@ exit 0";
 				OTHER_REZFLAGS = "";
 				PRODUCT_NAME = openjtalk_wrapper;
 				SECTORDER_FLAGS = "";
-				TARGET_TEMP_DIR = "/Users/inamotoyuuta/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build/openjtalk_wrapper.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				TARGET_TEMP_DIR = "/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build/openjtalk_wrapper.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
 				USE_HEADERMAP = NO;
 				VALID_ARCHS = arm64;
 				WARNING_CFLAGS = ("$(inherited)");
 			};
-			name = Release;
+			name = MinSizeRel;
 		};
-		DD48CDC97D184A6C8ADC581B /* Debug */ = {
+		81B11B7265C54612AB3EA0C1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -878,65 +691,254 @@ exit 0";
 			};
 			name = Debug;
 		};
+		8423F447EFEF4890905CDB91 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				"ARCHS[sdk=iphoneos*]" = arm64;
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				ENABLE_BITCODE = NO;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				ONLY_ACTIVE_ARCH = NO;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SYMROOT = /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build;
+				"VALID_ARCHS[sdk=iphoneos*]" = arm64;
+			};
+			name = MinSizeRel;
+		};
+		9C0B81E820154BD2AF317E03 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		A09A3A701048453DB7153304 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		A9C6CAFCBC634D7AB270092E /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				"ARCHS[sdk=iphoneos*]" = arm64;
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				ENABLE_BITCODE = NO;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				ONLY_ACTIVE_ARCH = NO;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SYMROOT = /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build;
+				"VALID_ARCHS[sdk=iphoneos*]" = arm64;
+			};
+			name = RelWithDebInfo;
+		};
+		C1D2F5A001F840759DB8B881 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		D1DBF74A44F04D61B6E96497 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/lib/RelWithDebInfo;
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .dylib;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'",IOS,"$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				HEADER_SEARCH_PATHS = (/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/include,/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/install/include,"/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/jpcommon","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab/src","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/text2mecab","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/mecab2njd","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_pronunciation","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_digit","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_phrase","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_accent_type","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_unvoiced_vowel","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd_set_long_vowel","/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/external/openjtalk_build/open_jtalk-1.11/njd2jpcommon","$(inherited)");
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (" -fembed-bitcode        -DNDEBUG '-std=gnu99' -fPIC -Wall     ","$(inherited)");
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = openjtalk_wrapper;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build/openjtalk_wrapper.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				VALID_ARCHS = arm64;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		D5016FE3720F413994B46FFF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		E419253CCC994A8AB1BB43FD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		EF0B31F5B4FF4DFE84863824 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				"ARCHS[sdk=iphoneos*]" = arm64;
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				ENABLE_BITCODE = NO;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				ONLY_ACTIVE_ARCH = NO;
+				SDKROOT = /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk;
+				SYMROOT = /Users/s19447/Desktop/uPiper/NativePlugins/OpenJTalk/build_ios/OS64/build;
+				"VALID_ARCHS[sdk=iphoneos*]" = arm64;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		384C46D91061442B941D133D /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */ = {
+		376381E1DF0543969B4FF521 /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				C2035619BAF146C38124E875 /* Debug */,
-				A2DD2D8B8AFA43B08CE23755 /* Release */,
-				68DE29D321224A70B93E1C86 /* MinSizeRel */,
-				0CBE87D912254C2F897161F1 /* RelWithDebInfo */,
+				6EE3AA6FE36A49EAB94D90DD /* Debug */,
+				E419253CCC994A8AB1BB43FD /* Release */,
+				9C0B81E820154BD2AF317E03 /* MinSizeRel */,
+				02C67F3E86FF4CBD92AA393A /* RelWithDebInfo */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		4F32443B2BB342B4AB65D0CA /* Build configuration list for PBXNativeTarget "openjtalk_wrapper" */ = {
+		A6A469981282478F8ED4462B /* Build configuration list for PBXProject "openjtalk_wrapper" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				4F8A3254B40F41328538171C /* Debug */,
-				D0A5345FE4C94ED1BD987C17 /* Release */,
-				69453639F93E4B1A9CA1D6C2 /* MinSizeRel */,
-				2A3D9F5FE77B49D2B9F94068 /* RelWithDebInfo */,
+				EF0B31F5B4FF4DFE84863824 /* Debug */,
+				2755AAA63277443F9D61B5CB /* Release */,
+				8423F447EFEF4890905CDB91 /* MinSizeRel */,
+				A9C6CAFCBC634D7AB270092E /* RelWithDebInfo */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		606A183B1A1B441B80934305 /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */ = {
+		AFEBD3B4E58F47F4AE1080CD /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				9A0620DB2B0847EBA3501F48 /* Debug */,
-				2C0DFB56603E45DDBA764207 /* Release */,
-				8864AA48492A4BAC9839501E /* MinSizeRel */,
-				4A12BA165D6C4F5682FAE8B7 /* RelWithDebInfo */,
+				A09A3A701048453DB7153304 /* Debug */,
+				D5016FE3720F413994B46FFF /* Release */,
+				C1D2F5A001F840759DB8B881 /* MinSizeRel */,
+				4660DDFFA5404128AE60D4C1 /* RelWithDebInfo */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		9636904107694C04B69DF826 /* Build configuration list for PBXAggregateTarget "install" */ = {
+		C1529947CAE64C40A7259C7F /* Build configuration list for PBXAggregateTarget "install" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				DD48CDC97D184A6C8ADC581B /* Debug */,
-				11B92C78D03743D38D5733EE /* Release */,
-				26FA6E1563E94B0AA1CFA113 /* MinSizeRel */,
-				A1D060D0028B46E7824B9C56 /* RelWithDebInfo */,
+				81B11B7265C54612AB3EA0C1 /* Debug */,
+				5A4859B70CBC4CCA91DFABE7 /* Release */,
+				2F4BA3BF4438461D9A1E273B /* MinSizeRel */,
+				5B9066D150434E389A581437 /* RelWithDebInfo */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		F1ECBFE2E3AE456FA13D9C98 /* Build configuration list for PBXProject "openjtalk_wrapper" */ = {
+		C458DF6BB5A9432BA3359122 /* Build configuration list for PBXNativeTarget "openjtalk_wrapper" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1B630503CA38459885408414 /* Debug */,
-				C9B21E40997345CD82022F05 /* Release */,
-				979CFB566B694B9DBABA04DB /* MinSizeRel */,
-				3C3408F85B934AB4A24FD216 /* RelWithDebInfo */,
+				49A4A612943244B5ADE0EAFD /* Debug */,
+				2D28B0457C5B4A22AAD5395A /* Release */,
+				745C7FE423EF4CC59F04B118 /* MinSizeRel */,
+				D1DBF74A44F04D61B6E96497 /* RelWithDebInfo */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = A721331040C947CBA056CEB9 /* Project object */;
+	rootObject = 8007075165734F08B52CE024 /* Project object */;
 }
