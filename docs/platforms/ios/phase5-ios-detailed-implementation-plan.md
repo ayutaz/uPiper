@@ -1,17 +1,19 @@
 # Phase 5: iOSサポート 詳細実装計画
 
-> **最終更新**: 2025年8月1日  
-> **現在のステータス**: 基本実装完了、テスト段階
+> **最終更新**: 2025年10月9日
+> **現在のステータス**: コード実装完了、Unity Editorでのビルド設定待ち
 
 ## 1. 概要
 
 本ドキュメントは、uPiperのiOSプラットフォーム対応の具体的な実装手順を示します。macOS環境でのビルドを前提としています。
 
-### 1.1 現在の進捗状況
+### 1.1 現在の進捗状況（2025-10-09時点）
 - ✅ **ネイティブライブラリビルド環境構築**: 完了
-- ✅ **OpenJTalk iOSライブラリビルド**: 成功
-- ✅ **Unity側iOS対応実装**: 完了
-- 🔄 **テストと最適化**: 進行中
+- ✅ **OpenJTalk iOSライブラリビルド**: 成功（libopenjtalk_wrapper.a: 1.46MB）
+- ✅ **Unity側iOS対応実装**: 完了（P/Invoke、パス解決、エラーハンドリング）
+- ✅ **テストコード実装**: 完了（単体テスト、統合テスト、デモアプリ）
+- ⚠️ **Unity Editorでのビルド設定**: 未実施
+- ⚠️ **実機テスト**: 未実施
 
 ## 2. 開発環境要件
 
@@ -643,3 +645,67 @@ jobs:
 - Xcodeプロジェクトのビルド
 - 実機へのデプロイとテスト
 - パフォーマンスプロファイリング
+
+### 2025年10月9日 - 実装状況確認
+
+### 9.7 最新の実装状況
+
+#### 確認済み成果物
+1. **ネイティブライブラリ**
+   - `libopenjtalk_wrapper.a` (1.46MB) - 正常にビルド済み
+   - `build_ios.sh` (3881バイト) - 実装済み
+   - Assets/uPiper/Plugins/iOS/に配置済み
+
+2. **Unity統合コード**
+   - `IOSPathResolver.cs` (202行) - 完全実装
+   - `OpenJTalkPhonemizer.cs` - iOS対応済み（`__Internal`リンク）
+   - `IOSTestController.cs` (305行) - デモアプリ実装済み
+
+3. **テストコード**
+   - `OpenJTalkPhonemizerIOSTest.cs` (197行)
+   - `IOSPathResolverTest.cs`
+   - `IOSIntegrationTest.cs`
+   - `IOSBuildValidationTest.cs`
+
+4. **主要な実装内容**
+   - P/Invoke設定（`UNITY_IOS && !UNITY_EDITOR`条件）
+   - StreamingAssetsパス解決（`Application.dataPath + "/Raw"`）
+   - エラーハンドリングとログ機能
+   - メモリ最適化対応
+   - スレッドセーフティ確保
+
+### 9.8 次のステップ（Unity Editor作業）
+
+1. **Unity PlayerSettings設定**
+   ```
+   - Platform: iOS
+   - Minimum iOS Version: 11.0
+   - Architecture: ARM64
+   - API Compatibility Level: .NET Standard 2.1
+   - Graphics APIs: Metal
+   ```
+
+2. **ビルドとテスト手順**
+   - File > Build Settings > iOS
+   - Player Settingsの設定
+   - Buildボタンでcodeプロジェクト生成
+   - Xcodeで開いて署名設定
+   - 実機またはシミュレータでテスト
+
+3. **パフォーマンス検証項目**
+   - 起動時間
+   - 音声生成速度
+   - メモリ使用量
+   - バッテリー消費
+
+### 9.9 リスクと対策
+
+1. **技術的リスク**: すべて解決済み
+   - ビルドスクリプト: 実装済み
+   - 静的ライブラリ: 正常生成
+   - P/Invoke設定: 対応済み
+
+2. **残存リスク**: 実機テストで判明する可能性
+   - パフォーマンス問題
+   - メモリ制限
+   - App Store審査要件

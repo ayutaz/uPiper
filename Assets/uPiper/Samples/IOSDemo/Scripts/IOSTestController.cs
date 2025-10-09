@@ -25,6 +25,8 @@ namespace uPiper.Samples.IOSDemo
         [SerializeField] private string modelPath = "Models/kokoro-v0_19-small-ja.onnx";
         
         private PiperTTS piperTTS;
+        private PiperVoiceConfig voiceConfig;
+        private bool isInitialized = false;
         private bool isModelLoaded = false;
 
         private void Start()
@@ -36,35 +38,49 @@ namespace uPiper.Samples.IOSDemo
             // Setup button listeners
             if (testDictionaryButton != null)
                 testDictionaryButton.onClick.AddListener(TestDictionary);
-            
+
             if (testPhonemizerButton != null)
                 testPhonemizerButton.onClick.AddListener(TestPhonemizer);
-            
+
             if (testTTSButton != null)
                 testTTSButton.onClick.AddListener(TestTTS);
 
             // Initialize PiperTTS
-            InitializeTTS();
+            StartCoroutine(InitializeTTSCoroutine());
 
             UpdateStatus("iOS Test App Ready");
             LogSystemInfo();
         }
 
-        private void InitializeTTS()
+        private IEnumerator InitializeTTSCoroutine()
         {
-            try
-            {
-                // Create PiperTTS instance
-                var go = new GameObject("PiperTTS");
-                piperTTS = go.AddComponent<PiperTTS>();
-                piperTTS.Initialize();
+            UpdateStatus("Initializing PiperTTS...");
 
-                UpdateStatus("PiperTTS initialized");
-            }
-            catch (Exception ex)
+            // Create PiperTTS instance with configuration
+            var config = new Core.PiperConfig
             {
-                UpdateStatus($"Failed to initialize PiperTTS: {ex.Message}");
-                Debug.LogError($"[IOSTestController] TTS initialization error: {ex}");
+                SampleRate = 22050,
+                DefaultLanguage = "ja",
+                Backend = Core.InferenceBackend.CPU,
+                EnablePhonemeCache = true,
+                MaxCacheSizeMB = 32
+            };
+
+            piperTTS = new PiperTTS(config);
+
+            // Initialize asynchronously
+            var initTask = piperTTS.InitializeAsync();
+            yield return new WaitUntil(() => initTask.IsCompleted);
+
+            if (initTask.IsFaulted)
+            {
+                UpdateStatus($"Failed to initialize PiperTTS: {initTask.Exception?.GetBaseException().Message}");
+                Debug.LogError($"[IOSTestController] TTS initialization error: {initTask.Exception}");
+            }
+            else
+            {
+                isInitialized = true;
+                UpdateStatus("PiperTTS initialized successfully");
             }
         }
 
@@ -165,7 +181,7 @@ namespace uPiper.Samples.IOSDemo
 
         private void TestTTS()
         {
-            if (piperTTS == null)
+            if (piperTTS == null || !isInitialized)
             {
                 UpdateStatus("PiperTTS not initialized");
                 return;
@@ -177,79 +193,53 @@ namespace uPiper.Samples.IOSDemo
 
         private IEnumerator TestTTSCoroutine()
         {
-            // Load model if not already loaded
+            // Load voice model if not already loaded
             if (!isModelLoaded)
             {
-                UpdateStatus("Loading TTS model...");
-                
-                bool modelLoadComplete = false;
-                bool modelLoadSuccess = false;
-                string modelLoadError = null;
+                UpdateStatus("Loading voice model...");
 
-                var fullModelPath = System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", modelPath);
-                
-                piperTTS.LoadModel(fullModelPath, 
-                    success =>
-                    {
-                        modelLoadSuccess = success;
-                        modelLoadComplete = true;
-                    },
-                    error =>
-                    {
-                        modelLoadError = error;
-                        modelLoadComplete = true;
-                    });
-
-                // Wait for model load
-                while (!modelLoadComplete)
+                // Create voice configuration
+                voiceConfig = new Core.PiperVoiceConfig
                 {
-                    yield return new WaitForSeconds(0.1f);
-                }
+                    VoiceId = "kokoro-v0_19-small-ja",
+                    ModelPath = modelPath,
+                    Language = "ja",
+                    SampleRate = 22050,
+                    // Additional config if needed
+                };
 
-                if (!modelLoadSuccess)
+                // Load voice asynchronously
+                var loadTask = piperTTS.LoadVoiceAsync(voiceConfig);
+                yield return new WaitUntil(() => loadTask.IsCompleted);
+
+                if (loadTask.IsFaulted)
                 {
-                    UpdateStatus($"Model load failed: {modelLoadError}");
-                    UpdateResult($"Model Error: {modelLoadError}");
+                    UpdateStatus($"Voice load failed: {loadTask.Exception?.GetBaseException().Message}");
+                    UpdateResult($"Voice Error: {loadTask.Exception?.GetBaseException().Message}");
                     yield break;
                 }
 
                 isModelLoaded = true;
-                UpdateStatus("Model loaded successfully");
+                UpdateStatus("Voice model loaded successfully");
             }
 
             // Generate audio
             UpdateStatus("Generating audio...");
-            
+
             var testText = string.IsNullOrEmpty(textInput.text) ? "iOSでの音声合成テストです" : textInput.text;
-            AudioClip generatedClip = null;
-            string generateError = null;
-            bool generateComplete = false;
 
-            piperTTS.GenerateAudioAsync(testText,
-                clip =>
-                {
-                    generatedClip = clip;
-                    generateComplete = true;
-                },
-                error =>
-                {
-                    generateError = error;
-                    generateComplete = true;
-                });
+            // Generate audio asynchronously
+            var generateTask = piperTTS.GenerateAudioAsync(testText);
+            yield return new WaitUntil(() => generateTask.IsCompleted);
 
-            // Wait for generation
-            var startTime = Time.time;
-            while (!generateComplete && Time.time - startTime < 10f)
+            if (generateTask.IsFaulted)
             {
-                yield return new WaitForSeconds(0.1f);
-            }
-
-            if (!generateComplete)
-            {
-                UpdateStatus("Audio generation timed out");
-                UpdateResult("Timeout after 10 seconds");
+                UpdateStatus($"Audio generation failed: {generateTask.Exception?.GetBaseException().Message}");
+                UpdateResult($"Generation Error: {generateTask.Exception?.GetBaseException().Message}");
                 yield break;
             }
+
+            var generatedClip = generateTask.Result;
 
             if (generatedClip != null)
             {
@@ -259,24 +249,24 @@ namespace uPiper.Samples.IOSDemo
                            $"Sample Rate: {generatedClip.frequency}Hz\n" +
                            $"Channels: {generatedClip.channels}\n" +
                            $"Samples: {generatedClip.samples}";
-                
+
                 UpdateResult(result);
                 UpdateStatus("Playing generated audio...");
-                
+
                 // Play the audio
                 if (audioSource != null)
                 {
                     audioSource.clip = generatedClip;
                     audioSource.Play();
                 }
-                
+
                 yield return new WaitForSeconds(generatedClip.length);
                 UpdateStatus("TTS test completed!");
             }
             else
             {
-                UpdateStatus($"Audio generation failed: {generateError}");
-                UpdateResult($"Generation Error: {generateError}");
+                UpdateStatus("Audio generation returned null");
+                UpdateResult("No audio generated");
             }
         }
 
@@ -296,10 +286,7 @@ namespace uPiper.Samples.IOSDemo
         private void OnDestroy()
         {
             // Clean up
-            if (piperTTS != null && piperTTS.gameObject != null)
-            {
-                Destroy(piperTTS.gameObject);
-            }
+            piperTTS?.Dispose();
         }
     }
 }
