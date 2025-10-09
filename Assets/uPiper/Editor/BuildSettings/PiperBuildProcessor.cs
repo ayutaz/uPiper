@@ -56,8 +56,13 @@ namespace uPiper.Editor.BuildSettings
             PiperLogger.LogDebug($"[PiperBuildProcessor] Build size: {report.summary.totalSize / (1024 * 1024)}MB");
             PiperLogger.LogDebug($"[PiperBuildProcessor] Build time: {report.summary.totalTime.TotalSeconds:F2} seconds");
 
+            // iOSの場合、UnityはXcodeプロジェクトを生成するだけなので、BuildResult.Unknownは正常
+            if (report.summary.platform == BuildTarget.iOS && report.summary.result == BuildResult.Unknown)
+            {
+                PiperLogger.LogInfo("[PiperBuildProcessor] iOS Xcode project generated successfully");
+            }
             // ビルドが成功した場合はログを出さない（CI環境でのエラー表示を避けるため）
-            if (report.summary.result != BuildResult.Succeeded)
+            else if (report.summary.result != BuildResult.Succeeded)
             {
                 PiperLogger.LogWarning($"[PiperBuildProcessor] Build result: {report.summary.result}");
             }
@@ -132,13 +137,13 @@ namespace uPiper.Editor.BuildSettings
             // アーキテクチャ設定（ARM64）
             PlayerSettings.SetArchitecture(NamedBuildTarget.iOS, 1); // 1 = ARM64
 
-            // Bundle Identifierの確認と設定
+            // Bundle Identifierの確認と設定（Apple推奨のreverse DNS形式）
             if (string.IsNullOrEmpty(PlayerSettings.applicationIdentifier) ||
                 PlayerSettings.applicationIdentifier == "com.DefaultCompany.uPiper" ||
                 PlayerSettings.applicationIdentifier == "com.DefaultCompany.ProjectName")
             {
-                PlayerSettings.applicationIdentifier = "com.uPiper.Demo";
-                PiperLogger.LogInfo("[PiperBuildProcessor] Set Bundle Identifier to: com.uPiper.Demo");
+                PlayerSettings.applicationIdentifier = "com.ayutaz.uPiper";
+                PiperLogger.LogInfo("[PiperBuildProcessor] Set Bundle Identifier to: com.ayutaz.uPiper");
             }
 
             // iOS向けの追加設定
