@@ -19,7 +19,8 @@ namespace uPiper.Core.Platform
         public static string GetOpenJTalkDictionaryPath()
         {
             // On iOS, StreamingAssets are in Application.dataPath/Raw
-            var basePath = Path.Combine(Application.dataPath, "Raw", "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
+            // Dictionary files are directly in naist_jdic folder
+            var basePath = Path.Combine(Application.dataPath, "Raw", "uPiper", "OpenJTalk", "naist_jdic");
             return basePath;
         }
 
