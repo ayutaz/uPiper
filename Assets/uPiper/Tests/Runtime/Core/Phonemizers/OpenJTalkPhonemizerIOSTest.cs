@@ -1,8 +1,10 @@
 #if UNITY_IOS && !UNITY_EDITOR
 using System;
+using System.Collections;
 using System.IO;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 using uPiper.Core.Phonemizers.Implementations;
 using uPiper.Core.Platform;
 
@@ -133,13 +135,13 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.AreEqual(1, stats.UniqueEntries);
         }
 
-        [Test]
-        public void ThreadSafety_OnIOS()
+        [UnityTest]
+        public IEnumerator ThreadSafety_OnIOS()
         {
             // Test thread safety on iOS
             var errors = 0;
             var tasks = new System.Threading.Tasks.Task[5];
-            
+
             for (int i = 0; i < tasks.Length; i++)
             {
                 var taskId = i;
@@ -161,8 +163,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                     }
                 });
             }
-            
-            System.Threading.Tasks.Task.WaitAll(tasks);
+
+            // Wait for all tasks to complete using Unity's yield pattern to avoid deadlocks
+            yield return new WaitUntil(() => System.Linq.Enumerable.All(tasks, t => t.IsCompleted));
             Assert.AreEqual(0, errors, "Thread safety test failed with errors");
         }
 

@@ -186,12 +186,13 @@ install_dependencies() {
 
     # Check if Homebrew is installed
     if ! command -v brew &> /dev/null; then
-        print_warning "Homebrewがインストールされていません"
-        echo "インストールしますか？ (y/n)"
-        read -r response
-        if [ "$response" = "y" ]; then
-            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        fi
+        print_error "Homebrewがインストールされていません"
+        echo ""
+        echo "セキュリティのため、Homebrewは手動でインストールしてください。"
+        echo "公式インストール手順: https://brew.sh/"
+        echo ""
+        echo "インストール後、再度このスクリプトを実行してください。"
+        exit 1
     fi
 
     # Check if ios-deploy is installed (useful for command-line deployment)
