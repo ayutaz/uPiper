@@ -389,10 +389,121 @@ jobs:
         name: openjtalk-macos-universal
         path: artifacts/
 
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Install CMake
+      run: brew install cmake
+
+    - name: Setup Dependencies
+      run: |
+        cd NativePlugins/OpenJTalk
+        echo "Fetching and building OpenJTalk dependencies for iOS..."
+        # Use CI-specific scripts for better reliability
+        if [ -f "fetch_dependencies_ci.sh" ]; then
+          chmod +x fetch_dependencies_ci.sh build_dependencies_ios.sh
+          ./fetch_dependencies_ci.sh
+          ./build_dependencies_ios.sh
+        else
+          chmod +x fetch_dependencies.sh build_dependencies_ios.sh
+          ./fetch_dependencies.sh
+          ./build_dependencies_ios.sh
+        fi
+
+    - name: Check Dictionary Files
+      run: |
+        cd NativePlugins/OpenJTalk
+        echo "Checking dictionary files..."
+        ls -la dictionary/ || echo "Dictionary directory not found"
+
+    - name: Build iOS Static Library
+      run: |
+        cd NativePlugins/OpenJTalk
+        echo "Building iOS static library..."
+        chmod +x build_ios.sh
+        ./build_ios.sh
+
+    - name: Verify iOS Library
+      run: |
+        cd NativePlugins/OpenJTalk
+        echo "=== iOS Library Verification ==="
+
+        # Check if library exists
+        if [ ! -f "build_ios/libopenjtalk_wrapper.a" ]; then
+          echo "❌ iOS library not found!"
+          echo "Build directory contents:"
+          ls -la build_ios/ || echo "Build directory doesn't exist"
+          exit 1
+        fi
+
+        echo "✅ iOS library found"
+        ls -la build_ios/libopenjtalk_wrapper.a
+
+        # Check architecture
+        echo ""
+        echo "=== Architecture Check ==="
+        lipo -info build_ios/libopenjtalk_wrapper.a
+
+        # Verify it's ARM64
+        if lipo -info build_ios/libopenjtalk_wrapper.a | grep -q "arm64"; then
+          echo "✅ ARM64 architecture confirmed"
+        else
+          echo "❌ ARM64 architecture not found!"
+          exit 1
+        fi
+
+        # Check platform (should be iOS, platform 2)
+        echo ""
+        echo "=== Platform Check ==="
+        otool -l build_ios/libopenjtalk_wrapper.a | grep -A 2 LC_BUILD_VERSION
+
+        if otool -l build_ios/libopenjtalk_wrapper.a | grep -A 2 LC_BUILD_VERSION | grep -q "platform 2"; then
+          echo "✅ iOS platform (platform 2) confirmed"
+        else
+          echo "⚠️  Platform check: Expected platform 2 (iOS)"
+        fi
+
+        # Check file size (should be around 4-5 MB)
+        FILE_SIZE=$(stat -f%z build_ios/libopenjtalk_wrapper.a)
+        echo ""
+        echo "=== File Size Check ==="
+        echo "Library size: $((FILE_SIZE / 1024 / 1024)) MB ($FILE_SIZE bytes)"
+
+        if [ $FILE_SIZE -lt 1000000 ]; then
+          echo "⚠️  Library seems too small (< 1MB)"
+        else
+          echo "✅ Library size looks reasonable"
+        fi
+
+        # Check for required symbols
+        echo ""
+        echo "=== Symbol Check ==="
+        nm build_ios/libopenjtalk_wrapper.a | grep -E "openjtalk_initialize|openjtalk_phonemize" | head -5
+        echo "✅ iOS library verification completed successfully"
+
+    - name: Prepare Artifacts
+      run: |
+        mkdir -p artifacts/iOS
+        # Copy the static library
+        cp NativePlugins/OpenJTalk/build_ios/libopenjtalk_wrapper.a artifacts/iOS/
+        # Copy header files
+        cp NativePlugins/OpenJTalk/include/*.h artifacts/ || true
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: openjtalk-ios-arm64
+        path: artifacts/
+
   # Validate all platform builds
   validate-builds:
     name: Validate Cross-Platform Builds
-    needs: [build-windows-cross, build-linux, build-macos, build-android]
+    needs: [build-windows-cross, build-linux, build-macos, build-android, build-ios]
     runs-on: ubuntu-latest
     
     steps:
@@ -449,10 +560,22 @@ jobs:
             find libraries -name "*.so" | grep "${abi}" || true
           fi
         done
-        
+
+        # Check iOS library
+        echo ""
+        echo "Checking iOS library..."
+        if [ -f "libraries/openjtalk-ios-arm64/iOS/libopenjtalk_wrapper.a" ]; then
+          echo "✓ iOS ARM64 static library found"
+          ls -la "libraries/openjtalk-ios-arm64/iOS/"
+        else
+          echo "✗ iOS static library missing"
+          find libraries -name "*.a" || true
+          exit 1
+        fi
+
         echo ""
         echo "All platform libraries validated successfully!"
-        
+
     - name: Generate Build Report
       if: always()
       run: |
@@ -465,6 +588,7 @@ jobs:
         echo "| Linux | x86_64 | ${{ needs.build-linux.result }} |" >> $GITHUB_STEP_SUMMARY
         echo "| macOS | Universal | ${{ needs.build-macos.result }} |" >> $GITHUB_STEP_SUMMARY
         echo "| Android | Multi-ABI | ${{ needs.build-android.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| iOS | ARM64 | ${{ needs.build-ios.result }} |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "## Unity Integration Status" >> $GITHUB_STEP_SUMMARY
         echo "✅ P/Invoke compatible interface" >> $GITHUB_STEP_SUMMARY
@@ -473,7 +597,7 @@ jobs:
 
   create-release:
     name: Create Release Package
-    needs: [build-windows-cross, build-linux, build-macos, build-android]
+    needs: [build-windows-cross, build-linux, build-macos, build-android, build-ios]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
     
@@ -495,44 +619,49 @@ jobs:
         mkdir -p uPiper-OpenJTalk-Native/Plugins/Android/libs/armeabi-v7a
         mkdir -p uPiper-OpenJTalk-Native/Plugins/Android/libs/x86
         mkdir -p uPiper-OpenJTalk-Native/Plugins/Android/libs/x86_64
+        mkdir -p uPiper-OpenJTalk-Native/Plugins/iOS
         mkdir -p uPiper-OpenJTalk-Native/Include
-        
+
         # Windows
         cp artifacts/openjtalk-windows-x64/windows/x64/*.dll uPiper-OpenJTalk-Native/Plugins/Windows/x86_64/
-        
+
         # Linux
         cp artifacts/openjtalk-linux-x86_64/linux/x86_64/*.so uPiper-OpenJTalk-Native/Plugins/Linux/x86_64/
         # Skip aarch64 for now as it's not being built
         # cp artifacts/openjtalk-linux-aarch64/linux/aarch64/*.so uPiper-OpenJTalk-Native/Plugins/Linux/aarch64/
-        
+
         # macOS
         cp artifacts/openjtalk-macos-universal/macos/*.dylib uPiper-OpenJTalk-Native/Plugins/macOS/
-        
+
         # Android
         cp artifacts/openjtalk-android-arm64-v8a/android/arm64-v8a/*.so uPiper-OpenJTalk-Native/Plugins/Android/libs/arm64-v8a/
         cp artifacts/openjtalk-android-armeabi-v7a/android/armeabi-v7a/*.so uPiper-OpenJTalk-Native/Plugins/Android/libs/armeabi-v7a/
         cp artifacts/openjtalk-android-x86/android/x86/*.so uPiper-OpenJTalk-Native/Plugins/Android/libs/x86/
         cp artifacts/openjtalk-android-x86_64/android/x86_64/*.so uPiper-OpenJTalk-Native/Plugins/Android/libs/x86_64/
-        
+
+        # iOS
+        cp artifacts/openjtalk-ios-arm64/iOS/*.a uPiper-OpenJTalk-Native/Plugins/iOS/
+
         # Headers
         cp artifacts/openjtalk-windows-x64/*.h uPiper-OpenJTalk-Native/Include/
         
         # Create README
         cat > uPiper-OpenJTalk-Native/README.md << EOF
         # uPiper OpenJTalk Native Libraries
-        
+
         This package contains pre-built OpenJTalk native libraries for Unity.
-        
+
         ## Supported Platforms
         - Windows (x64 only)
         - Linux (x86_64)
         - macOS (Universal Binary: x86_64 + arm64)
         - Android (arm64-v8a, armeabi-v7a, x86, x86_64)
-        
+        - iOS (ARM64, iOS 11.0+)
+
         ## Installation
         1. Copy the contents of the Plugins folder to your Unity project's Assets/Plugins folder
         2. Include the header files from the Include folder in your native code if needed
-        
+
         ## Version
         Built from commit: ${{ github.sha }}
         Build date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
