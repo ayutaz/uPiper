@@ -42,6 +42,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 - **macOS**: Xcode 14 or later
 - **Linux**: GCC 9 or later
 - **Android**: NDK r21 or later
+- **iOS**: Xcode 14 or later, iOS 11.0+ devices
 
 ## Installation
 
@@ -108,11 +109,11 @@ Download the latest package from [Releases](https://github.com/ayutaz/uPiper/rel
 - ✅ Windows (x64)
 - ✅ macOS (Apple Silicon/Intel)
 - ✅ Linux (x64)
-- ✅ Android (ARM64)
+- ✅ Android (ARM64/ARMv7/x86/x86_64)
+- ✅ iOS (ARM64, iOS 11.0+) - **NEW!**
 
 ### Not Supported
 - ❌ WebGL - Under investigation (future support planned via piper-plus integration)
-- ❌ iOS - Planned for Phase 5
 
 ## Build and Package Creation
 
