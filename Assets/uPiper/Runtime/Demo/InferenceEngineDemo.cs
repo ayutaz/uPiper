@@ -219,6 +219,10 @@ namespace uPiper.Demo
             // Additional iOS debugging
 #if UNITY_IOS
             DebugIOSSetup();
+
+            // Initialize iOS AudioSession for playback
+            // This is required for audio to play on iOS, especially when silent switch is on
+            uPiper.Core.Platform.IOSAudioSessionHelper.Initialize();
 #endif
 #endif
 
@@ -1010,9 +1014,24 @@ namespace uPiper.Demo
                 // 再生
                 if (_audioSource != null && audioClip != null)
                 {
+#if UNITY_IOS && !UNITY_EDITOR
+                    // Ensure AudioSession is active before playback on iOS
+                    uPiper.Core.Platform.IOSAudioSessionHelper.EnsureActive();
+
+                    // Log AudioSession status for debugging
+                    uPiper.Core.Platform.IOSAudioSessionHelper.LogStatus();
+#endif
+
                     _audioSource.clip = audioClip;
+                    _audioSource.volume = 1.0f; // Ensure volume is maximum
                     _audioSource.Play();
                     PiperLogger.LogInfo("Audio playback started");
+
+                    // Log AudioSource state for debugging
+                    PiperLogger.LogDebug($"[AudioSource] isPlaying={_audioSource.isPlaying}, volume={_audioSource.volume}, mute={_audioSource.mute}, enabled={_audioSource.enabled}");
+#if UNITY_IOS && !UNITY_EDITOR
+                    PiperLogger.LogDebug($"[AudioSource] Hardware volume: {uPiper.Core.Platform.IOSAudioSessionHelper.GetVolume():F2}");
+#endif
                 }
 
                 // Calculate total time
