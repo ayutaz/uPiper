@@ -120,7 +120,24 @@ jobs:
         restore-keys: |
           Library-${{ matrix.backend }}-${{ matrix.platform }}-
           Library-${{ matrix.platform }}-
-          
+
+    # Configure Unity License timeout for service delays
+    - name: Configure Unity License Timeout (Extended for Service Delays)
+      run: |
+        sudo mkdir -p /usr/share/unity3d/config/
+        sudo tee /usr/share/unity3d/config/services-config.json > /dev/null << 'EOF'
+        {
+          "clientConnectTimeoutSec": 30,
+          "clientHandshakeTimeoutSec": 60,
+          "clientResolveEntitlementsTimeoutSec": 90,
+          "clientUpdateLicenseTimeoutSec": 90,
+          "licensingServiceBaseUrl": "",
+          "enableProxyAutoconfig": "false"
+        }
+        EOF
+        echo "Unity License timeout configuration updated:"
+        cat /usr/share/unity3d/config/services-config.json
+
     - name: Build
       uses: game-ci/unity-builder@v4
       env:

@@ -215,6 +215,15 @@ namespace uPiper.Demo
             // Preload dictionary asynchronously for better performance
             uPiper.Core.Platform.OptimizedAndroidPathResolver.PreloadDictionaryAsync();
 #endif
+
+            // Additional iOS debugging
+#if UNITY_IOS
+            DebugIOSSetup();
+
+            // Initialize iOS AudioSession for playback
+            // This is required for audio to play on iOS, especially when silent switch is on
+            uPiper.Core.Platform.IOSAudioSessionHelper.Initialize();
+#endif
 #endif
 
 #if !UNITY_WEBGL
@@ -1005,9 +1014,24 @@ namespace uPiper.Demo
                 // 再生
                 if (_audioSource != null && audioClip != null)
                 {
+#if UNITY_IOS && !UNITY_EDITOR
+                    // Ensure AudioSession is active before playback on iOS
+                    uPiper.Core.Platform.IOSAudioSessionHelper.EnsureActive();
+
+                    // Log AudioSession status for debugging
+                    uPiper.Core.Platform.IOSAudioSessionHelper.LogStatus();
+#endif
+
                     _audioSource.clip = audioClip;
+                    _audioSource.volume = 1.0f; // Ensure volume is maximum
                     _audioSource.Play();
                     PiperLogger.LogInfo("Audio playback started");
+
+                    // Log AudioSource state for debugging
+                    PiperLogger.LogDebug($"[AudioSource] isPlaying={_audioSource.isPlaying}, volume={_audioSource.volume}, mute={_audioSource.mute}, enabled={_audioSource.enabled}");
+#if UNITY_IOS && !UNITY_EDITOR
+                    PiperLogger.LogDebug($"[AudioSource] Hardware volume: {uPiper.Core.Platform.IOSAudioSessionHelper.GetVolume():F2}");
+#endif
                 }
 
                 // Calculate total time
@@ -1406,6 +1430,101 @@ namespace uPiper.Demo
             PiperLogger.LogInfo("[Android Debug] === End Android Setup Debug ===");
         }
 
+#endif
+
+#if UNITY_IOS && !UNITY_EDITOR
+        private void DebugIOSSetup()
+        {
+            PiperLogger.LogInfo("[iOS Debug] === iOS Setup Debug ===");
+
+            // Check platform
+            PiperLogger.LogInfo($"[iOS Debug] Platform: {Application.platform}");
+            PiperLogger.LogInfo($"[iOS Debug] Device Model: {SystemInfo.deviceModel}");
+            PiperLogger.LogInfo($"[iOS Debug] iOS Version: {SystemInfo.operatingSystem}");
+            PiperLogger.LogInfo($"[iOS Debug] System Memory: {SystemInfo.systemMemorySize}MB");
+
+            // Check paths
+            PiperLogger.LogInfo($"[iOS Debug] Data Path: {Application.dataPath}");
+            PiperLogger.LogInfo($"[iOS Debug] StreamingAssets Path (iOS): {Application.dataPath}/Raw");
+
+            // Check OpenJTalk dictionary using IOSPathResolver
+            try
+            {
+                var dictPath = uPiper.Core.Platform.IOSPathResolver.GetOpenJTalkDictionaryPath();
+                PiperLogger.LogInfo($"[iOS Debug] OpenJTalk Dictionary Path: {dictPath}");
+
+                if (uPiper.Core.Platform.IOSPathResolver.DictionaryExists())
+                {
+                    PiperLogger.LogInfo("[iOS Debug] ✓ Dictionary exists");
+                    var size = uPiper.Core.Platform.IOSPathResolver.GetDictionarySize();
+                    PiperLogger.LogInfo($"[iOS Debug] Dictionary total size: {size / 1024 / 1024}MB");
+
+                    // Log detailed dictionary info
+                    uPiper.Core.Platform.IOSPathResolver.LogDictionaryInfo();
+                }
+                else
+                {
+                    PiperLogger.LogWarning("[iOS Debug] ✗ Dictionary not found");
+                    PiperLogger.LogWarning("[iOS Debug] Please ensure dictionary files are in StreamingAssets");
+                }
+            }
+            catch (Exception e)
+            {
+                PiperLogger.LogError($"[iOS Debug] Error checking dictionary: {e.Message}");
+            }
+
+            // Check native library status
+            try
+            {
+                PiperLogger.LogInfo("[iOS Debug] Checking native library...");
+
+                // On iOS, static libraries are linked at build time
+                PiperLogger.LogInfo("[iOS Debug] Using static library: libopenjtalk_wrapper.a");
+                PiperLogger.LogInfo("[iOS Debug] Static linking with __Internal");
+
+                // Test if we can create OpenJTalkPhonemizer instance
+                try
+                {
+                    var testPhon = new OpenJTalkPhonemizer();
+                    PiperLogger.LogInfo("[iOS Debug] ✓ OpenJTalkPhonemizer instance created successfully");
+                    testPhon.Dispose();
+                }
+                catch (Exception libEx)
+                {
+                    PiperLogger.LogWarning($"[iOS Debug] ✗ Failed to create OpenJTalkPhonemizer: {libEx.Message}");
+                }
+            }
+            catch (Exception e)
+            {
+                PiperLogger.LogError($"[iOS Debug] Error checking native library: {e.Message}");
+            }
+
+            // Text encoding test
+            PiperLogger.LogInfo("[iOS Debug] === Text Encoding Test ===");
+
+            string testText = "こんにちは";
+            byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(testText);
+            PiperLogger.LogInfo($"[iOS Debug] Test text: {testText}");
+            PiperLogger.LogInfo($"[iOS Debug] UTF-8 bytes ({utf8Bytes.Length}): {BitConverter.ToString(utf8Bytes)}");
+
+            // Verify UTF-8 encoding is correct
+            byte[] expectedBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
+            bool encodingCorrect = utf8Bytes.Length == expectedBytes.Length;
+            if (encodingCorrect)
+            {
+                for (int i = 0; i < utf8Bytes.Length; i++)
+                {
+                    if (utf8Bytes[i] != expectedBytes[i])
+                    {
+                        encodingCorrect = false;
+                        break;
+                    }
+                }
+            }
+            PiperLogger.LogInfo($"[iOS Debug] UTF-8 encoding correct: {encodingCorrect}");
+
+            PiperLogger.LogInfo("[iOS Debug] === End iOS Setup Debug ===");
+        }
 #endif
 
         /// <summary>

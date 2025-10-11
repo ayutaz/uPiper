@@ -24,6 +24,13 @@ namespace uPiper.Core.Phonemizers.Implementations
             Debug.Log($"[OpenJTalkDebug] Data path: {Application.dataPath}");
             Debug.Log($"[OpenJTalkDebug] Persistent data path: {Application.persistentDataPath}");
 
+#if UNITY_IOS && !UNITY_EDITOR
+            // iOSでは静的ライブラリなので、動的ライブラリのロードチェックはスキップ
+            Debug.Log("[OpenJTalkDebug] iOS platform - using static library (__Internal)");
+            Debug.Log("[OpenJTalkDebug] Native library is statically linked into the app binary");
+            return;
+#endif
+
             // Check Plugins directory (not applicable for Android)
 #if !UNITY_EDITOR && !UNITY_ANDROID
             string pluginsPath;

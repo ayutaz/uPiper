@@ -40,6 +40,9 @@ namespace uPiper.Editor.BuildSettings
                 case BuildTarget.Android:
                     ConfigureAndroidBuild();
                     break;
+                case BuildTarget.iOS:
+                    ConfigureIOSBuild();
+                    break;
             }
 
             // ONNXモデルファイルの確認
@@ -53,8 +56,13 @@ namespace uPiper.Editor.BuildSettings
             PiperLogger.LogDebug($"[PiperBuildProcessor] Build size: {report.summary.totalSize / (1024 * 1024)}MB");
             PiperLogger.LogDebug($"[PiperBuildProcessor] Build time: {report.summary.totalTime.TotalSeconds:F2} seconds");
 
+            // iOSの場合、UnityはXcodeプロジェクトを生成するだけなので、BuildResult.Unknownは正常
+            if (report.summary.platform == BuildTarget.iOS && report.summary.result == BuildResult.Unknown)
+            {
+                PiperLogger.LogInfo("[PiperBuildProcessor] iOS Xcode project generated successfully");
+            }
             // ビルドが成功した場合はログを出さない（CI環境でのエラー表示を避けるため）
-            if (report.summary.result != BuildResult.Succeeded)
+            else if (report.summary.result != BuildResult.Succeeded)
             {
                 PiperLogger.LogWarning($"[PiperBuildProcessor] Build result: {report.summary.result}");
             }
@@ -114,6 +122,40 @@ namespace uPiper.Editor.BuildSettings
 
             // ターゲットAPIレベルの設定
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
+        }
+
+        private void ConfigureIOSBuild()
+        {
+            PiperLogger.LogInfo("[PiperBuildProcessor] Configuring iOS build settings");
+
+            // iOS固有の設定
+            PlayerSettings.SetApiCompatibilityLevel(NamedBuildTarget.iOS, ApiCompatibilityLevel.NET_Standard);
+
+            // 最小iOSバージョン（iOS 11.0以上）
+            PlayerSettings.iOS.targetOSVersionString = "11.0";
+
+            // アーキテクチャ設定（ARM64）
+            PlayerSettings.SetArchitecture(NamedBuildTarget.iOS, 1); // 1 = ARM64
+
+            // Bundle Identifierの確認と設定（Apple推奨のreverse DNS形式）
+            if (string.IsNullOrEmpty(PlayerSettings.applicationIdentifier) ||
+                PlayerSettings.applicationIdentifier == "com.DefaultCompany.uPiper" ||
+                PlayerSettings.applicationIdentifier == "com.DefaultCompany.ProjectName")
+            {
+                PlayerSettings.applicationIdentifier = "com.ayutaz.uPiper";
+                PiperLogger.LogInfo("[PiperBuildProcessor] Set Bundle Identifier to: com.ayutaz.uPiper");
+            }
+
+            // iOS向けの追加設定
+            PlayerSettings.iOS.allowHTTPDownload = false; // HTTPSのみ許可
+            PlayerSettings.iOS.requiresPersistentWiFi = false; // Wi-Fi必須ではない
+            PlayerSettings.iOS.appInBackgroundBehavior = iOSAppInBackgroundBehavior.Suspend;
+
+            // カメラ使用権限（必要ない場合はNone）
+            PlayerSettings.iOS.cameraUsageDescription = "";
+
+            // マイク使用権限（音声入力を使用する場合）
+            PlayerSettings.iOS.microphoneUsageDescription = "This app uses the microphone for voice input features.";
         }
 
         private void SetupStreamingAssets()
@@ -263,6 +305,7 @@ namespace uPiper.Editor.BuildSettings
             BuildForPlatform(BuildTarget.StandaloneOSX, Path.Combine(outputPath, "macOS", "uPiper.app"));
             BuildForPlatform(BuildTarget.StandaloneLinux64, Path.Combine(outputPath, "Linux", "uPiper"));
             BuildForPlatform(BuildTarget.WebGL, Path.Combine(outputPath, "WebGL"));
+            BuildForPlatform(BuildTarget.iOS, Path.Combine(outputPath, "iOS"));
         }
 
         private static void BuildForPlatform(BuildTarget target, string outputPath)

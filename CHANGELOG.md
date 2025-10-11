@@ -5,6 +5,80 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025/10/11
+
+### ✨ Added
+
+#### iOS Platform Support
+- **iOS Native Library**: OpenJTalk static library for iOS (arm64, iOS 11.0+)
+  - Built with CMake and iOS toolchain
+  - P/Invoke with `__Internal` linking
+  - File: `Assets/uPiper/Plugins/iOS/libopenjtalk_wrapper.a` (4.2MB)
+
+- **iOS AudioSession Integration**: Native audio session management for iOS
+  - `AudioSessionSetup.mm`: Objective-C plugin for AVAudioSession configuration
+  - `IOSAudioSessionHelper.cs`: C# wrapper with P/Invoke
+  - AVAudioSessionCategoryPlayback: Override silent switch
+  - AVAudioSessionCategoryOptionMixWithOthers: Mix with other apps
+  - Hardware volume control support
+
+- **iOS Path Resolver**: iOS-specific StreamingAssets path resolution
+  - iOS path: `Application.dataPath + "/Raw"`
+  - Dictionary and model file access from iOS bundle
+
+- **iOS Build Processor**: Automated Unity build configuration
+  - Automatic Bundle Identifier setup (com.ayutaz.uPiper)
+  - iOS minimum version: 11.0
+  - Architecture: ARM64
+  - API Compatibility: .NET Standard
+  - BuildResult.Unknown proper handling for iOS
+
+- **iOS Build Scripts**:
+  - `build_ios.sh`: Main iOS build script
+  - `build_dependencies_ios.sh`: iOS dependencies builder
+  - `combine_ios_libs.sh`: Static library combiner
+
+### 🔧 Changed
+
+- **InferenceEngineDemo**: Integrated iOS AudioSession initialization
+  - AudioSession.Initialize() in Start()
+  - AudioSession.EnsureActive() before playback
+  - Debug logging for AudioSession status
+
+- **PiperBuildProcessor**: Added iOS build configuration
+  - ConfigureIOSBuild() method
+  - iOS-specific player settings
+
+- **OpenJTalkDebugHelper**: Skip dynamic library check on iOS
+  - iOS uses static linking, no dynamic library loading needed
+
+### 📊 Performance
+
+Tested on iPhone 7 (iOS 15.8.4):
+- Model Load: 170ms
+- OpenJTalk (Japanese): 66ms
+- Synthesis (VITS): 195ms
+- **Total**: 966ms
+- Audio Output: 19,456 samples, 0.88s @ 22,050Hz
+
+### ✅ Platform Support
+
+uPiper now supports **5 platforms**:
+- Windows (x64) ✅
+- macOS (Intel/Apple Silicon) ✅
+- Linux (x64) ✅
+- Android (ARMv7/ARM64/x86/x86_64) ✅
+- **iOS (ARM64, iOS 11.0+)** ✅ NEW
+
+### 🧪 Testing
+
+- ✅ Real device testing: iPhone 7 (iOS 15.8.4)
+- ✅ Japanese TTS: Confirmed working (same quality as Android/Web)
+- ✅ English TTS: Confirmed working (same quality as Android/Web)
+- ✅ AudioSession: Silent switch override working
+- ✅ Performance: Comparable to Android platform
+- ✅ Memory: No leaks or crashes detected
+
 ## [0.1.0] - 2025-09-02
 
 ### 🎉 Initial Release

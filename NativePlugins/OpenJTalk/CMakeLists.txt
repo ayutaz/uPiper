@@ -21,6 +21,13 @@ elseif(ANDROID)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--strip-all")
         # Note: LTO disabled due to gold linker compatibility issues in NDK
     endif()
+elseif(IOS)
+    set(PLATFORM_NAME "ios")
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    add_definitions(-DIOS)
+    # iOS specific settings
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fembed-bitcode")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fembed-bitcode")
 elseif(UNIX AND NOT APPLE)
     set(PLATFORM_NAME "linux")
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -94,8 +101,17 @@ if(NOT EXISTS "${OPENJTALK_INCLUDE_DIR}/jpcommon.h")
     endif()
 endif()
 
-# Create shared library
-add_library(openjtalk_wrapper SHARED ${SOURCES})
+# Create library (static for iOS, shared for others)
+if(IOS)
+    add_library(openjtalk_wrapper STATIC ${SOURCES})
+    # iOS specific library properties
+    set_target_properties(openjtalk_wrapper PROPERTIES
+        XCODE_ATTRIBUTE_VALID_ARCHS "arm64"
+        XCODE_ATTRIBUTE_ARCHS "arm64"
+    )
+else()
+    add_library(openjtalk_wrapper SHARED ${SOURCES})
+endif()
 
 # Link libraries
 if(ANDROID)
@@ -180,6 +196,14 @@ endif()
 # Link libraries based on platform
 if(ANDROID)
     target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS} c++_shared m log)
+elseif(IOS)
+    # iOS specific linking
+    target_link_libraries(openjtalk_wrapper ${OPENJTALK_LIBS})
+    # Add iOS frameworks if needed
+    target_link_libraries(openjtalk_wrapper
+        "-framework Foundation"
+        "-framework CoreFoundation"
+    )
 elseif(WIN32)
     # For MSVC builds, we don't need stdc++
     if(MSVC)

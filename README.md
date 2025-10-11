@@ -42,6 +42,7 @@
 - **macOS**: Xcode 14以降
 - **Linux**: GCC 9以降
 - **Android**: NDK r21以降
+- **iOS**: Xcode 14以降、iOS 11.0以降のデバイス
 
 ## インストール
 
@@ -118,11 +119,11 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 - ✅ Windows (x64)
 - ✅ macOS (Apple Silicon/Intel)
 - ✅ Linux (x64)
-- ✅ Android (ARM64)
+- ✅ Android (ARM64/ARMv7/x86/x86_64)
+- ✅ iOS (ARM64, iOS 11.0+) - **NEW!**
 
 ### 未対応
 - ❌ WebGL - 技術調査中（piper-plus連携により将来対応予定）
-- ❌ iOS - Phase 5で対応予定
 
 ## ビルドとパッケージ作成
 

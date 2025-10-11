@@ -14,7 +14,7 @@
 CLAUDE.md
 
 # VS Code settings
-.vscode/settings.json
+.vscode/
 
 # Windows special files
 nul
@@ -249,6 +249,10 @@ TestMeCabOutput.cs.meta
 /NativePlugins/OpenJTalk/src/mecab_full_dict_builder
 /NativePlugins/OpenJTalk/build-simple/
 /NativePlugins/OpenJTalk/build-openjtalk-full/
+/NativePlugins/OpenJTalk/build_ios/
+/NativePlugins/OpenJTalk/install_ios/
+/NativePlugins/OpenJTalk/build_android/
+/NativePlugins/OpenJTalk/install_android/
 # Don't ignore the source files themselves
 !/NativePlugins/OpenJTalk/src/
 !/NativePlugins/OpenJTalk/include/
