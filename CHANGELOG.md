@@ -5,11 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - TBD
 
 ### ✨ Added
 
-#### iOS Platform Support (Phase 5)
+#### iOS Platform Support
 - **iOS Native Library**: OpenJTalk static library for iOS (arm64, iOS 11.0+)
   - Built with CMake and iOS toolchain
   - P/Invoke with `__Internal` linking
@@ -69,13 +69,6 @@ uPiper now supports **5 platforms**:
 - Linux (x64) ✅
 - Android (ARMv7/ARM64/x86/x86_64) ✅
 - **iOS (ARM64, iOS 11.0+)** ✅ NEW
-
-### 📝 Documentation
-
-- `docs/ja/phase5-ios/ios-final-completion-report.md`: Complete implementation report
-- `docs/ja/phase5-ios/ios-implementation-checklist.md`: Phase 1-5 checklist
-- `docs/ja/phase5-ios/ios-device-testing-guide.md`: Device testing guide
-- `docs/ja/phase5-ios/ios-quick-start-checklist.md`: Quick start guide
 
 ### 🧪 Testing
 
