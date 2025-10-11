@@ -11,9 +11,6 @@
 ```bash
 # Unity でビルドしたフォルダを開く
 open [ビルドフォルダ]/Unity-iPhone.xcodeproj
-
-# または、ヘルパースクリプトを使用
-./scripts/ios_deploy_helper.sh open
 ```
 
 ### ステップ 3: 署名設定 (3分)
@@ -55,21 +52,7 @@ open [ビルドフォルダ]/Unity-iPhone.xcodeproj
 
 ## 🔧 トラブルシューティング
 
-### 問題が発生した場合
-
-#### ヘルパースクリプトを使用:
-```bash
-# 環境チェック
-./scripts/ios_deploy_helper.sh check
-
-# 問題を自動修正
-./scripts/ios_deploy_helper.sh fix
-
-# ビルドをクリーン
-./scripts/ios_deploy_helper.sh clean
-```
-
-#### よくある問題:
+### よくある問題:
 
 **Q: デバイスが表示されない**
 - A: USBケーブルを抜き差し、デバイスで「信頼」を再度選択
@@ -115,7 +98,6 @@ OpenJTalk
 
 より詳しい情報は以下を参照:
 - [iOS実機テストガイド](./ios-device-testing-guide.md)
-- [iOS最終ステータスレポート](./ios-final-status-report.md)
 
 ---
 
