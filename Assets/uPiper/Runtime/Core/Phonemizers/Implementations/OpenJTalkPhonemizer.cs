@@ -755,7 +755,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                     Debug.Log($"[OpenJTalkPhonemizer] Native library is statically linked on {(PlatformHelper.IsAndroid ? "Android" : "iOS")}");
                     return true;
                 }
-                
+
                 try
                 {
 #if ENABLE_PINVOKE
