@@ -94,7 +94,25 @@ jobs:
         else
           echo "Found $LIBS_FOUND out of 4 Android native libraries"
         fi
-        
+
+    # Configure Unity License timeout for service delays
+    - name: Configure Unity License Timeout (Extended for Service Delays)
+      if: matrix.targetPlatform == 'Android'
+      run: |
+        sudo mkdir -p /usr/share/unity3d/config/
+        sudo tee /usr/share/unity3d/config/services-config.json > /dev/null << 'EOF'
+        {
+          "clientConnectTimeoutSec": 30,
+          "clientHandshakeTimeoutSec": 60,
+          "clientResolveEntitlementsTimeoutSec": 90,
+          "clientUpdateLicenseTimeoutSec": 90,
+          "licensingServiceBaseUrl": "",
+          "enableProxyAutoconfig": "false"
+        }
+        EOF
+        echo "Unity License timeout configuration updated:"
+        cat /usr/share/unity3d/config/services-config.json
+
     # Unity Builder を使用してビルド (Android)
     - name: Build Unity project (Android)
       if: matrix.targetPlatform == 'Android'
@@ -115,7 +133,25 @@ jobs:
         androidKeyaliasPass: ''
         buildMethod: UnityBuilderAction.BuildScript.Build
         customParameters: -scriptingBackend ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && 'IL2CPP' || 'Mono2x' }}
-        
+
+    # Configure Unity License timeout for service delays
+    - name: Configure Unity License Timeout (Extended for Service Delays)
+      if: matrix.targetPlatform != 'Android'
+      run: |
+        sudo mkdir -p /usr/share/unity3d/config/
+        sudo tee /usr/share/unity3d/config/services-config.json > /dev/null << 'EOF'
+        {
+          "clientConnectTimeoutSec": 30,
+          "clientHandshakeTimeoutSec": 60,
+          "clientResolveEntitlementsTimeoutSec": 90,
+          "clientUpdateLicenseTimeoutSec": 90,
+          "licensingServiceBaseUrl": "",
+          "enableProxyAutoconfig": "false"
+        }
+        EOF
+        echo "Unity License timeout configuration updated:"
+        cat /usr/share/unity3d/config/services-config.json
+
     # Unity Builder を使用してビルド (Non-Android)
     - name: Build Unity project (Non-Android)
       if: matrix.targetPlatform != 'Android'
