@@ -229,12 +229,13 @@ namespace uPiper.Tests.Runtime.Phonemizers
         }
 
         // ========================================
-        // Tests for Issue #69: English phonemization quality improvements
+        // Tests for complex suffix phonemization improvements
+        // Related to Issue #69
         // ========================================
 
         [UnityTest]
-        [Category("Issue69")]
-        public IEnumerator Issue69_CooperationAndInvestigation_ShouldProduceCorrectPhonemes()
+        [Category("ComplexSuffix")]
+        public IEnumerator ComplexWords_CooperationAndInvestigation_ShouldProduceCorrectPhonemes()
         {
             var options = new PhonemizerBackendOptions { DataPath = null };
             var initTask = phonemizer.InitializeAsync(options);
@@ -250,7 +251,7 @@ namespace uPiper.Tests.Runtime.Phonemizers
             Assert.IsNotNull(result.Phonemes);
 
             var phonemeString = string.Join(" ", result.Phonemes);
-            Debug.Log($"Issue #69 test: '{text}' -> [{phonemeString}]");
+            Debug.Log($"Complex words test: '{text}' -> [{phonemeString}]");
 
             // Verify we have a reasonable number of phonemes (not too few, indicating skipping)
             // "cooperation" should have ~11 phonemes, "and" ~3, "investigation" ~14
@@ -265,8 +266,8 @@ namespace uPiper.Tests.Runtime.Phonemizers
         }
 
         [UnityTest]
-        [Category("Issue69")]
-        public IEnumerator Issue69_ComplexSuffix_Tion_ShouldProduceThreePhonemes()
+        [Category("ComplexSuffix")]
+        public IEnumerator ComplexSuffix_Tion_ShouldProduceMultiplePhonemes()
         {
             var options = new PhonemizerBackendOptions { DataPath = null };
             var initTask = phonemizer.InitializeAsync(options);
@@ -302,8 +303,8 @@ namespace uPiper.Tests.Runtime.Phonemizers
         }
 
         [UnityTest]
-        [Category("Issue69")]
-        public IEnumerator Issue69_ComplexSuffix_Sion_ShouldProduceThreePhonemes()
+        [Category("ComplexSuffix")]
+        public IEnumerator ComplexSuffix_Sion_ShouldProduceMultiplePhonemes()
         {
             var options = new PhonemizerBackendOptions { DataPath = null };
             var initTask = phonemizer.InitializeAsync(options);
@@ -339,8 +340,8 @@ namespace uPiper.Tests.Runtime.Phonemizers
         }
 
         [UnityTest]
-        [Category("Issue69")]
-        public IEnumerator Issue69_OtherComplexSuffixes_ShouldHandleCorrectly()
+        [Category("ComplexSuffix")]
+        public IEnumerator ComplexSuffix_VariousPatterns_ShouldHandleCorrectly()
         {
             var options = new PhonemizerBackendOptions { DataPath = null };
             var initTask = phonemizer.InitializeAsync(options);
@@ -377,8 +378,8 @@ namespace uPiper.Tests.Runtime.Phonemizers
         }
 
         [UnityTest]
-        [Category("Issue69")]
-        public IEnumerator Issue69_Cooperation_ShouldNotSkipSyllables()
+        [Category("ComplexSuffix")]
+        public IEnumerator Phonemization_Cooperation_ShouldIncludeAllSyllables()
         {
             var options = new PhonemizerBackendOptions { DataPath = null };
             var initTask = phonemizer.InitializeAsync(options);
