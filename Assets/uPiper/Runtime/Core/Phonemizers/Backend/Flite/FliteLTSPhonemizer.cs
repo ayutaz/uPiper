@@ -18,6 +18,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
     {
         private FliteLTSEngine ltsEngine;
         private CMUDictionary cmuDictionary;
+        private ComplexPatternHandler complexPatternHandler;
         private readonly Dictionary<string, string[]> customDictionary = new();
         private readonly object lockObject = new();
 
@@ -36,6 +37,10 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                 var ruleSet = FliteLTSRuleSet.CreateDefault();
                 ltsEngine = new FliteLTSEngine(ruleSet);
                 Debug.Log("Flite LTS engine initialized");
+
+                // Initialize complex pattern handler for Issue #69
+                complexPatternHandler = new ComplexPatternHandler();
+                Debug.Log("Complex pattern handler initialized");
 
                 // Load CMU dictionary
                 cmuDictionary = new CMUDictionary();
@@ -149,7 +154,33 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                 if (cmuDictionary != null && cmuDictionary.TryGetPronunciation(word, out var dictPhonemes))
                     return dictPhonemes;
 
-                // 3. Apply Flite LTS rules
+                // 3. Try complex pattern matching (for Issue #69)
+                // This handles multi-phoneme suffixes like "tion" -> ["sh", "ah0", "n"]
+                var complexSuffix = complexPatternHandler?.SplitComplexSuffix(word);
+                if (complexSuffix.HasValue)
+                {
+                    var (prefix, suffix, suffixPhonemes) = complexSuffix.Value;
+
+                    // Try to get prefix phonemes from dictionary first
+                    string[] prefixPhonemes = null;
+                    if (cmuDictionary != null && cmuDictionary.TryGetPronunciation(prefix, out prefixPhonemes))
+                    {
+                        // Combine prefix from dictionary + complex suffix phonemes
+                        var combined = new List<string>(prefixPhonemes);
+                        combined.AddRange(suffixPhonemes);
+                        return combined.ToArray();
+                    }
+                    else
+                    {
+                        // Prefix not in dictionary, apply LTS to prefix
+                        prefixPhonemes = ltsEngine.ApplyLTS(prefix);
+                        var combined = new List<string>(prefixPhonemes);
+                        combined.AddRange(suffixPhonemes);
+                        return combined.ToArray();
+                    }
+                }
+
+                // 4. Apply Flite LTS rules as fallback
                 return ltsEngine.ApplyLTS(word);
             }
         }
@@ -301,6 +332,8 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
 
                 cmuDictionary?.Dispose();
                 cmuDictionary = null;
+
+                complexPatternHandler = null;
 
                 customDictionary.Clear();
             }
