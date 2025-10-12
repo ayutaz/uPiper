@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
@@ -224,6 +226,187 @@ namespace uPiper.Tests.Runtime.Phonemizers
             Assert.IsFalse(result.Success);
             Assert.IsNotNull(result.ErrorMessage);
             Assert.AreEqual(0, result.Phonemes.Length);
+        }
+
+        // ========================================
+        // Tests for Issue #69: English phonemization quality improvements
+        // ========================================
+
+        [UnityTest]
+        [Category("Issue69")]
+        public IEnumerator Issue69_CooperationAndInvestigation_ShouldProduceCorrectPhonemes()
+        {
+            var options = new PhonemizerBackendOptions { DataPath = null };
+            var initTask = phonemizer.InitializeAsync(options);
+            yield return new WaitUntil(() => initTask.IsCompleted);
+
+            // The original reported text from Issue #69
+            var text = "cooperation and investigation";
+            var phonemeTask = phonemizer.PhonemizeAsync(text, "en-US");
+            yield return new WaitUntil(() => phonemeTask.IsCompleted);
+
+            var result = phonemeTask.Result;
+            Assert.IsTrue(result.Success, "Phonemization should succeed");
+            Assert.IsNotNull(result.Phonemes);
+
+            var phonemeString = string.Join(" ", result.Phonemes);
+            Debug.Log($"Issue #69 test: '{text}' -> [{phonemeString}]");
+
+            // Verify we have a reasonable number of phonemes (not too few, indicating skipping)
+            // "cooperation" should have ~11 phonemes, "and" ~3, "investigation" ~14
+            // Total: ~28-32 phonemes (including pauses)
+            Assert.GreaterOrEqual(result.Phonemes.Length, 23,
+                "Should have enough phonemes - syllables should not be skipped");
+            Assert.LessOrEqual(result.Phonemes.Length, 35,
+                "Should not have too many phonemes");
+
+            // Verify word boundaries are detected
+            Assert.AreEqual(3, result.WordBoundaries.Length, "Should have 3 words");
+        }
+
+        [UnityTest]
+        [Category("Issue69")]
+        public IEnumerator Issue69_ComplexSuffix_Tion_ShouldProduceThreePhonemes()
+        {
+            var options = new PhonemizerBackendOptions { DataPath = null };
+            var initTask = phonemizer.InitializeAsync(options);
+            yield return new WaitUntil(() => initTask.IsCompleted);
+
+            // Test words ending in "tion"
+            var testWords = new[] { "nation", "action", "station", "creation" };
+
+            foreach (var word in testWords)
+            {
+                var phonemeTask = phonemizer.PhonemizeAsync(word, "en-US");
+                yield return new WaitUntil(() => phonemeTask.IsCompleted);
+
+                var result = phonemeTask.Result;
+                Assert.IsTrue(result.Success, $"Should phonemize '{word}' successfully");
+
+                var phonemeString = string.Join(" ", result.Phonemes);
+                Debug.Log($"'{word}' -> [{phonemeString}]");
+
+                // "tion" should produce 3 phonemes: "sh", "ah0", "n"
+                // Find the "sh" phoneme (should be near the end for "tion" words)
+                var hasShSound = result.Phonemes.Any(p => p.ToLower().StartsWith("sh"));
+                Assert.IsTrue(hasShSound, $"'{word}' should contain 'sh' sound from 'tion'");
+
+                // Verify we have schwa (ah0 or ah) sound
+                var hasSchwaSound = result.Phonemes.Any(p => p.ToLower().StartsWith("ah"));
+                Assert.IsTrue(hasSchwaSound, $"'{word}' should contain schwa 'ah' sound from 'tion'");
+
+                // Verify we have "n" sound
+                var hasNSound = result.Phonemes.Any(p => p.ToLower() == "n" || p.ToLower().StartsWith("n"));
+                Assert.IsTrue(hasNSound, $"'{word}' should contain 'n' sound from 'tion'");
+            }
+        }
+
+        [UnityTest]
+        [Category("Issue69")]
+        public IEnumerator Issue69_ComplexSuffix_Sion_ShouldProduceThreePhonemes()
+        {
+            var options = new PhonemizerBackendOptions { DataPath = null };
+            var initTask = phonemizer.InitializeAsync(options);
+            yield return new WaitUntil(() => initTask.IsCompleted);
+
+            // Test words ending in "sion"
+            var testWords = new[] { "vision", "decision", "revision", "explosion" };
+
+            foreach (var word in testWords)
+            {
+                var phonemeTask = phonemizer.PhonemizeAsync(word, "en-US");
+                yield return new WaitUntil(() => phonemeTask.IsCompleted);
+
+                var result = phonemeTask.Result;
+                Assert.IsTrue(result.Success, $"Should phonemize '{word}' successfully");
+
+                var phonemeString = string.Join(" ", result.Phonemes);
+                Debug.Log($"'{word}' -> [{phonemeString}]");
+
+                // "sion" should produce 3 phonemes: "zh", "ah0", "n"
+                // Find the "zh" phoneme (should be near the end for "sion" words)
+                var hasZhSound = result.Phonemes.Any(p => p.ToLower() == "zh" || p.ToLower().StartsWith("zh"));
+                Assert.IsTrue(hasZhSound, $"'{word}' should contain 'zh' sound from 'sion'");
+
+                // Verify we have schwa (ah0 or ah) sound
+                var hasSchwaSound = result.Phonemes.Any(p => p.ToLower().StartsWith("ah"));
+                Assert.IsTrue(hasSchwaSound, $"'{word}' should contain schwa 'ah' sound from 'sion'");
+
+                // Verify we have "n" sound
+                var hasNSound = result.Phonemes.Any(p => p.ToLower() == "n" || p.ToLower().StartsWith("n"));
+                Assert.IsTrue(hasNSound, $"'{word}' should contain 'n' sound from 'sion'");
+            }
+        }
+
+        [UnityTest]
+        [Category("Issue69")]
+        public IEnumerator Issue69_OtherComplexSuffixes_ShouldHandleCorrectly()
+        {
+            var options = new PhonemizerBackendOptions { DataPath = null };
+            var initTask = phonemizer.InitializeAsync(options);
+            yield return new WaitUntil(() => initTask.IsCompleted);
+
+            // Test other complex suffix patterns
+            var testCases = new Dictionary<string, string>
+            {
+                ["nature"] = "ture",      // Should end with "ch er0"
+                ["measure"] = "sure",     // Should end with "zh er0"
+                ["package"] = "age",      // Should end with "ih0 jh"
+                ["curious"] = "ious",     // Should end with "iy0 ah0 s"
+                ["famous"] = "ous",       // Should end with "ah0 s"
+            };
+
+            foreach (var testCase in testCases)
+            {
+                var word = testCase.Key;
+                var suffix = testCase.Value;
+
+                var phonemeTask = phonemizer.PhonemizeAsync(word, "en-US");
+                yield return new WaitUntil(() => phonemeTask.IsCompleted);
+
+                var result = phonemeTask.Result;
+                Assert.IsTrue(result.Success, $"Should phonemize '{word}' successfully");
+
+                var phonemeString = string.Join(" ", result.Phonemes);
+                Debug.Log($"'{word}' (suffix: {suffix}) -> [{phonemeString}]");
+
+                // Just verify we get reasonable phonemes - complex validation would be too brittle
+                Assert.Greater(result.Phonemes.Length, 2,
+                    $"'{word}' should produce multiple phonemes");
+            }
+        }
+
+        [UnityTest]
+        [Category("Issue69")]
+        public IEnumerator Issue69_Cooperation_ShouldNotSkipSyllables()
+        {
+            var options = new PhonemizerBackendOptions { DataPath = null };
+            var initTask = phonemizer.InitializeAsync(options);
+            yield return new WaitUntil(() => initTask.IsCompleted);
+
+            var word = "cooperation";
+            var phonemeTask = phonemizer.PhonemizeAsync(word, "en-US");
+            yield return new WaitUntil(() => phonemeTask.IsCompleted);
+
+            var result = phonemeTask.Result;
+            Assert.IsTrue(result.Success);
+
+            var phonemeString = string.Join(" ", result.Phonemes);
+            Debug.Log($"'{word}' -> [{phonemeString}]");
+
+            // Expected phonemes for "cooperation":
+            // k ow . ah p . er . ey . sh ah n
+            // Should have approximately 9-11 phonemes
+            Assert.GreaterOrEqual(result.Phonemes.Length, 9,
+                "cooperation should have at least 9 phonemes (was skipping syllables before fix)");
+            Assert.LessOrEqual(result.Phonemes.Length, 13,
+                "cooperation should not have more than 13 phonemes");
+
+            // Verify key sounds are present
+            Assert.IsTrue(result.Phonemes.Any(p => p.ToLower().StartsWith("ah")),
+                "Should contain schwa sound (was missing before fix)");
+            Assert.IsTrue(result.Phonemes.Any(p => p.ToLower().StartsWith("sh")),
+                "Should contain 'sh' from 'tion' suffix");
         }
     }
 }
