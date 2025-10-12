@@ -38,6 +38,12 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         };
 
         /// <summary>
+        /// Cached sorted suffixes for performance (longest to shortest)
+        /// </summary>
+        private static readonly KeyValuePair<string, string[]>[] SortedSuffixes =
+            ComplexSuffixes.OrderByDescending(kvp => kvp.Key.Length).ToArray();
+
+        /// <summary>
         /// Context-dependent "ough" patterns
         /// Different pronunciations based on the preceding letters
         /// </summary>
@@ -126,10 +132,8 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         /// </summary>
         private string[] TryMatchSuffix(string word)
         {
-            // Check each suffix pattern from longest to shortest
-            var sortedSuffixes = ComplexSuffixes.OrderByDescending(kvp => kvp.Key.Length);
-
-            foreach (var pattern in sortedSuffixes)
+            // Check each suffix pattern from longest to shortest (using cached sorted list)
+            foreach (var pattern in SortedSuffixes)
             {
                 if (word.EndsWith(pattern.Key))
                 {
@@ -179,10 +183,8 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
 
             word = word.ToLower();
 
-            // Check each suffix pattern from longest to shortest
-            var sortedSuffixes = ComplexSuffixes.OrderByDescending(kvp => kvp.Key.Length);
-
-            foreach (var pattern in sortedSuffixes)
+            // Check each suffix pattern from longest to shortest (using cached sorted list)
+            foreach (var pattern in SortedSuffixes)
             {
                 if (word.EndsWith(pattern.Key))
                 {
