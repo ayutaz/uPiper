@@ -289,16 +289,15 @@ namespace uPiper.Tests.Runtime.Phonemizers
 
                 // "tion" should produce 3 phonemes: "sh", "ah0", "n"
                 // Find the "sh" phoneme (should be near the end for "tion" words)
-                var hasShSound = result.Phonemes.Any(p => p.StartsWith("sh", StringComparison.OrdinalIgnoreCase));
+                var hasShSound = result.Phonemes.Any(p => p.ToLower().StartsWith("sh"));
                 Assert.IsTrue(hasShSound, $"'{word}' should contain 'sh' sound from 'tion'");
 
                 // Verify we have schwa (ah0 or ah) sound
-                var hasSchwaSound = result.Phonemes.Any(p => p.StartsWith("ah", StringComparison.OrdinalIgnoreCase));
+                var hasSchwaSound = result.Phonemes.Any(p => p.ToLower().StartsWith("ah"));
                 Assert.IsTrue(hasSchwaSound, $"'{word}' should contain schwa 'ah' sound from 'tion'");
 
                 // Verify we have "n" sound
-                var hasNSound = result.Phonemes.Any(p => p.Equals("n", StringComparison.OrdinalIgnoreCase) ||
-                                                         p.StartsWith("n", StringComparison.OrdinalIgnoreCase));
+                var hasNSound = result.Phonemes.Any(p => p.ToLower() == "n" || p.ToLower().StartsWith("n"));
                 Assert.IsTrue(hasNSound, $"'{word}' should contain 'n' sound from 'tion'");
             }
         }
@@ -327,17 +326,15 @@ namespace uPiper.Tests.Runtime.Phonemizers
 
                 // "sion" should produce 3 phonemes: "zh", "ah0", "n"
                 // Find the "zh" phoneme (should be near the end for "sion" words)
-                var hasZhSound = result.Phonemes.Any(p => p.Equals("zh", StringComparison.OrdinalIgnoreCase) ||
-                                                         p.StartsWith("zh", StringComparison.OrdinalIgnoreCase));
+                var hasZhSound = result.Phonemes.Any(p => p.ToLower() == "zh" || p.ToLower().StartsWith("zh"));
                 Assert.IsTrue(hasZhSound, $"'{word}' should contain 'zh' sound from 'sion'");
 
                 // Verify we have schwa (ah0 or ah) sound
-                var hasSchwaSound = result.Phonemes.Any(p => p.StartsWith("ah", StringComparison.OrdinalIgnoreCase));
+                var hasSchwaSound = result.Phonemes.Any(p => p.ToLower().StartsWith("ah"));
                 Assert.IsTrue(hasSchwaSound, $"'{word}' should contain schwa 'ah' sound from 'sion'");
 
                 // Verify we have "n" sound
-                var hasNSound = result.Phonemes.Any(p => p.Equals("n", StringComparison.OrdinalIgnoreCase) ||
-                                                         p.StartsWith("n", StringComparison.OrdinalIgnoreCase));
+                var hasNSound = result.Phonemes.Any(p => p.ToLower() == "n" || p.ToLower().StartsWith("n"));
                 Assert.IsTrue(hasNSound, $"'{word}' should contain 'n' sound from 'sion'");
             }
         }
@@ -407,9 +404,9 @@ namespace uPiper.Tests.Runtime.Phonemizers
                 "cooperation should not have more than 13 phonemes");
 
             // Verify key sounds are present
-            Assert.IsTrue(result.Phonemes.Any(p => p.StartsWith("ah", StringComparison.OrdinalIgnoreCase)),
+            Assert.IsTrue(result.Phonemes.Any(p => p.ToLower().StartsWith("ah")),
                 "Should contain schwa sound (was missing before fix)");
-            Assert.IsTrue(result.Phonemes.Any(p => p.StartsWith("sh", StringComparison.OrdinalIgnoreCase)),
+            Assert.IsTrue(result.Phonemes.Any(p => p.ToLower().StartsWith("sh")),
                 "Should contain 'sh' from 'tion' suffix");
         }
     }
