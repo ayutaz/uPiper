@@ -29,7 +29,6 @@
 - Unity AI Inference Engineによる高速推論
 - OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux/Android/iOS）
 - GPU推論サポート（GPUCompute/GPUPixel）
-- 高度なサンプル（ストリーミング、複数音声、リアルタイム）
 
 ## Requirements
 * Unity 6000.0.55f1

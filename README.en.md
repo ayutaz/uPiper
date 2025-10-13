@@ -29,7 +29,6 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 - Fast inference with Unity AI Inference Engine
 - High-precision Japanese phonemization with OpenJTalk (Windows/macOS/Linux/Android/iOS)
 - GPU inference support (GPUCompute/GPUPixel)
-- Advanced samples (streaming, multi-voice, real-time)
 
 ## Requirements
 * Unity 6000.0.55f1
