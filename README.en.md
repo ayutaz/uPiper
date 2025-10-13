@@ -115,10 +115,6 @@ Download the latest package from [Releases](https://github.com/ayutaz/uPiper/rel
 
 ## Build and Package Creation
 
-### Automated Build (GitHub Actions)
-- All platform builds are automatically executed when pushing to the main branch
-- Creating a release tag (v*) will automatically create releases and packages
-
 ### Package Export (For Developers)
 Create packages manually from Unity Editor:
 1. `uPiper/Package/Export Unity Package (.unitypackage)` - Legacy format

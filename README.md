@@ -121,10 +121,6 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 
 ## ビルドとパッケージ作成
 
-### 自動ビルド（GitHub Actions）
-- mainブランチへのプッシュ時に自動的に全プラットフォーム向けのビルドが実行されます
-- リリースタグ（v*）をプッシュすると、自動的にリリースとパッケージが作成されます
-
 ### パッケージエクスポート（開発者向け）
 Unity Editorから手動でパッケージを作成：
 1. `uPiper/Package/Export Unity Package (.unitypackage)` - レガシー形式
