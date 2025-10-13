@@ -24,13 +24,13 @@
 
 ## 機能
 
-- 🎤 高品質な音声合成（piper-plusベース）
-- 🌍 多言語対応（日本語、英語）
-- 🚀 Unity AI Inference Engineによる高速推論
-- 📱 マルチプラットフォーム対応
-- 🔧 OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux/Android）
-- ⚡ GPU推論サポート（GPUCompute/GPUPixel）
-- 🎭 高度なサンプル（ストリーミング、複数音声、リアルタイム）
+- 高品質な音声合成（piper-plusベース）
+- 多言語対応（日本語、英語）
+- Unity AI Inference Engineによる高速推論
+- マルチプラットフォーム対応
+- OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux/Android）
+- GPU推論サポート（GPUCompute/GPUPixel）
+- 高度なサンプル（ストリーミング、複数音声、リアルタイム）
 
 ## Requirements
 * Unity 6000.0.55f1
