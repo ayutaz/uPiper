@@ -110,7 +110,7 @@ Download the latest package from [Releases](https://github.com/ayutaz/uPiper/rel
 - ✅ macOS (Apple Silicon/Intel)
 - ✅ Linux (x64)
 - ✅ Android (ARM64/ARMv7/x86/x86_64)
-- ✅ iOS (ARM64, iOS 11.0+) - **NEW!**
+- ✅ iOS (ARM64, iOS 11.0+)
 
 ### Not Supported
 - ❌ WebGL - Under investigation (future support planned via piper-plus integration)

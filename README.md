@@ -120,7 +120,7 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 - ✅ macOS (Apple Silicon/Intel)
 - ✅ Linux (x64)
 - ✅ Android (ARM64/ARMv7/x86/x86_64)
-- ✅ iOS (ARM64, iOS 11.0+) - **NEW!**
+- ✅ iOS (ARM64, iOS 11.0+)
 
 ### 未対応
 - ❌ WebGL - 技術調査中（piper-plus連携により将来対応予定）
