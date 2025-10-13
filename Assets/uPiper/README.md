@@ -138,6 +138,8 @@ uPiper/
   - Windows: Windows 10 以降（x64のみ）
   - Linux: Ubuntu 20.04 以降（x86_64, aarch64）
   - macOS: macOS 10.15 以降（Universal）
+  - Android: Android 5.0 (API 21) 以降（arm64-v8a, armeabi-v7a, x86, x86_64）
+  - iOS: iOS 11.0 以降（ARM64）
 
 ## ライセンス
 

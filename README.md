@@ -11,38 +11,26 @@
 
 - [機能](#機能)
 - [Requirements](#requirements)
-- [ビルド要件](#ビルド要件)
 - [インストール](#インストール)
   - [Unity Package Manager経由（推奨）](#unity-package-manager経由推奨)
   - [パッケージファイルからのインストール](#パッケージファイルからのインストール)
-  - [サンプルのインポート](#サンプルのインポート)
+  - [トラブルシューティング](#トラブルシューティング)
 - [サポートプラットフォーム](#サポートプラットフォーム)
-- [ビルドとパッケージ作成](#ビルドとパッケージ作成)
 - [GPU推論の使用](#gpu推論の使用)
 - [詳細ドキュメント](#詳細ドキュメント)
 - [ライセンス](#ライセンス)
 
 ## 機能
 
-- 🎤 高品質な音声合成（piper-plusベース）
-- 🌍 多言語対応（日本語、英語）
-- 🚀 Unity AI Inference Engineによる高速推論
-- 📱 マルチプラットフォーム対応
-- 🔧 OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux/Android）
-- ⚡ GPU推論サポート（GPUCompute/GPUPixel）
-- 🎭 高度なサンプル（ストリーミング、複数音声、リアルタイム）
+- 高品質な音声合成（piper-plusベース）
+- 多言語対応（日本語、英語）
+- Unity AI Inference Engineによる高速推論
+- OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux/Android/iOS）
+- GPU推論サポート（GPUCompute/GPUPixel）
 
 ## Requirements
 * Unity 6000.0.55f1
 * Unity AI Interface (Inference Engine) 2.2.x
-
-## ビルド要件
-
-- **Windows**: Visual Studio 2022以降
-- **macOS**: Xcode 14以降
-- **Linux**: GCC 9以降
-- **Android**: NDK r21以降
-- **iOS**: Xcode 14以降、iOS 11.0以降のデバイス
 
 ## インストール
 
@@ -64,10 +52,10 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 2. **「uPiper」パッケージを選択**
 3. **「Samples」セクションを展開**
 4. **以下のサンプルをインポート**：
-   - 📚 **OpenJTalk Dictionary Data** (必須) - 日本語音声合成用辞書
-   - 📚 **CMU Pronouncing Dictionary** (必須) - 英語音声合成用辞書
-   - 🎤 **Voice Models** (推奨) - 高品質音声モデル
-   - 🎮 **Basic TTS Demo** (オプション) - デモシーン
+   - **OpenJTalk Dictionary Data** (必須) - 日本語音声合成用辞書
+   - **CMU Pronouncing Dictionary** (必須) - 英語音声合成用辞書
+   - **Voice Models** (推奨) - 高品質音声モデル
+   - **Basic TTS Demo** (オプション) - デモシーン
 
 #### ステップ3: データのセットアップ
 
@@ -76,10 +64,6 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 1. **メニューから `uPiper > Setup > Install from Samples` を実行**
 2. インストールダイアログで「Install」をクリック
 3. セットアップが完了するまで待つ
-
-> 💡 **注**: 以前の「Run Initial Setup」メニューは削除されました。「Install from Samples」が唯一のセットアップ方法です。
-> 
-> 📁 **モデルファイルの保存場所**: 音声モデルは `Assets/Resources/uPiper/Models/` に保存されます（パッケージの外側）。
 
 #### ステップ4: 動作確認
 
@@ -120,22 +104,10 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 - ✅ macOS (Apple Silicon/Intel)
 - ✅ Linux (x64)
 - ✅ Android (ARM64/ARMv7/x86/x86_64)
-- ✅ iOS (ARM64, iOS 11.0+) - **NEW!**
+- ✅ iOS (ARM64, iOS 11.0+)
 
 ### 未対応
 - ❌ WebGL - 技術調査中（piper-plus連携により将来対応予定）
-
-## ビルドとパッケージ作成
-
-### 自動ビルド（GitHub Actions）
-- mainブランチへのプッシュ時に自動的に全プラットフォーム向けのビルドが実行されます
-- リリースタグ（v*）をプッシュすると、自動的にリリースとパッケージが作成されます
-
-### パッケージエクスポート（開発者向け）
-Unity Editorから手動でパッケージを作成：
-1. `uPiper/Package/Export Unity Package (.unitypackage)` - レガシー形式
-2. `uPiper/Package/Export UPM Package (.tgz)` - Unity Package Manager形式
-3. `uPiper/Package/Export Both Formats` - 両形式を同時にエクスポート
 
 ## GPU推論の使用
 
@@ -156,44 +128,6 @@ var config = new PiperConfig
 ```
 
 詳細は[GPU推論ガイド](docs/features/gpu/gpu-inference.md)を参照してください。
-
-## 開発者向け情報
-
-### プロジェクト構造
-
-開発環境では以下の構造で辞書データを管理しています：
-
-```
-Assets/
-├── uPiper/
-│   ├── Samples~/                         # Package Manager配布用データ（Unity Editorからは非表示）
-│   │   ├── OpenJTalk Dictionary Data/    # 日本語音声合成用辞書（約50MB）
-│   │   │   └── naist_jdic/              # OpenJTalk辞書本体
-│   │   │       └── open_jtalk_dic_utf_8-1.11/
-│   │   ├── CMU Pronouncing Dictionary/   # 英語音声合成用辞書（約3MB）
-│   │   │   └── cmudict-0.7b.txt         # CMU辞書本体
-│   │   └── Voice Models/                 # 音声モデル（ONNX形式）
-│   │       ├── ja_JP-test-medium.onnx   # 日本語音声モデル
-│   │       └── en_US-ljspeech-medium.onnx # 英語音声モデル
-│   ├── Runtime/                          # ランタイムコード
-│   ├── Editor/                           # エディタ拡張
-│   └── Plugins/                          # ネイティブプラグイン
-└── StreamingAssets/                      # 実行時データ（Package Manager版のみ）
-```
-
-#### 注意事項
-
-- **Samples~フォルダ**: Unity Editorからは見えません（Unityの仕様）
-- **開発環境判定**: `UPIPER_DEVELOPMENT`プリプロセッサディレクティブが定義されています
-- **辞書の読み込み**: 開発環境では`Samples~`から直接読み込み、Package Manager版では`StreamingAssets`から読み込みます
-- **セットアップ不要**: 開発環境では初回セットアップは不要で、クローン後すぐに動作します
-
-### Package Manager配布時の動作
-
-Package Manager経由で配布される場合：
-1. ユーザーがPackage Managerから辞書サンプルをインポート
-2. `uPiper/Setup/Install from Samples`メニューを実行
-3. 辞書データが`StreamingAssets/uPiper/`にコピーされる
 
 ## 詳細ドキュメント
 
