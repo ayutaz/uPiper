@@ -147,7 +147,7 @@ namespace uPiper.Editor.BuildSettings
             }
 
             // iOS向けの追加設定
-            PlayerSettings.iOS.allowHTTPDownload = false; // HTTPSのみ許可
+            PlayerSettings.insecureHttpOption = InsecureHttpOption.NotAllowed; // HTTPSのみ許可
             PlayerSettings.iOS.requiresPersistentWiFi = false; // Wi-Fi必須ではない
             PlayerSettings.iOS.appInBackgroundBehavior = iOSAppInBackgroundBehavior.Suspend;
 
