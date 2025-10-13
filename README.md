@@ -28,7 +28,7 @@
 - 多言語対応（日本語、英語）
 - Unity AI Inference Engineによる高速推論
 - マルチプラットフォーム対応
-- OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux/Android）
+- OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux/Android/iOS）
 - GPU推論サポート（GPUCompute/GPUPixel）
 - 高度なサンプル（ストリーミング、複数音声、リアルタイム）
 
