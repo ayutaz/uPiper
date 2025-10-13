@@ -64,10 +64,10 @@ After installing from Package Manager, **you must import the data following thes
 2. **Select the "uPiper" package**
 3. **Expand the "Samples" section**
 4. **Import the following samples**:
-   - 📚 **OpenJTalk Dictionary Data** (Required) - Dictionary for Japanese speech synthesis
-   - 📚 **CMU Pronouncing Dictionary** (Required) - Dictionary for English speech synthesis
-   - 🎤 **Voice Models** (Recommended) - High-quality voice models
-   - 🎮 **Basic TTS Demo** (Optional) - Demo scene
+   - **OpenJTalk Dictionary Data** (Required) - Dictionary for Japanese speech synthesis
+   - **CMU Pronouncing Dictionary** (Required) - Dictionary for English speech synthesis
+   - **Voice Models** (Recommended) - High-quality voice models
+   - **Basic TTS Demo** (Optional) - Demo scene
 
 #### Step 3: Setup Data
 
