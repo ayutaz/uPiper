@@ -144,20 +144,79 @@ result->durations[i] = 0.05f; // Default 50ms duration
 - Unicode PUA領域を使用
 - pyopenjtalkと互換性のあるマッピング
 
+## プラットフォームサポート
+
+### サポート済みプラットフォーム
+- **Windows**: x64 (Windows 10/11)
+- **macOS**: Intel/Apple Silicon (macOS 11+)
+- **Linux**: x64 (Ubuntu 20.04+)
+- **Android**: arm64-v8a, armeabi-v7a, x86, x86_64 (API 21+)
+- **iOS**: arm64 (iOS 11.0+)
+
+### プラットフォーム固有の実装
+
+#### Windows
+- ネイティブライブラリ: `openjtalk_wrapper.dll`
+- コンパイラ: MSVC 2019+
+- Unityバックエンド: Mono/IL2CPP
+
+#### macOS
+- ネイティブライブラリ: `openjtalk_wrapper.bundle`
+- コンパイラ: Clang
+- Universal Binaryサポート
+
+#### Android
+- ネイティブライブラリ: `libopenjtalk_wrapper.so`
+- NDK: r21+
+- アーキテクチャ: arm64-v8a, armeabi-v7a, x86, x86_64
+
+#### iOS
+- ネイティブライブラリ: `libopenjtalk_wrapper.a` (`__Internal`経由でリンク)
+- Xcode: 14+
+- アーキテクチャ: arm64 (iOS 11.0+)
+
 ## パフォーマンス特性
 
-- **音素化処理**: < 10ms/文（OpenJTalk）
-- **ONNX推論**: < 100ms（目標）
-- **メモリ使用量**: 辞書データ 15-20MB + モデル 50-100MB
+### メモリ使用量
+- モデル読み込み: ~100MB (VITSモデル)
+- 辞書: ~30MB (圧縮済み)
+- ランタイム: ~50-200MB (使用状況による)
 
-## 今後の拡張計画
+### 処理速度
+- 音素化: 一般的な文章で <10ms
+- 推論: ~100-500ms (ハードウェアによる)
+- 合計レイテンシー: ほとんどのケースで <1秒
 
-### Phase 2
-- eSpeak-NG統合（英語音素化の改善）
-- 追加言語サポート（中国語、韓国語）
-- モバイルプラットフォーム対応検討
+### 最適化戦略
+1. **音素キャッシュ**: 頻繁に使用されるテキストをキャッシュ
+2. **モデル量子化**: オプションでINT8量子化
+3. **GPUアクセラレーション**: Unity AI Inference Engine経由でサポート
+4. **ストリーミング**: 長いテキストのチャンク処理
 
-### 最適化の余地
-- バッチ処理による高速化
-- ストリーミング音声合成
-- モデル量子化による軽量化
+## 拡張ポイント
+
+### カスタム音素化器
+`IPhonemizerBackend`インターフェースを実装：
+```csharp
+public interface IPhonemizerBackend
+{
+    string Language { get; }
+    PhonemeResult Phonemize(string text);
+}
+```
+
+### 音声モデルサポート
+- ONNXモデルを`StreamingAssets/uPiper/Models/`に配置
+- `PiperVoiceConfig`で設定
+
+### 言語拡張
+1. 言語固有の音素化器を実装
+2. 音素からIDへのマッピングを追加
+3. 互換性のあるVITSモデルをトレーニングまたは取得
+
+## セキュリティ上の考慮事項
+
+- すべての処理はローカルで実行（クラウド依存なし）
+- 個人データの収集なし
+- モデルと辞書は読み取り専用
+- Unity環境内でサンドボックス実行

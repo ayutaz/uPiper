@@ -126,10 +126,8 @@ Phoneme IDs → TextEncoder → Duration Predictor → Flow Decoder → Audio Wa
 - **Windows**: x64 (Windows 10/11)
 - **macOS**: Intel/Apple Silicon (macOS 11+)
 - **Linux**: x64 (Ubuntu 20.04+)
-- **Android**: arm64-v8a (API 21+)
-
-### In Development
-- **iOS**: arm64 (iOS 11+) - Phase 5
+- **Android**: arm64-v8a, armeabi-v7a, x86, x86_64 (API 21+)
+- **iOS**: arm64 (iOS 11.0+)
 
 ### Platform-Specific Implementation
 
@@ -147,6 +145,11 @@ Phoneme IDs → TextEncoder → Duration Predictor → Flow Decoder → Audio Wa
 - Native library: `libopenjtalk_wrapper.so`
 - NDK: r21+
 - Architectures: arm64-v8a, armeabi-v7a, x86, x86_64
+
+#### iOS
+- Native library: `libopenjtalk_wrapper.a` (linked via `__Internal`)
+- Xcode: 14+
+- Architecture: arm64 (iOS 11.0+)
 
 ## Performance Characteristics
 
