@@ -11,13 +11,11 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 
 - [Features](#features)
 - [Requirements](#requirements)
-- [Build Requirements](#build-requirements)
 - [Installation](#installation)
   - [Via Unity Package Manager (Recommended)](#via-unity-package-manager-recommended)
   - [From Package Files](#from-package-files)
-  - [Importing Samples](#importing-samples)
+  - [Troubleshooting](#troubleshooting)
 - [Supported Platforms](#supported-platforms)
-- [Build and Package Creation](#build-and-package-creation)
 - [GPU Inference](#gpu-inference)
 - [Documentation](#documentation)
 - [License](#license)
@@ -33,14 +31,6 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 ## Requirements
 * Unity 6000.0.55f1
 * Unity AI Interface (Inference Engine) 2.2.x
-
-## Build Requirements
-
-- **Windows**: Visual Studio 2022 or later
-- **macOS**: Xcode 14 or later
-- **Linux**: GCC 9 or later
-- **Android**: NDK r21 or later
-- **iOS**: Xcode 14 or later, iOS 11.0+ devices
 
 ## Installation
 
@@ -112,14 +102,6 @@ Download the latest package from [Releases](https://github.com/ayutaz/uPiper/rel
 
 ### Not Supported
 - ❌ WebGL - Under investigation (future support planned via piper-plus integration)
-
-## Build and Package Creation
-
-### Package Export (For Developers)
-Create packages manually from Unity Editor:
-1. `uPiper/Package/Export Unity Package (.unitypackage)` - Legacy format
-2. `uPiper/Package/Export UPM Package (.tgz)` - Unity Package Manager format
-3. `uPiper/Package/Export Both Formats` - Export both formats simultaneously
 
 ## GPU Inference
 
