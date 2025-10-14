@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025/10/14
+
+### 🔧 Changed
+
+- **Package Version Management**: Introduced `PACKAGE_VERSION` constant in uPiperSetup.cs (#75)
+  - Centralized version string to simplify maintenance
+  - Replaced hardcoded version strings with version constant
+  - Ensures sample path detection works correctly after version updates
+  - Thanks to @dtaddis for the original contribution
+
 ## [0.2.0] - 2025/10/11
 
 ### ✨ Added
@@ -142,5 +152,6 @@ MIT License - See [LICENSE](LICENSE) file for details
 - [Documentation](https://github.com/ayutaz/uPiper/tree/main/docs)
 - [Issues](https://github.com/ayutaz/uPiper/issues)
 
+[0.2.1]: https://github.com/ayutaz/uPiper/releases/tag/v0.2.1
 [0.2.0]: https://github.com/ayutaz/uPiper/releases/tag/v0.2.0
 [0.1.0]: https://github.com/ayutaz/uPiper/releases/tag/v0.1.0
