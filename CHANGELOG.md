@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2025/10/14
+
+### 🎉 First Stable Release
+
+uPiper reaches version 1.0.0 with production-ready features and full platform support.
+
+### ✨ Key Features
+
+- **Production-Ready TTS Engine**: High-quality neural text-to-speech synthesis
+- **Multi-Language Support**: Japanese (OpenJTalk) and English (Flite LTS) phonemization
+- **Cross-Platform**: Full support for Windows, macOS, Linux, Android, and iOS
+- **Unity Integration**: Seamless integration with Unity 6000.0.55f1+
+- **GPU Acceleration**: Unity AI Inference Engine with GPU support
+- **Easy Setup**: Streamlined installation via Unity Package Manager
+
+### 📊 Platform Support Matrix
+
+| Platform | Architecture | Status |
+|----------|-------------|--------|
+| Windows | x64 | ✅ Stable |
+| macOS | Intel/Apple Silicon | ✅ Stable |
+| Linux | x64 | ✅ Stable |
+| Android | ARMv7/ARM64/x86/x86_64 | ✅ Stable |
+| iOS | ARM64 (iOS 11.0+) | ✅ Stable |
+
+### 🔧 Recent Improvements (v0.2.0 - v0.2.1)
+
+- **Package Version Management**: Centralized version constant for easier maintenance
+- **iOS Platform Support**: Complete implementation with AudioSession integration
+- **English Phonemization**: Improved handling of complex suffixes
+- **Documentation**: Comprehensive Japanese and English documentation
+
+### 📦 Package Contents
+
+- **Core Runtime**: Production-ready TTS engine
+- **Native Libraries**: Platform-specific OpenJTalk wrappers
+- **Voice Models**: Pre-trained ONNX models (127MB)
+- **Dictionaries**: OpenJTalk (103MB) and CMU (3.5MB)
+- **Sample Projects**: Complete demo implementations
+
+### 🚀 What's Next
+
+- Additional language support
+- More voice models
+- Performance optimizations
+- Advanced audio processing features
+
 ## [0.2.1] - 2025/10/14
 
 ### 🔧 Changed
@@ -152,6 +199,7 @@ MIT License - See [LICENSE](LICENSE) file for details
 - [Documentation](https://github.com/ayutaz/uPiper/tree/main/docs)
 - [Issues](https://github.com/ayutaz/uPiper/issues)
 
+[1.0.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.0.0
 [0.2.1]: https://github.com/ayutaz/uPiper/releases/tag/v0.2.1
 [0.2.0]: https://github.com/ayutaz/uPiper/releases/tag/v0.2.0
 [0.1.0]: https://github.com/ayutaz/uPiper/releases/tag/v0.1.0
