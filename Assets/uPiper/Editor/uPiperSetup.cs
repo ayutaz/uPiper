@@ -18,6 +18,7 @@ namespace uPiper.Editor
     {
         private const string SETUP_COMPLETE_KEY = "uPiper_InitialSetupComplete_v1";
         private const string PACKAGE_NAME = "com.ayutaz.upiper";
+        private const string PACKAGE_VERSION = "0.2.0";
 
         // Target paths in Assets (made public for shared use)
         public const string TARGET_STREAMING_ASSETS_PATH = "Assets/StreamingAssets/uPiper";
@@ -375,7 +376,7 @@ namespace uPiper.Editor
             var status = new SamplesStatus();
 
             // Check for imported OpenJTalk sample
-            var openJTalkSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "OpenJTalk Dictionary Data");
+            var openJTalkSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", PACKAGE_VERSION, "OpenJTalk Dictionary Data");
             if (!Directory.Exists(openJTalkSamplePath))
             {
                 // Try without version number
@@ -385,7 +386,7 @@ namespace uPiper.Editor
                 Directory.Exists(Path.Combine(openJTalkSamplePath, "naist_jdic"));
 
             // Check for imported CMU sample
-            var cmuSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "CMU Pronouncing Dictionary");
+            var cmuSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", PACKAGE_VERSION, "CMU Pronouncing Dictionary");
             if (!Directory.Exists(cmuSamplePath))
             {
                 // Try without version number
@@ -395,7 +396,7 @@ namespace uPiper.Editor
                 File.Exists(Path.Combine(cmuSamplePath, "cmudict-0.7b.txt"));
 
             // Check for imported voice models sample
-            var modelsSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "Voice Models");
+            var modelsSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", PACKAGE_VERSION, "Voice Models");
             if (!Directory.Exists(modelsSamplePath))
             {
                 // Try without version number
@@ -420,7 +421,7 @@ namespace uPiper.Editor
                 {
                     var sourcePaths = new[]
                     {
-                        Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "OpenJTalk Dictionary Data"),
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", PACKAGE_VERSION, "OpenJTalk Dictionary Data"),
                         Path.Combine(Application.dataPath, "Samples", "uPiper", "OpenJTalk Dictionary Data")
                     };
 
@@ -451,7 +452,7 @@ namespace uPiper.Editor
                 {
                     var sourcePaths = new[]
                     {
-                        Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "CMU Pronouncing Dictionary"),
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", PACKAGE_VERSION, "CMU Pronouncing Dictionary"),
                         Path.Combine(Application.dataPath, "Samples", "uPiper", "CMU Pronouncing Dictionary")
                     };
 
@@ -482,7 +483,7 @@ namespace uPiper.Editor
                 {
                     var sourcePaths = new[]
                     {
-                        Path.Combine(Application.dataPath, "Samples", "uPiper", "0.1.0", "Voice Models"),
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", PACKAGE_VERSION, "Voice Models"),
                         Path.Combine(Application.dataPath, "Samples", "uPiper", "Voice Models")
                     };
 
