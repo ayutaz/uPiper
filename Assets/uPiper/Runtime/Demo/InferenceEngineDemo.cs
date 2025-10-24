@@ -188,7 +188,7 @@ namespace uPiper.Demo
             }
 
 
-            // Initialize English phonemizer (Flite LTS) - use Unity's main thread
+            // Initialize Custom English phonemizer
             InitializeEnglishPhonemizerAsync();
 #endif
 
@@ -802,7 +802,7 @@ namespace uPiper.Demo
                 }
                 else if (language == "en" && _englishPhonemizer != null)
                 {
-                    PiperLogger.LogDebug("[InferenceEngineDemo] Using Flite LTS phonemizer for English text");
+                    PiperLogger.LogDebug("[InferenceEngineDemo] Using Custom English phonemizer for English text");
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
 
                     var englishStopwatch = Stopwatch.StartNew();
@@ -1231,7 +1231,7 @@ namespace uPiper.Demo
             }
             catch (Exception ex)
             {
-                PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer: {ex.Message}");
+                PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize Custom English phonemizer: {ex.Message}");
                 _englishPhonemizer = null;
             }
         }
