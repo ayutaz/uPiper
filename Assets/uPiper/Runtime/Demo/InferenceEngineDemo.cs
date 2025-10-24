@@ -13,73 +13,14 @@ using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
+using uPiper.Core.Phonemizers.Backend.CustomEnglishPhonemizer;
+
 #if !UNITY_WEBGL
 using uPiper.Core.Phonemizers.Implementations;
 #endif
 
 namespace uPiper.Demo
 {
-    // Temporary workaround for compilation issue
-    internal static class ArpabetToIPAConverterTemp
-    {
-        private static readonly Dictionary<string, string> ArpabetToIPA = new()
-        {
-            // Vowels
-            ["AA"] = "ɑ",
-            ["AE"] = "æ",
-            ["AH"] = "ʌ",
-            ["AO"] = "ɔ",
-            ["AW"] = "a",
-            ["AY"] = "a",
-            ["EH"] = "ɛ",
-            ["ER"] = "ɚ",  // Simplified diphthongs
-            ["EY"] = "e",
-            ["IH"] = "ɪ",
-            ["IY"] = "i",
-            ["OW"] = "o",   // Simplified diphthongs
-            ["OY"] = "ɔ",
-            ["UH"] = "ʊ",
-            ["UW"] = "u",                 // Simplified diphthongs
-            // Consonants
-            ["B"] = "b",
-            ["CH"] = "tʃ",
-            ["D"] = "d",
-            ["DH"] = "ð",
-            ["F"] = "f",
-            ["G"] = "ɡ",
-            ["HH"] = "h",
-            ["JH"] = "dʒ",
-            ["K"] = "k",
-            ["L"] = "l",
-            ["M"] = "m",
-            ["N"] = "n",
-            ["NG"] = "ŋ",
-            ["P"] = "p",
-            ["R"] = "ɹ",
-            ["S"] = "s",
-            ["SH"] = "ʃ",
-            ["T"] = "t",
-            ["TH"] = "θ",
-            ["V"] = "v",
-            ["W"] = "w",
-            ["Y"] = "j",
-            ["Z"] = "z",
-            ["ZH"] = "ʒ",
-        };
-
-        public static string[] ConvertAll(string[] arpabetPhonemes)
-        {
-            var result = new string[arpabetPhonemes.Length];
-            for (int i = 0; i < arpabetPhonemes.Length; i++)
-            {
-                var basePhoneme = arpabetPhonemes[i].TrimEnd('0', '1', '2');
-                result[i] = ArpabetToIPA.TryGetValue(basePhoneme.ToUpper(), out var ipa)
-                    ? ipa : arpabetPhonemes[i].ToLower();
-            }
-            return result;
-        }
-    }
-
     /// <summary>
     /// Phase 1.10 - Unity.InferenceEngineを使用したPiper TTSデモ（OpenJTalk統合版）
     ///
@@ -91,7 +32,7 @@ namespace uPiper.Demo
     ///    ↓
     /// 2. Phonemization
     ///    - Japanese: OpenJTalk (MeCab + dictionary) → phonemes
-    ///    - English: Simple word splitting (eSpeak-NG in future phases)
+    ///    - English: CMUDict lookup with a simple rule-based fallback
     ///    ↓
     /// 3. Phoneme Encoding
     ///    - Multi-char phonemes → PUA characters (e.g., "ky" → "\ue006")
@@ -145,8 +86,10 @@ namespace uPiper.Demo
         private GPUInferenceSettings _gpuSettings;
 #if !UNITY_WEBGL
         private ITextPhonemizer _phonemizer;
-        private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
 #endif
+
+        private CMUDict _cmuDict;
+        private EnglishPhonemizer _englishPhonemizer;
 
         private Dictionary<string, string> _modelLanguages = new()
         {
@@ -478,7 +421,6 @@ namespace uPiper.Demo
                     disposable.Dispose();
                 }
             }
-            _englishPhonemizer?.Dispose();
 #endif
         }
 
@@ -864,20 +806,10 @@ namespace uPiper.Demo
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
 
                     var englishStopwatch = Stopwatch.StartNew();
-                    var phonemeResult = await _englishPhonemizer.PhonemizeAsync(_inputField.text, "en");
-                    timings["FliteLTS"] = englishStopwatch.ElapsedMilliseconds;
+                    var phonemeResult = await _englishPhonemizer.TextToIPAPhonemesAsync(_cmuDict, config, _inputField.text);
+                    timings["CustomEnglishPhonemizer"] = englishStopwatch.ElapsedMilliseconds;
 
-                    // Convert Arpabet to IPA for eSpeak-compatible model
-                    var arpabetPhonemes = phonemeResult.Phonemes;
-                    PiperLogger.LogInfo($"[English] Arpabet phonemes ({arpabetPhonemes.Length}): {string.Join(" ", arpabetPhonemes)}");
-
-                    // Arpabet音素の詳細をログ出力
-                    for (int i = 0; i < arpabetPhonemes.Length; i++)
-                    {
-                        PiperLogger.LogDebug($"  Arpabet[{i}]: '{arpabetPhonemes[i]}'");
-                    }
-
-                    phonemes = ArpabetToIPAConverterTemp.ConvertAll(arpabetPhonemes);
+                    phonemes = phonemeResult.ToArray();
                     PiperLogger.LogInfo($"[English] IPA phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
 
                     // IPA音素の詳細をログ出力
@@ -889,7 +821,7 @@ namespace uPiper.Demo
                     // Show phoneme details in UI
                     if (_phonemeDetailsText != null)
                     {
-                        _phonemeDetailsText.text = $"English (Flite LTS):\nArpabet: {string.Join(" ", arpabetPhonemes)}\nIPA: {string.Join(" ", phonemes)}";
+                        _phonemeDetailsText.text = $"English (Custom Phonemizer):\nIPA: {string.Join(" ", phonemes)}";
                     }
                 }
                 else
@@ -1221,7 +1153,7 @@ namespace uPiper.Demo
         {
             try
             {
-                _englishPhonemizer = new Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer();
+                _englishPhonemizer = new EnglishPhonemizer();
 
                 // Get path on main thread before initialization
                 string dictPath;
@@ -1283,15 +1215,18 @@ namespace uPiper.Demo
                     DataPath = dictPath
                 };
 
-                var initialized = await _englishPhonemizer.InitializeAsync(options);
-                if (initialized)
+                _cmuDict = new CMUDict();
+                var loadedDictionary = await _cmuDict.LoadFromPath(dictPath);
+
+                if (loadedDictionary)
                 {
-                    PiperLogger.LogInfo("[InferenceEngineDemo] Flite LTS phonemizer initialized successfully");
+                    PiperLogger.LogInfo("[InferenceEngineDemo] Custom English phonemizer initialized successfully");
                 }
                 else
                 {
-                    PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize Flite LTS phonemizer");
+                    PiperLogger.LogError("[InferenceEngineDemo] Failed to initialize Custom English phonemizer");
                     _englishPhonemizer = null;
+                    _cmuDict = null;
                 }
             }
             catch (Exception ex)
