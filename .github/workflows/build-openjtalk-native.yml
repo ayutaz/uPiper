@@ -101,7 +101,7 @@ jobs:
         ls -la artifacts/windows/x64/
     
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: openjtalk-windows-x64
         path: artifacts/
@@ -178,7 +178,7 @@ jobs:
         cp NativePlugins/OpenJTalk/include/*.h artifacts/ || true
     
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: openjtalk-linux-${{ matrix.arch }}
         path: artifacts/
@@ -324,7 +324,7 @@ jobs:
         cp NativePlugins/OpenJTalk/output/android/${{ matrix.abi }}/*.so artifacts/android/${{ matrix.abi }}/
     
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: openjtalk-android-${{ matrix.abi }}
         path: artifacts/
@@ -384,7 +384,7 @@ jobs:
         cp NativePlugins/OpenJTalk/include/*.h artifacts/ || true
     
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: openjtalk-macos-universal
         path: artifacts/
@@ -495,7 +495,7 @@ jobs:
         cp NativePlugins/OpenJTalk/include/*.h artifacts/ || true
 
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: openjtalk-ios-arm64
         path: artifacts/
@@ -672,7 +672,7 @@ jobs:
         zip -r uPiper-OpenJTalk-Native.zip uPiper-OpenJTalk-Native/
     
     - name: Upload Release Package
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: uPiper-OpenJTalk-Native-Release
         path: uPiper-OpenJTalk-Native.zip
