@@ -1,6 +1,6 @@
 # Phase 3 実装サマリー: MITライセンス多言語音素化
 
-[🇯🇵 **日本語**](../../../ja/guides/implementation/phonemization-system/implementation-summary.md) | [🇬🇧 English](../../../en/guides/implementation/phonemization-system/implementation-summary.md)
+<!-- 日本語のみのドキュメント -->
 
 ## 概要
 
