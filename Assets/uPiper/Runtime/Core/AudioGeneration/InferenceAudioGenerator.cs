@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Collections;
 using Unity.InferenceEngine;
 using UnityEngine;
 using uPiper.Core.Logging;
@@ -289,11 +290,9 @@ namespace uPiper.Core.AudioGeneration
                         var audioLength = shape.length;
                         var audioData = new float[audioLength];
 
-                        // テンソルデータをコピー
-                        for (var i = 0; i < audioLength; i++)
-                        {
-                            audioData[i] = readableTensor[i];
-                        }
+                        // テンソルデータを効率的にコピー（NativeArrayを使用）
+                        var nativeArray = readableTensor.ToReadOnlyNativeArray();
+                        nativeArray.CopyTo(audioData);
 
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Copied {audioData.Length} samples");
 

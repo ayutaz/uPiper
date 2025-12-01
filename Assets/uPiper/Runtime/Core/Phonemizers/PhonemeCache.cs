@@ -201,8 +201,9 @@ namespace uPiper.Core.Phonemizers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string GetCacheKey(string text, string language)
         {
-            // Simple but effective cache key
-            return $"{language}:{text.GetHashCode():X8}:{text.Length}";
+            // Use full text as key to avoid hash collisions
+            // For typical TTS inputs (a few hundred characters), this is safe
+            return $"{language}:{text}";
         }
 
         private void EvictLRU()

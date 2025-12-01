@@ -16,6 +16,10 @@ namespace uPiper.Core.Phonemizers
     /// </summary>
     public class UnifiedPhonemizer : IPhonemizerBackend
     {
+        // Static type cache for reflection optimization
+        private static readonly Dictionary<string, Type> _typeCache = new();
+        private static readonly object _typeCacheLock = new();
+
         private readonly Dictionary<string, List<IPhonemizerBackend>> backendsByLanguage;
         private readonly MixedLanguagePhonemizer mixedLanguagePhonemizer;
         private readonly LanguageDetector languageDetector;
@@ -462,17 +466,17 @@ namespace uPiper.Core.Phonemizers
 
         /// <summary>
         /// Creates an OpenJTalk backend using reflection to avoid compile-time dependency.
-        /// 
+        ///
         /// Note: Reflection is used here to maintain loose coupling between core components
         /// and optional backends. This allows the system to work without all backends present.
-        /// For production use, consider implementing a proper factory pattern with dependency
-        /// injection for better maintainability and compile-time safety.
+        /// Type.GetType results are cached to avoid repeated reflection overhead.
         /// </summary>
         private IPhonemizerBackend CreateOpenJTalkBackend()
         {
             try
             {
-                var type = System.Type.GetType("uPiper.Core.Phonemizers.Backend.OpenJTalkBackendAdapter, uPiper.Runtime");
+                const string typeName = "uPiper.Core.Phonemizers.Backend.OpenJTalkBackendAdapter, uPiper.Runtime";
+                var type = GetCachedType(typeName);
                 if (type != null)
                 {
                     return Activator.CreateInstance(type) as IPhonemizerBackend;
@@ -489,25 +493,26 @@ namespace uPiper.Core.Phonemizers
 
         /// <summary>
         /// Creates a SimpleLTS backend using reflection to avoid compile-time dependency.
-        /// 
+        ///
         /// Note: Reflection is used here to maintain loose coupling between core components
         /// and optional backends. This allows the system to work without all backends present.
-        /// For production use, consider implementing a proper factory pattern with dependency
-        /// injection for better maintainability and compile-time safety.
+        /// Type.GetType results are cached to avoid repeated reflection overhead.
         /// </summary>
         private IPhonemizerBackend CreateSimpleLTSBackend()
         {
             try
             {
                 // Try EnhancedEnglishPhonemizer first (higher priority)
-                var enhancedType = System.Type.GetType("uPiper.Core.Phonemizers.Backend.EnhancedEnglishPhonemizer, uPiper.Runtime");
+                const string enhancedTypeName = "uPiper.Core.Phonemizers.Backend.EnhancedEnglishPhonemizer, uPiper.Runtime";
+                var enhancedType = GetCachedType(enhancedTypeName);
                 if (enhancedType != null)
                 {
                     return Activator.CreateInstance(enhancedType) as IPhonemizerBackend;
                 }
 
                 // Fall back to SimpleLTSPhonemizer
-                var type = System.Type.GetType("uPiper.Core.Phonemizers.Backend.SimpleLTSPhonemizer, uPiper.Runtime");
+                const string simpleLTSTypeName = "uPiper.Core.Phonemizers.Backend.SimpleLTSPhonemizer, uPiper.Runtime";
+                var type = GetCachedType(simpleLTSTypeName);
                 if (type != null)
                 {
                     return Activator.CreateInstance(type) as IPhonemizerBackend;
@@ -519,6 +524,22 @@ namespace uPiper.Core.Phonemizers
             {
                 Debug.LogError($"Failed to create English phonemizer: {ex.Message}");
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets a cached Type by name to avoid repeated reflection overhead.
+        /// </summary>
+        private static Type GetCachedType(string typeName)
+        {
+            lock (_typeCacheLock)
+            {
+                if (!_typeCache.TryGetValue(typeName, out var type))
+                {
+                    type = Type.GetType(typeName);
+                    _typeCache[typeName] = type;
+                }
+                return type;
             }
         }
 
