@@ -127,6 +127,19 @@ var config = new PiperConfig
 };
 ```
 
+### InferenceBackend.Auto の選択ロジック
+
+`InferenceBackend.Auto`を指定した場合、プラットフォームに応じて最適なバックエンドが自動選択されます：
+
+| プラットフォーム | 自動選択されるバックエンド | 理由 |
+|-----------------|--------------------------|------|
+| Windows/Linux | GPUPixel | VITSモデルとの互換性が良好 |
+| macOS | CPU | MetalはUnity.InferenceEngineで問題があるため |
+| iOS/Android | GPUPixel | モバイルGPUに最適化 |
+| WebGL | GPUPixel | WebGL専用バックエンド |
+
+> **注意**: GPUComputeはVITSモデルで音声が正しく生成されない問題があるため、現在はGPUPixelまたはCPUの使用を推奨します。
+
 詳細は[GPU推論ガイド](docs/features/gpu/gpu-inference.md)を参照してください。
 
 ## 詳細ドキュメント

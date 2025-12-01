@@ -1,6 +1,6 @@
 # アジア言語サポート実装ガイド
 
-[🇯🇵 **日本語**](../../ja/guides/implementation/asian-language-support.md) | [🇬🇧 English](../../en/guides/implementation/asian-language-support.md)
+<!-- 日本語のみのドキュメント -->
 
 ## 概要
 

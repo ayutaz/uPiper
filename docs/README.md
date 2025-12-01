@@ -8,10 +8,9 @@
   - implementation-guide.md - 実装ガイド
   - performance-optimization.md - パフォーマンス最適化
   - technical-report.md - 技術レポート
-- **ios/** - iOS実装（Phase 5）
-  - phase5-ios-detailed-implementation-plan.md - 詳細実装計画
-  - phase5-ios-implementation-plan.md - 実装計画
-  - phase5-ios-technical-research.md - 技術調査
+- **ios/** - iOS実装 ✅ 完了（v0.2.0）
+  - iOS対応はv0.2.0で完了しました
+  - 詳細は[CHANGELOG](../CHANGELOG.md)を参照
 
 ### 🚀 features/ - 機能別ドキュメント
 - **phonemization/** - 音素化システム

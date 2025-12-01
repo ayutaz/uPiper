@@ -127,5 +127,5 @@ For developers working on uPiper itself:
 
 After setup is complete:
 1. Check out the sample scene in the imported **Basic TTS Demo**
-2. See the [API Documentation](api-reference.md) for usage examples
-3. Explore the [Configuration Guide](configuration.md) for customization options
+2. See the [Architecture Documentation](ARCHITECTURE_en.md) for technical details and usage examples
+3. Explore the [GPU Inference Guide](features/gpu/gpu-inference.md) for performance customization

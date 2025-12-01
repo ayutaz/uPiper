@@ -191,7 +191,10 @@ uPiper is a Unity plugin for high-quality text-to-speech synthesis using the pip
 
 ### 📝 License
 
-MIT License - See [LICENSE](LICENSE) file for details
+Apache License 2.0 - See [LICENSE](LICENSE) file for details
+
+> **Note**: ライセンスはv0.1.0のMIT LicenseからApache License 2.0に変更されました。
+> これにより、特許権の明示的な付与と、より明確な貢献者ライセンス条項が提供されます。
 
 ### 🔗 Links
 

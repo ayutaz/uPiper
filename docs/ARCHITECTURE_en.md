@@ -1,6 +1,6 @@
 # uPiper Architecture Document
 
-[🇯🇵 日本語](../ja/ARCHITECTURE.md) | [🇬🇧 **English**](../en/ARCHITECTURE.md)
+[🇯🇵 日本語](ARCHITECTURE_ja.md) | [🇬🇧 **English**](ARCHITECTURE_en.md)
 
 ## Overview
 
