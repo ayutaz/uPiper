@@ -290,9 +290,11 @@ namespace uPiper.Core.AudioGeneration
                         var audioLength = shape.length;
                         var audioData = new float[audioLength];
 
-                        // テンソルデータを効率的にコピー（NativeArrayを使用）
-                        var nativeArray = readableTensor.ToReadOnlyNativeArray();
-                        nativeArray.CopyTo(audioData);
+                        // テンソルデータをコピー
+                        for (var i = 0; i < audioLength; i++)
+                        {
+                            audioData[i] = readableTensor[i];
+                        }
 
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Copied {audioData.Length} samples");
 
