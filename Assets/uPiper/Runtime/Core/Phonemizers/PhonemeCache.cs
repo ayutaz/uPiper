@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
 
@@ -28,6 +30,12 @@ namespace uPiper.Core.Phonemizers
         private long hitCount;
         private long missCount;
         private long evictionCount;
+
+        /// <summary>
+        /// Threshold for using SHA256 hash instead of full text as cache key.
+        /// Texts longer than this will use hash to save memory.
+        /// </summary>
+        private const int HashThreshold = 500;
 
         /// <summary>
         /// Gets the singleton instance of the phoneme cache.
@@ -201,8 +209,14 @@ namespace uPiper.Core.Phonemizers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string GetCacheKey(string text, string language)
         {
-            // Use full text as key to avoid hash collisions
-            // For typical TTS inputs (a few hundred characters), this is safe
+            // For short texts, use full text as key to avoid hash collisions
+            // For long texts, use SHA256 hash to save memory
+            if (text.Length > HashThreshold)
+            {
+                using var sha256 = SHA256.Create();
+                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(text));
+                return $"{language}:SHA256:{Convert.ToBase64String(hash)}";
+            }
             return $"{language}:{text}";
         }
 

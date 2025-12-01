@@ -330,7 +330,11 @@ namespace uPiper.Core
                 // Load model asset asynchronously to avoid blocking the main thread
                 var modelPath = $"Models/{voice.VoiceId}";
                 var request = Resources.LoadAsync<ModelAsset>(modelPath);
-                await request;
+                // Use polling loop for Unity version compatibility (await ResourceRequest may not work in all versions)
+                while (!request.isDone)
+                {
+                    await Task.Yield();
+                }
                 var modelAsset = request.asset as ModelAsset ?? throw new PiperException($"Model asset not found: {modelPath}");
 
                 // Initialize audio generator if not already done
@@ -612,6 +616,8 @@ namespace uPiper.Core
                 var task = GenerateAudioAsync(text);
 
                 // Use Task.Wait for efficient waiting (avoids CPU-wasting polling loop)
+                // Note: Task.Wait() can potentially cause deadlock if async task needs main thread.
+                // If deadlock occurs, ensure GenerateAudioAsync uses ConfigureAwait(false) throughout.
                 var timeoutMs = _config.TimeoutMs > 0 ? _config.TimeoutMs : 300000; // 5 minutes default
 
                 if (!task.Wait(timeoutMs))
@@ -619,12 +625,8 @@ namespace uPiper.Core
                     throw new TimeoutException($"Audio generation timed out after {timeoutMs}ms");
                 }
 
-                if (task.IsFaulted)
-                {
-                    throw task.Exception.GetBaseException();
-                }
-
-                return task.Result;
+                // Use GetAwaiter().GetResult() for proper exception propagation
+                return task.GetAwaiter().GetResult();
             }
             catch (AggregateException ae)
             {

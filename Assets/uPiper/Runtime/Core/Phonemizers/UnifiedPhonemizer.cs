@@ -529,6 +529,7 @@ namespace uPiper.Core.Phonemizers
 
         /// <summary>
         /// Gets a cached Type by name to avoid repeated reflection overhead.
+        /// Only caches non-null types to allow retry if assemblies are loaded dynamically later.
         /// </summary>
         private static Type GetCachedType(string typeName)
         {
@@ -537,7 +538,11 @@ namespace uPiper.Core.Phonemizers
                 if (!_typeCache.TryGetValue(typeName, out var type))
                 {
                     type = Type.GetType(typeName);
-                    _typeCache[typeName] = type;
+                    // Only cache non-null types to allow retry for dynamically loaded assemblies
+                    if (type != null)
+                    {
+                        _typeCache[typeName] = type;
+                    }
                 }
                 return type;
             }
