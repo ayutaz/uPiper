@@ -22,7 +22,7 @@ jobs:
     name: IL2CPP Compatibility Check
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         lfs: true
         
@@ -70,7 +70,7 @@ jobs:
             scriptingBackend: IL2CPP
     
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         lfs: true
         
@@ -171,7 +171,7 @@ jobs:
     needs: build-unity
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     
     - name: Generate Build Summary
       run: |
