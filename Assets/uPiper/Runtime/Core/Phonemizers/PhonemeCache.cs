@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
-using System.Text;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
 
@@ -32,7 +30,7 @@ namespace uPiper.Core.Phonemizers
         private long evictionCount;
 
         /// <summary>
-        /// Threshold for using SHA256 hash instead of full text as cache key.
+        /// Threshold for using FNV-1a hash instead of full text as cache key.
         /// Texts longer than this will use hash to save memory.
         /// </summary>
         private const int HashThreshold = 500;
@@ -210,14 +208,31 @@ namespace uPiper.Core.Phonemizers
         private string GetCacheKey(string text, string language)
         {
             // For short texts, use full text as key to avoid hash collisions
-            // For long texts, use SHA256 hash to save memory
+            // For long texts, use FNV-1a hash to save memory (faster than SHA256, no crypto overhead)
             if (text.Length > HashThreshold)
             {
-                using var sha256 = SHA256.Create();
-                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(text));
-                return $"{language}:SHA256:{Convert.ToBase64String(hash)}";
+                var hash = ComputeFnv1aHash(text);
+                return $"{language}:FNV:{hash:X16}";
             }
             return $"{language}:{text}";
+        }
+
+        /// <summary>
+        /// Computes FNV-1a 64-bit hash for the given text.
+        /// FNV-1a is a fast, non-cryptographic hash with good distribution.
+        /// </summary>
+        private static ulong ComputeFnv1aHash(string text)
+        {
+            const ulong fnvPrime = 0x100000001B3;
+            const ulong fnvOffset = 0xCBF29CE484222325;
+
+            var hash = fnvOffset;
+            foreach (var c in text)
+            {
+                hash ^= c;
+                hash *= fnvPrime;
+            }
+            return hash;
         }
 
         private void EvictLRU()
