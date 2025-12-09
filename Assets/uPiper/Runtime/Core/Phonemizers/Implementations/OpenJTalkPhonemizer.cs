@@ -895,11 +895,10 @@ namespace uPiper.Core.Phonemizers.Implementations
                 }
             }
 
-            // Library not found - provide helpful error message
-            Debug.LogError($"[OpenJTalkPhonemizer] Native library not found at: {primaryPath}");
-            Debug.LogError($"[OpenJTalkPhonemizer] Please run 'uPiper/Setup/Run Initial Setup' from the menu.");
-
-            return primaryPath; // Return expected path for error messages
+            // Library not found at expected path - return path anyway
+            // The caller (IsNativeLibraryAvailable) will check alternative paths
+            // and display appropriate error messages if all paths fail
+            return primaryPath;
 #else
             // In built application, Unity automatically loads native plugins
             // We just need to verify if the library was loaded successfully
