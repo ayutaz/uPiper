@@ -603,14 +603,19 @@ namespace uPiper.Core.Phonemizers.Implementations
 
             // PackageCache path for UPM installations
             var packageCachePath = Path.Combine(Application.dataPath, "..", "Library", "PackageCache");
+            Debug.Log($"[OpenJTalkPhonemizer] Checking PackageCache at: {packageCachePath}");
+            Debug.Log($"[OpenJTalkPhonemizer] PackageCache exists: {Directory.Exists(packageCachePath)}");
+
             if (Directory.Exists(packageCachePath))
             {
                 try
                 {
                     var packageDirs = Directory.GetDirectories(packageCachePath, "com.ayutaz.upiper@*");
+                    Debug.Log($"[OpenJTalkPhonemizer] Found {packageDirs.Length} uPiper packages in cache");
                     foreach (var packageDir in packageDirs)
                     {
                         var packagePluginPath = Path.Combine(packageDir, "Plugins", platformFolder, libraryFileName);
+                        Debug.Log($"[OpenJTalkPhonemizer] Adding PackageCache path: {packagePluginPath}");
                         paths.Add(packagePluginPath);
                     }
                 }
