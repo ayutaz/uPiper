@@ -614,9 +614,9 @@ namespace uPiper.Core.Phonemizers.Implementations
                         paths.Add(packagePluginPath);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // Ignore errors when searching PackageCache
+                    Debug.LogWarning($"[OpenJTalkPhonemizer] Exception occurred while searching PackageCache: {ex}");
                 }
             }
 
