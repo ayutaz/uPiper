@@ -122,7 +122,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
-        unityVersion: 6000.0.55f1
+        unityVersion: 6000.0.58f2
         targetPlatform: ${{ matrix.targetPlatform }}
         buildName: uPiper${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
         buildsPath: build
@@ -161,7 +161,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
-        unityVersion: 6000.0.55f1
+        unityVersion: 6000.0.58f2
         targetPlatform: ${{ matrix.targetPlatform }}
         buildName: uPiper${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
         buildsPath: build
@@ -225,7 +225,7 @@ jobs:
           Library-PackageExport-
           Library-
           
-    # Unity Package作成をスキップ (Unity 6000.0.55f1のDockerイメージが利用不可のため手動対応)
+    # Unity Package作成をスキップ (Unity 6000.0.58f2のDockerイメージが利用不可のため手動対応)
     # - name: Create Unity Package (.unitypackage)
     #   uses: game-ci/unity-builder@v4
     #   env:
@@ -233,7 +233,7 @@ jobs:
     #     UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
     #     UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
     #   with:
-    #     unityVersion: 6000.0.55f1
+    #     unityVersion: 6000.0.58f2
     #     targetPlatform: NoTarget
     #     buildMethod: uPiper.Editor.PackageExporter.ExportUnityPackageCI
     #     customParameters: -outputPath ./PackageExports/uPiper-${{ steps.version.outputs.version }}.unitypackage
