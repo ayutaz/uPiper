@@ -101,7 +101,6 @@ jobs:
         lfs: true
         
     - name: Free Disk Space
-      if: matrix.backend == 'IL2CPP'
       uses: jlumbroso/free-disk-space@main
       with:
         tool-cache: false
