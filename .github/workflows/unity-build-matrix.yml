@@ -101,7 +101,6 @@ jobs:
         lfs: true
         
     - name: Free Disk Space
-      if: matrix.backend == 'IL2CPP'
       uses: jlumbroso/free-disk-space@main
       with:
         tool-cache: false
@@ -145,7 +144,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
-        unityVersion: 6000.0.55f1
+        unityVersion: 6000.0.58f2
         targetPlatform: ${{ matrix.platform }}
         buildMethod: UnityBuilderAction.BuildScript.Build
         customParameters: -scriptingBackend ${{ matrix.backend }}
