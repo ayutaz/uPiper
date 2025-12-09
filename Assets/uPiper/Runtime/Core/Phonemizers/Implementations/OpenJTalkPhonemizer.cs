@@ -601,6 +601,25 @@ namespace uPiper.Core.Phonemizers.Implementations
             // After initial setup, files should be in fixed location
             paths.Add(Path.Combine(Application.dataPath, "uPiper", "Plugins", platformFolder, libraryFileName));
 
+            // PackageCache path for UPM installations
+            var packageCachePath = Path.Combine(Application.dataPath, "..", "Library", "PackageCache");
+            if (Directory.Exists(packageCachePath))
+            {
+                try
+                {
+                    var packageDirs = Directory.GetDirectories(packageCachePath, "com.ayutaz.upiper@*");
+                    foreach (var packageDir in packageDirs)
+                    {
+                        var packagePluginPath = Path.Combine(packageDir, "Plugins", platformFolder, libraryFileName);
+                        paths.Add(packagePluginPath);
+                    }
+                }
+                catch (Exception)
+                {
+                    // Ignore errors when searching PackageCache
+                }
+            }
+
             // Legacy paths for backward compatibility
             if (PlatformHelper.IsWindows)
             {
