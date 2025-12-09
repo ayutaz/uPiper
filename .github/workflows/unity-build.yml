@@ -61,7 +61,19 @@ jobs:
         restore-keys: |
           Library-${{ matrix.targetPlatform }}-
           Library-
-          
+
+    # Free up disk space for Unity builds
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: ${{ matrix.targetPlatform != 'Android' }}
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
+        swap-storage: true
+
     # Check and setup Android native libraries
     - name: Check and Setup Android Native Libraries
       if: matrix.targetPlatform == 'Android'
