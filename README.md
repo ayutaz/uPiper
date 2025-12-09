@@ -29,7 +29,7 @@
 - GPU推論サポート（GPUCompute/GPUPixel）
 
 ## Requirements
-* Unity 6000.0.55f1
+* Unity 6000.0.58f2
 * Unity AI Interface (Inference Engine) 2.2.x
 
 ## インストール

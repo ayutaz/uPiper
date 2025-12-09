@@ -29,7 +29,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 - GPU inference support (GPUCompute/GPUPixel)
 
 ## Requirements
-* Unity 6000.0.55f1
+* Unity 6000.0.58f2
 * Unity AI Interface (Inference Engine) 2.2.x
 
 ## Installation
