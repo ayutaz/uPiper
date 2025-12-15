@@ -54,7 +54,7 @@ jobs:
         lfs: true
         
     - name: Cache Library
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: Library
         key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
@@ -217,7 +217,7 @@ jobs:
         fi
         
     - name: Cache Library for Package Export
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: Library
         key: Library-PackageExport-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}

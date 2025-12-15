@@ -90,7 +90,7 @@ jobs:
       shell: bash
         
     - name: Cache Library
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: Library
         key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
@@ -843,7 +843,7 @@ jobs:
         
     # Unity Hubとエディターのキャッシュ
     - name: Cache Unity
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           /Applications/Unity*
