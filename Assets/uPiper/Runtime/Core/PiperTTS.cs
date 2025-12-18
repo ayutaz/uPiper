@@ -1041,7 +1041,11 @@ namespace uPiper.Core
                         worker?.Dispose();
                     }
 
-                    // Clear models (Model doesn't have Dispose method)
+                    // Dispose models
+                    foreach (var model in _loadedModels.Values)
+                    {
+                        model?.Dispose();
+                    }
                     _loadedModels.Clear();
 
                     // Clear event handlers

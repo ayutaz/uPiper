@@ -13,23 +13,29 @@ namespace uPiper.Core.AudioGeneration
     public static class UnityMainThreadDispatcher
     {
         private static readonly ConcurrentQueue<Action> _actions = new();
-        private static bool _initialized;
+        private static volatile bool _initialized;
+        private static readonly object _initLock = new();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
             if (_initialized) return;
 
-            var gameObject = new GameObject("UnityMainThreadDispatcher");
-            gameObject.AddComponent<UnityMainThreadDispatcherComponent>();
-
-            // DontDestroyOnLoadはPlayModeでのみ使用
-            if (Application.isPlaying)
+            lock (_initLock)
             {
-                GameObject.DontDestroyOnLoad(gameObject);
-            }
+                if (_initialized) return;
 
-            _initialized = true;
+                var gameObject = new GameObject("UnityMainThreadDispatcher");
+                gameObject.AddComponent<UnityMainThreadDispatcherComponent>();
+
+                // DontDestroyOnLoadはPlayModeでのみ使用
+                if (Application.isPlaying)
+                {
+                    GameObject.DontDestroyOnLoad(gameObject);
+                }
+
+                _initialized = true;
+            }
         }
 
         /// <summary>

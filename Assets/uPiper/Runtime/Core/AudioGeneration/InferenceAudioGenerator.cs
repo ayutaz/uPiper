@@ -166,6 +166,13 @@ namespace uPiper.Core.AudioGeneration
             {
                 lock (_lockObject)
                 {
+                    // テンソルを事前に宣言してfinallyで確実に破棄
+                    Tensor<int> inputTensor = null;
+                    Tensor<int> inputLengthsTensor = null;
+                    Tensor<float> scalesTensor = null;
+                    Tensor<float> outputTensor = null;
+                    Tensor<float> readableTensor = null;
+
                     try
                     {
                         // Piperモデルは3つの入力を必要とする:
@@ -178,9 +185,9 @@ namespace uPiper.Core.AudioGeneration
                         PiperLogger.LogInfo($"  Length scale: {lengthScale}, Noise scale: {noiseScale}, Noise W: {noiseW}");
 
                         // 入力テンソルを作成
-                        var inputTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
-                        var inputLengthsTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
-                        var scalesTensor = new Tensor<float>(new TensorShape(3), new[] { noiseScale, lengthScale, noiseW });
+                        inputTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
+                        inputLengthsTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
+                        scalesTensor = new Tensor<float>(new TensorShape(3), new[] { noiseScale, lengthScale, noiseW });
 
                         // デバッグ: 入力データの詳細を表示
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Input tensor shape: {inputTensor.shape}");
@@ -188,47 +195,35 @@ namespace uPiper.Core.AudioGeneration
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Input lengths tensor: {phonemeIds.Length}");
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Scales: noise={noiseScale}, length={lengthScale}, noise_w={noiseW}");
 
-                        try
+                        // モデルの入力名を確認
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Model expects {_model.inputs.Count} inputs:");
+                        for (var i = 0; i < _model.inputs.Count; i++)
                         {
-                            // モデルの入力名を確認
-                            PiperLogger.LogInfo($"[InferenceAudioGenerator] Model expects {_model.inputs.Count} inputs:");
-                            for (var i = 0; i < _model.inputs.Count; i++)
-                            {
-                                var modelInput = _model.inputs[i];
-                                PiperLogger.LogInfo($"  Input[{i}]: name='{modelInput.name}', shape=({string.Join(", ", modelInput.shape)}), dataType={modelInput.dataType}");
-                            }
-
-                            // 各入力を名前で設定
-                            if (_model.inputs.Count >= 3)
-                            {
-                                // input (音素ID)
-                                var inputName = _model.inputs[0].name;
-                                _worker.SetInput(inputName, inputTensor);
-                                PiperLogger.LogInfo($"[InferenceAudioGenerator] Set '{inputName}' with phoneme IDs tensor");
-
-                                // input_lengths (入力長)
-                                var lengthsName = _model.inputs[1].name;
-                                _worker.SetInput(lengthsName, inputLengthsTensor);
-                                PiperLogger.LogInfo($"[InferenceAudioGenerator] Set '{lengthsName}' with length tensor");
-
-                                // scales (スケールパラメータ)
-                                var scalesName = _model.inputs[2].name;
-                                _worker.SetInput(scalesName, scalesTensor);
-                                PiperLogger.LogInfo($"[InferenceAudioGenerator] Set '{scalesName}' with scales tensor");
-                            }
-                            else
-                            {
-                                throw new InvalidOperationException($"Model has {_model.inputs.Count} inputs, but Piper models require 3 inputs");
-                            }
+                            var modelInput = _model.inputs[i];
+                            PiperLogger.LogInfo($"  Input[{i}]: name='{modelInput.name}', shape=({string.Join(", ", modelInput.shape)}), dataType={modelInput.dataType}");
                         }
-                        catch (Exception ex)
+
+                        // 各入力を名前で設定
+                        if (_model.inputs.Count >= 3)
                         {
-                            PiperLogger.LogError($"[InferenceAudioGenerator] Failed to set model inputs: {ex.Message}");
-                            // テンソルをクリーンアップ
-                            inputTensor?.Dispose();
-                            inputLengthsTensor?.Dispose();
-                            scalesTensor?.Dispose();
-                            throw;
+                            // input (音素ID)
+                            var inputName = _model.inputs[0].name;
+                            _worker.SetInput(inputName, inputTensor);
+                            PiperLogger.LogInfo($"[InferenceAudioGenerator] Set '{inputName}' with phoneme IDs tensor");
+
+                            // input_lengths (入力長)
+                            var lengthsName = _model.inputs[1].name;
+                            _worker.SetInput(lengthsName, inputLengthsTensor);
+                            PiperLogger.LogInfo($"[InferenceAudioGenerator] Set '{lengthsName}' with length tensor");
+
+                            // scales (スケールパラメータ)
+                            var scalesName = _model.inputs[2].name;
+                            _worker.SetInput(scalesName, scalesTensor);
+                            PiperLogger.LogInfo($"[InferenceAudioGenerator] Set '{scalesName}' with scales tensor");
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException($"Model has {_model.inputs.Count} inputs, but Piper models require 3 inputs");
                         }
 
                         // 推論を実行
@@ -244,9 +239,6 @@ namespace uPiper.Core.AudioGeneration
                         }
 
                         PiperLogger.LogInfo("[InferenceAudioGenerator] Inference completed");
-
-                        // 出力を取得
-                        Tensor<float> outputTensor = null;
 
                         // 出力名を確認
                         if (_model.outputs.Count > 0)
@@ -277,7 +269,7 @@ namespace uPiper.Core.AudioGeneration
 
                         // GPUからCPUにデータを読み戻すためにReadbackAndClone()を使用
                         PiperLogger.LogInfo("[InferenceAudioGenerator] Reading back tensor data from GPU...");
-                        var readableTensor = outputTensor.ReadbackAndClone();
+                        readableTensor = outputTensor.ReadbackAndClone();
 
                         // 出力データをコピー
                         var shape = readableTensor.shape;
@@ -323,15 +315,6 @@ namespace uPiper.Core.AudioGeneration
                             }
                         }
 
-                        // 読み戻し用のテンソルを破棄
-                        readableTensor.Dispose();
-
-                        // すべてのテンソルを破棄
-                        inputTensor.Dispose();
-                        inputLengthsTensor.Dispose();
-                        scalesTensor.Dispose();
-                        outputTensor.Dispose();
-
                         PiperLogger.LogDebug($"Generated audio: {audioData.Length} samples");
 
                         // 音声の長さを秒単位で計算（22050 Hzの場合）
@@ -347,6 +330,15 @@ namespace uPiper.Core.AudioGeneration
                     {
                         PiperLogger.LogError($"Failed to generate audio: {ex.Message}");
                         throw;
+                    }
+                    finally
+                    {
+                        // すべてのテンソルを確実に破棄（例外発生時も含む）
+                        inputTensor?.Dispose();
+                        inputLengthsTensor?.Dispose();
+                        scalesTensor?.Dispose();
+                        readableTensor?.Dispose();
+                        outputTensor?.Dispose();
                     }
                 }
             });

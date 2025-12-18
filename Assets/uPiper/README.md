@@ -18,7 +18,7 @@
 2. `+` ボタンをクリックし、`Add package from git URL...` を選択
 3. 以下の URL を入力:
    ```
-   https://github.com/ayutaz/uPiper.git?path=/Assets/uPiper
+   https://github.com/ayutaz/uPiper.git?path=Assets/uPiper
    ```
 
 #### ステップ2: 必要なデータのインポート
@@ -143,11 +143,11 @@ uPiper/
 
 ## ライセンス
 
-MIT License - 詳細は [LICENSE](../../LICENSE) を参照
+Apache License 2.0 - 詳細は [LICENSE](../../LICENSE) を参照
 
 ## 貢献
 
-貢献を歓迎します！[Contributing Guidelines](../../CONTRIBUTING.md) を参照してください。
+貢献を歓迎します！[Issue Tracker](https://github.com/ayutaz/uPiper/issues) でバグ報告や機能提案を受け付けています。
 
 ## サポート
 
