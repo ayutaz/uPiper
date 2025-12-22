@@ -5,6 +5,10 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
+#if UPIPER_DEVELOPMENT
+using System.IO.Compression;
+#endif
+
 namespace uPiper.Editor
 {
     /// <summary>
@@ -26,7 +30,10 @@ namespace uPiper.Editor
         [InitializeOnLoadMethod]
         private static void CheckFirstTimeSetup()
         {
-#if !UPIPER_DEVELOPMENT
+#if UPIPER_DEVELOPMENT
+            // Development environment: auto-extract dictionary from zip
+            EditorApplication.delayCall += ExtractDevelopmentDictionary;
+#else
             EditorApplication.delayCall += () =>
             {
                 if (!IsSetupComplete() && IsPackageInstalled())
@@ -572,6 +579,121 @@ namespace uPiper.Editor
 
             return false;
         }
+
+#if UPIPER_DEVELOPMENT
+        /// <summary>
+        /// Automatically extracts the OpenJTalk dictionary from zip file for development environment.
+        /// Called on Editor startup when UPIPER_DEVELOPMENT is defined.
+        /// </summary>
+        private static void ExtractDevelopmentDictionary()
+        {
+            var zipPath = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "naist_jdic.zip");
+            var extractBasePath = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "naist_jdic");
+            var extractPath = Path.Combine(extractBasePath, "open_jtalk_dic_utf_8-1.11");
+
+            // Skip if zip doesn't exist or dictionary already extracted
+            if (!File.Exists(zipPath))
+            {
+                return;
+            }
+
+            if (Directory.Exists(extractPath))
+            {
+                return;
+            }
+
+            try
+            {
+                Debug.Log("[uPiper] Extracting development dictionary from zip...");
+
+                // Create base directory
+                Directory.CreateDirectory(extractBasePath);
+
+                // Extract to target path
+                ZipFile.ExtractToDirectory(zipPath, extractPath);
+
+                Debug.Log($"[uPiper] Development dictionary extracted successfully to: {extractPath}");
+
+                // Refresh AssetDatabase to recognize new files
+                AssetDatabase.Refresh();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[uPiper] Failed to extract development dictionary: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+
+        /// <summary>
+        /// Manual menu item to extract or re-extract the OpenJTalk dictionary from zip.
+        /// </summary>
+        [MenuItem("uPiper/Development/Extract Dictionary from Zip", false, 100)]
+        public static void ExtractDictionaryManually()
+        {
+            var zipPath = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "naist_jdic.zip");
+            var extractBasePath = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "naist_jdic");
+            var extractPath = Path.Combine(extractBasePath, "open_jtalk_dic_utf_8-1.11");
+
+            if (!File.Exists(zipPath))
+            {
+                EditorUtility.DisplayDialog(
+                    "Dictionary Zip Not Found",
+                    $"naist_jdic.zip was not found at:\n{zipPath}",
+                    "OK");
+                return;
+            }
+
+            if (Directory.Exists(extractPath))
+            {
+                if (!EditorUtility.DisplayDialog(
+                    "Dictionary Already Exists",
+                    "The dictionary has already been extracted.\n\nDo you want to delete and re-extract?",
+                    "Re-extract", "Cancel"))
+                {
+                    return;
+                }
+
+                try
+                {
+                    Directory.Delete(extractPath, true);
+                }
+                catch (Exception ex)
+                {
+                    EditorUtility.DisplayDialog(
+                        "Delete Failed",
+                        $"Failed to delete existing dictionary:\n{ex.Message}",
+                        "OK");
+                    return;
+                }
+            }
+
+            try
+            {
+                EditorUtility.DisplayProgressBar("Extracting Dictionary", "Extracting naist_jdic.zip...", 0.5f);
+
+                Directory.CreateDirectory(extractBasePath);
+                ZipFile.ExtractToDirectory(zipPath, extractPath);
+
+                EditorUtility.ClearProgressBar();
+                AssetDatabase.Refresh();
+
+                EditorUtility.DisplayDialog(
+                    "Extraction Complete",
+                    $"Dictionary extracted successfully to:\n{extractPath}",
+                    "OK");
+
+                Debug.Log($"[uPiper] Dictionary manually extracted to: {extractPath}");
+            }
+            catch (Exception ex)
+            {
+                EditorUtility.ClearProgressBar();
+                EditorUtility.DisplayDialog(
+                    "Extraction Failed",
+                    $"Failed to extract dictionary:\n{ex.Message}",
+                    "OK");
+                Debug.LogError($"[uPiper] Failed to extract dictionary: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+#endif
 
     }
 }
