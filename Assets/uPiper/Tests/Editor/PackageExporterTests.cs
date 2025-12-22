@@ -190,11 +190,14 @@ namespace uPiper.Tests.Editor
                     var sampleName = Path.GetFileName(sampleDir);
                     Debug.Log($"Found sample directory: {sampleName}");
 
-                    // Each sample should have at least one scene or script
+                    // Each sample should have at least one scene, script, or data file
+                    // Data files include: .txt (CMU dict), .dic/.bin (OpenJTalk dict), .onnx/.json (Voice Models)
                     var hasContent = Directory.GetFiles(sampleDir, "*", SearchOption.AllDirectories)
-                        .Any(f => f.EndsWith(".unity") || f.EndsWith(".cs"));
+                        .Any(f => f.EndsWith(".unity") || f.EndsWith(".cs") ||
+                                  f.EndsWith(".txt") || f.EndsWith(".dic") || f.EndsWith(".bin") ||
+                                  f.EndsWith(".onnx") || f.EndsWith(".json"));
 
-                    Assert.IsTrue(hasContent, $"Sample '{sampleName}' should contain at least one scene or script");
+                    Assert.IsTrue(hasContent, $"Sample '{sampleName}' should contain at least one scene, script, or data file");
                 }
             }
         }

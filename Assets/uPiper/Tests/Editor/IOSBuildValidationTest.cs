@@ -87,12 +87,15 @@ namespace uPiper.Tests.Editor
             
             if (Directory.Exists(dictionaryPath))
             {
+                // Dictionary files are in open_jtalk_dic_utf_8-1.11 subdirectory
+                var dictSubPath = Path.Combine(dictionaryPath, "open_jtalk_dic_utf_8-1.11");
+
                 // Verify essential dictionary files
                 var essentialFiles = new[] { "sys.dic", "unk.dic", "matrix.bin", "char.bin" };
                 foreach (var file in essentialFiles)
                 {
-                    var filePath = Path.Combine(dictionaryPath, file);
-                    Assert.IsTrue(File.Exists(filePath), 
+                    var filePath = Path.Combine(dictSubPath, file);
+                    Assert.IsTrue(File.Exists(filePath),
                         $"Essential dictionary file missing: {file}");
                 }
             }
