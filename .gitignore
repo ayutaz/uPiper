@@ -271,3 +271,7 @@ Assets/uPiper/Samples/
 
 # Development environment - platform specific plugins
 # Assets/uPiper/Plugins/macOS/  # Commented out to include macOS plugin in repository
+
+# Development environment - extracted dictionary (from naist_jdic.zip)
+Assets/StreamingAssets/uPiper/OpenJTalk/naist_jdic/
+Assets/StreamingAssets/uPiper/OpenJTalk/naist_jdic.meta
