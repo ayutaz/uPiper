@@ -157,7 +157,7 @@ jobs:
     # Upload only critical builds to save space
     - name: Upload Build Artifact
       if: matrix.priority == 'critical'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Build-${{ matrix.backend }}-${{ matrix.platform }}-PR${{ github.event.pull_request.number }}
         path: build/${{ matrix.platform }}
