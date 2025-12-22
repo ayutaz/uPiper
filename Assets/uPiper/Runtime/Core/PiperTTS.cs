@@ -327,8 +327,15 @@ namespace uPiper.Core
             {
                 PiperLogger.LogInfo("Loading voice: {0}", voice.VoiceId);
 
-                // Load model asset
-                var modelAsset = Resources.Load<ModelAsset>($"Models/{voice.VoiceId}") ?? throw new PiperException($"Model asset not found: Models/{voice.VoiceId}");
+                // Load model asset asynchronously to avoid blocking the main thread
+                var modelPath = $"Models/{voice.VoiceId}";
+                var request = Resources.LoadAsync<ModelAsset>(modelPath);
+                // Use polling loop for Unity version compatibility (await ResourceRequest may not work in all versions)
+                while (!request.isDone)
+                {
+                    await Task.Delay(1);
+                }
+                var modelAsset = request.asset as ModelAsset ?? throw new PiperException($"Model asset not found: {modelPath}");
 
                 // Initialize audio generator if not already done
                 _inferenceGenerator ??= new InferenceAudioGenerator();
@@ -480,29 +487,8 @@ namespace uPiper.Core
                 // Report initial progress
                 _onProcessingProgress?.Invoke(0.1f);
 
-                // Check cache first if enabled
-                if (_config.EnablePhonemeCache)
-                {
-                    var cacheKey = GenerateCacheKey(text, _currentVoiceId);
-                    lock (_lockObject)
-                    {
-                        if (_phonemeCache.ContainsKey(cacheKey))
-                        {
-                            _cacheHitCount++;
-                            PiperLogger.LogInfo("Cache hit for text");
-                            _onProcessingProgress?.Invoke(1.0f);
-
-                            // Return cached audio clip
-#pragma warning disable CS0618 // Type or member is obsolete
-                            return CreateDummyAudioClip(text);
-#pragma warning restore CS0618 // Type or member is obsolete
-                        }
-                        else
-                        {
-                            _cacheMissCount++;
-                        }
-                    }
-                }
+                // Note: Phoneme caching is now handled by PhonemeCache.Instance
+                // inside the phonemizer implementations for better accuracy and LRU eviction
 
                 _onProcessingProgress?.Invoke(0.3f);
 
@@ -629,25 +615,18 @@ namespace uPiper.Core
                 // In a real implementation, this would use native synchronous methods
                 var task = GenerateAudioAsync(text);
 
-                // Use a simple polling loop to wait for completion
-                var startTime = DateTime.UtcNow;
-                var timeout = _config.TimeoutMs > 0 ? TimeSpan.FromMilliseconds(_config.TimeoutMs) : TimeSpan.FromMinutes(5);
+                // Use Task.Wait for efficient waiting (avoids CPU-wasting polling loop)
+                // TODO: Ensure all awaits in GenerateAudioAsync use ConfigureAwait(false) to avoid deadlocks.
+                // Note: Task.Wait() can potentially cause deadlock if async task needs main thread.
+                var timeoutMs = _config.TimeoutMs > 0 ? _config.TimeoutMs : 300000; // 5 minutes default
 
-                while (!task.IsCompleted)
+                if (!task.Wait(timeoutMs))
                 {
-                    if (DateTime.UtcNow - startTime > timeout)
-                    {
-                        throw new TimeoutException($"Audio generation timed out after {timeout.TotalMilliseconds}ms");
-                    }
-                    System.Threading.Thread.Yield();
+                    throw new TimeoutException($"Audio generation timed out after {timeoutMs}ms");
                 }
 
-                if (task.IsFaulted)
-                {
-                    throw task.Exception.GetBaseException();
-                }
-
-                return task.Result;
+                // Use GetAwaiter().GetResult() for proper exception propagation
+                return task.GetAwaiter().GetResult();
             }
             catch (AggregateException ae)
             {
@@ -900,52 +879,27 @@ namespace uPiper.Core
                 return;
             }
 
-            var cacheKey = GenerateCacheKey(text, _currentVoiceId);
-
-            lock (_lockObject)
-            {
-                if (_phonemeCache.ContainsKey(cacheKey))
-                {
-                    PiperLogger.LogInfo("Text already in cache");
-                    return;
-                }
-            }
-
             try
             {
                 PiperLogger.LogInfo("Preloading text for caching (length: {0})", text.Length);
 
-                // Phonemization is handled by phonemizer implementations
-                // This is a test mode path
-                await Task.Delay(50, cancellationToken);
-
-                // Create dummy phoneme data
-                var dummyData = new byte[text.Length * 2]; // Rough estimate
-
-                lock (_lockObject)
+                // Perform actual phonemization which will cache the result in PhonemeCache.Instance
+                if (_phonemizer != null)
                 {
-                    // Check cache size limit
-                    var dataSize = dummyData.Length;
-                    var maxCacheBytes = _config.MaxCacheSizeMB * 1024 * 1024;
+                    var result = await _phonemizer.PhonemizeAsync(text, _config.DefaultLanguage, cancellationToken);
 
-                    // Evict old entries if needed
-                    while (_currentCacheSize + dataSize > maxCacheBytes && _phonemeCache.Count > 0)
+                    if (result.Success)
                     {
-                        // Simple FIFO eviction (should be LRU in production)
-                        var firstKey = _phonemeCache.Keys.First();
-                        var evictedSize = _phonemeCache[firstKey].Length;
-                        _phonemeCache.Remove(firstKey);
-                        _currentCacheSize -= evictedSize;
-                        _cacheEvictionCount++;
-                        PiperLogger.LogInfo("Evicted cache entry to make room");
+                        PiperLogger.LogInfo("Text preloaded and cached ({0} phonemes)", result.Phonemes?.Length ?? 0);
                     }
-
-                    // Add to cache
-                    _phonemeCache[cacheKey] = dummyData;
-                    _currentCacheSize += dataSize;
-
-                    PiperLogger.LogInfo("Text preloaded and cached (cache size: {0:F2}MB)",
-                        _currentCacheSize / (1024.0 * 1024.0));
+                    else
+                    {
+                        PiperLogger.LogWarning("Failed to preload text: {0}", result.ErrorMessage);
+                    }
+                }
+                else
+                {
+                    PiperLogger.LogWarning("No phonemizer available for preloading");
                 }
             }
             catch (OperationCanceledException)
@@ -956,49 +910,44 @@ namespace uPiper.Core
         }
 
         /// <summary>
-        /// Get cache statistics
+        /// Get cache statistics from PhonemeCache (LRU cache with accurate statistics)
         /// </summary>
         public CacheStatistics GetCacheStatistics()
         {
             ThrowIfDisposed();
 
-            lock (_lockObject)
+            // Use PhonemeCache.Instance for accurate statistics
+            var phonemeCacheStats = PhonemeCache.Instance.GetStatistics();
+
+            var stats = new CacheStatistics
             {
-                var stats = new CacheStatistics
-                {
-                    EntryCount = _phonemeCache.Count,
-                    TotalSizeBytes = _currentCacheSize,
-                    HitCount = _cacheHitCount,
-                    MissCount = _cacheMissCount,
-                    EvictionCount = _cacheEvictionCount,
-                    MaxSizeBytes = _config.MaxCacheSizeMB * 1024L * 1024L
-                };
-                return stats;
-            }
+                EntryCount = phonemeCacheStats.EntryCount,
+                TotalSizeBytes = phonemeCacheStats.MemoryUsage,
+                HitCount = phonemeCacheStats.HitCount,
+                MissCount = phonemeCacheStats.MissCount,
+                EvictionCount = phonemeCacheStats.EvictionCount,
+                MaxSizeBytes = _config.MaxCacheSizeMB * 1024L * 1024L
+            };
+            return stats;
         }
 
         /// <summary>
-        /// Clear the cache
+        /// Clear the cache (both local and PhonemeCache)
         /// </summary>
         public void ClearCache()
         {
             ThrowIfDisposed();
 
+            // Clear PhonemeCache.Instance (primary cache)
+            PhonemeCache.Instance.Clear();
+
             lock (_lockObject)
             {
-                var previousSize = _currentCacheSize;
+                // Clear local cache for backwards compatibility
                 _phonemeCache.Clear();
                 _currentCacheSize = 0;
 
-                if (previousSize > 0)
-                {
-                    PiperLogger.LogInfo("Cache cleared ({0:F2}MB freed)",
-                        previousSize / (1024.0 * 1024.0));
-                }
-                else
-                {
-                    PiperLogger.LogInfo("Cache cleared (was already empty)");
-                }
+                PiperLogger.LogInfo("Cache cleared");
             }
         }
 

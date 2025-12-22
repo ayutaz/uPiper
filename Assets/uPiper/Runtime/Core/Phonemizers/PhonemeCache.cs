@@ -30,6 +30,12 @@ namespace uPiper.Core.Phonemizers
         private long evictionCount;
 
         /// <summary>
+        /// Threshold for using FNV-1a hash instead of full text as cache key.
+        /// Texts longer than this will use hash to save memory.
+        /// </summary>
+        private const int HashThreshold = 500;
+
+        /// <summary>
         /// Gets the singleton instance of the phoneme cache.
         /// </summary>
         public static PhonemeCache Instance { get; } = new PhonemeCache(5000);
@@ -201,8 +207,32 @@ namespace uPiper.Core.Phonemizers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string GetCacheKey(string text, string language)
         {
-            // Simple but effective cache key
-            return $"{language}:{text.GetHashCode():X8}:{text.Length}";
+            // For short texts, use full text as key to avoid hash collisions
+            // For long texts, use FNV-1a hash to save memory (faster than SHA256, no crypto overhead)
+            if (text.Length > HashThreshold)
+            {
+                var hash = ComputeFnv1aHash(text);
+                return $"{language}:FNV:{hash:X16}";
+            }
+            return $"{language}:{text}";
+        }
+
+        /// <summary>
+        /// Computes FNV-1a 64-bit hash for the given text.
+        /// FNV-1a is a fast, non-cryptographic hash with good distribution.
+        /// </summary>
+        private static ulong ComputeFnv1aHash(string text)
+        {
+            const ulong fnvPrime = 0x100000001B3;
+            const ulong fnvOffset = 0xCBF29CE484222325;
+
+            var hash = fnvOffset;
+            foreach (var c in text)
+            {
+                hash ^= c;
+                hash *= fnvPrime;
+            }
+            return hash;
         }
 
         private void EvictLRU()
