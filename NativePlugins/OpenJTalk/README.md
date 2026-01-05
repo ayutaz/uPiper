@@ -61,6 +61,70 @@ OpenJTalk (C++)
 
 See `include/openjtalk_wrapper.h` for the complete API documentation.
 
+### Core Functions
+
+```c
+// Initialize/cleanup
+void* openjtalk_initialize(const char* dict_path);
+void openjtalk_destroy(void* handle);
+
+// Basic phonemization
+char* openjtalk_phonemize(void* handle, const char* text);
+void openjtalk_free_string(char* str);
+```
+
+### Prosody API
+
+Extract phonemes with A1/A2/A3 prosody values from full-context labels:
+
+```c
+// Prosody result structure
+typedef struct {
+    char* phonemes;      // Space-separated phoneme string
+    int* prosody_a1;     // Relative position from accent nucleus
+    int* prosody_a2;     // Mora position in accent phrase (1-based)
+    int* prosody_a3;     // Total morae in accent phrase
+    int phoneme_count;   // Number of phonemes
+} ProsodyPhonemeResult;
+
+// Get phonemes with prosody information
+ProsodyPhonemeResult* openjtalk_phonemize_with_prosody(void* handle, const char* text);
+
+// Free prosody result
+void openjtalk_free_prosody_result(ProsodyPhonemeResult* result);
+```
+
+#### Prosody Values
+
+| Value | Description |
+|-------|-------------|
+| **A1** | Relative position from accent nucleus (can be negative) |
+| **A2** | Mora position within accent phrase (1-based) |
+| **A3** | Total number of morae in accent phrase |
+
+These values are extracted from OpenJTalk's full-context labels in the format:
+```
+xx^xx-phoneme+xx=xx/A:a1+a2+a3/B:...
+```
+
+## Docker Build
+
+Cross-platform builds are available via Docker:
+
+```bash
+# Windows (MinGW)
+docker build -f Dockerfile.windows -t openjtalk-windows .
+docker run -v $(pwd)/output_windows:/output openjtalk-windows
+
+# Linux
+docker build -f Dockerfile.linux -t openjtalk-linux .
+docker run -v $(pwd)/output_linux:/output openjtalk-linux
+
+# Android (all ABIs)
+docker build -f Dockerfile.android -t openjtalk-android .
+docker run -v $(pwd)/output:/NativePlugins/OpenJTalk/output openjtalk-android
+```
+
 ## License
 
 This wrapper is part of uPiper and follows the same license.
