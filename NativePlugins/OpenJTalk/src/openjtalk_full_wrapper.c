@@ -326,7 +326,147 @@ static PhonemeResult* labels_to_phonemes(OpenJTalkContext* ctx, JPCommon* jpcomm
     
     // Calculate total duration (rough estimate only)
     result->total_duration = phoneme_count * 0.05f;
-    
+
+    return result;
+}
+
+// Convert JPCommon labels to phonemes with prosody features (A1/A2/A3)
+static ProsodyPhonemeResult* labels_to_phonemes_with_prosody(OpenJTalkContext* ctx, JPCommon* jpcommon) {
+    ProsodyPhonemeResult* result = (ProsodyPhonemeResult*)calloc(1, sizeof(ProsodyPhonemeResult));
+    if (!result) {
+        return NULL;
+    }
+
+    // Get label data from JPCommon
+    int label_size = JPCommon_get_label_size(jpcommon);
+    char** label_feature = JPCommon_get_label_feature(jpcommon);
+
+    if (label_size <= 0 || !label_feature) {
+        free(result);
+        return NULL;
+    }
+
+    // Allocate temporary arrays for prosody values
+    int* temp_a1 = (int*)calloc(label_size, sizeof(int));
+    int* temp_a2 = (int*)calloc(label_size, sizeof(int));
+    int* temp_a3 = (int*)calloc(label_size, sizeof(int));
+
+    if (!temp_a1 || !temp_a2 || !temp_a3) {
+        free(temp_a1);
+        free(temp_a2);
+        free(temp_a3);
+        free(result);
+        return NULL;
+    }
+
+    // First pass: count phonemes, build phoneme string, extract prosody
+    char phoneme_buffer[8192] = {0};
+    char* buf_ptr = phoneme_buffer;
+    int phoneme_count = 0;
+
+    for (int i = 0; i < label_size; i++) {
+        if (!label_feature[i]) continue;
+
+        DEBUG_LOG("Label[%d]: %s", i, label_feature[i]);
+
+        // Extract phoneme from full-context label
+        // Full-context label format: xx^xx-phoneme+xx=xx/A:a1+a2+a3/B:...
+        char* phoneme_start = strchr(label_feature[i], '-');
+        char* phoneme_end = strchr(label_feature[i], '+');
+
+        if (phoneme_start && phoneme_end && phoneme_start < phoneme_end) {
+            phoneme_start++; // Skip the '-' character
+            int phoneme_len = (int)(phoneme_end - phoneme_start);
+
+            // Extract phoneme
+            char phoneme_tmp[32] = {0};
+            strncpy(phoneme_tmp, phoneme_start, (phoneme_len < 31) ? phoneme_len : 31);
+
+            // Default prosody values
+            int a1 = 0, a2 = 0, a3 = 0;
+
+            // Parse /A:a1+a2+a3/ from the label
+            // Example: /A:-3+2+5/ means a1=-3, a2=2, a3=5
+            char* accent_marker = strstr(label_feature[i], "/A:");
+            if (accent_marker) {
+                accent_marker += 3; // Skip "/A:"
+                // Parse a1 (can be negative)
+                a1 = (int)strtol(accent_marker, &accent_marker, 10);
+                if (*accent_marker == '+') {
+                    accent_marker++; // Skip '+'
+                    a2 = (int)strtol(accent_marker, &accent_marker, 10);
+                    if (*accent_marker == '+') {
+                        accent_marker++; // Skip '+'
+                        a3 = (int)strtol(accent_marker, NULL, 10);
+                    }
+                }
+            }
+
+            DEBUG_LOG("  Extracted phoneme: '%s', A1=%d, A2=%d, A3=%d", phoneme_tmp, a1, a2, a3);
+
+            // Handle silence phonemes
+            if (strncmp(phoneme_start, "sil", phoneme_len) == 0) {
+                // Only add pau at the beginning and end
+                if (i == 0 || i == label_size - 1) {
+                    if (buf_ptr != phoneme_buffer) {
+                        *buf_ptr++ = ' ';
+                    }
+                    strcpy(buf_ptr, "pau");
+                    buf_ptr += 3;
+                    temp_a1[phoneme_count] = a1;
+                    temp_a2[phoneme_count] = a2;
+                    temp_a3[phoneme_count] = a3;
+                    phoneme_count++;
+                    DEBUG_LOG("  Added 'pau' for silence");
+                }
+            } else {
+                // Add the phoneme
+                if (buf_ptr != phoneme_buffer) {
+                    *buf_ptr++ = ' ';
+                }
+                strncpy(buf_ptr, phoneme_start, phoneme_len);
+                buf_ptr += phoneme_len;
+                temp_a1[phoneme_count] = a1;
+                temp_a2[phoneme_count] = a2;
+                temp_a3[phoneme_count] = a3;
+                phoneme_count++;
+            }
+        } else {
+            DEBUG_LOG("  WARNING: Could not extract phoneme from label");
+        }
+    }
+
+    // Null-terminate the phoneme string
+    *buf_ptr = '\0';
+
+    DEBUG_LOG("Extracted phonemes with prosody: %s (count: %d)", phoneme_buffer, phoneme_count);
+
+    // Allocate result arrays
+    result->phoneme_count = phoneme_count;
+    result->phonemes = strdup(phoneme_buffer);
+    result->prosody_a1 = (int*)calloc(phoneme_count, sizeof(int));
+    result->prosody_a2 = (int*)calloc(phoneme_count, sizeof(int));
+    result->prosody_a3 = (int*)calloc(phoneme_count, sizeof(int));
+
+    if (!result->phonemes || !result->prosody_a1 || !result->prosody_a2 || !result->prosody_a3) {
+        openjtalk_free_prosody_result(result);
+        free(temp_a1);
+        free(temp_a2);
+        free(temp_a3);
+        return NULL;
+    }
+
+    // Copy prosody values
+    for (int i = 0; i < phoneme_count; i++) {
+        result->prosody_a1[i] = temp_a1[i];
+        result->prosody_a2[i] = temp_a2[i];
+        result->prosody_a3[i] = temp_a3[i];
+    }
+
+    free(temp_a1);
+    free(temp_a2);
+    free(temp_a3);
+
     return result;
 }
 
@@ -411,10 +551,84 @@ PhonemeResult* openjtalk_phonemize(void* handle, const char* text) {
 // Free phoneme result
 void openjtalk_free_result(PhonemeResult* result) {
     if (!result) return;
-    
+
     if (result->phonemes) free(result->phonemes);
     if (result->phoneme_ids) free(result->phoneme_ids);
     if (result->durations) free(result->durations);
+    free(result);
+}
+
+// Phonemize text with prosody features
+ProsodyPhonemeResult* openjtalk_phonemize_with_prosody(void* handle, const char* text) {
+    if (!handle || !text) {
+        return NULL;
+    }
+
+    OpenJTalkContext* ctx = (OpenJTalkContext*)handle;
+
+    if (!ctx->initialized) {
+        ctx->last_error = OPENJTALK_ERROR_INITIALIZATION_FAILED;
+        return NULL;
+    }
+
+    DEBUG_LOG("Phonemizing text with prosody: %s", text);
+
+    // Clear previous data
+    NJD_clear(ctx->njd);
+    JPCommon_clear(ctx->jpcommon);
+
+    // Convert text to Mecab input
+    char mecab_text[8192];
+    text2mecab(mecab_text, text);
+
+    DEBUG_LOG("After text2mecab: %s", mecab_text);
+
+    // Mecab analysis
+    if (Mecab_analysis(ctx->mecab, mecab_text) != TRUE) {
+        ctx->last_error = OPENJTALK_ERROR_PHONEMIZATION_FAILED;
+        DEBUG_LOG("Mecab analysis failed");
+        return NULL;
+    }
+
+    // Convert Mecab to NJD
+    mecab2njd(ctx->njd, Mecab_get_feature(ctx->mecab), Mecab_get_size(ctx->mecab));
+
+    // NJD processing pipeline
+    njd_set_pronunciation(ctx->njd);
+    njd_set_digit(ctx->njd);
+    njd_set_accent_phrase(ctx->njd);
+    njd_set_accent_type(ctx->njd);
+    njd_set_unvoiced_vowel(ctx->njd);
+    njd_set_long_vowel(ctx->njd);
+
+    // Convert NJD to JPCommon
+    njd2jpcommon(ctx->jpcommon, ctx->njd);
+
+    // Make label
+    JPCommon_make_label(ctx->jpcommon);
+
+    // Convert labels to phonemes with prosody
+    ProsodyPhonemeResult* result = labels_to_phonemes_with_prosody(ctx, ctx->jpcommon);
+
+    if (!result) {
+        ctx->last_error = OPENJTALK_ERROR_MEMORY_ALLOCATION;
+        return NULL;
+    }
+
+    DEBUG_LOG("Phonemization with prosody complete: %d phonemes", result->phoneme_count);
+
+    ctx->last_error = OPENJTALK_SUCCESS;
+    return result;
+}
+
+// Free prosody phoneme result
+void openjtalk_free_prosody_result(ProsodyPhonemeResult* result) {
+    if (!result) return;
+
+    if (result->phonemes) free(result->phonemes);
+    if (result->prosody_a1) free(result->prosody_a1);
+    if (result->prosody_a2) free(result->prosody_a2);
+    if (result->prosody_a3) free(result->prosody_a3);
     free(result);
 }
 

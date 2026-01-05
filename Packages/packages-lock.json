@@ -131,6 +131,15 @@
         "com.unity.modules.imgui": "1.0.0"
       }
     },
+    "io.github.hatayama.uloopmcp": {
+      "version": "https://github.com/hatayama/uLoopMCP.git?path=/Packages/src",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.2.1"
+      },
+      "hash": "e3090f4f6f482675319a8fb91c4e82731d992272"
+    },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
       "depth": 0,

@@ -8,6 +8,7 @@
     "com.unity.test-framework": "1.5.1",
     "com.unity.testtools.codecoverage": "1.2.7",
     "com.unity.ugui": "2.0.0",
+    "io.github.hatayama.uloopmcp": "https://github.com/hatayama/uLoopMCP.git?path=/Packages/src",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.assetbundle": "1.0.0",

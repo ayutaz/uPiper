@@ -64,6 +64,25 @@ typedef struct {
 } PhonemeResult;
 
 /**
+ * @brief Result structure for phoneme conversion with prosody features
+ *
+ * Contains the phoneme sequence with A1/A2/A3 prosody values extracted
+ * from OpenJTalk's full-context labels.
+ *
+ * Prosody values (per phoneme):
+ * - A1: Relative position from accent nucleus (can be negative)
+ * - A2: Position in accent phrase (1-based)
+ * - A3: Total morae in accent phrase
+ */
+typedef struct {
+    char* phonemes;          /**< Space-separated phoneme string (e.g., "k o N n i ch i w a") */
+    int* prosody_a1;         /**< A1: relative position from accent nucleus (per phoneme) */
+    int* prosody_a2;         /**< A2: position in accent phrase, 1-based (per phoneme) */
+    int* prosody_a3;         /**< A3: total morae in accent phrase (per phoneme) */
+    int phoneme_count;       /**< Number of phonemes in the result */
+} ProsodyPhonemeResult;
+
+/**
  * @brief Get the version string of the OpenJTalk wrapper
  * @return Version string (e.g., "2.0.0-full")
  */
@@ -91,6 +110,10 @@ OPENJTALK_API void openjtalk_destroy(void* handle);
 // Phonemization
 OPENJTALK_API PhonemeResult* openjtalk_phonemize(void* handle, const char* text);
 OPENJTALK_API void openjtalk_free_result(PhonemeResult* result);
+
+// Phonemization with prosody features (A1/A2/A3 extraction)
+OPENJTALK_API ProsodyPhonemeResult* openjtalk_phonemize_with_prosody(void* handle, const char* text);
+OPENJTALK_API void openjtalk_free_prosody_result(ProsodyPhonemeResult* result);
 
 // Error handling
 OPENJTALK_API int openjtalk_get_last_error(void* handle);
