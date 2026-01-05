@@ -24,6 +24,7 @@ namespace uPiper.Core.AudioGeneration
         private readonly object _lockObject = new();
         private bool _disposed;
         private BackendType _actualBackendType;
+        private bool _supportsProsody;
 
         /// <inheritdoc/>
         public bool IsInitialized => _isInitialized;
@@ -35,6 +36,9 @@ namespace uPiper.Core.AudioGeneration
         /// Get the actual backend type being used
         /// </summary>
         public BackendType ActualBackendType => _actualBackendType;
+
+        /// <inheritdoc/>
+        public bool SupportsProsody => _supportsProsody;
 
         /// <inheritdoc/>
         public async Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config, CancellationToken cancellationToken = default)
@@ -133,6 +137,10 @@ namespace uPiper.Core.AudioGeneration
                             var output = _model.outputs[i];
                             PiperLogger.LogInfo($"  Output[{i}]: name='{output.name}'");
                         }
+
+                        // Check if model supports prosody_features input
+                        _supportsProsody = _model.inputs.Any(input => input.name == "prosody_features");
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Model prosody support: {_supportsProsody}");
                     }
                     catch (Exception ex)
                     {
@@ -347,6 +355,149 @@ namespace uPiper.Core.AudioGeneration
                     catch (Exception ex)
                     {
                         PiperLogger.LogError($"Failed to generate audio: {ex.Message}");
+                        throw;
+                    }
+                }
+            });
+        }
+
+        /// <inheritdoc/>
+        public async Task<float[]> GenerateAudioWithProsodyAsync(
+            int[] phonemeIds,
+            int[] prosodyA1,
+            int[] prosodyA2,
+            int[] prosodyA3,
+            float lengthScale = 1.0f,
+            float noiseScale = 0.667f,
+            float noiseW = 0.8f,
+            CancellationToken cancellationToken = default)
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(InferenceAudioGenerator));
+
+            if (!_isInitialized)
+                throw new InvalidOperationException("Generator is not initialized. Call InitializeAsync first.");
+
+            if (phonemeIds == null || phonemeIds.Length == 0)
+                throw new ArgumentException("Phoneme IDs cannot be null or empty.", nameof(phonemeIds));
+
+            // Unity.InferenceEngineの操作はメインスレッドで実行する必要がある
+            return await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
+            {
+                lock (_lockObject)
+                {
+                    try
+                    {
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Preparing model inputs with prosody...");
+                        PiperLogger.LogInfo($"  Phoneme IDs length: {phonemeIds.Length}, Prosody support: {_supportsProsody}");
+
+                        // 入力テンソルを作成
+                        var inputTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
+                        var inputLengthsTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
+                        var scalesTensor = new Tensor<float>(new TensorShape(3), new[] { noiseScale, lengthScale, noiseW });
+                        Tensor<float> prosodyTensor = null;
+
+                        try
+                        {
+                            // 基本の3入力を設定
+                            if (_model.inputs.Count >= 3)
+                            {
+                                var inputName = _model.inputs[0].name;
+                                _worker.SetInput(inputName, inputTensor);
+
+                                var lengthsName = _model.inputs[1].name;
+                                _worker.SetInput(lengthsName, inputLengthsTensor);
+
+                                var scalesName = _model.inputs[2].name;
+                                _worker.SetInput(scalesName, scalesTensor);
+                            }
+
+                            // prosody_featuresテンソルを設定（モデルがサポートする場合）
+                            if (_supportsProsody)
+                            {
+                                // Shape: (1, sequence_length, 3)
+                                var prosodyData = new float[phonemeIds.Length * 3];
+                                for (var i = 0; i < phonemeIds.Length; i++)
+                                {
+                                    prosodyData[i * 3 + 0] = prosodyA1 != null && i < prosodyA1.Length ? prosodyA1[i] : 0f;
+                                    prosodyData[i * 3 + 1] = prosodyA2 != null && i < prosodyA2.Length ? prosodyA2[i] : 0f;
+                                    prosodyData[i * 3 + 2] = prosodyA3 != null && i < prosodyA3.Length ? prosodyA3[i] : 0f;
+                                }
+
+                                prosodyTensor = new Tensor<float>(
+                                    new TensorShape(1, phonemeIds.Length, 3),
+                                    prosodyData
+                                );
+
+                                _worker.SetInput("prosody_features", prosodyTensor);
+                                PiperLogger.LogInfo($"[InferenceAudioGenerator] Set prosody_features tensor with shape (1, {phonemeIds.Length}, 3)");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            PiperLogger.LogError($"[InferenceAudioGenerator] Failed to set model inputs: {ex.Message}");
+                            inputTensor?.Dispose();
+                            inputLengthsTensor?.Dispose();
+                            scalesTensor?.Dispose();
+                            prosodyTensor?.Dispose();
+                            throw;
+                        }
+
+                        // 推論を実行
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Running inference with prosody...");
+                        _worker.Schedule();
+                        PiperLogger.LogInfo("[InferenceAudioGenerator] Inference completed");
+
+                        // 出力を取得
+                        Tensor<float> outputTensor = null;
+                        if (_model.outputs.Count > 0)
+                        {
+                            var outputName = _model.outputs[0].name;
+                            try
+                            {
+                                outputTensor = _worker.PeekOutput(outputName) as Tensor<float>;
+                            }
+                            catch
+                            {
+                                outputTensor = _worker.PeekOutput() as Tensor<float>;
+                            }
+                        }
+                        else
+                        {
+                            outputTensor = _worker.PeekOutput() as Tensor<float>;
+                        }
+
+                        if (outputTensor == null)
+                        {
+                            throw new InvalidOperationException("Failed to get output from model");
+                        }
+
+                        // GPUからCPUにデータを読み戻す
+                        var readableTensor = outputTensor.ReadbackAndClone();
+                        var shape = readableTensor.shape;
+                        var audioLength = shape.length;
+                        var audioData = new float[audioLength];
+
+                        for (var i = 0; i < audioLength; i++)
+                        {
+                            audioData[i] = readableTensor[i];
+                        }
+
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Generated {audioData.Length} samples with prosody");
+
+                        // テンソルを破棄
+                        readableTensor.Dispose();
+                        inputTensor.Dispose();
+                        inputLengthsTensor.Dispose();
+                        scalesTensor.Dispose();
+                        prosodyTensor?.Dispose();
+                        outputTensor.Dispose();
+
+                        return audioData;
+                    }
+                    catch (Exception ex)
+                    {
+                        PiperLogger.LogError($"Failed to generate audio with prosody: {ex.Message}");
                         throw;
                     }
                 }

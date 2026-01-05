@@ -523,14 +523,47 @@ namespace uPiper.Core
                     {
                         PiperLogger.LogInfo("Using InferenceAudioGenerator for audio synthesis");
 
+                        // Check if model supports prosody and we have OpenJTalk phonemizer
+                        int[] prosodyA1 = null, prosodyA2 = null, prosodyA3 = null;
+                        var useProsody = _inferenceGenerator.SupportsProsody && _phonemizer is OpenJTalkPhonemizer;
+
+                        if (useProsody)
+                        {
+                            PiperLogger.LogInfo("Model supports prosody, using PhonemizeWithProsody");
+                            var openJTalkPhonemizer = (OpenJTalkPhonemizer)_phonemizer;
+                            var prosodyResult = openJTalkPhonemizer.PhonemizeWithProsody(text);
+
+                            // Update phonemeResult with prosody data
+                            phonemeResult.Phonemes = prosodyResult.Phonemes;
+                            phonemeResult.ProsodyA1 = prosodyResult.ProsodyA1;
+                            phonemeResult.ProsodyA2 = prosodyResult.ProsodyA2;
+                            phonemeResult.ProsodyA3 = prosodyResult.ProsodyA3;
+
+                            prosodyA1 = prosodyResult.ProsodyA1;
+                            prosodyA2 = prosodyResult.ProsodyA2;
+                            prosodyA3 = prosodyResult.ProsodyA3;
+
+                            PiperLogger.LogInfo($"Prosody extracted: {prosodyResult.PhonemeCount} phonemes with A1/A2/A3 values");
+                        }
+
                         // Encode phonemes to IDs
                         var phonemeIds = _phonemeEncoder.Encode(phonemeResult.Phonemes);
                         PiperLogger.LogInfo($"Encoded {phonemeIds.Length} phoneme IDs");
 
                         _onProcessingProgress?.Invoke(0.6f);
 
-                        // Generate audio using inference
-                        var audioData = await _inferenceGenerator.GenerateAudioAsync(phonemeIds, cancellationToken: cancellationToken);
+                        // Generate audio using inference (with or without prosody)
+                        float[] audioData;
+                        if (useProsody)
+                        {
+                            audioData = await _inferenceGenerator.GenerateAudioWithProsodyAsync(
+                                phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                                cancellationToken: cancellationToken);
+                        }
+                        else
+                        {
+                            audioData = await _inferenceGenerator.GenerateAudioAsync(phonemeIds, cancellationToken: cancellationToken);
+                        }
                         PiperLogger.LogInfo($"Generated {audioData.Length} audio samples");
 
                         _onProcessingProgress?.Invoke(0.7f);
