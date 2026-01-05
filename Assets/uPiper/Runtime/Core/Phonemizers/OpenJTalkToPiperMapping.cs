@@ -44,7 +44,7 @@ namespace uPiper.Core.Phonemizers
             
             // Special consonants
             { "N", "N" },    // ん
-            { "cl", "t" },   // Closure for っ (small tsu) - map to t
+            // NOTE: "cl" (促音/geminate) is now handled via PUA mapping for better accuracy
             { "ts", "ts" },  // つ -> Will be mapped to PUA by PhonemeEncoder
             { "ch", "ch" },  // ち -> Will be mapped to PUA by PhonemeEncoder
             { "sh", "sh" },  // し -> Will be mapped to PUA by PhonemeEncoder
@@ -182,7 +182,14 @@ namespace uPiper.Core.Phonemizers
             { "py", "\ue00c" },  // ぴゃ、ぴゅ、ぴょ
             { "my", "\ue014" },  // みゃ、みゅ、みょ
             { "ry", "\ue015" },  // りゃ、りゅ、りょ
-            
+
+            // Labialized consonants (合拗音 - gouyouon)
+            { "kw", "\ue007" },  // クヮ (e.g., 火事 kwaji in some dialects)
+            { "gw", "\ue009" },  // グヮ
+
+            // Special consonants
+            { "cl", "\ue005" },  // 促音 (geminate/sokuon) っ
+
             // Other multi-character phonemes
             { "ch", "\ue00a" },  // ち、ちゃ、ちゅ、ちょ (maps to same as ty in model)
             { "ts", "\ue00f" },  // つ

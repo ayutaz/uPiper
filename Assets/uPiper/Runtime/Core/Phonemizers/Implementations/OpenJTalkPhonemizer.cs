@@ -43,6 +43,20 @@ namespace uPiper.Core.Phonemizers.Implementations
             public float total_duration;
         }
 
+        /// <summary>
+        /// Native structure for phoneme results with prosody features (A1/A2/A3)
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        [Preserve]
+        private struct NativeProsodyPhonemeResult
+        {
+            public IntPtr phonemes;      // char* - space-separated phoneme string (UTF-8)
+            public IntPtr prosody_a1;    // int* - A1: relative position from accent nucleus
+            public IntPtr prosody_a2;    // int* - A2: position in accent phrase (1-based)
+            public IntPtr prosody_a3;    // int* - A3: total morae in accent phrase
+            public int phoneme_count;
+        }
+
         #endregion
 
         #region P/Invoke Declarations
@@ -72,6 +86,13 @@ namespace uPiper.Core.Phonemizers.Implementations
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern void openjtalk_free_result(IntPtr result);
 
+        // Prosody API - phonemization with A1/A2/A3 extraction
+        [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr openjtalk_phonemize_with_prosody(IntPtr handle, string text);
+
+        [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
+        private static extern void openjtalk_free_prosody_result(IntPtr result);
+
         [DllImport(LIBRARY_NAME, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr openjtalk_get_version();
 
@@ -89,6 +110,10 @@ namespace uPiper.Core.Phonemizers.Implementations
         private static IntPtr openjtalk_phonemize(IntPtr handle, string text)
             => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
         private static void openjtalk_free_result(IntPtr result)
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static IntPtr openjtalk_phonemize_with_prosody(IntPtr handle, string text)
+            => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
+        private static void openjtalk_free_prosody_result(IntPtr result)
             => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
         private static IntPtr openjtalk_get_version()
             => throw new NotSupportedException("OpenJTalk is not supported on this platform. P/Invoke is not available.");
@@ -515,6 +540,153 @@ namespace uPiper.Core.Phonemizers.Implementations
                 {
                     ["TotalDuration"] = nativeResult.total_duration
                 }
+            };
+        }
+
+        #endregion
+
+        #region Prosody API
+
+        /// <summary>
+        /// Result structure for phoneme conversion with prosody features (A1/A2/A3)
+        /// </summary>
+        public struct ProsodyResult
+        {
+            /// <summary>Phoneme strings</summary>
+            public string[] Phonemes;
+            /// <summary>A1: relative position from accent nucleus (can be negative)</summary>
+            public int[] ProsodyA1;
+            /// <summary>A2: position in accent phrase (1-based)</summary>
+            public int[] ProsodyA2;
+            /// <summary>A3: total morae in accent phrase</summary>
+            public int[] ProsodyA3;
+            /// <summary>Number of phonemes</summary>
+            public int PhonemeCount;
+        }
+
+        /// <summary>
+        /// Phonemize text with prosody features (A1/A2/A3 extraction from OpenJTalk labels)
+        /// </summary>
+        /// <param name="text">Japanese text to phonemize</param>
+        /// <returns>ProsodyResult containing phonemes and prosody values</returns>
+        public ProsodyResult PhonemizeWithProsody(string text)
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(OpenJTalkPhonemizer));
+
+            if (string.IsNullOrEmpty(text))
+            {
+                return new ProsodyResult
+                {
+                    Phonemes = Array.Empty<string>(),
+                    ProsodyA1 = Array.Empty<int>(),
+                    ProsodyA2 = Array.Empty<int>(),
+                    ProsodyA3 = Array.Empty<int>(),
+                    PhonemeCount = 0
+                };
+            }
+
+            lock (_handleLock)
+            {
+                if (_handle == IntPtr.Zero)
+                    throw new PiperInitializationException("OpenJTalk not initialized");
+
+                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Processing text with prosody: '{text}'");
+
+                var resultPtr = IntPtr.Zero;
+                try
+                {
+#if ENABLE_PINVOKE
+                    resultPtr = openjtalk_phonemize_with_prosody(_handle, text);
+                    if (resultPtr == IntPtr.Zero)
+                    {
+                        var errorCode = openjtalk_get_last_error(_handle);
+                        var errorMsgPtr = openjtalk_get_error_string(errorCode);
+                        var errorMsg = errorMsgPtr != IntPtr.Zero
+                            ? Marshal.PtrToStringAnsi(errorMsgPtr)
+                            : "Unknown error";
+
+                        throw new PiperPhonemizationException(text, "ja",
+                            $"OpenJTalk phonemization with prosody failed: {errorMsg}");
+                    }
+#else
+                    throw new PiperInitializationException("P/Invoke is disabled");
+#endif
+
+                    // Marshal the result
+                    var nativeResult = Marshal.PtrToStructure<NativeProsodyPhonemeResult>(resultPtr);
+                    return ConvertToProsodyResult(nativeResult);
+                }
+                finally
+                {
+#if ENABLE_PINVOKE
+                    if (resultPtr != IntPtr.Zero)
+                        openjtalk_free_prosody_result(resultPtr);
+#endif
+                }
+            }
+        }
+
+        private ProsodyResult ConvertToProsodyResult(NativeProsodyPhonemeResult nativeResult)
+        {
+            if (nativeResult.phoneme_count <= 0)
+            {
+                return new ProsodyResult
+                {
+                    Phonemes = Array.Empty<string>(),
+                    ProsodyA1 = Array.Empty<int>(),
+                    ProsodyA2 = Array.Empty<int>(),
+                    ProsodyA3 = Array.Empty<int>(),
+                    PhonemeCount = 0
+                };
+            }
+
+            var phonemes = new string[nativeResult.phoneme_count];
+            var prosodyA1 = new int[nativeResult.phoneme_count];
+            var prosodyA2 = new int[nativeResult.phoneme_count];
+            var prosodyA3 = new int[nativeResult.phoneme_count];
+
+            // Parse space-separated phoneme string
+            if (nativeResult.phonemes != IntPtr.Zero)
+            {
+                var phonemeString = Marshal.PtrToStringAnsi(nativeResult.phonemes);
+                if (!string.IsNullOrEmpty(phonemeString))
+                {
+                    var phonemeList = phonemeString.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    // Convert OpenJTalk phonemes to Piper phonemes using the mapping
+                    var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(phonemeList);
+
+                    for (var i = 0; i < Math.Min(piperPhonemes.Length, nativeResult.phoneme_count); i++)
+                    {
+                        phonemes[i] = piperPhonemes[i];
+                    }
+                }
+            }
+
+            // Marshal prosody arrays
+            if (nativeResult.prosody_a1 != IntPtr.Zero)
+            {
+                Marshal.Copy(nativeResult.prosody_a1, prosodyA1, 0, nativeResult.phoneme_count);
+            }
+            if (nativeResult.prosody_a2 != IntPtr.Zero)
+            {
+                Marshal.Copy(nativeResult.prosody_a2, prosodyA2, 0, nativeResult.phoneme_count);
+            }
+            if (nativeResult.prosody_a3 != IntPtr.Zero)
+            {
+                Marshal.Copy(nativeResult.prosody_a3, prosodyA3, 0, nativeResult.phoneme_count);
+            }
+
+            PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Prosody extraction complete: {nativeResult.phoneme_count} phonemes");
+
+            return new ProsodyResult
+            {
+                Phonemes = phonemes,
+                ProsodyA1 = prosodyA1,
+                ProsodyA2 = prosodyA2,
+                ProsodyA3 = prosodyA3,
+                PhonemeCount = nativeResult.phoneme_count
             };
         }
 
