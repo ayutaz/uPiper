@@ -1,12 +1,16 @@
 #if !UNITY_WEBGL
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using Unity.InferenceEngine;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
+using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Tests.Runtime.AudioGeneration
@@ -19,6 +23,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
     [Category("RequiresProsodyModel")]
     public class ProsodyInferenceIntegrationTests
     {
+        private const string MODEL_NAME = "tsukuyomi-chan";
         private InferenceAudioGenerator _generator;
         private OpenJTalkPhonemizer _phonemizer;
         private PhonemeEncoder _encoder;
@@ -28,18 +33,48 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            // Load prosody-enabled model
-            _prosodyModelAsset = Resources.Load<ModelAsset>("Models/tsukuyomi-chan");
+            // Load prosody-enabled model (try both paths)
+            _prosodyModelAsset = Resources.Load<ModelAsset>($"uPiper/Models/{MODEL_NAME}");
             if (_prosodyModelAsset == null)
             {
-                Debug.LogWarning("Prosody model (tsukuyomi-chan.onnx) not found in Resources/Models. Skipping prosody inference tests.");
+                _prosodyModelAsset = Resources.Load<ModelAsset>($"Models/{MODEL_NAME}");
+            }
+            if (_prosodyModelAsset == null)
+            {
+                Debug.LogWarning($"Prosody model ({MODEL_NAME}.onnx) not found in Resources. Skipping prosody inference tests.");
             }
 
-            _voiceConfig = new PiperVoiceConfig
+            // Load voice config from JSON
+            var jsonAsset = Resources.Load<TextAsset>($"uPiper/Models/{MODEL_NAME}.onnx.json");
+            if (jsonAsset == null)
             {
-                SampleRate = 22050,
-                Language = "ja"
-            };
+                jsonAsset = Resources.Load<TextAsset>($"Models/{MODEL_NAME}.onnx.json");
+            }
+            if (jsonAsset == null)
+            {
+                jsonAsset = Resources.Load<TextAsset>($"uPiper/Models/{MODEL_NAME}.onnx");
+            }
+            if (jsonAsset == null)
+            {
+                jsonAsset = Resources.Load<TextAsset>($"Models/{MODEL_NAME}.onnx");
+            }
+
+            if (jsonAsset != null)
+            {
+                _voiceConfig = ParseConfig(jsonAsset.text, MODEL_NAME);
+                Debug.Log($"Loaded voice config with {_voiceConfig.PhonemeIdMap.Count} phonemes");
+            }
+            else
+            {
+                _voiceConfig = new PiperVoiceConfig
+                {
+                    VoiceId = MODEL_NAME,
+                    SampleRate = 22050,
+                    Language = "ja",
+                    PhonemeIdMap = new Dictionary<string, int>()
+                };
+                Debug.LogWarning("Voice config JSON not found, using default config without phoneme map");
+            }
         }
 
         [SetUp]
@@ -57,6 +92,52 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             {
                 Debug.LogWarning($"Failed to create OpenJTalkPhonemizer: {ex.Message}");
             }
+        }
+
+        private static PiperVoiceConfig ParseConfig(string json, string modelName)
+        {
+            var config = new PiperVoiceConfig
+            {
+                VoiceId = modelName,
+                DisplayName = modelName,
+                Language = "ja",
+                SampleRate = 22050,
+                PhonemeIdMap = new Dictionary<string, int>()
+            };
+
+            try
+            {
+                var jsonObj = JObject.Parse(json);
+
+                if (jsonObj["audio"]?["sample_rate"] != null)
+                {
+                    config.SampleRate = jsonObj["audio"]["sample_rate"].ToObject<int>();
+                }
+
+                // Read phoneme_type (critical for correct encoding - openjtalk vs espeak)
+                if (jsonObj["phoneme_type"] != null)
+                {
+                    config.PhonemeType = jsonObj["phoneme_type"].ToString();
+                    Debug.Log($"[ParseConfig] PhonemeType: {config.PhonemeType}");
+                }
+
+                if (jsonObj["phoneme_id_map"] is JObject phonemeIdMap)
+                {
+                    foreach (var kvp in phonemeIdMap)
+                    {
+                        if (kvp.Value is JArray idArray && idArray.Count > 0)
+                        {
+                            config.PhonemeIdMap[kvp.Key] = idArray[0].ToObject<int>();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error parsing config JSON: {ex.Message}");
+            }
+
+            return config;
         }
 
         [TearDown]
@@ -96,28 +177,45 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 return;
             }
 
+            if (_voiceConfig.PhonemeIdMap == null || _voiceConfig.PhonemeIdMap.Count == 0)
+            {
+                Assert.Ignore("Voice config phoneme map not available");
+                return;
+            }
+
             // Initialize generator
             await _generator.InitializeAsync(_prosodyModelAsset, _voiceConfig);
 
             // Get prosody data
-            var testText = "こんにちは";
+            var testText = "今日はとても良い天気ですね";  // 15 character test text
             var prosodyResult = _phonemizer.PhonemizeWithProsody(testText);
 
-            Debug.Log($"Phonemes: [{string.Join(", ", prosodyResult.Phonemes)}]");
+            Debug.Log($"Phonemes ({prosodyResult.Phonemes.Length}): [{string.Join(", ", prosodyResult.Phonemes)}]");
             Debug.Log($"ProsodyA1: [{string.Join(", ", prosodyResult.ProsodyA1)}]");
             Debug.Log($"ProsodyA2: [{string.Join(", ", prosodyResult.ProsodyA2)}]");
             Debug.Log($"ProsodyA3: [{string.Join(", ", prosodyResult.ProsodyA3)}]");
 
-            // Encode phonemes
-            var phonemeIds = _encoder.Encode(prosodyResult.Phonemes);
-            Debug.Log($"PhonemeIds: [{string.Join(", ", phonemeIds)}]");
+            // Convert OpenJTalk phonemes to Piper format
+            var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(prosodyResult.Phonemes);
+            Debug.Log($"Piper phonemes ({piperPhonemes.Length}): [{string.Join(", ", piperPhonemes)}]");
 
-            // Generate audio with prosody
-            var audioData = await _generator.GenerateAudioWithProsodyAsync(
-                phonemeIds,
+            // Encode phonemes with prosody (this expands prosody arrays to match phoneme IDs length)
+            var encodingResult = _encoder.EncodeWithProsody(
+                piperPhonemes,
                 prosodyResult.ProsodyA1,
                 prosodyResult.ProsodyA2,
                 prosodyResult.ProsodyA3
+            );
+
+            Debug.Log($"PhonemeIds ({encodingResult.PhonemeIds.Length}): [{string.Join(", ", encodingResult.PhonemeIds)}]");
+            Debug.Log($"ExpandedA1 ({encodingResult.ExpandedProsodyA1.Length}): [{string.Join(", ", encodingResult.ExpandedProsodyA1)}]");
+
+            // Generate audio with prosody
+            var audioData = await _generator.GenerateAudioWithProsodyAsync(
+                encodingResult.PhonemeIds,
+                encodingResult.ExpandedProsodyA1,
+                encodingResult.ExpandedProsodyA2,
+                encodingResult.ExpandedProsodyA3
             );
 
             // Validate audio
@@ -151,26 +249,40 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 return;
             }
 
+            if (_voiceConfig.PhonemeIdMap == null || _voiceConfig.PhonemeIdMap.Count == 0)
+            {
+                Assert.Ignore("Voice config phoneme map not available");
+                return;
+            }
+
             // Initialize generator
             await _generator.InitializeAsync(_prosodyModelAsset, _voiceConfig);
 
             // Get prosody data
-            var testText = "こんにちは";
+            var testText = "今日はとても良い天気ですね";  // 15 character test text
             var prosodyResult = _phonemizer.PhonemizeWithProsody(testText);
-            var phonemeIds = _encoder.Encode(prosodyResult.Phonemes);
 
-            // Generate WITH prosody
-            var audioWithProsody = await _generator.GenerateAudioWithProsodyAsync(
-                phonemeIds,
+            // Convert and encode with prosody
+            var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(prosodyResult.Phonemes);
+            var encodingResult = _encoder.EncodeWithProsody(
+                piperPhonemes,
                 prosodyResult.ProsodyA1,
                 prosodyResult.ProsodyA2,
                 prosodyResult.ProsodyA3
             );
 
-            // Generate with ZERO prosody (all zeros)
-            var zeroProsody = new int[prosodyResult.ProsodyA1.Length];
+            // Generate WITH prosody
+            var audioWithProsody = await _generator.GenerateAudioWithProsodyAsync(
+                encodingResult.PhonemeIds,
+                encodingResult.ExpandedProsodyA1,
+                encodingResult.ExpandedProsodyA2,
+                encodingResult.ExpandedProsodyA3
+            );
+
+            // Generate with ZERO prosody (all zeros, same length as expanded arrays)
+            var zeroProsody = new int[encodingResult.ExpandedProsodyA1.Length];
             var audioWithoutProsody = await _generator.GenerateAudioWithProsodyAsync(
-                phonemeIds,
+                encodingResult.PhonemeIds,
                 zeroProsody,
                 zeroProsody,
                 zeroProsody
@@ -200,6 +312,18 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 return;
             }
 
+            if (_phonemizer == null)
+            {
+                Assert.Ignore("OpenJTalk phonemizer not available");
+                return;
+            }
+
+            if (_voiceConfig.PhonemeIdMap == null || _voiceConfig.PhonemeIdMap.Count == 0)
+            {
+                Assert.Ignore("Voice config phoneme map not available");
+                return;
+            }
+
             // モデルを初期化（初期化時に型検証が行われる）
             // もしprosody_featuresがFloat以外の型を期待する場合、InitializeAsyncで例外がスローされる
             await _generator.InitializeAsync(_prosodyModelAsset, _voiceConfig);
@@ -207,23 +331,31 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             Assert.IsTrue(_generator.IsInitialized, "Generator should be initialized");
             Assert.IsTrue(_generator.SupportsProsody, "Model should support prosody");
 
-            // 追加の検証: 実際にProsody付きで音声生成が成功することを確認
-            // これにより、Tensor<float>が正しく受け入れられることを検証
-            var testPhonemeIds = new[] { 1, 0, 25, 0, 2 }; // Simple test sequence
-            var testProsody = new[] { 0, 1, 2, 1, 0 };
+            // 正しいエンコーディングフローでテスト
+            var testText = "こんにちは";
+            var prosodyResult = _phonemizer.PhonemizeWithProsody(testText);
+            var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(prosodyResult.Phonemes);
+            var encodingResult = _encoder.EncodeWithProsody(
+                piperPhonemes,
+                prosodyResult.ProsodyA1,
+                prosodyResult.ProsodyA2,
+                prosodyResult.ProsodyA3
+            );
+
+            Debug.Log($"[InputTypeTest] Testing with {encodingResult.PhonemeIds.Length} phoneme IDs");
 
             // この呼び出しが成功すれば、Float型が正しいことが証明される
             var audioData = await _generator.GenerateAudioWithProsodyAsync(
-                testPhonemeIds,
-                testProsody,
-                testProsody,
-                testProsody
+                encodingResult.PhonemeIds,
+                encodingResult.ExpandedProsodyA1,
+                encodingResult.ExpandedProsodyA2,
+                encodingResult.ExpandedProsodyA3
             );
 
             Assert.IsNotNull(audioData, "Audio generation should succeed with Float prosody tensor");
             Assert.Greater(audioData.Length, 0, "Audio should have samples");
 
-            Debug.Log($"[InputTypeTest] Successfully generated audio with Float prosody tensor: {audioData.Length} samples");
+            Debug.Log($"[InputTypeTest] Successfully generated audio with Float prosody tensor: {audioData.Length} samples ({audioData.Length / 22050.0f:F2}s)");
         }
     }
 }
