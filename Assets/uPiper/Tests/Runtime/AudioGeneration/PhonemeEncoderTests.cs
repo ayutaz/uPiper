@@ -17,9 +17,13 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             _config = new PiperVoiceConfig
             {
                 VoiceId = "ja_JP-test-medium",
+                PhonemeType = "openjtalk",  // OpenJTalk方式（PADなし）
                 SampleRate = 22050,
                 PhonemeIdMap = new Dictionary<string, int>
                 {
+                    { "_", 0 },  // PAD
+                    { "^", 1 },  // BOS
+                    { "$", 2 },  // EOS
                     { "a", 3 },
                     { "b", 4 },
                     { "c", 5 },
@@ -50,10 +54,13 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Assert
             Assert.IsNotNull(ids);
-            Assert.AreEqual(3, ids.Length); // 3 phonemes (no BOS/EOS)
-            Assert.AreEqual(3, ids[0]); // a
-            Assert.AreEqual(4, ids[1]); // b
-            Assert.AreEqual(5, ids[2]); // c
+            // BOS + 3 phonemes + EOS = 5 (OpenJTalk方式はPADなし)
+            Assert.AreEqual(5, ids.Length);
+            Assert.AreEqual(1, ids[0]); // BOS (^)
+            Assert.AreEqual(3, ids[1]); // a
+            Assert.AreEqual(4, ids[2]); // b
+            Assert.AreEqual(5, ids[3]); // c
+            Assert.AreEqual(2, ids[4]); // EOS ($)
         }
 
         [Test]
@@ -81,9 +88,12 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Assert
             Assert.IsNotNull(ids);
-            Assert.AreEqual(2, ids.Length); // Only known phonemes
-            Assert.AreEqual(3, ids[0]); // a
-            Assert.AreEqual(4, ids[1]); // b
+            // BOS + 2 known phonemes + EOS = 4 (unknown is skipped)
+            Assert.AreEqual(4, ids.Length);
+            Assert.AreEqual(1, ids[0]); // BOS (^)
+            Assert.AreEqual(3, ids[1]); // a
+            Assert.AreEqual(4, ids[2]); // b
+            Assert.AreEqual(2, ids[3]); // EOS ($)
         }
 
         [Test]

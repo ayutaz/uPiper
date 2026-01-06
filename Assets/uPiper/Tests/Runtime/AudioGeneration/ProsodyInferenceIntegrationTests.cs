@@ -186,6 +186,45 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // Note: The audio may differ in length and content due to prosody features
             // This test validates that both paths work correctly
         }
+
+        /// <summary>
+        /// モデルの入力型が実装と一致することを検証するテスト
+        /// このテストは、prosody_featuresの型をintに変更するような間違いを事前に検知する
+        /// </summary>
+        [Test]
+        public async Task ProsodyModel_InputTypes_MatchImplementationExpectations()
+        {
+            if (_prosodyModelAsset == null)
+            {
+                Assert.Ignore("Prosody model not available");
+                return;
+            }
+
+            // モデルを初期化（初期化時に型検証が行われる）
+            // もしprosody_featuresがFloat以外の型を期待する場合、InitializeAsyncで例外がスローされる
+            await _generator.InitializeAsync(_prosodyModelAsset, _voiceConfig);
+
+            Assert.IsTrue(_generator.IsInitialized, "Generator should be initialized");
+            Assert.IsTrue(_generator.SupportsProsody, "Model should support prosody");
+
+            // 追加の検証: 実際にProsody付きで音声生成が成功することを確認
+            // これにより、Tensor<float>が正しく受け入れられることを検証
+            var testPhonemeIds = new[] { 1, 0, 25, 0, 2 }; // Simple test sequence
+            var testProsody = new[] { 0, 1, 2, 1, 0 };
+
+            // この呼び出しが成功すれば、Float型が正しいことが証明される
+            var audioData = await _generator.GenerateAudioWithProsodyAsync(
+                testPhonemeIds,
+                testProsody,
+                testProsody,
+                testProsody
+            );
+
+            Assert.IsNotNull(audioData, "Audio generation should succeed with Float prosody tensor");
+            Assert.Greater(audioData.Length, 0, "Audio should have samples");
+
+            Debug.Log($"[InputTypeTest] Successfully generated audio with Float prosody tensor: {audioData.Length} samples");
+        }
     }
 }
 #endif

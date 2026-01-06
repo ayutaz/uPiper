@@ -145,13 +145,13 @@ namespace uPiper.Demo
         private GPUInferenceSettings _gpuSettings;
 #if !UNITY_WEBGL
         private ITextPhonemizer _phonemizer;
+        private OpenJTalkPhonemizer _openJTalkPhonemizer;
         private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
 #endif
 
         private Dictionary<string, string> _modelLanguages = new()
         {
-            { "ja_JP-test-medium", "ja" },
-            { "en_US-ljspeech-medium", "en" }
+            { "tsukuyomi-chan", "ja" }
         };
 
         // テスト用の定型文 - will be initialized in Start() to avoid encoding issues
@@ -230,8 +230,8 @@ namespace uPiper.Demo
             // Initialize OpenJTalk phonemizer for Japanese
             try
             {
-                var openJTalk = new OpenJTalkPhonemizer();
-                _phonemizer = new TextPhonemizerAdapter(openJTalk);
+                _openJTalkPhonemizer = new OpenJTalkPhonemizer();
+                _phonemizer = new TextPhonemizerAdapter(_openJTalkPhonemizer);
                 PiperLogger.LogInfo("[InferenceEngineDemo] OpenJTalk phonemizer initialized successfully");
             }
             catch (Exception ex)
@@ -242,6 +242,7 @@ namespace uPiper.Demo
                 PiperLogger.LogError("[InferenceEngineDemo]   1. Navigate to NativePlugins/OpenJTalk/");
                 PiperLogger.LogError("[InferenceEngineDemo]   2. Run ./build.sh (macOS/Linux) or build.bat (Windows)");
                 _phonemizer = null;
+                _openJTalkPhonemizer = null;
             }
 
 
@@ -469,15 +470,7 @@ namespace uPiper.Demo
 
             _generator?.Dispose();
 #if !UNITY_WEBGL
-            if (_phonemizer is TextPhonemizerAdapter adapter)
-            {
-                // Dispose the underlying OpenJTalkPhonemizer
-                var field = adapter.GetType().GetField("_phonemizer", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (field?.GetValue(adapter) is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
-            }
+            _openJTalkPhonemizer?.Dispose();
             _englishPhonemizer?.Dispose();
 #endif
         }
@@ -493,7 +486,7 @@ namespace uPiper.Demo
             if (_modelDropdown != null)
             {
                 _modelDropdown.ClearOptions();
-                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "en_US-ljspeech-medium" });
+                _modelDropdown.AddOptions(new List<string> { "tsukuyomi-chan" });
                 _modelDropdown.onValueChanged.AddListener(OnModelChanged);
             }
 
@@ -551,7 +544,7 @@ namespace uPiper.Demo
 
         private void OnModelChanged(int index)
         {
-            var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium" };
+            var modelNames = new[] { "tsukuyomi-chan" };
             var modelName = modelNames[index];
             var language = _modelLanguages[modelName];
 
@@ -615,9 +608,11 @@ namespace uPiper.Demo
             // モデルに応じたフレーズリストを取得
             List<string> phrases;
             var modelIndex = _modelDropdown?.value ?? 0;
-            if (modelIndex == 0)  // Japanese
+            var modelName = GetModelNameForIndex(modelIndex);
+            var language = _modelLanguages[modelName];
+            if (language == "ja")
                 phrases = _japaneseTestPhrases;
-            else  // English
+            else
                 phrases = _englishTestPhrases;
 
             if (index > 0 && index < phrases.Count)
@@ -633,8 +628,6 @@ namespace uPiper.Demo
                 if (string.IsNullOrEmpty(_inputField.text) || phrases.Contains(_inputField.text))
                 {
                     // 空または定型文の場合はデフォルトテキストを設定
-                    var modelName = GetModelNameForIndex(_modelDropdown?.value ?? 0);
-                    var language = _modelLanguages[modelName];
                     _inputField.text = GetDefaultTextForLanguage(language);
                 }
                 _inputField.Select(); // フォーカスを設定
@@ -703,7 +696,7 @@ namespace uPiper.Demo
             try
             {
                 // モデル名を取得
-                var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium" };
+                var modelNames = new[] { "tsukuyomi-chan" };
                 var modelName = modelNames[_modelDropdown?.value ?? 0];
                 PiperLogger.LogDebug($"Selected model: {modelName}");
 
@@ -797,20 +790,48 @@ namespace uPiper.Demo
                 string[] phonemes;
                 var language = _modelLanguages[modelName];
 
+                // Prosody data for prosody-enabled models
+                int[] prosodyA1 = null, prosodyA2 = null, prosodyA3 = null;
+                var useProsody = _generator.SupportsProsody && language == "ja";
+
                 // Define konnichiwa string for special debugging
                 var konnichiwa = "こんにちは";
 
 #if !UNITY_WEBGL
                 // Use OpenJTalk for Japanese if available
-                if (language == "ja" && _phonemizer != null)
+                if (language == "ja" && _openJTalkPhonemizer != null)
                 {
                     PiperLogger.LogDebug("[InferenceEngineDemo] Using OpenJTalk phonemizer for Japanese text");
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
 
                     var openJTalkStopwatch = Stopwatch.StartNew();
-                    var phonemeResult = await _phonemizer.PhonemizeAsync(_inputField.text, language);
+
+                    string[] openJTalkPhonemes;
+                    if (useProsody)
+                    {
+                        // Use PhonemizeWithProsody for prosody-enabled models
+                        PiperLogger.LogInfo("[InferenceEngineDemo] Model supports prosody, using PhonemizeWithProsody");
+                        var prosodyResult = _openJTalkPhonemizer.PhonemizeWithProsody(_inputField.text);
+                        openJTalkPhonemes = prosodyResult.Phonemes;
+                        prosodyA1 = prosodyResult.ProsodyA1;
+                        prosodyA2 = prosodyResult.ProsodyA2;
+                        prosodyA3 = prosodyResult.ProsodyA3;
+
+                        PiperLogger.LogInfo($"[OpenJTalk] Prosody data extracted: {prosodyResult.PhonemeCount} phonemes");
+                        if (prosodyA1 != null && prosodyA1.Length > 0)
+                        {
+                            PiperLogger.LogInfo($"[OpenJTalk] A1 (mora position): [{string.Join(",", prosodyA1.Take(Math.Min(10, prosodyA1.Length)))}...]");
+                            PiperLogger.LogInfo($"[OpenJTalk] A2 (accent nucleus): [{string.Join(",", prosodyA2.Take(Math.Min(10, prosodyA2.Length)))}...]");
+                            PiperLogger.LogInfo($"[OpenJTalk] A3 (phrase position): [{string.Join(",", prosodyA3.Take(Math.Min(10, prosodyA3.Length)))}...]");
+                        }
+                    }
+                    else
+                    {
+                        // Fallback to standard phonemization (for non-prosody models)
+                        var phonemeResult = await _phonemizer.PhonemizeAsync(_inputField.text, language);
+                        openJTalkPhonemes = phonemeResult.Phonemes;
+                    }
                     timings["OpenJTalk"] = openJTalkStopwatch.ElapsedMilliseconds;
-                    var openJTalkPhonemes = phonemeResult.Phonemes;
 
                     PiperLogger.LogInfo($"[OpenJTalk] Raw phonemes ({openJTalkPhonemes.Length}): {string.Join(" ", openJTalkPhonemes)}");
 
@@ -829,14 +850,9 @@ namespace uPiper.Demo
                         }
                         else
                         {
-                            _phonemeDetailsText.text = $"OpenJTalk: {string.Join(" ", openJTalkPhonemes)}\nPiper: {string.Join(" ", phonemes)}";
+                            var prosodyInfo = useProsody ? $"\nProsody: A1=[{string.Join(",", prosodyA1?.Take(5) ?? Array.Empty<int>())}...], A2=[{string.Join(",", prosodyA2?.Take(5) ?? Array.Empty<int>())}...], A3=[{string.Join(",", prosodyA3?.Take(5) ?? Array.Empty<int>())}...]" : "";
+                            _phonemeDetailsText.text = $"OpenJTalk: {string.Join(" ", openJTalkPhonemes)}\nPiper: {string.Join(" ", phonemes)}{prosodyInfo}";
                         }
-                    }
-
-                    // Log detailed phoneme information
-                    if (phonemeResult.Durations != null && phonemeResult.Durations.Length > 0)
-                    {
-                        PiperLogger.LogDebug($"[OpenJTalk] Total duration: {phonemeResult.Durations.Sum():F3}s");
                     }
                 }
                 else if (language == "ja")
@@ -941,9 +957,27 @@ namespace uPiper.Demo
 
                 timings["Phonemization"] = phonemeStopwatch.ElapsedMilliseconds;
 
-                // 音素をIDに変換
+                // 音素をIDに変換（Prosody対応時は展開済みProsody配列も取得）
                 var encodeStopwatch = Stopwatch.StartNew();
-                var phonemeIds = _encoder.Encode(phonemes);
+                int[] phonemeIds;
+                int[] expandedA1 = null, expandedA2 = null, expandedA3 = null;
+
+                if (useProsody && prosodyA1 != null)
+                {
+                    // Prosody対応: 音素IDとProsody配列を同時に展開
+                    var encodingResult = _encoder.EncodeWithProsody(phonemes, prosodyA1, prosodyA2, prosodyA3);
+                    phonemeIds = encodingResult.PhonemeIds;
+                    expandedA1 = encodingResult.ExpandedProsodyA1;
+                    expandedA2 = encodingResult.ExpandedProsodyA2;
+                    expandedA3 = encodingResult.ExpandedProsodyA3;
+
+                    PiperLogger.LogInfo($"Encoded with prosody: {phonemes.Length} phonemes -> {phonemeIds.Length} IDs, expanded prosody arrays");
+                }
+                else
+                {
+                    phonemeIds = _encoder.Encode(phonemes);
+                }
+
                 PiperLogger.LogInfo($"Phoneme IDs ({phonemeIds.Length}): {string.Join(", ", phonemeIds)}");
                 timings["Encoding"] = encodeStopwatch.ElapsedMilliseconds;
 
@@ -957,9 +991,20 @@ namespace uPiper.Demo
 
                 // 音声生成
                 SetStatus("音声を生成中...");
-                PiperLogger.LogDebug("Calling GenerateAudioAsync...");
                 var synthesisStopwatch = Stopwatch.StartNew();
-                var audioData = await _generator.GenerateAudioAsync(phonemeIds);
+
+                float[] audioData;
+                if (useProsody && expandedA1 != null)
+                {
+                    PiperLogger.LogDebug($"Calling GenerateAudioWithProsodyAsync with expanded prosody (phonemeIds={phonemeIds.Length}, prosody={expandedA1.Length})...");
+                    audioData = await _generator.GenerateAudioWithProsodyAsync(
+                        phonemeIds, expandedA1, expandedA2, expandedA3);
+                }
+                else
+                {
+                    PiperLogger.LogDebug("Calling GenerateAudioAsync...");
+                    audioData = await _generator.GenerateAudioAsync(phonemeIds);
+                }
                 timings["Synthesis"] = synthesisStopwatch.ElapsedMilliseconds;
                 PiperLogger.LogInfo($"Audio generated: {audioData.Length} samples");
 
@@ -1164,6 +1209,19 @@ namespace uPiper.Demo
                 if (jsonObj["inference"]?["noise_w"] != null)
                 {
                     config.NoiseW = jsonObj["inference"]["noise_w"].ToObject<float>();
+                }
+
+                // Extract phoneme_type (espeak or openjtalk)
+                if (jsonObj["phoneme_type"] != null)
+                {
+                    config.PhonemeType = jsonObj["phoneme_type"].ToString();
+                    PiperLogger.LogDebug($"[ParseConfig] PhonemeType: {config.PhonemeType}");
+                }
+                else
+                {
+                    // Default to espeak if not specified
+                    config.PhonemeType = "espeak";
+                    PiperLogger.LogWarning("[ParseConfig] No phoneme_type found, defaulting to 'espeak'");
                 }
 
                 PiperLogger.LogDebug($"[ParseConfig] Language: {config.Language}, SampleRate: {config.SampleRate}");
@@ -1558,7 +1616,7 @@ namespace uPiper.Demo
         /// </summary>
         private string GetModelNameForIndex(int index)
         {
-            var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium" };
+            var modelNames = new[] { "tsukuyomi-chan" };
             return index >= 0 && index < modelNames.Length ? modelNames[index] : modelNames[0];
         }
 

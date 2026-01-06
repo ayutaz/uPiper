@@ -141,6 +141,22 @@ namespace uPiper.Core.AudioGeneration
                         // Check if model supports prosody_features input
                         _supportsProsody = _model.inputs.Any(input => input.name == "prosody_features");
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Model prosody support: {_supportsProsody}");
+
+                        // Validate prosody_features input type if model supports it
+                        if (_supportsProsody)
+                        {
+                            foreach (var input in _model.inputs)
+                            {
+                                if (input.name == "prosody_features" && input.dataType != DataType.Float)
+                                {
+                                    PiperLogger.LogError($"[InferenceAudioGenerator] prosody_features expects {input.dataType}, " +
+                                        "but implementation uses Float. This is a code/model mismatch!");
+                                    throw new InvalidOperationException(
+                                        $"Model prosody_features expects {input.dataType}, but implementation uses Float. " +
+                                        "Please verify the model export settings or update the code to match.");
+                                }
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -170,6 +186,10 @@ namespace uPiper.Core.AudioGeneration
             if (phonemeIds == null || phonemeIds.Length == 0)
                 throw new ArgumentException("Phoneme IDs cannot be null or empty.", nameof(phonemeIds));
 
+            // Prosody非対応モデルはサポートしない
+            if (!_supportsProsody)
+                throw new InvalidOperationException("This model does not support prosody features. Only prosody-enabled models are supported.");
+
             // Unity.InferenceEngineの操作はメインスレッドで実行する必要がある
             return await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
             {
@@ -181,6 +201,7 @@ namespace uPiper.Core.AudioGeneration
                         // 1. input: 音素ID (shape: [batch_size, sequence_length])
                         // 2. input_lengths: 入力の長さ (shape: [batch_size])
                         // 3. scales: ノイズとレングススケール (shape: [3])
+                        // 4. (Prosody対応モデルのみ) prosody_features: 韻律情報 (shape: [batch_size, sequence_length, 3])
 
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Preparing model inputs...");
                         PiperLogger.LogInfo($"  Phoneme IDs: {string.Join(", ", phonemeIds.Take(Math.Min(10, phonemeIds.Length)))}... (length: {phonemeIds.Length})");
@@ -190,6 +211,7 @@ namespace uPiper.Core.AudioGeneration
                         var inputTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
                         var inputLengthsTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
                         var scalesTensor = new Tensor<float>(new TensorShape(3), new[] { noiseScale, lengthScale, noiseW });
+                        Tensor<float> prosodyTensor = null;
 
                         // デバッグ: 入力データの詳細を表示
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Input tensor shape: {inputTensor.shape}");
@@ -224,10 +246,24 @@ namespace uPiper.Core.AudioGeneration
                                 var scalesName = _model.inputs[2].name;
                                 _worker.SetInput(scalesName, scalesTensor);
                                 PiperLogger.LogInfo($"[InferenceAudioGenerator] Set '{scalesName}' with scales tensor");
+
+                                // Prosody対応モデルの場合、デフォルトのprosody_featuresを設定
+                                if (_supportsProsody)
+                                {
+                                    // Shape: (1, sequence_length, 3) - すべてゼロで初期化
+                                    // Note: ONNX model expects Float, not Int (despite Python using int64)
+                                    var defaultProsodyData = new float[phonemeIds.Length * 3];
+                                    prosodyTensor = new Tensor<float>(
+                                        new TensorShape(1, phonemeIds.Length, 3),
+                                        defaultProsodyData
+                                    );
+                                    _worker.SetInput("prosody_features", prosodyTensor);
+                                    PiperLogger.LogInfo($"[InferenceAudioGenerator] Set default prosody_features for prosody-enabled model (shape: 1x{phonemeIds.Length}x3)");
+                                }
                             }
                             else
                             {
-                                throw new InvalidOperationException($"Model has {_model.inputs.Count} inputs, but Piper models require 3 inputs");
+                                throw new InvalidOperationException($"Model has {_model.inputs.Count} inputs, but Piper models require at least 3 inputs");
                             }
                         }
                         catch (Exception ex)
@@ -237,6 +273,7 @@ namespace uPiper.Core.AudioGeneration
                             inputTensor?.Dispose();
                             inputLengthsTensor?.Dispose();
                             scalesTensor?.Dispose();
+                            prosodyTensor?.Dispose();
                             throw;
                         }
 
@@ -339,6 +376,7 @@ namespace uPiper.Core.AudioGeneration
                         inputTensor.Dispose();
                         inputLengthsTensor.Dispose();
                         scalesTensor.Dispose();
+                        prosodyTensor?.Dispose();
                         outputTensor.Dispose();
 
                         PiperLogger.LogDebug($"Generated audio: {audioData.Length} samples");
@@ -381,6 +419,10 @@ namespace uPiper.Core.AudioGeneration
             if (phonemeIds == null || phonemeIds.Length == 0)
                 throw new ArgumentException("Phoneme IDs cannot be null or empty.", nameof(phonemeIds));
 
+            // Prosody非対応モデルはサポートしない
+            if (!_supportsProsody)
+                throw new InvalidOperationException("This model does not support prosody features. Only prosody-enabled models are supported.");
+
             // Unity.InferenceEngineの操作はメインスレッドで実行する必要がある
             return await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
             {
@@ -389,7 +431,7 @@ namespace uPiper.Core.AudioGeneration
                     try
                     {
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Preparing model inputs with prosody...");
-                        PiperLogger.LogInfo($"  Phoneme IDs length: {phonemeIds.Length}, Prosody support: {_supportsProsody}");
+                        PiperLogger.LogInfo($"  Phoneme IDs length: {phonemeIds.Length}");
 
                         // 入力テンソルを作成
                         var inputTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
@@ -416,6 +458,7 @@ namespace uPiper.Core.AudioGeneration
                             if (_supportsProsody)
                             {
                                 // Shape: (1, sequence_length, 3)
+                                // Note: ONNX model expects Float, not Int (despite Python using int64)
                                 var prosodyData = new float[phonemeIds.Length * 3];
                                 for (var i = 0; i < phonemeIds.Length; i++)
                                 {

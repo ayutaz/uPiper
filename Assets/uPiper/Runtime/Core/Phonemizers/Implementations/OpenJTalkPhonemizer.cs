@@ -650,9 +650,16 @@ namespace uPiper.Core.Phonemizers.Implementations
             if (nativeResult.phonemes != IntPtr.Zero)
             {
                 var phonemeString = Marshal.PtrToStringAnsi(nativeResult.phonemes);
+
+                // DEBUG: Log raw native phoneme string BEFORE any conversion
+                PiperLogger.LogInfo($"[DEBUG] Native raw phoneme string (BEFORE conversion): '{phonemeString}'");
+
                 if (!string.IsNullOrEmpty(phonemeString))
                 {
                     var phonemeList = phonemeString.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    // DEBUG: Log phoneme list after splitting
+                    PiperLogger.LogInfo($"[DEBUG] Phoneme list after split ({phonemeList.Length}): [{string.Join(", ", phonemeList.Select(p => $"'{p}'"))}]");
 
                     // Convert OpenJTalk phonemes to Piper phonemes using the mapping
                     var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(phonemeList);

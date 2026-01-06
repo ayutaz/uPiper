@@ -122,6 +122,26 @@ namespace uPiper.Core
         /// </summary>
         public PiperConfig Configuration => _config;
 
+        /// <summary>
+        /// Current cache size in bytes
+        /// </summary>
+        public long CurrentCacheSize => _currentCacheSize;
+
+        /// <summary>
+        /// Number of cache hits
+        /// </summary>
+        public long CacheHitCount => _cacheHitCount;
+
+        /// <summary>
+        /// Number of cache misses
+        /// </summary>
+        public long CacheMissCount => _cacheMissCount;
+
+        /// <summary>
+        /// Number of cache evictions
+        /// </summary>
+        public long CacheEvictionCount => _cacheEvictionCount;
+
         #endregion
 
         #region Events
@@ -546,18 +566,35 @@ namespace uPiper.Core
                             PiperLogger.LogInfo($"Prosody extracted: {prosodyResult.PhonemeCount} phonemes with A1/A2/A3 values");
                         }
 
-                        // Encode phonemes to IDs
-                        var phonemeIds = _phonemeEncoder.Encode(phonemeResult.Phonemes);
-                        PiperLogger.LogInfo($"Encoded {phonemeIds.Length} phoneme IDs");
+                        // Encode phonemes to IDs (with prosody expansion if needed)
+                        int[] phonemeIds;
+                        int[] expandedA1 = null, expandedA2 = null, expandedA3 = null;
+
+                        if (useProsody && prosodyA1 != null)
+                        {
+                            // Prosody対応: 音素IDとProsody配列を同時に展開
+                            var encodingResult = _phonemeEncoder.EncodeWithProsody(
+                                phonemeResult.Phonemes, prosodyA1, prosodyA2, prosodyA3);
+                            phonemeIds = encodingResult.PhonemeIds;
+                            expandedA1 = encodingResult.ExpandedProsodyA1;
+                            expandedA2 = encodingResult.ExpandedProsodyA2;
+                            expandedA3 = encodingResult.ExpandedProsodyA3;
+                            PiperLogger.LogInfo($"Encoded with prosody: {phonemeResult.Phonemes.Length} phonemes -> {phonemeIds.Length} IDs");
+                        }
+                        else
+                        {
+                            phonemeIds = _phonemeEncoder.Encode(phonemeResult.Phonemes);
+                            PiperLogger.LogInfo($"Encoded {phonemeIds.Length} phoneme IDs");
+                        }
 
                         _onProcessingProgress?.Invoke(0.6f);
 
                         // Generate audio using inference (with or without prosody)
                         float[] audioData;
-                        if (useProsody)
+                        if (useProsody && expandedA1 != null)
                         {
                             audioData = await _inferenceGenerator.GenerateAudioWithProsodyAsync(
-                                phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                                phonemeIds, expandedA1, expandedA2, expandedA3,
                                 cancellationToken: cancellationToken);
                         }
                         else

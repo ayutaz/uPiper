@@ -112,6 +112,13 @@ namespace uPiper.Core
         public Dictionary<string, int> PhonemeIdMap;
 
         /// <summary>
+        /// Phoneme type for encoding (e.g., "espeak", "openjtalk")
+        /// Determines whether PAD tokens are inserted between phonemes
+        /// </summary>
+        [HideInInspector]
+        public string PhonemeType;
+
+        /// <summary>
         /// Inference parameters
         /// </summary>
         [Header("Inference Parameters")]
