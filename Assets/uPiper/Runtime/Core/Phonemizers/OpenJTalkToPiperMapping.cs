@@ -219,25 +219,9 @@ namespace uPiper.Core.Phonemizers
                     continue;
                 }
 
-                // Special handling for "t i" sequence -> "ch i" (for ち)
-                if (phoneme.ToLower() == "t" && i + 1 < openJTalkPhonemes.Length && openJTalkPhonemes[i + 1].ToLower() == "i")
-                {
-                    // Check if this is actually "ち" sound
-                    // Look at the previous phoneme to determine context
-                    var isChiSound = true;
-
-                    // If preceded by "t" (like in "tti"), it's not "chi"
-                    if (i > 0 && openJTalkPhonemes[i - 1].ToLower() == "t")
-                    {
-                        isChiSound = false;
-                    }
-
-                    if (isChiSound)
-                    {
-                        result.Add("\ue00e"); // PUA for "ch"
-                        continue;
-                    }
-                }
+                // NOTE: "t i" sequence is NOT converted to "ch" here
+                // OpenJTalk outputs "ch" directly for ち (chi sound)
+                // "t i" from OpenJTalk means ティ (foreign katakana sound) and should remain as t + i
 
                 // Handle pause/silence
                 if (phoneme.ToLower() == "pau")
