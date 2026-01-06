@@ -63,9 +63,34 @@ namespace uPiper.Core.AudioGeneration
 
             // IPAモデルかどうかを判定（phoneme_id_mapにIPA文字 "ɕ" が含まれているか）
             _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
+
+            // デバッグ: PhonemeIdMapの状態を出力
+            PiperLogger.LogInfo($"[PhonemeEncoder] PhonemeIdMap count: {_config.PhonemeIdMap?.Count ?? 0}");
+            PiperLogger.LogInfo($"[PhonemeEncoder] _phonemeToId count: {_phonemeToId.Count}");
+            PiperLogger.LogInfo($"[PhonemeEncoder] _useIpaMapping: {_useIpaMapping}");
+
             if (_useIpaMapping)
             {
                 PiperLogger.LogInfo("[PhonemeEncoder] Detected IPA-based model, using IPA phoneme mapping");
+                // IPA文字の存在確認
+                var ipaKeys = new[] { "ɕ", "tɕ", "q", "ɯ", "ɴ" };
+                foreach (var key in ipaKeys)
+                {
+                    var exists = _phonemeToId.ContainsKey(key);
+                    PiperLogger.LogInfo($"[PhonemeEncoder] IPA key '{key}': {(exists ? "found" : "NOT FOUND")}");
+                }
+            }
+            else
+            {
+                PiperLogger.LogInfo("[PhonemeEncoder] Using PUA-based model (non-IPA)");
+                // PUA文字の存在確認
+                var puaKeys = new[] { "\ue00e", "\ue005", "\ue00a" };
+                foreach (var key in puaKeys)
+                {
+                    var exists = _phonemeToId.ContainsKey(key);
+                    var code = key.Length > 0 ? $"U+{((int)key[0]):X4}" : "empty";
+                    PiperLogger.LogInfo($"[PhonemeEncoder] PUA key {code}: {(exists ? "found" : "NOT FOUND")}");
+                }
             }
         }
 
@@ -89,7 +114,7 @@ namespace uPiper.Core.AudioGeneration
             ["dy"] = "\ue00b",
             ["py"] = "\ue00c",
             ["by"] = "\ue00d",
-            ["ch"] = "\ue00a",  // Same as ty in ja_JP-test-medium model
+            ["ch"] = "\ue00e",  // ID 39 in PUA models (different from ty)
             ["ts"] = "\ue00f",
             ["sh"] = "\ue010",
             ["zy"] = "\ue011",
@@ -138,11 +163,11 @@ namespace uPiper.Core.AudioGeneration
             ["\ue007"] = "kw",
             ["\ue008"] = "gy",
             ["\ue009"] = "gw",
-            ["\ue00a"] = "ch",  // ty/ch both map to this PUA
+            ["\ue00a"] = "ty",  // ty maps to 0xE00A
             ["\ue00b"] = "dy",
             ["\ue00c"] = "py",
             ["\ue00d"] = "by",
-            ["\ue00e"] = "ch",  // Used by OpenJTalkToPiperMapping for "ti" -> "ch" sound
+            ["\ue00e"] = "ch",  // ch maps to 0xE00E (ち、ちゃ sounds)
             ["\ue00f"] = "ts",
             ["\ue010"] = "sh",
             ["\ue011"] = "zy",
@@ -272,7 +297,11 @@ namespace uPiper.Core.AudioGeneration
                 else
                 {
                     // 未知の音素はスキップ（PADトークンも使用しない）
-                    PiperLogger.LogWarning($"Unknown phoneme: {phoneme} (mapped as: {phonemeToLookup}), skipping");
+                    var phonemeCode = phoneme.Length > 0 && phoneme[0] >= 0xE000 && phoneme[0] <= 0xF8FF
+                        ? $"PUA U+{((int)phoneme[0]):X4}"
+                        : $"'{phoneme}'";
+                    PiperLogger.LogWarning($"Unknown phoneme: {phonemeCode} (mapped as: '{phonemeToLookup}'), skipping. " +
+                        $"IPA mode: {_useIpaMapping}, PhonemeIdMap has {_phonemeToId.Count} entries");
                 }
             }
 

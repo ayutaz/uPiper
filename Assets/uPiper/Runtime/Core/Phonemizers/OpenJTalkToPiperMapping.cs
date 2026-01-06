@@ -117,14 +117,14 @@ namespace uPiper.Core.Phonemizers
             { "\ue008", 29 },  // gy
             { "\ue009", 30 },  // gw
             { "t", 31 },
-            { "\ue00a", 32 },  // ty (and ch!)
+            { "\ue00a", 32 },  // ty
             { "d", 33 },
             { "\ue00b", 34 },  // dy
             { "p", 35 },
             { "\ue00c", 36 },  // py
             { "b", 37 },
             { "\ue00d", 38 },  // by
-            { "\ue00e", 39 },  // ch (mapped to same ID as ty)
+            { "\ue00e", 39 },  // ch
             { "\ue00f", 40 },  // ts
             { "s", 41 },
             { "\ue010", 42 },  // sh (and sy)
@@ -191,7 +191,7 @@ namespace uPiper.Core.Phonemizers
             { "cl", "\ue005" },  // 促音 (geminate/sokuon) っ
 
             // Other multi-character phonemes
-            { "ch", "\ue00a" },  // ち、ちゃ、ちゅ、ちょ (maps to same as ty in model)
+            { "ch", "\ue00e" },  // ち、ちゃ、ちゅ、ちょ (ID 39 in PUA models)
             { "ts", "\ue00f" },  // つ
             { "sh", "\ue010" }   // し、しゃ、しゅ、しょ (same as "sy")
         };

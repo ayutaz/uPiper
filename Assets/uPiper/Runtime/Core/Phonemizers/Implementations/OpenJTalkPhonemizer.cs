@@ -131,6 +131,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         private readonly object _handleLock = new();
         private bool _disposed;
         private readonly string _dictionaryPath;
+        private readonly CustomDictionary _customDictionary;
 
         // Note: Phoneme to ID mapping is now handled by PhonemeEncoder based on the model's config
         // The phonemizer only returns the phoneme strings, not IDs
@@ -147,10 +148,11 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region Constructor and Destructor
 
-        public OpenJTalkPhonemizer(int cacheCapacity = 1000, string dictionaryPath = null)
+        public OpenJTalkPhonemizer(int cacheCapacity = 1000, string dictionaryPath = null, bool loadCustomDictionary = true)
             : base(cacheCapacity)
         {
             _dictionaryPath = dictionaryPath ?? GetDefaultDictionaryPath();
+            _customDictionary = new CustomDictionary(loadCustomDictionary);
             Initialize();
         }
 
@@ -336,24 +338,31 @@ namespace uPiper.Core.Phonemizers.Implementations
                 };
             }
 
+            // Apply custom dictionary replacements before phonemization
+            var processedText = _customDictionary.ApplyToText(text);
+            if (processedText != text)
+            {
+                PiperLogger.LogInfo($"[OpenJTalkPhonemizer] Custom dictionary applied: '{text}' -> '{processedText}'");
+            }
+
             lock (_handleLock)
             {
                 if (_handle == IntPtr.Zero)
                     throw new PiperInitializationException("OpenJTalk not initialized");
 
                 // Log input text with detailed encoding information
-                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Processing text: '{text}' (length: {text.Length})");
+                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Processing text: '{processedText}' (length: {processedText.Length})");
 
                 // Debug text encoding to identify Windows-specific issues
-                var textBytes = System.Text.Encoding.UTF8.GetBytes(text);
+                var textBytes = System.Text.Encoding.UTF8.GetBytes(processedText);
                 var hexText = string.Join(" ", textBytes.Select(b => b.ToString("X2", System.Globalization.CultureInfo.InvariantCulture)));
                 PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Input text UTF-8 bytes: {hexText}");
 
                 // Additional character analysis for Windows debugging
                 PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Character analysis:");
-                for (var i = 0; i < Math.Min(text.Length, 10); i++)
+                for (var i = 0; i < Math.Min(processedText.Length, 10); i++)
                 {
-                    var ch = text[i];
+                    var ch = processedText[i];
                     var unicode = ((int)ch).ToString("X4", System.Globalization.CultureInfo.InvariantCulture);
                     PiperLogger.LogDebug($"  [{i}] '{ch}' = U+{unicode}");
                 }
@@ -370,7 +379,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 {
 #if ENABLE_PINVOKE
                     // Call native phonemize function (Unity marshals as UTF-8 by default)
-                    resultPtr = openjtalk_phonemize(_handle, text);
+                    resultPtr = openjtalk_phonemize(_handle, processedText);
                     if (resultPtr == IntPtr.Zero)
                     {
                         var errorCode = openjtalk_get_last_error(_handle);
@@ -379,7 +388,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                             ? Marshal.PtrToStringAnsi(errorMsgPtr)
                             : "Unknown error";
 
-                        throw new PiperPhonemizationException(text, "ja",
+                        throw new PiperPhonemizationException(processedText, "ja",
                             $"OpenJTalk phonemization failed: {errorMsg}");
                     }
 #else
@@ -586,18 +595,25 @@ namespace uPiper.Core.Phonemizers.Implementations
                 };
             }
 
+            // Apply custom dictionary replacements before phonemization
+            var processedText = _customDictionary.ApplyToText(text);
+            if (processedText != text)
+            {
+                PiperLogger.LogInfo($"[OpenJTalkPhonemizer] Custom dictionary applied: '{text}' -> '{processedText}'");
+            }
+
             lock (_handleLock)
             {
                 if (_handle == IntPtr.Zero)
                     throw new PiperInitializationException("OpenJTalk not initialized");
 
-                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Processing text with prosody: '{text}'");
+                PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Processing text with prosody: '{processedText}'");
 
                 var resultPtr = IntPtr.Zero;
                 try
                 {
 #if ENABLE_PINVOKE
-                    resultPtr = openjtalk_phonemize_with_prosody(_handle, text);
+                    resultPtr = openjtalk_phonemize_with_prosody(_handle, processedText);
                     if (resultPtr == IntPtr.Zero)
                     {
                         var errorCode = openjtalk_get_last_error(_handle);
@@ -606,7 +622,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                             ? Marshal.PtrToStringAnsi(errorMsgPtr)
                             : "Unknown error";
 
-                        throw new PiperPhonemizationException(text, "ja",
+                        throw new PiperPhonemizationException(processedText, "ja",
                             $"OpenJTalk phonemization with prosody failed: {errorMsg}");
                     }
 #else

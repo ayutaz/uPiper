@@ -43,6 +43,10 @@ dotnet format --verify-no-changes
 ```
 テキスト入力
     ↓
+カスタム辞書による前処理 (CustomDictionary)
+    • 技術用語・固有名詞の読み変換
+    • 例: "Docker" → "ドッカー", "GitHub" → "ギットハブ"
+    ↓
 Phonemizer (テキスト→音素変換)
     • 日本語: OpenJTalk (ネイティブC++ライブラリ, P/Invoke)
     • 英語: Flite LTS (純粋C#実装)
@@ -75,6 +79,7 @@ AudioClip出力 (22050Hz, float32)
 | `OpenJTalkPhonemizerBackend` | 同上 | 日本語音素化（P/Invoke） |
 | `FliteLTSPhonemizerBackend` | 同上 | 英語音素化（C#） |
 | `OpenJTalkPhonemizer` | `Runtime/Core/Phonemizers/Implementations/` | Prosody情報付き音素化 |
+| `CustomDictionary` | `Runtime/Core/Phonemizers/` | カスタム辞書（技術用語・固有名詞の読み変換） |
 | `PiperConfig` | `Runtime/Core/` | 設定管理（GPU, キャッシュ, バックエンド選択） |
 | `AudioChunkBuilder` | `Runtime/Core/AudioGeneration/` | 音声波形→AudioClip変換 |
 | `InferenceAudioGenerator` | `Runtime/Core/AudioGeneration/` | ONNX直接推論（Prosody対応） |
@@ -191,3 +196,45 @@ if (generator.SupportsProsody)
 ### モデル判定
 - `InferenceAudioGenerator.SupportsProsody`: ONNXモデルがProsody入力をサポートしているかを返す
 - Prosody対応モデルは `a1`, `a2`, `a3` 入力テンソルを持つ
+
+## カスタム辞書機能
+
+### 概要
+技術用語や固有名詞（英単語・アルファベット）を日本語の読みに変換する前処理機能。piper-plusのPython実装と互換性のあるJSON形式をサポート。
+
+### 辞書ファイル
+辞書は `StreamingAssets/uPiper/Dictionaries/` に配置（ファイル名順に読み込み）:
+
+| ファイル | 内容 |
+|---------|------|
+| `additional_tech_dict.json` | AI/LLM関連用語 |
+| `default_common_dict.json` | IT/ビジネス用語 |
+| `default_tech_dict.json` | 技術用語（プログラミング言語、開発ツール等） |
+| `user_custom_dict.json` | ユーザー定義辞書（テンプレート） |
+
+### JSON形式
+```json
+{
+  "version": "2.0",
+  "entries": {
+    "Docker": {"pronunciation": "ドッカー", "priority": 9},
+    "GitHub": {"pronunciation": "ギットハブ", "priority": 9}
+  }
+}
+```
+
+### 使用方法
+`OpenJTalkPhonemizer`が自動的にカスタム辞書を読み込み、テキスト前処理を行う。
+```csharp
+// 辞書は自動読み込み
+var phonemizer = new OpenJTalkPhonemizer();
+
+// "DockerとGitHubを使った開発" → "ドッカーとギットハブを使った開発" に変換後、音素化
+var result = phonemizer.PhonemizeWithProsody("DockerとGitHubを使った開発");
+```
+
+### 動的追加
+```csharp
+var dict = new CustomDictionary();
+dict.AddWord("MyTerm", "マイターム", priority: 10);
+```
