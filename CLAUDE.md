@@ -238,3 +238,53 @@ var result = phonemizer.PhonemizeWithProsody("DockerとGitHubを使った開発"
 var dict = new CustomDictionary();
 dict.AddWord("MyTerm", "マイターム", priority: 10);
 ```
+
+## 音素エンコーディング
+
+### IPA vs PUA モデル
+
+Piperモデルには2種類の音素表現がある：
+
+| モデルタイプ | 音素表現 | 例 | 対応モデル |
+|------------|---------|-----|-----------|
+| **PUA (Private Use Area)** | Unicode私用領域文字 | `ch` → `\ue00e` (ID 39) | ja_JP-test-medium |
+| **IPA (International Phonetic Alphabet)** | 国際音声記号 | `ch` → `tɕ` (ID 32) | tsukuyomi-chan |
+
+### PhonemeEncoder の動作
+
+`PhonemeEncoder`は初期化時にモデルの`phoneme_id_map`を検査し、IPA文字（`ɕ`等）の有無で自動判定：
+
+```csharp
+// IPA判定: phoneme_id_mapに "ɕ" が含まれているか
+_useIpaMapping = _phonemeToId.ContainsKey("ɕ");
+```
+
+**IPAモデルの場合**:
+1. PUA文字を元の音素に逆変換（`\ue00e` → `ch`）
+2. IPA音素に変換（`ch` → `tɕ`）
+3. phoneme_id_mapでIDを取得
+
+**PUAモデルの場合**:
+1. PUA文字をそのまま使用
+2. phoneme_id_mapでIDを取得
+
+### 主要な音素マッピング
+
+| OpenJTalk出力 | PUA文字 | PUA ID | IPA音素 | IPA ID |
+|--------------|---------|--------|---------|--------|
+| `ch` (ち) | `\ue00e` | 39 | `tɕ` | 32 |
+| `ts` (つ) | `\ue00f` | 40 | `ts` | 33 |
+| `sh` (し) | `\ue010` | 42 | `ɕ` | 18 |
+| `cl` (っ) | `\ue005` | 23 | `q` | 24 |
+| `ky` (きゃ) | `\ue006` | 26 | `kʲ` | - |
+| `N` (ん) | `N` | 22 | `ɴ` | 22 |
+
+### デバッグ
+
+PhonemeEncoderは初期化時に詳細なログを出力：
+```
+[PhonemeEncoder] PhonemeIdMap count: 58
+[PhonemeEncoder] _useIpaMapping: True
+[PhonemeEncoder] IPA key 'ɕ': found
+[PhonemeEncoder] IPA key 'tɕ': found
+```
