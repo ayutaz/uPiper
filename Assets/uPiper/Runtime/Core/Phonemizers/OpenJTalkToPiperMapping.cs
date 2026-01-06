@@ -249,15 +249,28 @@ namespace uPiper.Core.Phonemizers
                 // Try to map the phoneme
                 if (OpenJTalkToPiperPhoneme.TryGetValue(phoneme.ToLower(), out var piperPhoneme))
                 {
-                    result.Add(piperPhoneme);
+                    // IMPORTANT: Preserve case for unvoiced vowels (U, I, E, O, A) and moraic nasal (N)
+                    // These have separate phoneme IDs in IPA-based models like tsukuyomi-chan
+                    // - N (moraic nasal) → ID 22
+                    // - n (regular consonant) → ID 50
+                    // - U (unvoiced u) → ID 14
+                    // - u (regular u) → ID 9
+                    if (phoneme.Length == 1 && "UIEOAN".Contains(phoneme))
+                    {
+                        result.Add(phoneme); // Keep original case
+                    }
+                    else
+                    {
+                        result.Add(piperPhoneme);
+                    }
                 }
                 else
                 {
                     // If no mapping exists, use the original phoneme
-                    // IMPORTANT: Preserve case for unvoiced vowels (U, I, E, O, A)
-                    if (phoneme.Length == 1 && "UIEOA".Contains(phoneme))
+                    // IMPORTANT: Preserve case for unvoiced vowels (U, I, E, O, A) and moraic nasal (N)
+                    if (phoneme.Length == 1 && "UIEOAN".Contains(phoneme))
                     {
-                        result.Add(phoneme); // Keep uppercase for unvoiced vowels
+                        result.Add(phoneme); // Keep uppercase
                     }
                     else
                     {
