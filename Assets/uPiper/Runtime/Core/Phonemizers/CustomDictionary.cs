@@ -272,11 +272,11 @@ namespace uPiper.Core.Phonemizers
 
             var escapedWord = Regex.Escape(word);
 
-            // 日本語を含むかチェック（最初の文字がASCII外）
-            var hasJapanese = word.Length > 0 && word[0] > 127;
+            // 日本語を含むかチェック（ひらがな、カタカナ、漢字）
+            var hasJapanese = word.Length > 0 && IsJapaneseChar(word[0]);
             if (!hasJapanese && word.Length > 1)
             {
-                hasJapanese = word.Skip(1).Any(c => c > 127);
+                hasJapanese = word.Skip(1).Any(IsJapaneseChar);
             }
 
             string patternStr;
@@ -375,6 +375,18 @@ namespace uPiper.Core.Phonemizers
                 CaseInsensitiveEntries = _entries.Count,
                 CaseSensitiveEntries = _caseSensitiveEntries.Count
             };
+        }
+
+        /// <summary>
+        /// 日本語文字かどうかを判定
+        /// ひらがな、カタカナ、CJK統合漢字をチェック
+        /// </summary>
+        private static bool IsJapaneseChar(char c)
+        {
+            // ひらがな (U+3040-U+309F), カタカナ (U+30A0-U+30FF), 漢字 (U+4E00-U+9FAF)
+            return (c >= 0x3040 && c <= 0x309F) ||  // ひらがな
+                   (c >= 0x30A0 && c <= 0x30FF) ||  // カタカナ
+                   (c >= 0x4E00 && c <= 0x9FAF);    // 漢字 (CJK統合漢字)
         }
 
         /// <summary>

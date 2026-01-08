@@ -217,9 +217,9 @@ static PhonemeResult* labels_to_phonemes(OpenJTalkContext* ctx, JPCommon* jpcomm
             DEBUG_LOG("  Extracted phoneme: '%s' (len=%d)", phoneme_tmp, phoneme_len);
             
             // Handle silence phonemes
-            // FIX: Must check phoneme_len == 3 to avoid matching single 's' as 'sil'
+            // Ensure we don't match single 's' as 'sil' by requiring at least 3 characters
             // strncmp("s", "sil", 1) would return 0 (match), incorrectly treating 's' as silence
-            if (phoneme_len == 3 && strncmp(phoneme_start, "sil", 3) == 0) {
+            if (phoneme_len >= 3 && strncmp(phoneme_start, "sil", 3) == 0) {
                 // Only add pau at the beginning and end
                 if (i == 0 || i == label_size - 1) {
                     if (buf_ptr != phoneme_buffer) {
@@ -407,9 +407,9 @@ static ProsodyPhonemeResult* labels_to_phonemes_with_prosody(OpenJTalkContext* c
             DEBUG_LOG("  Extracted phoneme: '%s', A1=%d, A2=%d, A3=%d", phoneme_tmp, a1, a2, a3);
 
             // Handle silence phonemes
-            // FIX: Must check phoneme_len == 3 to avoid matching single 's' as 'sil'
+            // Ensure we don't match single 's' as 'sil' by requiring at least 3 characters
             // strncmp("s", "sil", 1) would return 0 (match), incorrectly treating 's' as silence
-            if (phoneme_len == 3 && strncmp(phoneme_start, "sil", 3) == 0) {
+            if (phoneme_len >= 3 && strncmp(phoneme_start, "sil", 3) == 0) {
                 // Only add pau at the beginning and end
                 if (i == 0 || i == label_size - 1) {
                     if (buf_ptr != phoneme_buffer) {

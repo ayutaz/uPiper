@@ -251,7 +251,10 @@ namespace uPiper.Core.AudioGeneration
                                 if (_supportsProsody)
                                 {
                                     // Shape: (1, sequence_length, 3) - すべてゼロで初期化
-                                    // Note: ONNX model expects Float, not Int (despite Python using int64)
+                                    // Note: ONNX model expects Float, not Int (despite Python using int64).
+                                    //       This matches the prosody_features input type used in the Piper ONNX export;
+                                    //       changing this to an integer tensor would no longer match the exported model
+                                    //       and could cause inference failures.
                                     var defaultProsodyData = new float[phonemeIds.Length * 3];
                                     prosodyTensor = new Tensor<float>(
                                         new TensorShape(1, phonemeIds.Length, 3),

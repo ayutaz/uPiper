@@ -303,7 +303,12 @@ namespace uPiper.Core.AudioGeneration
                 else
                 {
                     // 未知の音素はスキップ（PADトークンも使用しない）
-                    var phonemeCode = phoneme.Length > 0 && phoneme[0] >= 0xE000 && phoneme[0] <= 0xF8FF
+                    // Note: We only check the BMP Private Use Area (U+E000–U+F8FF) here because phoneme[0] is a single
+                    // UTF-16 code unit. Non-BMP PUA code points (planes 15 and 16) would appear as surrogate pairs and
+                    // are not expected in this phoneme representation.
+                    const int BmpPuaStart = 0xE000;
+                    const int BmpPuaEnd = 0xF8FF;
+                    var phonemeCode = phoneme.Length > 0 && phoneme[0] >= BmpPuaStart && phoneme[0] <= BmpPuaEnd
                         ? $"PUA U+{((int)phoneme[0]):X4}"
                         : $"'{phoneme}'";
                     PiperLogger.LogWarning($"Unknown phoneme: {phonemeCode} (mapped as: '{phonemeToLookup}'), skipping. " +
