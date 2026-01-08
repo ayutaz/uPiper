@@ -99,7 +99,11 @@ namespace uPiper.Tests.Runtime
 
             // Generate audio
             var testText = "こんにちは";
-            var audioClip = piperTTS.GenerateAudio(testText);
+            var audioTask = piperTTS.GenerateAudioAsync(testText);
+            yield return new WaitUntil(() => audioTask.IsCompleted);
+
+            Assert.IsTrue(audioTask.IsCompletedSuccessfully);
+            var audioClip = audioTask.Result;
 
             Assert.IsNotNull(audioClip, "Should generate audio clip");
             Assert.Greater(audioClip.length, 0f, "Audio clip should have duration");
@@ -184,9 +188,12 @@ namespace uPiper.Tests.Runtime
             var testText = "これはパフォーマンステストです。";
 
             var startTime = Time.realtimeSinceStartup;
-            var audioClip = piperTTS.GenerateAudio(testText);
+            var audioTask = piperTTS.GenerateAudioAsync(testText);
+            yield return new WaitUntil(() => audioTask.IsCompleted);
             var generationTime = Time.realtimeSinceStartup - startTime;
 
+            Assert.IsTrue(audioTask.IsCompletedSuccessfully);
+            var audioClip = audioTask.Result;
             Assert.IsNotNull(audioClip);
 
             // Performance targets for mobile

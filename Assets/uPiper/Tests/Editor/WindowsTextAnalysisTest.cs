@@ -1,6 +1,7 @@
 #if UNITY_EDITOR && UNITY_EDITOR_WIN && !UNITY_WEBGL
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
 using uPiper.Core;
@@ -29,7 +30,7 @@ namespace uPiper.Tests.Editor
         }
 
         [Test]
-        public void TestProblematicSentences()
+        public async Task TestProblematicSentences()
         {
             try
             {
@@ -39,7 +40,7 @@ namespace uPiper.Tests.Editor
                 {
                     // 問題のある文
                     ("今日はいい天気ですね", "きょうはいいてんきですね"),
-                    
+
                     // 比較用の文
                     ("今日は", "きょうは"),
                     ("いい", "いい"),
@@ -47,7 +48,7 @@ namespace uPiper.Tests.Editor
                     ("ですね", "ですね"),
                     ("いい天気", "いいてんき"),
                     ("天気ですね", "てんきですね"),
-                    
+
                     // 別の文章パターン
                     ("今日はいい天気です", "きょうはいいてんきです"),
                     ("今日は天気がいいですね", "きょうはてんきがいいですね"),
@@ -57,7 +58,7 @@ namespace uPiper.Tests.Editor
                 foreach (var (text, reading) in testCases)
                 {
                     Debug.Log($"\n=== Analyzing: {text} ({reading}) ===");
-                    var result = _phonemizer.Phonemize(text, "ja");
+                    var result = await _phonemizer.PhonemizeAsync(text, "ja");
 
                     Debug.Log($"Input text: '{text}'");
                     Debug.Log($"Expected reading: {reading}");
@@ -137,7 +138,7 @@ namespace uPiper.Tests.Editor
         }
 
         [Test]
-        public void AnalyzeCharacterByCharacter()
+        public async Task AnalyzeCharacterByCharacter()
         {
             try
             {
@@ -150,7 +151,7 @@ namespace uPiper.Tests.Editor
                 for (var i = 0; i < text.Length; i++)
                 {
                     var singleChar = text[i].ToString();
-                    var result = _phonemizer.Phonemize(singleChar, "ja");
+                    var result = await _phonemizer.PhonemizeAsync(singleChar, "ja");
                     Debug.Log($"'{singleChar}' -> {string.Join(" ", result.Phonemes)}");
                 }
 
@@ -159,7 +160,7 @@ namespace uPiper.Tests.Editor
                 for (var i = 1; i <= text.Length; i++)
                 {
                     var partial = text[..i];
-                    var result = _phonemizer.Phonemize(partial, "ja");
+                    var result = await _phonemizer.PhonemizeAsync(partial, "ja");
                     Debug.Log($"'{partial}' -> {string.Join(" ", result.Phonemes)} ({result.Phonemes.Length} phonemes)");
                 }
             }

@@ -40,14 +40,6 @@ namespace uPiper.Core.Phonemizers
         public Task<PhonemeResult> PhonemizeAsync(string text, string language = "ja", CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Converts text to phonemes synchronously.
-        /// </summary>
-        /// <param name="text">The text to phonemize.</param>
-        /// <param name="language">The language code (default: "ja").</param>
-        /// <returns>The phonemization result.</returns>
-        public PhonemeResult Phonemize(string text, string language = "ja");
-
-        /// <summary>
         /// Converts multiple texts to phonemes asynchronously.
         /// </summary>
         /// <param name="texts">The texts to phonemize.</param>
