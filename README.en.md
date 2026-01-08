@@ -27,6 +27,16 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 - Fast inference with Unity AI Inference Engine
 - High-precision Japanese phonemization with OpenJTalk (Windows/macOS/Linux/Android/iOS)
 - GPU inference support (GPUCompute/GPUPixel)
+- **Prosody Support**: More natural intonation in speech synthesis
+- **Custom Dictionary**: Reading conversion for technical terms and proper nouns
+
+### Supported Models
+
+| Model Name | Language | Prosody | Description |
+|-----------|----------|---------|-------------|
+| ja_JP-test-medium | Japanese | No | Standard Japanese model |
+| en_US-ljspeech-medium | English | No | Standard English model |
+| tsukuyomi-chan | Japanese | Yes | Prosody-enabled Japanese model (more natural intonation) |
 
 ## Requirements
 * Unity 6000.0.58f2

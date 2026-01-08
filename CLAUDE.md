@@ -6,6 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 uPiperは[piper-plus](https://github.com/ayutaz/piper-plus)ベースの高品質ニューラルTTS（Text-to-Speech）Unityプラグイン。VITS（Variational Inference with adversarial learning for end-to-end Text-to-Speech）モデルを使用し、日本語（OpenJTalk）と英語（Flite LTS）の多言語音声合成に対応。
 
+### 対応モデル
+
+| モデル名 | 言語 | Prosody対応 | 説明 |
+|---------|------|------------|------|
+| ja_JP-test-medium | 日本語 | No | 標準日本語モデル |
+| en_US-ljspeech-medium | 英語 | No | 標準英語モデル |
+| tsukuyomi-chan | 日本語 | Yes | Prosody対応日本語モデル（より自然なイントネーション） |
+
 ## ビルド・テストコマンド
 
 ### Unity テスト実行
@@ -35,6 +43,10 @@ dotnet format --verify-no-changes
 ```
 テキスト入力
     ↓
+カスタム辞書による前処理 (CustomDictionary)
+    • 技術用語・固有名詞の読み変換
+    • 例: "Docker" → "ドッカー", "GitHub" → "ギットハブ"
+    ↓
 Phonemizer (テキスト→音素変換)
     • 日本語: OpenJTalk (ネイティブC++ライブラリ, P/Invoke)
     • 英語: Flite LTS (純粋C#実装)
@@ -42,9 +54,18 @@ Phonemizer (テキスト→音素変換)
 音素エンコーディング (Unicode PUAマッピング)
     • 複数文字音素（ky, ch, ts, sh等）→ Private Use Area文字
     ↓
+┌─────────────────────────────────────────────────┐
+│ Prosody対応モデルの場合（tsukuyomi-chan等）     │
+│   Prosody情報取得 (OpenJTalk PhonemizeWithProsody)│
+│     • A1: アクセント句内モーラ位置              │
+│     • A2: アクセント句内アクセント位置          │
+│     • A3: 呼気段落内アクセント句位置            │
+└─────────────────────────────────────────────────┘
+    ↓
 VITS推論 (ONNX via Unity.InferenceEngine)
     • GPU: GPUPixel (推奨), GPUCompute (非推奨)
     • CPU: macOSデフォルト
+    • Prosody対応: GenerateAudioWithProsodyAsync
     ↓
 AudioClip出力 (22050Hz, float32)
 ```
@@ -57,20 +78,28 @@ AudioClip出力 (22050Hz, float32)
 | `IPhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/` | 音素化バックエンド抽象 |
 | `OpenJTalkPhonemizerBackend` | 同上 | 日本語音素化（P/Invoke） |
 | `FliteLTSPhonemizerBackend` | 同上 | 英語音素化（C#） |
+| `OpenJTalkPhonemizer` | `Runtime/Core/Phonemizers/Implementations/` | Prosody情報付き音素化 |
+| `CustomDictionary` | `Runtime/Core/Phonemizers/` | カスタム辞書（技術用語・固有名詞の読み変換） |
 | `PiperConfig` | `Runtime/Core/` | 設定管理（GPU, キャッシュ, バックエンド選択） |
 | `AudioChunkBuilder` | `Runtime/Core/AudioGeneration/` | 音声波形→AudioClip変換 |
+| `InferenceAudioGenerator` | `Runtime/Core/AudioGeneration/` | ONNX直接推論（Prosody対応） |
+| `InferenceEngineDemo` | `Runtime/Demo/` | テスト用デモUI |
 
 ### ディレクトリ構造
 ```
 Assets/uPiper/
-├── Runtime/Core/           # ランタイムコア
-│   ├── AudioGeneration/    # AudioClip生成
-│   ├── Phonemizers/        # 音素化システム
-│   │   ├── Backend/        # バックエンド実装
-│   │   ├── Native/         # P/Invoke定義
-│   │   └── Threading/      # マルチスレッド処理
-│   ├── IL2CPP/             # IL2CPP互換レイヤー
-│   └── Platform/           # プラットフォーム固有コード
+├── Runtime/
+│   ├── Core/               # ランタイムコア
+│   │   ├── AudioGeneration/    # AudioClip生成、ONNX推論
+│   │   ├── Phonemizers/        # 音素化システム
+│   │   │   ├── Backend/        # バックエンド実装
+│   │   │   ├── Implementations/# Prosody対応実装
+│   │   │   ├── Native/         # P/Invoke定義
+│   │   │   └── Threading/      # マルチスレッド処理
+│   │   ├── IL2CPP/             # IL2CPP互換レイヤー
+│   │   └── Platform/           # プラットフォーム固有コード
+│   └── Demo/               # デモ・テストUI
+├── Resources/Models/       # ONNXモデルファイル（*.onnx, *.onnx.json）
 ├── Editor/                 # エディタツール
 ├── Tests/                  # テスト
 │   ├── Editor/             # EditModeテスト
@@ -78,7 +107,7 @@ Assets/uPiper/
 ├── Plugins/                # ネイティブライブラリ
 └── Samples~/               # サンプルデータ
 
-StreamingAssets/uPiper/     # 実行時データ（モデル, 辞書）
+StreamingAssets/uPiper/     # 実行時データ（辞書）
 NativePlugins/OpenJTalk/    # OpenJTalk C/C++ソース
 ```
 
@@ -135,3 +164,127 @@ NativePlugins/OpenJTalk/    # OpenJTalk C/C++ソース
 | `unity-build.yml` | マルチプラットフォームビルド |
 | `dotnet-format.yml` | C#コードフォーマット |
 | `build-openjtalk-native.yml` | ネイティブライブラリコンパイル |
+
+## Prosody（韻律）機能
+
+### 概要
+Prosody対応モデル（tsukuyomi-chan等）では、OpenJTalkから取得したアクセント情報を使用してより自然なイントネーションの音声を生成できる。
+
+### Prosodyパラメータ
+- **A1 (ProsodyA1)**: アクセント句内でのモーラ位置（0始まり）
+- **A2 (ProsodyA2)**: アクセント句内のアクセント核位置（アクセント型）
+- **A3 (ProsodyA3)**: 呼気段落（イントネーション句）内でのアクセント句位置
+
+### 使用方法
+```csharp
+// Prosody情報付き音素化
+var phonemizer = new OpenJTalkPhonemizer();
+var result = phonemizer.PhonemizeWithProsody("こんにちは");
+// result.Phonemes: 音素配列
+// result.ProsodyA1, ProsodyA2, ProsodyA3: 各音素に対応するProsody値
+
+// Prosody対応音声生成
+var generator = new InferenceAudioGenerator();
+await generator.InitializeAsync(modelAsset, voiceConfig);
+if (generator.SupportsProsody)
+{
+    var audio = await generator.GenerateAudioWithProsodyAsync(
+        phonemeIds, prosodyA1, prosodyA2, prosodyA3);
+}
+```
+
+### モデル判定
+- `InferenceAudioGenerator.SupportsProsody`: ONNXモデルがProsody入力をサポートしているかを返す
+- Prosody対応モデルは `a1`, `a2`, `a3` 入力テンソルを持つ
+
+## カスタム辞書機能
+
+### 概要
+技術用語や固有名詞（英単語・アルファベット）を日本語の読みに変換する前処理機能。piper-plusのPython実装と互換性のあるJSON形式をサポート。
+
+### 辞書ファイル
+辞書は `StreamingAssets/uPiper/Dictionaries/` に配置（ファイル名順に読み込み）:
+
+| ファイル | 内容 |
+|---------|------|
+| `additional_tech_dict.json` | AI/LLM関連用語 |
+| `default_common_dict.json` | IT/ビジネス用語 |
+| `default_tech_dict.json` | 技術用語（プログラミング言語、開発ツール等） |
+| `user_custom_dict.json` | ユーザー定義辞書（テンプレート） |
+
+### JSON形式
+```json
+{
+  "version": "2.0",
+  "entries": {
+    "Docker": {"pronunciation": "ドッカー", "priority": 9},
+    "GitHub": {"pronunciation": "ギットハブ", "priority": 9}
+  }
+}
+```
+
+### 使用方法
+`OpenJTalkPhonemizer`が自動的にカスタム辞書を読み込み、テキスト前処理を行う。
+```csharp
+// 辞書は自動読み込み
+var phonemizer = new OpenJTalkPhonemizer();
+
+// "DockerとGitHubを使った開発" → "ドッカーとギットハブを使った開発" に変換後、音素化
+var result = phonemizer.PhonemizeWithProsody("DockerとGitHubを使った開発");
+```
+
+### 動的追加
+```csharp
+var dict = new CustomDictionary();
+dict.AddWord("MyTerm", "マイターム", priority: 10);
+```
+
+## 音素エンコーディング
+
+### IPA vs PUA モデル
+
+Piperモデルには2種類の音素表現がある：
+
+| モデルタイプ | 音素表現 | 例 | 対応モデル |
+|------------|---------|-----|-----------|
+| **PUA (Private Use Area)** | Unicode私用領域文字 | `ch` → `\ue00e` (ID 39) | ja_JP-test-medium |
+| **IPA (International Phonetic Alphabet)** | 国際音声記号 | `ch` → `tɕ` (ID 32) | tsukuyomi-chan |
+
+### PhonemeEncoder の動作
+
+`PhonemeEncoder`は初期化時にモデルの`phoneme_id_map`を検査し、IPA文字（`ɕ`等）の有無で自動判定：
+
+```csharp
+// IPA判定: phoneme_id_mapに "ɕ" が含まれているか
+_useIpaMapping = _phonemeToId.ContainsKey("ɕ");
+```
+
+**IPAモデルの場合**:
+1. PUA文字を元の音素に逆変換（`\ue00e` → `ch`）
+2. IPA音素に変換（`ch` → `tɕ`）
+3. phoneme_id_mapでIDを取得
+
+**PUAモデルの場合**:
+1. PUA文字をそのまま使用
+2. phoneme_id_mapでIDを取得
+
+### 主要な音素マッピング
+
+| OpenJTalk出力 | PUA文字 | PUA ID | IPA音素 | IPA ID |
+|--------------|---------|--------|---------|--------|
+| `ch` (ち) | `\ue00e` | 39 | `tɕ` | 32 |
+| `ts` (つ) | `\ue00f` | 40 | `ts` | 33 |
+| `sh` (し) | `\ue010` | 42 | `ɕ` | 18 |
+| `cl` (っ) | `\ue005` | 23 | `q` | 24 |
+| `ky` (きゃ) | `\ue006` | 26 | `kʲ` | - |
+| `N` (ん) | `N` | 22 | `ɴ` | 22 |
+
+### デバッグ
+
+PhonemeEncoderは初期化時に詳細なログを出力：
+```
+[PhonemeEncoder] PhonemeIdMap count: 58
+[PhonemeEncoder] _useIpaMapping: True
+[PhonemeEncoder] IPA key 'ɕ': found
+[PhonemeEncoder] IPA key 'tɕ': found
+```

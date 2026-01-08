@@ -77,16 +77,16 @@ using uPiper.Core;
 public class TTSExample : MonoBehaviour
 {
     private IPiperTTS piperTTS;
-    
+
     async void Start()
     {
         // 初期化
         piperTTS = new PiperTTS();
         await piperTTS.InitializeAsync();
-        
+
         // 音声生成
         AudioClip clip = await piperTTS.GenerateAudioAsync("こんにちは、世界！");
-        
+
         // 再生
         var audioSource = GetComponent<AudioSource>();
         audioSource.clip = clip;
@@ -94,6 +94,39 @@ public class TTSExample : MonoBehaviour
     }
 }
 ```
+
+## Prosody API（韻律情報取得）
+
+OpenJTalk の full-context label から韻律情報（A1/A2/A3値）を取得できます。
+
+```csharp
+using uPiper.Core.Phonemizers.Implementations;
+
+// OpenJTalkPhonemizer を直接使用
+var phonemizer = new OpenJTalkPhonemizer();
+
+// 韻律情報付きで音素化
+var result = phonemizer.PhonemizeWithProsody("今日は良い天気です");
+
+// 結果にアクセス
+Debug.Log($"音素数: {result.PhonemeCount}");
+for (int i = 0; i < result.PhonemeCount; i++)
+{
+    Debug.Log($"{result.Phonemes[i]}: A1={result.ProsodyA1[i]}, A2={result.ProsodyA2[i]}, A3={result.ProsodyA3[i]}");
+}
+
+phonemizer.Dispose();
+```
+
+### 韻律値の説明
+
+| 値 | 説明 |
+|----|------|
+| **A1** | アクセント核からの相対位置（負の値も可） |
+| **A2** | アクセント句内のモーラ位置（1-based） |
+| **A3** | アクセント句内の総モーラ数 |
+
+これらの値は日本語の自然なイントネーション生成に使用できます。
 
 ## サンプル
 

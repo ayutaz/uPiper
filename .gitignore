@@ -12,6 +12,9 @@
 # Ignore Claude configuration
 .claude/
 
+# Claude Code MCP configuration (local development only)
+.mcp.json
+
 # VS Code settings
 .vscode/
 
@@ -275,3 +278,9 @@ Assets/uPiper/Samples/
 # Development environment - extracted dictionary (from naist_jdic.zip)
 Assets/StreamingAssets/uPiper/OpenJTalk/naist_jdic/
 Assets/StreamingAssets/uPiper/OpenJTalk/naist_jdic.meta
+
+# Development environment - tsukuyomi-chan model (not redistributable)
+Assets/uPiper/Resources/Models/tsukuyomi-chan.onnx
+Assets/uPiper/Resources/Models/tsukuyomi-chan.onnx.meta
+Assets/uPiper/Resources/Models/tsukuyomi-chan.onnx.json
+Assets/uPiper/Resources/Models/tsukuyomi-chan.onnx.json.meta

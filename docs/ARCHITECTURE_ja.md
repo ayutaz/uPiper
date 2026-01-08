@@ -111,6 +111,124 @@ result->durations[i] = 0.05f; // Default 50ms duration
 
 5. **音声出力**: Unity AudioSourceで再生
 
+## Prosody（韻律）サポート
+
+### 概要
+
+Prosody対応モデル（tsukuyomi-chan等）では、OpenJTalkから取得したアクセント情報を使用してより自然なイントネーションの音声を生成できます。
+
+### データフロー（Prosody対応）
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Text Input    │ --> │ CustomDictionary │ --> │   OpenJTalk     │
+│   "Dockerを..."  │     │ (前処理)         │     │   Phonemizer    │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                                                         │
+                                 ┌───────────────────────┴───────────────────────┐
+                                 │                                               │
+                                 ↓                                               ↓
+                        ┌──────────────────┐                        ┌──────────────────┐
+                        │ Phoneme Sequence │                        │ Prosody Data     │
+                        │ "d o q k a ..."  │                        │ A1: [0,1,2,...]  │
+                        └──────────────────┘                        │ A2: [2,2,2,...]  │
+                                 │                                  │ A3: [1,1,1,...]  │
+                                 │                                  └──────────────────┘
+                                 │                                           │
+                                 ↓                                           │
+                        ┌──────────────────┐                                 │
+                        │ PhonemeEncoder   │                                 │
+                        │ IPA/PUA変換      │                                 │
+                        └──────────────────┘                                 │
+                                 │                                           │
+                                 ↓                                           ↓
+                        ┌─────────────────────────────────────────────────────────┐
+                        │              VITS Model (ONNX)                          │
+                        │  入力: phoneme_ids, a1, a2, a3                         │
+                        │  出力: 音声波形                                         │
+                        └─────────────────────────────────────────────────────────┘
+                                                         │
+                                                         ↓
+                                                ┌─────────────────┐
+                                                │  Audio Output   │
+                                                │    (Unity)      │
+                                                └─────────────────┘
+```
+
+### Prosodyパラメータ
+
+| パラメータ | 説明 | 値の範囲 |
+|-----------|------|---------|
+| **A1** | アクセント句内でのモーラ位置（0始まり） | 0～ |
+| **A2** | アクセント句内のアクセント核位置（アクセント型） | 0～ |
+| **A3** | 呼気段落（イントネーション句）内でのアクセント句位置 | 1～ |
+
+### 使用例
+
+```csharp
+// Prosody情報付き音素化
+var phonemizer = new OpenJTalkPhonemizer();
+var result = phonemizer.PhonemizeWithProsody("こんにちは");
+// result.Phonemes: 音素配列
+// result.ProsodyA1, ProsodyA2, ProsodyA3: 各音素に対応するProsody値
+
+// Prosody対応音声生成
+var generator = new InferenceAudioGenerator();
+await generator.InitializeAsync(modelAsset, voiceConfig);
+if (generator.SupportsProsody)
+{
+    var audio = await generator.GenerateAudioWithProsodyAsync(
+        phonemeIds, prosodyA1, prosodyA2, prosodyA3);
+}
+```
+
+## カスタム辞書
+
+### 概要
+
+技術用語や固有名詞（英単語・アルファベット）を日本語の読みに変換する前処理機能。
+
+### 処理フロー
+
+```
+入力テキスト
+    │
+    ↓
+┌─────────────────────────────────────┐
+│ CustomDictionary.ApplyToText()      │
+│                                     │
+│ "DockerとGitHubを使った開発"         │
+│          ↓                          │
+│ "ドッカーとギットハブを使った開発"     │
+└─────────────────────────────────────┘
+    │
+    ↓
+OpenJTalk音素化
+```
+
+### 辞書ファイル
+
+辞書は `StreamingAssets/uPiper/Dictionaries/` に配置：
+
+| ファイル | 内容 |
+|---------|------|
+| `default_tech_dict.json` | 技術用語（プログラミング言語、開発ツール等） |
+| `default_common_dict.json` | IT/ビジネス用語 |
+| `additional_tech_dict.json` | AI/LLM関連用語 |
+| `user_custom_dict.json` | ユーザー定義辞書（テンプレート） |
+
+### JSON形式
+
+```json
+{
+  "version": "2.0",
+  "entries": {
+    "Docker": {"pronunciation": "ドッカー", "priority": 9},
+    "GitHub": {"pronunciation": "ギットハブ", "priority": 9}
+  }
+}
+```
+
 ## 重要な設計判断の根拠
 
 ### 1. HTS Engine非使用の判断

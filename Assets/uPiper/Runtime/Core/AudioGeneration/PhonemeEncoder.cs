@@ -7,6 +7,32 @@ using uPiper.Core.Logging;
 namespace uPiper.Core.AudioGeneration
 {
     /// <summary>
+    /// Prosody付きエンコーディングの結果
+    /// </summary>
+    public class ProsodyEncodingResult
+    {
+        /// <summary>
+        /// エンコードされた音素ID配列
+        /// </summary>
+        public int[] PhonemeIds { get; set; }
+
+        /// <summary>
+        /// PhonemeIdsに対応する展開済みProsody A1配列
+        /// </summary>
+        public int[] ExpandedProsodyA1 { get; set; }
+
+        /// <summary>
+        /// PhonemeIdsに対応する展開済みProsody A2配列
+        /// </summary>
+        public int[] ExpandedProsodyA2 { get; set; }
+
+        /// <summary>
+        /// PhonemeIdsに対応する展開済みProsody A3配列
+        /// </summary>
+        public int[] ExpandedProsodyA3 { get; set; }
+    }
+
+    /// <summary>
     /// 音素をモデル入力用のIDに変換するクラス
     /// </summary>
     public class PhonemeEncoder
@@ -34,9 +60,41 @@ namespace uPiper.Core.AudioGeneration
             _idToPhoneme = new Dictionary<int, string>();
 
             InitializePhonemeMapping();
+
+            // IPAモデルかどうかを判定（phoneme_id_mapにIPA文字 "ɕ" が含まれているか）
+            _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
+
+            // デバッグ: PhonemeIdMapの状態を出力
+            PiperLogger.LogInfo($"[PhonemeEncoder] PhonemeIdMap count: {_config.PhonemeIdMap?.Count ?? 0}");
+            PiperLogger.LogInfo($"[PhonemeEncoder] _phonemeToId count: {_phonemeToId.Count}");
+            PiperLogger.LogInfo($"[PhonemeEncoder] _useIpaMapping: {_useIpaMapping}");
+
+            if (_useIpaMapping)
+            {
+                PiperLogger.LogInfo("[PhonemeEncoder] Detected IPA-based model, using IPA phoneme mapping");
+                // IPA文字の存在確認
+                var ipaKeys = new[] { "ɕ", "tɕ", "q", "ɯ", "ɴ" };
+                foreach (var key in ipaKeys)
+                {
+                    var exists = _phonemeToId.ContainsKey(key);
+                    PiperLogger.LogInfo($"[PhonemeEncoder] IPA key '{key}': {(exists ? "found" : "NOT FOUND")}");
+                }
+            }
+            else
+            {
+                PiperLogger.LogInfo("[PhonemeEncoder] Using PUA-based model (non-IPA)");
+                // PUA文字の存在確認
+                var puaKeys = new[] { "\ue00e", "\ue005", "\ue00a" };
+                foreach (var key in puaKeys)
+                {
+                    var exists = _phonemeToId.ContainsKey(key);
+                    var code = key.Length > 0 ? $"U+{((int)key[0]):X4}" : "empty";
+                    PiperLogger.LogInfo($"[PhonemeEncoder] PUA key {code}: {(exists ? "found" : "NOT FOUND")}");
+                }
+            }
         }
 
-        // Multi-character phonemes to PUA mapping (must match openjtalk_phonemize.cpp)
+        // Multi-character phonemes to PUA mapping (for PUA-based models like ja_JP-test-medium)
         private static readonly Dictionary<string, string> multiCharPhonemeMap = new()
         {
             // Long vowels
@@ -56,7 +114,7 @@ namespace uPiper.Core.AudioGeneration
             ["dy"] = "\ue00b",
             ["py"] = "\ue00c",
             ["by"] = "\ue00d",
-            ["ch"] = "\ue00a",  // Same as ty in ja_JP-test-medium model
+            ["ch"] = "\ue00e",  // ID 39 in PUA models (different from ty)
             ["ts"] = "\ue00f",
             ["sh"] = "\ue010",
             ["zy"] = "\ue011",
@@ -65,6 +123,68 @@ namespace uPiper.Core.AudioGeneration
             ["my"] = "\ue014",
             ["ry"] = "\ue015"
         };
+
+        // Multi-character phonemes to IPA mapping (for IPA-based models like tsukuyomi-chan)
+        private static readonly Dictionary<string, string> multiCharToIpaMap = new()
+        {
+            // Palatalized consonants
+            ["ky"] = "kʲ",
+            ["gy"] = "ɡʲ",
+            ["ty"] = "tɕ",
+            ["dy"] = "dʲ",
+            ["py"] = "pʲ",
+            ["by"] = "bʲ",
+            ["hy"] = "hʲ",
+            ["ny"] = "ɲ",
+            ["my"] = "mʲ",
+            ["ry"] = "ɽ",
+            ["zy"] = "ʑ",
+            // Affricates and fricatives
+            ["ch"] = "tɕ",
+            ["sh"] = "ʃ",  // Use ʃ (ID 42), not ɕ (ID 18) - matches training data
+            ["ts"] = "ts",  // Keep as-is (not in IPA model)
+            // Special
+            ["cl"] = "q",   // 促音 maps to q (ID 24) in tsukuyomi-chan (glottal stop)
+            // Long vowels (tsukuyomi-chan uses ɯ for う)
+            ["u:"] = "ɯ"
+        };
+
+        // PUA to original phoneme reverse mapping
+        // OpenJTalkToPiperMapping outputs PUA characters, but IPA models need original phonemes first
+        private static readonly Dictionary<string, string> puaToPhonemeMap = new()
+        {
+            ["\ue000"] = "a:",
+            ["\ue001"] = "i:",
+            ["\ue002"] = "u:",
+            ["\ue003"] = "e:",
+            ["\ue004"] = "o:",
+            ["\ue005"] = "cl",
+            ["\ue006"] = "ky",
+            ["\ue007"] = "kw",
+            ["\ue008"] = "gy",
+            ["\ue009"] = "gw",
+            ["\ue00a"] = "ty",  // ty maps to 0xE00A
+            ["\ue00b"] = "dy",
+            ["\ue00c"] = "py",
+            ["\ue00d"] = "by",
+            ["\ue00e"] = "ch",  // ch maps to 0xE00E (ち、ちゃ sounds)
+            ["\ue00f"] = "ts",
+            ["\ue010"] = "sh",
+            ["\ue011"] = "zy",
+            ["\ue012"] = "hy",
+            ["\ue013"] = "ny",
+            ["\ue014"] = "my",
+            ["\ue015"] = "ry",
+            // N phoneme variants (piper-plus Issue #207)
+            // Map to ASCII "N" (ID 22), NOT IPA "ɴ" (ID 20)
+            ["\ue019"] = "N",  // N_m
+            ["\ue01a"] = "N",  // N_n
+            ["\ue01b"] = "N",  // N_ng
+            ["\ue01c"] = "N"   // N_uvular
+        };
+
+        // フィールド: IPAモデルかどうかを初期化時に判定
+        private readonly bool _useIpaMapping;
 
         /// <summary>
         /// 音素配列をID配列にエンコードする
@@ -81,22 +201,21 @@ namespace uPiper.Core.AudioGeneration
 
             var ids = new List<int>();
 
-            // 日本語モデルは音素だけ、英語/中国語などのeSpeak方式は各音素の後にPADを追加
-            var isJapaneseModel = _config.VoiceId != null && _config.VoiceId.Contains("ja_JP");
-            var isESpeakModel = !isJapaneseModel;
+            // eSpeak方式では各音素の後にPADを追加、OpenJTalk方式では追加しない
+            // PhonemeTypeがnullの場合はVoiceId名でフォールバック判定
+            var isESpeakModel = !string.IsNullOrEmpty(_config.PhonemeType)
+                ? _config.PhonemeType.Equals("espeak", StringComparison.OrdinalIgnoreCase)
+                : !(_config.VoiceId != null && _config.VoiceId.Contains("ja_JP"));
 
-            if (isESpeakModel)
+            // BOSトークン(^)を常に追加（全モデル共通）
+            if (_phonemeToId.TryGetValue("^", out var bosId))
             {
-                // eSpeak方式: BOSトークン(^)を追加
-                if (_phonemeToId.TryGetValue("^", out var bosId))
-                {
-                    ids.Add(bosId);
-                    PiperLogger.LogDebug($"Added BOS token '^' with ID {bosId}");
-                }
-                else
-                {
-                    PiperLogger.LogWarning("BOS token '^' not found in phoneme map");
-                }
+                ids.Add(bosId);
+                PiperLogger.LogDebug($"Added BOS token '^' with ID {bosId}");
+            }
+            else
+            {
+                PiperLogger.LogWarning("BOS token '^' not found in phoneme map");
             }
 
             // 各音素をIDに変換
@@ -107,15 +226,62 @@ namespace uPiper.Core.AudioGeneration
 
                 var phonemeToLookup = phoneme;
 
-                // Multi-character phonemes need to be mapped to PUA characters first
-                if (multiCharPhonemeMap.TryGetValue(phoneme, out var puaChar))
+                // Multi-character phonemes need to be mapped based on model type (IPA or PUA)
+                if (_useIpaMapping)
+                {
+                    // For IPA models: First convert PUA back to original phoneme, then to IPA
+                    var phonemeToConvert = phoneme;
+                    if (puaToPhonemeMap.TryGetValue(phoneme, out var originalPhoneme))
+                    {
+                        phonemeToConvert = originalPhoneme;
+                        PiperLogger.LogDebug($"Reversed PUA U+{((int)phoneme[0]):X4} to original phoneme '{originalPhoneme}'");
+                    }
+
+                    // Now convert to IPA if applicable
+                    if (multiCharToIpaMap.TryGetValue(phonemeToConvert, out var ipaChar))
+                    {
+                        phonemeToLookup = ipaChar;
+                        PiperLogger.LogDebug($"Mapped phoneme '{phonemeToConvert}' to IPA '{ipaChar}'");
+                    }
+                    else if (phonemeToConvert != phoneme)
+                    {
+                        // We reversed PUA but no IPA mapping, use the original phoneme directly
+                        phonemeToLookup = phonemeToConvert;
+                    }
+                }
+                else if (multiCharPhonemeMap.TryGetValue(phoneme, out var puaChar))
                 {
                     phonemeToLookup = puaChar;
                     var puaCode = ((int)puaChar[0]).ToString("X4", System.Globalization.CultureInfo.InvariantCulture);
-                    PiperLogger.LogInfo($"Mapped multi-char phoneme '{phoneme}' to PUA U+{puaCode}");
+                    PiperLogger.LogDebug($"Mapped multi-char phoneme '{phoneme}' to PUA U+{puaCode}");
                 }
 
-                if (_phonemeToId.TryGetValue(phonemeToLookup, out var id))
+                // Special handling for "ts": split into "t" + "s" if model doesn't have "ts"
+                if (phonemeToLookup == "ts" && !_phonemeToId.ContainsKey("ts"))
+                {
+                    // Split "ts" into "t" and "s"
+                    if (_phonemeToId.TryGetValue("t", out var tId) && _phonemeToId.TryGetValue("s", out var sId))
+                    {
+                        ids.Add(tId);
+                        PiperLogger.LogDebug($"Split 'ts' -> 't' ID {tId}");
+                        if (isESpeakModel && _phonemeToId.TryGetValue("_", out var padId1))
+                        {
+                            ids.Add(padId1);
+                        }
+
+                        ids.Add(sId);
+                        PiperLogger.LogDebug($"Split 'ts' -> 's' ID {sId}");
+                        if (isESpeakModel && _phonemeToId.TryGetValue("_", out var padId2))
+                        {
+                            ids.Add(padId2);
+                        }
+                    }
+                    else
+                    {
+                        PiperLogger.LogWarning($"Cannot split 'ts': 't' or 's' not found in phoneme map");
+                    }
+                }
+                else if (_phonemeToId.TryGetValue(phonemeToLookup, out var id))
                 {
                     ids.Add(id);
                     PiperLogger.LogDebug($"Phoneme '{phoneme}' -> ID {id}");
@@ -137,22 +303,28 @@ namespace uPiper.Core.AudioGeneration
                 else
                 {
                     // 未知の音素はスキップ（PADトークンも使用しない）
-                    PiperLogger.LogWarning($"Unknown phoneme: {phoneme} (mapped as: {phonemeToLookup}), skipping");
+                    // Note: We only check the BMP Private Use Area (U+E000–U+F8FF) here because phoneme[0] is a single
+                    // UTF-16 code unit. Non-BMP PUA code points (planes 15 and 16) would appear as surrogate pairs and
+                    // are not expected in this phoneme representation.
+                    const int BmpPuaStart = 0xE000;
+                    const int BmpPuaEnd = 0xF8FF;
+                    var phonemeCode = phoneme.Length > 0 && phoneme[0] >= BmpPuaStart && phoneme[0] <= BmpPuaEnd
+                        ? $"PUA U+{((int)phoneme[0]):X4}"
+                        : $"'{phoneme}'";
+                    PiperLogger.LogWarning($"Unknown phoneme: {phonemeCode} (mapped as: '{phonemeToLookup}'), skipping. " +
+                        $"IPA mode: {_useIpaMapping}, PhonemeIdMap has {_phonemeToId.Count} entries");
                 }
             }
 
-            // EOSトークンを追加
-            if (isESpeakModel)
+            // EOSトークン($)を常に追加（全モデル共通）
+            if (_phonemeToId.TryGetValue("$", out var eosId))
             {
-                if (_phonemeToId.TryGetValue("$", out var eosId))
-                {
-                    ids.Add(eosId);
-                    PiperLogger.LogDebug($"Added EOS token '$' with ID {eosId}");
-                }
-                else
-                {
-                    PiperLogger.LogWarning("EOS token '$' not found in phoneme map");
-                }
+                ids.Add(eosId);
+                PiperLogger.LogDebug($"Added EOS token '$' with ID {eosId}");
+            }
+            else
+            {
+                PiperLogger.LogWarning("EOS token '$' not found in phoneme map");
             }
 
             // 空の結果になった場合は、無音を表すPADトークンを1つ追加
@@ -161,8 +333,191 @@ namespace uPiper.Core.AudioGeneration
                 ids.Add(GetPadId());
             }
 
-            PiperLogger.LogDebug($"Encoded {phonemes.Length} phonemes to {ids.Count} IDs (model type: {(isJapaneseModel ? "Japanese" : "eSpeak")})");
+            PiperLogger.LogDebug($"Encoded {phonemes.Length} phonemes to {ids.Count} IDs (model type: {(!isESpeakModel ? "Japanese/OpenJTalk" : "eSpeak")})");
             return ids.ToArray();
+        }
+
+        /// <summary>
+        /// 音素配列をID配列にエンコードし、Prosody配列も同時に展開する
+        /// </summary>
+        /// <param name="phonemes">音素配列</param>
+        /// <param name="prosodyA1">元のProsody A1配列（音素ごと）</param>
+        /// <param name="prosodyA2">元のProsody A2配列（音素ごと）</param>
+        /// <param name="prosodyA3">元のProsody A3配列（音素ごと）</param>
+        /// <returns>エンコード結果（音素IDと展開済みProsody配列）</returns>
+        public ProsodyEncodingResult EncodeWithProsody(string[] phonemes, int[] prosodyA1, int[] prosodyA2, int[] prosodyA3)
+        {
+            if (phonemes == null || phonemes.Length == 0)
+            {
+                PiperLogger.LogWarning("Empty phoneme array provided for prosody encoding");
+                return new ProsodyEncodingResult
+                {
+                    PhonemeIds = Array.Empty<int>(),
+                    ExpandedProsodyA1 = Array.Empty<int>(),
+                    ExpandedProsodyA2 = Array.Empty<int>(),
+                    ExpandedProsodyA3 = Array.Empty<int>()
+                };
+            }
+
+            var ids = new List<int>();
+            var expandedA1 = new List<int>();
+            var expandedA2 = new List<int>();
+            var expandedA3 = new List<int>();
+
+            // eSpeak方式では各音素の後にPADを追加、OpenJTalk方式では追加しない
+            // PhonemeTypeがnullの場合はVoiceId名でフォールバック判定
+            var isESpeakModel = !string.IsNullOrEmpty(_config.PhonemeType)
+                ? _config.PhonemeType.Equals("espeak", StringComparison.OrdinalIgnoreCase)
+                : !(_config.VoiceId != null && _config.VoiceId.Contains("ja_JP"));
+
+            // BOSトークン(^)を常に追加（全モデル共通、Prosodyは0）
+            if (_phonemeToId.TryGetValue("^", out var bosId))
+            {
+                ids.Add(bosId);
+                expandedA1.Add(0);
+                expandedA2.Add(0);
+                expandedA3.Add(0);
+                PiperLogger.LogDebug($"Added BOS token '^' with ID {bosId}, prosody=0");
+            }
+
+            // 各音素をIDに変換（Prosodyも同時に展開）
+            var prosodyIndex = 0;
+            foreach (var phoneme in phonemes)
+            {
+                if (string.IsNullOrEmpty(phoneme))
+                    continue;
+
+                var phonemeToLookup = phoneme;
+
+                // Multi-character phonemes need to be mapped based on model type (IPA or PUA)
+                if (_useIpaMapping)
+                {
+                    // For IPA models: First convert PUA back to original phoneme, then to IPA
+                    var phonemeToConvert = phoneme;
+                    if (puaToPhonemeMap.TryGetValue(phoneme, out var originalPhoneme))
+                    {
+                        phonemeToConvert = originalPhoneme;
+                        PiperLogger.LogDebug($"[Prosody] Reversed PUA U+{((int)phoneme[0]):X4} to original phoneme '{originalPhoneme}'");
+                    }
+
+                    // Now convert to IPA if applicable
+                    if (multiCharToIpaMap.TryGetValue(phonemeToConvert, out var ipaChar))
+                    {
+                        phonemeToLookup = ipaChar;
+                        PiperLogger.LogDebug($"[Prosody] Mapped phoneme '{phonemeToConvert}' to IPA '{ipaChar}'");
+                    }
+                    else if (phonemeToConvert != phoneme)
+                    {
+                        // We reversed PUA but no IPA mapping, use the original phoneme directly
+                        phonemeToLookup = phonemeToConvert;
+                    }
+                }
+                else if (multiCharPhonemeMap.TryGetValue(phoneme, out var puaChar))
+                {
+                    phonemeToLookup = puaChar;
+                }
+
+                // Special handling for "ts": split into "t" + "s" if model doesn't have "ts"
+                if (phonemeToLookup == "ts" && !_phonemeToId.ContainsKey("ts"))
+                {
+                    // Split "ts" into "t" and "s" - both get the same prosody values
+                    var a1 = prosodyA1 != null && prosodyIndex < prosodyA1.Length ? prosodyA1[prosodyIndex] : 0;
+                    var a2 = prosodyA2 != null && prosodyIndex < prosodyA2.Length ? prosodyA2[prosodyIndex] : 0;
+                    var a3 = prosodyA3 != null && prosodyIndex < prosodyA3.Length ? prosodyA3[prosodyIndex] : 0;
+
+                    if (_phonemeToId.TryGetValue("t", out var tId) && _phonemeToId.TryGetValue("s", out var sId))
+                    {
+                        ids.Add(tId);
+                        expandedA1.Add(a1);
+                        expandedA2.Add(a2);
+                        expandedA3.Add(a3);
+                        PiperLogger.LogDebug($"Split 'ts' -> 't' ID {tId}, prosody=({a1},{a2},{a3})");
+
+                        if (isESpeakModel && _phonemeToId.TryGetValue("_", out var padId1))
+                        {
+                            ids.Add(padId1);
+                            expandedA1.Add(0);
+                            expandedA2.Add(0);
+                            expandedA3.Add(0);
+                        }
+
+                        ids.Add(sId);
+                        expandedA1.Add(a1);
+                        expandedA2.Add(a2);
+                        expandedA3.Add(a3);
+                        PiperLogger.LogDebug($"Split 'ts' -> 's' ID {sId}, prosody=({a1},{a2},{a3})");
+
+                        if (isESpeakModel && _phonemeToId.TryGetValue("_", out var padId2))
+                        {
+                            ids.Add(padId2);
+                            expandedA1.Add(0);
+                            expandedA2.Add(0);
+                            expandedA3.Add(0);
+                        }
+                    }
+                    else
+                    {
+                        PiperLogger.LogWarning($"Cannot split 'ts': 't' or 's' not found in phoneme map");
+                    }
+                }
+                else if (_phonemeToId.TryGetValue(phonemeToLookup, out var id))
+                {
+                    ids.Add(id);
+
+                    // この音素に対応するProsody値を追加
+                    var a1 = prosodyA1 != null && prosodyIndex < prosodyA1.Length ? prosodyA1[prosodyIndex] : 0;
+                    var a2 = prosodyA2 != null && prosodyIndex < prosodyA2.Length ? prosodyA2[prosodyIndex] : 0;
+                    var a3 = prosodyA3 != null && prosodyIndex < prosodyA3.Length ? prosodyA3[prosodyIndex] : 0;
+                    expandedA1.Add(a1);
+                    expandedA2.Add(a2);
+                    expandedA3.Add(a3);
+
+                    PiperLogger.LogDebug($"Phoneme '{phoneme}' -> ID {id}, prosody=({a1},{a2},{a3})");
+
+                    // eSpeak方式では各音素の後にPADを追加（Prosodyは0）
+                    if (isESpeakModel)
+                    {
+                        if (_phonemeToId.TryGetValue("_", out var padId))
+                        {
+                            ids.Add(padId);
+                            expandedA1.Add(0);
+                            expandedA2.Add(0);
+                            expandedA3.Add(0);
+                        }
+                    }
+                }
+
+                prosodyIndex++;
+            }
+
+            // EOSトークン($)を常に追加（全モデル共通、Prosodyは0）
+            if (_phonemeToId.TryGetValue("$", out var eosId))
+            {
+                ids.Add(eosId);
+                expandedA1.Add(0);
+                expandedA2.Add(0);
+                expandedA3.Add(0);
+                PiperLogger.LogDebug($"Added EOS token '$' with ID {eosId}, prosody=0");
+            }
+
+            // 空の結果になった場合
+            if (ids.Count == 0)
+            {
+                ids.Add(GetPadId());
+                expandedA1.Add(0);
+                expandedA2.Add(0);
+                expandedA3.Add(0);
+            }
+
+            PiperLogger.LogInfo($"Encoded {phonemes.Length} phonemes with prosody to {ids.Count} IDs (model type: {(!isESpeakModel ? "Japanese/OpenJTalk" : "eSpeak")})");
+
+            return new ProsodyEncodingResult
+            {
+                PhonemeIds = ids.ToArray(),
+                ExpandedProsodyA1 = expandedA1.ToArray(),
+                ExpandedProsodyA2 = expandedA2.ToArray(),
+                ExpandedProsodyA3 = expandedA3.ToArray()
+            };
         }
 
         /// <summary>
