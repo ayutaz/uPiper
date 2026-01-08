@@ -1,6 +1,7 @@
 #if UNITY_EDITOR && UNITY_EDITOR_WIN && !UNITY_WEBGL
 using System.Collections;
 using System.Linq;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -31,7 +32,7 @@ namespace uPiper.Tests.Editor
         }
 
         [Test]
-        public void TestLongJapaneseText()
+        public async Task TestLongJapaneseText()
         {
             try
             {
@@ -40,7 +41,7 @@ namespace uPiper.Tests.Editor
                 // テストケース1: 短い文
                 var shortText = "こんにちは";
                 Debug.Log($"\n=== Testing short text: {shortText} ===");
-                var shortResult = _phonemizer.Phonemize(shortText, "ja");
+                var shortResult = await _phonemizer.PhonemizeAsync(shortText, "ja");
                 Debug.Log($"Phonemes: {string.Join(" ", shortResult.Phonemes)}");
                 Assert.IsNotNull(shortResult.Phonemes);
                 Assert.Greater(shortResult.Phonemes.Length, 0);
@@ -48,7 +49,7 @@ namespace uPiper.Tests.Editor
                 // テストケース2: 漢字を含む文
                 var kanjiText = "日本語の音声合成";
                 Debug.Log($"\n=== Testing kanji text: {kanjiText} ===");
-                var kanjiResult = _phonemizer.Phonemize(kanjiText, "ja");
+                var kanjiResult = await _phonemizer.PhonemizeAsync(kanjiText, "ja");
                 Debug.Log($"Phonemes: {string.Join(" ", kanjiResult.Phonemes)}");
                 Assert.IsNotNull(kanjiResult.Phonemes);
                 Assert.Greater(kanjiResult.Phonemes.Length, 0);
@@ -56,7 +57,7 @@ namespace uPiper.Tests.Editor
                 // テストケース3: 長文
                 var longText = "人工知能による音声合成技術は、近年急速に発展しています。特に深層学習を用いた手法により、より自然で人間らしい音声を生成することが可能になりました。";
                 Debug.Log($"\n=== Testing long text: {longText} ===");
-                var longResult = _phonemizer.Phonemize(longText, "ja");
+                var longResult = await _phonemizer.PhonemizeAsync(longText, "ja");
                 Debug.Log($"Phonemes ({longResult.Phonemes.Length} total): {string.Join(" ", longResult.Phonemes)}");
                 Assert.IsNotNull(longResult.Phonemes);
                 Assert.Greater(longResult.Phonemes.Length, 20); // 長文なので多くのフォネームが期待される
@@ -64,7 +65,7 @@ namespace uPiper.Tests.Editor
                 // テストケース4: 問題が報告されていた「日本橋」
                 var nihonbashiText = "日本橋";
                 Debug.Log($"\n=== Testing problematic text: {nihonbashiText} ===");
-                var nihonbashiResult = _phonemizer.Phonemize(nihonbashiText, "ja");
+                var nihonbashiResult = await _phonemizer.PhonemizeAsync(nihonbashiText, "ja");
                 Debug.Log($"Phonemes: {string.Join(" ", nihonbashiResult.Phonemes)}");
 
                 // 重複チェック
@@ -75,7 +76,7 @@ namespace uPiper.Tests.Editor
                 // テストケース5: 繰り返しの多い文
                 var repetitiveText = "ててて";
                 Debug.Log($"\n=== Testing repetitive text: {repetitiveText} ===");
-                var repetitiveResult = _phonemizer.Phonemize(repetitiveText, "ja");
+                var repetitiveResult = await _phonemizer.PhonemizeAsync(repetitiveText, "ja");
                 Debug.Log($"Phonemes: {string.Join(" ", repetitiveResult.Phonemes)}");
 
                 // 異常な繰り返しがないかチェック
@@ -93,7 +94,7 @@ namespace uPiper.Tests.Editor
         }
 
         [Test]
-        public void TestWindowsSpecificIssues()
+        public async Task TestWindowsSpecificIssues()
         {
             try
             {
@@ -112,7 +113,7 @@ namespace uPiper.Tests.Editor
                 foreach (var (kanji, hiragana) in testCases)
                 {
                     Debug.Log($"\n=== Testing: {kanji} ({hiragana}) ===");
-                    var result = _phonemizer.Phonemize(kanji, "ja");
+                    var result = await _phonemizer.PhonemizeAsync(kanji, "ja");
                     var phonemes = string.Join(" ", result.Phonemes);
                     Debug.Log($"Phonemes: {phonemes}");
 

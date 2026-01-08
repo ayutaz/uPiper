@@ -260,14 +260,14 @@ namespace uPiper.Editor
             }
         }
 
-        private void PhonemizeTextSync()
+        private async void PhonemizeTextSync()
         {
             try
             {
-                _statusMessage = "Phonemizing (sync)...";
+                _statusMessage = "Phonemizing...";
 
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-                _lastResult = _phonemizer.Phonemize(_testText);
+                _lastResult = await _phonemizer.PhonemizeAsync(_testText);
                 stopwatch.Stop();
 
                 _statusMessage = $"Phonemization completed in {stopwatch.ElapsedMilliseconds}ms";

@@ -41,7 +41,7 @@ namespace uPiper.Core.Phonemizers.Backend
                 var openJTalkInstance = new OpenJTalkPhonemizer(1000, dictPath);
 
                 // Test if it's working
-                var testResult = await Task.Run(() => openJTalkInstance.Phonemize("テスト", "ja"), cancellationToken);
+                var testResult = await openJTalkInstance.PhonemizeAsync("テスト", "ja", cancellationToken);
 
                 if (testResult != null && testResult.Phonemes != null && testResult.Phonemes.Length > 0)
                 {

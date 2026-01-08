@@ -1,6 +1,7 @@
 #if !UNITY_WEBGL
 using System;
 using System.Collections;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -219,12 +220,12 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         #region Integration Tests
 
         [Test]
-        public void PhonemizeWithProsody_CompareToRegularPhonemize_SamePhonemes()
+        public async Task PhonemizeWithProsody_CompareToRegularPhonemize_SamePhonemes()
         {
             const string text = "音声合成";
 
             var prosodyResult = _phonemizer.PhonemizeWithProsody(text);
-            var regularResult = _phonemizer.Phonemize(text);
+            var regularResult = await _phonemizer.PhonemizeAsync(text);
 
             Assert.Greater(prosodyResult.PhonemeCount, 0);
             Assert.Greater(regularResult.Phonemes?.Length ?? 0, 0);

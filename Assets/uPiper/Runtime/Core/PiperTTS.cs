@@ -663,59 +663,6 @@ namespace uPiper.Core
         }
 
         /// <summary>
-        /// Generate audio from text synchronously
-        /// </summary>
-        public AudioClip GenerateAudio(string text)
-        {
-            ThrowIfDisposed();
-            ThrowIfNotInitialized();
-
-            if (string.IsNullOrWhiteSpace(text))
-                throw new ArgumentNullException(nameof(text));
-
-            if (string.IsNullOrEmpty(_currentVoiceId))
-                throw new InvalidOperationException("No voice selected. Load a voice first.");
-
-            try
-            {
-                IsProcessing = true;
-                PiperLogger.LogInfo("Generating audio synchronously for text length: {0}", text.Length);
-
-                // For synchronous version, we'll use the async method internally
-                // In a real implementation, this would use native synchronous methods
-                var task = GenerateAudioAsync(text);
-
-                // Use Task.Wait for efficient waiting (avoids CPU-wasting polling loop)
-                // TODO: Ensure all awaits in GenerateAudioAsync use ConfigureAwait(false) to avoid deadlocks.
-                // Note: Task.Wait() can potentially cause deadlock if async task needs main thread.
-                var timeoutMs = _config.TimeoutMs > 0 ? _config.TimeoutMs : 300000; // 5 minutes default
-
-                if (!task.Wait(timeoutMs))
-                {
-                    throw new TimeoutException($"Audio generation timed out after {timeoutMs}ms");
-                }
-
-                // Use GetAwaiter().GetResult() for proper exception propagation
-                return task.GetAwaiter().GetResult();
-            }
-            catch (AggregateException ae)
-            {
-                // Unwrap the aggregate exception
-                var innerEx = ae.InnerException;
-                if (innerEx is PiperException)
-                    throw innerEx;
-
-                var piperEx = new PiperException("Failed to generate audio", innerEx);
-                _onError?.Invoke(piperEx);
-                throw piperEx;
-            }
-            finally
-            {
-                IsProcessing = false;
-            }
-        }
-
-        /// <summary>
         /// Stream audio generation
         /// </summary>
         public async IAsyncEnumerable<AudioChunk> StreamAudioAsync(
@@ -777,51 +724,6 @@ namespace uPiper.Core
             finally
             {
                 IsProcessing = false;
-            }
-        }
-
-        /// <summary>
-        /// Generate audio from text with specific voice configuration (synchronous)
-        /// </summary>
-        public AudioClip GenerateAudio(string text, PiperVoiceConfig voiceConfig)
-        {
-            ThrowIfDisposed();
-            ThrowIfNotInitialized();
-
-            if (string.IsNullOrWhiteSpace(text))
-                throw new ArgumentNullException(nameof(text));
-
-            if (voiceConfig == null)
-                throw new ArgumentNullException(nameof(voiceConfig));
-
-            // Temporarily switch voice
-            var previousVoiceId = _currentVoiceId;
-
-            try
-            {
-                // Load voice if not already loaded
-                lock (_lockObject)
-                {
-                    if (!_voices.ContainsKey(voiceConfig.VoiceId))
-                    {
-                        // Load synchronously (block on async)
-                        var loadTask = LoadVoiceAsync(voiceConfig);
-                        loadTask.Wait();
-                    }
-
-                    _currentVoiceId = voiceConfig.VoiceId;
-                }
-
-                // Generate audio with the specified voice
-                return GenerateAudio(text);
-            }
-            finally
-            {
-                // Restore previous voice
-                lock (_lockObject)
-                {
-                    _currentVoiceId = previousVoiceId;
-                }
             }
         }
 
