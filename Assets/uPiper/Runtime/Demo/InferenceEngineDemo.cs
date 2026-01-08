@@ -128,9 +128,7 @@ namespace uPiper.Demo
         [Header("GPU Inference UI")]
         [SerializeField] private TMP_Dropdown _backendDropdown;
 
-        [Header("Settings")]
-        [SerializeField] private string _defaultJapaneseText = "";  // Will be set in Start()
-        [SerializeField] private string _defaultEnglishText = "Hello world";
+        // Default texts are now in DemoTestData
 
         [Header("Font Settings")]
         [SerializeField] private TMP_FontAsset _japaneseFontAsset;
@@ -149,57 +147,12 @@ namespace uPiper.Demo
         private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
 #endif
 
-        private Dictionary<string, string> _modelLanguages = new()
-        {
-            { "tsukuyomi-chan", "ja" }
-        };
-
-        // テスト用の定型文 - will be initialized in Start() to avoid encoding issues
-        private List<string> _japaneseTestPhrases;
-
-        private List<string> _englishTestPhrases = new()
-        {
-            "Custom Input",  // Custom input option
-            "Hello world",
-            "Welcome to Unity",
-            "This is a test of the text to speech system",
-            "The quick brown fox jumps over the lazy dog",
-            "How are you doing today?",
-            "Unity Inference Engine is amazing",
-            "Can you hear me clearly?",
-            "Let's test the voice synthesis"
-        };
+        // Model and test phrase configuration is now in DemoTestData class
 
         private void Start()
         {
-            // Set default Japanese text
-            _defaultJapaneseText = "こんにちは";
-
             // Font setup
             SetupFontFallback();
-
-            // Initialize Japanese test phrases
-            _japaneseTestPhrases = new List<string>
-            {
-                "自由入力",  // Custom input option
-                "こんにちは",
-                "こんにちは、世界！",
-                "ありがとうございます",
-                "日本の日本橋の上で箸を使ってご飯を食べる",
-                "私は東京に住んでいます",
-                "今日はいい天気ですね",
-                "音声合成のテストです",
-                "ユニティで日本語音声合成ができました",
-                "おはようございます、今日も一日頑張りましょう",
-                "すみません、ちょっとお聞きしたいことがあります",
-                // アルファベット・英単語を含むテスト (カスタム辞書で発音変換)
-                "DockerとGitHubを使った開発",
-                "PythonでAIモデルを作成する",
-                "AWSとAzureのクラウド比較",
-                "ChatGPTとClaudeの違い",
-                "UnityでVITSモデルを実行"
-            };
-
 
             _generator = new InferenceAudioGenerator();
             _audioBuilder = new AudioClipBuilder();
@@ -484,15 +437,13 @@ namespace uPiper.Demo
         private void SetupUI()
         {
             PiperLogger.LogInfo($"[SetupUI] Starting UI setup");
-            PiperLogger.LogInfo($"[SetupUI] _japaneseTestPhrases count: {_japaneseTestPhrases?.Count ?? 0}");
-            PiperLogger.LogInfo($"[SetupUI] _englishTestPhrases count: {_englishTestPhrases?.Count ?? 0}");
             PiperLogger.LogInfo($"[SetupUI] _phraseDropdown is null: {_phraseDropdown == null}");
 
             // モデル選択ドロップダウンの設定
             if (_modelDropdown != null)
             {
                 _modelDropdown.ClearOptions();
-                _modelDropdown.AddOptions(new List<string> { "tsukuyomi-chan" });
+                _modelDropdown.AddOptions(new List<string>(DemoTestData.ModelNames));
                 _modelDropdown.onValueChanged.AddListener(OnModelChanged);
             }
 
@@ -501,17 +452,9 @@ namespace uPiper.Demo
             {
                 PiperLogger.LogInfo("[SetupUI] Setting up phrase dropdown");
                 _phraseDropdown.ClearOptions();
-                if (_japaneseTestPhrases != null && _japaneseTestPhrases.Count > 0)
-                {
-                    PiperLogger.LogInfo($"[SetupUI] Adding {_japaneseTestPhrases.Count} Japanese phrases to dropdown");
-                    _phraseDropdown.AddOptions(_japaneseTestPhrases);
-                }
-                else
-                {
-                    // フォールバック
-                    PiperLogger.LogWarning("[SetupUI] Japanese test phrases not initialized, using fallback");
-                    _phraseDropdown.AddOptions(new List<string> { "Custom Input", "Hello", "Test" });
-                }
+                var phrases = DemoTestData.JapaneseTestPhrases;
+                PiperLogger.LogInfo($"[SetupUI] Adding {phrases.Count} Japanese phrases to dropdown");
+                _phraseDropdown.AddOptions(phrases);
                 _phraseDropdown.onValueChanged.AddListener(OnPhraseChanged);
                 PiperLogger.LogInfo($"[SetupUI] Phrase dropdown options count: {_phraseDropdown.options.Count}");
             }
@@ -544,59 +487,31 @@ namespace uPiper.Demo
             // 初期テキストの設定
             if (_inputField != null)
             {
-                _inputField.text = _defaultJapaneseText;
+                _inputField.text = DemoTestData.DefaultJapaneseText;
             }
         }
 
         private void OnModelChanged(int index)
         {
-            var modelNames = new[] { "tsukuyomi-chan" };
-            var modelName = modelNames[index];
-            var language = _modelLanguages[modelName];
+            var modelName = DemoTestData.GetModelName(index);
+            var language = DemoTestData.GetLanguage(modelName);
 
             // フレーズドロップダウンを更新
             if (_phraseDropdown != null)
             {
                 PiperLogger.LogInfo($"[OnModelChanged] Updating phrase dropdown for language: {language}");
                 _phraseDropdown.ClearOptions();
-                if (language == "ja")
-                {
-                    if (_japaneseTestPhrases != null && _japaneseTestPhrases.Count > 0)
-                    {
-                        PiperLogger.LogInfo($"[OnModelChanged] Adding {_japaneseTestPhrases.Count} Japanese phrases");
-                        _phraseDropdown.AddOptions(_japaneseTestPhrases);
-                    }
-                    else
-                    {
-                        PiperLogger.LogWarning("[OnModelChanged] Japanese phrases not available, using fallback");
-                        _phraseDropdown.AddOptions(new List<string> { "Custom Input", "こんにちは" });
-                    }
 
-                    if (_inputField != null)
-                        _inputField.text = _defaultJapaneseText;
+                var phrases = DemoTestData.GetTestPhrases(language);
+                PiperLogger.LogInfo($"[OnModelChanged] Adding {phrases.Count} phrases for {language}");
+                _phraseDropdown.AddOptions(phrases);
 
-                    // Apply Japanese font
-                    ApplyLanguageFont("ja");
-                }
-                else
-                {
-                    if (_englishTestPhrases != null && _englishTestPhrases.Count > 0)
-                    {
-                        PiperLogger.LogInfo($"[OnModelChanged] Adding {_englishTestPhrases.Count} English phrases");
-                        _phraseDropdown.AddOptions(_englishTestPhrases);
-                    }
-                    else
-                    {
-                        PiperLogger.LogWarning("[OnModelChanged] English phrases not available, using fallback");
-                        _phraseDropdown.AddOptions(new List<string> { "Custom Input", "Hello" });
-                    }
+                if (_inputField != null)
+                    _inputField.text = DemoTestData.GetDefaultText(language);
 
-                    if (_inputField != null)
-                        _inputField.text = _defaultEnglishText;
+                // Apply font for the language
+                ApplyLanguageFont(language);
 
-                    // Apply English/default font
-                    ApplyLanguageFont("en");
-                }
                 PiperLogger.LogInfo($"[OnModelChanged] Phrase dropdown now has {_phraseDropdown.options.Count} options");
                 _phraseDropdown.value = 1; // デフォルトフレーズを選択
             }
@@ -612,14 +527,10 @@ namespace uPiper.Demo
                 return;
 
             // モデルに応じたフレーズリストを取得
-            List<string> phrases;
             var modelIndex = _modelDropdown?.value ?? 0;
-            var modelName = GetModelNameForIndex(modelIndex);
-            var language = _modelLanguages[modelName];
-            if (language == "ja")
-                phrases = _japaneseTestPhrases;
-            else
-                phrases = _englishTestPhrases;
+            var modelName = DemoTestData.GetModelName(modelIndex);
+            var language = DemoTestData.GetLanguage(modelName);
+            var phrases = DemoTestData.GetTestPhrases(language);
 
             if (index > 0 && index < phrases.Count)
             {
@@ -634,7 +545,7 @@ namespace uPiper.Demo
                 if (string.IsNullOrEmpty(_inputField.text) || phrases.Contains(_inputField.text))
                 {
                     // 空または定型文の場合はデフォルトテキストを設定
-                    _inputField.text = GetDefaultTextForLanguage(language);
+                    _inputField.text = DemoTestData.GetDefaultText(language);
                 }
                 _inputField.Select(); // フォーカスを設定
             }
@@ -702,8 +613,7 @@ namespace uPiper.Demo
             try
             {
                 // モデル名を取得
-                var modelNames = new[] { "tsukuyomi-chan" };
-                var modelName = modelNames[_modelDropdown?.value ?? 0];
+                var modelName = DemoTestData.GetModelName(_modelDropdown?.value ?? 0);
                 PiperLogger.LogDebug($"Selected model: {modelName}");
 
                 // モデルをロード
@@ -794,7 +704,7 @@ namespace uPiper.Demo
                 SetStatus("音素に変換中...");
                 var phonemeStopwatch = Stopwatch.StartNew();
                 string[] phonemes;
-                var language = _modelLanguages[modelName];
+                var language = DemoTestData.GetLanguage(modelName);
 
                 // Prosody data for prosody-enabled models
                 int[] prosodyA1 = null, prosodyA2 = null, prosodyA3 = null;
@@ -1617,26 +1527,6 @@ namespace uPiper.Demo
             return Resources.Load<TextAsset>($"{uPiperPaths.LEGACY_MODELS_PATH}/{fileName}");
         }
 
-        /// <summary>
-        /// モデルのインデックスからモデル名を取得
-        /// </summary>
-        private string GetModelNameForIndex(int index)
-        {
-            var modelNames = new[] { "tsukuyomi-chan" };
-            return index >= 0 && index < modelNames.Length ? modelNames[index] : modelNames[0];
-        }
-
-        /// <summary>
-        /// 言語に応じたデフォルトテキストを取得
-        /// </summary>
-        private string GetDefaultTextForLanguage(string language)
-        {
-            return language switch
-            {
-                "ja" => _defaultJapaneseText,
-                "en" => _defaultEnglishText,
-                _ => _defaultEnglishText
-            };
-        }
+        // GetModelNameForIndex and GetDefaultTextForLanguage are now in DemoTestData
     }
 }

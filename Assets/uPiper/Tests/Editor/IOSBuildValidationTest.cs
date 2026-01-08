@@ -158,18 +158,25 @@ namespace uPiper.Tests.Editor
         public void IOSCodeSupport_InPhonemizer()
         {
             var phonemizerPath = "Assets/uPiper/Runtime/Core/Phonemizers/Implementations/OpenJTalkPhonemizer.cs";
-            Assert.IsTrue(File.Exists(phonemizerPath), 
+            Assert.IsTrue(File.Exists(phonemizerPath),
                 $"OpenJTalkPhonemizer not found at: {phonemizerPath}");
-            
+
             var content = File.ReadAllText(phonemizerPath);
-            
-            // Verify iOS support
-            Assert.IsTrue(content.Contains("UNITY_IOS"), 
+
+            // Verify iOS support in phonemizer
+            Assert.IsTrue(content.Contains("UNITY_IOS"),
                 "Phonemizer should have iOS platform support");
-            Assert.IsTrue(content.Contains("__Internal"), 
+            Assert.IsTrue(content.Contains("__Internal"),
                 "Phonemizer should use __Internal for iOS DllImport");
-            Assert.IsTrue(content.Contains("PlatformHelper.IsIOS"), 
-                "Phonemizer should check for iOS platform");
+
+            // iOS platform checking is now in NativeLibraryResolver (shared path resolution)
+            var resolverPath = "Assets/uPiper/Runtime/Core/Platform/NativeLibraryResolver.cs";
+            Assert.IsTrue(File.Exists(resolverPath),
+                $"NativeLibraryResolver not found at: {resolverPath}");
+
+            var resolverContent = File.ReadAllText(resolverPath);
+            Assert.IsTrue(resolverContent.Contains("PlatformHelper.IsIOS"),
+                "NativeLibraryResolver should check for iOS platform");
         }
 
         [Test]
