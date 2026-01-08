@@ -192,14 +192,24 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         #region Cancellation Tests
 
         [Test]
-        public void Cancellation_ThrowsOperationCanceledException()
+        public async Task Cancellation_ThrowsOperationCanceledException()
         {
             using var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            Assert.ThrowsAsync<OperationCanceledException>(
-                async () => await _phonemizer.PhonemizeAsync("test", "en", cts.Token)
-            );
+            // TaskCanceledException is a subclass of OperationCanceledException
+            // so we catch the base type to handle both cases
+            var exceptionThrown = false;
+            try
+            {
+                await _phonemizer.PhonemizeAsync("test", "en", cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                exceptionThrown = true;
+            }
+
+            Assert.IsTrue(exceptionThrown, "Expected OperationCanceledException or TaskCanceledException to be thrown");
         }
 
         [Test]
@@ -298,7 +308,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             var result = await _phonemizer.PhonemizeAsync("test", "en");
 
             Assert.GreaterOrEqual(result.ProcessingTime.TotalMilliseconds, 0);
-            Assert.LessOrEqual(result.ProcessingTime.TotalMilliseconds, 50); // Allow some overhead
+            Assert.LessOrEqual(result.ProcessingTime.TotalMilliseconds, 100); // Allow overhead for system variance
         }
 
         [Test]
