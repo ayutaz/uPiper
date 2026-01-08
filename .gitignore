@@ -12,6 +12,9 @@
 # Ignore Claude configuration
 .claude/
 
+# Claude Code MCP configuration (local development only)
+.mcp.json
+
 # VS Code settings
 .vscode/
 
