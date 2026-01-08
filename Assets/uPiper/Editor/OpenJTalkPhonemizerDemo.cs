@@ -91,7 +91,7 @@ namespace uPiper.Editor
 
                     if (GUILayout.Button("Phonemize (Sync)"))
                     {
-                        PhonemizeTextSync();
+                        PhonemizeText();
                     }
                 }
 
@@ -260,7 +260,7 @@ namespace uPiper.Editor
             }
         }
 
-        private async void PhonemizeTextSync()
+        private async void PhonemizeText()
         {
             try
             {
