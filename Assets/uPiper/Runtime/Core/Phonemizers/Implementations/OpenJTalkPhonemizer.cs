@@ -174,62 +174,36 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                 // Try to set DLL directory on Windows in CI environment
 #if ENABLE_PINVOKE && UNITY_EDITOR_WIN
-                if (Application.isBatchMode || Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null)
+                if (NativeLibraryResolver.IsCIEnvironment)
                 {
                     Debug.Log("[OpenJTalkPhonemizer] CI environment detected, setting DLL search paths...");
 
                     // Try multiple DLL directories
-                    var dllPaths = new[]
-                    {
-                        Directory.GetCurrentDirectory(),
-                        Path.Combine(Application.dataPath, "uPiper", "Plugins", "Windows", "x86_64"),
-                        Path.Combine(Application.dataPath, "Plugins", "x86_64"),
-                        Path.Combine(Directory.GetCurrentDirectory(), "Library", "ScriptAssemblies")
-                    };
-
+                    var dllPaths = NativeLibraryResolver.GetAlternativeLibraryPaths();
                     foreach (var dllPath in dllPaths)
                     {
-                        if (Directory.Exists(dllPath))
+                        var dirPath = Path.GetDirectoryName(dllPath);
+                        if (Directory.Exists(dirPath) && File.Exists(dllPath))
                         {
-                            var dllFile = Path.Combine(dllPath, "openjtalk_wrapper.dll");
-                            if (File.Exists(dllFile))
-                            {
-                                Debug.Log($"[OpenJTalkPhonemizer] Found DLL at: {dllFile}, setting DLL directory to: {dllPath}");
-                                SetDllDirectory(dllPath);
-                                break;
-                            }
+                            Debug.Log($"[OpenJTalkPhonemizer] Found DLL at: {dllPath}, setting DLL directory to: {dirPath}");
+                            SetDllDirectory(dirPath);
+                            break;
                         }
                     }
                 }
 #endif
 
-                if (!IsNativeLibraryAvailable())
+                if (!NativeLibraryResolver.IsNativeLibraryAvailable())
                 {
-                    var expectedPath = GetExpectedLibraryPath();
+                    var expectedPath = NativeLibraryResolver.GetExpectedLibraryPath();
                     var nativePluginsPath = Path.GetFullPath(Path.Combine(Application.dataPath, "../NativePlugins/OpenJTalk/"));
 
                     // In CI environment, provide more detailed information
-                    if (Application.isBatchMode || Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null)
+                    if (NativeLibraryResolver.IsCIEnvironment)
                     {
-                        Debug.LogError($"[OpenJTalkPhonemizer] CI Environment detected. Library search failed.");
-                        Debug.LogError($"[OpenJTalkPhonemizer] Expected path: {expectedPath}");
-                        Debug.LogError($"[OpenJTalkPhonemizer] Application.dataPath: {Application.dataPath}");
-                        Debug.LogError($"[OpenJTalkPhonemizer] Current directory: {Directory.GetCurrentDirectory()}");
-
-                        // Log actual plugin directory contents
-                        var pluginsPath = Path.Combine(Application.dataPath, "uPiper", "Plugins");
-                        if (Directory.Exists(pluginsPath))
-                        {
-                            Debug.LogError($"[OpenJTalkPhonemizer] Plugins directory exists: {pluginsPath}");
-                            foreach (var file in Directory.GetFiles(pluginsPath, "*", SearchOption.AllDirectories))
-                            {
-                                Debug.LogError($"[OpenJTalkPhonemizer]   Found: {file}");
-                            }
-                        }
-                        else
-                        {
-                            Debug.LogError($"[OpenJTalkPhonemizer] Plugins directory not found: {pluginsPath}");
-                        }
+                        Debug.LogError("[OpenJTalkPhonemizer] CI Environment detected. Library search failed.");
+                        NativeLibraryResolver.LogEnvironmentInfo();
+                        NativeLibraryResolver.LogPluginDirectoryContents();
                     }
 
                     throw new PiperInitializationException(
@@ -253,13 +227,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 }
 
                 // Add detailed logging for CI debugging
-                Debug.Log($"[OpenJTalkPhonemizer] Environment info:");
-                Debug.Log($"[OpenJTalkPhonemizer]   UNITY_EDITOR: {UnityEngine.Application.isEditor}");
-                Debug.Log($"[OpenJTalkPhonemizer]   Batch mode: {UnityEngine.Application.isBatchMode}");
-                Debug.Log($"[OpenJTalkPhonemizer]   Platform: {UnityEngine.Application.platform}");
-                Debug.Log($"[OpenJTalkPhonemizer]   Data path: {UnityEngine.Application.dataPath}");
-                Debug.Log($"[OpenJTalkPhonemizer]   Current directory: {System.IO.Directory.GetCurrentDirectory()}");
-                Debug.Log($"[OpenJTalkPhonemizer]   GITHUB_ACTIONS env: {System.Environment.GetEnvironmentVariable("GITHUB_ACTIONS")}");
+                NativeLibraryResolver.LogEnvironmentInfo();
 
                 try
                 {
@@ -717,114 +685,6 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region Helper Methods
 
-        private static string GetPackagePath()
-        {
-#if UNITY_EDITOR
-            // Method 1: Check if uPiper assets exist in Assets folder
-            var localPath = Path.Combine(Application.dataPath, "uPiper");
-            if (!Directory.Exists(localPath))
-            {
-                // Not in Assets, likely a package installation
-                // Try to find in PackageCache
-                var packageCachePath = Path.Combine(Application.dataPath, "..", "Library", "PackageCache");
-                if (Directory.Exists(packageCachePath))
-                {
-                    // Search for uPiper package
-                    var packageDirs = Directory.GetDirectories(packageCachePath, "com.ayutaz.upiper@*");
-                    if (packageDirs.Length > 0)
-                    {
-                        var packagePath = packageDirs[0]; // Use first match
-                        Debug.Log($"[OpenJTalkPhonemizer] Detected package installation at: {packagePath}");
-                        return packagePath;
-                    }
-                }
-            }
-
-            // Method 2: Try using UnityEditor.PackageManager (if available)
-            try
-            {
-                var packageListRequest = UnityEditor.PackageManager.Client.List(true);
-                while (!packageListRequest.IsCompleted)
-                {
-                    System.Threading.Thread.Sleep(10);
-                }
-
-                if (packageListRequest.Status == UnityEditor.PackageManager.StatusCode.Success)
-                {
-                    foreach (var package in packageListRequest.Result)
-                    {
-                        if (package.name == "com.ayutaz.upiper")
-                        {
-                            Debug.Log($"[OpenJTalkPhonemizer] Found package via PackageManager at: {package.resolvedPath}");
-                            return package.resolvedPath;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.Log($"[OpenJTalkPhonemizer] Could not use PackageManager API: {ex.Message}");
-            }
-#endif
-            return null;
-        }
-
-        private List<string> GetAlternativeLibraryPaths()
-        {
-            var paths = new List<string>();
-
-#if UNITY_EDITOR
-            string libraryFileName = "";
-            string platformFolder = "";
-
-            if (PlatformHelper.IsWindows)
-            {
-                libraryFileName = "openjtalk_wrapper.dll";
-                platformFolder = Path.Combine("Windows", "x86_64");
-            }
-            else if (PlatformHelper.IsMacOS)
-            {
-                libraryFileName = "openjtalk_wrapper.bundle";
-                platformFolder = "macOS";
-            }
-            else if (PlatformHelper.IsLinux)
-            {
-                libraryFileName = "libopenjtalk_wrapper.so";
-                platformFolder = Path.Combine("Linux", "x86_64");
-            }
-
-            // After initial setup, files should be in fixed location
-            paths.Add(Path.Combine(Application.dataPath, "uPiper", "Plugins", platformFolder, libraryFileName));
-
-            // PackageCache path for UPM installations
-            var packageCachePath = Path.Combine(Application.dataPath, "..", "Library", "PackageCache");
-            if (Directory.Exists(packageCachePath))
-            {
-                try
-                {
-                    var packageDirs = Directory.GetDirectories(packageCachePath, "com.ayutaz.upiper@*");
-                    foreach (var packageDir in packageDirs)
-                    {
-                        var packagePluginPath = Path.Combine(packageDir, "Plugins", platformFolder, libraryFileName);
-                        paths.Add(packagePluginPath);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogWarning($"[OpenJTalkPhonemizer] Exception occurred while searching PackageCache: {ex}");
-                }
-            }
-
-            // Legacy paths for backward compatibility
-            if (PlatformHelper.IsWindows)
-            {
-                paths.Add(Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll"));
-            }
-#endif
-
-            return paths;
-        }
-
         private static string GetDefaultDictionaryPath()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -847,8 +707,8 @@ namespace uPiper.Core.Phonemizers.Implementations
             // On iOS, use the IOSPathResolver for proper path handling
             return IOSPathResolver.GetOpenJTalkDictionaryPath();
 #else
-            // After setup, files should always be in fixed locations - using consistent path structure
-            var primaryPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
+            // Use uPiperPaths for consistent path handling
+            var primaryPath = uPiperPaths.GetRuntimeOpenJTalkPath();
 
             // Check primary path first
             if (Directory.Exists(primaryPath))
@@ -879,242 +739,12 @@ namespace uPiper.Core.Phonemizers.Implementations
                 return legacyPath;
             }
 
-            Debug.LogError($"[OpenJTalkPhonemizer] Dictionary not found. Please run 'uPiper/Setup/Run Initial Setup' from the menu.");
+            Debug.LogError("[OpenJTalkPhonemizer] Dictionary not found. Please run 'uPiper/Setup/Run Initial Setup' from the menu.");
             return primaryPath; // Return expected path for error messages
 #endif
         }
 
         #endregion
-
-        private bool IsNativeLibraryAvailable()
-        {
-            try
-            {
-                var libraryPath = GetExpectedLibraryPath();
-                if (string.IsNullOrEmpty(libraryPath))
-                {
-                    Debug.LogError("[OpenJTalkPhonemizer] No library path defined for current platform");
-                    return false;
-                }
-
-#if UNITY_EDITOR
-                // In Editor, check if the library file exists
-
-                // For bundle format on macOS, check if directory exists
-                var libraryExists = false;
-                if (PlatformHelper.IsMacOS && libraryPath.EndsWith(".bundle"))
-                {
-                    libraryExists = Directory.Exists(libraryPath);
-                    if (libraryExists)
-                    {
-                        // Verify the actual binary exists inside the bundle
-                        var binaryPath = Path.Combine(libraryPath, "Contents", "MacOS", "openjtalk_wrapper");
-                        if (!File.Exists(binaryPath))
-                        {
-                            Debug.LogError($"[OpenJTalkPhonemizer] Bundle exists but binary not found: {binaryPath}");
-                            libraryExists = false;
-                        }
-                    }
-                }
-                else
-                {
-                    libraryExists = File.Exists(libraryPath);
-                }
-
-                if (!libraryExists)
-                {
-                    // Try alternative paths before giving up
-                    var alternativePaths = GetAlternativeLibraryPaths();
-                    foreach (var altPath in alternativePaths)
-                    {
-                        if (PlatformHelper.IsMacOS && altPath.EndsWith(".bundle"))
-                        {
-                            if (Directory.Exists(altPath))
-                            {
-                                var binaryPath = Path.Combine(altPath, "Contents", "MacOS", "openjtalk_wrapper");
-                                if (File.Exists(binaryPath))
-                                {
-                                    Debug.Log($"[OpenJTalkPhonemizer] Found library at alternative location: {altPath}");
-                                    return true;
-                                }
-                            }
-                        }
-                        else if (File.Exists(altPath))
-                        {
-                            Debug.Log($"[OpenJTalkPhonemizer] Found library at alternative location: {altPath}");
-                            return true;
-                        }
-                    }
-
-                    // Library not found - provide helpful error message
-                    Debug.LogError($"[OpenJTalkPhonemizer] Native library not found. Searched locations:");
-                    Debug.LogError($"  Primary: {libraryPath}");
-                    foreach (var altPath in alternativePaths)
-                    {
-                        Debug.LogError($"  - {altPath}");
-                    }
-
-                    Debug.LogError($"[OpenJTalkPhonemizer] Please run 'uPiper/Setup/Run Initial Setup' from the menu to copy required files.");
-
-                    return false;
-                }
-
-                Debug.Log($"[OpenJTalkPhonemizer] Native library found at: {libraryPath}");
-                return true;
-#else
-                // In built application, try to call a simple function to check if library is loaded
-                // For Android and iOS, the library is always available at runtime (statically linked or included in APK/IPA)
-                if (PlatformHelper.IsAndroid || PlatformHelper.IsIOS)
-                {
-                    Debug.Log($"[OpenJTalkPhonemizer] Native library is statically linked on {(PlatformHelper.IsAndroid ? "Android" : "iOS")}");
-                    return true;
-                }
-
-                try
-                {
-#if ENABLE_PINVOKE
-                    // Try to get version as a simple test
-                    var version = Marshal.PtrToStringAnsi(openjtalk_get_version());
-                    if (!string.IsNullOrEmpty(version))
-                    {
-                        Debug.Log($"[OpenJTalkPhonemizer] Native library loaded successfully (version: {version})");
-                        return true;
-                    }
-#endif
-                    return false;
-                }
-                catch (DllNotFoundException)
-                {
-                    Debug.LogError("[OpenJTalkPhonemizer] Native library not found. Please ensure the plugin is properly included in the build.");
-                    Debug.LogError("[OpenJTalkPhonemizer] Expected library name: " + GetExpectedLibraryPath());
-                    return false;
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"[OpenJTalkPhonemizer] Error loading native library: {ex.Message}");
-                    return false;
-                }
-#endif
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[OpenJTalkPhonemizer] Error checking library availability: {ex.Message}");
-                return false;
-            }
-        }
-
-        private string GetExpectedLibraryPath()
-        {
-            // Check for CI/Docker environment first (regardless of UNITY_EDITOR)
-            if (PlatformHelper.IsWindows && (Application.isBatchMode || Environment.GetEnvironmentVariable("GITHUB_ACTIONS") != null))
-            {
-                // CI/Docker environment: Check multiple locations
-                var possiblePaths = new[]
-                {
-                    Path.Combine(Directory.GetCurrentDirectory(), "openjtalk_wrapper.dll"),
-                    Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll"),
-                    Path.Combine(Directory.GetCurrentDirectory(), "Library", "ScriptAssemblies", "openjtalk_wrapper.dll"),
-                    Path.Combine(Application.dataPath, "uPiper", "Plugins", "Windows", "x86_64", "openjtalk_wrapper.dll")
-                };
-
-                foreach (var path in possiblePaths)
-                {
-                    if (File.Exists(path))
-                    {
-                        Debug.Log($"[OpenJTalkPhonemizer] Found library in CI environment: {path}");
-                        return path;
-                    }
-                }
-
-                // If not found, log all searched paths for debugging
-                Debug.LogError($"[OpenJTalkPhonemizer] DLL not found in CI environment. Searched paths:");
-                foreach (var path in possiblePaths)
-                {
-                    Debug.LogError($"  - {path} (exists: {File.Exists(path)})");
-                }
-            }
-
-            // In Unity Editor
-#if UNITY_EDITOR
-            // Define library file name based on platform
-            string libraryFileName = "";
-            string platformFolder = "";
-
-            if (PlatformHelper.IsWindows)
-            {
-                libraryFileName = "openjtalk_wrapper.dll";
-                platformFolder = Path.Combine("Windows", "x86_64");
-            }
-            else if (PlatformHelper.IsMacOS)
-            {
-                libraryFileName = "openjtalk_wrapper.bundle";
-                platformFolder = "macOS";
-            }
-            else if (PlatformHelper.IsLinux)
-            {
-                libraryFileName = "libopenjtalk_wrapper.so";
-                platformFolder = Path.Combine("Linux", "x86_64");
-            }
-
-            // After initial setup, files should be in fixed location
-            var primaryPath = Path.Combine(Application.dataPath, "uPiper", "Plugins", platformFolder, libraryFileName);
-
-            // Check primary path first
-            if (PlatformHelper.IsMacOS && libraryFileName.EndsWith(".bundle"))
-            {
-                if (Directory.Exists(primaryPath))
-                {
-                    // Verify the actual binary exists inside the bundle
-                    var binaryPath = Path.Combine(primaryPath, "Contents", "MacOS", "openjtalk_wrapper");
-                    if (File.Exists(binaryPath))
-                    {
-                        Debug.Log($"[OpenJTalkPhonemizer] Found library at: {primaryPath}");
-                        return primaryPath;
-                    }
-                }
-            }
-            else if (File.Exists(primaryPath))
-            {
-                Debug.Log($"[OpenJTalkPhonemizer] Found library at: {primaryPath}");
-                return primaryPath;
-            }
-
-            // Check legacy paths for backward compatibility
-            if (PlatformHelper.IsWindows)
-            {
-                var legacyPath = Path.Combine(Application.dataPath, "Plugins", "x86_64", "openjtalk_wrapper.dll");
-                if (File.Exists(legacyPath))
-                {
-                    Debug.Log($"[OpenJTalkPhonemizer] Found library at legacy path: {legacyPath}");
-                    return legacyPath;
-                }
-            }
-
-            // Library not found at expected path - return path anyway
-            // The caller (IsNativeLibraryAvailable) will check alternative paths
-            // and display appropriate error messages if all paths fail
-            return primaryPath;
-#else
-            // In built application, Unity automatically loads native plugins
-            // We just need to verify if the library was loaded successfully
-            // The actual path checking is not necessary as Unity handles plugin loading
-
-            // Return a dummy path that indicates the library should be loaded by Unity
-            if (PlatformHelper.IsWindows)
-                return "openjtalk_wrapper.dll";
-            else if (PlatformHelper.IsMacOS)
-                return "libopenjtalk_wrapper.dylib";
-            else if (PlatformHelper.IsLinux)
-                return "libopenjtalk_wrapper.so";
-            else if (PlatformHelper.IsAndroid)
-                return "libopenjtalk_wrapper.so";
-            else if (PlatformHelper.IsIOS)
-                return "libopenjtalk_wrapper.a";
-            else
-                return "openjtalk_wrapper";  // Fallback for unknown platforms
-#endif
-        }
-
 
         #region IDisposable Implementation
 
