@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -27,16 +28,16 @@ namespace uPiper.Tests.Runtime.Integration
         public void OneTimeSetUp()
         {
             Debug.Log("[IOSIntegrationTest] Setting up iOS integration tests");
-            
+
             // Check if we have a test model available
             _modelPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "Models", "test_model.onnx");
-            
+
             if (!File.Exists(_modelPath))
             {
                 // Try alternative path for iOS
                 _modelPath = Path.Combine(Application.dataPath, "Raw", "uPiper", "Models", "test_model.onnx");
             }
-            
+
             if (!File.Exists(_modelPath))
             {
                 Assert.Ignore("Test model not found. Skipping integration tests.");
@@ -84,7 +85,7 @@ namespace uPiper.Tests.Runtime.Integration
             // Wait for model loading
             float timeout = 10f;
             float elapsed = 0f;
-            
+
             while (!modelLoaded && string.IsNullOrEmpty(error) && elapsed < timeout)
             {
                 yield return new WaitForSeconds(0.1f);
@@ -122,7 +123,7 @@ namespace uPiper.Tests.Runtime.Integration
             // Wait for generation
             float timeout = 5f;
             float elapsed = 0f;
-            
+
             while (!completed && elapsed < timeout)
             {
                 yield return new WaitForSeconds(0.1f);
@@ -140,7 +141,7 @@ namespace uPiper.Tests.Runtime.Integration
         public IEnumerator PhonemizerChain_WorksOnIOS()
         {
             var phonemizer = new OpenJTalkPhonemizer();
-            
+
             var testCases = new[]
             {
                 ("日本語", "Japanese text"),
@@ -150,67 +151,75 @@ namespace uPiper.Tests.Runtime.Integration
 
             foreach (var (text, description) in testCases)
             {
-                var result = phonemizer.Phonemize(text);
-                
+                var task = phonemizer.PhonemizeAsync(text);
+                yield return new WaitUntil(() => task.IsCompleted);
+                var result = task.Result;
+
                 Assert.NotNull(result, $"Result is null for {description}");
                 Assert.NotNull(result.Phonemes, $"Phonemes are null for {description}");
                 Assert.Greater(result.Phonemes.Length, 0, $"No phonemes for {description}");
-                
+
                 Debug.Log($"[iOS] {description}: '{text}' -> {result.Phonemes.Length} phonemes");
-                
+
                 yield return null;
             }
-            
+
             phonemizer.Dispose();
         }
 
-        [Test]
-        public void MemoryPressure_HandledGracefully()
+        [UnityTest]
+        public IEnumerator MemoryPressure_HandledGracefully()
         {
             // Test that the system handles memory pressure
             var initialMemory = GC.GetTotalMemory(false);
-            
+
             // Generate multiple audio clips
             for (int i = 0; i < 5; i++)
             {
                 var phonemizer = new OpenJTalkPhonemizer();
-                var result = phonemizer.Phonemize($"メモリテスト {i}");
+                var task = phonemizer.PhonemizeAsync($"メモリテスト {i}");
+                yield return new WaitUntil(() => task.IsCompleted);
+                var result = task.Result;
                 Assert.NotNull(result);
                 phonemizer.Dispose();
-                
+
                 // Force garbage collection
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
             }
-            
+
             var finalMemory = GC.GetTotalMemory(false);
             var memoryIncrease = finalMemory - initialMemory;
-            
+
             // Memory should not increase significantly
-            Assert.Less(memoryIncrease, 5 * 1024 * 1024, 
+            Assert.Less(memoryIncrease, 5 * 1024 * 1024,
                 $"Memory leak detected: {memoryIncrease / 1024}KB increase");
         }
 
-        [Test]
-        public void BackgroundMode_PreservesState()
+        [UnityTest]
+        public IEnumerator BackgroundMode_PreservesState()
         {
             // Test that the phonemizer works after app suspension
             var phonemizer = new OpenJTalkPhonemizer();
-            
+
             // Initial phonemization
-            var result1 = phonemizer.Phonemize("初期テスト");
+            var task1 = phonemizer.PhonemizeAsync("初期テスト");
+            yield return new WaitUntil(() => task1.IsCompleted);
+            var result1 = task1.Result;
             Assert.NotNull(result1);
             Assert.Greater(result1.Phonemes.Length, 0);
-            
+
             // Simulate app going to background and returning
             // (In actual iOS, this would involve applicationWillResignActive/applicationDidBecomeActive)
-            
+
             // Phonemization after "resume"
-            var result2 = phonemizer.Phonemize("復帰後テスト");
+            var task2 = phonemizer.PhonemizeAsync("復帰後テスト");
+            yield return new WaitUntil(() => task2.IsCompleted);
+            var result2 = task2.Result;
             Assert.NotNull(result2);
             Assert.Greater(result2.Phonemes.Length, 0);
-            
+
             phonemizer.Dispose();
         }
 
@@ -220,26 +229,28 @@ namespace uPiper.Tests.Runtime.Integration
             var phonemizer = new OpenJTalkPhonemizer();
             var iterations = 10;
             var totalTime = 0f;
-            
+
             for (int i = 0; i < iterations; i++)
             {
                 var startTime = Time.realtimeSinceStartup;
-                var result = phonemizer.Phonemize($"パフォーマンステスト {i}");
+                var task = phonemizer.PhonemizeAsync($"パフォーマンステスト {i}");
+                yield return new WaitUntil(() => task.IsCompleted);
+                var result = task.Result;
                 var elapsed = Time.realtimeSinceStartup - startTime;
-                
+
                 totalTime += elapsed;
                 Assert.NotNull(result);
-                
+
                 yield return null; // Allow frame updates
             }
-            
+
             var averageTime = totalTime / iterations;
             Debug.Log($"[iOS] Average phonemization time: {averageTime * 1000:F2}ms");
-            
+
             // Should be fast enough for real-time use (under 100ms average)
-            Assert.Less(averageTime, 0.1f, 
+            Assert.Less(averageTime, 0.1f,
                 $"Phonemization too slow on iOS: {averageTime * 1000:F2}ms average");
-            
+
             phonemizer.Dispose();
         }
     }

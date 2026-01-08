@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -57,20 +58,20 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         }
 
         [Test]
-        public void DictionaryPath_UsesIOSSpecificPath()
+        public async Task DictionaryPath_UsesIOSSpecificPath()
         {
             // iOS uses Application.dataPath + /Raw for StreamingAssets
             var expectedPathPrefix = Path.Combine(Application.dataPath, "Raw", "uPiper", "OpenJTalk");
-            
+
             // Note: We can't directly access the private _dictionaryPath field,
             // but we can verify that phonemization works, which indirectly validates the path
-            var result = _phonemizer.Phonemize("テスト");
+            var result = await _phonemizer.PhonemizeAsync("テスト");
             Assert.NotNull(result);
             Assert.Greater(result.Phonemes?.Length ?? 0, 0);
         }
 
         [Test]
-        public void Phonemize_JapaneseText_WorksOnIOS()
+        public async Task Phonemize_JapaneseText_WorksOnIOS()
         {
             var testTexts = new[]
             {
@@ -81,54 +82,55 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
 
             foreach (var text in testTexts)
             {
-                var result = _phonemizer.Phonemize(text);
+                var result = await _phonemizer.PhonemizeAsync(text);
                 Assert.NotNull(result, $"Result should not be null for '{text}'");
                 Assert.NotNull(result.Phonemes, $"Phonemes should not be null for '{text}'");
                 Assert.Greater(result.Phonemes.Length, 0, $"Should have phonemes for '{text}'");
-                
+
                 Debug.Log($"[iOS] Phonemized '{text}' -> {string.Join(" ", result.Phonemes)}");
             }
         }
 
-        [Test]
-        public void MemoryUsage_IsOptimized()
+        [UnityTest]
+        public IEnumerator MemoryUsage_IsOptimized()
         {
             // Test memory usage on iOS
             var initialMemory = GC.GetTotalMemory(false);
-            
+
             // Perform multiple phonemizations
             for (int i = 0; i < 100; i++)
             {
-                var result = _phonemizer.Phonemize($"テスト{i}");
-                Assert.NotNull(result);
+                var task = _phonemizer.PhonemizeAsync($"テスト{i}");
+                yield return new WaitUntil(() => task.IsCompleted);
+                Assert.NotNull(task.Result);
             }
-            
+
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.Collect();
-            
+
             var finalMemory = GC.GetTotalMemory(false);
             var memoryIncrease = finalMemory - initialMemory;
-            
+
             // Memory increase should be reasonable (less than 10MB for 100 operations)
-            Assert.Less(memoryIncrease, 10 * 1024 * 1024, 
+            Assert.Less(memoryIncrease, 10 * 1024 * 1024,
                 $"Memory usage increased by {memoryIncrease / 1024 / 1024}MB, which is too high for iOS");
         }
 
         [Test]
-        public void CacheStatistics_WorksOnIOS()
+        public async Task CacheStatistics_WorksOnIOS()
         {
             // Test cache functionality on iOS
             var text = "キャッシュテスト";
-            
+
             // First call - should not be cached
-            var result1 = _phonemizer.Phonemize(text);
+            var result1 = await _phonemizer.PhonemizeAsync(text);
             Assert.IsFalse(result1.FromCache);
-            
+
             // Second call - should be cached
-            var result2 = _phonemizer.Phonemize(text);
+            var result2 = await _phonemizer.PhonemizeAsync(text);
             Assert.IsTrue(result2.FromCache);
-            
+
             // Verify cache statistics
             var stats = _phonemizer.GetCacheStatistics();
             Assert.Greater(stats.HitCount, 0);
@@ -140,18 +142,18 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         {
             // Test thread safety on iOS
             var errors = 0;
-            var tasks = new System.Threading.Tasks.Task[5];
+            var tasks = new Task[5];
 
             for (int i = 0; i < tasks.Length; i++)
             {
                 var taskId = i;
-                tasks[i] = System.Threading.Tasks.Task.Run(() =>
+                tasks[i] = Task.Run(async () =>
                 {
                     try
                     {
                         for (int j = 0; j < 10; j++)
                         {
-                            var result = _phonemizer.Phonemize($"スレッド{taskId}テスト{j}");
+                            var result = await _phonemizer.PhonemizeAsync($"スレッド{taskId}テスト{j}");
                             Assert.NotNull(result);
                             Assert.NotNull(result.Phonemes);
                         }
@@ -169,28 +171,31 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
             Assert.AreEqual(0, errors, "Thread safety test failed with errors");
         }
 
-        [Test]
-        public void LowMemoryWarning_HandledGracefully()
+        [UnityTest]
+        public IEnumerator LowMemoryWarning_HandledGracefully()
         {
             // Simulate low memory warning handling
             // Note: We can't actually trigger a low memory warning in tests,
             // but we can verify the phonemizer continues to work after clearing cache
-            
+
             // Fill cache
             for (int i = 0; i < 50; i++)
             {
-                _phonemizer.Phonemize($"メモリテスト{i}");
+                var task = _phonemizer.PhonemizeAsync($"メモリテスト{i}");
+                yield return new WaitUntil(() => task.IsCompleted);
             }
-            
+
             // Clear cache (simulating response to low memory)
             _phonemizer.ClearCache();
-            
+
             // Verify it still works
-            var result = _phonemizer.Phonemize("低メモリ後のテスト");
+            var resultTask = _phonemizer.PhonemizeAsync("低メモリ後のテスト");
+            yield return new WaitUntil(() => resultTask.IsCompleted);
+            var result = resultTask.Result;
             Assert.NotNull(result);
             Assert.NotNull(result.Phonemes);
             Assert.Greater(result.Phonemes.Length, 0);
-            
+
             // Verify cache was cleared
             var stats = _phonemizer.GetCacheStatistics();
             Assert.AreEqual(1, stats.UniqueEntries);

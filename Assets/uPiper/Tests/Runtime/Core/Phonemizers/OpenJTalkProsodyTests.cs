@@ -219,12 +219,12 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         #region Integration Tests
 
         [Test]
-        public void PhonemizeWithProsody_CompareToRegularPhonemize_SamePhonemes()
+        public async System.Threading.Tasks.Task PhonemizeWithProsody_CompareToRegularPhonemize_SamePhonemes()
         {
             const string text = "音声合成";
 
             var prosodyResult = _phonemizer.PhonemizeWithProsody(text);
-            var regularResult = _phonemizer.Phonemize(text);
+            var regularResult = await _phonemizer.PhonemizeAsync(text);
 
             Assert.Greater(prosodyResult.PhonemeCount, 0);
             Assert.Greater(regularResult.Phonemes?.Length ?? 0, 0);

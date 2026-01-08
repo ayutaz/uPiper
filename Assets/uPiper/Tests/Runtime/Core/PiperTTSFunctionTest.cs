@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using uPiper.Core;
 
@@ -186,27 +187,28 @@ namespace uPiper.Tests.Runtime.Core
         #region Error Handling Tests
 
         [Test]
-        public void GenerateAudio_BeforeInitialization_ThrowsInvalidOperationException()
+        public void GenerateAudioAsync_BeforeInitialization_ThrowsInvalidOperationException()
         {
-            Assert.Throws<InvalidOperationException>(() => _piperTTS.GenerateAudio("test"));
+            Assert.ThrowsAsync<InvalidOperationException>(async () => await _piperTTS.GenerateAudioAsync("test"));
         }
 
-        // Note: PreloadText is async only, so we can't test it synchronously
-        // PreloadTextAsync would require async test infrastructure
-
         [Test]
-        public void GenerateAudio_WithNullText_ThrowsArgumentNullException()
+        public void GenerateAudioAsync_WithNullText_ThrowsArgumentNullException()
         {
             // Note: This test assumes the method checks for null even before initialization check
             // If not, it might throw InvalidOperationException instead
             try
             {
-                _piperTTS.GenerateAudio(null);
+                _ = _piperTTS.GenerateAudioAsync(null).GetAwaiter().GetResult();
                 Assert.Fail("Expected an exception");
             }
-            catch (Exception ex)
+            catch (AggregateException ae) when (ae.InnerException is ArgumentNullException or InvalidOperationException)
             {
-                Assert.IsTrue(ex is ArgumentNullException || ex is InvalidOperationException);
+                Assert.Pass();
+            }
+            catch (Exception ex) when (ex is ArgumentNullException or InvalidOperationException)
+            {
+                Assert.Pass();
             }
         }
 

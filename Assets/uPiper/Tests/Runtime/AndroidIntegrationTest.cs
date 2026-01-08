@@ -1,6 +1,7 @@
 #if UNITY_ANDROID
 using System.Collections;
 using System.IO;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -97,9 +98,17 @@ namespace uPiper.Tests.Runtime
 
             Assert.IsTrue(piperTTS.IsInitialized);
 
-            // Generate audio
+            // Generate audio asynchronously
             var testText = "こんにちは";
-            var audioClip = piperTTS.GenerateAudio(testText);
+            var audioTask = piperTTS.GenerateAudioAsync(testText);
+
+            // Wait for async task to complete
+            while (!audioTask.IsCompleted)
+            {
+                yield return null;
+            }
+
+            var audioClip = audioTask.GetAwaiter().GetResult();
 
             Assert.IsNotNull(audioClip, "Should generate audio clip");
             Assert.Greater(audioClip.length, 0f, "Audio clip should have duration");
@@ -184,8 +193,16 @@ namespace uPiper.Tests.Runtime
             var testText = "これはパフォーマンステストです。";
 
             var startTime = Time.realtimeSinceStartup;
-            var audioClip = piperTTS.GenerateAudio(testText);
+            var audioTask = piperTTS.GenerateAudioAsync(testText);
+
+            // Wait for async task to complete
+            while (!audioTask.IsCompleted)
+            {
+                yield return null;
+            }
+
             var generationTime = Time.realtimeSinceStartup - startTime;
+            var audioClip = audioTask.GetAwaiter().GetResult();
 
             Assert.IsNotNull(audioClip);
 

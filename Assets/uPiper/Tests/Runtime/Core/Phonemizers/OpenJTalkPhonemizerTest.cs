@@ -80,25 +80,25 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         #region Phonemization Tests
 
         [Test]
-        public void Phonemize_EmptyText_ReturnsEmpty()
+        public async Task PhonemizeAsync_EmptyText_ReturnsEmpty()
         {
-            var result = _phonemizer.Phonemize("");
+            var result = await _phonemizer.PhonemizeAsync("");
             Assert.NotNull(result);
             Assert.AreEqual(0, result.Phonemes?.Length ?? 0);
         }
 
         [Test]
-        public void Phonemize_NullText_ReturnsEmpty()
+        public async Task PhonemizeAsync_NullText_ReturnsEmpty()
         {
-            var result = _phonemizer.Phonemize(null);
+            var result = await _phonemizer.PhonemizeAsync(null);
             Assert.NotNull(result);
             Assert.AreEqual(0, result.Phonemes?.Length ?? 0);
         }
 
         [Test]
-        public void Phonemize_SimpleHiragana_ReturnsPhonemes()
+        public async Task PhonemizeAsync_SimpleHiragana_ReturnsPhonemes()
         {
-            var result = _phonemizer.Phonemize("こんにちは");
+            var result = await _phonemizer.PhonemizeAsync("こんにちは");
 
             Assert.NotNull(result);
             Assert.Greater(result.Phonemes?.Length ?? 0, 0);
@@ -111,9 +111,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         }
 
         [Test]
-        public void Phonemize_SimpleKatakana_ReturnsPhonemes()
+        public async Task PhonemizeAsync_SimpleKatakana_ReturnsPhonemes()
         {
-            var result = _phonemizer.Phonemize("コンピューター");
+            var result = await _phonemizer.PhonemizeAsync("コンピューター");
 
             Assert.NotNull(result);
             Assert.Greater(result.Phonemes?.Length ?? 0, 0);
@@ -123,9 +123,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         }
 
         [Test]
-        public void Phonemize_MixedText_ReturnsPhonemes()
+        public async Task PhonemizeAsync_MixedText_ReturnsPhonemes()
         {
-            var result = _phonemizer.Phonemize("私はAIです");
+            var result = await _phonemizer.PhonemizeAsync("私はAIです");
 
             Assert.NotNull(result);
             Assert.Greater(result.Phonemes?.Length ?? 0, 0);
@@ -135,9 +135,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         }
 
         [Test]
-        public void Phonemize_WithNumbers_ReturnsPhonemes()
+        public async Task PhonemizeAsync_WithNumbers_ReturnsPhonemes()
         {
-            var result = _phonemizer.Phonemize("今日は2024年です");
+            var result = await _phonemizer.PhonemizeAsync("今日は2024年です");
 
             Assert.NotNull(result);
             Assert.Greater(result.Phonemes?.Length ?? 0, 0);
@@ -169,15 +169,15 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         #region Cache Tests
 
         [Test]
-        public void Phonemize_SameText_UsesCachedResult()
+        public async Task PhonemizeAsync_SameText_UsesCachedResult()
         {
             const string text = "テスト";
 
             // First call
-            var result1 = _phonemizer.Phonemize(text);
+            var result1 = await _phonemizer.PhonemizeAsync(text);
 
             // Second call (should be cached)
-            var result2 = _phonemizer.Phonemize(text);
+            var result2 = await _phonemizer.PhonemizeAsync(text);
 
             Assert.NotNull(result1);
             Assert.NotNull(result2);
@@ -191,18 +191,18 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         }
 
         [Test]
-        public void ClearCache_RemovesCachedResults()
+        public async Task ClearCache_RemovesCachedResults()
         {
             const string text = "キャッシュテスト";
 
             // Phonemize to cache
-            var result1 = _phonemizer.Phonemize(text);
+            var result1 = await _phonemizer.PhonemizeAsync(text);
 
             // Clear cache
             _phonemizer.ClearCache();
 
             // Phonemize again
-            var result2 = _phonemizer.Phonemize(text);
+            var result2 = await _phonemizer.PhonemizeAsync(text);
 
             // Check that cache was cleared - result2 should not be from cache
             Assert.IsFalse(result2.FromCache);
@@ -214,14 +214,14 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
 
         [Test]
         [Timeout(5000)] // 5 second timeout
-        public void Phonemize_VeryLongText_HandlesGracefully()
+        public async Task PhonemizeAsync_VeryLongText_HandlesGracefully()
         {
             // Create a much shorter text to avoid memory issues
             var longText = new string('あ', 100); // Reduced from 10000 to 100
 
             try
             {
-                var result = _phonemizer.Phonemize(longText);
+                var result = await _phonemizer.PhonemizeAsync(longText);
                 Assert.NotNull(result);
                 Assert.Greater(result.Phonemes?.Length ?? 0, 0);
             }
@@ -234,14 +234,14 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         }
 
         [Test]
-        public void Phonemize_InvalidCharacters_HandlesGracefully()
+        public async Task PhonemizeAsync_InvalidCharacters_HandlesGracefully()
         {
             // Text with potentially problematic characters
             var problematicText = "テスト\0\n\r\t";
 
             try
             {
-                var result = _phonemizer.Phonemize(problematicText);
+                var result = await _phonemizer.PhonemizeAsync(problematicText);
                 Assert.NotNull(result);
             }
             catch (PiperPhonemizationException)
@@ -278,7 +278,7 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         }
 
         [Test]
-        public void Phonemize_AfterDispose_ThrowsObjectDisposedException()
+        public void PhonemizeAsync_AfterDispose_ThrowsObjectDisposedException()
         {
             // Skip this test if native library is not available
             try
@@ -290,9 +290,9 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
                 System.GC.Collect();
                 System.GC.WaitForPendingFinalizers();
 
-                Assert.Throws<ObjectDisposedException>(() =>
+                Assert.ThrowsAsync<ObjectDisposedException>(async () =>
                 {
-                    phonemizer.Phonemize("テスト");
+                    await phonemizer.PhonemizeAsync("テスト");
                 });
             }
             catch (PiperInitializationException ex)
