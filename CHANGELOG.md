@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026/01/08
+
+### ⚠️ Breaking Changes
+
+#### sync API削除（デッドロックリスク解消）
+
+以下の同期APIを削除しました。非同期APIを使用してください：
+
+| 削除されたAPI | 代替API |
+|--------------|---------|
+| `IPiperTTS.GenerateAudio(string)` | `GenerateAudioAsync(string)` |
+| `IPiperTTS.GenerateAudio(string, PiperVoiceConfig)` | `GenerateAudioAsync(string, PiperVoiceConfig)` |
+| `IPhonemizer.Phonemize(string, string)` | `PhonemizeAsync(string, string)` |
+
+**理由**: 同期APIは内部で `Task.Wait()` や `Task.Run().Result` を使用しており、Unityのメインスレッドコンテキストでデッドロックを引き起こす可能性がありました。
+
+### 🔧 Changed
+
+- `OpenJTalkPhonemizerDemo`: `PhonemizeTextSync` を `PhonemizeTextWithTimingAsync` にリネーム（async命名規則に準拠）
+
 ## [1.1.0] - 2026/01/08
 
 ### ✨ Added
