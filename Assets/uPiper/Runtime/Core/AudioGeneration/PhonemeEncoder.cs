@@ -141,7 +141,7 @@ namespace uPiper.Core.AudioGeneration
             ["zy"] = "ʑ",
             // Affricates and fricatives
             ["ch"] = "tɕ",
-            ["sh"] = "ɕ",
+            ["sh"] = "ʃ",  // Use ʃ (ID 42), not ɕ (ID 18) - matches training data
             ["ts"] = "ts",  // Keep as-is (not in IPA model)
             // Special
             ["cl"] = "q",   // 促音 maps to q (ID 24) in tsukuyomi-chan (glottal stop)
@@ -174,7 +174,13 @@ namespace uPiper.Core.AudioGeneration
             ["\ue012"] = "hy",
             ["\ue013"] = "ny",
             ["\ue014"] = "my",
-            ["\ue015"] = "ry"
+            ["\ue015"] = "ry",
+            // N phoneme variants (piper-plus Issue #207)
+            // Map to ASCII "N" (ID 22), NOT IPA "ɴ" (ID 20)
+            ["\ue019"] = "N",  // N_m
+            ["\ue01a"] = "N",  // N_n
+            ["\ue01b"] = "N",  // N_ng
+            ["\ue01c"] = "N"   // N_uvular
         };
 
         // フィールド: IPAモデルかどうかを初期化時に判定

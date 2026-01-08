@@ -194,7 +194,8 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         }
 
         /// <summary>
-        /// 「し」(sh)が正しくɕ(ID 18)にマッピングされることを確認
+        /// 「し」(sh)が正しくʃ(ID 42)にマッピングされることを確認
+        /// (学習データでは ʃ を使用、ɕ ではない)
         /// </summary>
         [Test]
         public void Encode_ShPhoneme_MapsToSh()
@@ -207,11 +208,12 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Assert
             Assert.IsNotNull(ids);
-            // BOS + ɕ + i + EOS = 4
+            // BOS + ʃ + i + EOS = 4
             Assert.AreEqual(4, ids.Length, $"Expected 4 IDs but got {ids.Length}: [{string.Join(", ", ids)}]");
 
             Assert.AreEqual(1, ids[0], "ids[0] should be BOS (^) = 1");
-            Assert.AreEqual(18, ids[1], $"ids[1] should be ɕ = 18, but got {ids[1]}");
+            // sh maps to ʃ (ID 42), NOT ɕ (ID 18) - matches training data
+            Assert.AreEqual(42, ids[1], $"ids[1] should be ʃ = 42, but got {ids[1]}");
             Assert.AreEqual(8, ids[2], "ids[2] should be i = 8");
             Assert.AreEqual(2, ids[3], "ids[3] should be EOS ($) = 2");
         }
