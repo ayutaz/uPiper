@@ -89,9 +89,9 @@ namespace uPiper.Editor
                         _ = PhonemizeTextAsync();
                     }
 
-                    if (GUILayout.Button("Phonemize (Sync)"))
+                    if (GUILayout.Button("Phonemize (Timed)"))
                     {
-                        PhonemizeText();
+                        PhonemizeTextWithTimingAsync();
                     }
                 }
 
@@ -260,7 +260,7 @@ namespace uPiper.Editor
             }
         }
 
-        private async void PhonemizeText()
+        private async void PhonemizeTextWithTimingAsync()
         {
             try
             {
