@@ -27,6 +27,16 @@
 - Unity AI Inference Engineによる高速推論
 - OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux/Android/iOS）
 - GPU推論サポート（GPUCompute/GPUPixel）
+- **Prosody（韻律）サポート**: より自然なイントネーションの音声合成
+- **カスタム辞書**: 技術用語・固有名詞の読み変換
+
+### 対応モデル
+
+| モデル名 | 言語 | Prosody対応 | 説明 |
+|---------|------|------------|------|
+| ja_JP-test-medium | 日本語 | No | 標準日本語モデル |
+| en_US-ljspeech-medium | 英語 | No | 標準英語モデル |
+| tsukuyomi-chan | 日本語 | Yes | Prosody対応日本語モデル（より自然なイントネーション） |
 
 ## Requirements
 * Unity 6000.0.58f2
