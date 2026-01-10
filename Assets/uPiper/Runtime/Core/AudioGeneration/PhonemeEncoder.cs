@@ -231,7 +231,7 @@ namespace uPiper.Core.AudioGeneration
             AddToken("^", ids, expandedA1, expandedA2, expandedA3, 0, 0, 0, "BOS");
 
             // 各音素をIDに変換
-            var prosodyIndex = 0;
+            var phonemeIndex = 0;
             foreach (var phoneme in phonemes)
             {
                 if (string.IsNullOrEmpty(phoneme))
@@ -240,9 +240,9 @@ namespace uPiper.Core.AudioGeneration
                 var phonemeToLookup = MapPhoneme(phoneme);
 
                 // 現在の音素のProsody値を取得
-                var a1 = prosodyA1 != null && prosodyIndex < prosodyA1.Length ? prosodyA1[prosodyIndex] : 0;
-                var a2 = prosodyA2 != null && prosodyIndex < prosodyA2.Length ? prosodyA2[prosodyIndex] : 0;
-                var a3 = prosodyA3 != null && prosodyIndex < prosodyA3.Length ? prosodyA3[prosodyIndex] : 0;
+                var a1 = prosodyA1 != null && phonemeIndex < prosodyA1.Length ? prosodyA1[phonemeIndex] : 0;
+                var a2 = prosodyA2 != null && phonemeIndex < prosodyA2.Length ? prosodyA2[phonemeIndex] : 0;
+                var a3 = prosodyA3 != null && phonemeIndex < prosodyA3.Length ? prosodyA3[phonemeIndex] : 0;
 
                 // "ts"の特殊処理
                 if (phonemeToLookup == "ts" && !_phonemeToId.ContainsKey("ts"))
@@ -276,7 +276,7 @@ namespace uPiper.Core.AudioGeneration
                     LogUnknownPhoneme(phoneme, phonemeToLookup);
                 }
 
-                prosodyIndex++;
+                phonemeIndex++;
             }
 
             // EOSトークン($)を常に追加

@@ -244,8 +244,8 @@ namespace uPiper.Core.AudioGeneration
             float noiseScale,
             float noiseW)
         {
-            var hasProsodyInput = prosodyA1 != null || prosodyA2 != null || prosodyA3 != null;
-            PiperLogger.LogInfo($"[InferenceAudioGenerator] Preparing model inputs{(hasProsodyInput ? " with prosody" : "")}...");
+            var hasAnyProsodyInput = prosodyA1 != null || prosodyA2 != null || prosodyA3 != null;
+            PiperLogger.LogInfo($"[InferenceAudioGenerator] Preparing model inputs{(hasAnyProsodyInput ? " with prosody" : "")}...");
             PiperLogger.LogInfo($"  Phoneme IDs length: {phonemeIds.Length}");
 
             // 入力テンソルを作成
@@ -291,7 +291,7 @@ namespace uPiper.Core.AudioGeneration
                 var readableTensor = outputTensor.ReadbackAndClone();
                 var audioData = ExtractAudioData(readableTensor);
 
-                PiperLogger.LogInfo($"[InferenceAudioGenerator] Generated {audioData.Length} samples{(hasProsodyInput ? " with prosody" : "")}");
+                PiperLogger.LogInfo($"[InferenceAudioGenerator] Generated {audioData.Length} samples{(hasAnyProsodyInput ? " with prosody" : "")}");
 
                 // テンソルを破棄
                 readableTensor.Dispose();
