@@ -166,8 +166,15 @@ namespace uPiper.Tests.Editor
             // Verify iOS support in phonemizer
             Assert.IsTrue(content.Contains("UNITY_IOS"),
                 "Phonemizer should have iOS platform support");
-            Assert.IsTrue(content.Contains("__Internal"),
-                "Phonemizer should use __Internal for iOS DllImport");
+
+            // __Internal is now in OpenJTalkNative.cs (centralized P/Invoke declarations)
+            var nativePath = "Assets/uPiper/Runtime/Core/Phonemizers/Native/OpenJTalkNative.cs";
+            Assert.IsTrue(File.Exists(nativePath),
+                $"OpenJTalkNative not found at: {nativePath}");
+
+            var nativeContent = File.ReadAllText(nativePath);
+            Assert.IsTrue(nativeContent.Contains("__Internal"),
+                "OpenJTalkNative should use __Internal for iOS DllImport");
 
             // PlatformHelper.IsIOS is now in NativeLibraryResolver
             var resolverPath = "Assets/uPiper/Runtime/Core/Platform/NativeLibraryResolver.cs";
