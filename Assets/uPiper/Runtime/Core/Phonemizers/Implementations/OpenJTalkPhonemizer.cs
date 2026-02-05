@@ -349,6 +349,9 @@ namespace uPiper.Core.Phonemizers.Implementations
                     // Convert OpenJTalk phonemes to Piper phonemes using the mapping
                     var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(phonemeList);
 
+                    // Apply context-dependent N phoneme rules (piper-plus #210)
+                    piperPhonemes = ApplyNPhonemeRules(piperPhonemes);
+
                     // Debug log the mapping result
                     PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Phoneme mapping: {string.Join(" ", phonemeList)} -> {string.Join(" ", piperPhonemes.Select(p => p.Length == 1 && p[0] >= '\ue000' && p[0] <= '\uf8ff' ? $"PUA(U+{((int)p[0]):X4})" : $"'{p}'"))}");
 
@@ -528,6 +531,9 @@ namespace uPiper.Core.Phonemizers.Implementations
                     // Convert OpenJTalk phonemes to Piper phonemes using the mapping
                     var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(phonemeList);
 
+                    // Apply context-dependent N phoneme rules (piper-plus #210)
+                    piperPhonemes = ApplyNPhonemeRules(piperPhonemes);
+
                     for (var i = 0; i < Math.Min(piperPhonemes.Length, nativeResult.phoneme_count); i++)
                     {
                         phonemes[i] = piperPhonemes[i];
@@ -559,6 +565,121 @@ namespace uPiper.Core.Phonemizers.Implementations
                 ProsodyA3 = prosodyA3,
                 PhonemeCount = nativeResult.phoneme_count
             };
+        }
+
+        #endregion
+
+        #region Extended Question Markers and N Phoneme Variants (piper-plus #210)
+
+        /// <summary>
+        /// Tokens that should be skipped when looking for the next actual phoneme
+        /// </summary>
+        private static readonly HashSet<string> SkipTokens = new() { "_", "#", "[", "]", "^", "$", "?", "?!", "?.", "?~" };
+
+        /// <summary>
+        /// Bilabial consonants for N phoneme variant detection (N before m/b/p)
+        /// </summary>
+        private static readonly HashSet<string> BilabialConsonants = new() { "m", "my", "b", "by", "p", "py" };
+
+        /// <summary>
+        /// Alveolar consonants for N phoneme variant detection (N before n/t/d/ts/ch)
+        /// </summary>
+        private static readonly HashSet<string> AlveolarConsonants = new() { "n", "ny", "t", "ty", "d", "dy", "ts", "ch" };
+
+        /// <summary>
+        /// Velar consonants for N phoneme variant detection (N before k/g)
+        /// </summary>
+        private static readonly HashSet<string> VelarConsonants = new() { "k", "ky", "kw", "g", "gy", "gw" };
+
+        /// <summary>
+        /// Detect the question type from the input text for extended question markers
+        /// </summary>
+        /// <param name="text">Input text</param>
+        /// <returns>Question type marker: "?!" for emphatic, "?." for declarative, "?~" for confirmatory, "?" for normal, "$" for non-question</returns>
+        private static string GetQuestionType(string text)
+        {
+            var stripped = text.Trim();
+
+            // Emphatic question (強調疑問): !? or ！？ or ？！
+            if (stripped.EndsWith("?!") || stripped.EndsWith("!?") ||
+                stripped.EndsWith("！？") || stripped.EndsWith("？！"))
+                return "?!";
+
+            // Declarative question (平叙疑問): ?. or 。？ or ？。
+            if (stripped.EndsWith("?.") || stripped.EndsWith(".?") ||
+                stripped.EndsWith("。？") || stripped.EndsWith("？。"))
+                return "?.";
+
+            // Confirmatory question (確認疑問): ?~ or ～？ or ？～
+            if (stripped.EndsWith("?~") || stripped.EndsWith("~?") ||
+                stripped.EndsWith("～？") || stripped.EndsWith("？～"))
+                return "?~";
+
+            // Normal question
+            if (stripped.EndsWith("?") || stripped.EndsWith("？"))
+                return "?";
+
+            // Not a question
+            return "$";
+        }
+
+        /// <summary>
+        /// Apply context-dependent N phoneme rules based on the following consonant
+        /// </summary>
+        /// <param name="phonemes">Input phoneme array</param>
+        /// <returns>Phoneme array with N replaced by context-specific variants</returns>
+        private static string[] ApplyNPhonemeRules(string[] phonemes)
+        {
+            var result = new List<string>(phonemes.Length);
+
+            for (var i = 0; i < phonemes.Length; i++)
+            {
+                if (phonemes[i] != "N")
+                {
+                    result.Add(phonemes[i]);
+                    continue;
+                }
+
+                // Look ahead for the next actual phoneme (skipping special tokens)
+                string nextPhoneme = null;
+                for (var j = i + 1; j < phonemes.Length; j++)
+                {
+                    if (!SkipTokens.Contains(phonemes[j]))
+                    {
+                        nextPhoneme = phonemes[j];
+                        break;
+                    }
+                }
+
+                // Determine N variant based on following consonant
+                if (nextPhoneme == null)
+                {
+                    // End of phrase: uvular N
+                    result.Add("N_uvular");
+                }
+                else if (BilabialConsonants.Contains(nextPhoneme))
+                {
+                    // Before m, my, b, by, p, py: bilabial assimilation
+                    result.Add("N_m");
+                }
+                else if (AlveolarConsonants.Contains(nextPhoneme))
+                {
+                    // Before n, ny, t, ty, d, dy, ts, ch: alveolar assimilation
+                    result.Add("N_n");
+                }
+                else if (VelarConsonants.Contains(nextPhoneme))
+                {
+                    // Before k, ky, kw, g, gy, gw: velar assimilation
+                    result.Add("N_ng");
+                }
+                else
+                {
+                    // Before vowels or other consonants: uvular N
+                    result.Add("N_uvular");
+                }
+            }
+
+            return result.ToArray();
         }
 
         #endregion

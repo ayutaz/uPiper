@@ -142,7 +142,22 @@ namespace uPiper.Core.Phonemizers
             { "r", 54 },
             { "\ue015", 55 },  // ry
             { "w", 56 },
-            { "y", 57 }
+            { "y", 57 },
+
+            // Extended question markers (piper-plus #210)
+            // Note: These IDs are provisional and may vary depending on the model
+            // Models that support extended question markers will have these in their phoneme_id_map
+            { "\ue016", 58 },  // ?! (emphatic question)
+            { "\ue017", 59 },  // ?. (declarative question)
+            { "\ue018", 60 },  // ?~ (confirmatory question)
+
+            // Context-dependent N phoneme variants (piper-plus #207/#210)
+            // Note: These IDs are provisional and may vary depending on the model
+            // Older models will map all N variants to "N" (ID 22) via PhonemeEncoder
+            { "\ue019", 61 },  // N_m (bilabial)
+            { "\ue01a", 62 },  // N_n (alveolar)
+            { "\ue01b", 63 },  // N_ng (velar)
+            { "\ue01c", 64 }   // N_uvular
         };
 
         /// <summary>
@@ -193,7 +208,24 @@ namespace uPiper.Core.Phonemizers
             // Other multi-character phonemes
             { "ch", "\ue00e" },  // ち、ちゃ、ちゅ、ちょ (ID 39 in PUA models)
             { "ts", "\ue00f" },  // つ
-            { "sh", "\ue010" }   // し、しゃ、しゅ、しょ (same as "sy")
+            { "sh", "\ue010" },  // し、しゃ、しゅ、しょ (same as "sy")
+
+            // Extended question markers (piper-plus #210)
+            { "?!", "\ue016" },     // Emphatic question (強調疑問)
+            { "?.", "\ue017" },     // Declarative question (平叙疑問)
+            { "?~", "\ue018" },     // Confirmatory question (確認疑問)
+
+            // Context-dependent N phoneme variants (piper-plus #207/#210)
+            // Note: Both uppercase (from ApplyNPhonemeRules) and lowercase versions are needed
+            // because ConvertToPiperPhonemes uses ToLower() for lookup
+            { "N_m", "\ue019" },       // N before m/b/p (bilabial assimilation)
+            { "n_m", "\ue019" },       // lowercase version
+            { "N_n", "\ue01a" },       // N before n/t/d/ts/ch (alveolar assimilation)
+            { "n_n", "\ue01a" },       // lowercase version
+            { "N_ng", "\ue01b" },      // N before k/g (velar assimilation)
+            { "n_ng", "\ue01b" },      // lowercase version
+            { "N_uvular", "\ue01c" },  // N at end/before vowels (uvular)
+            { "n_uvular", "\ue01c" }   // lowercase version
         };
 
         /// <summary>
