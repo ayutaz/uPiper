@@ -170,5 +170,135 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 Assert.AreEqual(originalPhonemes[i], decodedPhonemes[i]);
             }
         }
+
+        #region Extended Question Markers Tests (piper-plus #210)
+
+        [Test]
+        public void Encode_WithEosMarker_DoesNotAddExtraEos()
+        {
+            // Arrange: phonemes ending with "$" (EOS marker from OpenJTalkPhonemizer)
+            var phonemes = new[] { "a", "b", "$" };
+
+            // Act
+            var ids = _encoder.Encode(phonemes);
+
+            // Assert
+            Assert.IsNotNull(ids);
+            // BOS + 3 phonemes (including $) = 4 (no extra EOS added)
+            Assert.AreEqual(4, ids.Length);
+            Assert.AreEqual(1, ids[0]); // BOS (^)
+            Assert.AreEqual(3, ids[1]); // a
+            Assert.AreEqual(4, ids[2]); // b
+            Assert.AreEqual(2, ids[3]); // $ (EOS, not duplicated)
+        }
+
+        [Test]
+        public void Encode_WithQuestionMarker_DoesNotAddEos()
+        {
+            // Arrange: Create encoder with question marker support
+            var configWithQuestion = new PiperVoiceConfig
+            {
+                VoiceId = "ja_JP-test-medium",
+                PhonemeType = "openjtalk",
+                SampleRate = 22050,
+                PhonemeIdMap = new Dictionary<string, int>
+                {
+                    { "_", 0 },  // PAD
+                    { "^", 1 },  // BOS
+                    { "$", 2 },  // EOS
+                    { "?", 3 },  // Question marker
+                    { "a", 4 },
+                    { "b", 5 }
+                }
+            };
+            var encoder = new PhonemeEncoder(configWithQuestion);
+
+            // Arrange: phonemes ending with "?" (question marker from OpenJTalkPhonemizer)
+            var phonemes = new[] { "a", "b", "?" };
+
+            // Act
+            var ids = encoder.Encode(phonemes);
+
+            // Assert
+            Assert.IsNotNull(ids);
+            // BOS + 3 phonemes (including ?) = 4 (no EOS added because ? is EOS-like)
+            Assert.AreEqual(4, ids.Length);
+            Assert.AreEqual(1, ids[0]); // BOS (^)
+            Assert.AreEqual(4, ids[1]); // a
+            Assert.AreEqual(5, ids[2]); // b
+            Assert.AreEqual(3, ids[3]); // ? (question marker, no extra $ added)
+        }
+
+        [Test]
+        public void Encode_WithExtendedQuestionMarkers_DoesNotAddEos()
+        {
+            // Arrange: Create encoder with extended question marker support
+            // Note: Extended question markers are converted to PUA characters by PhonemeEncoder
+            // So the PhonemeIdMap needs to include the PUA characters, not the ASCII markers
+            var configWithExtendedQuestions = new PiperVoiceConfig
+            {
+                VoiceId = "ja_JP-test-medium",
+                PhonemeType = "openjtalk",
+                SampleRate = 22050,
+                PhonemeIdMap = new Dictionary<string, int>
+                {
+                    { "_", 0 },       // PAD
+                    { "^", 1 },       // BOS
+                    { "$", 2 },       // EOS
+                    { "?", 3 },       // Normal question
+                    { "\ue016", 4 },  // ?! Emphatic question (PUA) (piper-plus #210)
+                    { "\ue017", 5 },  // ?. Declarative question (PUA) (piper-plus #210)
+                    { "\ue018", 6 },  // ?~ Confirmatory question (PUA) (piper-plus #210)
+                    { "a", 7 },
+                    { "b", 8 }
+                }
+            };
+            var encoder = new PhonemeEncoder(configWithExtendedQuestions);
+
+            // Test each extended question marker
+            // Note: The markers are converted to PUA, so we expect the PUA IDs
+            var testCases = new[]
+            {
+                ("?!", 4, "emphatic question"),
+                ("?.", 5, "declarative question"),
+                ("?~", 6, "confirmatory question")
+            };
+
+            foreach (var (marker, expectedId, description) in testCases)
+            {
+                var phonemes = new[] { "a", "b", marker };
+                var ids = encoder.Encode(phonemes);
+
+                Assert.IsNotNull(ids, $"Failed for {description}");
+                // BOS + 3 phonemes (including marker) = 4 (no EOS added)
+                Assert.AreEqual(4, ids.Length, $"Expected 4 IDs for {description}, got {ids.Length}");
+                Assert.AreEqual(1, ids[0], $"BOS check failed for {description}");
+                Assert.AreEqual(7, ids[1], $"'a' check failed for {description}");
+                Assert.AreEqual(8, ids[2], $"'b' check failed for {description}");
+                Assert.AreEqual(expectedId, ids[3], $"'{marker}' check failed for {description}");
+            }
+        }
+
+        [Test]
+        public void Encode_WithoutEosLikeMarker_AddsEos()
+        {
+            // Arrange: phonemes NOT ending with EOS-like marker
+            var phonemes = new[] { "a", "b", "c" };
+
+            // Act
+            var ids = _encoder.Encode(phonemes);
+
+            // Assert
+            Assert.IsNotNull(ids);
+            // BOS + 3 phonemes + EOS = 5 (EOS is added normally)
+            Assert.AreEqual(5, ids.Length);
+            Assert.AreEqual(1, ids[0]); // BOS (^)
+            Assert.AreEqual(3, ids[1]); // a
+            Assert.AreEqual(4, ids[2]); // b
+            Assert.AreEqual(5, ids[3]); // c
+            Assert.AreEqual(2, ids[4]); // EOS ($) added
+        }
+
+        #endregion
     }
 }

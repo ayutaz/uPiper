@@ -49,6 +49,10 @@ namespace uPiper.Core.AudioGeneration
         private const int DEFAULT_BOS_ID = 1;
         private const int DEFAULT_EOS_ID = 2;
 
+        // EOS-like tokens: These tokens act as sentence terminators (piper-plus #210)
+        // When the last phoneme is one of these, we don't add a separate EOS token
+        private static readonly HashSet<string> EosLikeTokens = new() { "$", "?", "?!", "?.", "?~" };
+
         /// <summary>
         /// 音素エンコーダーを初期化する
         /// </summary>
@@ -294,8 +298,20 @@ namespace uPiper.Core.AudioGeneration
                 phonemeIndex++;
             }
 
-            // EOSトークン($)を常に追加
-            AddToken("$", ids, expandedA1, expandedA2, expandedA3, 0, 0, 0, "EOS");
+            // Check if the last phoneme is an EOS-like token (piper-plus #210)
+            // If so, we don't need to add a separate EOS token
+            var lastPhoneme = phonemes.Length > 0 ? phonemes[^1] : null;
+            var lastPhonemeIsEosLike = lastPhoneme != null && EosLikeTokens.Contains(lastPhoneme);
+
+            if (!lastPhonemeIsEosLike)
+            {
+                // EOSトークン($)を追加（最後の音素がEOS-likeでない場合のみ）
+                AddToken("$", ids, expandedA1, expandedA2, expandedA3, 0, 0, 0, "EOS");
+            }
+            else
+            {
+                PiperLogger.LogDebug($"[PhonemeEncoder] Last phoneme '{lastPhoneme}' is EOS-like, skipping separate EOS token");
+            }
 
             // 空の結果になった場合
             if (ids.Count == 0)

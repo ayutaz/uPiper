@@ -238,6 +238,140 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
 
         #endregion
 
+        #region Extended Question Markers Tests (piper-plus #210)
+
+        [Test]
+        public void PhonemizeWithProsody_NormalQuestion_ProducesQuestionMarker()
+        {
+            // Test "本当？" (hontou?) - normal question
+            var result = _phonemizer.PhonemizeWithProsody("本当？");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"Question marker test for '本当？':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // The last phoneme should be "?" (normal question marker)
+            var lastPhoneme = result.Phonemes[result.PhonemeCount - 1];
+            Assert.AreEqual("?", lastPhoneme, "Expected '?' as the last phoneme for normal question");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_EmphaticQuestion_ProducesEmphaticMarker()
+        {
+            // Test "本当？！" (hontou?!) - emphatic question
+            var result = _phonemizer.PhonemizeWithProsody("本当？！");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"Emphatic question marker test for '本当？！':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // The last phoneme should be "?!" (emphatic question marker)
+            var lastPhoneme = result.Phonemes[result.PhonemeCount - 1];
+            Assert.AreEqual("?!", lastPhoneme, "Expected '?!' as the last phoneme for emphatic question");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_DeclarativeQuestion_ProducesDeclarativeMarker()
+        {
+            // Test "本当。？" (hontou.?) - declarative question
+            var result = _phonemizer.PhonemizeWithProsody("本当。？");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"Declarative question marker test for '本当。？':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // The last phoneme should be "?." (declarative question marker)
+            var lastPhoneme = result.Phonemes[result.PhonemeCount - 1];
+            Assert.AreEqual("?.", lastPhoneme, "Expected '?.' as the last phoneme for declarative question");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_ConfirmatoryQuestion_ProducesConfirmatoryMarker()
+        {
+            // Test "本当～？" (hontou~?) - confirmatory question
+            var result = _phonemizer.PhonemizeWithProsody("本当～？");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"Confirmatory question marker test for '本当～？':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // The last phoneme should be "?~" (confirmatory question marker)
+            var lastPhoneme = result.Phonemes[result.PhonemeCount - 1];
+            Assert.AreEqual("?~", lastPhoneme, "Expected '?~' as the last phoneme for confirmatory question");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_NonQuestion_ProducesEosMarker()
+        {
+            // Test "本当" (hontou) - non-question (declarative)
+            var result = _phonemizer.PhonemizeWithProsody("本当");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"Non-question marker test for '本当':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // The last phoneme should be "$" (EOS marker for non-question)
+            var lastPhoneme = result.Phonemes[result.PhonemeCount - 1];
+            Assert.AreEqual("$", lastPhoneme, "Expected '$' as the last phoneme for non-question");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_QuestionWithAsciiMark_ProducesQuestionMarker()
+        {
+            // Test with ASCII question mark "本当?" instead of full-width "？"
+            var result = _phonemizer.PhonemizeWithProsody("本当?");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"ASCII question mark test for '本当?':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                Debug.Log($"  [{i}] '{phoneme}'");
+            }
+
+            // The last phoneme should be "?" (normal question marker)
+            var lastPhoneme = result.Phonemes[result.PhonemeCount - 1];
+            Assert.AreEqual("?", lastPhoneme, "Expected '?' as the last phoneme for ASCII question mark");
+        }
+
+        #endregion
+
         #region N Phoneme Variants Tests (piper-plus #207/#210)
 
         [Test]
