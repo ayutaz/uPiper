@@ -49,6 +49,10 @@ namespace uPiper.Core.AudioGeneration
         private const int DEFAULT_BOS_ID = 1;
         private const int DEFAULT_EOS_ID = 2;
 
+        // EOS-like tokens: These tokens act as sentence terminators (piper-plus #210)
+        // When the last phoneme is one of these, we don't add a separate EOS token
+        private static readonly HashSet<string> EosLikeTokens = new() { "$", "?", "?!", "?.", "?~" };
+
         /// <summary>
         /// 音素エンコーダーを初期化する
         /// </summary>
@@ -121,7 +125,16 @@ namespace uPiper.Core.AudioGeneration
             ["hy"] = "\ue012",
             ["ny"] = "\ue013",
             ["my"] = "\ue014",
-            ["ry"] = "\ue015"
+            ["ry"] = "\ue015",
+            // Extended question markers (piper-plus #210)
+            ["?!"] = "\ue016",      // Emphatic question (強調疑問)
+            ["?."] = "\ue017",      // Declarative question (平叙疑問)
+            ["?~"] = "\ue018",      // Confirmatory question (確認疑問)
+            // Context-dependent N phoneme variants (piper-plus #207/#210)
+            ["N_m"] = "\ue019",     // N before m/b/p (bilabial assimilation)
+            ["N_n"] = "\ue01a",     // N before n/t/d/ts/ch (alveolar assimilation)
+            ["N_ng"] = "\ue01b",    // N before k/g (velar assimilation)
+            ["N_uvular"] = "\ue01c" // N at end/before vowels (uvular)
         };
 
         // Multi-character phonemes to IPA mapping (for IPA-based models like tsukuyomi-chan)
@@ -175,11 +188,17 @@ namespace uPiper.Core.AudioGeneration
             ["\ue013"] = "ny",
             ["\ue014"] = "my",
             ["\ue015"] = "ry",
-            // N phoneme variants (piper-plus Issue #207)
+            // Extended question markers (piper-plus #210)
+            ["\ue016"] = "?!",       // Emphatic question
+            ["\ue017"] = "?.",       // Declarative question
+            ["\ue018"] = "?~",       // Confirmatory question
+            // N phoneme variants (piper-plus Issue #207/#210)
             // Map to ASCII "N" (ID 22), NOT IPA "ɴ" (ID 20)
-            ["\ue019"] = "N",  // N_m
-            ["\ue01a"] = "N",  // N_n
-            ["\ue01b"] = "N",  // N_ng
+            // Note: These are kept as "N" for backward compatibility with existing models
+            // New models may have separate IDs for each N variant
+            ["\ue019"] = "N",  // N_m (bilabial)
+            ["\ue01a"] = "N",  // N_n (alveolar)
+            ["\ue01b"] = "N",  // N_ng (velar)
             ["\ue01c"] = "N"   // N_uvular
         };
 
@@ -279,8 +298,20 @@ namespace uPiper.Core.AudioGeneration
                 phonemeIndex++;
             }
 
-            // EOSトークン($)を常に追加
-            AddToken("$", ids, expandedA1, expandedA2, expandedA3, 0, 0, 0, "EOS");
+            // Check if the last phoneme is an EOS-like token (piper-plus #210)
+            // If so, we don't need to add a separate EOS token
+            var lastPhoneme = phonemes.Length > 0 ? phonemes[^1] : null;
+            var lastPhonemeIsEosLike = lastPhoneme != null && EosLikeTokens.Contains(lastPhoneme);
+
+            if (!lastPhonemeIsEosLike)
+            {
+                // EOSトークン($)を追加（最後の音素がEOS-likeでない場合のみ）
+                AddToken("$", ids, expandedA1, expandedA2, expandedA3, 0, 0, 0, "EOS");
+            }
+            else
+            {
+                PiperLogger.LogDebug($"[PhonemeEncoder] Last phoneme '{lastPhoneme}' is EOS-like, skipping separate EOS token");
+            }
 
             // 空の結果になった場合
             if (ids.Count == 0)

@@ -253,8 +253,8 @@ namespace uPiper.Core.Phonemizers.Implementations
                     // Log native result info
                     PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Native result - phoneme_count: {nativeResult.phoneme_count}, total_duration: {nativeResult.total_duration:F3}");
 
-                    // Convert to PhonemeResult
-                    return ConvertToPhonemeResult(nativeResult);
+                    // Convert to PhonemeResult (pass original text for question marker detection)
+                    return ConvertToPhonemeResult(nativeResult, text);
                 }
                 finally
                 {
@@ -270,7 +270,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region Conversion Methods
 
-        private PhonemeResult ConvertToPhonemeResult(OpenJTalkNative.NativePhonemeResult nativeResult)
+        private PhonemeResult ConvertToPhonemeResult(OpenJTalkNative.NativePhonemeResult nativeResult, string originalText)
         {
             if (nativeResult.phoneme_count <= 0)
             {
@@ -349,10 +349,27 @@ namespace uPiper.Core.Phonemizers.Implementations
                     // Convert OpenJTalk phonemes to Piper phonemes using the mapping
                     var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(phonemeList);
 
+                    // Apply context-dependent N phoneme rules (piper-plus #210)
+                    piperPhonemes = ApplyNPhonemeRules(piperPhonemes);
+
+                    // Append question marker based on original text (piper-plus #210)
+                    var questionType = GetQuestionType(originalText);
+                    var piperPhonemesList = new List<string>(piperPhonemes);
+                    piperPhonemesList.Add(questionType);
+                    piperPhonemes = piperPhonemesList.ToArray();
+
+                    PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Question type detected: '{questionType}' for text: '{originalText}'");
+
                     // Debug log the mapping result
                     PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Phoneme mapping: {string.Join(" ", phonemeList)} -> {string.Join(" ", piperPhonemes.Select(p => p.Length == 1 && p[0] >= '\ue000' && p[0] <= '\uf8ff' ? $"PUA(U+{((int)p[0]):X4})" : $"'{p}'"))}");
 
-                    for (var i = 0; i < Math.Min(piperPhonemes.Length, nativeResult.phoneme_count); i++)
+                    // Resize arrays to accommodate the question marker
+                    phonemes = new string[piperPhonemes.Length];
+                    phonemeIds = new int[piperPhonemes.Length];
+                    durations = new float[piperPhonemes.Length];
+                    pitches = new float[piperPhonemes.Length];
+
+                    for (var i = 0; i < piperPhonemes.Length; i++)
                     {
                         phonemes[i] = piperPhonemes[i];
                         // PhonemeIds will be set by PhonemeEncoder based on the model's phoneme mapping
@@ -370,20 +387,23 @@ namespace uPiper.Core.Phonemizers.Implementations
             }
 
             // Marshal phoneme IDs (if provided by native)
-            if (nativeResult.phoneme_ids != IntPtr.Zero)
+            // Note: Only copy up to original phoneme_count, question marker uses placeholder
+            var copyCount = Math.Min(nativeResult.phoneme_count, phonemeIds.Length);
+            if (nativeResult.phoneme_ids != IntPtr.Zero && copyCount > 0)
             {
-                Marshal.Copy(nativeResult.phoneme_ids, phonemeIds, 0, nativeResult.phoneme_count);
+                Marshal.Copy(nativeResult.phoneme_ids, phonemeIds, 0, copyCount);
             }
 
             // Marshal durations
-            if (nativeResult.durations != IntPtr.Zero)
+            // Note: Only copy up to original phoneme_count, question marker uses default duration
+            if (nativeResult.durations != IntPtr.Zero && copyCount > 0)
             {
-                Marshal.Copy(nativeResult.durations, durations, 0, nativeResult.phoneme_count);
+                Marshal.Copy(nativeResult.durations, durations, 0, copyCount);
             }
 
-            // Pitches are not provided by the current native implementation
-            // Initialize with default values
-            for (var i = 0; i < nativeResult.phoneme_count; i++)
+            // Initialize pitches with default values
+            // Note: Initialize all phonemes including question marker
+            for (var i = 0; i < phonemes.Length; i++)
             {
                 pitches[i] = 1.0f; // Default pitch
             }
@@ -479,7 +499,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                     // Marshal the result
                     var nativeResult = Marshal.PtrToStructure<OpenJTalkNative.NativeProsodyPhonemeResult>(resultPtr);
-                    return ConvertToProsodyResult(nativeResult);
+                    return ConvertToProsodyResult(nativeResult, text);
                 }
                 finally
                 {
@@ -491,7 +511,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             }
         }
 
-        private ProsodyResult ConvertToProsodyResult(OpenJTalkNative.NativeProsodyPhonemeResult nativeResult)
+        private ProsodyResult ConvertToProsodyResult(OpenJTalkNative.NativeProsodyPhonemeResult nativeResult, string originalText)
         {
             if (nativeResult.phoneme_count <= 0)
             {
@@ -528,14 +548,58 @@ namespace uPiper.Core.Phonemizers.Implementations
                     // Convert OpenJTalk phonemes to Piper phonemes using the mapping
                     var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(phonemeList);
 
-                    for (var i = 0; i < Math.Min(piperPhonemes.Length, nativeResult.phoneme_count); i++)
+                    // Apply context-dependent N phoneme rules (piper-plus #210)
+                    piperPhonemes = ApplyNPhonemeRules(piperPhonemes);
+
+                    // Append question marker based on original text (piper-plus #210)
+                    var questionType = GetQuestionType(originalText);
+                    var piperPhonemesList = new List<string>(piperPhonemes);
+                    piperPhonemesList.Add(questionType);
+                    piperPhonemes = piperPhonemesList.ToArray();
+
+                    PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Question type detected: '{questionType}' for text: '{originalText}'");
+
+                    // Resize arrays to accommodate the question marker
+                    var totalCount = piperPhonemes.Length;
+                    phonemes = new string[totalCount];
+                    var newProsodyA1 = new int[totalCount];
+                    var newProsodyA2 = new int[totalCount];
+                    var newProsodyA3 = new int[totalCount];
+
+                    for (var i = 0; i < piperPhonemes.Length; i++)
                     {
                         phonemes[i] = piperPhonemes[i];
                     }
+
+                    // Marshal prosody arrays (only up to original phoneme_count)
+                    if (nativeResult.prosody_a1 != IntPtr.Zero)
+                    {
+                        Marshal.Copy(nativeResult.prosody_a1, newProsodyA1, 0, nativeResult.phoneme_count);
+                    }
+                    if (nativeResult.prosody_a2 != IntPtr.Zero)
+                    {
+                        Marshal.Copy(nativeResult.prosody_a2, newProsodyA2, 0, nativeResult.phoneme_count);
+                    }
+                    if (nativeResult.prosody_a3 != IntPtr.Zero)
+                    {
+                        Marshal.Copy(nativeResult.prosody_a3, newProsodyA3, 0, nativeResult.phoneme_count);
+                    }
+
+                    // Question marker gets default prosody values (0)
+                    PiperLogger.LogDebug($"[OpenJTalkPhonemizer] Prosody extraction complete: {totalCount} phonemes (including question marker)");
+
+                    return new ProsodyResult
+                    {
+                        Phonemes = phonemes,
+                        ProsodyA1 = newProsodyA1,
+                        ProsodyA2 = newProsodyA2,
+                        ProsodyA3 = newProsodyA3,
+                        PhonemeCount = totalCount
+                    };
                 }
             }
 
-            // Marshal prosody arrays
+            // Fallback: Marshal prosody arrays with original size
             if (nativeResult.prosody_a1 != IntPtr.Zero)
             {
                 Marshal.Copy(nativeResult.prosody_a1, prosodyA1, 0, nativeResult.phoneme_count);
@@ -559,6 +623,121 @@ namespace uPiper.Core.Phonemizers.Implementations
                 ProsodyA3 = prosodyA3,
                 PhonemeCount = nativeResult.phoneme_count
             };
+        }
+
+        #endregion
+
+        #region Extended Question Markers and N Phoneme Variants (piper-plus #210)
+
+        /// <summary>
+        /// Tokens that should be skipped when looking for the next actual phoneme
+        /// </summary>
+        private static readonly HashSet<string> SkipTokens = new() { "_", "#", "[", "]", "^", "$", "?", "?!", "?.", "?~" };
+
+        /// <summary>
+        /// Bilabial consonants for N phoneme variant detection (N before m/b/p)
+        /// </summary>
+        private static readonly HashSet<string> BilabialConsonants = new() { "m", "my", "b", "by", "p", "py" };
+
+        /// <summary>
+        /// Alveolar consonants for N phoneme variant detection (N before n/t/d/ts/ch)
+        /// </summary>
+        private static readonly HashSet<string> AlveolarConsonants = new() { "n", "ny", "t", "ty", "d", "dy", "ts", "ch" };
+
+        /// <summary>
+        /// Velar consonants for N phoneme variant detection (N before k/g)
+        /// </summary>
+        private static readonly HashSet<string> VelarConsonants = new() { "k", "ky", "kw", "g", "gy", "gw" };
+
+        /// <summary>
+        /// Detect the question type from the input text for extended question markers
+        /// </summary>
+        /// <param name="text">Input text</param>
+        /// <returns>Question type marker: "?!" for emphatic, "?." for declarative, "?~" for confirmatory, "?" for normal, "$" for non-question</returns>
+        private static string GetQuestionType(string text)
+        {
+            var stripped = text.Trim();
+
+            // Emphatic question (強調疑問): !? or ！？ or ？！
+            if (stripped.EndsWith("?!") || stripped.EndsWith("!?") ||
+                stripped.EndsWith("！？") || stripped.EndsWith("？！"))
+                return "?!";
+
+            // Declarative question (平叙疑問): ?. or 。？ or ？。
+            if (stripped.EndsWith("?.") || stripped.EndsWith(".?") ||
+                stripped.EndsWith("。？") || stripped.EndsWith("？。"))
+                return "?.";
+
+            // Confirmatory question (確認疑問): ?~ or ～？ or ？～
+            if (stripped.EndsWith("?~") || stripped.EndsWith("~?") ||
+                stripped.EndsWith("～？") || stripped.EndsWith("？～"))
+                return "?~";
+
+            // Normal question
+            if (stripped.EndsWith("?") || stripped.EndsWith("？"))
+                return "?";
+
+            // Not a question
+            return "$";
+        }
+
+        /// <summary>
+        /// Apply context-dependent N phoneme rules based on the following consonant
+        /// </summary>
+        /// <param name="phonemes">Input phoneme array</param>
+        /// <returns>Phoneme array with N replaced by context-specific variants</returns>
+        private static string[] ApplyNPhonemeRules(string[] phonemes)
+        {
+            var result = new List<string>(phonemes.Length);
+
+            for (var i = 0; i < phonemes.Length; i++)
+            {
+                if (phonemes[i] != "N")
+                {
+                    result.Add(phonemes[i]);
+                    continue;
+                }
+
+                // Look ahead for the next actual phoneme (skipping special tokens)
+                string nextPhoneme = null;
+                for (var j = i + 1; j < phonemes.Length; j++)
+                {
+                    if (!SkipTokens.Contains(phonemes[j]))
+                    {
+                        nextPhoneme = phonemes[j];
+                        break;
+                    }
+                }
+
+                // Determine N variant based on following consonant
+                if (nextPhoneme == null)
+                {
+                    // End of phrase: uvular N
+                    result.Add("N_uvular");
+                }
+                else if (BilabialConsonants.Contains(nextPhoneme))
+                {
+                    // Before m, my, b, by, p, py: bilabial assimilation
+                    result.Add("N_m");
+                }
+                else if (AlveolarConsonants.Contains(nextPhoneme))
+                {
+                    // Before n, ny, t, ty, d, dy, ts, ch: alveolar assimilation
+                    result.Add("N_n");
+                }
+                else if (VelarConsonants.Contains(nextPhoneme))
+                {
+                    // Before k, ky, kw, g, gy, gw: velar assimilation
+                    result.Add("N_ng");
+                }
+                else
+                {
+                    // Before vowels or other consonants: uvular N
+                    result.Add("N_uvular");
+                }
+            }
+
+            return result.ToArray();
         }
 
         #endregion

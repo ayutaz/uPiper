@@ -147,12 +147,12 @@ namespace uPiper.Core.AudioGeneration
                         {
                             foreach (var input in _model.inputs)
                             {
-                                if (input.name == "prosody_features" && input.dataType != DataType.Float)
+                                if (input.name == "prosody_features" && input.dataType != DataType.Int)
                                 {
                                     PiperLogger.LogError($"[InferenceAudioGenerator] prosody_features expects {input.dataType}, " +
-                                        "but implementation uses Float. This is a code/model mismatch!");
+                                        "but implementation uses Int. This is a code/model mismatch!");
                                     throw new InvalidOperationException(
-                                        $"Model prosody_features expects {input.dataType}, but implementation uses Float. " +
+                                        $"Model prosody_features expects {input.dataType}, but implementation uses Int. " +
                                         "Please verify the model export settings or update the code to match.");
                                 }
                             }
@@ -252,7 +252,7 @@ namespace uPiper.Core.AudioGeneration
             var inputTensor = new Tensor<int>(new TensorShape(1, phonemeIds.Length), phonemeIds);
             var inputLengthsTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
             var scalesTensor = new Tensor<float>(new TensorShape(3), new[] { noiseScale, lengthScale, noiseW });
-            Tensor<float> prosodyTensor = null;
+            Tensor<int> prosodyTensor = null;
 
             try
             {
@@ -317,19 +317,19 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// Create prosody tensor from A1/A2/A3 arrays
         /// </summary>
-        private Tensor<float> CreateProsodyTensor(int sequenceLength, int[] prosodyA1, int[] prosodyA2, int[] prosodyA3)
+        private Tensor<int> CreateProsodyTensor(int sequenceLength, int[] prosodyA1, int[] prosodyA2, int[] prosodyA3)
         {
             // Shape: (1, sequence_length, 3)
-            // Note: ONNX model expects Float, not Int (despite Python using int64)
-            var prosodyData = new float[sequenceLength * 3];
+            // Note: ONNX model expects Int (int64 in Python, mapped to Int in Sentis)
+            var prosodyData = new int[sequenceLength * 3];
             for (var i = 0; i < sequenceLength; i++)
             {
-                prosodyData[i * 3 + 0] = prosodyA1 != null && i < prosodyA1.Length ? prosodyA1[i] : 0f;
-                prosodyData[i * 3 + 1] = prosodyA2 != null && i < prosodyA2.Length ? prosodyA2[i] : 0f;
-                prosodyData[i * 3 + 2] = prosodyA3 != null && i < prosodyA3.Length ? prosodyA3[i] : 0f;
+                prosodyData[i * 3 + 0] = prosodyA1 != null && i < prosodyA1.Length ? prosodyA1[i] : 0;
+                prosodyData[i * 3 + 1] = prosodyA2 != null && i < prosodyA2.Length ? prosodyA2[i] : 0;
+                prosodyData[i * 3 + 2] = prosodyA3 != null && i < prosodyA3.Length ? prosodyA3[i] : 0;
             }
 
-            return new Tensor<float>(new TensorShape(1, sequenceLength, 3), prosodyData);
+            return new Tensor<int>(new TensorShape(1, sequenceLength, 3), prosodyData);
         }
 
         /// <summary>

@@ -237,6 +237,302 @@ namespace uPiper.Tests.Runtime.Core.Phonemizers
         }
 
         #endregion
+
+        #region Extended Question Markers Tests (piper-plus #210)
+
+        [Test]
+        public void PhonemizeWithProsody_NormalQuestion_ProducesQuestionMarker()
+        {
+            // Test "本当？" (hontou?) - normal question
+            var result = _phonemizer.PhonemizeWithProsody("本当？");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"Question marker test for '本当？':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // The last phoneme should be "?" (normal question marker)
+            var lastPhoneme = result.Phonemes[result.PhonemeCount - 1];
+            Assert.AreEqual("?", lastPhoneme, "Expected '?' as the last phoneme for normal question");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_EmphaticQuestion_ProducesEmphaticMarker()
+        {
+            // Test "本当？！" (hontou?!) - emphatic question
+            var result = _phonemizer.PhonemizeWithProsody("本当？！");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"Emphatic question marker test for '本当？！':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // The last phoneme should be "?!" (emphatic question marker)
+            var lastPhoneme = result.Phonemes[result.PhonemeCount - 1];
+            Assert.AreEqual("?!", lastPhoneme, "Expected '?!' as the last phoneme for emphatic question");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_DeclarativeQuestion_ProducesDeclarativeMarker()
+        {
+            // Test "本当。？" (hontou.?) - declarative question
+            var result = _phonemizer.PhonemizeWithProsody("本当。？");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"Declarative question marker test for '本当。？':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // The last phoneme should be "?." (declarative question marker)
+            var lastPhoneme = result.Phonemes[result.PhonemeCount - 1];
+            Assert.AreEqual("?.", lastPhoneme, "Expected '?.' as the last phoneme for declarative question");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_ConfirmatoryQuestion_ProducesConfirmatoryMarker()
+        {
+            // Test "本当～？" (hontou~?) - confirmatory question
+            var result = _phonemizer.PhonemizeWithProsody("本当～？");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"Confirmatory question marker test for '本当～？':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // The last phoneme should be "?~" (confirmatory question marker)
+            var lastPhoneme = result.Phonemes[result.PhonemeCount - 1];
+            Assert.AreEqual("?~", lastPhoneme, "Expected '?~' as the last phoneme for confirmatory question");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_NonQuestion_ProducesEosMarker()
+        {
+            // Test "本当" (hontou) - non-question (declarative)
+            var result = _phonemizer.PhonemizeWithProsody("本当");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"Non-question marker test for '本当':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // The last phoneme should be "$" (EOS marker for non-question)
+            var lastPhoneme = result.Phonemes[result.PhonemeCount - 1];
+            Assert.AreEqual("$", lastPhoneme, "Expected '$' as the last phoneme for non-question");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_QuestionWithAsciiMark_ProducesQuestionMarker()
+        {
+            // Test with ASCII question mark "本当?" instead of full-width "？"
+            var result = _phonemizer.PhonemizeWithProsody("本当?");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"ASCII question mark test for '本当?':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                Debug.Log($"  [{i}] '{phoneme}'");
+            }
+
+            // The last phoneme should be "?" (normal question marker)
+            var lastPhoneme = result.Phonemes[result.PhonemeCount - 1];
+            Assert.AreEqual("?", lastPhoneme, "Expected '?' as the last phoneme for ASCII question mark");
+        }
+
+        #endregion
+
+        #region N Phoneme Variants Tests (piper-plus #207/#210)
+
+        [Test]
+        public void PhonemizeWithProsody_NBeforeBilabial_ProducesNm()
+        {
+            // Test "かんぱい" (kanpai) - N before 'p' (bilabial)
+            var result = _phonemizer.PhonemizeWithProsody("かんぱい");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"N phoneme variant test for 'かんぱい' (kanpai):");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // Check that N is converted to N_m (PUA \ue019) when before 'p'
+            var hasNmVariant = false;
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                if (result.Phonemes[i] == "N_m" || result.Phonemes[i] == "\ue019")
+                {
+                    hasNmVariant = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(hasNmVariant, "Expected N_m variant (U+E019) before bilabial consonant 'p'");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_NBeforeAlveolar_ProducesNn()
+        {
+            // Test "かんたん" (kantan) - N before 't' (alveolar)
+            var result = _phonemizer.PhonemizeWithProsody("かんたん");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"N phoneme variant test for 'かんたん' (kantan):");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // Check that at least one N is converted to N_n (PUA \ue01a) when before 't'
+            var hasNnVariant = false;
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                if (result.Phonemes[i] == "N_n" || result.Phonemes[i] == "\ue01a")
+                {
+                    hasNnVariant = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(hasNnVariant, "Expected N_n variant (U+E01A) before alveolar consonant 't'");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_NBeforeVelar_ProducesNng()
+        {
+            // Test "かんこく" (kankoku) - N before 'k' (velar)
+            var result = _phonemizer.PhonemizeWithProsody("かんこく");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"N phoneme variant test for 'かんこく' (kankoku):");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // Check that N is converted to N_ng (PUA \ue01b) when before 'k'
+            var hasNngVariant = false;
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                if (result.Phonemes[i] == "N_ng" || result.Phonemes[i] == "\ue01b")
+                {
+                    hasNngVariant = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(hasNngVariant, "Expected N_ng variant (U+E01B) before velar consonant 'k'");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_NAtEnd_ProducesNUvular()
+        {
+            // Test "ほん" (hon) - N at end of word
+            var result = _phonemizer.PhonemizeWithProsody("ほん");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"N phoneme variant test for 'ほん' (hon):");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // Check that N is converted to N_uvular (PUA \ue01c) at end of word
+            var hasNUvularVariant = false;
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                if (result.Phonemes[i] == "N_uvular" || result.Phonemes[i] == "\ue01c")
+                {
+                    hasNUvularVariant = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(hasNUvularVariant, "Expected N_uvular variant (U+E01C) at end of word");
+        }
+
+        [Test]
+        public void PhonemizeWithProsody_MultipleNVariants_AllConverted()
+        {
+            // Test sentence with multiple N variants
+            // "かんたんに かんこくに いきました" (I easily went to Korea)
+            var result = _phonemizer.PhonemizeWithProsody("かんたんに");
+
+            Assert.Greater(result.PhonemeCount, 0);
+
+            Debug.Log($"Multiple N variants test for 'かんたんに':");
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                var isPua = phoneme.Length == 1 && phoneme[0] >= '\ue000' && phoneme[0] <= '\uf8ff';
+                var display = isPua ? $"PUA(U+{((int)phoneme[0]):X4})" : $"'{phoneme}'";
+                Debug.Log($"  [{i}] {display}");
+            }
+
+            // Should contain at least one N variant
+            var hasAnyNVariant = false;
+            for (var i = 0; i < result.PhonemeCount; i++)
+            {
+                var phoneme = result.Phonemes[i];
+                if (phoneme == "N_m" || phoneme == "N_n" || phoneme == "N_ng" || phoneme == "N_uvular" ||
+                    phoneme == "\ue019" || phoneme == "\ue01a" || phoneme == "\ue01b" || phoneme == "\ue01c")
+                {
+                    hasAnyNVariant = true;
+                    break;
+                }
+            }
+
+            Assert.IsTrue(hasAnyNVariant, "Expected at least one N variant in the output");
+        }
+
+        #endregion
     }
 }
 #endif
