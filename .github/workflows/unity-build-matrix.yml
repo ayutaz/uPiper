@@ -101,7 +101,6 @@ jobs:
         lfs: true
         
     - name: Free Disk Space
-      if: matrix.backend == 'IL2CPP'
       uses: jlumbroso/free-disk-space@main
       with:
         tool-cache: false
@@ -113,7 +112,7 @@ jobs:
         swap-storage: true
         
     - name: Cache Library
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: Library
         key: Library-${{ matrix.backend }}-${{ matrix.platform }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
@@ -145,7 +144,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
-        unityVersion: 6000.0.55f1
+        unityVersion: 6000.0.58f2
         targetPlatform: ${{ matrix.platform }}
         buildMethod: UnityBuilderAction.BuildScript.Build
         customParameters: -scriptingBackend ${{ matrix.backend }}
@@ -158,7 +157,7 @@ jobs:
     # Upload only critical builds to save space
     - name: Upload Build Artifact
       if: matrix.priority == 'critical'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Build-${{ matrix.backend }}-${{ matrix.platform }}-PR${{ github.event.pull_request.number }}
         path: build/${{ matrix.platform }}

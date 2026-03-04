@@ -132,7 +132,7 @@ jobs:
       shell: powershell
 
     - name: Cache Unity Library
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: Library
         key: Library-${{ matrix.os }}-${{ matrix.locale }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
@@ -180,9 +180,9 @@ jobs:
         # Add Unity Hub to current session PATH
         $env:PATH = "${env:ProgramFiles}\Unity Hub;$env:PATH"
         
-        # Install Unity 6000.0.55f1
-        Write-Host "Installing Unity 6000.0.55f1..."
-        & "${env:ProgramFiles}\Unity Hub\Unity Hub.exe" -- --headless install --version 6000.0.55f1 --changeset 60b3a55154f1
+        # Install Unity 6000.0.58f2
+        Write-Host "Installing Unity 6000.0.58f2..."
+        & "${env:ProgramFiles}\Unity Hub\Unity Hub.exe" -- --headless install --version 6000.0.58f2 --changeset 92dee566b325
         
         # Wait for installation with progress checking
         Write-Host "Waiting for Unity installation to complete..."
@@ -191,9 +191,9 @@ jobs:
         $elapsed = 0
         
         $unityPaths = @(
-          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.55f1\Editor\Unity.exe",
-          "${env:ProgramFiles}\Unity\6000.0.55f1\Editor\Unity.exe",
-          "C:\Program Files\Unity\Hub\Editor\6000.0.55f1\Editor\Unity.exe"
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.58f2\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.58f2\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.58f2\Editor\Unity.exe"
         )
         
         $foundUnity = $false
@@ -225,9 +225,9 @@ jobs:
       run: |
         # Find Unity executable
         $unityPaths = @(
-          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.55f1\Editor\Unity.exe",
-          "${env:ProgramFiles}\Unity\6000.0.55f1\Editor\Unity.exe",
-          "C:\Program Files\Unity\Hub\Editor\6000.0.55f1\Editor\Unity.exe"
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.58f2\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.58f2\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.58f2\Editor\Unity.exe"
         )
         
         $unityExe = $null
@@ -262,9 +262,9 @@ jobs:
         
         # Find Unity executable
         $unityPaths = @(
-          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.55f1\Editor\Unity.exe",
-          "${env:ProgramFiles}\Unity\6000.0.55f1\Editor\Unity.exe",
-          "C:\Program Files\Unity\Hub\Editor\6000.0.55f1\Editor\Unity.exe"
+          "${env:ProgramFiles}\Unity\Hub\Editor\6000.0.58f2\Editor\Unity.exe",
+          "${env:ProgramFiles}\Unity\6000.0.58f2\Editor\Unity.exe",
+          "C:\Program Files\Unity\Hub\Editor\6000.0.58f2\Editor\Unity.exe"
         )
         
         $unityExe = $null
@@ -344,7 +344,7 @@ jobs:
         }
         
     - name: Upload Test Results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       if: always()
       with:
         name: test-results-${{ matrix.os }}-${{ matrix.locale }}

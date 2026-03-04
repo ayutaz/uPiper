@@ -5,6 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026/01/08
+
+### ⚠️ Breaking Changes
+
+#### sync API削除（デッドロックリスク解消）
+
+以下の同期APIを削除しました。非同期APIを使用してください：
+
+| 削除されたAPI | 代替API |
+|--------------|---------|
+| `IPiperTTS.GenerateAudio(string)` | `GenerateAudioAsync(string)` |
+| `IPiperTTS.GenerateAudio(string, PiperVoiceConfig)` | `GenerateAudioAsync(string, PiperVoiceConfig)` |
+| `IPhonemizer.Phonemize(string, string)` | `PhonemizeAsync(string, string)` |
+
+**理由**: 同期APIは内部で `Task.Wait()` や `Task.Run().Result` を使用しており、Unityのメインスレッドコンテキストでデッドロックを引き起こす可能性がありました。
+
+### 🔧 Changed
+
+- `OpenJTalkPhonemizerDemo`: `PhonemizeTextSync` を `PhonemizeTextWithTimingAsync` にリネーム（async命名規則に準拠）
+
+## [1.1.0] - 2026/01/08
+
+### ✨ Added
+
+#### Prosody（韻律）サポート
+- **OpenJTalk Prosody API**: ネイティブライブラリにA1/A2/A3パラメータ抽出機能を追加
+  - A1: アクセント句内でのモーラ位置
+  - A2: アクセント句内のアクセント核位置
+  - A3: 呼気段落内でのアクセント句位置
+- **C# Prosody API**: `OpenJTalkPhonemizer.PhonemizeWithProsody()` メソッドを追加
+- **ONNX Prosody推論**: `InferenceAudioGenerator.GenerateAudioWithProsodyAsync()` を追加
+- **Prosody対応モデル判定**: `SupportsProsody` プロパティでモデルのProsody対応を自動判定
+
+#### カスタム辞書機能
+- **CustomDictionary クラス**: 技術用語・固有名詞の読み変換機能
+- **JSON辞書形式**: piper-plusのPython実装と互換性のある形式をサポート
+- **辞書ファイル**: `StreamingAssets/uPiper/Dictionaries/` に配置
+  - `default_tech_dict.json`: 技術用語辞書
+  - `default_common_dict.json`: IT/ビジネス用語辞書
+  - `additional_tech_dict.json`: AI/LLM関連用語辞書
+
+#### 音素エンコーディング改善
+- **IPA/PUAデュアルマッピング**: tsukuyomi-chanモデル等のIPAモデルに対応
+- **自動モデル判定**: phoneme_id_mapからIPA/PUAモデルを自動判定
+
+### 🐛 Fixed
+
+- **strncmpバグ修正**: 's'音素がスキップされる問題を修正
+- **大文字音素保持**: N, U, I, E, O, A の大文字音素が小文字に変換される問題を修正
+- **N変異音素マッピング**: N_m, N_n, N_ng, N_uvularを正しくASCII "N" (ID 22)にマッピング
+- **sh音素マッピング**: shをɕ (ID 18)ではなくʃ (ID 42)にマッピング（学習データと一致）
+- **ch PUAマッピング**: 不正な 't i' → 'ch' 変換を削除
+
+### 🔧 Changed
+
+- **Copilotレビュー対応**:
+  - 日本語文字判定のUnicode範囲を適切に定義 (`IsJapaneseChar`)
+  - PUA範囲の名前付き定数化 (`BmpPuaStart`, `BmpPuaEnd`)
+  - phoneme_len条件を `== 3` から `>= 3` に修正
+
+### 📦 Infrastructure
+
+- **CI互換性**: uLoopMCPをmanifest.jsonから削除（開発ツールのためCI不要）
+- **モデル管理**: tsukuyomi-chanモデルをgit追跡から除外
+
+### 📝 Documentation
+
+- **CLAUDE.md**: Prosody機能とカスタム辞書の説明を追加
+- **音素エンコーディングアーキテクチャ**: IPA/PUAマッピングの詳細ドキュメント
+
 ## [1.0.0] - 2025/10/14
 
 ### 🎉 First Stable Release
@@ -202,6 +272,7 @@ Apache License 2.0 - See [LICENSE](LICENSE) file for details
 - [Documentation](https://github.com/ayutaz/uPiper/tree/main/docs)
 - [Issues](https://github.com/ayutaz/uPiper/issues)
 
+[1.1.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.1.0
 [1.0.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.0.0
 [0.2.1]: https://github.com/ayutaz/uPiper/releases/tag/v0.2.1
 [0.2.0]: https://github.com/ayutaz/uPiper/releases/tag/v0.2.0

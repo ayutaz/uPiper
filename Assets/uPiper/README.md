@@ -18,7 +18,7 @@
 2. `+` ボタンをクリックし、`Add package from git URL...` を選択
 3. 以下の URL を入力:
    ```
-   https://github.com/ayutaz/uPiper.git?path=/Assets/uPiper
+   https://github.com/ayutaz/uPiper.git?path=Assets/uPiper
    ```
 
 #### ステップ2: 必要なデータのインポート
@@ -77,16 +77,16 @@ using uPiper.Core;
 public class TTSExample : MonoBehaviour
 {
     private IPiperTTS piperTTS;
-    
+
     async void Start()
     {
         // 初期化
         piperTTS = new PiperTTS();
         await piperTTS.InitializeAsync();
-        
+
         // 音声生成
         AudioClip clip = await piperTTS.GenerateAudioAsync("こんにちは、世界！");
-        
+
         // 再生
         var audioSource = GetComponent<AudioSource>();
         audioSource.clip = clip;
@@ -94,6 +94,39 @@ public class TTSExample : MonoBehaviour
     }
 }
 ```
+
+## Prosody API（韻律情報取得）
+
+OpenJTalk の full-context label から韻律情報（A1/A2/A3値）を取得できます。
+
+```csharp
+using uPiper.Core.Phonemizers.Implementations;
+
+// OpenJTalkPhonemizer を直接使用
+var phonemizer = new OpenJTalkPhonemizer();
+
+// 韻律情報付きで音素化
+var result = phonemizer.PhonemizeWithProsody("今日は良い天気です");
+
+// 結果にアクセス
+Debug.Log($"音素数: {result.PhonemeCount}");
+for (int i = 0; i < result.PhonemeCount; i++)
+{
+    Debug.Log($"{result.Phonemes[i]}: A1={result.ProsodyA1[i]}, A2={result.ProsodyA2[i]}, A3={result.ProsodyA3[i]}");
+}
+
+phonemizer.Dispose();
+```
+
+### 韻律値の説明
+
+| 値 | 説明 |
+|----|------|
+| **A1** | アクセント核からの相対位置（負の値も可） |
+| **A2** | アクセント句内のモーラ位置（1-based） |
+| **A3** | アクセント句内の総モーラ数 |
+
+これらの値は日本語の自然なイントネーション生成に使用できます。
 
 ## サンプル
 
@@ -132,8 +165,8 @@ uPiper/
 
 ## 必要要件
 
-- Unity 6000.0.55f1 以降
-- Unity AI Interface (Inference Engine) 2.2.1
+- Unity 6000.0.58f2 以降
+- Unity AI Interface (Inference Engine) 2.2.2
 - 各プラットフォームの要件:
   - Windows: Windows 10 以降（x64のみ）
   - Linux: Ubuntu 20.04 以降（x86_64, aarch64）
@@ -143,11 +176,11 @@ uPiper/
 
 ## ライセンス
 
-MIT License - 詳細は [LICENSE](../../LICENSE) を参照
+Apache License 2.0 - 詳細は [LICENSE](../../LICENSE) を参照
 
 ## 貢献
 
-貢献を歓迎します！[Contributing Guidelines](../../CONTRIBUTING.md) を参照してください。
+貢献を歓迎します！[Issue Tracker](https://github.com/ayutaz/uPiper/issues) でバグ報告や機能提案を受け付けています。
 
 ## サポート
 

@@ -75,7 +75,7 @@ jobs:
         lfs: true
         
     - name: Cache Library
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: Library
         key: Library-${{ matrix.scriptingBackend }}-${{ matrix.targetPlatform }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
@@ -128,7 +128,7 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
-        unityVersion: 6000.0.55f1
+        unityVersion: 6000.0.58f2
         targetPlatform: ${{ matrix.targetPlatform }}
         buildsPath: build
         buildMethod: UnityBuilderAction.BuildScript.Build
@@ -160,7 +160,7 @@ jobs:
         
     # Upload build artifacts
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Build-${{ matrix.scriptingBackend }}-${{ matrix.targetPlatform }}
         path: build/${{ matrix.targetPlatform }}
@@ -191,7 +191,7 @@ jobs:
         echo "" >> build-summary.md
         echo "## Build Configuration" >> build-summary.md
         echo "" >> build-summary.md
-        echo "- Unity Version: 6000.0.55f1" >> build-summary.md
+        echo "- Unity Version: 6000.0.58f2" >> build-summary.md
         echo "- link.xml: Present ✅" >> build-summary.md
         echo "- [Preserve] attributes: Applied ✅" >> build-summary.md
         echo "- Custom build script: UnityBuilderAction.BuildScript ✅" >> build-summary.md
@@ -215,7 +215,7 @@ jobs:
         echo "| Code Security | Low | High 🔒 |" >> build-summary.md
         
     - name: Upload performance summary
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: Build-Summary
         path: build-summary.md

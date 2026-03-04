@@ -44,7 +44,7 @@ namespace uPiper.Core.Phonemizers
             
             // Special consonants
             { "N", "N" },    // ん
-            { "cl", "t" },   // Closure for っ (small tsu) - map to t
+            // NOTE: "cl" (促音/geminate) is now handled via PUA mapping for better accuracy
             { "ts", "ts" },  // つ -> Will be mapped to PUA by PhonemeEncoder
             { "ch", "ch" },  // ち -> Will be mapped to PUA by PhonemeEncoder
             { "sh", "sh" },  // し -> Will be mapped to PUA by PhonemeEncoder
@@ -117,14 +117,14 @@ namespace uPiper.Core.Phonemizers
             { "\ue008", 29 },  // gy
             { "\ue009", 30 },  // gw
             { "t", 31 },
-            { "\ue00a", 32 },  // ty (and ch!)
+            { "\ue00a", 32 },  // ty
             { "d", 33 },
             { "\ue00b", 34 },  // dy
             { "p", 35 },
             { "\ue00c", 36 },  // py
             { "b", 37 },
             { "\ue00d", 38 },  // by
-            { "\ue00e", 39 },  // ch (mapped to same ID as ty)
+            { "\ue00e", 39 },  // ch
             { "\ue00f", 40 },  // ts
             { "s", 41 },
             { "\ue010", 42 },  // sh (and sy)
@@ -142,7 +142,22 @@ namespace uPiper.Core.Phonemizers
             { "r", 54 },
             { "\ue015", 55 },  // ry
             { "w", 56 },
-            { "y", 57 }
+            { "y", 57 },
+
+            // Extended question markers (piper-plus #210)
+            // Note: These IDs are provisional and may vary depending on the model
+            // Models that support extended question markers will have these in their phoneme_id_map
+            { "\ue016", 58 },  // ?! (emphatic question)
+            { "\ue017", 59 },  // ?. (declarative question)
+            { "\ue018", 60 },  // ?~ (confirmatory question)
+
+            // Context-dependent N phoneme variants (piper-plus #207/#210)
+            // Note: These IDs are provisional and may vary depending on the model
+            // Older models will map all N variants to "N" (ID 22) via PhonemeEncoder
+            { "\ue019", 61 },  // N_m (bilabial)
+            { "\ue01a", 62 },  // N_n (alveolar)
+            { "\ue01b", 63 },  // N_ng (velar)
+            { "\ue01c", 64 }   // N_uvular
         };
 
         /// <summary>
@@ -182,11 +197,35 @@ namespace uPiper.Core.Phonemizers
             { "py", "\ue00c" },  // ぴゃ、ぴゅ、ぴょ
             { "my", "\ue014" },  // みゃ、みゅ、みょ
             { "ry", "\ue015" },  // りゃ、りゅ、りょ
-            
+
+            // Labialized consonants (合拗音 - gouyouon)
+            { "kw", "\ue007" },  // クヮ (e.g., 火事 kwaji in some dialects)
+            { "gw", "\ue009" },  // グヮ
+
+            // Special consonants
+            { "cl", "\ue005" },  // 促音 (geminate/sokuon) っ
+
             // Other multi-character phonemes
-            { "ch", "\ue00a" },  // ち、ちゃ、ちゅ、ちょ (maps to same as ty in model)
+            { "ch", "\ue00e" },  // ち、ちゃ、ちゅ、ちょ (ID 39 in PUA models)
             { "ts", "\ue00f" },  // つ
-            { "sh", "\ue010" }   // し、しゃ、しゅ、しょ (same as "sy")
+            { "sh", "\ue010" },  // し、しゃ、しゅ、しょ (same as "sy")
+
+            // Extended question markers (piper-plus #210)
+            { "?!", "\ue016" },     // Emphatic question (強調疑問)
+            { "?.", "\ue017" },     // Declarative question (平叙疑問)
+            { "?~", "\ue018" },     // Confirmatory question (確認疑問)
+
+            // Context-dependent N phoneme variants (piper-plus #207/#210)
+            // Note: Both uppercase (from ApplyNPhonemeRules) and lowercase versions are needed
+            // because ConvertToPiperPhonemes uses ToLower() for lookup
+            { "N_m", "\ue019" },       // N before m/b/p (bilabial assimilation)
+            { "n_m", "\ue019" },       // lowercase version
+            { "N_n", "\ue01a" },       // N before n/t/d/ts/ch (alveolar assimilation)
+            { "n_n", "\ue01a" },       // lowercase version
+            { "N_ng", "\ue01b" },      // N before k/g (velar assimilation)
+            { "n_ng", "\ue01b" },      // lowercase version
+            { "N_uvular", "\ue01c" },  // N at end/before vowels (uvular)
+            { "n_uvular", "\ue01c" }   // lowercase version
         };
 
         /// <summary>
@@ -212,25 +251,9 @@ namespace uPiper.Core.Phonemizers
                     continue;
                 }
 
-                // Special handling for "t i" sequence -> "ch i" (for ち)
-                if (phoneme.ToLower() == "t" && i + 1 < openJTalkPhonemes.Length && openJTalkPhonemes[i + 1].ToLower() == "i")
-                {
-                    // Check if this is actually "ち" sound
-                    // Look at the previous phoneme to determine context
-                    var isChiSound = true;
-
-                    // If preceded by "t" (like in "tti"), it's not "chi"
-                    if (i > 0 && openJTalkPhonemes[i - 1].ToLower() == "t")
-                    {
-                        isChiSound = false;
-                    }
-
-                    if (isChiSound)
-                    {
-                        result.Add("\ue00e"); // PUA for "ch"
-                        continue;
-                    }
-                }
+                // NOTE: "t i" sequence is NOT converted to "ch" here
+                // OpenJTalk outputs "ch" directly for ち (chi sound)
+                // "t i" from OpenJTalk means ティ (foreign katakana sound) and should remain as t + i
 
                 // Handle pause/silence
                 if (phoneme.ToLower() == "pau")
@@ -242,15 +265,28 @@ namespace uPiper.Core.Phonemizers
                 // Try to map the phoneme
                 if (OpenJTalkToPiperPhoneme.TryGetValue(phoneme.ToLower(), out var piperPhoneme))
                 {
-                    result.Add(piperPhoneme);
+                    // IMPORTANT: Preserve case for unvoiced vowels (U, I, E, O, A) and moraic nasal (N)
+                    // These have separate phoneme IDs in IPA-based models like tsukuyomi-chan
+                    // - N (moraic nasal) → ID 22
+                    // - n (regular consonant) → ID 50
+                    // - U (unvoiced u) → ID 14
+                    // - u (regular u) → ID 9
+                    if (phoneme.Length == 1 && "UIEOAN".Contains(phoneme))
+                    {
+                        result.Add(phoneme); // Keep original case
+                    }
+                    else
+                    {
+                        result.Add(piperPhoneme);
+                    }
                 }
                 else
                 {
                     // If no mapping exists, use the original phoneme
-                    // IMPORTANT: Preserve case for unvoiced vowels (U, I, E, O, A)
-                    if (phoneme.Length == 1 && "UIEOA".Contains(phoneme))
+                    // IMPORTANT: Preserve case for unvoiced vowels (U, I, E, O, A) and moraic nasal (N)
+                    if (phoneme.Length == 1 && "UIEOAN".Contains(phoneme))
                     {
-                        result.Add(phoneme); // Keep uppercase for unvoiced vowels
+                        result.Add(phoneme); // Keep uppercase
                     }
                     else
                     {

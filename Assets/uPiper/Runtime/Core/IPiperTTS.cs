@@ -34,21 +34,6 @@ namespace uPiper.Core
         public Task InitializeAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Generate audio from text (synchronous)
-        /// </summary>
-        /// <param name="text">Input text</param>
-        /// <returns>Generated audio clip</returns>
-        public AudioClip GenerateAudio(string text);
-
-        /// <summary>
-        /// Generate audio from text with specific voice configuration (synchronous)
-        /// </summary>
-        /// <param name="text">Input text</param>
-        /// <param name="voiceConfig">Voice configuration to use</param>
-        /// <returns>Generated audio clip</returns>
-        public AudioClip GenerateAudio(string text, PiperVoiceConfig voiceConfig);
-
-        /// <summary>
         /// Generate audio from text (asynchronous)
         /// </summary>
         /// <param name="text">Input text</param>

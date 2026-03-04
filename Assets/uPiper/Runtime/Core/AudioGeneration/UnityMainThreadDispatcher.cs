@@ -14,6 +14,18 @@ namespace uPiper.Core.AudioGeneration
     {
         private static readonly ConcurrentQueue<Action> _actions = new();
         private static bool _initialized;
+        private static int _mainThreadId;
+
+        static UnityMainThreadDispatcher()
+        {
+            // Capture main thread ID at static constructor time
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+        }
+
+        /// <summary>
+        /// Check if current thread is the main thread
+        /// </summary>
+        private static bool IsMainThread => Thread.CurrentThread.ManagedThreadId == _mainThreadId;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
@@ -37,6 +49,23 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         public static Task RunOnMainThreadAsync(Action action, CancellationToken cancellationToken = default)
         {
+            // If already on main thread, execute directly to avoid deadlock
+            if (IsMainThread)
+            {
+                try
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                        return Task.FromCanceled(cancellationToken);
+
+                    action();
+                    return Task.CompletedTask;
+                }
+                catch (Exception ex)
+                {
+                    return Task.FromException(ex);
+                }
+            }
+
             if (!_initialized)
                 Initialize();
 
@@ -69,6 +98,25 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         public static Task<T> RunOnMainThreadAsync<T>(Func<T> func, CancellationToken cancellationToken = default)
         {
+            // If already on main thread, execute directly to avoid deadlock
+            if (IsMainThread)
+            {
+                try
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                        return Task.FromCanceled<T>(cancellationToken);
+
+                    PiperLogger.LogDebug("[UnityMainThreadDispatcher] Already on main thread, executing directly");
+                    var result = func();
+                    return Task.FromResult(result);
+                }
+                catch (Exception ex)
+                {
+                    PiperLogger.LogError($"[UnityMainThreadDispatcher] Error executing function: {ex.Message}");
+                    return Task.FromException<T>(ex);
+                }
+            }
+
             if (!_initialized)
             {
                 PiperLogger.LogDebug("[UnityMainThreadDispatcher] Initializing...");

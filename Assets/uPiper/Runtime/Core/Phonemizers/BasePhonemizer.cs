@@ -144,24 +144,6 @@ namespace uPiper.Core.Phonemizers
         }
 
         /// <summary>
-        /// Converts text to phonemes synchronously.
-        /// </summary>
-        public virtual PhonemeResult Phonemize(string text, string language = "ja")
-        {
-            try
-            {
-                // Run async method synchronously using a thread pool task
-                // This prevents deadlocks in Unity's synchronization context
-                return Task.Run(() => PhonemizeAsync(text, language)).Result;
-            }
-            catch (AggregateException ex)
-            {
-                // Unwrap the AggregateException to throw the actual inner exception
-                throw ex.InnerException ?? ex;
-            }
-        }
-
-        /// <summary>
         /// Converts multiple texts to phonemes asynchronously.
         /// </summary>
         public virtual async Task<PhonemeResult[]> PhonemizeBatchAsync(string[] texts, string language = "ja", CancellationToken cancellationToken = default)

@@ -87,12 +87,15 @@ namespace uPiper.Tests.Editor
             
             if (Directory.Exists(dictionaryPath))
             {
+                // Dictionary files are in open_jtalk_dic_utf_8-1.11 subdirectory
+                var dictSubPath = Path.Combine(dictionaryPath, "open_jtalk_dic_utf_8-1.11");
+
                 // Verify essential dictionary files
                 var essentialFiles = new[] { "sys.dic", "unk.dic", "matrix.bin", "char.bin" };
                 foreach (var file in essentialFiles)
                 {
-                    var filePath = Path.Combine(dictionaryPath, file);
-                    Assert.IsTrue(File.Exists(filePath), 
+                    var filePath = Path.Combine(dictSubPath, file);
+                    Assert.IsTrue(File.Exists(filePath),
                         $"Essential dictionary file missing: {file}");
                 }
             }
@@ -155,18 +158,32 @@ namespace uPiper.Tests.Editor
         public void IOSCodeSupport_InPhonemizer()
         {
             var phonemizerPath = "Assets/uPiper/Runtime/Core/Phonemizers/Implementations/OpenJTalkPhonemizer.cs";
-            Assert.IsTrue(File.Exists(phonemizerPath), 
+            Assert.IsTrue(File.Exists(phonemizerPath),
                 $"OpenJTalkPhonemizer not found at: {phonemizerPath}");
-            
+
             var content = File.ReadAllText(phonemizerPath);
-            
-            // Verify iOS support
-            Assert.IsTrue(content.Contains("UNITY_IOS"), 
+
+            // Verify iOS support in phonemizer
+            Assert.IsTrue(content.Contains("UNITY_IOS"),
                 "Phonemizer should have iOS platform support");
-            Assert.IsTrue(content.Contains("__Internal"), 
-                "Phonemizer should use __Internal for iOS DllImport");
-            Assert.IsTrue(content.Contains("PlatformHelper.IsIOS"), 
-                "Phonemizer should check for iOS platform");
+
+            // __Internal is now in OpenJTalkNative.cs (centralized P/Invoke declarations)
+            var nativePath = "Assets/uPiper/Runtime/Core/Phonemizers/Native/OpenJTalkNative.cs";
+            Assert.IsTrue(File.Exists(nativePath),
+                $"OpenJTalkNative not found at: {nativePath}");
+
+            var nativeContent = File.ReadAllText(nativePath);
+            Assert.IsTrue(nativeContent.Contains("__Internal"),
+                "OpenJTalkNative should use __Internal for iOS DllImport");
+
+            // PlatformHelper.IsIOS is now in NativeLibraryResolver
+            var resolverPath = "Assets/uPiper/Runtime/Core/Platform/NativeLibraryResolver.cs";
+            Assert.IsTrue(File.Exists(resolverPath),
+                $"NativeLibraryResolver not found at: {resolverPath}");
+
+            var resolverContent = File.ReadAllText(resolverPath);
+            Assert.IsTrue(resolverContent.Contains("PlatformHelper.IsIOS"),
+                "NativeLibraryResolver should check for iOS platform");
         }
 
         [Test]

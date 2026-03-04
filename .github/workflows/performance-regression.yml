@@ -95,7 +95,7 @@ jobs:
       shell: bash
       
     - name: Upload Performance Report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       if: always()
       with:
         name: performance-${{ matrix.os }}
@@ -112,7 +112,7 @@ jobs:
     
     steps:
     - name: Download All Reports
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v7
       with:
         path: reports
         

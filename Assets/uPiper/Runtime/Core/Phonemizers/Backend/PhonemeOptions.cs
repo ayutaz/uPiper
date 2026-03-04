@@ -126,6 +126,9 @@ namespace uPiper.Core.Phonemizers.Backend
             Pitches = new float[0];
             Stresses = new int[0];
             WordBoundaries = new int[0];
+            ProsodyA1 = new int[0];
+            ProsodyA2 = new int[0];
+            ProsodyA3 = new int[0];
             Success = true;
             Metadata = new Dictionary<string, object>();
         }
@@ -185,6 +188,24 @@ namespace uPiper.Core.Phonemizers.Backend
         public int[] WordBoundaries { get; set; }
 
         /// <summary>
+        /// Prosody A1: relative position from accent nucleus (can be negative).
+        /// Used for Japanese accent/intonation features from OpenJTalk.
+        /// </summary>
+        public int[] ProsodyA1 { get; set; }
+
+        /// <summary>
+        /// Prosody A2: position in accent phrase (1-based).
+        /// Used for Japanese accent/intonation features from OpenJTalk.
+        /// </summary>
+        public int[] ProsodyA2 { get; set; }
+
+        /// <summary>
+        /// Prosody A3: total morae in accent phrase.
+        /// Used for Japanese accent/intonation features from OpenJTalk.
+        /// </summary>
+        public int[] ProsodyA3 { get; set; }
+
+        /// <summary>
         /// Backend used for phonemization.
         /// </summary>
         public string Backend { get; set; }
@@ -234,6 +255,9 @@ namespace uPiper.Core.Phonemizers.Backend
                 Durations = Durations,
                 Pitches = Pitches,
                 WordBoundaries = WordBoundaries,
+                ProsodyA1 = ProsodyA1,
+                ProsodyA2 = ProsodyA2,
+                ProsodyA3 = ProsodyA3,
                 Backend = Backend,
                 ProcessingTime = ProcessingTime,
                 ProcessingTimeMs = ProcessingTimeMs,
@@ -260,6 +284,9 @@ namespace uPiper.Core.Phonemizers.Backend
                 Durations = (float[])Durations?.Clone(),
                 Pitches = (float[])Pitches?.Clone(),
                 WordBoundaries = (int[])WordBoundaries?.Clone(),
+                ProsodyA1 = (int[])ProsodyA1?.Clone(),
+                ProsodyA2 = (int[])ProsodyA2?.Clone(),
+                ProsodyA3 = (int[])ProsodyA3?.Clone(),
                 Backend = Backend,
                 ProcessingTime = ProcessingTime,
                 ProcessingTimeMs = ProcessingTimeMs,
