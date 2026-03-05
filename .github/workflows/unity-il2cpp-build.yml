@@ -160,7 +160,7 @@ jobs:
         
     # Upload build artifacts
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: Build-${{ matrix.scriptingBackend }}-${{ matrix.targetPlatform }}
         path: build/${{ matrix.targetPlatform }}
@@ -215,7 +215,7 @@ jobs:
         echo "| Code Security | Low | High 🔒 |" >> build-summary.md
         
     - name: Upload performance summary
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: Build-Summary
         path: build-summary.md
