@@ -16,7 +16,7 @@ namespace uPiper.Tests.Editor
     /// </summary>
     public class WindowsLongTextTest
     {
-        private OpenJTalkPhonemizer _phonemizer;
+        private DotNetG2PPhonemizer _phonemizer;
 
         [SetUp]
         public void Setup()
@@ -36,7 +36,7 @@ namespace uPiper.Tests.Editor
         {
             try
             {
-                _phonemizer = new OpenJTalkPhonemizer();
+                _phonemizer = new DotNetG2PPhonemizer();
 
                 // テストケース1: 短い文
                 var shortText = "こんにちは";
@@ -98,7 +98,7 @@ namespace uPiper.Tests.Editor
         {
             try
             {
-                _phonemizer = new OpenJTalkPhonemizer();
+                _phonemizer = new DotNetG2PPhonemizer();
 
                 // Windows環境で問題が発生していた具体的なケース
                 var testCases = new[]

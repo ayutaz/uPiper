@@ -11,7 +11,6 @@ using UnityEngine;
 using UnityEngine.Scripting;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers.Backend;
-using uPiper.Core.Platform;
 
 namespace uPiper.Core.Phonemizers.Implementations
 {
@@ -22,6 +21,22 @@ namespace uPiper.Core.Phonemizers.Implementations
     [Preserve]
     public class DotNetG2PPhonemizer : BasePhonemizer
     {
+        #region Nested Types
+
+        /// <summary>
+        /// Result of prosody-aware phonemization
+        /// </summary>
+        public class ProsodyResult
+        {
+            public string[] Phonemes { get; set; }
+            public int[] ProsodyA1 { get; set; }
+            public int[] ProsodyA2 { get; set; }
+            public int[] ProsodyA3 { get; set; }
+            public int PhonemeCount { get; set; }
+        }
+
+        #endregion
+
         #region Fields
 
         private G2PEngine _engine;
@@ -195,14 +210,14 @@ namespace uPiper.Core.Phonemizers.Implementations
         /// </summary>
         /// <param name="text">Japanese text to phonemize</param>
         /// <returns>ProsodyResult containing phonemes and prosody values</returns>
-        public OpenJTalkPhonemizer.ProsodyResult PhonemizeWithProsody(string text)
+        public ProsodyResult PhonemizeWithProsody(string text)
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(DotNetG2PPhonemizer));
 
             if (string.IsNullOrEmpty(text))
             {
-                return new OpenJTalkPhonemizer.ProsodyResult
+                return new ProsodyResult
                 {
                     Phonemes = Array.Empty<string>(),
                     ProsodyA1 = Array.Empty<int>(),
@@ -231,7 +246,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
             if (features.Count == 0)
             {
-                return new OpenJTalkPhonemizer.ProsodyResult
+                return new ProsodyResult
                 {
                     Phonemes = Array.Empty<string>(),
                     ProsodyA1 = Array.Empty<int>(),
@@ -277,7 +292,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             PiperLogger.LogDebug(
                 $"[DotNetG2PPhonemizer] Prosody extraction complete: {totalCount} phonemes (including question marker)");
 
-            return new OpenJTalkPhonemizer.ProsodyResult
+            return new ProsodyResult
             {
                 Phonemes = piperPhonemes,
                 ProsodyA1 = newA1,
@@ -412,9 +427,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         private static string GetDefaultDictionaryPath()
         {
-#if UNITY_ANDROID && !UNITY_EDITOR
-            return AndroidPathResolver.GetOpenJTalkDictionaryPath();
-#elif UNITY_EDITOR && UPIPER_DEVELOPMENT
+#if UNITY_EDITOR && UPIPER_DEVELOPMENT
             var developmentPath = uPiperPaths.GetDevelopmentOpenJTalkPath();
             if (Directory.Exists(developmentPath))
             {
@@ -428,8 +441,19 @@ namespace uPiper.Core.Phonemizers.Implementations
                     $"[DotNetG2PPhonemizer] Development mode: Dictionary not found at: {developmentPath}");
                 return developmentPath;
             }
-#elif UNITY_IOS && !UNITY_EDITOR
-            return IOSPathResolver.GetOpenJTalkDictionaryPath();
+#elif UNITY_ANDROID && !UNITY_EDITOR
+            // On Android, StreamingAssets is inside APK. Dictionary must be extracted to persistentDataPath.
+            var extractedPath = Path.Combine(
+                Application.persistentDataPath, "uPiper", "OpenJTalk",
+                "naist_jdic", uPiperPaths.OPENJTALK_DICT_NAME);
+            if (Directory.Exists(extractedPath))
+            {
+                Debug.Log($"[DotNetG2PPhonemizer] Found dictionary at: {extractedPath}");
+                return extractedPath;
+            }
+
+            Debug.LogError("[DotNetG2PPhonemizer] Dictionary not found. Please extract naist_jdic from StreamingAssets.");
+            return extractedPath;
 #else
             var primaryPath = uPiperPaths.GetRuntimeOpenJTalkPath();
             if (Directory.Exists(primaryPath))

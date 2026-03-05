@@ -1,4 +1,3 @@
-#if UNITY_EDITOR && UNITY_EDITOR_WIN && !UNITY_WEBGL
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,7 +14,7 @@ namespace uPiper.Tests.Editor
     /// </summary>
     public class WindowsTextAnalysisTest
     {
-        private OpenJTalkPhonemizer _phonemizer;
+        private DotNetG2PPhonemizer _phonemizer;
 
         [SetUp]
         public void Setup()
@@ -34,7 +33,7 @@ namespace uPiper.Tests.Editor
         {
             try
             {
-                _phonemizer = new OpenJTalkPhonemizer();
+                _phonemizer = new DotNetG2PPhonemizer();
 
                 var testCases = new[]
                 {
@@ -144,7 +143,7 @@ namespace uPiper.Tests.Editor
         {
             try
             {
-                _phonemizer = new OpenJTalkPhonemizer();
+                _phonemizer = new DotNetG2PPhonemizer();
 
                 var text = "今日はいい天気ですね";
                 Debug.Log($"\n=== Character-by-character analysis of: {text} ===");
@@ -173,4 +172,3 @@ namespace uPiper.Tests.Editor
         }
     }
 }
-#endif

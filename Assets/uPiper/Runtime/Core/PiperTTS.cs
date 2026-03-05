@@ -546,21 +546,13 @@ namespace uPiper.Core
                         // Check if model supports prosody and we have a compatible phonemizer
                         int[] prosodyA1 = null, prosodyA2 = null, prosodyA3 = null;
                         var useProsody = _inferenceGenerator.SupportsProsody &&
-                            (_phonemizer is DotNetG2PPhonemizer || _phonemizer is OpenJTalkPhonemizer);
+                            _phonemizer is DotNetG2PPhonemizer;
 
                         if (useProsody)
                         {
                             PiperLogger.LogInfo("Model supports prosody, using PhonemizeWithProsody");
-                            OpenJTalkPhonemizer.ProsodyResult prosodyResult;
-                            if (_phonemizer is DotNetG2PPhonemizer g2pPhonemizer)
-                            {
-                                prosodyResult = g2pPhonemizer.PhonemizeWithProsody(text);
-                            }
-                            else
-                            {
-                                var openJTalkPhonemizer = (OpenJTalkPhonemizer)_phonemizer;
-                                prosodyResult = openJTalkPhonemizer.PhonemizeWithProsody(text);
-                            }
+                            var g2pPhonemizer = (DotNetG2PPhonemizer)_phonemizer;
+                            var prosodyResult = g2pPhonemizer.PhonemizeWithProsody(text);
 
                             // Update phonemeResult with prosody data
                             phonemeResult.Phonemes = prosodyResult.Phonemes;
