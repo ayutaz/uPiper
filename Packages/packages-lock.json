@@ -132,13 +132,13 @@
       }
     },
     "io.github.hatayama.uloopmcp": {
-      "version": "https://github.com/hatayama/uLoopMCP.git?path=/Packages/src",
+      "version": "0.50.0",
       "depth": 0,
-      "source": "git",
+      "source": "registry",
       "dependencies": {
         "com.unity.nuget.newtonsoft-json": "3.2.1"
       },
-      "hash": "e3090f4f6f482675319a8fb91c4e82731d992272"
+      "url": "https://package.openupm.com"
     },
     "org.nuget.microsoft.codeanalysis.analyzers": {
       "version": "3.11.0",
