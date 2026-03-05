@@ -543,15 +543,24 @@ namespace uPiper.Core
                     {
                         PiperLogger.LogInfo("Using InferenceAudioGenerator for audio synthesis");
 
-                        // Check if model supports prosody and we have OpenJTalk phonemizer
+                        // Check if model supports prosody and we have a compatible phonemizer
                         int[] prosodyA1 = null, prosodyA2 = null, prosodyA3 = null;
-                        var useProsody = _inferenceGenerator.SupportsProsody && _phonemizer is OpenJTalkPhonemizer;
+                        var useProsody = _inferenceGenerator.SupportsProsody &&
+                            (_phonemizer is DotNetG2PPhonemizer || _phonemizer is OpenJTalkPhonemizer);
 
                         if (useProsody)
                         {
                             PiperLogger.LogInfo("Model supports prosody, using PhonemizeWithProsody");
-                            var openJTalkPhonemizer = (OpenJTalkPhonemizer)_phonemizer;
-                            var prosodyResult = openJTalkPhonemizer.PhonemizeWithProsody(text);
+                            OpenJTalkPhonemizer.ProsodyResult prosodyResult;
+                            if (_phonemizer is DotNetG2PPhonemizer g2pPhonemizer)
+                            {
+                                prosodyResult = g2pPhonemizer.PhonemizeWithProsody(text);
+                            }
+                            else
+                            {
+                                var openJTalkPhonemizer = (OpenJTalkPhonemizer)_phonemizer;
+                                prosodyResult = openJTalkPhonemizer.PhonemizeWithProsody(text);
+                            }
 
                             // Update phonemeResult with prosody data
                             phonemeResult.Phonemes = prosodyResult.Phonemes;
@@ -1052,16 +1061,16 @@ namespace uPiper.Core
 
             try
             {
-                // For Japanese, use OpenJTalkPhonemizer
+                // For Japanese, use DotNetG2PPhonemizer (pure C#, no native plugin dependency)
                 if (_config.DefaultLanguage == "ja" || _config.DefaultLanguage == "jp" ||
                     _config.DefaultLanguage == "japanese")
                 {
 #if !UNITY_WEBGL
-                    _phonemizer = new OpenJTalkPhonemizer();
-                    PiperLogger.LogInfo("Initialized OpenJTalkPhonemizer for Japanese");
+                    _phonemizer = new DotNetG2PPhonemizer();
+                    PiperLogger.LogInfo("Initialized DotNetG2PPhonemizer for Japanese");
 #else
-                    PiperLogger.LogWarning("OpenJTalkPhonemizer is not supported on WebGL platform");
-                    _phonemizer = null; // No phonemizer available on WebGL
+                    PiperLogger.LogWarning("DotNetG2PPhonemizer is not supported on WebGL (file I/O required for dictionary)");
+                    _phonemizer = null;
 #endif
                 }
                 else

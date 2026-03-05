@@ -123,9 +123,11 @@ namespace uPiper.Tests.Editor
                     if (text.Contains("天気"))
                     {
                         // "t e n k i"または類似のパターンを期待
+                        // ApplyNPhonemeRulesにより "N" は velar consonant "k" の前で "N_ng" に変換される
                         Assert.IsTrue(
                             phonemeString.Contains("t e n k i") ||
-                            phonemeString.Contains("t e N k i"),
+                            phonemeString.Contains("t e N k i") ||
+                            phonemeString.Contains("t e N_ng k i"),
                             $"'天気' not properly phonemized in '{text}'. Got: {phonemeString}"
                         );
                     }
