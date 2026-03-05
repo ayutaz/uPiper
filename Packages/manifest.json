@@ -3,10 +3,11 @@
     {
       "name": "OpenUPM",
       "url": "https://package.openupm.com",
-      "scopes": ["org.nuget"]
+      "scopes": ["org.nuget", "io.github.hatayama.uloopmcp"]
     }
   ],
   "dependencies": {
+    "io.github.hatayama.uloopmcp": "0.50.0",
     "org.nuget.microsoft.codeanalysis.csharp": "4.14.0",
     "com.unity.ai.inference": "2.2.2",
     "com.unity.ide.visualstudio": "2.0.25",
