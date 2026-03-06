@@ -147,12 +147,13 @@ namespace uPiper.Tests.Runtime
         [Test]
         public async Task TestPunctuationHandling()
         {
+            // Note: UnifiedPhonemizer only has English backends. Japanese-only text
+            // cannot be phonemized here (handled by PiperTTS via DotNetG2PPhonemizer directly).
+            // Only test with English text for punctuation/silence markers.
             var testCases = new[]
             {
                 "Hello, world!",
-                "こんにちは、世界！",
                 "What's your name?",
-                "質問があります。答えてください。"
             };
 
             foreach (var text in testCases)
