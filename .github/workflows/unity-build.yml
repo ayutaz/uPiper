@@ -121,6 +121,7 @@ jobs:
         androidKeyaliasName: ''
         androidKeyaliasPass: ''
         buildMethod: UnityBuilderAction.BuildScript.Build
+        allowDirtyBuild: true
         customParameters: -scriptingBackend ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && 'IL2CPP' || 'Mono2x' }}
 
     # Configure Unity License timeout for service delays
@@ -155,8 +156,9 @@ jobs:
         buildName: uPiper${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
         buildsPath: build
         buildMethod: UnityBuilderAction.BuildScript.Build
+        allowDirtyBuild: true
         customParameters: -scriptingBackend ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && 'IL2CPP' || 'Mono2x' }}
-        
+
     # ビルド成果物をアップロード
     - name: Upload build artifacts
       uses: actions/upload-artifact@v7

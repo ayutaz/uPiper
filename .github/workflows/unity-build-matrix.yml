@@ -157,8 +157,9 @@ jobs:
         unityVersion: 6000.0.58f2
         targetPlatform: ${{ matrix.platform }}
         buildMethod: UnityBuilderAction.BuildScript.Build
+        allowDirtyBuild: true
         customParameters: -scriptingBackend ${{ matrix.backend }}
-        
+
     - name: Verify Build Output
       run: |
         echo "✅ ${{ matrix.backend }} build for ${{ matrix.platform }} completed successfully"

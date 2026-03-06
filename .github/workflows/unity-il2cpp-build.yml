@@ -142,8 +142,9 @@ jobs:
         targetPlatform: ${{ matrix.targetPlatform }}
         buildsPath: build
         buildMethod: UnityBuilderAction.BuildScript.Build
+        allowDirtyBuild: true
         customParameters: -scriptingBackend ${{ matrix.scriptingBackend }}
-        
+
     # Verify build output
     - name: Verify build output
       run: |
