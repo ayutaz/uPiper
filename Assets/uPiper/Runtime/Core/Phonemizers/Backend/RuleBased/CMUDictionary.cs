@@ -58,8 +58,9 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                     actualFilePath = uPiperPaths.GetRuntimeCMUPath(fileName);
                 }
 #elif UNITY_ANDROID && !UNITY_EDITOR
-                // Android platform: Extract from APK to persistent storage
-                actualFilePath = Platform.AndroidPathResolver.GetCMUDictionaryPath();
+                // Android platform: CMU dictionary from persistent storage
+                actualFilePath = Path.Combine(
+                    Application.persistentDataPath, "uPiper", "Phonemizers", fileName);
                 Debug.Log($"[CMUDictionary] Android platform: Using persistent path: {actualFilePath}");
 #else
                 // Primary path after setup - using shared constant for consistency

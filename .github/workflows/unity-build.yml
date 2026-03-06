@@ -74,39 +74,6 @@ jobs:
         docker-images: true
         swap-storage: true
 
-    # Check and setup Android native libraries
-    - name: Check and Setup Android Native Libraries
-      if: matrix.targetPlatform == 'Android'
-      run: |
-        echo "=== Checking Android native libraries ==="
-        
-        # Create directory structure
-        mkdir -p Assets/uPiper/Plugins/Android/libs/arm64-v8a
-        mkdir -p Assets/uPiper/Plugins/Android/libs/armeabi-v7a
-        mkdir -p Assets/uPiper/Plugins/Android/libs/x86
-        mkdir -p Assets/uPiper/Plugins/Android/libs/x86_64
-        
-        # Check what libraries exist
-        LIBS_FOUND=0
-        for abi in arm64-v8a armeabi-v7a x86 x86_64; do
-          if [ -f "Assets/uPiper/Plugins/Android/libs/$abi/libopenjtalk_wrapper.so" ]; then
-            echo "✓ Found library for $abi"
-            ls -la "Assets/uPiper/Plugins/Android/libs/$abi/libopenjtalk_wrapper.so"
-            LIBS_FOUND=$((LIBS_FOUND + 1))
-          else
-            echo "⚠ Library not found for $abi"
-            # Create placeholder to prevent build errors
-            echo "// Placeholder for $abi" > "Assets/uPiper/Plugins/Android/libs/$abi/.gitkeep"
-          fi
-        done
-        
-        if [ "$LIBS_FOUND" -eq 0 ]; then
-          echo "WARNING: No Android native libraries found in the repository"
-          echo "The build may have limited functionality"
-        else
-          echo "Found $LIBS_FOUND out of 4 Android native libraries"
-        fi
-
     # Configure Unity License timeout for service delays
     - name: Configure Unity License Timeout (Extended for Service Delays)
       if: matrix.targetPlatform == 'Android'
