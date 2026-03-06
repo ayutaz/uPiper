@@ -16,9 +16,6 @@ jobs:
           # Windows with Japanese locale to test CultureInfo issues
           - os: windows-latest
             platform: Windows
-            lib_ext: dll
-            lib_prefix: ""
-            lib_path: Windows/x86_64
             locale: ja-JP
             culture_test: true
           # Add more locale combinations as needed
@@ -38,7 +35,17 @@ jobs:
     - uses: actions/checkout@v5
       with:
         lfs: true
-        
+
+    - uses: actions/checkout@v5
+      with:
+        repository: ayutaz/dot-net-g2p
+        ref: feature/english-g2p
+        path: dot-net-g2p
+
+    - name: Fix local package paths for CI
+      shell: bash
+      run: sed -i 's|file:../../dot-net-g2p/src|file:../dot-net-g2p/src|g' Packages/manifest.json
+
     - name: Set Windows Locale
       if: matrix.os == 'windows-latest' && matrix.culture_test
       run: |
@@ -65,72 +72,6 @@ jobs:
         echo "Test number formatting (50.0 as P0, InvariantCulture): '$($testNumber.ToString('P0', [System.Globalization.CultureInfo]::InvariantCulture))'"
       shell: powershell
         
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
-        
-    - name: Install CMake
-      uses: lukka/get-cmake@latest
-        
-    - name: Build OpenJTalk Native Library
-      run: |
-        cd NativePlugins/OpenJTalk
-        
-        # Make build script executable
-        chmod +x build_ci.sh
-        
-        # Build native library
-        ./build_ci.sh
-      shell: bash
-      
-    - name: Copy OpenJTalk Library
-      run: |
-        # Find and copy built library to Unity Plugins directory
-        $targetDir = "Assets/uPiper/Plugins/${{ matrix.lib_path }}"
-        $targetPath = "$targetDir/openjtalk_wrapper.${{ matrix.lib_ext }}"
-        
-        # Check multiple possible locations
-        $possiblePaths = @(
-          "NativePlugins/OpenJTalk/output/windows/openjtalk_wrapper.${{ matrix.lib_ext }}",
-          "NativePlugins/OpenJTalk/output/openjtalk_wrapper.${{ matrix.lib_ext }}",
-          "NativePlugins/OpenJTalk/build/bin/Release/openjtalk_wrapper.${{ matrix.lib_ext }}",
-          "NativePlugins/OpenJTalk/build/bin/openjtalk_wrapper.${{ matrix.lib_ext }}"
-        )
-        
-        $found = $false
-        foreach ($sourcePath in $possiblePaths) {
-          echo "Checking: $sourcePath"
-          if (Test-Path $sourcePath) {
-            echo "Found library at: $sourcePath"
-            New-Item -ItemType Directory -Path $targetDir -Force
-            Copy-Item $sourcePath $targetPath -Force
-            echo "Library copied successfully to $targetPath"
-            $found = $true
-            break
-          }
-        }
-        
-        if (-not $found) {
-          echo "ERROR: Library not found in any expected location"
-          echo "Searched paths:"
-          $possiblePaths | ForEach-Object { echo "  $_" }
-          
-          # List actual files to debug
-          echo ""
-          echo "Files in output directory:"
-          if (Test-Path "NativePlugins/OpenJTalk/output") {
-            Get-ChildItem -Path "NativePlugins/OpenJTalk/output" -Recurse -Filter "*.dll" | ForEach-Object { echo $_.FullName }
-          }
-          echo ""
-          echo "Files in build directory:"
-          if (Test-Path "NativePlugins/OpenJTalk/build") {
-            Get-ChildItem -Path "NativePlugins/OpenJTalk/build" -Recurse -Filter "*.dll" | ForEach-Object { echo $_.FullName }
-          }
-          exit 1
-        }
-      shell: powershell
-
     - name: Cache Unity Library
       uses: actions/cache@v5
       with:
@@ -276,10 +217,7 @@ jobs:
         }
         
         Write-Host "Using Unity at: $unityExe"
-        
-        # Set OpenJTalk DLL path
-        $env:PATH = "$env:GITHUB_WORKSPACE\Assets\uPiper\Plugins\Windows\x86_64;$env:PATH"
-        
+
         # Run EditMode tests with locale
         & $unityExe -batchmode -nographics -silent-crashes -logFile - -projectPath . -runTests -testPlatform EditMode -testResults test-results-${{ matrix.os }}-${{ matrix.locale }}/editmode-results.xml
         
@@ -311,8 +249,6 @@ jobs:
       run: |
         Write-Host "## Windows Locale Test Summary" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
         Write-Host "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-        Write-Host "✅ OpenJTalk native library built successfully" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-        Write-Host "✅ DLL verified at: Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
         Write-Host "✅ Locale settings: ${{ matrix.locale }}" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
         Write-Host "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
         
