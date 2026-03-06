@@ -18,14 +18,8 @@ jobs:
         include:
           - os: windows-latest
             platform: Windows
-            lib_ext: dll
-            lib_prefix: ""
-            lib_path: Windows/x86_64
           # - os: macos-latest  # TODO: Re-enable after fixing Unity license issues
           #   platform: macOS
-          #   lib_ext: dylib
-          #   lib_prefix: lib
-          #   lib_path: macOS
     permissions:
       contents: read
       checks: write
@@ -35,60 +29,17 @@ jobs:
     - uses: actions/checkout@v5
       with:
         lfs: true
-        
-    - name: Setup Python
-      uses: actions/setup-python@v5
+
+    - uses: actions/checkout@v5
       with:
-        python-version: '3.9'
-        
-    - name: Install CMake
-      uses: lukka/get-cmake@latest
-        
-    - name: Build OpenJTalk Native Library
-      run: |
-        cd NativePlugins/OpenJTalk
-        
-        # Make build script executable
-        chmod +x build_ci.sh
-        
-        # Run build script (using simplified CI build for all platforms)
-        ./build_ci.sh
-        
-        # Create Plugins directory structure
-        mkdir -p ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}
-        
-        # Copy the built library to Unity Plugins directory
-        if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-          cp build/bin/Release/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/ || cp build/bin/openjtalk_wrapper.dll ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/
-        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-          # Check if library already exists (from repository)
-          if [ ! -f "../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }}" ]; then
-            cp build/lib/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }} ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/
-          fi
-        else
-          cp build/lib/${{ matrix.lib_prefix }}openjtalk_wrapper.${{ matrix.lib_ext }} ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/
-        fi
-        
-        # Verify the library was copied
-        echo "=== Verifying library placement ==="
-        ls -la ../../Assets/uPiper/Plugins/${{ matrix.lib_path }}/ || dir ..\..\Assets\uPiper\Plugins\${{ matrix.lib_path }}\
-        
-        # For Ubuntu Docker environment, also copy to standard library paths
-        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-          echo "=== Setting up for Docker environment ==="
-          # Create symbolic link in standard paths that Docker Unity might check
-          sudo mkdir -p /usr/local/lib
-          sudo cp build/lib/libopenjtalk_wrapper.so /usr/local/lib/
-          sudo ldconfig || true
-          
-          # Also copy to the project root for Docker volume mapping
-          cp build/lib/libopenjtalk_wrapper.so ${{ github.workspace }}/
-          
-          # Set environment variable for library path
-          echo "LD_LIBRARY_PATH=${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-        fi
+        repository: ayutaz/dot-net-g2p
+        ref: feature/english-g2p
+        path: dot-net-g2p
+
+    - name: Fix local package paths for CI
       shell: bash
-        
+      run: sed -i 's|file:../../dot-net-g2p/src|file:../dot-net-g2p/src|g' Packages/manifest.json
+
     - name: Cache Library
       uses: actions/cache@v5
       with:
@@ -118,43 +69,6 @@ jobs:
         find Assets -name "*Test*.cs" 2>/dev/null | head -10 || echo "No test scripts found"
       shell: bash
         
-    # Create symlink for library loading in Docker
-    - name: Setup Library Symlinks
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        # Create symlink in the expected location for DllImport
-        cd Assets/uPiper/Plugins
-        if [ -f "Linux/x86_64/libopenjtalk_wrapper.so" ]; then
-          ln -sf Linux/x86_64/libopenjtalk_wrapper.so openjtalk_wrapper.so || true
-          ln -sf Linux/x86_64/libopenjtalk_wrapper.so libopenjtalk_wrapper.so || true
-        fi
-        
-        # Also create in parent directories
-        cd ..
-        ln -sf Plugins/Linux/x86_64/libopenjtalk_wrapper.so openjtalk_wrapper.so || true
-        ln -sf Plugins/Linux/x86_64/libopenjtalk_wrapper.so libopenjtalk_wrapper.so || true
-        
-        # List all library locations for debugging
-        echo "=== Library locations ==="
-        find . -name "*openjtalk_wrapper*" -type f -o -type l | head -20
-      shell: bash
-    
-    # Verify OpenJTalk library placement for Windows
-    - name: Verify OpenJTalk Library (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: bash
-      run: |
-        echo "=== Checking OpenJTalk library placement ==="
-        echo "Current directory: $(pwd)"
-        echo "Checking Assets/uPiper/Plugins/Windows/x86_64:"
-        ls -la Assets/uPiper/Plugins/Windows/x86_64/ || true
-        echo ""
-        echo "Checking for openjtalk_wrapper.dll:"
-        find Assets -name "openjtalk_wrapper.dll" -type f 2>/dev/null || echo "DLL not found"
-        echo ""
-        echo "Checking plugin meta files:"
-        find Assets/uPiper/Plugins -name "*.meta" | head -10
-        
     # Create Unity cache directory for Windows
     - name: Create Unity Cache Directory (Windows)
       if: matrix.os == 'windows-latest'
@@ -175,56 +89,6 @@ jobs:
           }
         }
 
-    # Windows: Copy DLL to multiple locations for Docker volume mapping
-    - name: Prepare Windows DLL for Docker (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: bash
-      run: |
-        echo "=== Preparing OpenJTalk DLL for Docker environment ==="
-        # Docker mounts the project at C:/github/workspace
-        # Copy DLL to multiple locations to ensure Unity can find it
-        
-        # Verify source DLL exists
-        if [ -f "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" ]; then
-          echo "Source DLL found at: Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll"
-          
-          # Create additional copies for Docker environment
-          cp "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" "./openjtalk_wrapper.dll"
-          echo "Copied DLL to project root"
-          
-          # Also copy to Assets/Plugins for legacy support
-          mkdir -p "Assets/Plugins/x86_64"
-          cp "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" "Assets/Plugins/x86_64/openjtalk_wrapper.dll"
-          echo "Copied DLL to Assets/Plugins/x86_64"
-          
-          # Copy to Library/ScriptAssemblies (where Unity looks for native libraries)
-          mkdir -p "Library/ScriptAssemblies"
-          cp "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" "Library/ScriptAssemblies/openjtalk_wrapper.dll"
-          echo "Copied DLL to Library/ScriptAssemblies"
-          
-          # Copy to system directories that might be in PATH
-          # Unity might look in Windows system directories
-          mkdir -p "temp_dll"
-          cp "Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" "temp_dll/openjtalk_wrapper.dll"
-          echo "Copied DLL to temp_dll directory"
-          
-          # List files to verify
-          echo "=== Files in project root ==="
-          ls -la *.dll || true
-          
-          echo "=== Files in plugin directory ==="
-          ls -la Assets/uPiper/Plugins/Windows/x86_64/ || true
-          
-          echo "=== Files in Assets/Plugins/x86_64 ==="
-          ls -la Assets/Plugins/x86_64/ || true
-          
-          echo "=== Files in temp_dll ==="
-          ls -la temp_dll/ || true
-        else
-          echo "ERROR: Source DLL not found!"
-          exit 1
-        fi
-
     # Unity 6対応 - game-ci/unity-test-runnerを使用 (Linux only)
     - name: Run Unity Tests (Docker)
       uses: game-ci/unity-test-runner@v4
@@ -235,9 +99,6 @@ jobs:
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         PROJECT_PATH: .
-        LD_LIBRARY_PATH: ${{ github.workspace }}/Assets/uPiper/Plugins/Linux/x86_64:${{ github.workspace }}:/usr/local/lib:${{ env.LD_LIBRARY_PATH }}
-        # Windows-specific: Add current directory and temp_dll to PATH for DLL search
-        PATH: ${{ github.workspace }};${{ github.workspace }}/temp_dll;${{ github.workspace }}/Assets/uPiper/Plugins/Windows/x86_64;${{ github.workspace }}/Library/ScriptAssemblies;${{ env.PATH }}
       with:
         unityVersion: 6000.0.58f2
         testMode: all
@@ -504,10 +365,7 @@ jobs:
         }
         
         Write-Host "Using Unity at: $unityExe"
-        
-        # Set OpenJTalk DLL path
-        $env:PATH = "$env:GITHUB_WORKSPACE\Assets\uPiper\Plugins\Windows\x86_64;$env:PATH"
-        
+
         # Create test results directory
         New-Item -ItemType Directory -Path "test-results" -Force
         
@@ -725,8 +583,6 @@ jobs:
       run: |
         Write-Host "## Windows Build Summary" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
         Write-Host "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-        Write-Host "✅ OpenJTalk native library built successfully" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
-        Write-Host "✅ DLL verified at: Assets/uPiper/Plugins/Windows/x86_64/openjtalk_wrapper.dll" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
         Write-Host "✅ Unity tests run natively on Windows using Unity CLI" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
         Write-Host "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
         
@@ -763,8 +619,6 @@ jobs:
       run: |
         echo "## macOS Build Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ OpenJTalk native library built successfully" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Library verified at: Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" >> $GITHUB_STEP_SUMMARY
         echo "✅ Unity tests run natively on macOS using Unity CLI" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
@@ -806,40 +660,6 @@ jobs:
     - uses: actions/checkout@v5
       with:
         lfs: true
-        
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
-        
-    - name: Install CMake
-      run: brew install cmake
-        
-    - name: Build OpenJTalk Native Library
-      run: |
-        cd NativePlugins/OpenJTalk
-        chmod +x build_ci.sh
-        ./build_ci.sh
-        
-        # Verify the library exists in Plugins
-        echo "=== Checking for existing library ==="
-        ls -la ../../Assets/uPiper/Plugins/macOS/ || echo "macOS plugin directory not found"
-        
-        # Only copy if not already present
-        if [ ! -f "../../Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" ]; then
-          mkdir -p ../../Assets/uPiper/Plugins/macOS
-          cp build/lib/libopenjtalk_wrapper.dylib ../../Assets/uPiper/Plugins/macOS/
-        fi
-        
-        # Verify installation
-        echo "=== Library verification ==="
-        ls -la ../../Assets/uPiper/Plugins/macOS/
-        
-    - name: Run Native OpenJTalk Tests
-      run: |
-        cd NativePlugins/OpenJTalk/build
-        # Run all native tests
-        ctest --output-on-failure -V
         
     # Unity Hubとエディターのキャッシュ
     - name: Cache Unity
@@ -1001,16 +821,7 @@ jobs:
       run: |
         echo "## macOS Unity Test Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        
-        # Check if library is properly built
-        if [ -f "Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" ]; then
-          echo "✅ OpenJTalk library built successfully" >> $GITHUB_STEP_SUMMARY
-          echo "- Location: Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib" >> $GITHUB_STEP_SUMMARY
-          echo "- Architecture: $(lipo -info Assets/uPiper/Plugins/macOS/libopenjtalk_wrapper.dylib 2>&1)" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
+
         # Parse test results
         for file in test-results/*.xml; do
           if [ -f "$file" ]; then
@@ -1043,43 +854,11 @@ jobs:
       with:
         lfs: true
         
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.9'
-        
-    - name: Install CMake and Dependencies
+    - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake build-essential libxml2-utils bc
-        
-    - name: Build OpenJTalk Native Library
-      run: |
-        cd NativePlugins/OpenJTalk
-        chmod +x build_ci.sh
-        ./build_ci.sh
-        
-        # Create Plugins directory structure
-        mkdir -p ../../Assets/uPiper/Plugins/Linux/x86_64
-        
-        # Copy the built library
-        cp build/lib/libopenjtalk_wrapper.so ../../Assets/uPiper/Plugins/Linux/x86_64/
-        
-        # Install to system paths
-        sudo cp build/lib/libopenjtalk_wrapper.so /usr/local/lib/
-        sudo ldconfig
-        
-        # Verify installation
-        echo "=== Library verification ==="
-        ls -la ../../Assets/uPiper/Plugins/Linux/x86_64/
-        ldd build/bin/test_openjtalk || echo "Test binary not found"
-        
-    - name: Run Native OpenJTalk Tests
-      run: |
-        cd NativePlugins/OpenJTalk/build
-        # Run all native tests
-        ctest --output-on-failure -V
-        
+        sudo apt-get install -y build-essential libxml2-utils bc
+
     - name: Install Unity Hub
       run: |
         sudo sh -c 'echo "deb https://hub.unity3d.com/linux/repos/deb stable main" > /etc/apt/sources.list.d/unityhub.list'

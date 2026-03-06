@@ -63,18 +63,18 @@ python extract_german_from_wiktionary.py
 
 **MeCab + UniDic統合**
 ```csharp
-// uPiperのOpenJTalk経由で既にサポート済み
-// mecab-ipadic辞書を使用 (BSDライセンス)
+// uPiperのdot-net-g2p経由で既にサポート済み
+// MeCab naist-jdic辞書を使用
 public class JapanesePhonemizer : IPhonemizerBackend
 {
-    private OpenJTalkPhonemizer openJTalk;
+    private DotNetG2PPhonemizer _phonemizer;
     
     public async Task<PhonemeResult> PhonemizeAsync(
         string text, string language, 
         PhonemeOptions options, CancellationToken ct)
     {
         // 既存のOpenJTalk実装を使用
-        return await openJTalk.ProcessAsync(text);
+        return await _phonemizer.PhonemizeAsync(text, language);
     }
 }
 ```
@@ -245,7 +245,7 @@ public void RegisterLanguageBackends()
 {
     // 既存
     RegisterBackend(new RuleBasedPhonemizer()); // 英語
-    RegisterBackend(new OpenJTalkPhonemizer()); // 日本語
+    RegisterBackend(new DotNetG2PPhonemizer()); // 日本語（純粋C#）
     
     // 新しい言語
     RegisterBackend(new SpanishPhonemizer());

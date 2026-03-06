@@ -1,4 +1,3 @@
-#if UNITY_EDITOR && UNITY_EDITOR_WIN && !UNITY_WEBGL
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,7 +14,7 @@ namespace uPiper.Tests.Editor
     /// </summary>
     public class WindowsTextAnalysisTest
     {
-        private OpenJTalkPhonemizer _phonemizer;
+        private DotNetG2PPhonemizer _phonemizer;
 
         [SetUp]
         public void Setup()
@@ -34,7 +33,7 @@ namespace uPiper.Tests.Editor
         {
             try
             {
-                _phonemizer = new OpenJTalkPhonemizer();
+                _phonemizer = new DotNetG2PPhonemizer();
 
                 var testCases = new[]
                 {
@@ -123,9 +122,11 @@ namespace uPiper.Tests.Editor
                     if (text.Contains("天気"))
                     {
                         // "t e n k i"または類似のパターンを期待
+                        // ApplyNPhonemeRulesにより "N" は velar consonant "k" の前で "N_ng" に変換される
                         Assert.IsTrue(
                             phonemeString.Contains("t e n k i") ||
-                            phonemeString.Contains("t e N k i"),
+                            phonemeString.Contains("t e N k i") ||
+                            phonemeString.Contains("t e N_ng k i"),
                             $"'天気' not properly phonemized in '{text}'. Got: {phonemeString}"
                         );
                     }
@@ -133,7 +134,7 @@ namespace uPiper.Tests.Editor
             }
             catch (PiperInitializationException)
             {
-                Assert.Inconclusive("Native library not available");
+                Assert.Inconclusive("Phonemizer initialization failed");
             }
         }
 
@@ -142,7 +143,7 @@ namespace uPiper.Tests.Editor
         {
             try
             {
-                _phonemizer = new OpenJTalkPhonemizer();
+                _phonemizer = new DotNetG2PPhonemizer();
 
                 var text = "今日はいい天気ですね";
                 Debug.Log($"\n=== Character-by-character analysis of: {text} ===");
@@ -166,9 +167,8 @@ namespace uPiper.Tests.Editor
             }
             catch (PiperInitializationException)
             {
-                Assert.Inconclusive("Native library not available");
+                Assert.Inconclusive("Phonemizer initialization failed");
             }
         }
     }
 }
-#endif

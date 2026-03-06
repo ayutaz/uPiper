@@ -1,9 +1,8 @@
-name: Performance Regression Test
+name: Performance Regression Test (Legacy - OpenJTalk)
 
 on:
-  pull_request:
-    paths:
-      - 'NativePlugins/OpenJTalk/src/**'
+  # Disabled: OpenJTalk native backend replaced by dot-net-g2p (pure C#)
+  # Kept for reference; remove when no longer needed
   workflow_dispatch:
 
 jobs:

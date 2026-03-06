@@ -164,22 +164,7 @@ namespace uPiper.Editor.BuildSettings
 
             // StreamingAssetsディレクトリの作成
             var streamingAssetsPath = "Assets/StreamingAssets/uPiper";
-            Directory.CreateDirectory(Path.Combine(streamingAssetsPath, "OpenJTalk"));
             Directory.CreateDirectory(Path.Combine(streamingAssetsPath, "Phonemizers"));
-
-            // OpenJTalk辞書のコピー
-            var openJTalkSource = "Assets/uPiper/Samples~/OpenJTalk Dictionary Data/openjtalk_dict.zip";
-            var openJTalkTarget = Path.Combine(streamingAssetsPath, "OpenJTalk", "naist_jdic.zip");
-
-            if (File.Exists(openJTalkSource))
-            {
-                File.Copy(openJTalkSource, openJTalkTarget, true);
-                PiperLogger.LogInfo($"[PiperBuildProcessor] Copied OpenJTalk dictionary to StreamingAssets");
-            }
-            else
-            {
-                PiperLogger.LogWarning($"[PiperBuildProcessor] OpenJTalk dictionary not found at: {openJTalkSource}");
-            }
 
             // CMU辞書のコピー
             var cmuSource = "Assets/uPiper/Samples~/CMU Pronouncing Dictionary/cmudict-0.7b.txt";

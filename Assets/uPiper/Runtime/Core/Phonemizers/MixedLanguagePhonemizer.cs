@@ -40,20 +40,10 @@ namespace uPiper.Core.Phonemizers
         {
             try
             {
-                // Initialize Japanese backend (OpenJTalk)
-                var jaBackend = CreateOpenJTalkBackend();
-                if (jaBackend == null)
-                {
-                    Debug.LogError("Failed to create Japanese backend");
-                    return false;
-                }
-                var jaResult = await jaBackend.InitializeAsync(options, cancellationToken);
-                if (!jaResult)
-                {
-                    Debug.LogError("Failed to initialize Japanese phonemizer");
-                    return false;
-                }
-                backends["ja"] = jaBackend;
+                // Note: Japanese backend (DotNetG2PPhonemizer) is used directly by PiperTTS,
+                // not through the IPhonemizerBackend interface. Mixed language support
+                // currently handles Japanese text via the English fallback path.
+                Debug.Log("MixedLanguagePhonemizer: Japanese backend not available via IPhonemizerBackend interface");
 
                 // Initialize English backend (SimpleLTS as primary, RuleBased as fallback)
                 IPhonemizerBackend enBackend = null;
@@ -328,28 +318,6 @@ namespace uPiper.Core.Phonemizers
                 }
                 backends.Clear();
                 isInitialized = false;
-            }
-        }
-
-        /// <summary>
-        /// Creates an OpenJTalk backend using reflection to avoid compile-time dependency.
-        /// </summary>
-        private IPhonemizerBackend CreateOpenJTalkBackend()
-        {
-            try
-            {
-                var type = System.Type.GetType("uPiper.Core.Phonemizers.Backend.OpenJTalkBackendAdapter, uPiper.Runtime");
-                if (type != null)
-                {
-                    return Activator.CreateInstance(type) as IPhonemizerBackend;
-                }
-                Debug.LogError("OpenJTalkBackendAdapter type not found");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Failed to create OpenJTalkBackendAdapter: {ex.Message}");
-                return null;
             }
         }
 

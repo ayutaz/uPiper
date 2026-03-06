@@ -5,7 +5,6 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using uPiper.Core;
-using uPiper.Core.Platform;
 
 namespace uPiper.Tests.Runtime
 {
@@ -15,7 +14,7 @@ namespace uPiper.Tests.Runtime
     public class AndroidIntegrationTest
     {
         [UnityTest]
-        public IEnumerator AndroidPathResolver_ExtractsDictionary()
+        public IEnumerator DotNetG2P_DictionaryExists()
         {
             // This test only runs on actual Android device
             if (Application.platform != RuntimePlatform.Android)
@@ -26,12 +25,12 @@ namespace uPiper.Tests.Runtime
 
             // Test dictionary extraction
 #if !UNITY_EDITOR
-            string dictPath = AndroidPathResolver.GetOpenJTalkDictionaryPath();
+            string dictPath = Path.Combine(Application.persistentDataPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
             Assert.IsNotNull(dictPath);
             Assert.IsTrue(Directory.Exists(dictPath), $"Dictionary directory should exist at: {dictPath}");
 #else
             // In editor, just check streaming assets
-            var dictPath = Path.Combine(Application.streamingAssetsPath, "uPiper/OpenJTalk/open_jtalk_dic_utf_8-1.11");
+            var dictPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
             Assert.IsTrue(Directory.Exists(dictPath), $"Dictionary should exist in StreamingAssets");
 #endif
 
@@ -111,37 +110,6 @@ namespace uPiper.Tests.Runtime
             Assert.AreEqual(1, audioClip.channels, "Should be mono audio");
 
             yield return null;
-        }
-
-        [Test]
-        public void NativeLibrary_LoadsOnAndroid()
-        {
-            if (Application.platform != RuntimePlatform.Android)
-            {
-                Assert.Ignore("This test only runs on Android devices");
-                return;
-            }
-
-            // Check if native library is accessible
-            var libraryLoaded = false;
-
-            try
-            {
-                // This will be called by OpenJTalkPhonemizer
-                // We're just checking if the library can be found
-                var libPath = Path.Combine(Application.dataPath, "uPiper/Plugins/Android/libs");
-
-                // On Android, libraries are loaded from the APK automatically
-                // We can't directly check file existence, but we can verify through PiperTTS initialization
-                libraryLoaded = true;
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError($"Failed to verify native library: {e}");
-                libraryLoaded = false;
-            }
-
-            Assert.IsTrue(libraryLoaded, "Native library should be accessible on Android");
         }
 
         [Test]

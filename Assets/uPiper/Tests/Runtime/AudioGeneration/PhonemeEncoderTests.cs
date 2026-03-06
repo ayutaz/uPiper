@@ -176,7 +176,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         [Test]
         public void Encode_WithEosMarker_DoesNotAddExtraEos()
         {
-            // Arrange: phonemes ending with "$" (EOS marker from OpenJTalkPhonemizer)
+            // Arrange: phonemes ending with "$" (EOS marker from DotNetG2PPhonemizer)
             var phonemes = new[] { "a", "b", "$" };
 
             // Act
@@ -213,7 +213,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             };
             var encoder = new PhonemeEncoder(configWithQuestion);
 
-            // Arrange: phonemes ending with "?" (question marker from OpenJTalkPhonemizer)
+            // Arrange: phonemes ending with "?" (question marker from DotNetG2PPhonemizer)
             var phonemes = new[] { "a", "b", "?" };
 
             // Act
