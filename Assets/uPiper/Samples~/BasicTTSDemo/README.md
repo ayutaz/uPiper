@@ -15,7 +15,7 @@ This sample demonstrates text-to-speech functionality using uPiper with Japanese
 ## Features
 
 - Multi-language support (Japanese/English)
-- OpenJTalk integration for accurate Japanese phonemization
+- dot-net-g2p integration for accurate Japanese phonemization (pure C#)
 - Preset phrases for quick testing
 - Real-time phoneme display
 - Model selection dropdown
@@ -26,7 +26,7 @@ This sample demonstrates text-to-speech functionality using uPiper with Japanese
 - Unity 6000.0.58f2 or later
 - Unity AI Inference Engine 2.2.x
 - Japanese ONNX model (ja_JP-test-medium.onnx)
-- OpenJTalk native libraries (included)
+- dot-net-g2p dictionary (included)
 
 ## Included Assets
 
@@ -42,7 +42,7 @@ This sample demonstrates text-to-speech functionality using uPiper with Japanese
 ## Architecture
 
 The demo uses the complete TTS pipeline:
-1. Text Input → Phonemization (OpenJTalk/Simple)
+1. Text Input → Phonemization (dot-net-g2p/Flite LTS)
 2. Phoneme Encoding → PUA character mapping
 3. Neural Synthesis → VITS model inference
 4. Audio Output → Unity AudioSource

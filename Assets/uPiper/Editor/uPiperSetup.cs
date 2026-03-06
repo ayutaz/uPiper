@@ -610,7 +610,7 @@ namespace uPiper.Editor
                 Directory.CreateDirectory(extractBasePath);
 
                 // Extract to target path
-                ZipFile.ExtractToDirectory(zipPath, extractPath);
+                SafeExtractToDirectory(zipPath, extractPath);
 
                 Debug.Log($"[uPiper] Development dictionary extracted successfully to: {extractPath}");
 
@@ -671,7 +671,7 @@ namespace uPiper.Editor
                 EditorUtility.DisplayProgressBar("Extracting Dictionary", "Extracting naist_jdic.zip...", 0.5f);
 
                 Directory.CreateDirectory(extractBasePath);
-                ZipFile.ExtractToDirectory(zipPath, extractPath);
+                SafeExtractToDirectory(zipPath, extractPath);
 
                 EditorUtility.ClearProgressBar();
                 AssetDatabase.Refresh();
@@ -691,6 +691,36 @@ namespace uPiper.Editor
                     $"Failed to extract dictionary:\n{ex.Message}",
                     "OK");
                 Debug.LogError($"[uPiper] Failed to extract dictionary: {ex.Message}\n{ex.StackTrace}");
+            }
+        }
+
+        /// <summary>
+        /// Safely extracts a zip file, validating that no entries escape the target directory.
+        /// </summary>
+        private static void SafeExtractToDirectory(string zipPath, string destinationPath)
+        {
+            var fullDestination = Path.GetFullPath(destinationPath);
+            Directory.CreateDirectory(fullDestination);
+
+            using var archive = ZipFile.OpenRead(zipPath);
+            foreach (var entry in archive.Entries)
+            {
+                var entryDestination = Path.GetFullPath(Path.Combine(fullDestination, entry.FullName));
+                if (!entryDestination.StartsWith(fullDestination + Path.DirectorySeparatorChar)
+                    && entryDestination != fullDestination)
+                {
+                    throw new IOException($"Zip entry '{entry.FullName}' would extract outside target directory.");
+                }
+
+                if (string.IsNullOrEmpty(entry.Name))
+                {
+                    Directory.CreateDirectory(entryDestination);
+                }
+                else
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(entryDestination));
+                    entry.ExtractToFile(entryDestination, true);
+                }
             }
         }
 #endif

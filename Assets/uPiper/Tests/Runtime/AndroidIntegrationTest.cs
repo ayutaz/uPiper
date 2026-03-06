@@ -25,12 +25,12 @@ namespace uPiper.Tests.Runtime
 
             // Test dictionary extraction
 #if !UNITY_EDITOR
-            string dictPath = Path.Combine(Application.persistentDataPath, "uPiper", "OpenJTalk", "naist_jdic", "naist_jdic");
+            string dictPath = Path.Combine(Application.persistentDataPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
             Assert.IsNotNull(dictPath);
             Assert.IsTrue(Directory.Exists(dictPath), $"Dictionary directory should exist at: {dictPath}");
 #else
             // In editor, just check streaming assets
-            var dictPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "naist_jdic");
+            var dictPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11");
             Assert.IsTrue(Directory.Exists(dictPath), $"Dictionary should exist in StreamingAssets");
 #endif
 
