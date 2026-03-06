@@ -6,31 +6,7 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 
 ## ワークフロー一覧
 
-### 1. build-openjtalk-native.yml
-**目的**: OpenJTalkネイティブライブラリのマルチプラットフォームビルドと検証
-
-**特徴**:
-- Windows: Dockerを使用したクロスコンパイル（Ubuntu上でMinGW-w64使用）
-- Linux: ネイティブビルド（x86_64）
-- macOS: Universal Binary（Intel + Apple Silicon）
-- Android: NDKクロスコンパイル（arm64-v8a, armeabi-v7a, x86, x86_64）
-- ビルド成果物の自動検証
-- リリース時の自動パッケージング
-
-**トリガー**:
-- main/developブランチへのプッシュ
-- Pull Request
-- 手動実行（workflow_dispatch）
-
-### 2. native-tests.yml
-**目的**: OpenJTalkネイティブライブラリのテスト実行と互換性マトリクス生成
-
-**特徴**:
-- 全プラットフォームでのCTest実行
-- パフォーマンスレポート生成
-- 互換性マトリクスの自動生成
-
-### 3. unity-build.yml
+### 1. unity-build.yml
 **目的**: Unityプロジェクトのマルチプラットフォームビルド
 
 **特徴**:
@@ -39,7 +15,7 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 - Mono2x/IL2CPPバックエンド対応
 - 自動リリース作成（タグプッシュ時）
 
-### 4. unity-build-matrix.yml (PR Quality Check)
+### 2. unity-build-matrix.yml (PR Quality Check)
 **目的**: PR時の包括的なビルド検証
 
 **特徴**:
@@ -49,7 +25,7 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 - PRへの自動コメントでビルド結果を報告
 - 並列実行で高速化
 
-### 5. unity-tests.yml
+### 3. unity-tests.yml
 **目的**: Unity Test Runnerの実行
 
 **特徴**:
@@ -57,7 +33,7 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 - Windows: 現在無効化（Docker制限のため）
 - PlayModeとEditModeテスト
 
-### 6. unity-tests-windows-cli.yml
+### 4. unity-tests-windows-cli.yml
 **目的**: Windows環境でのUnity Test Runner
 
 **特徴**:
@@ -65,7 +41,7 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 - Unity Hub/Editor自動インストール
 - Windows専用の代替実装
 
-### 7. locale-tests.yml
+### 5. locale-tests.yml
 **目的**: 日本語ロケール環境でのテスト
 
 **特徴**:
@@ -73,59 +49,28 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 - 日本語音素化テスト
 - Windowsロケール設定
 
-### 8. dotnet-format.yml
+### 6. dotnet-format.yml
 **目的**: C#コードフォーマットチェック
 
 **特徴**:
 - dotnet formatによる自動チェック
 - コードスタイル統一
 
-### 9. performance-regression.yml
+### 7. performance-regression.yml
 **目的**: パフォーマンスベンチマーク
 
 **特徴**:
 - Unity Performance Testing拡張使用
+- dot-net-g2pの処理時間測定
 - 回帰検出とレポート生成
 
-### 10. unity-il2cpp-build.yml
+### 8. unity-il2cpp-build.yml
 **目的**: IL2CPP専用ビルド
 
 **特徴**:
 - Windows/macOSネイティブランナー使用
 - Visual Studio/Xcode統合
 - 完全なIL2CPPサポート
-
-### 5. unity-tests.yml
-**目的**: UnityのEdit Mode/Play Modeテスト実行
-
-**特徴**:
-- コードカバレッジ測定（Codecov連携）
-- Windows/Linux/macOS環境でのテスト
-- テスト結果のアップロード
-
-### 6. locale-tests.yml
-**目的**: 異なるロケール環境でのテスト（特に日本語環境）
-
-**特徴**:
-- 日本語Windows環境でのテスト
-- CultureInfo関連の問題検出
-- 数値フォーマット互換性確認
-
-### 7. performance-regression.yml
-**目的**: パフォーマンス回帰テスト
-
-**特徴**:
-- OpenJTalkの処理時間測定
-- 100ms以下の基準確認
-- ベンチマーク結果の記録
-
-### 8. dotnet-format.yml
-**目的**: C#コードフォーマットチェック
-
-**特徴**:
-- 段階的な有効化（現在: whitespace_only）
-- PR時は変更ファイルのみチェック
-- .editorconfig準拠
 
 ## ブランチ保護ルールの設定
 
@@ -222,10 +167,6 @@ developブランチにも同様のルールを設定：
 
 ## トラブルシューティング
 
-### OpenJTalkビルドエラー
-- Dockerイメージのビルドログを確認
-- クロスコンパイル環境の依存関係を確認
-
 ### Unityビルドエラー
 
 1. **ライセンスエラー**
@@ -246,10 +187,6 @@ developブランチにも同様のルールを設定：
 ### テスト失敗
 - ロケール依存のテストは環境設定を確認
 - タイムアウトの場合は処理時間を確認
-
-### Android固有の問題
-- NDKバージョンの互換性を確認
-- ターゲットAPIレベルを確認
 
 ## 関連ドキュメント
 
