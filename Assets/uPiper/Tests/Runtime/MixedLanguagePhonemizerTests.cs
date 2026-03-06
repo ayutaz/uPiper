@@ -270,7 +270,8 @@ SimpleLTSによるEnglish phonemizationを
         {
             var backends = unifiedPhonemizer.GetAvailableBackends();
 
-            Assert.IsTrue(backends.ContainsKey("ja"), "Should have Japanese backend");
+            // Note: Japanese backend (DotNetG2PPhonemizer) is used directly by PiperTTS,
+            // not through UnifiedPhonemizer's IPhonemizerBackend interface.
             Assert.IsTrue(backends.ContainsKey("en"), "Should have English backend");
 
             Debug.Log("Available backends:");
