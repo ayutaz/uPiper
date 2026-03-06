@@ -87,9 +87,9 @@ namespace uPiper.Tests.Editor
             }
             catch (PiperInitializationException e)
             {
-                Debug.LogWarning($"OpenJTalk initialization failed: {e.Message}");
-                Debug.LogWarning("This is expected if native library is not built.");
-                Assert.Inconclusive("Native library not available");
+                Debug.LogWarning($"Phonemizer initialization failed: {e.Message}");
+                Debug.LogWarning("This is expected if required dictionary files are not available.");
+                Assert.Inconclusive("Phonemizer initialization failed");
             }
         }
 
@@ -135,7 +135,7 @@ namespace uPiper.Tests.Editor
             }
             catch (PiperInitializationException)
             {
-                Assert.Inconclusive("Native library not available");
+                Assert.Inconclusive("Phonemizer initialization failed");
             }
         }
     }

@@ -19,7 +19,6 @@ namespace uPiper.Tests.Runtime.AudioGeneration
     /// Prosody対応モデルでの推論統合テスト
     /// </summary>
     [TestFixture]
-    [Category("RequiresNativeLibrary")]
     [Category("RequiresProsodyModel")]
     public class ProsodyInferenceIntegrationTests
     {

@@ -134,7 +134,7 @@ namespace uPiper.Tests.Editor
             }
             catch (PiperInitializationException)
             {
-                Assert.Inconclusive("Native library not available");
+                Assert.Inconclusive("Phonemizer initialization failed");
             }
         }
 
@@ -167,7 +167,7 @@ namespace uPiper.Tests.Editor
             }
             catch (PiperInitializationException)
             {
-                Assert.Inconclusive("Native library not available");
+                Assert.Inconclusive("Phonemizer initialization failed");
             }
         }
     }
