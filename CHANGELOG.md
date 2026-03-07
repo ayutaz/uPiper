@@ -29,11 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ✨ Added
 
-- **dot-net-g2p統合**: 純粋C#による日本語G2P（MeCab辞書ベース）
+- **dot-net-g2p統合**: 純粋C#による日本語G2P（MeCab辞書ベース）でネイティブOpenJTalkを置換
 - **英語G2P**: Flite LTS純粋C#実装による英語音素化
-- **Prosody（韻律）サポート**: A1/A2/A3パラメータによる自然なイントネーション
-- **カスタム辞書機能**: 技術用語・固有名詞の読み変換（JSON形式）
-- **IPA/PUAデュアルマッピング**: モデル種別に応じた音素エンコーディング自動判定
 - **開発環境向け辞書自動展開機能**
 
 ### 🐛 Fixed
