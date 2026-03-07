@@ -5,9 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026/01/08
+## [1.2.0] - 2026/03/07
 
 ### ⚠️ Breaking Changes
+
+#### ネイティブOpenJTalk完全削除 → dot-net-g2p（純C#）移行
+
+日本語G2Pバックエンドを**ネイティブOpenJTalk**から**dot-net-g2p**（純粋C#実装、MeCab辞書）に完全移行しました。
+
+- ネイティブプラグイン（`.dll` / `.so` / `.dylib` / `.a`）が不要に
+- プラットフォーム固有のビルド手順・P/Invoke定義を完全削除
+- IL2CPP互換レイヤー不要
 
 #### sync API削除（デッドロックリスク解消）
 
@@ -19,11 +27,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | `IPiperTTS.GenerateAudio(string, PiperVoiceConfig)` | `GenerateAudioAsync(string, PiperVoiceConfig)` |
 | `IPhonemizer.Phonemize(string, string)` | `PhonemizeAsync(string, string)` |
 
-**理由**: 同期APIは内部で `Task.Wait()` や `Task.Run().Result` を使用しており、Unityのメインスレッドコンテキストでデッドロックを引き起こす可能性がありました。
+### ✨ Added
+
+- **dot-net-g2p統合**: 純粋C#による日本語G2P（MeCab辞書ベース）でネイティブOpenJTalkを置換
+- **英語G2P**: Flite LTS純粋C#実装による英語音素化
+- **開発環境向け辞書自動展開機能**
+
+### 🐛 Fixed
+
+- prosody_featuresテンソルの型をFloatからIntに修正
 
 ### 🔧 Changed
 
-- `OpenJTalkPhonemizerDemo`: `PhonemizeTextSync` を `PhonemizeTextWithTimingAsync` にリネーム（async命名規則に準拠）
+- ランタイムパフォーマンスの複数最適化
+- Unity 6000.0.58f2へのアップグレード
+
+### 🗑️ Removed
+
+- ネイティブOpenJTalkライブラリ（全プラットフォーム）
+- IL2CPP互換レイヤー
+- 未使用のFliteネイティブバックエンド
+- 同期API（デッドロックリスク）
 
 ## [1.1.0] - 2026/01/08
 
