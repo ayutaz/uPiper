@@ -66,9 +66,6 @@ namespace uPiper.Core.Phonemizers
             {
                 var tasks = new List<Task<(string language, IPhonemizerBackend backend, bool success)>>
                 {
-                    // Initialize Japanese backends
-                    InitializeBackendAsync("ja", () => CreateOpenJTalkBackend(), options, cancellationToken),
-
                     // Initialize English backends
                     InitializeBackendAsync("en", () => CreateSimpleLTSBackend(), options, cancellationToken),
                     InitializeBackendAsync("en", () => new Backend.RuleBased.RuleBasedPhonemizer(), options, cancellationToken)
@@ -317,7 +314,7 @@ namespace uPiper.Core.Phonemizers
             // Define backend priorities
             return backend.Name switch
             {
-                "OpenJTalk" => 200,      // Highest for Japanese
+                "DotNetG2P" => 200,      // Highest for Japanese
                 "Flite" => 180,          // High for English (if available)
                 "SimpleLTS" => 150,      // Good for English
                 "RuleBased" => 100,      // Basic fallback
@@ -461,33 +458,6 @@ namespace uPiper.Core.Phonemizers
 
                 mixedLanguagePhonemizer?.Dispose();
                 isInitialized = false;
-            }
-        }
-
-        /// <summary>
-        /// Creates an OpenJTalk backend using reflection to avoid compile-time dependency.
-        ///
-        /// Note: Reflection is used here to maintain loose coupling between core components
-        /// and optional backends. This allows the system to work without all backends present.
-        /// Type.GetType results are cached to avoid repeated reflection overhead.
-        /// </summary>
-        private IPhonemizerBackend CreateOpenJTalkBackend()
-        {
-            try
-            {
-                const string typeName = "uPiper.Core.Phonemizers.Backend.OpenJTalkBackendAdapter, uPiper.Runtime";
-                var type = GetCachedType(typeName);
-                if (type != null)
-                {
-                    return Activator.CreateInstance(type) as IPhonemizerBackend;
-                }
-                Debug.LogError("OpenJTalkBackendAdapter type not found");
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Failed to create OpenJTalkBackendAdapter: {ex.Message}");
-                return null;
             }
         }
 

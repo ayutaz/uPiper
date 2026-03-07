@@ -6,7 +6,9 @@
         "UnityEditor.TestRunner",
         "Unity.InferenceEngine",
         "uPiper.Runtime",
-        "uPiper.Editor"
+        "uPiper.Editor",
+        "DotNetG2P",
+        "DotNetG2P.MeCab"
     ],
     "includePlatforms": [
         "Editor"

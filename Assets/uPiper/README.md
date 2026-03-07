@@ -4,7 +4,7 @@
 
 ## 特徴
 
-- 🎌 **日本語対応**: OpenJTalk による高精度な日本語音素化
+- 🎌 **日本語対応**: dot-net-g2p による高精度な日本語音素化（純粋C#実装）
 - 🚀 **高速処理**: Unity AI Interface による最適化された推論
 - 🎮 **マルチプラットフォーム**: Windows, Linux, macOS に対応
 - 🔧 **簡単な統合**: シンプルな API とエディタ拡張
@@ -97,13 +97,13 @@ public class TTSExample : MonoBehaviour
 
 ## Prosody API（韻律情報取得）
 
-OpenJTalk の full-context label から韻律情報（A1/A2/A3値）を取得できます。
+dot-net-g2p（MeCab辞書）から韻律情報（A1/A2/A3値）を取得できます。
 
 ```csharp
 using uPiper.Core.Phonemizers.Implementations;
 
-// OpenJTalkPhonemizer を直接使用
-var phonemizer = new OpenJTalkPhonemizer();
+// DotNetG2PPhonemizer を直接使用
+var phonemizer = new DotNetG2PPhonemizer();
 
 // 韻律情報付きで音素化
 var result = phonemizer.PhonemizeWithProsody("今日は良い天気です");
@@ -143,7 +143,7 @@ Package Managerからサンプルをインポートできます：
 ### Basic TTS Demo
 - 日本語・英語テキストの音声合成デモ
 - シンプルな UI で TTS を体験
-- OpenJTalk による高精度な日本語処理
+- dot-net-g2p による高精度な日本語処理
 - リアルタイム音声生成
 
 ## アーキテクチャ
@@ -155,10 +155,8 @@ uPiper/
 │   ├── Phonemizers/ # 音素化システム
 │   ├── Synthesis/   # 音声合成エンジン
 │   ├── Models/      # モデル管理
-│   ├── Native/      # ネイティブバインディング
 │   └── Utils/       # ユーティリティ
 ├── Editor/          # エディタ拡張
-├── Plugins/         # プラットフォーム別ネイティブライブラリ
 ├── Models/          # TTS モデルファイル
 └── Samples~/        # サンプルプロジェクト
 ```

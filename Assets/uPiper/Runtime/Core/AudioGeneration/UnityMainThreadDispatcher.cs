@@ -16,20 +16,15 @@ namespace uPiper.Core.AudioGeneration
         private static bool _initialized;
         private static int _mainThreadId;
 
-        static UnityMainThreadDispatcher()
-        {
-            // Capture main thread ID at static constructor time
-            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
-        }
-
         /// <summary>
         /// Check if current thread is the main thread
         /// </summary>
-        private static bool IsMainThread => Thread.CurrentThread.ManagedThreadId == _mainThreadId;
+        private static bool IsMainThread => _mainThreadId != 0 && Thread.CurrentThread.ManagedThreadId == _mainThreadId;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
             if (_initialized) return;
 
             var gameObject = new GameObject("UnityMainThreadDispatcher");

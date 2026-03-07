@@ -21,11 +21,9 @@ namespace uPiper.Editor.Build
         private const string TEMP_MARKER_FILE = "Assets/StreamingAssets/.upiper_temp";
 
         // Source folders in Samples~
-        private const string OPENJTALK_SOURCE = "OpenJTalk Dictionary Data";
         private const string CMU_SOURCE = "CMU Pronouncing Dictionary";
 
         // Target folders in StreamingAssets
-        private const string OPENJTALK_TARGET = "OpenJTalk";
         private const string PHONEMIZERS_TARGET = "Phonemizers";
 
         public int callbackOrder => 0;
@@ -38,9 +36,6 @@ namespace uPiper.Editor.Build
             {
                 // Create StreamingAssets directory structure
                 CreateStreamingAssetsStructure();
-
-                // Copy OpenJTalk dictionary
-                CopyOpenJTalkDictionary();
 
                 // Copy CMU dictionary
                 CopyCMUDictionary();
@@ -87,24 +82,9 @@ namespace uPiper.Editor.Build
         private void CreateStreamingAssetsStructure()
         {
             // Create main directories
-            Directory.CreateDirectory(Path.Combine(STREAMING_ASSETS_PATH, OPENJTALK_TARGET));
             Directory.CreateDirectory(Path.Combine(STREAMING_ASSETS_PATH, PHONEMIZERS_TARGET));
 
             Debug.Log($"[DevelopmentBuildProcessor] Created directory structure at: {STREAMING_ASSETS_PATH}");
-        }
-
-        private void CopyOpenJTalkDictionary()
-        {
-            var sourcePath = Path.Combine(SAMPLES_PATH, OPENJTALK_SOURCE, "naist_jdic");
-            var targetPath = Path.Combine(STREAMING_ASSETS_PATH, OPENJTALK_TARGET, "naist_jdic");
-
-            if (!Directory.Exists(sourcePath))
-            {
-                throw new DirectoryNotFoundException($"OpenJTalk dictionary not found at: {sourcePath}");
-            }
-
-            CopyDirectory(sourcePath, targetPath);
-            Debug.Log($"[DevelopmentBuildProcessor] Copied OpenJTalk dictionary from {sourcePath} to {targetPath}");
         }
 
         private void CopyCMUDictionary()
@@ -153,31 +133,6 @@ namespace uPiper.Editor.Build
             else
             {
                 throw new IOException($"Failed to copy CMU dictionary to {targetFile}");
-            }
-        }
-
-        private void CopyDirectory(string sourceDir, string targetDir)
-        {
-            Directory.CreateDirectory(targetDir);
-
-            // Copy all files
-            foreach (var file in Directory.GetFiles(sourceDir))
-            {
-                // Skip .meta files
-                if (file.EndsWith(".meta"))
-                    continue;
-
-                var fileName = Path.GetFileName(file);
-                var targetFile = Path.Combine(targetDir, fileName);
-                File.Copy(file, targetFile, true);
-            }
-
-            // Copy all subdirectories
-            foreach (var directory in Directory.GetDirectories(sourceDir))
-            {
-                var dirName = Path.GetFileName(directory);
-                var targetSubDir = Path.Combine(targetDir, dirName);
-                CopyDirectory(directory, targetSubDir);
             }
         }
 

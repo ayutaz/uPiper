@@ -212,7 +212,7 @@ namespace uPiper.Core.Phonemizers
             if (text.Length > HashThreshold)
             {
                 var hash = ComputeFnv1aHash(text);
-                return $"{language}:FNV:{hash:X16}";
+                return $"{language}:FNV:{text.Length}:{hash:X16}";
             }
             return $"{language}:{text}";
         }

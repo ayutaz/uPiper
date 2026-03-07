@@ -52,7 +52,17 @@ jobs:
     - uses: actions/checkout@v5
       with:
         lfs: true
-        
+
+    - uses: actions/checkout@v5
+      with:
+        repository: ayutaz/dot-net-g2p
+        ref: main
+        path: dot-net-g2p
+
+    - name: Fix local package paths for CI
+      shell: bash
+      run: sed -i 's|file:../../dot-net-g2p/src|file:../dot-net-g2p/src|g' Packages/manifest.json
+
     - name: Cache Library
       uses: actions/cache@v5
       with:
@@ -73,39 +83,6 @@ jobs:
         large-packages: true
         docker-images: true
         swap-storage: true
-
-    # Check and setup Android native libraries
-    - name: Check and Setup Android Native Libraries
-      if: matrix.targetPlatform == 'Android'
-      run: |
-        echo "=== Checking Android native libraries ==="
-        
-        # Create directory structure
-        mkdir -p Assets/uPiper/Plugins/Android/libs/arm64-v8a
-        mkdir -p Assets/uPiper/Plugins/Android/libs/armeabi-v7a
-        mkdir -p Assets/uPiper/Plugins/Android/libs/x86
-        mkdir -p Assets/uPiper/Plugins/Android/libs/x86_64
-        
-        # Check what libraries exist
-        LIBS_FOUND=0
-        for abi in arm64-v8a armeabi-v7a x86 x86_64; do
-          if [ -f "Assets/uPiper/Plugins/Android/libs/$abi/libopenjtalk_wrapper.so" ]; then
-            echo "✓ Found library for $abi"
-            ls -la "Assets/uPiper/Plugins/Android/libs/$abi/libopenjtalk_wrapper.so"
-            LIBS_FOUND=$((LIBS_FOUND + 1))
-          else
-            echo "⚠ Library not found for $abi"
-            # Create placeholder to prevent build errors
-            echo "// Placeholder for $abi" > "Assets/uPiper/Plugins/Android/libs/$abi/.gitkeep"
-          fi
-        done
-        
-        if [ "$LIBS_FOUND" -eq 0 ]; then
-          echo "WARNING: No Android native libraries found in the repository"
-          echo "The build may have limited functionality"
-        else
-          echo "Found $LIBS_FOUND out of 4 Android native libraries"
-        fi
 
     # Configure Unity License timeout for service delays
     - name: Configure Unity License Timeout (Extended for Service Delays)
@@ -144,6 +121,7 @@ jobs:
         androidKeyaliasName: ''
         androidKeyaliasPass: ''
         buildMethod: UnityBuilderAction.BuildScript.Build
+        allowDirtyBuild: true
         customParameters: -scriptingBackend ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && 'IL2CPP' || 'Mono2x' }}
 
     # Configure Unity License timeout for service delays
@@ -178,11 +156,12 @@ jobs:
         buildName: uPiper${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && '-IL2CPP' || '' }}
         buildsPath: build
         buildMethod: UnityBuilderAction.BuildScript.Build
+        allowDirtyBuild: true
         customParameters: -scriptingBackend ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && 'IL2CPP' || 'Mono2x' }}
-        
+
     # ビルド成果物をアップロード
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: Build-${{ matrix.targetPlatform }}
         path: build/${{ matrix.targetPlatform }}
@@ -283,7 +262,7 @@ jobs:
         fi
         
     - name: Download build artifacts
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         path: ./artifacts
         

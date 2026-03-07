@@ -40,17 +40,6 @@ namespace uPiper.Tests.Runtime.Core.Platform
         }
 
         [Test]
-        public void NativeLibraryName_ForIOS()
-        {
-            // iOS uses "lib" prefix for libraries
-            if (PlatformHelper.IsIOS)
-            {
-                var libName = PlatformHelper.GetNativeLibraryName("openjtalk_wrapper");
-                Assert.IsTrue(libName.StartsWith("lib") || libName == "openjtalk_wrapper");
-            }
-        }
-
-        [Test]
         public void Architecture_ForIOS()
         {
             // iOS should report arm64
@@ -130,26 +119,6 @@ namespace uPiper.Tests.Runtime.Core.Platform
             }
             
             Assert.IsTrue(validPath, "Should have at least one valid dictionary path format");
-        }
-
-        [Test]
-        public void LibraryLoading_StaticLinking()
-        {
-#if UNITY_IOS && !UNITY_EDITOR
-            // On iOS, libraries are statically linked
-            // Test that we can reference the OpenJTalk functions
-            try
-            {
-                // This would normally be done through P/Invoke
-                // Here we just verify that the library name is correct
-                var libraryName = "__Internal";
-                Assert.AreEqual("__Internal", libraryName);
-            }
-            catch (System.Exception ex)
-            {
-                Assert.Fail($"Static library reference failed: {ex.Message}");
-            }
-#endif
         }
 
         [Test]

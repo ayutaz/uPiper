@@ -8,17 +8,17 @@ using uPiper.Core.Phonemizers.Implementations;
 namespace uPiper.Core.Phonemizers
 {
     /// <summary>
-    /// Adapter class to make OpenJTalkPhonemizer implement ITextPhonemizer interface.
+    /// Adapter class to make DotNetG2PPhonemizer implement ITextPhonemizer interface.
     /// This provides a bridge between the existing BasePhonemizer hierarchy and the simplified interface.
     /// </summary>
     public class TextPhonemizerAdapter : ITextPhonemizer
     {
-        private readonly OpenJTalkPhonemizer _phonemizer;
+        private readonly DotNetG2PPhonemizer _phonemizer;
 
         public string Name => _phonemizer.Name;
         public string[] SupportedLanguages => _phonemizer.SupportedLanguages;
 
-        public TextPhonemizerAdapter(OpenJTalkPhonemizer phonemizer)
+        public TextPhonemizerAdapter(DotNetG2PPhonemizer phonemizer)
         {
             _phonemizer = phonemizer;
         }

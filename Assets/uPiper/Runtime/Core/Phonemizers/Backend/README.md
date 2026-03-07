@@ -5,12 +5,16 @@ This directory contains phonemizer backend implementations for uPiper.
 ## Important Files
 
 ### Core Backends
-- **OpenJTalkBackendAdapter.cs** - Adapter for Japanese phonemization using OpenJTalk
-- **SimpleLTSPhonemizer.cs** - Simple Letter-to-Sound phonemizer for English
+- **FliteLTSPhonemizerBackend.cs** - Letter-to-Sound phonemizer for English using Flite (pure C#)
+- **RuleBased/** - Rule-based phonemizer components
 
 ### Supporting Components
 - **IPhonemizerBackend.cs** - Interface for all phonemizer backends
 - **PhonemizerBackendBase.cs** - Base class for backend implementations
+
+## Japanese Phonemization
+
+Japanese phonemization is handled by `DotNetG2PPhonemizer` (located in `../Implementations/`), which uses dot-net-g2p (pure C# MeCab implementation). No native libraries are required.
 
 ## Unity Compilation Issues
 
@@ -28,14 +32,6 @@ If Unity doesn't recognize the backend classes:
 3. **Check Assembly Definition**
    - Ensure `uPiper.Runtime.asmdef` includes this directory
    - No circular dependencies exist
-
-## Backend Registration
-
-Backends are loaded dynamically using reflection to avoid compilation order issues:
-```csharp
-var type = System.Type.GetType("uPiper.Core.Phonemizers.Backend.OpenJTalkBackendAdapter, uPiper.Runtime");
-var backend = Activator.CreateInstance(type) as IPhonemizerBackend;
-```
 
 ## License
 All backends use commercial-friendly licenses (MIT/BSD).
