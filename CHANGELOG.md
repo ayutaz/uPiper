@@ -39,15 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🐛 Fixed
 
 - prosody_featuresテンソルの型をFloatからIntに修正
-- strncmpバグ修正（'s'音素スキップ問題）
-- 大文字音素保持（N, U, I, E, O, A）
-- sh/ch/N変異音素の正しいマッピング
 
 ### 🔧 Changed
 
 - ランタイムパフォーマンスの複数最適化
-- コード重複解消とP/Invoke統合
-- パス解決ロジックをNativeLibraryResolverに抽出
 - Unity 6000.0.58f2へのアップグレード
 
 ### 🗑️ Removed
