@@ -1,6 +1,6 @@
 {
   "name": "com.ayutaz.upiper",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "displayName": "uPiper",
   "description": "Text-to-Speech plugin for Unity using Piper-Plus TTS engine. Supports Japanese and English with high-quality neural voice synthesis.",
   "unity": "6000.0",
@@ -20,7 +20,7 @@
     "speech-synthesis",
     "japanese-tts",
     "english-tts",
-    "openjtalk"
+    "dot-net-g2p"
   ],
   "author": {
     "name": "ayutaz",

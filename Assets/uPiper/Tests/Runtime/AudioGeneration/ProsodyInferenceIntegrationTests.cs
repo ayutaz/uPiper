@@ -19,13 +19,12 @@ namespace uPiper.Tests.Runtime.AudioGeneration
     /// Prosody対応モデルでの推論統合テスト
     /// </summary>
     [TestFixture]
-    [Category("RequiresNativeLibrary")]
     [Category("RequiresProsodyModel")]
     public class ProsodyInferenceIntegrationTests
     {
         private const string MODEL_NAME = "tsukuyomi-chan";
         private InferenceAudioGenerator _generator;
-        private OpenJTalkPhonemizer _phonemizer;
+        private DotNetG2PPhonemizer _phonemizer;
         private PhonemeEncoder _encoder;
         private ModelAsset _prosodyModelAsset;
         private PiperVoiceConfig _voiceConfig;
@@ -86,11 +85,11 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // Initialize OpenJTalk phonemizer
             try
             {
-                _phonemizer = new OpenJTalkPhonemizer();
+                _phonemizer = new DotNetG2PPhonemizer();
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"Failed to create OpenJTalkPhonemizer: {ex.Message}");
+                Debug.LogWarning($"Failed to create DotNetG2PPhonemizer: {ex.Message}");
             }
         }
 

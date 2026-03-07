@@ -99,7 +99,17 @@ jobs:
     - uses: actions/checkout@v5
       with:
         lfs: true
-        
+
+    - uses: actions/checkout@v5
+      with:
+        repository: ayutaz/dot-net-g2p
+        ref: main
+        path: dot-net-g2p
+
+    - name: Fix local package paths for CI
+      shell: bash
+      run: sed -i 's|file:../../dot-net-g2p/src|file:../dot-net-g2p/src|g' Packages/manifest.json
+
     - name: Free Disk Space
       uses: jlumbroso/free-disk-space@main
       with:
@@ -147,8 +157,9 @@ jobs:
         unityVersion: 6000.0.58f2
         targetPlatform: ${{ matrix.platform }}
         buildMethod: UnityBuilderAction.BuildScript.Build
+        allowDirtyBuild: true
         customParameters: -scriptingBackend ${{ matrix.backend }}
-        
+
     - name: Verify Build Output
       run: |
         echo "✅ ${{ matrix.backend }} build for ${{ matrix.platform }} completed successfully"
@@ -157,7 +168,7 @@ jobs:
     # Upload only critical builds to save space
     - name: Upload Build Artifact
       if: matrix.priority == 'critical'
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: Build-${{ matrix.backend }}-${{ matrix.platform }}-PR${{ github.event.pull_request.number }}
         path: build/${{ matrix.platform }}

@@ -3,7 +3,9 @@
     "rootNamespace": "uPiper",
     "references": [
         "Unity.InferenceEngine",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "DotNetG2P",
+        "DotNetG2P.MeCab"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

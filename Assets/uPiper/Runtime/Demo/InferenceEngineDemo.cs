@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -81,7 +80,7 @@ namespace uPiper.Demo
     }
 
     /// <summary>
-    /// Phase 1.10 - Unity.InferenceEngineを使用したPiper TTSデモ（OpenJTalk統合版）
+    /// Unity.InferenceEngineを使用したPiper TTSデモ（DotNetG2P統合版）
     ///
     /// ARCHITECTURE OVERVIEW
     /// ====================
@@ -90,8 +89,8 @@ namespace uPiper.Demo
     /// 1. Text Input (Japanese/English)
     ///    ↓
     /// 2. Phonemization
-    ///    - Japanese: OpenJTalk (MeCab + dictionary) → phonemes
-    ///    - English: Simple word splitting (eSpeak-NG in future phases)
+    ///    - Japanese: DotNetG2P (pure C# MeCab + dictionary) → phonemes
+    ///    - English: Flite LTS → phonemes
     ///    ↓
     /// 3. Phoneme Encoding
     ///    - Multi-char phonemes → PUA characters (e.g., "ky" → "\ue006")
@@ -106,13 +105,9 @@ namespace uPiper.Demo
     ///
     /// IMPORTANT: Phoneme Timing Design
     /// ================================
-    /// OpenJTalk provides fixed 50ms durations for all phonemes.
-    /// This is intentional because:
-    /// - VITS models have built-in Duration Predictor
-    /// - The model re-estimates timing during inference
-    /// - Precise input timing is not required for neural TTS
-    ///
-    /// For details, see comments in openjtalk_full_wrapper.c
+    /// DotNetG2P provides phoneme durations via MeCab tokenization.
+    /// VITS models have built-in Duration Predictor that re-estimates
+    /// timing during inference, so precise input timing is not required.
     /// </summary>
     public class InferenceEngineDemo : MonoBehaviour
     {
@@ -144,8 +139,7 @@ namespace uPiper.Demo
         private InferenceBackend _selectedBackend = InferenceBackend.CPU;
         private GPUInferenceSettings _gpuSettings;
 #if !UNITY_WEBGL
-        private ITextPhonemizer _phonemizer;
-        private OpenJTalkPhonemizer _openJTalkPhonemizer;
+        private DotNetG2PPhonemizer _japanesePhonemizer;
         private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
 #endif
 
@@ -210,22 +204,9 @@ namespace uPiper.Demo
             // Set up audio configuration change handler
             AudioSettings.OnAudioConfigurationChanged += OnAudioConfigurationChanged;
 
-            // Debug OpenJTalk library loading on non-WebGL platforms in builds
 #if !UNITY_WEBGL && !UNITY_EDITOR
-            PiperLogger.LogInfo("[InferenceEngineDemo] Running OpenJTalk debug helper...");
-            OpenJTalkDebugHelper.DebugLibraryLoading();
-
-            // Additional Android debugging
-#if UNITY_ANDROID
-            DebugAndroidSetup();
-            // Preload dictionary asynchronously for better performance
-            uPiper.Core.Platform.OptimizedAndroidPathResolver.PreloadDictionaryAsync();
-#endif
-
             // Additional iOS debugging
 #if UNITY_IOS
-            DebugIOSSetup();
-
             // Initialize iOS AudioSession for playback
             // This is required for audio to play on iOS, especially when silent switch is on
             uPiper.Core.Platform.IOSAudioSessionHelper.Initialize();
@@ -233,24 +214,18 @@ namespace uPiper.Demo
 #endif
 
 #if !UNITY_WEBGL
-            // Initialize OpenJTalk phonemizer for Japanese
+            // Initialize DotNetG2P phonemizer for Japanese (pure C#, no native plugin dependency)
             try
             {
-                _openJTalkPhonemizer = new OpenJTalkPhonemizer();
-                _phonemizer = new TextPhonemizerAdapter(_openJTalkPhonemizer);
-                PiperLogger.LogInfo("[InferenceEngineDemo] OpenJTalk phonemizer initialized successfully");
+                _japanesePhonemizer = new DotNetG2PPhonemizer();
+                PiperLogger.LogInfo("[InferenceEngineDemo] DotNetG2P phonemizer initialized successfully");
             }
             catch (Exception ex)
             {
-                PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize OpenJTalk: {ex.Message}");
+                PiperLogger.LogError($"[InferenceEngineDemo] Failed to initialize DotNetG2P: {ex.Message}");
                 PiperLogger.LogError("[InferenceEngineDemo] Japanese text-to-speech will not be available.");
-                PiperLogger.LogError("[InferenceEngineDemo] To enable Japanese TTS, please build the OpenJTalk native library:");
-                PiperLogger.LogError("[InferenceEngineDemo]   1. Navigate to NativePlugins/OpenJTalk/");
-                PiperLogger.LogError("[InferenceEngineDemo]   2. Run ./build.sh (macOS/Linux) or build.bat (Windows)");
-                _phonemizer = null;
-                _openJTalkPhonemizer = null;
+                _japanesePhonemizer = null;
             }
-
 
             // Initialize English phonemizer (Flite LTS) - use Unity's main thread
             InitializeEnglishPhonemizerAsync();
@@ -476,7 +451,7 @@ namespace uPiper.Demo
 
             _generator?.Dispose();
 #if !UNITY_WEBGL
-            _openJTalkPhonemizer?.Dispose();
+            _japanesePhonemizer?.Dispose();
             _englishPhonemizer?.Dispose();
 #endif
         }
@@ -804,81 +779,52 @@ namespace uPiper.Demo
                 var konnichiwa = "こんにちは";
 
 #if !UNITY_WEBGL
-                // Use OpenJTalk for Japanese if available
-                if (language == "ja" && _openJTalkPhonemizer != null)
+                // Use DotNetG2P for Japanese if available
+                if (language == "ja" && _japanesePhonemizer != null)
                 {
-                    PiperLogger.LogDebug("[InferenceEngineDemo] Using OpenJTalk phonemizer for Japanese text");
+                    PiperLogger.LogDebug("[InferenceEngineDemo] Using DotNetG2P phonemizer for Japanese text");
                     PiperLogger.LogInfo($"[InferenceEngineDemo] Input text: '{_inputField.text}'");
 
-                    var openJTalkStopwatch = Stopwatch.StartNew();
+                    var g2pStopwatch = Stopwatch.StartNew();
 
-                    string[] openJTalkPhonemes;
                     if (useProsody)
                     {
                         // Use PhonemizeWithProsody for prosody-enabled models
                         PiperLogger.LogInfo("[InferenceEngineDemo] Model supports prosody, using PhonemizeWithProsody");
-                        var prosodyResult = _openJTalkPhonemizer.PhonemizeWithProsody(_inputField.text);
-                        openJTalkPhonemes = prosodyResult.Phonemes;
+                        var prosodyResult = _japanesePhonemizer.PhonemizeWithProsody(_inputField.text);
+                        phonemes = prosodyResult.Phonemes;
                         prosodyA1 = prosodyResult.ProsodyA1;
                         prosodyA2 = prosodyResult.ProsodyA2;
                         prosodyA3 = prosodyResult.ProsodyA3;
 
-                        PiperLogger.LogInfo($"[OpenJTalk] Prosody data extracted: {prosodyResult.PhonemeCount} phonemes");
+                        PiperLogger.LogInfo($"[DotNetG2P] Prosody data extracted: {prosodyResult.PhonemeCount} phonemes");
                         if (prosodyA1 != null && prosodyA1.Length > 0)
                         {
-                            PiperLogger.LogInfo($"[OpenJTalk] A1 (mora position): [{string.Join(",", prosodyA1.Take(Math.Min(10, prosodyA1.Length)))}...]");
-                            PiperLogger.LogInfo($"[OpenJTalk] A2 (accent nucleus): [{string.Join(",", prosodyA2.Take(Math.Min(10, prosodyA2.Length)))}...]");
-                            PiperLogger.LogInfo($"[OpenJTalk] A3 (phrase position): [{string.Join(",", prosodyA3.Take(Math.Min(10, prosodyA3.Length)))}...]");
+                            PiperLogger.LogInfo($"[DotNetG2P] A1 (mora position): [{string.Join(",", prosodyA1.Take(Math.Min(10, prosodyA1.Length)))}...]");
+                            PiperLogger.LogInfo($"[DotNetG2P] A2 (accent nucleus): [{string.Join(",", prosodyA2.Take(Math.Min(10, prosodyA2.Length)))}...]");
+                            PiperLogger.LogInfo($"[DotNetG2P] A3 (phrase position): [{string.Join(",", prosodyA3.Take(Math.Min(10, prosodyA3.Length)))}...]");
                         }
                     }
                     else
                     {
                         // Fallback to standard phonemization (for non-prosody models)
-                        var phonemeResult = await _phonemizer.PhonemizeAsync(_inputField.text, language);
-                        openJTalkPhonemes = phonemeResult.Phonemes;
+                        var phonemeResult = await _japanesePhonemizer.PhonemizeAsync(_inputField.text, language);
+                        phonemes = phonemeResult.Phonemes;
                     }
-                    timings["OpenJTalk"] = openJTalkStopwatch.ElapsedMilliseconds;
+                    timings["DotNetG2P"] = g2pStopwatch.ElapsedMilliseconds;
 
-                    PiperLogger.LogInfo($"[OpenJTalk] Raw phonemes ({openJTalkPhonemes.Length}): {string.Join(" ", openJTalkPhonemes)}");
-
-                    // Convert OpenJTalk phonemes to Piper phonemes
-                    phonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(openJTalkPhonemes);
-                    PiperLogger.LogInfo($"[OpenJTalk] Converted to Piper phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
+                    PiperLogger.LogInfo($"[DotNetG2P] Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
 
                     // Show phoneme details in UI
                     if (_phonemeDetailsText != null)
                     {
-                        // Special handling for こんにちは to debug
-                        if (_inputField.text == konnichiwa)
-                        {
-                            _phonemeDetailsText.text = $"[DEBUG こんにちは]\nOpenJTalk: {string.Join(" ", openJTalkPhonemes)}\nPiper: {string.Join(" ", phonemes)}\n" +
-                                $"Expected: k o n n i ch i w a\nCheck if 'ch i' sounds like 'ch u'";
-                        }
-                        else
-                        {
-                            var prosodyInfo = useProsody ? $"\nProsody: A1=[{string.Join(",", prosodyA1?.Take(5) ?? Array.Empty<int>())}...], A2=[{string.Join(",", prosodyA2?.Take(5) ?? Array.Empty<int>())}...], A3=[{string.Join(",", prosodyA3?.Take(5) ?? Array.Empty<int>())}...]" : "";
-                            _phonemeDetailsText.text = $"OpenJTalk: {string.Join(" ", openJTalkPhonemes)}\nPiper: {string.Join(" ", phonemes)}{prosodyInfo}";
-                        }
+                        var prosodyInfo = useProsody ? $"\nProsody: A1=[{string.Join(",", prosodyA1?.Take(5) ?? Array.Empty<int>())}...], A2=[{string.Join(",", prosodyA2?.Take(5) ?? Array.Empty<int>())}...], A3=[{string.Join(",", prosodyA3?.Take(5) ?? Array.Empty<int>())}...]" : "";
+                        _phonemeDetailsText.text = $"DotNetG2P: {string.Join(" ", phonemes)}{prosodyInfo}";
                     }
                 }
                 else if (language == "ja")
                 {
-                    // OpenJTalk is required for Japanese
-                    var errorMsg = "OpenJTalk is required for Japanese text but is not available.\n" +
-                                  "To enable Japanese TTS:\n" +
-                                  "1. Navigate to NativePlugins/OpenJTalk/\n" +
-                                  "2. Run ./build.sh (macOS/Linux) or build.bat (Windows)\n" +
-                                  "3. Restart Unity Editor";
-
-#if UNITY_ANDROID && !UNITY_EDITOR
-                    // Add Android-specific error info
-                    errorMsg += "\n\nOn Android:\n" +
-                                "- Check if libopenjtalk_wrapper.so is in Plugins/Android/libs/{ABI}/\n" +
-                                "- Check if dictionary files are in StreamingAssets\n" +
-                                "- Dictionary will be extracted to persistent data path on first run";
-#endif
-
-                    throw new Exception(errorMsg);
+                    throw new Exception("DotNetG2P phonemizer is required for Japanese text but is not available.");
                 }
                 else if (language == "en" && _englishPhonemizer != null)
                 {
@@ -929,7 +875,7 @@ namespace uPiper.Demo
                 // WebGL is not supported for Japanese
                 if (language == "ja")
                 {
-                    throw new Exception("Japanese text-to-speech is not supported on WebGL platform. OpenJTalk native library is required.");
+                    throw new Exception("Japanese text-to-speech is not supported on WebGL platform. DotNetG2P requires file I/O for dictionary loading.");
                 }
                 else
                 {
@@ -1110,9 +1056,9 @@ namespace uPiper.Demo
                 {
                     var existingText = _phonemeDetailsText.text;
                     _phonemeDetailsText.text = $"{existingText}\n\n[Performance]\nTotal: {processingTime}ms";
-                    if (timings.ContainsKey("OpenJTalk"))
+                    if (timings.ContainsKey("DotNetG2P"))
                     {
-                        _phonemeDetailsText.text += $"\nOpenJTalk: {timings["OpenJTalk"]}ms";
+                        _phonemeDetailsText.text += $"\nDotNetG2P: {timings["DotNetG2P"]}ms";
                     }
                     _phonemeDetailsText.text += $"\nSynthesis: {timings["Synthesis"]}ms";
                     _phonemeDetailsText.text += $"\nRequirement: {(meetsRequirement ? "✓ PASSED" : "✗ FAILED")}";
@@ -1366,136 +1312,6 @@ namespace uPiper.Demo
         }
 #endif
 
-#if UNITY_ANDROID && !UNITY_EDITOR
-        private void DebugAndroidSetup()
-        {
-            PiperLogger.LogInfo("[Android Debug] === Android Setup Debug ===");
-
-            // Check platform
-            PiperLogger.LogInfo($"[Android Debug] Platform: {Application.platform}");
-            PiperLogger.LogInfo($"[Android Debug] System Language: {Application.systemLanguage}");
-
-            // Check paths
-            PiperLogger.LogInfo($"[Android Debug] Persistent Data Path: {Application.persistentDataPath}");
-            PiperLogger.LogInfo($"[Android Debug] Streaming Assets Path: {Application.streamingAssetsPath}");
-
-            // Check OpenJTalk dictionary
-            try
-            {
-                string dictPath = uPiper.Core.Platform.AndroidPathResolver.GetOpenJTalkDictionaryPath();
-                PiperLogger.LogInfo($"[Android Debug] OpenJTalk Dictionary Path: {dictPath}");
-
-                if (System.IO.Directory.Exists(dictPath))
-                {
-                    PiperLogger.LogInfo("[Android Debug] ✓ Dictionary directory exists");
-
-                    // Check for required files
-                    string[] requiredFiles = { "char.bin", "sys.dic", "unk.dic", "matrix.bin", "left-id.def", "pos-id.def", "rewrite.def", "right-id.def" };
-                    foreach (var file in requiredFiles)
-                    {
-                        string filePath = System.IO.Path.Combine(dictPath, file);
-                        if (System.IO.File.Exists(filePath))
-                        {
-                            var fileInfo = new System.IO.FileInfo(filePath);
-                            PiperLogger.LogInfo($"[Android Debug] ✓ {file}: {fileInfo.Length} bytes");
-                        }
-                        else
-                        {
-                            PiperLogger.LogWarning($"[Android Debug] ✗ {file}: NOT FOUND");
-                        }
-                    }
-                }
-                else
-                {
-                    PiperLogger.LogWarning("[Android Debug] ✗ Dictionary directory does not exist");
-                    PiperLogger.LogInfo("[Android Debug] Will attempt to extract from StreamingAssets on first use");
-                }
-            }
-            catch (Exception e)
-            {
-                PiperLogger.LogError($"[Android Debug] Error checking dictionary: {e.Message}");
-            }
-
-            // Check native library loading
-            try
-            {
-                // On Android, native libraries are loaded from the APK
-                PiperLogger.LogInfo("[Android Debug] Checking native library loading...");
-
-                // Expected library name on Android
-                string expectedLibraryName = "libopenjtalk_wrapper.so";
-                PiperLogger.LogInfo($"[Android Debug] Expected library name: {expectedLibraryName}");
-
-                // The actual check will happen when OpenJTalkPhonemizer is initialized
-                // Here we just log that we expect the library to be loaded from APK
-                PiperLogger.LogInfo("[Android Debug] Native libraries on Android are loaded directly from APK");
-                PiperLogger.LogInfo("[Android Debug] Library loading will be verified during OpenJTalk initialization");
-
-                // Check if we can access the native method
-                try
-                {
-                    // This will help verify if the library is accessible
-                    var testPhon = new OpenJTalkPhonemizer();
-                    PiperLogger.LogInfo("[Android Debug] ✓ OpenJTalkPhonemizer instance created successfully");
-                    testPhon.Dispose();
-                }
-                catch (Exception libEx)
-                {
-                    PiperLogger.LogWarning($"[Android Debug] ✗ Failed to create OpenJTalkPhonemizer: {libEx.Message}");
-                }
-            }
-            catch (Exception e)
-            {
-                PiperLogger.LogError($"[Android Debug] Error checking native library: {e.Message}");
-            }
-
-            // Text encoding test
-            PiperLogger.LogInfo("[Android Debug] === Text Encoding Test ===");
-
-            // Create test string
-            string testText = "こんにちは";
-            byte[] konnichiwaBytes = System.Text.Encoding.UTF8.GetBytes(testText);
-            PiperLogger.LogInfo($"[Android Debug] Test text from UTF-8 bytes: {testText}");
-
-            // Also test with char array
-            string charArrayText = new string(new char[] { 'こ', 'ん', 'に', 'ち', 'は' });
-            PiperLogger.LogInfo($"[Android Debug] Test text from char array: {charArrayText}");
-
-            // Get UTF-8 bytes from both
-            byte[] utf8FromBytes = System.Text.Encoding.UTF8.GetBytes(testText);
-            byte[] utf8FromChars = System.Text.Encoding.UTF8.GetBytes(charArrayText);
-
-            PiperLogger.LogInfo($"[Android Debug] UTF-8 from bytes text ({utf8FromBytes.Length}): {BitConverter.ToString(utf8FromBytes)}");
-            PiperLogger.LogInfo($"[Android Debug] UTF-8 from chars text ({utf8FromChars.Length}): {BitConverter.ToString(utf8FromChars)}");
-
-            // Check if bytes match expected
-            bool bytesMatchExpected = true;
-            if (utf8FromBytes.Length == konnichiwaBytes.Length)
-            {
-                for (int i = 0; i < utf8FromBytes.Length; i++)
-                {
-                    if (utf8FromBytes[i] != konnichiwaBytes[i])
-                    {
-                        bytesMatchExpected = false;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                bytesMatchExpected = false;
-            }
-
-            PiperLogger.LogInfo($"[Android Debug] UTF-8 bytes match expected: {bytesMatchExpected}");
-
-            // Test if we can create correct string from bytes
-            PiperLogger.LogInfo($"[Android Debug] Direct UTF-8 string successful: {testText.Length == 5}");
-
-            PiperLogger.LogInfo("[Android Debug] === End Android Setup Debug ===");
-        }
-
-#endif
-
 #if UNITY_IOS && !UNITY_EDITOR
         private void DebugIOSSetup()
         {
@@ -1510,82 +1326,6 @@ namespace uPiper.Demo
             // Check paths
             PiperLogger.LogInfo($"[iOS Debug] Data Path: {Application.dataPath}");
             PiperLogger.LogInfo($"[iOS Debug] StreamingAssets Path (iOS): {Application.dataPath}/Raw");
-
-            // Check OpenJTalk dictionary using IOSPathResolver
-            try
-            {
-                var dictPath = uPiper.Core.Platform.IOSPathResolver.GetOpenJTalkDictionaryPath();
-                PiperLogger.LogInfo($"[iOS Debug] OpenJTalk Dictionary Path: {dictPath}");
-
-                if (uPiper.Core.Platform.IOSPathResolver.DictionaryExists())
-                {
-                    PiperLogger.LogInfo("[iOS Debug] ✓ Dictionary exists");
-                    var size = uPiper.Core.Platform.IOSPathResolver.GetDictionarySize();
-                    PiperLogger.LogInfo($"[iOS Debug] Dictionary total size: {size / 1024 / 1024}MB");
-
-                    // Log detailed dictionary info
-                    uPiper.Core.Platform.IOSPathResolver.LogDictionaryInfo();
-                }
-                else
-                {
-                    PiperLogger.LogWarning("[iOS Debug] ✗ Dictionary not found");
-                    PiperLogger.LogWarning("[iOS Debug] Please ensure dictionary files are in StreamingAssets");
-                }
-            }
-            catch (Exception e)
-            {
-                PiperLogger.LogError($"[iOS Debug] Error checking dictionary: {e.Message}");
-            }
-
-            // Check native library status
-            try
-            {
-                PiperLogger.LogInfo("[iOS Debug] Checking native library...");
-
-                // On iOS, static libraries are linked at build time
-                PiperLogger.LogInfo("[iOS Debug] Using static library: libopenjtalk_wrapper.a");
-                PiperLogger.LogInfo("[iOS Debug] Static linking with __Internal");
-
-                // Test if we can create OpenJTalkPhonemizer instance
-                try
-                {
-                    var testPhon = new OpenJTalkPhonemizer();
-                    PiperLogger.LogInfo("[iOS Debug] ✓ OpenJTalkPhonemizer instance created successfully");
-                    testPhon.Dispose();
-                }
-                catch (Exception libEx)
-                {
-                    PiperLogger.LogWarning($"[iOS Debug] ✗ Failed to create OpenJTalkPhonemizer: {libEx.Message}");
-                }
-            }
-            catch (Exception e)
-            {
-                PiperLogger.LogError($"[iOS Debug] Error checking native library: {e.Message}");
-            }
-
-            // Text encoding test
-            PiperLogger.LogInfo("[iOS Debug] === Text Encoding Test ===");
-
-            string testText = "こんにちは";
-            byte[] utf8Bytes = System.Text.Encoding.UTF8.GetBytes(testText);
-            PiperLogger.LogInfo($"[iOS Debug] Test text: {testText}");
-            PiperLogger.LogInfo($"[iOS Debug] UTF-8 bytes ({utf8Bytes.Length}): {BitConverter.ToString(utf8Bytes)}");
-
-            // Verify UTF-8 encoding is correct
-            byte[] expectedBytes = new byte[] { 0xE3, 0x81, 0x93, 0xE3, 0x82, 0x93, 0xE3, 0x81, 0xAB, 0xE3, 0x81, 0xA1, 0xE3, 0x81, 0xAF };
-            bool encodingCorrect = utf8Bytes.Length == expectedBytes.Length;
-            if (encodingCorrect)
-            {
-                for (int i = 0; i < utf8Bytes.Length; i++)
-                {
-                    if (utf8Bytes[i] != expectedBytes[i])
-                    {
-                        encodingCorrect = false;
-                        break;
-                    }
-                }
-            }
-            PiperLogger.LogInfo($"[iOS Debug] UTF-8 encoding correct: {encodingCorrect}");
 
             PiperLogger.LogInfo("[iOS Debug] === End iOS Setup Debug ===");
         }

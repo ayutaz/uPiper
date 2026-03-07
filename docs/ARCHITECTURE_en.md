@@ -11,7 +11,7 @@ uPiper is a plugin for using Piper TTS in Unity environments. It employs neural 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │   Text Input    │ --> │   Phonemizer     │ --> │  VITS Model     │
-│   (Japanese)    │     │   (OpenJTalk)    │     │  (ONNX/Unity)   │
+│   (Japanese)    │     │   (dot-net-g2p)  │     │  (ONNX/Unity)   │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
                                  │                         │
                                  ↓                         ↓
@@ -31,19 +31,19 @@ uPiper is a plugin for using Piper TTS in Unity environments. It employs neural 
 
 ### 2. Phonemization Layer
 
-#### OpenJTalk (Japanese)
+#### dot-net-g2p (Japanese)
 - **Role**: Convert Japanese text to phoneme sequences
-- **Implementation**: C/C++ native library (called via P/Invoke)
+- **Implementation**: Pure C# implementation (using MeCab dictionary)
 - **Dictionary**: Uses mecab-naist-jdic (789,120 entries)
 - **Processing Flow**:
   ```
-  Text → MeCab Analysis → NJD Processing → JPCommon → Phoneme Sequence
+  Text → MeCab Analysis → G2P Conversion → Phoneme Sequence
   ```
 
 #### Important Design Decision: Phoneme Timing
-```c
-// In Phase 1.10, all phonemes are assigned a fixed 50ms duration
-result->durations[i] = 0.05f; // Default 50ms duration
+```csharp
+// All phonemes are assigned a fixed 50ms duration
+duration = 0.05f; // Default 50ms duration
 ```
 
 **Rationale**:
@@ -96,7 +96,7 @@ Phoneme IDs → TextEncoder → Duration Predictor → Flow Decoder → Audio Wa
 
 1. **Input**: "こんにちは"
 
-2. **OpenJTalk Phonemization**:
+2. **dot-net-g2p Phonemization**:
    ```
    k o N n i ch i w a
    ```
@@ -132,23 +132,19 @@ Phoneme IDs → TextEncoder → Duration Predictor → Flow Decoder → Audio Wa
 ### Platform-Specific Implementation
 
 #### Windows
-- Native library: `openjtalk_wrapper.dll`
-- Compiler: MSVC 2019+
+- No native library required (pure C#)
 - Unity backend: Mono/IL2CPP
 
 #### macOS
-- Native library: `openjtalk_wrapper.bundle`
-- Compiler: Clang
+- No native library required (pure C#)
 - Universal Binary support
 
 #### Android
-- Native library: `libopenjtalk_wrapper.so`
-- NDK: r21+
+- No native library required (pure C#)
 - Architectures: arm64-v8a, armeabi-v7a, x86, x86_64
 
 #### iOS
-- Native library: `libopenjtalk_wrapper.a` (linked via `__Internal`)
-- Xcode: 14+
+- No native library required (pure C#)
 - Architecture: arm64 (iOS 11.0+)
 
 ## Performance Characteristics

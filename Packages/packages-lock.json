@@ -1,5 +1,19 @@
 {
   "dependencies": {
+    "com.dotnetg2p.core": {
+      "version": "file:../../dot-net-g2p/src/DotNetG2P.Core",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
+    "com.dotnetg2p.mecab": {
+      "version": "file:../../dot-net-g2p/src/DotNetG2P.MeCab",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.dotnetg2p.core": "1.1.0"
+      }
+    },
     "com.unity.ai.inference": {
       "version": "2.2.2",
       "depth": 0,
@@ -132,13 +146,13 @@
       }
     },
     "io.github.hatayama.uloopmcp": {
-      "version": "https://github.com/hatayama/uLoopMCP.git?path=/Packages/src",
+      "version": "0.50.0",
       "depth": 0,
-      "source": "git",
+      "source": "registry",
       "dependencies": {
         "com.unity.nuget.newtonsoft-json": "3.2.1"
       },
-      "hash": "e3090f4f6f482675319a8fb91c4e82731d992272"
+      "url": "https://package.openupm.com"
     },
     "org.nuget.microsoft.codeanalysis.analyzers": {
       "version": "3.11.0",

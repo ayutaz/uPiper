@@ -1,9 +1,8 @@
-name: Performance Regression Test
+name: Performance Regression Test (Legacy - OpenJTalk)
 
 on:
-  pull_request:
-    paths:
-      - 'NativePlugins/OpenJTalk/src/**'
+  # Disabled: OpenJTalk native backend replaced by dot-net-g2p (pure C#)
+  # Kept for reference; remove when no longer needed
   workflow_dispatch:
 
 jobs:
@@ -95,7 +94,7 @@ jobs:
       shell: bash
       
     - name: Upload Performance Report
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: performance-${{ matrix.os }}
@@ -112,7 +111,7 @@ jobs:
     
     steps:
     - name: Download All Reports
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         path: reports
         
