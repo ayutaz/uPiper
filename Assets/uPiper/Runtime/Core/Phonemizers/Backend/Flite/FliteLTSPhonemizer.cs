@@ -353,8 +353,29 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         /// <summary>
         /// Load custom dictionary from file
         /// </summary>
+#pragma warning disable CS1998 // Async method lacks 'await' operators
         public async Task LoadCustomDictionary(string path, CancellationToken cancellationToken = default)
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            if (!System.IO.File.Exists(path))
+                return;
+
+            var lines = System.IO.File.ReadAllLines(path);
+            foreach (var line in lines)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var parts = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length >= 2)
+                {
+                    var word = parts[0];
+                    var phonemes = parts.Skip(1).ToArray();
+                    AddCustomPronunciation(word, phonemes);
+                }
+            }
+
+            Debug.Log($"Loaded {customDictionary.Count} custom pronunciations");
+#else
             await Task.Run(() =>
             {
                 if (!System.IO.File.Exists(path))
@@ -376,6 +397,8 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
 
                 Debug.Log($"Loaded {customDictionary.Count} custom pronunciations");
             }, cancellationToken);
+#endif
         }
+#pragma warning restore CS1998
     }
 }

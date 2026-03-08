@@ -47,12 +47,93 @@ namespace uPiper.Core.Phonemizers.Backend
             }
         }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators
         public override async Task<PhonemeResult> PhonemizeAsync(
             string text,
             string language,
             PhonemeOptions options = null,
             CancellationToken cancellationToken = default)
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL: execute directly on main thread
+            var stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                EnsureInitialized();
+
+                // Handle empty text as a special case - return empty result, not error
+                if (string.IsNullOrEmpty(text))
+                {
+                    stopwatch.Stop();
+                    return new PhonemeResult
+                    {
+                        OriginalText = text,
+                        Phonemes = new string[0],
+                        PhonemeIds = new int[0],
+                        Language = language,
+                        Success = true,
+                        Backend = Name,
+                        ProcessingTimeMs = (float)stopwatch.ElapsedMilliseconds,
+                        ProcessingTime = stopwatch.Elapsed
+                    };
+                }
+
+                if (!ValidateInput(text, language, out var error))
+                {
+                    return CreateErrorResult(error, language);
+                }
+
+                options ??= PhonemeOptions.Default;
+
+                var phonemes = new List<string>();
+                var words = TokenizeText(text);
+
+                foreach (var word in words)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    if (IsPunctuation(word))
+                    {
+                        phonemes.Add("_"); // Silence
+                        continue;
+                    }
+
+                    var cleanWord = CleanWord(word);
+                    if (string.IsNullOrEmpty(cleanWord))
+                        continue;
+
+                    // Try dictionary first
+                    if (cmuDictionary != null && cmuDictionary.TryGetPronunciation(cleanWord, out var dictPhonemes))
+                    {
+                        phonemes.AddRange(ProcessPhonemes(dictPhonemes, options));
+                    }
+                    else
+                    {
+                        // Apply simple LTS rules
+                        var ltsPhonemes = ApplyLTSRules(cleanWord);
+                        phonemes.AddRange(ProcessPhonemes(ltsPhonemes, options));
+                    }
+                }
+
+                stopwatch.Stop();
+
+                return new PhonemeResult
+                {
+                    OriginalText = text,
+                    Phonemes = phonemes.ToArray(),
+                    PhonemeIds = ConvertToPhonemeIds(phonemes),
+                    Language = language,
+                    Success = true,
+                    Backend = Name,
+                    ProcessingTimeMs = (float)stopwatch.ElapsedMilliseconds
+                };
+            }
+            catch (Exception ex)
+            {
+                return CreateErrorResult($"Phonemization failed: {ex.Message}", language);
+            }
+#else
             // Run synchronous code on a background thread to avoid blocking
             return await Task.Run(() =>
             {
@@ -134,7 +215,9 @@ namespace uPiper.Core.Phonemizers.Backend
                     return CreateErrorResult($"Phonemization failed: {ex.Message}", language);
                 }
             }, cancellationToken);
+#endif
         }
+#pragma warning restore CS1998
 
         private string[] ApplyLTSRules(string word)
         {

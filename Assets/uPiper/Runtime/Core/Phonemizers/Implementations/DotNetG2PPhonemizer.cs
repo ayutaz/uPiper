@@ -101,13 +101,19 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region BasePhonemizer Implementation
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators
         protected override async Task<PhonemeResult> PhonemizeInternalAsync(
             string normalizedText,
             string language,
             CancellationToken cancellationToken)
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            return PhonemizeInternal(normalizedText);
+#else
             return await Task.Run(() => PhonemizeInternal(normalizedText), cancellationToken);
+#endif
         }
+#pragma warning restore CS1998
 
         private PhonemeResult PhonemizeInternal(string text)
         {

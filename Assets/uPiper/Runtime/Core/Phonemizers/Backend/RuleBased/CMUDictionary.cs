@@ -105,6 +105,48 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                         actualFilePath);
                 }
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+                // WebGL: read dictionary directly on main thread
+                using (var reader = new StreamReader(actualFilePath))
+                {
+                    string line;
+                    while ((line = await reader.ReadLineAsync()) != null)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        // Skip comments and empty lines
+                        if (string.IsNullOrWhiteSpace(line) || line.StartsWith(";;;"))
+                            continue;
+
+                        // Parse the line - find first space as separator
+                        var spaceIndex = line.IndexOf(' ');
+                        if (spaceIndex > 0 && spaceIndex < line.Length - 1)
+                        {
+                            var word = line[..spaceIndex].Trim();
+                            var phonemesPart = line[(spaceIndex + 1)..].Trim();
+                            var phonemes = phonemesPart.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                            // Handle multiple pronunciations (e.g., "WORD(1)", "WORD(2)")
+                            var baseWord = ExtractBaseWord(word);
+
+                            lock (lockObject)
+                            {
+                                if (!dict.ContainsKey(baseWord))
+                                {
+                                    dict[baseWord] = phonemes;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                lock (lockObject)
+                {
+                    pronunciations = dict;
+                    isLoaded = true;
+                }
+                Debug.Log($"Loaded CMU dictionary with {pronunciations.Count} words from {filePath}");
+#else
                 // Read the dictionary file with timeout
                 var readTask = Task.Run(async () =>
                 {
@@ -160,6 +202,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 {
                     throw new TimeoutException("Dictionary loading timed out after 10 seconds");
                 }
+#endif
             }
             catch (OperationCanceledException)
             {

@@ -5,7 +5,11 @@
     
     <!-- uPiper runtime assembly preservation -->
     <assembly fullname="uPiper.Runtime" preserve="all"/>
-    
+
+    <!-- dot-net-g2p assembly preservation -->
+    <assembly fullname="DotNetG2P.Core" preserve="all"/>
+    <assembly fullname="DotNetG2P.MeCab" preserve="all"/>
+
     <!-- System types used by uPiper -->
     <assembly fullname="System.Core">
         <type fullname="System.Linq.Enumerable" preserve="all"/>
@@ -33,8 +37,4 @@
         <type fullname="System.IntPtr" preserve="all"/>
     </assembly>
     
-    <!-- Native structs -->
-    <assembly fullname="uPiper.Runtime">
-        <type fullname="uPiper.Core.Phonemizers.Implementations.OpenJTalkPhonemizer/NativePhonemeResult" preserve="all"/>
-    </assembly>
 </linker>
