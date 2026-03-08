@@ -1057,12 +1057,14 @@ namespace uPiper.Core
                 if (_config.DefaultLanguage == "ja" || _config.DefaultLanguage == "jp" ||
                     _config.DefaultLanguage == "japanese")
                 {
-#if !UNITY_WEBGL
+#if UNITY_WEBGL && !UNITY_EDITOR
+                    var webGlPhonemizer = new DotNetG2PPhonemizer();
+                    await webGlPhonemizer.InitializeAsync(cancellationToken);
+                    _phonemizer = webGlPhonemizer;
+                    PiperLogger.LogInfo("Initialized DotNetG2PPhonemizer for Japanese (WebGL async)");
+#else
                     _phonemizer = new DotNetG2PPhonemizer();
                     PiperLogger.LogInfo("Initialized DotNetG2PPhonemizer for Japanese");
-#else
-                    PiperLogger.LogWarning("DotNetG2PPhonemizer is not supported on WebGL (file I/O required for dictionary)");
-                    _phonemizer = null;
 #endif
                 }
                 else

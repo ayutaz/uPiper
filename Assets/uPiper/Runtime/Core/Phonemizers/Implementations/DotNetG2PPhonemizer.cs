@@ -1,16 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+#if UNITY_WEBGL && !UNITY_EDITOR
+using System.IO.Compression;
+#endif
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetG2P;
 using DotNetG2P.MeCab;
+#if UNITY_WEBGL && !UNITY_EDITOR
+using DotNetG2P.MeCab.Dictionary;
+#endif
 using DotNetG2P.Models;
 using UnityEngine;
 using UnityEngine.Scripting;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers.Backend;
+#if UNITY_WEBGL && !UNITY_EDITOR
+using uPiper.Core.Platform;
+#endif
 
 namespace uPiper.Core.Phonemizers.Implementations
 {
@@ -62,9 +71,15 @@ namespace uPiper.Core.Phonemizers.Implementations
             bool loadCustomDictionary = true)
             : base(cacheCapacity)
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL: skip synchronous initialization, use InitializeAsync() instead
+            _dictionaryPath = null;
+            _customDictionary = new CustomDictionary(loadCustomDictionary);
+#else
             _dictionaryPath = dictionaryPath ?? GetDefaultDictionaryPath();
             _customDictionary = new CustomDictionary(loadCustomDictionary);
             Initialize();
+#endif
         }
 
         ~DotNetG2PPhonemizer()
@@ -76,6 +91,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region Initialization
 
+#if !UNITY_WEBGL || UNITY_EDITOR
         private void Initialize()
         {
             if (!Directory.Exists(_dictionaryPath))
@@ -96,6 +112,83 @@ namespace uPiper.Core.Phonemizers.Implementations
                     $"Failed to initialize DotNetG2P: {ex.Message}", ex);
             }
         }
+#endif
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        /// <summary>
+        /// Asynchronously initialize the phonemizer for WebGL.
+        /// Downloads the MeCab dictionary ZIP from StreamingAssets and loads it via byte[] API.
+        /// </summary>
+        public async Task InitializeAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                Debug.Log("[DotNetG2PPhonemizer] WebGL: Downloading dictionary ZIP...");
+
+                var zipData = await WebGLStreamingAssetsLoader.LoadBytesAsync(
+                    "uPiper/OpenJTalk/naist_jdic.zip", cancellationToken);
+
+                Debug.Log($"[DotNetG2PPhonemizer] WebGL: ZIP downloaded ({zipData.Length} bytes), extracting...");
+
+                byte[] sysDic = null, matrix = null, charBin = null, unkDic = null;
+
+                using (var zipStream = new MemoryStream(zipData))
+                using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Read))
+                {
+                    foreach (var entry in archive.Entries)
+                    {
+                        var name = Path.GetFileName(entry.FullName);
+                        if (string.IsNullOrEmpty(name))
+                            continue;
+
+                        using var entryStream = entry.Open();
+                        using var ms = new MemoryStream();
+                        entryStream.CopyTo(ms);
+                        var data = ms.ToArray();
+
+                        switch (name)
+                        {
+                            case "sys.dic":
+                                sysDic = data;
+                                break;
+                            case "matrix.bin":
+                                matrix = data;
+                                break;
+                            case "char.bin":
+                                charBin = data;
+                                break;
+                            case "unk.dic":
+                                unkDic = data;
+                                break;
+                        }
+                    }
+                }
+
+                if (sysDic == null || matrix == null || charBin == null || unkDic == null)
+                {
+                    throw new PiperInitializationException(
+                        "Failed to extract MeCab dictionary from ZIP: missing required files " +
+                        $"(sys.dic={sysDic != null}, matrix.bin={matrix != null}, " +
+                        $"char.bin={charBin != null}, unk.dic={unkDic != null})");
+                }
+
+                var bundle = DictionaryBundle.Load(sysDic, matrix, charBin, unkDic);
+                _tokenizer = new MeCabTokenizer(bundle);
+                _engine = new G2PEngine(_tokenizer);
+
+                Debug.Log("[DotNetG2PPhonemizer] WebGL: Dictionary initialized from ZIP");
+            }
+            catch (PiperInitializationException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new PiperInitializationException(
+                    $"Failed to initialize DotNetG2P on WebGL: {ex.Message}", ex);
+            }
+        }
+#endif
 
         #endregion
 
