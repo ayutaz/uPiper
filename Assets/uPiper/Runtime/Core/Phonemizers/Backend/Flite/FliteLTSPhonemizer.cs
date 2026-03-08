@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend.RuleBased;
+using uPiper.Core.Platform;
 
 namespace uPiper.Core.Phonemizers.Backend.Flite
 {
@@ -353,28 +354,41 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         /// <summary>
         /// Load custom dictionary from file
         /// </summary>
-#pragma warning disable CS1998 // Async method lacks 'await' operators
         public async Task LoadCustomDictionary(string path, CancellationToken cancellationToken = default)
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
-            if (!System.IO.File.Exists(path))
-                return;
-
-            var lines = System.IO.File.ReadAllLines(path);
-            foreach (var line in lines)
+            try
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var parts = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length >= 2)
+                // Convert absolute path to relative path for WebGLStreamingAssetsLoader
+                var relativePath = path;
+                var streamingAssetsPrefix = Application.streamingAssetsPath;
+                if (path.StartsWith(streamingAssetsPrefix))
                 {
-                    var word = parts[0];
-                    var phonemes = parts.Skip(1).ToArray();
-                    AddCustomPronunciation(word, phonemes);
+                    relativePath = path[(streamingAssetsPrefix.Length + 1)..];
                 }
-            }
 
-            Debug.Log($"Loaded {customDictionary.Count} custom pronunciations");
+                var text = await WebGLStreamingAssetsLoader.LoadTextAsync(relativePath, cancellationToken);
+                var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var line in lines)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var parts = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 2)
+                    {
+                        var word = parts[0];
+                        var phonemes = parts.Skip(1).ToArray();
+                        AddCustomPronunciation(word, phonemes);
+                    }
+                }
+
+                Debug.Log($"Loaded {customDictionary.Count} custom pronunciations");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning(
+                    $"[FliteLTSPhonemizer] Custom dictionary not found or failed to load: {ex.Message}");
+            }
 #else
             await Task.Run(() =>
             {
@@ -399,6 +413,5 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             }, cancellationToken);
 #endif
         }
-#pragma warning restore CS1998
     }
 }
