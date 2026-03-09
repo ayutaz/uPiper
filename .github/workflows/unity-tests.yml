@@ -648,9 +648,7 @@ jobs:
   macos-unity-test:
     name: Unity Test Runner - macOS (Native)
     runs-on: macos-latest
-    timeout-minutes: 60  # タイムアウトを60分に設定
-    # macOSのUnityライセンス問題のため一時的にスキップ
-    if: false  # TODO: Unity ライセンスのマシンバインディング問題を解決後に有効化
+    timeout-minutes: 60
     permissions:
       contents: read
       checks: write
