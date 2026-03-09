@@ -90,13 +90,22 @@ Assets/uPiper/
 │   │   │   └── Threading/      # マルチスレッド処理
 │   │   ├── IL2CPP/             # IL2CPP互換レイヤー
 │   │   └── Platform/           # プラットフォーム固有コード
+│   │       ├── WebGLStreamingAssetsLoader.cs  # WebGL非同期ファイルローダー
+│   │       ├── IndexedDBCache.cs              # IndexedDBキャッシュC#ラッパー
+│   │       └── WebGLLoadingPanel.cs           # ローディング進捗UI
 │   └── Demo/               # デモ・テストUI
 ├── Resources/Models/       # ONNXモデルファイル（*.onnx, *.onnx.json）
 ├── Editor/                 # エディタツール
+│   └── WebGL/                 # WebGLビルドツール
+│       ├── WebGLSplitDataProcessor.cs  # 大容量ファイル自動分割
+│       ├── split-file-loader.js        # 分割ファイル結合ローダー
+│       └── github-pages-adapter.js     # GitHub Pagesパス解決
 ├── Tests/                  # テスト
 │   ├── Editor/             # EditModeテスト
 │   └── Runtime/            # PlayModeテスト
 ├── Plugins/                # プラットフォーム固有プラグイン（Android Sentis等）
+│   └── WebGL/                 # WebGLネイティブプラグイン
+│       └── IndexedDBCache.jslib        # IndexedDB JS interop
 └── Samples~/               # サンプルデータ
 
 StreamingAssets/uPiper/     # 実行時データ（辞書）
@@ -136,12 +145,13 @@ StreamingAssets/uPiper/     # 実行時データ（辞書）
 | Windows/Linux | GPUPixel |
 | macOS | CPU（Metal非対応） |
 | iOS/Android | GPUPixel |
-| WebGL | 未対応（調査中） |
+| WebGL | GPUPixel（Phase 1-3完了、Phase 2/4未実装） |
 
 ## 定義シンボル
 
 - `UPIPER_DEVELOPMENT` - セットアップウィザード無効化、開発メニュー有効化
 - `ENABLE_IL2CPP_COMPATIBILITY` - IL2CPP固有コードパス
+- `UNITY_WEBGL` - WebGLプラットフォーム判定（Task.Run除去、ファイルI/O代替）
 
 ## バージョン管理
 
@@ -154,6 +164,7 @@ StreamingAssets/uPiper/     # 実行時データ（辞書）
 | `unity-tests.yml` | Edit/Playモードテスト |
 | `unity-build.yml` | マルチプラットフォームビルド |
 | `dotnet-format.yml` | C#コードフォーマット |
+| `deploy-webgl.yml` | WebGLビルド・GitHub Pagesデプロイ |
 
 ## Prosody（韻律）機能
 
