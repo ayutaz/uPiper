@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using uPiper.Core.Logging;
+using uPiper.Core.Platform;
 using UnityEngine;
 
 namespace uPiper.Core.Phonemizers
@@ -82,6 +85,42 @@ namespace uPiper.Core.Phonemizers
                 catch (Exception e)
                 {
                     PiperLogger.LogWarning($"[CustomDictionary] Failed to load {filePath}: {e.Message}");
+                }
+            }
+
+            var stats = GetStats();
+            PiperLogger.LogInfo($"[CustomDictionary] Total entries: {stats.TotalEntries} " +
+                               $"(case-insensitive: {stats.CaseInsensitiveEntries}, " +
+                               $"case-sensitive: {stats.CaseSensitiveEntries})");
+        }
+
+        /// <summary>
+        /// デフォルト辞書を非同期で読み込む（WebGL対応）
+        /// WebGLではディレクトリ列挙ができないため、既知の辞書ファイル名リストを使用する
+        /// </summary>
+        public async Task LoadDefaultDictionariesAsync(CancellationToken cancellationToken = default)
+        {
+            var dictionaryFiles = new[]
+            {
+                "additional_tech_dict.json",
+                "default_common_dict.json",
+                "default_tech_dict.json",
+                "user_custom_dict.json"
+            };
+
+            foreach (var fileName in dictionaryFiles)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var relativePath = $"uPiper/Dictionaries/{fileName}";
+                try
+                {
+                    var json = await WebGLStreamingAssetsLoader.LoadTextAsync(relativePath, cancellationToken);
+                    LoadFromJson(json);
+                    PiperLogger.LogInfo($"[CustomDictionary] Loaded: {fileName}");
+                }
+                catch (Exception e)
+                {
+                    PiperLogger.LogWarning($"[CustomDictionary] Failed to load {fileName}: {e.Message}");
                 }
             }
 
