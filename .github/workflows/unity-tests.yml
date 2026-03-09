@@ -43,6 +43,7 @@ jobs:
       shell: bash
       run: |
         cd Assets/StreamingAssets/uPiper/OpenJTalk
+        mkdir -p naist_jdic/open_jtalk_dic_utf_8-1.11
         unzip -o naist_jdic.zip -d naist_jdic/open_jtalk_dic_utf_8-1.11/
 
     - name: Run Unity Tests
