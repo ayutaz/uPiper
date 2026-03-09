@@ -8,9 +8,6 @@
   - implementation-guide.md - 実装ガイド
   - performance-optimization.md - パフォーマンス最適化
   - technical-report.md - 技術レポート
-- **ios/** - iOS実装 ✅ 完了（v0.2.0）
-  - iOS対応はv0.2.0で完了しました
-  - 詳細は[CHANGELOG](../CHANGELOG.md)を参照
 
 ### 🚀 features/ - 機能別ドキュメント
 - **phonemization/** - 音素化システム
@@ -39,6 +36,11 @@
 - ARCHITECTURE_ja.md - アーキテクチャ（日本語）
 - ARCHITECTURE_en.md - アーキテクチャ（英語）
 - DEVELOPMENT_LOG.md - 開発ログ
+- setup-guide.md - セットアップガイド
+- ONNX_RUNTIME_RESEARCH.md - ONNX Runtime調査
+- dot-net-g2p-integration-investigation.md - dot-net-g2p統合調査
+- webgl-architecture.md - WebGLアーキテクチャ
+- webgl-research.md - WebGL調査
 
 ## 🔍 ドキュメントの探し方
 

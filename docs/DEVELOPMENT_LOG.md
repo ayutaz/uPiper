@@ -6,6 +6,49 @@ This document records the development progress and milestones achieved during th
 
 ## [Unreleased]
 
+### WebGL Support - 2026-03-09
+
+#### Added
+- **WebGL Phase 1: 基盤整備** (commit ee774b4)
+  - `WebGLStreamingAssetsLoader`: UnityWebRequest経由の非同期ファイルロード
+  - Sentis 2.2.2 → 2.5.0アップグレード（WebGPUビルド対応）
+  - `Task.Run` → メインスレッド直接実行への条件分岐（13箇所）
+  - `link.xml`にdot-net-g2pアセンブリ追加
+  - WebGLヒープサイズ1024MBに拡大
+
+- **WebGL Phase 2b: 英語TTS対応** (commit 3871ebe)
+  - CMUDictionary/FliteLTSのWebGL非同期初期化対応
+  - StatisticalG2PModel/G2PEngineのWebGL対応
+
+- **WebGL Phase 2: 日本語TTS MVP** (commit d42d57c)
+  - `CustomDictionary.LoadDefaultDictionariesAsync()`: WebGL非同期辞書ロード
+  - `InferenceEngineDemo`: WebGLガード解除、日本語・英語TTS有効化
+  - `WebGLInteractionGate`: AudioContext再開用オーバーレイUI
+  - `WebGLAudioContext.jslib`: WebAudio API JavaScript interop
+
+- **WebGL Phase 3: 最適化・配信** (commit 2e844b0)
+  - `IndexedDBCache`: ブラウザIndexedDBへの辞書キャッシュ（jslib連携）
+  - `WebGLSplitDataProcessor`: 100MB超ファイルの90MBチャンク自動分割
+  - `WebGLLoadingPanel`: プログレスバー付きローディングUI
+  - `split-file-loader.js`: 分割ファイル並列DL→透過的結合
+  - `github-pages-adapter.js`: GitHub Pagesパス解決
+
+- **CI/CD改善** (commit 50918af)
+  - `deploy-webgl.yml`: WebGLビルド→GitHub Pagesデプロイワークフロー
+  - `unity-build.yml`: WebGLをビルドマトリクスに追加
+
+### v1.2.0 Release - 2026-03-07
+
+#### Changed
+- ネイティブOpenJTalkを完全削除、dot-net-g2p（純粋C#実装）に移行
+- 同期API削除（全て非同期APIに統一）
+- Unity 6000.0.58f2へアップグレード
+
+#### Added
+- dot-net-g2p統合: 純粋C#による日本語G2P（MeCab辞書ベース）
+- 英語G2P: Flite LTS純粋C#実装
+- 開発環境向け辞書自動展開機能
+
 ### Chinese Language Support Phase 1 - 2025-08-01
 
 #### Added
@@ -145,8 +188,8 @@ This document records the development progress and milestones achieved during th
 - **Documentation**: Comprehensive guides and API references
 
 ### Known Limitations
-- WebGL not supported (Unity.InferenceEngine limitation)
-- Mobile platforms (iOS/Android) planned for Phase 2
+- WebGL supported (Phase 1-3 complete, Phase 4 WebGPU pending)
+- Mobile platforms (iOS/Android) supported (v0.2.0+)
 - Metal GPU inference requires CPU fallback
 
 ---

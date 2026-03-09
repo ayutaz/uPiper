@@ -10,8 +10,8 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 **目的**: Unityプロジェクトのマルチプラットフォームビルド
 
 **特徴**:
-- Windows/Linux/macOS向けビルド
-- Unity 6000.0.55f1使用
+- Windows/Linux/macOS/WebGL向けビルド
+- Unity 6000.0.58f2使用
 - Mono2x/IL2CPPバックエンド対応
 - 自動リリース作成（タグプッシュ時）
 
@@ -71,6 +71,19 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 - Windows/macOSネイティブランナー使用
 - Visual Studio/Xcode統合
 - 完全なIL2CPPサポート
+
+### 9. deploy-webgl.yml
+**目的**: WebGLビルドとGitHub Pagesへのデプロイ
+
+**特徴**:
+- feature/webgl-supportブランチへのpush時に自動実行
+- workflow_dispatch（手動実行）対応
+- dot-net-g2pサブリポジトリの自動checkout
+- game-ci/unity-builder@v4によるWebGLビルド
+- 100MB超ファイルの90MBチャンク自動分割（GitHub Pages制限対応）
+- split-file-loader.js / github-pages-adapter.jsの自動注入
+- GitHub Pagesへの自動デプロイ
+- デプロイ後のHTTPステータス確認
 
 ## ブランチ保護ルールの設定
 
