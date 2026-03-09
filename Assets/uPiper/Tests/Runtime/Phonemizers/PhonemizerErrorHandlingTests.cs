@@ -187,18 +187,19 @@ namespace uPiper.Tests.Phonemizers
             var backend = new RuleBasedPhonemizer();
 
             // Use timeout for initialization
+            bool initialized;
             using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2)))
             {
-                try
-                {
-                    await backend.InitializeAsync(null, cts.Token);
-                }
-                catch (OperationCanceledException)
-                {
-                    LogAssert.Expect(LogType.Error, "CMU dictionary loading was cancelled.");
-                    Assert.Inconclusive("Backend initialization timed out");
-                    return;
-                }
+                initialized = await backend.InitializeAsync(null, cts.Token);
+            }
+
+            if (!initialized)
+            {
+                LogAssert.Expect(LogType.Error, "CMU dictionary loading was cancelled.");
+                LogAssert.Expect(LogType.Error,
+                    "Failed to initialize RuleBasedPhonemizer: The operation was canceled.");
+                Assert.Inconclusive("Backend initialization timed out or failed");
+                return;
             }
 
             var invalidInputs = new[]

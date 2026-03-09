@@ -43,7 +43,7 @@ jobs:
       shell: bash
       run: |
         cd Assets/StreamingAssets/uPiper/OpenJTalk
-        unzip -o naist_jdic.zip -d naist_jdic/
+        unzip -o naist_jdic.zip -d naist_jdic/open_jtalk_dic_utf_8-1.11/
 
     - name: Run Unity Tests
       uses: game-ci/unity-test-runner@v4
