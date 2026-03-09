@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Backend.RuleBased;
 using uPiper.Core.Phonemizers.ErrorHandling;
@@ -194,6 +195,7 @@ namespace uPiper.Tests.Phonemizers
                 }
                 catch (OperationCanceledException)
                 {
+                    LogAssert.Expect(LogType.Error, "CMU dictionary loading was cancelled.");
                     Assert.Inconclusive("Backend initialization timed out");
                     return;
                 }

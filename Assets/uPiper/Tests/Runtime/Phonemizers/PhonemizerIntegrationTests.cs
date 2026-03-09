@@ -382,6 +382,7 @@ namespace uPiper.Tests.Phonemizers
         }
 
         [Test]
+        [Timeout(120000)]
         public async Task Benchmark_FlitePhonemizer()
         {
             // Flite benchmark temporarily disabled
