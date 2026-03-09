@@ -46,6 +46,7 @@ jobs:
           - StandaloneWindows64
           - StandaloneOSX
           - StandaloneLinux64
+          - WebGL
           # - Android  # Temporarily disabled due to Unity licensing issues
     
     steps:
