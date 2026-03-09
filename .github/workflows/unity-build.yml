@@ -57,7 +57,7 @@ jobs:
     - uses: actions/checkout@v5
       with:
         repository: ayutaz/dot-net-g2p
-        ref: main
+        ref: feature/spanish-g2p
         path: dot-net-g2p
 
     - name: Fix local package paths for CI
