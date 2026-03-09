@@ -334,7 +334,7 @@ WebGLではファイルシステムへの直接アクセスやマルチスレッ
 │ IndexedDBCache.StoreAsync            │  次回用にキャッシュ保存
 └───────────┬──────────────────────────┘
             ↓
-        DictionaryBundle.Load(byte[])
+        DictionaryBundle.Load(byte[], byte[], byte[], byte[])
 ```
 
 ### 条件分岐パターン

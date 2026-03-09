@@ -247,7 +247,7 @@ gh-pages ブランチ
 ├── StreamingAssets/
 │   └── uPiper/
 │       ├── Dictionaries/*.json     # カスタム辞書 (~48KB)
-│       └── MeCab/naist_jdic.zip    # MeCab辞書 (23MB)
+│       └── OpenJTalk/naist_jdic.zip # MeCab辞書 (23MB)
 └── TemplateData/                   # テンプレート静的リソース
 ```
 

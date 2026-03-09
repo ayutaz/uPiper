@@ -343,7 +343,7 @@ On non-WebGL platforms, files are read directly via `File.ReadAllBytes`, but on 
 │ IndexedDBCache.StoreAsync            │  Save to cache for next time
 └───────────┬──────────────────────────┘
             ↓
-        DictionaryBundle.Load(byte[])
+        DictionaryBundle.Load(byte[], byte[], byte[], byte[])
 ```
 
 ### Conditional Compilation Pattern

@@ -99,7 +99,7 @@ jobs:
         echo "Copied JS helpers into build output"
 
     - name: Upload WebGL build artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: webgl-build
         path: build/WebGL/Web
@@ -114,7 +114,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
     - name: Download WebGL build
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: webgl-build
         path: ./site
@@ -174,12 +174,12 @@ jobs:
     - name: Inject JS helpers into index.html
       run: |
         if [ -f ./site/index.html ]; then
-          # Add split-file-loader.js before closing </head>
-          if [ -f ./site/split-file-loader.js ]; then
+          # Add split-file-loader.js before closing </head> (skip if already injected)
+          if [ -f ./site/split-file-loader.js ] && ! grep -q 'split-file-loader.js' ./site/index.html; then
             sed -i 's|</head>|<script src="split-file-loader.js"></script>\n</head>|' ./site/index.html
           fi
-          # Add github-pages-adapter.js before closing </head>
-          if [ -f ./site/github-pages-adapter.js ]; then
+          # Add github-pages-adapter.js before closing </head> (skip if already injected)
+          if [ -f ./site/github-pages-adapter.js ] && ! grep -q 'github-pages-adapter.js' ./site/index.html; then
             sed -i 's|</head>|<script src="github-pages-adapter.js"></script>\n</head>|' ./site/index.html
           fi
           echo "Updated index.html:"

@@ -40,7 +40,7 @@ namespace uPiper.Core.Platform
             CancellationToken cancellationToken = default)
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
-            var url = Path.Combine(Application.streamingAssetsPath, relativePath);
+            var url = Application.streamingAssetsPath + "/" + relativePath.Replace('\\', '/');
             using var request = UnityWebRequest.Get(url);
             await SendWebRequestWithProgressAsync(request, progress, cancellationToken);
 
@@ -93,7 +93,7 @@ namespace uPiper.Core.Platform
             CancellationToken cancellationToken = default)
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
-            var url = Path.Combine(Application.streamingAssetsPath, relativePath);
+            var url = Application.streamingAssetsPath + "/" + relativePath.Replace('\\', '/');
             using var request = UnityWebRequest.Get(url);
             await SendWebRequestWithProgressAsync(request, progress, cancellationToken);
 
@@ -136,43 +136,6 @@ namespace uPiper.Core.Platform
                 progress?.Report(operation.progress);
                 await Task.Yield();
             }
-        }
-
-        /// <summary>
-        /// Converts a UnityWebRequestAsyncOperation to a Task using TaskCompletionSource.
-        /// </summary>
-        private static Task SendWebRequestAsync(
-            UnityWebRequest request,
-            CancellationToken cancellationToken)
-        {
-            var tcs = new TaskCompletionSource<bool>();
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                tcs.SetCanceled();
-                return tcs.Task;
-            }
-
-            var registration = cancellationToken.Register(() =>
-            {
-                request.Abort();
-                tcs.TrySetCanceled();
-            });
-
-            request.SendWebRequest().completed += _ =>
-            {
-                registration.Dispose();
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    tcs.TrySetCanceled();
-                }
-                else
-                {
-                    tcs.TrySetResult(true);
-                }
-            };
-
-            return tcs.Task;
         }
 #endif
     }

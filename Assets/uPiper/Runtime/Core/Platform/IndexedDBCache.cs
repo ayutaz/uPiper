@@ -197,9 +197,15 @@ namespace uPiper.Core.Platform
             var parts = message.Split('|');
             if (parts.Length >= 3 && int.TryParse(parts[0], out var callbackId))
             {
-                var ptr = new IntPtr(long.Parse(parts[1]));
-                var length = int.Parse(parts[2]);
-                IndexedDBCache.HandleLoadComplete(callbackId, ptr, length);
+                if (long.TryParse(parts[1], out var ptrValue) && int.TryParse(parts[2], out var length))
+                {
+                    var ptr = new IntPtr(ptrValue);
+                    IndexedDBCache.HandleLoadComplete(callbackId, ptr, length);
+                }
+                else
+                {
+                    IndexedDBCache.HandleLoadError(callbackId, $"Invalid callback format: {message}");
+                }
             }
         }
 
