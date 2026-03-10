@@ -203,6 +203,9 @@ namespace uPiper.Core.AudioGeneration
         {
             ValidateGenerationPrerequisites(phonemeIds);
 
+            if (!_supportsProsody)
+                throw new InvalidOperationException("This model does not support prosody features.");
+
             // Unity.InferenceEngineの操作はメインスレッドで実行する必要がある
             return await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
             {
@@ -226,10 +229,6 @@ namespace uPiper.Core.AudioGeneration
 
             if (phonemeIds == null || phonemeIds.Length == 0)
                 throw new ArgumentException("Phoneme IDs cannot be null or empty.", nameof(phonemeIds));
-
-            // Prosody非対応モデルはサポートしない
-            if (!_supportsProsody)
-                throw new InvalidOperationException("This model does not support prosody features. Only prosody-enabled models are supported.");
         }
 
         /// <summary>
