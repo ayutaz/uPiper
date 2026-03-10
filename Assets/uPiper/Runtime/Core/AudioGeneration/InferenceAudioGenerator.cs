@@ -434,9 +434,16 @@ namespace uPiper.Core.AudioGeneration
             }
 
             // GPU Compute has known issues with VITS models producing silent/corrupted audio
-            // Force GPU Pixel or CPU for better compatibility
+            // Force GPU Pixel or CPU for better compatibility (except WebGPU where GPUCompute works correctly)
             if (config.Backend == InferenceBackend.GPUCompute)
             {
+#if UNITY_WEBGL
+                if (Platform.PlatformHelper.IsWebGPU)
+                {
+                    PiperLogger.LogInfo("[InferenceAudioGenerator] GPUCompute backend on WebGPU - allowing (WebGPU compute shaders are supported).");
+                    return BackendType.GPUCompute;
+                }
+#endif
                 PiperLogger.LogWarning("[InferenceAudioGenerator] GPU Compute backend has known issues with VITS audio models.");
                 PiperLogger.LogWarning("[InferenceAudioGenerator] Switching to GPU Pixel backend for better compatibility.");
                 PiperLogger.LogWarning("[InferenceAudioGenerator] If issues persist, please use CPU backend explicitly.");
@@ -462,8 +469,14 @@ namespace uPiper.Core.AudioGeneration
             if (config.Backend == InferenceBackend.Auto)
             {
 #if UNITY_WEBGL
-                // WebGL typically works better with GPUPixel
-                PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUPixel backend for WebGL");
+                // WebGPU: GPUCompute for better performance via compute shaders
+                // WebGL2: GPUPixel as fallback
+                if (Platform.PlatformHelper.IsWebGPU)
+                {
+                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUCompute backend for WebGPU");
+                    return BackendType.GPUCompute;
+                }
+                PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUPixel backend for WebGL2");
                 return BackendType.GPUPixel;
 #elif UNITY_IOS || UNITY_ANDROID
                 // Mobile platforms often have GPU support but may have compatibility issues
