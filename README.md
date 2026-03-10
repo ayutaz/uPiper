@@ -109,15 +109,15 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 
 ## サポートプラットフォーム
 
-### 現在サポート中
 - ✅ Windows (x64)
 - ✅ macOS (Apple Silicon/Intel)
 - ✅ Linux (x64)
 - ✅ Android (ARM64/ARMv7/x86/x86_64)
 - ✅ iOS (ARM64, iOS 11.0+)
+- ✅ WebGL (WebGPU / WebGL2)
 
-### 未対応
-- ❌ WebGL - 技術調査中（piper-plus連携により将来対応予定）
+> **WebGL**: WebGPU対応ブラウザではGPUComputeによる高速推論、WebGL2環境ではGPUPixelに自動フォールバックします。
+> [デモページ](https://ayutaz.github.io/uPiper/)
 
 ## GPU推論の使用
 
@@ -146,9 +146,10 @@ var config = new PiperConfig
 | Windows/Linux | GPUPixel | VITSモデルとの互換性が良好 |
 | macOS | CPU | MetalはUnity.InferenceEngineで問題があるため |
 | iOS/Android | GPUPixel | モバイルGPUに最適化 |
-| WebGL | GPUPixel | WebGL専用バックエンド |
+| WebGL (WebGPU) | GPUCompute | WebGPU Compute Shaderによる高速推論 |
+| WebGL (WebGL2) | GPUPixel | WebGL2フォールバック |
 
-> **注意**: GPUComputeはVITSモデルで音声が正しく生成されない問題があるため、現在はGPUPixelまたはCPUの使用を推奨します。
+> **注意**: デスクトップ環境ではGPUComputeはVITSモデルで音声が正しく生成されない問題があるため、GPUPixelまたはCPUの使用を推奨します。WebGPU環境ではGPUComputeが正常に動作します。
 
 詳細は[GPU推論ガイド](docs/features/gpu/gpu-inference.md)を参照してください。
 
