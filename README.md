@@ -25,7 +25,7 @@
 - 高品質な音声合成（piper-plusベース）
 - 多言語対応（日本語、英語）
 - Unity AI Inference Engineによる高速推論
-- OpenJTalkによる高精度な日本語音素化（Windows/macOS/Linux/Android/iOS）
+- dot-net-g2p（MeCab辞書）による高精度な日本語音素化（全プラットフォーム対応）
 - GPU推論サポート（GPUCompute/GPUPixel）
 - **Prosody（韻律）サポート**: より自然なイントネーションの音声合成
 - **カスタム辞書**: 技術用語・固有名詞の読み変換
@@ -40,7 +40,7 @@
 
 ## Requirements
 * Unity 6000.0.58f2
-* Unity AI Interface (Inference Engine) 2.2.x
+* Unity AI Inference Engine (com.unity.ai.inference) 2.5.0
 
 ## インストール
 
@@ -62,7 +62,7 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 2. **「uPiper」パッケージを選択**
 3. **「Samples」セクションを展開**
 4. **以下のサンプルをインポート**：
-   - **OpenJTalk Dictionary Data** (必須) - 日本語音声合成用辞書
+   - **OpenJTalk Dictionary Data** (必須) - 日本語音声合成用MeCab辞書
    - **CMU Pronouncing Dictionary** (必須) - 英語音声合成用辞書
    - **Voice Models** (推奨) - 高品質音声モデル
    - **Basic TTS Demo** (オプション) - デモシーン

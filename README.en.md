@@ -25,7 +25,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 - High-quality speech synthesis (piper-plus based)
 - Multi-language support (Japanese, English)
 - Fast inference with Unity AI Inference Engine
-- High-precision Japanese phonemization with OpenJTalk (Windows/macOS/Linux/Android/iOS)
+- High-precision Japanese phonemization with dot-net-g2p (MeCab dictionary, all platforms)
 - GPU inference support (GPUCompute/GPUPixel)
 - **Prosody Support**: More natural intonation in speech synthesis
 - **Custom Dictionary**: Reading conversion for technical terms and proper nouns
@@ -40,7 +40,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 
 ## Requirements
 * Unity 6000.0.58f2
-* Unity AI Interface (Inference Engine) 2.2.x
+* Unity AI Inference Engine (com.unity.ai.inference) 2.5.0
 
 ## Installation
 
@@ -62,7 +62,7 @@ After installing from Package Manager, **you must import the data following thes
 2. **Select the "uPiper" package**
 3. **Expand the "Samples" section**
 4. **Import the following samples**:
-   - **OpenJTalk Dictionary Data** (Required) - Dictionary for Japanese speech synthesis
+   - **OpenJTalk Dictionary Data** (Required) - MeCab dictionary for Japanese speech synthesis
    - **CMU Pronouncing Dictionary** (Required) - Dictionary for English speech synthesis
    - **Voice Models** (Recommended) - High-quality voice models
    - **Basic TTS Demo** (Optional) - Demo scene

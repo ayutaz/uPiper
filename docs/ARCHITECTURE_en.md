@@ -382,8 +382,6 @@ When `GPUCompute` is explicitly specified, it is allowed on WebGPU environments,
 2. Copies `split-file-loader.js` and `github-pages-adapter.js` to the build output
 3. Injects loader script tags into `index.html`
 
-For detailed architecture, see [webgl-architecture.md](webgl-architecture.md).
-
 ## Performance Characteristics
 
 ### Memory Usage

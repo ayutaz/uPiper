@@ -373,8 +373,6 @@ public static bool IsWebGPU =>
 2. `split-file-loader.js`と`github-pages-adapter.js`をビルド出力にコピー
 3. `index.html`にローダースクリプトタグを注入
 
-詳細なアーキテクチャについては [webgl-architecture.md](webgl-architecture.md) を参照してください。
-
 ## パフォーマンス特性
 
 ### メモリ使用量
