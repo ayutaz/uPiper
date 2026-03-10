@@ -36,7 +36,7 @@ jobs:
     - uses: actions/checkout@v5
       with:
         repository: ayutaz/dot-net-g2p
-        ref: feature/spanish-g2p
+        ref: main
         path: dot-net-g2p
 
     - name: Fix local package paths for CI
@@ -91,6 +91,9 @@ jobs:
         buildMethod: UnityBuilderAction.BuildScript.Build
         allowDirtyBuild: true
         customParameters: -webglCompression ${{ inputs.compression || 'Disabled' }}
+
+    - name: Fix build output permissions
+      run: sudo chown -R $(id -u):$(id -g) build/
 
     - name: Copy JS helpers into build output
       run: |
