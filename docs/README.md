@@ -25,8 +25,6 @@
 - ARCHITECTURE_en.md - アーキテクチャ（英語）
 - DEVELOPMENT_LOG.md - 開発ログ
 - setup-guide.md - セットアップガイド
-- webgl-architecture.md - WebGLアーキテクチャ
-- webgl-research.md - WebGL調査
 
 ## ドキュメントの探し方
 
