@@ -279,7 +279,7 @@ Dictionaries are placed in `StreamingAssets/uPiper/Dictionaries/`:
 - **Linux**: x64 (Ubuntu 20.04+)
 - **Android**: arm64-v8a, armeabi-v7a, x86, x86_64 (API 21+)
 - **iOS**: arm64 (iOS 11.0+)
-- **WebGL**: Supported (dedicated components for file I/O and threading constraint workarounds)
+- **WebGL**: Supported (dedicated components for file I/O and threading constraint workarounds. Uses GPUCompute on WebGPU, GPUPixel on WebGL2)
 
 ### Platform-Specific Implementation
 
@@ -301,6 +301,7 @@ dot-net-g2p is a pure C# implementation, so no platform-specific native librarie
 #### WebGL
 - Direct file system access is unavailable; a dedicated async loading mechanism is used
 - Multithreading is unavailable; `Task.Run` is replaced with main thread direct execution
+- WebGPU support: `PlatformHelper.IsWebGPU` detects WebGPU environments and automatically switches the Inference Backend
 - See the "WebGL Support" section below for details
 
 ## WebGL Support
@@ -345,6 +346,25 @@ On non-WebGL platforms, files are read directly via `File.ReadAllBytes`, but on 
             ↓
         DictionaryBundle.Load(byte[], byte[], byte[], byte[])
 ```
+
+### Inference Backend Selection (WebGPU Support)
+
+In WebGL environments, the Inference Backend is automatically selected based on the browser's graphics API:
+
+| Environment | `InferenceBackend.Auto` Selection | Reason |
+|-------------|----------------------------------|--------|
+| WebGPU | GPUCompute | Higher performance via compute shader support |
+| WebGL2 | GPUPixel | Pixel shader inference due to lack of compute shader support |
+
+This detection uses the `PlatformHelper.IsWebGPU` property:
+
+```csharp
+// PlatformHelper.cs
+public static bool IsWebGPU =>
+    IsWebGL && SystemInfo.graphicsDeviceType == GraphicsDeviceType.WebGPU;
+```
+
+When `GPUCompute` is explicitly specified, it is allowed on WebGPU environments, but falls back to `GPUPixel` on WebGL2 for compatibility.
 
 ### Conditional Compilation Pattern
 

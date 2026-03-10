@@ -33,6 +33,12 @@ This document records the development progress and milestones achieved during th
   - `split-file-loader.js`: 分割ファイル並列DL→透過的結合
   - `github-pages-adapter.js`: GitHub Pagesパス解決
 
+- **WebGL Phase 4: WebGPU対応** (commit 1260c61)
+  - `ProjectSettings.asset`: `webGLEnableWebGPU`を有効化（WebGPU優先、非対応ブラウザはWebGL2フォールバック）
+  - `PlatformHelper.IsWebGPU`: WebGPU環境判定プロパティ追加（`IsWebGL && SystemInfo.graphicsDeviceType == GraphicsDeviceType.WebGPU`）
+  - `InferenceAudioGenerator.DetermineBackendType()`: WebGPU環境でGPUComputeを優先、WebGL2ではGPUPixelにフォールバック
+  - Phase 4-4（GPUCompute動作検証）・4-5（パフォーマンスベンチマーク）はデプロイ後に手動検証予定
+
 - **CI/CD改善** (commit 50918af)
   - `deploy-webgl.yml`: WebGLビルド→GitHub Pagesデプロイワークフロー
   - `unity-build.yml`: WebGLをビルドマトリクスに追加
@@ -188,7 +194,7 @@ This document records the development progress and milestones achieved during th
 - **Documentation**: Comprehensive guides and API references
 
 ### Known Limitations
-- WebGL supported (Phase 1-3 complete, Phase 4 WebGPU pending)
+- WebGL supported (Phase 1-4 complete, Phase 4-4/4-5 検証はデプロイ後に実施予定)
 - Mobile platforms (iOS/Android) supported (v0.2.0+)
 - Metal GPU inference requires CPU fallback
 

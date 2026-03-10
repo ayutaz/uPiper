@@ -73,7 +73,54 @@ WebGLビルド起動時:
           └─ [フォールバック] 失敗時 → CPU（最終手段）
 ```
 
-### 2.3 Player Settings構成
+### 2.3 WebGPU対応
+
+#### 2.3.1 概要
+
+Unity Player SettingsでWebGPUを有効化する。WebGPU対応ブラウザではWebGPU APIを使用し、非対応ブラウザはWebGL2に自動フォールバックする。
+
+| ブラウザ | WebGPU対応バージョン |
+|---------|---------------------|
+| Chrome | 113+ |
+| Edge | 113+ |
+| Firefox | 141+ |
+| Safari | 26+ |
+
+#### 2.3.2 バックエンド自動選択の変更
+
+`InferenceAudioGenerator.DetermineBackendType()` がWebGPU検出時にGPUComputeを自動選択する。WebGPU環境ではCompute Shaderが利用可能なため、GPUComputeバックエンドによる高速推論が実現できる。WebGL2環境では従来通りGPUPixelを使用する。
+
+```csharp
+// DetermineBackendType() の判定フロー
+#if UNITY_WEBGL && !UNITY_EDITOR
+    if (PlatformHelper.IsWebGPU)
+        return BackendType.GPUCompute;  // WebGPU: Compute Shader対応
+    else
+        return BackendType.GPUPixel;    // WebGL2: ピクセルシェーダーのみ
+#endif
+```
+
+#### 2.3.3 PlatformHelper.IsWebGPU
+
+ランタイムでWebGPU環境かどうかを判定するプロパティ。`SystemInfo.graphicsDeviceType` を使用してWebGPUグラフィックスデバイスを検出する。
+
+```csharp
+public static bool IsWebGPU =>
+    SystemInfo.graphicsDeviceType == GraphicsDeviceType.WebGPU;
+```
+
+#### 2.3.4 GPUCompute許可の例外処理
+
+通常、WebGL環境ではGPUComputeを明示的に指定してもGPUPixelに強制変換するが、WebGPU環境では例外的にGPUComputeをそのまま許可する。これにより、ユーザーが明示的にGPUComputeを指定した場合もWebGPU環境では正常に動作する。
+
+#### 2.3.5 期待される効果
+
+| 項目 | 効果 |
+|------|------|
+| VITS推論速度 | Compute Shader利用により1.5-4倍の高速化 |
+| メモリ効率 | GPUComputeバックエンドにより30-50%のメモリ効率改善 |
+
+### 2.4 Player Settings構成
 
 ```
 Graphics APIs (Web):
@@ -82,7 +129,7 @@ Graphics APIs (Web):
 Auto Graphics API: OFF
 ```
 
-### 2.4 コード変更箇所
+### 2.5 コード変更箇所
 
 | ファイル | 変更内容 |
 |---------|---------|
@@ -91,7 +138,7 @@ Auto Graphics API: OFF
 | `PlatformHelper.cs` | `IsWebGPU`プロパティ追加 |
 | `ProjectSettings.asset` | `webGLEnableWebGPU: 1` |
 
-### 2.5 VITSオペレータ互換性
+### 2.6 VITSオペレータ互換性
 
 全51-52種類のオペレータがGPUPixel/GPUCompute両方で対応済み。ONNX Opset 15サポート。GroupNormalizationは未対応だがVITSはInstanceNormを使用するため問題なし。
 
@@ -546,12 +593,13 @@ Phase 4（WebGPU）               │        │        │███████
 
 ### 9.3 ブラウザ互換性テスト
 
-| ブラウザ | テスト対象 |
-|---------|-----------|
-| Chrome (最新) | WebGL2 + GPUPixel / WebGPU + GPUCompute |
-| Firefox (最新) | WebGL2 + GPUPixel |
-| Edge (最新) | WebGL2 + GPUPixel |
-| Safari (最新) | WebGL2 + GPUPixel |
+| ブラウザ | WebGPU対応 | テスト対象 |
+|---------|-----------|-----------|
+| Chrome 113+ | Yes | WebGPU + GPUCompute / WebGL2 + GPUPixel |
+| Edge 113+ | Yes | WebGPU + GPUCompute / WebGL2 + GPUPixel |
+| Firefox 141+ | Yes | WebGPU + GPUCompute / WebGL2 + GPUPixel |
+| Safari 26+ | Yes | WebGPU + GPUCompute / WebGL2 + GPUPixel |
+| 上記より古いバージョン | No | WebGL2 + GPUPixel（フォールバック） |
 
 ---
 

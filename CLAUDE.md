@@ -145,7 +145,7 @@ StreamingAssets/uPiper/     # 実行時データ（辞書）
 | Windows/Linux | GPUPixel |
 | macOS | CPU（Metal非対応） |
 | iOS/Android | GPUPixel |
-| WebGL | GPUPixel（Phase 1-3完了、Phase 2/4未実装） |
+| WebGL | GPUPixel / GPUCompute（Phase 1-4完了。WebGPU時はGPUCompute自動選択、WebGL2時はGPUPixel） |
 
 ## 定義シンボル
 
