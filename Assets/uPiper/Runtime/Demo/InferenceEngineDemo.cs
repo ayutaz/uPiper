@@ -141,6 +141,7 @@ namespace uPiper.Demo
 
         private Dictionary<string, string> _modelLanguages = new()
         {
+            { "ja_JP-test-medium", "ja" },
             { "tsukuyomi-chan", "ja" }
         };
 
@@ -462,7 +463,7 @@ namespace uPiper.Demo
             if (_modelDropdown != null)
             {
                 _modelDropdown.ClearOptions();
-                _modelDropdown.AddOptions(new List<string> { "tsukuyomi-chan" });
+                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "tsukuyomi-chan" });
                 _modelDropdown.onValueChanged.AddListener(OnModelChanged);
             }
 
@@ -520,7 +521,7 @@ namespace uPiper.Demo
 
         private void OnModelChanged(int index)
         {
-            var modelNames = new[] { "tsukuyomi-chan" };
+            var modelNames = new[] { "ja_JP-test-medium", "tsukuyomi-chan" };
             var modelName = modelNames[index];
             var language = _modelLanguages[modelName];
 
@@ -672,7 +673,7 @@ namespace uPiper.Demo
             try
             {
                 // モデル名を取得
-                var modelNames = new[] { "tsukuyomi-chan" };
+                var modelNames = new[] { "ja_JP-test-medium", "tsukuyomi-chan" };
                 var modelName = modelNames[_modelDropdown?.value ?? 0];
                 PiperLogger.LogDebug($"Selected model: {modelName}");
 
@@ -1336,7 +1337,7 @@ namespace uPiper.Demo
         /// </summary>
         private string GetModelNameForIndex(int index)
         {
-            var modelNames = new[] { "tsukuyomi-chan" };
+            var modelNames = new[] { "ja_JP-test-medium", "tsukuyomi-chan" };
             return index >= 0 && index < modelNames.Length ? modelNames[index] : modelNames[0];
         }
 
