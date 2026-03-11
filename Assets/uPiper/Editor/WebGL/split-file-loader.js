@@ -19,6 +19,14 @@
   var originalFetch = window.fetch;
 
   /**
+   * Check if a URL points to a Build directory file (only these are split).
+   * WebGLSplitDataProcessor only splits files in the Build/ directory.
+   */
+  function isBuildFile(url) {
+    return url.indexOf('/Build/') !== -1 || url.indexOf('Build/') === 0;
+  }
+
+  /**
    * Generate chunk suffixes: aa, ab, ..., az, ba, bb, ...
    */
   function chunkSuffix(index) {
@@ -95,8 +103,8 @@
   window.fetch = async function(input, init) {
     var url = typeof input === 'string' ? input : (input && input.url ? input.url : '');
 
-    // Skip if this is already a chunk or meta request
-    if (url.indexOf('.part') !== -1 || url.indexOf('.split-meta') !== -1) {
+    // Skip if this is already a chunk or meta request, or not a Build file
+    if (url.indexOf('.part') !== -1 || url.indexOf('.split-meta') !== -1 || !isBuildFile(url)) {
       return originalFetch.apply(this, arguments);
     }
 
@@ -140,8 +148,8 @@
     var xhr = this;
     var args = arguments;
 
-    // Skip non-split requests
-    if (!url || url.indexOf('.part') !== -1 || url.indexOf('.split-meta') !== -1) {
+    // Skip non-split requests or non-Build files
+    if (!url || url.indexOf('.part') !== -1 || url.indexOf('.split-meta') !== -1 || !isBuildFile(url)) {
       return originalXHRSend.apply(xhr, args);
     }
 
