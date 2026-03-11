@@ -110,7 +110,7 @@
 
     // Check for split metadata
     var meta = await loadSplitMeta(url);
-    if (!meta) {
+    if (!meta || meta.chunks === 0) {
       return originalFetch.apply(this, arguments);
     }
 
@@ -155,7 +155,7 @@
 
     // Check for split metadata asynchronously
     loadSplitMeta(url).then(function(meta) {
-      if (!meta) {
+      if (!meta || meta.chunks === 0) {
         originalXHRSend.apply(xhr, args);
         return;
       }

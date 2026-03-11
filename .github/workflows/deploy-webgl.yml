@@ -154,6 +154,19 @@ jobs:
         done
 
         echo "File splitting complete."
+
+        # Generate split-meta markers for non-split Build files (prevents 404 probes)
+        echo "Generating split-meta markers for non-split Build files..."
+        if [ -d ./site/Build ]; then
+          for filepath in ./site/Build/*; do
+            if [ -f "$filepath" ] && [ ! -f "${filepath}.split-meta" ]; then
+              basename=$(basename "$filepath")
+              echo "{\"originalFile\":\"${basename}\",\"chunks\":0}" > "${filepath}.split-meta"
+              echo "Created not-split marker for ${basename}"
+            fi
+          done
+        fi
+
         echo ""
         echo "Final site contents:"
         find ./site -type f -exec ls -lh {} \; | sort -k5 -h

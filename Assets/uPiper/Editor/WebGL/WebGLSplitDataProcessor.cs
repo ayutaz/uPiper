@@ -48,7 +48,15 @@ namespace uPiper.Editor.WebGL
             foreach (var filePath in files)
             {
                 var fileInfo = new FileInfo(filePath);
-                if (fileInfo.Length <= SplitThreshold) continue;
+                if (fileInfo.Length <= SplitThreshold)
+                {
+                    // 非分割ファイルにもマーカーを生成（split-file-loaderの404回避）
+                    var markerPath = $"{filePath}.split-meta";
+                    var marker = $"{{\"originalFile\":\"{fileInfo.Name}\",\"chunks\":0}}";
+                    File.WriteAllText(markerPath, marker);
+                    Debug.Log($"{LogPrefix} Created not-split marker: {fileInfo.Name}");
+                    continue;
+                }
 
                 Debug.Log($"{LogPrefix} File exceeds {SplitThreshold / 1024 / 1024}MB, splitting: " +
                           $"{fileInfo.Name} ({fileInfo.Length / 1024 / 1024}MB)");
