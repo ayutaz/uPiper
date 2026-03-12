@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.3.0] - 2026/03/12
 
-### ✨ Added
+### Added
 
 - **WebGLプラットフォーム対応**: WebGLビルドをサポート
   - StreamingAssets非同期ローダー（UnityWebRequest経由）
@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - GitHub Pagesデプロイワークフロー追加
   - 大容量ファイル自動分割（WebGLSplitDataProcessor）
 
-### 🐛 Fixed
+### Fixed
 
 - PhonemizerErrorHandlingTestsのコンパイルエラー修正（UnityEngine.TestTools using追加）
 
