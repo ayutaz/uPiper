@@ -82,11 +82,14 @@ namespace UnityBuilderAction
             Debug.Log($"Build location: {buildLocation}");
 
             // Configure build options
+            // CI環境（GitHub Actions等）ではRelease、ローカルではDevelopment
             var buildOptions = BuildOptions.None;
-            if (Debug.isDebugBuild)
+            var isCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI"));
+            if (!isCi)
             {
                 buildOptions |= BuildOptions.Development;
             }
+            Debug.Log($"Build mode: {(isCi ? "Release (CI)" : "Development (Local)")}");
 
             // Perform build
             var buildReport = BuildPipeline.BuildPlayer(new BuildPlayerOptions
