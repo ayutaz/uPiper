@@ -6,7 +6,7 @@
 
 - 🎌 **日本語対応**: dot-net-g2p による高精度な日本語音素化（純粋C#実装）
 - 🚀 **高速処理**: Unity AI Inference Engine による最適化された推論
-- 🎮 **マルチプラットフォーム**: Windows, Linux, macOS に対応
+- 🎮 **マルチプラットフォーム**: Windows, Linux, macOS, Android, iOS, WebGL に対応
 - 🔧 **簡単な統合**: シンプルな API とエディタ拡張
 
 ## インストール
@@ -29,7 +29,7 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 2. **「uPiper」パッケージを選択**
 3. **「Samples」セクションを展開**
 4. **以下のサンプルをインポート**：
-   - 📚 **OpenJTalk Dictionary Data** (必須) - 日本語音声合成用MeCab辞書
+   - 📚 **MeCab Dictionary Data** (必須) - 日本語音声合成用MeCab辞書
    - 📚 **CMU Pronouncing Dictionary** (必須) - 英語音声合成用辞書
    - 🎤 **Voice Models** (推奨) - 高品質音声モデル
    - 🎮 **Basic TTS Demo** (オプション) - デモシーン
@@ -136,7 +136,7 @@ Package Managerからサンプルをインポートできます：
 2. **"Samples" タブを開く**
 3. **利用可能なサンプル**：
    - **Basic TTS Demo** - 日本語・英語テキストの音声合成デモ
-   - **OpenJTalk Dictionary Data** - 日本語音声合成用MeCab辞書（必須）
+   - **MeCab Dictionary Data** - 日本語音声合成用MeCab辞書（必須）
    - **CMU Pronouncing Dictionary** - 英語音声合成用辞書（必須）
    - **Voice Models** - 高品質音声モデル（推奨）
 
@@ -171,6 +171,7 @@ uPiper/
   - macOS: macOS 10.15 以降（Universal）
   - Android: Android 5.0 (API 21) 以降（arm64-v8a, armeabi-v7a, x86, x86_64）
   - iOS: iOS 11.0 以降（ARM64）
+  - WebGL: WebGPU / WebGL2 対応ブラウザ
 
 ## ライセンス
 

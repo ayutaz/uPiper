@@ -34,7 +34,7 @@
 
 | モデル名 | 言語 | Prosody対応 | 説明 |
 |---------|------|------------|------|
-| ja_JP-test-medium | 日本語 | No | 標準日本語モデル |
+| ja_JP-test-medium | 日本語 | Yes | 標準日本語モデル（Prosody対応） |
 | en_US-ljspeech-medium | 英語 | No | 標準英語モデル |
 | tsukuyomi-chan | 日本語 | Yes | Prosody対応日本語モデル（より自然なイントネーション） |
 
@@ -62,7 +62,7 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 2. **「uPiper」パッケージを選択**
 3. **「Samples」セクションを展開**
 4. **以下のサンプルをインポート**：
-   - **OpenJTalk Dictionary Data** (必須) - 日本語音声合成用MeCab辞書
+   - **MeCab Dictionary Data** (必須) - 日本語音声合成用MeCab辞書
    - **CMU Pronouncing Dictionary** (必須) - 英語音声合成用辞書
    - **Voice Models** (推奨) - 高品質音声モデル
    - **Basic TTS Demo** (オプション) - デモシーン

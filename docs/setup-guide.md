@@ -111,9 +111,11 @@ For developers working on uPiper itself:
 ## Platform-Specific Notes
 
 ### WebGL
-- StreamingAssets access may be limited
-- Consider using Resources folder for critical data
-- Voice models may need optimization for web deployment
+- StreamingAssets are loaded asynchronously via `UnityWebRequest`
+- Custom dictionaries are loaded asynchronously during initialization
+- Large model files (100MB+) are automatically split for GitHub Pages deployment
+- WebGPU browsers use GPUCompute, WebGL2 browsers use GPUPixel
+- [Demo Page](https://ayutaz.github.io/uPiper/)
 
 ### Android
 - Dictionary files are automatically copied from StreamingAssets
