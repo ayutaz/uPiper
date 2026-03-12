@@ -1,20 +1,18 @@
 {
   "dependencies": {
     "com.dotnetg2p.core": {
-      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#5b531c7b0692ec20d892dd0bdfe67a1988059f3b",
+      "version": "file:../../dot-net-g2p/src/DotNetG2P.Core",
       "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "5b531c7b0692ec20d892dd0bdfe67a1988059f3b"
+      "source": "local",
+      "dependencies": {}
     },
     "com.dotnetg2p.mecab": {
-      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#5b531c7b0692ec20d892dd0bdfe67a1988059f3b",
+      "version": "file:../../dot-net-g2p/src/DotNetG2P.MeCab",
       "depth": 0,
-      "source": "git",
+      "source": "local",
       "dependencies": {
         "com.dotnetg2p.core": "1.3.0"
-      },
-      "hash": "5b531c7b0692ec20d892dd0bdfe67a1988059f3b"
+      }
     },
     "com.unity.ai.inference": {
       "version": "2.5.0",
