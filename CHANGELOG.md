@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026/03/12
+
+### ✨ Added
+
+- **WebGLプラットフォーム対応**: WebGLビルドをサポート
+  - StreamingAssets非同期ローダー（UnityWebRequest経由）
+  - IndexedDBキャッシュによるリソース永続化
+  - ローディング進捗UI
+  - WebGPU検出と適切なInferenceBackend自動選択
+  - GitHub Pagesデプロイワークフロー追加
+  - 大容量ファイル自動分割（WebGLSplitDataProcessor）
+
+### 🐛 Fixed
+
+- PhonemizerErrorHandlingTestsのコンパイルエラー修正（UnityEngine.TestTools using追加）
+
 ## [1.2.0] - 2026/03/07
 
 ### ⚠️ Breaking Changes
