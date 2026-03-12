@@ -134,7 +134,7 @@ namespace uPiper.Demo
         private AudioClipBuilder _audioBuilder;
         private PiperVoiceConfig _currentConfig;
         private bool _isGenerating;
-        private InferenceBackend _selectedBackend = InferenceBackend.CPU;
+        private InferenceBackend _selectedBackend = InferenceBackend.Auto;
         private GPUInferenceSettings _gpuSettings;
         private DotNetG2PPhonemizer _japanesePhonemizer;
         private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
@@ -495,12 +495,10 @@ namespace uPiper.Demo
             if (_backendDropdown != null)
             {
                 _backendDropdown.ClearOptions();
-                // GPU ComputeはVITSモデルとの互換性問題があるため除外
-                // AutoもGPU Computeを選択する可能性があるため除外
-                var options = new List<string> { "CPU", "GPU Pixel" };
+                var options = new List<string> { "Auto", "CPU", "GPU Pixel" };
                 _backendDropdown.AddOptions(options);
-                _backendDropdown.value = 0; // CPU
-                _selectedBackend = InferenceBackend.CPU; // 初期値を明示的に設定
+                _backendDropdown.value = 0; // Auto
+                _selectedBackend = InferenceBackend.Auto; // プラットフォームに応じて最速バックエンドを自動選択
                 _backendDropdown.onValueChanged.AddListener(OnBackendChanged);
             }
 
@@ -616,9 +614,10 @@ namespace uPiper.Demo
             // AutoとGPU Computeを除外したため、インデックスが変更されている
             _selectedBackend = index switch
             {
-                0 => InferenceBackend.CPU,
-                1 => InferenceBackend.GPUPixel,
-                _ => InferenceBackend.CPU
+                0 => InferenceBackend.Auto,
+                1 => InferenceBackend.CPU,
+                2 => InferenceBackend.GPUPixel,
+                _ => InferenceBackend.Auto
             };
             PiperLogger.LogDebug($"Backend changed to: {_selectedBackend}");
         }
