@@ -39,7 +39,11 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
         /// <returns>Array of ARPABET phonemes.</returns>
         public Task<string[]> PredictAsync(string word, CancellationToken cancellationToken = default)
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            return Task.FromResult(Predict(word));
+#else
             return Task.Run(() => Predict(word), cancellationToken);
+#endif
         }
 
         /// <summary>

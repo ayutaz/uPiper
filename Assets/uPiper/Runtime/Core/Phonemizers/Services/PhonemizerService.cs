@@ -117,6 +117,27 @@ namespace uPiper.Core.Phonemizers.Services
         {
             // Register rule-based backend for English
             var ruleBasedBackend = new uPiper.Core.Phonemizers.Backend.RuleBased.RuleBasedPhonemizer();
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL: initialize directly on main thread
+            try
+            {
+                ruleBasedBackend.InitializeAsync(new PhonemizerBackendOptions()).ContinueWith(t =>
+                {
+                    if (t.IsCompletedSuccessfully)
+                    {
+                        RegisterBackend(ruleBasedBackend);
+                    }
+                    else if (t.IsFaulted)
+                    {
+                        Debug.LogError($"Failed to initialize rule-based backend: {t.Exception?.Message}");
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to initialize rule-based backend: {ex.Message}");
+            }
+#else
             Task.Run(async () =>
             {
                 try
@@ -129,6 +150,7 @@ namespace uPiper.Core.Phonemizers.Services
                     Debug.LogError($"Failed to initialize rule-based backend: {ex.Message}");
                 }
             });
+#endif
         }
 
         /// <summary>

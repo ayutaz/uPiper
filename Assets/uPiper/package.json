@@ -36,9 +36,9 @@
       "path": "Samples~/BasicTTSDemo"
     },
     {
-      "displayName": "OpenJTalk Dictionary Data",
-      "description": "NAIST Japanese Dictionary for OpenJTalk (103MB). Required for Japanese text-to-speech functionality.",
-      "path": "Samples~/OpenJTalk Dictionary Data"
+      "displayName": "MeCab Dictionary Data",
+      "description": "NAIST Japanese Dictionary for dot-net-g2p (103MB). Required for Japanese text-to-speech functionality.",
+      "path": "Samples~/MeCab Dictionary Data"
     },
     {
       "displayName": "CMU Pronouncing Dictionary",

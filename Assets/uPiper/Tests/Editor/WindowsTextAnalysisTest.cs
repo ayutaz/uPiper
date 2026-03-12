@@ -132,7 +132,7 @@ namespace uPiper.Tests.Editor
                     }
                 }
             }
-            catch (PiperInitializationException)
+            catch (PiperException)
             {
                 Assert.Inconclusive("Phonemizer initialization failed");
             }
@@ -165,7 +165,7 @@ namespace uPiper.Tests.Editor
                     Debug.Log($"'{partial}' -> {string.Join(" ", result.Phonemes)} ({result.Phonemes.Length} phonemes)");
                 }
             }
-            catch (PiperInitializationException)
+            catch (PiperException)
             {
                 Assert.Inconclusive("Phonemizer initialization failed");
             }

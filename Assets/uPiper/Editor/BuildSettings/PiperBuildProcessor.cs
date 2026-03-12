@@ -76,7 +76,12 @@ namespace uPiper.Editor.BuildSettings
             PiperLogger.LogInfo("[PiperBuildProcessor] Configuring WebGL build settings");
 
             // WebGL固有の設定
-            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
+            // GitHub PagesはContent-Encoding: gzipヘッダーを付与できないため、
+            // CI環境では圧縮を無効にする（ローカルビルドではGzipを使用）
+            var isCi = !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("GITHUB_WORKFLOW"));
+            PlayerSettings.WebGL.compressionFormat = isCi
+                ? WebGLCompressionFormat.Disabled
+                : WebGLCompressionFormat.Gzip;
             // Unity 6ではデフォルトテンプレートを使用
             PlayerSettings.WebGL.template = "APPLICATION:Default";
 

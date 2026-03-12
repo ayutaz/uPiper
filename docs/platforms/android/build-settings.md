@@ -34,25 +34,9 @@ Edit → Preferences → External Tools
 - Android NDK: Unityが自動的に設定
 - JDK: Unityが自動的に設定
 
-## ネイティブライブラリの配置
+## 音素化ライブラリについて
 
-すべてのAndroidネイティブライブラリは以下の構造で配置されています：
-
-```
-Assets/
-└── uPiper/
-    └── Plugins/
-        └── Android/
-            └── libs/
-                ├── arm64-v8a/
-                │   └── libopenjtalk_wrapper.so
-                ├── armeabi-v7a/
-                │   └── libopenjtalk_wrapper.so
-                ├── x86/
-                │   └── libopenjtalk_wrapper.so
-                └── x86_64/
-                    └── libopenjtalk_wrapper.so
-```
+uPiperの日本語音素化にはdot-net-g2p（純粋C#実装）を使用しており、ネイティブライブラリ（.so）は不要です。辞書データ（NAIST Japanese Dictionary）はStreamingAssetsに配置されます。
 
 ## ビルドとテスト
 
@@ -72,13 +56,10 @@ adb logcat -s Unity
 
 ### 3. トラブルシューティング
 
-#### ライブラリが読み込まれない場合
-- Player Settings → Other Settings → Configuration → Scripting Backend が `IL2CPP` になっているか確認
-- すべてのTarget Architecturesが有効になっているか確認
-
 #### 音素化が動作しない場合
 - adb logcatでエラーログを確認
-- OpenJTalk辞書がStreamingAssetsに含まれているか確認
+- MeCab辞書（NAIST Japanese Dictionary）がStreamingAssetsに含まれているか確認
+- Player Settings → Other Settings → Configuration → Scripting Backend が `IL2CPP` になっているか確認
 
 ## CI/CD用の設定
 

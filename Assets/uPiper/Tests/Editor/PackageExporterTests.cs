@@ -150,6 +150,7 @@ namespace uPiper.Tests.Editor
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
             Assert.IsNotNull(exportUnityPackageMethod, "ExportUnityPackage method should exist");
 
+#if UPIPER_DEVELOPMENT
             var exportUPMPackageMethod = exporterType.GetMethod("ExportUPMPackage",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
             Assert.IsNotNull(exportUPMPackageMethod, "ExportUPMPackage method should exist");
@@ -157,6 +158,7 @@ namespace uPiper.Tests.Editor
             var exportBothFormatsMethod = exporterType.GetMethod("ExportBothFormats",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
             Assert.IsNotNull(exportBothFormatsMethod, "ExportBothFormats method should exist");
+#endif
 
             var exportUnityPackageCIMethod = exporterType.GetMethod("ExportUnityPackageCI",
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);

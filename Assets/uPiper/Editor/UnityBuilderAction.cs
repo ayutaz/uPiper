@@ -82,11 +82,16 @@ namespace UnityBuilderAction
             Debug.Log($"Build location: {buildLocation}");
 
             // Configure build options
+            // CI環境（GitHub Actions等）ではRelease、ローカルではDevelopment
+            // Note: game-ci/unity-builderはCI環境変数をDockerコンテナに転送しないため、
+            // 転送される GITHUB_WORKFLOW を使用して判定する
             var buildOptions = BuildOptions.None;
-            if (Debug.isDebugBuild)
+            var isCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_WORKFLOW"));
+            if (!isCi)
             {
                 buildOptions |= BuildOptions.Development;
             }
+            Debug.Log($"Build mode: {(isCi ? "Release (CI)" : "Development (Local)")}");
 
             // Perform build
             var buildReport = BuildPipeline.BuildPlayer(new BuildPlayerOptions
