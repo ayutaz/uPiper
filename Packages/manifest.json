@@ -7,8 +7,8 @@
     }
   ],
   "dependencies": {
-    "com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core",
-    "com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab",
+    "com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#5b531c7b0692ec20d892dd0bdfe67a1988059f3b",
+    "com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#5b531c7b0692ec20d892dd0bdfe67a1988059f3b",
     "io.github.hatayama.uloopmcp": "0.50.0",
     "org.nuget.microsoft.codeanalysis.csharp": "4.14.0",
     "com.unity.ai.inference": "2.5.0",
