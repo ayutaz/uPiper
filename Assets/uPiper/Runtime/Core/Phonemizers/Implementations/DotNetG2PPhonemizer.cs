@@ -74,7 +74,7 @@ namespace uPiper.Core.Phonemizers.Implementations
 #if UNITY_WEBGL && !UNITY_EDITOR
             // WebGL: skip synchronous initialization, use InitializeAsync() instead
             _dictionaryPath = null;
-            _customDictionary = new CustomDictionary(loadCustomDictionary);
+            _customDictionary = new CustomDictionary(false); // WebGL: async load in InitializeAsync()
 #else
             _dictionaryPath = dictionaryPath ?? GetDefaultDictionaryPath();
             _customDictionary = new CustomDictionary(loadCustomDictionary);
@@ -177,6 +177,9 @@ namespace uPiper.Core.Phonemizers.Implementations
                 _engine = new G2PEngine(_tokenizer);
 
                 Debug.Log("[DotNetG2PPhonemizer] WebGL: Dictionary initialized from ZIP");
+
+                // Load custom dictionaries asynchronously (WebGL cannot use synchronous file I/O)
+                await _customDictionary.LoadDefaultDictionariesAsync(cancellationToken);
             }
             catch (PiperInitializationException)
             {

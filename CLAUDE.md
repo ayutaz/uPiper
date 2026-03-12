@@ -10,7 +10,7 @@ uPiperは[piper-plus](https://github.com/ayutaz/piper-plus)ベースの高品質
 
 | モデル名 | 言語 | Prosody対応 | 説明 |
 |---------|------|------------|------|
-| ja_JP-test-medium | 日本語 | No | 標準日本語モデル |
+| ja_JP-test-medium | 日本語 | Yes | 標準日本語モデル（Prosody対応） |
 | en_US-ljspeech-medium | 英語 | No | 標準英語モデル |
 | tsukuyomi-chan | 日本語 | Yes | Prosody対応日本語モデル（より自然なイントネーション） |
 
