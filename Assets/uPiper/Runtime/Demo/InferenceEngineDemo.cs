@@ -12,9 +12,7 @@ using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
-#if !UNITY_WEBGL
 using uPiper.Core.Phonemizers.Implementations;
-#endif
 
 namespace uPiper.Demo
 {
@@ -138,14 +136,13 @@ namespace uPiper.Demo
         private bool _isGenerating;
         private InferenceBackend _selectedBackend = InferenceBackend.CPU;
         private GPUInferenceSettings _gpuSettings;
-#if !UNITY_WEBGL
         private DotNetG2PPhonemizer _japanesePhonemizer;
         private Core.Phonemizers.Backend.Flite.FliteLTSPhonemizer _englishPhonemizer;
-#endif
 
         private Dictionary<string, string> _modelLanguages = new()
         {
-            { "tsukuyomi-chan", "ja" }
+            { "ja_JP-test-medium", "ja" },
+            { "en_US-ljspeech-medium", "en" }
         };
 
         // テスト用の定型文 - will be initialized in Start() to avoid encoding issues
@@ -164,7 +161,7 @@ namespace uPiper.Demo
             "Let's test the voice synthesis"
         };
 
-        private void Start()
+        private async void Start()
         {
             // Set default Japanese text
             _defaultJapaneseText = "こんにちは";
@@ -213,11 +210,13 @@ namespace uPiper.Demo
 #endif
 #endif
 
-#if !UNITY_WEBGL
             // Initialize DotNetG2P phonemizer for Japanese (pure C#, no native plugin dependency)
             try
             {
                 _japanesePhonemizer = new DotNetG2PPhonemizer();
+#if UNITY_WEBGL && !UNITY_EDITOR
+                await _japanesePhonemizer.InitializeAsync();
+#endif
                 PiperLogger.LogInfo("[InferenceEngineDemo] DotNetG2P phonemizer initialized successfully");
             }
             catch (Exception ex)
@@ -229,7 +228,6 @@ namespace uPiper.Demo
 
             // Initialize English phonemizer (Flite LTS) - use Unity's main thread
             InitializeEnglishPhonemizerAsync();
-#endif
 
             SetupUI();
             SetStatus("準備完了");
@@ -450,10 +448,8 @@ namespace uPiper.Demo
             AudioSettings.OnAudioConfigurationChanged -= OnAudioConfigurationChanged;
 
             _generator?.Dispose();
-#if !UNITY_WEBGL
             _japanesePhonemizer?.Dispose();
             _englishPhonemizer?.Dispose();
-#endif
         }
 
         private void SetupUI()
@@ -467,7 +463,7 @@ namespace uPiper.Demo
             if (_modelDropdown != null)
             {
                 _modelDropdown.ClearOptions();
-                _modelDropdown.AddOptions(new List<string> { "tsukuyomi-chan" });
+                _modelDropdown.AddOptions(new List<string> { "ja_JP-test-medium", "en_US-ljspeech-medium" });
                 _modelDropdown.onValueChanged.AddListener(OnModelChanged);
             }
 
@@ -525,7 +521,7 @@ namespace uPiper.Demo
 
         private void OnModelChanged(int index)
         {
-            var modelNames = new[] { "tsukuyomi-chan" };
+            var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium" };
             var modelName = modelNames[index];
             var language = _modelLanguages[modelName];
 
@@ -677,7 +673,7 @@ namespace uPiper.Demo
             try
             {
                 // モデル名を取得
-                var modelNames = new[] { "tsukuyomi-chan" };
+                var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium" };
                 var modelName = modelNames[_modelDropdown?.value ?? 0];
                 PiperLogger.LogDebug($"Selected model: {modelName}");
 
@@ -778,7 +774,6 @@ namespace uPiper.Demo
                 // Define konnichiwa string for special debugging
                 var konnichiwa = "こんにちは";
 
-#if !UNITY_WEBGL
                 // Use DotNetG2P for Japanese if available
                 if (language == "ja" && _japanesePhonemizer != null)
                 {
@@ -871,24 +866,6 @@ namespace uPiper.Demo
                         .Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     PiperLogger.LogInfo($"Fallback phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                 }
-#else
-                // WebGL is not supported for Japanese
-                if (language == "ja")
-                {
-                    throw new Exception("Japanese text-to-speech is not supported on WebGL platform. DotNetG2P requires file I/O for dictionary loading.");
-                }
-                else
-                {
-                    // For non-Japanese languages, use basic phoneme splitting
-                    phonemes = _inputField.text.ToLower()
-                        .Replace(",", " _")
-                        .Replace(".", " _")
-                        .Replace("!", " _")
-                        .Replace("?", " _")
-                        .Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    PiperLogger.LogInfo($"English phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
-                }
-#endif
 
                 // 音素変換の詳細をログ出力
                 PiperLogger.LogDebug($"Input text: '{_inputField.text}'");
@@ -1226,7 +1203,6 @@ namespace uPiper.Demo
             }
         }
 
-#if !UNITY_WEBGL
         private async void InitializeEnglishPhonemizerAsync()
         {
             try
@@ -1310,7 +1286,6 @@ namespace uPiper.Demo
                 _englishPhonemizer = null;
             }
         }
-#endif
 
 #if UNITY_IOS && !UNITY_EDITOR
         private void DebugIOSSetup()
@@ -1362,7 +1337,7 @@ namespace uPiper.Demo
         /// </summary>
         private string GetModelNameForIndex(int index)
         {
-            var modelNames = new[] { "tsukuyomi-chan" };
+            var modelNames = new[] { "ja_JP-test-medium", "en_US-ljspeech-medium" };
             return index >= 0 && index < modelNames.Length ? modelNames[index] : modelNames[0];
         }
 

@@ -25,7 +25,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 - High-quality speech synthesis (piper-plus based)
 - Multi-language support (Japanese, English)
 - Fast inference with Unity AI Inference Engine
-- High-precision Japanese phonemization with OpenJTalk (Windows/macOS/Linux/Android/iOS)
+- High-precision Japanese phonemization with dot-net-g2p (MeCab dictionary, all platforms)
 - GPU inference support (GPUCompute/GPUPixel)
 - **Prosody Support**: More natural intonation in speech synthesis
 - **Custom Dictionary**: Reading conversion for technical terms and proper nouns
@@ -34,13 +34,13 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 
 | Model Name | Language | Prosody | Description |
 |-----------|----------|---------|-------------|
-| ja_JP-test-medium | Japanese | No | Standard Japanese model |
+| ja_JP-test-medium | Japanese | Yes | Standard Japanese model (Prosody-enabled) |
 | en_US-ljspeech-medium | English | No | Standard English model |
 | tsukuyomi-chan | Japanese | Yes | Prosody-enabled Japanese model (more natural intonation) |
 
 ## Requirements
 * Unity 6000.0.58f2
-* Unity AI Interface (Inference Engine) 2.2.x
+* Unity AI Inference Engine (com.unity.ai.inference) 2.5.0
 
 ## Installation
 
@@ -62,7 +62,7 @@ After installing from Package Manager, **you must import the data following thes
 2. **Select the "uPiper" package**
 3. **Expand the "Samples" section**
 4. **Import the following samples**:
-   - **OpenJTalk Dictionary Data** (Required) - Dictionary for Japanese speech synthesis
+   - **MeCab Dictionary Data** (Required) - MeCab dictionary for Japanese speech synthesis
    - **CMU Pronouncing Dictionary** (Required) - Dictionary for English speech synthesis
    - **Voice Models** (Recommended) - High-quality voice models
    - **Basic TTS Demo** (Optional) - Demo scene
@@ -103,15 +103,15 @@ Download the latest package from [Releases](https://github.com/ayutaz/uPiper/rel
 
 ## Supported Platforms
 
-### Currently Supported
 - ✅ Windows (x64)
 - ✅ macOS (Apple Silicon/Intel)
 - ✅ Linux (x64)
 - ✅ Android (ARM64/ARMv7/x86/x86_64)
 - ✅ iOS (ARM64, iOS 11.0+)
+- ✅ WebGL (WebGPU / WebGL2)
 
-### Not Supported
-- ❌ WebGL - Under investigation (future support planned via piper-plus integration)
+> **WebGL**: Browsers with WebGPU support use GPUCompute for fast inference. In WebGL2 environments, it automatically falls back to GPUPixel.
+> [Demo Page](https://ayutaz.github.io/uPiper/)
 
 ## GPU Inference
 
@@ -130,6 +130,20 @@ var config = new PiperConfig
     }
 };
 ```
+
+### InferenceBackend.Auto Selection Logic
+
+When `InferenceBackend.Auto` is specified, the optimal backend is automatically selected based on the platform:
+
+| Platform | Auto-selected Backend | Reason |
+|----------|----------------------|--------|
+| Windows/Linux | GPUPixel | Best compatibility with VITS models |
+| macOS | CPU | Metal has issues with Unity.InferenceEngine |
+| iOS/Android | GPUPixel | Optimized for mobile GPU |
+| WebGL (WebGPU) | GPUCompute | Fast inference via WebGPU Compute Shaders |
+| WebGL (WebGL2) | GPUPixel | WebGL2 fallback |
+
+> **Note**: On desktop, GPUCompute may not correctly generate audio with VITS models. GPUPixel or CPU is recommended. GPUCompute works correctly in WebGPU environments.
 
 See the [GPU Inference Guide](docs/features/gpu/gpu-inference.md) for details.
 

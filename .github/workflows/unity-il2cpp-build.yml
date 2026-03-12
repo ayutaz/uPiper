@@ -134,6 +134,7 @@ jobs:
     - name: Build Unity project with ${{ matrix.scriptingBackend }}
       uses: game-ci/unity-builder@v4
       env:
+        CI: "true"
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}

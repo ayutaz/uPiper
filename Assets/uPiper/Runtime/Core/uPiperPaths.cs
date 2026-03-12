@@ -10,7 +10,7 @@ namespace uPiper.Core
     {
         // Development environment paths (Samples~ folder)
         public const string SAMPLES_FOLDER = "Samples~";
-        public const string OPENJTALK_DICT_FOLDER = "OpenJTalk Dictionary Data";
+        public const string OPENJTALK_DICT_FOLDER = "MeCab Dictionary Data";
         public const string CMU_DICT_FOLDER = "CMU Pronouncing Dictionary";
         public const string VOICE_MODELS_FOLDER = "Voice Models";
         public const string OPENJTALK_DICT_NAME = "open_jtalk_dic_utf_8-1.11";

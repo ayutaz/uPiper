@@ -73,7 +73,7 @@ public class JapanesePhonemizer : IPhonemizerBackend
         string text, string language, 
         PhonemeOptions options, CancellationToken ct)
     {
-        // 既存のOpenJTalk実装を使用
+        // 既存のdot-net-g2p実装を使用
         return await _phonemizer.PhonemizeAsync(text, language);
     }
 }

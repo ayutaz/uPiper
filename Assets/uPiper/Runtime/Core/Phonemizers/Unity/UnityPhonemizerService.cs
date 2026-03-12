@@ -59,6 +59,24 @@ namespace uPiper.Core.Phonemizers.Unity
             PhonemeResult result = null;
             Exception error = null;
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL: execute directly on main thread
+            // Note: yield return cannot be inside try-catch (CS1626), so we poll outside
+            var awaiter = phonemizerService.PhonemizeAsync(text, language).GetAwaiter();
+            while (!awaiter.IsCompleted)
+            {
+                yield return null;
+            }
+
+            try
+            {
+                result = awaiter.GetResult();
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+            }
+#else
             // Run on background thread
             var task = Task.Run(async () =>
             {
@@ -77,6 +95,7 @@ namespace uPiper.Core.Phonemizers.Unity
             {
                 yield return null;
             }
+#endif
 
             if (error != null)
             {

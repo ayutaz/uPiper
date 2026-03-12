@@ -1,8 +1,10 @@
 # Phase 2: Android実装技術調査レポート
 
+> **注**: このレポートは当初のOpenJTalkネイティブ実装時に作成されたものです。現在はdot-net-g2p（純粋C#実装、NuGetパッケージ）に移行済みのため、ネイティブライブラリ関連の記載は参考情報です。
+
 ## エグゼクティブサマリー
 
-Phase 2のAndroid実装に向けた技術調査を完了しました。基本的なビルド環境は既に準備されており、Unity側のプラットフォーム対応基盤も存在します。主な作業は、既存コンポーネントのAndroid対応と、Android固有の制約への対応です。
+Phase 2のAndroid実装に向けた技術調査を完了しました。現在はdot-net-g2p（純粋C#実装）を使用しており、ネイティブライブラリのビルドは不要です。主な作業は、辞書データの配置とAndroid固有の制約への対応です。
 
 ## 調査結果
 
@@ -19,23 +21,21 @@ Phase 2のAndroid実装に向けた技術調査を完了しました。基本的
   - Android用ライブラリ拡張子（.so）の定義
   - 基本的なアーキテクチャ判定（arm64-v8aデフォルト）
 
-#### ❌ 未実装・要対応
-- **ネイティブライブラリ**
-  - CMakeLists.txtのAndroid対応
-  - libopenjtalk_wrapper.soの生成
-  - Unityプラグインディレクトリへの配置
+#### 現在の実装（dot-net-g2p移行後）
+- **音素化**
+  - dot-net-g2p（純粋C#実装）を使用
+  - ネイティブライブラリ（.so）不要
+  - NuGetパッケージとして参照
 
 - **Unity統合**
-  - P/InvokeマクロへのAndroid追加
   - StreamingAssetsからの辞書読み込み
-  - AndroidManifest.xml（必要に応じて）
+  - MeCab辞書（NAIST Japanese Dictionary）の配置
 
 ### 2. 技術的課題と解決策
 
-#### 課題1: P/Invoke vs JNI
-- **現状**: P/InvokeはAndroidで無効化されている
-- **解決策**: Unity 2018.2以降、AndroidでもP/Invokeが使用可能
-- **実装方針**: 既存のP/Invokeコードを活用し、Android対応を追加
+#### 課題1: 辞書ファイルアクセス（解決済み）
+
+> **注**: dot-net-g2p（純粋C#実装）への移行により、P/Invoke/JNIの課題は解消されました。
 
 #### 課題2: 辞書ファイルアクセス
 - **現状**: ファイルシステム直接アクセスを前提
@@ -63,39 +63,17 @@ Phase 2のAndroid実装に向けた技術調査を完了しました。基本的
 ### 3. 実装推奨事項
 
 #### 優先度: 高
-1. **CMakeLists.txtのAndroid対応追加**
-   ```cmake
-   elseif(ANDROID)
-       set(PLATFORM_NAME "android")
-       set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-       # Android固有の設定
-   ```
-
-2. **P/Invokeマクロの更新**
-   ```csharp
-   #define ENABLE_PINVOKE
-   ```
-   条件にUNITY_ANDROIDを追加
-
-3. **辞書ローダーのAndroid対応**
+1. **辞書ローダーのAndroid対応**
    - 非同期読み込みインターフェースの追加
    - プラットフォーム別実装の分離
+   - MeCab辞書のStreamingAssets配置
+
+2. **dot-net-g2pのIL2CPP互換性確認**
+   - 純粋C#実装のためネイティブビルド不要
+   - link.xmlでのリフレクション型保持
 
 #### 優先度: 中
-1. **プラグイン配置構造**
-   ```
-   Assets/uPiper/Plugins/Android/
-   ├── libs/
-   │   ├── arm64-v8a/
-   │   │   └── libopenjtalk_wrapper.so
-   │   ├── armeabi-v7a/
-   │   │   └── libopenjtalk_wrapper.so
-   │   └── x86_64/
-   │       └── libopenjtalk_wrapper.so
-   └── dictionary/
-   ```
-
-2. **メモリ最適化**
+1. **メモリ最適化**
    - 辞書データの圧縮実装
    - キャッシュサイズの動的調整
 
@@ -108,10 +86,10 @@ Phase 2のAndroid実装に向けた技術調査を完了しました。基本的
 
 | リスク | 影響度 | 発生確率 | 対策 |
 |--------|--------|----------|------|
-| JNI呼び出しオーバーヘッド | 中 | 低 | P/Invoke使用で回避 |
 | メモリ不足 | 高 | 中 | 段階的ロード実装 |
 | デバイス互換性 | 中 | 低 | API Level 21以上に限定 |
-| APKサイズ増加 | 低 | 高 | ProGuard/R8での最適化 |
+| APKサイズ増加（辞書データ） | 低 | 高 | 辞書圧縮での最適化 |
+| IL2CPP互換性 | 中 | 低 | link.xmlでの型保持 |
 
 ### 5. 実装スケジュール見積もり
 
@@ -129,9 +107,9 @@ Phase 2のAndroid実装は、既存の基盤を活用することで効率的に
 
 ## 次のアクション
 
-1. CMakeLists.txtへのAndroid設定追加
-2. build_android.shを使用したテストビルド実行
-3. Unity側のP/Invoke有効化とテスト
+1. MeCab辞書のStreamingAssets配置確認
+2. dot-net-g2pのAndroid実機テスト
+3. IL2CPP互換性の検証
 4. CI/CDパイプラインへの統合
 
-準備が整い次第、実装フェーズに移行可能です。
+dot-net-g2p（純粋C#実装）の採用により、ネイティブビルド関連の作業は不要になりました。

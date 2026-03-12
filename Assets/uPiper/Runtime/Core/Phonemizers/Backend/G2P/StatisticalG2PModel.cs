@@ -34,8 +34,66 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
         /// <summary>
         /// Trains the model from CMU dictionary data.
         /// </summary>
+#pragma warning disable CS1998 // Async method lacks 'await' operators
         public async Task TrainFromDictionary(Dictionary<string, string[]> dictionary, CancellationToken cancellationToken = default)
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL: execute training directly on main thread
+            trigramModel = new Dictionary<string, Dictionary<string, float>>();
+            bigramModel = new Dictionary<string, Dictionary<string, float>>();
+            unigramModel = new Dictionary<string, Dictionary<string, float>>();
+            alignmentExamples = new Dictionary<string, List<AlignmentExample>>();
+            phonemeTransitions = new Dictionary<string, Dictionary<string, float>>();
+
+            var alignments = new List<WordAlignment>();
+
+            // Step 1: Create letter-phoneme alignments
+            foreach (var entry in dictionary)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var word = entry.Key.ToLower();
+                var phonemes = entry.Value;
+
+                var alignment = AlignLettersToPhonemes(word, phonemes);
+                if (alignment != null)
+                {
+                    alignments.Add(alignment);
+
+                    // Store alignment examples
+                    for (var i = 0; i < alignment.Letters.Length; i++)
+                    {
+                        var letter = alignment.Letters[i];
+                        var phoneme = alignment.Phonemes[i];
+                        var context = GetAlignmentContext(alignment, i);
+
+                        if (!alignmentExamples.ContainsKey(letter))
+                            alignmentExamples[letter] = new List<AlignmentExample>();
+
+                        alignmentExamples[letter].Add(new AlignmentExample
+                        {
+                            Letter = letter,
+                            Phoneme = phoneme,
+                            Context = context,
+                            Word = word
+                        });
+                    }
+                }
+            }
+
+            // Step 2: Build n-gram models
+            BuildNGramModels(alignments, cancellationToken);
+
+            // Step 3: Build phoneme transition model
+            BuildPhonemeTransitions(alignments, cancellationToken);
+
+            lock (lockObject)
+            {
+                isInitialized = true;
+            }
+
+            Debug.Log($"G2P model trained with {alignments.Count} words");
+#else
             await Task.Run(() =>
             {
                 trigramModel = new Dictionary<string, Dictionary<string, float>>();
@@ -93,7 +151,9 @@ namespace uPiper.Core.Phonemizers.Backend.G2P
 
                 Debug.Log($"G2P model trained with {alignments.Count} words");
             }, cancellationToken);
+#endif
         }
+#pragma warning restore CS1998
 
         /// <summary>
         /// Predicts phonemes for an unknown word using Viterbi algorithm.

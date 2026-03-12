@@ -10,8 +10,8 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 **目的**: Unityプロジェクトのマルチプラットフォームビルド
 
 **特徴**:
-- Windows/Linux/macOS向けビルド
-- Unity 6000.0.55f1使用
+- Windows/Linux/macOS/WebGL向けビルド
+- Unity 6000.0.58f2使用
 - Mono2x/IL2CPPバックエンド対応
 - 自動リリース作成（タグプッシュ時）
 
@@ -33,44 +33,25 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 - Windows: 現在無効化（Docker制限のため）
 - PlayModeとEditModeテスト
 
-### 4. unity-tests-windows-cli.yml
-**目的**: Windows環境でのUnity Test Runner
-
-**特徴**:
-- Unity CLIを直接使用（Docker不要）
-- Unity Hub/Editor自動インストール
-- Windows専用の代替実装
-
-### 5. locale-tests.yml
-**目的**: 日本語ロケール環境でのテスト
-
-**特徴**:
-- UTF-8エンコーディング検証
-- 日本語音素化テスト
-- Windowsロケール設定
-
-### 6. dotnet-format.yml
+### 4. dotnet-format.yml
 **目的**: C#コードフォーマットチェック
 
 **特徴**:
 - dotnet formatによる自動チェック
 - コードスタイル統一
 
-### 7. performance-regression.yml
-**目的**: パフォーマンスベンチマーク
+### 5. deploy-webgl.yml
+**目的**: WebGLビルドとGitHub Pagesへのデプロイ
 
 **特徴**:
-- Unity Performance Testing拡張使用
-- dot-net-g2pの処理時間測定
-- 回帰検出とレポート生成
-
-### 8. unity-il2cpp-build.yml
-**目的**: IL2CPP専用ビルド
-
-**特徴**:
-- Windows/macOSネイティブランナー使用
-- Visual Studio/Xcode統合
-- 完全なIL2CPPサポート
+- feature/webgl-supportブランチへのpush時に自動実行
+- workflow_dispatch（手動実行）対応
+- dot-net-g2pサブリポジトリの自動checkout
+- game-ci/unity-builder@v4によるWebGLビルド
+- 100MB超ファイルの90MBチャンク自動分割（GitHub Pages制限対応）
+- split-file-loader.js / github-pages-adapter.jsの自動注入
+- GitHub Pagesへの自動デプロイ
+- デプロイ後のHTTPステータス確認
 
 ## ブランチ保護ルールの設定
 

@@ -11,7 +11,7 @@
     "com.dotnetg2p.mecab": "file:../../dot-net-g2p/src/DotNetG2P.MeCab",
     "io.github.hatayama.uloopmcp": "0.50.0",
     "org.nuget.microsoft.codeanalysis.csharp": "4.14.0",
-    "com.unity.ai.inference": "2.2.2",
+    "com.unity.ai.inference": "2.5.0",
     "com.unity.ide.visualstudio": "2.0.25",
     "com.unity.inputsystem": "1.14.2",
     "com.unity.mobile.android-logcat": "1.4.6",
