@@ -83,8 +83,10 @@ namespace UnityBuilderAction
 
             // Configure build options
             // CI環境（GitHub Actions等）ではRelease、ローカルではDevelopment
+            // Note: game-ci/unity-builderはCI環境変数をDockerコンテナに転送しないため、
+            // 転送される GITHUB_WORKFLOW を使用して判定する
             var buildOptions = BuildOptions.None;
-            var isCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI"));
+            var isCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_WORKFLOW"));
             if (!isCi)
             {
                 buildOptions |= BuildOptions.Development;
