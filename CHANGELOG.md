@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026/03/12
+
+### Added
+
+- **WebGLプラットフォーム対応**: WebGLビルドをサポート
+  - StreamingAssets非同期ローダー（UnityWebRequest経由）
+  - IndexedDBキャッシュによるリソース永続化
+  - ローディング進捗UI
+  - WebGPU検出と適切なInferenceBackend自動選択（WebGPU時はGPUCompute、WebGL2時はGPUPixel）
+  - GitHub Pagesデプロイワークフロー追加（`deploy-webgl.yml`）
+  - 大容量ファイル自動分割（WebGLSplitDataProcessor）
+  - AudioContext再開UI（WebGLInteractionGate）
+- **ja_JP-test-mediumモデル更新**: Prosody対応版に更新（prosody_features入力テンソル追加）
+
+### Changed
+
+- Unity Sentis 2.2.2 → 2.5.0（WebGPUビルド対応）
+- link.xmlにDotNetG2P.Core、MeCabのIL2CPPストリッピング対策を追加
+
+### Fixed
+
+- PhonemizerErrorHandlingTestsのコンパイルエラー修正（UnityEngine.TestTools using追加）
+
+### Removed
+
+- 不要CIワークフロー削除: `locale-tests.yml`, `performance-regression.yml`, `unity-tests-windows-cli.yml`
+- 不要ドキュメント整理: ONNX Runtime調査、IL2CPPガイド、中国語サポート計画等の未使用ドキュメントを削除
+
 ## [1.2.0] - 2026/03/07
 
 ### ⚠️ Breaking Changes
@@ -296,6 +324,7 @@ Apache License 2.0 - See [LICENSE](LICENSE) file for details
 - [Documentation](https://github.com/ayutaz/uPiper/tree/main/docs)
 - [Issues](https://github.com/ayutaz/uPiper/issues)
 
+[1.3.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.3.0
 [1.2.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.2.0
 [1.1.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.1.0
 [1.0.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.0.0
