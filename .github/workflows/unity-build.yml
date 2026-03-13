@@ -46,6 +46,7 @@ jobs:
           - StandaloneWindows64
           - StandaloneOSX
           - StandaloneLinux64
+          - WebGL
           # - Android  # Temporarily disabled due to Unity licensing issues
     
     steps:
@@ -107,6 +108,7 @@ jobs:
       if: matrix.targetPlatform == 'Android'
       uses: game-ci/unity-builder@v4
       env:
+        CI: "true"
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
@@ -147,6 +149,7 @@ jobs:
       if: matrix.targetPlatform != 'Android'
       uses: game-ci/unity-builder@v4
       env:
+        CI: "true"
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
@@ -157,7 +160,7 @@ jobs:
         buildsPath: build
         buildMethod: UnityBuilderAction.BuildScript.Build
         allowDirtyBuild: true
-        customParameters: -scriptingBackend ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && 'IL2CPP' || 'Mono2x' }}
+        customParameters: -scriptingBackend ${{ matrix.targetPlatform == 'WebGL' && 'IL2CPP' || (github.event_name == 'workflow_dispatch' && github.event.inputs.useIL2CPP == 'true' && 'IL2CPP' || 'Mono2x') }}
 
     # ビルド成果物をアップロード
     - name: Upload build artifacts

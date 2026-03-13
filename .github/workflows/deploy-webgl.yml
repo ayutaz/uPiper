@@ -1,0 +1,229 @@
+name: Deploy WebGL to GitHub Pages
+
+on:
+  push:
+    branches: [ feature/webgl-support ]
+  workflow_dispatch:
+    inputs:
+      compression:
+        description: 'WebGL compression format'
+        required: false
+        default: 'Disabled'
+        type: choice
+        options:
+          - Disabled
+          - Gzip
+          - Brotli
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-webgl:
+    name: Build WebGL
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        lfs: true
+
+    - uses: actions/checkout@v5
+      with:
+        repository: ayutaz/dot-net-g2p
+        ref: main
+        path: dot-net-g2p
+
+    - name: Fix local package paths for CI
+      shell: bash
+      run: sed -i 's|file:../../dot-net-g2p/src|file:../dot-net-g2p/src|g' Packages/manifest.json
+
+    - name: Cache Library
+      uses: actions/cache@v5
+      with:
+        path: Library
+        key: Library-WebGL-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+        restore-keys: |
+          Library-WebGL-
+          Library-
+
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
+        swap-storage: true
+
+    - name: Configure Unity License Timeout
+      run: |
+        sudo mkdir -p /usr/share/unity3d/config/
+        sudo tee /usr/share/unity3d/config/services-config.json > /dev/null << 'EOF'
+        {
+          "clientConnectTimeoutSec": 30,
+          "clientHandshakeTimeoutSec": 60,
+          "clientResolveEntitlementsTimeoutSec": 90,
+          "clientUpdateLicenseTimeoutSec": 90,
+          "licensingServiceBaseUrl": "",
+          "enableProxyAutoconfig": "false"
+        }
+        EOF
+
+    - name: Build Unity WebGL
+      uses: game-ci/unity-builder@v4
+      env:
+        CI: "true"
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      with:
+        unityVersion: 6000.0.58f2
+        targetPlatform: WebGL
+        buildName: Web
+        buildsPath: build
+        buildMethod: UnityBuilderAction.BuildScript.Build
+        allowDirtyBuild: true
+        customParameters: -webglCompression ${{ inputs.compression || 'Disabled' }}
+
+    - name: Fix build output permissions
+      run: sudo chown -R $(id -u):$(id -g) build/
+
+    - name: Copy JS helpers into build output
+      run: |
+        cp Assets/uPiper/Editor/WebGL/split-file-loader.js build/WebGL/Web/
+        cp Assets/uPiper/Editor/WebGL/github-pages-adapter.js build/WebGL/Web/
+        echo "Copied JS helpers into build output"
+
+    - name: Upload WebGL build artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: webgl-build
+        path: build/WebGL/Web
+        retention-days: 3
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build-webgl
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - name: Download WebGL build
+      uses: actions/download-artifact@v8
+      with:
+        name: webgl-build
+        path: ./site
+
+    - name: Add .nojekyll
+      run: touch ./site/.nojekyll
+
+    - name: Split large files (100MB+ for GitHub Pages)
+      run: |
+        echo "Checking for files exceeding 100MB..."
+        find ./site -type f -size +100M | while read filepath; do
+          filesize=$(stat --printf="%s" "$filepath")
+          echo "Splitting: $filepath ($(( filesize / 1024 / 1024 )) MB)"
+
+          # Split into 90MB chunks
+          split -b 90m "$filepath" "${filepath}.part"
+
+          # Rename split files: partaa, partab, ...
+          # split already generates aa, ab, ... suffixes
+
+          # Count chunks
+          chunk_count=$(ls -1 "${filepath}.part"* 2>/dev/null | wc -l)
+
+          # Create split metadata
+          basename=$(basename "$filepath")
+          cat > "${filepath}.split-meta" << METAEOF
+        {"originalFile":"${basename}","chunks":${chunk_count},"chunkSize":94371840}
+        METAEOF
+
+          echo "Created ${chunk_count} chunks + metadata for ${basename}"
+
+          # Remove original large file (chunks replace it)
+          rm "$filepath"
+        done
+
+        echo "File splitting complete."
+
+        # Generate split-meta markers for non-split Build files (prevents 404 probes)
+        echo "Generating split-meta markers for non-split Build files..."
+        if [ -d ./site/Build ]; then
+          for filepath in ./site/Build/*; do
+            if [ -f "$filepath" ] && [ ! -f "${filepath}.split-meta" ]; then
+              basename=$(basename "$filepath")
+              echo "{\"originalFile\":\"${basename}\",\"chunks\":0}" > "${filepath}.split-meta"
+              echo "Created not-split marker for ${basename}"
+            fi
+          done
+        fi
+
+        echo ""
+        echo "Final site contents:"
+        find ./site -type f -exec ls -lh {} \; | sort -k5 -h
+
+    - name: Verify JS helpers
+      run: |
+        # JS helpers are included in the build artifact from the build job
+        if [ -f ./site/split-file-loader.js ]; then
+          echo "split-file-loader.js found"
+        else
+          echo "ERROR: split-file-loader.js not found in build artifact"
+          exit 1
+        fi
+        if [ -f ./site/github-pages-adapter.js ]; then
+          echo "github-pages-adapter.js found"
+        else
+          echo "ERROR: github-pages-adapter.js not found in build artifact"
+          exit 1
+        fi
+
+    - name: Inject JS helpers into index.html
+      run: |
+        if [ -f ./site/index.html ]; then
+          # Add split-file-loader.js before closing </head> (skip if already injected)
+          if [ -f ./site/split-file-loader.js ] && ! grep -q 'split-file-loader.js' ./site/index.html; then
+            sed -i 's|</head>|<script src="split-file-loader.js"></script>\n</head>|' ./site/index.html
+          fi
+          # Add github-pages-adapter.js before closing </head> (skip if already injected)
+          if [ -f ./site/github-pages-adapter.js ] && ! grep -q 'github-pages-adapter.js' ./site/index.html; then
+            sed -i 's|</head>|<script src="github-pages-adapter.js"></script>\n</head>|' ./site/index.html
+          fi
+          echo "Updated index.html:"
+          head -20 ./site/index.html
+        fi
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v5
+
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./site
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+
+    - name: Verify deployment
+      if: steps.deployment.outputs.page_url
+      run: |
+        echo "Deployment URL: ${{ steps.deployment.outputs.page_url }}"
+        sleep 30
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.deployment.outputs.page_url }}")
+        echo "HTTP Status: $HTTP_STATUS"
+        if [ "$HTTP_STATUS" -ne 200 ]; then
+          echo "Warning: Deployment may not be ready yet (status: $HTTP_STATUS)"
+        else
+          echo "Deployment verified successfully"
+        fi

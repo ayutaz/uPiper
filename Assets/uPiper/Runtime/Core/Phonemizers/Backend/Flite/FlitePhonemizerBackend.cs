@@ -38,6 +38,7 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
             };
         }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators
         public override async Task<PhonemeResult> PhonemizeAsync(
             string text,
             string language,
@@ -49,6 +50,12 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                 throw new NotSupportedException($"Language {language} is not supported by Flite backend");
             }
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+            lock (syncLock)
+            {
+                return PhonemizeInternal(text, language, options ?? new PhonemeOptions());
+            }
+#else
             return await Task.Run(() =>
             {
                 lock (syncLock)
@@ -56,7 +63,9 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
                     return PhonemizeInternal(text, language, options ?? new PhonemeOptions());
                 }
             }, cancellationToken);
+#endif
         }
+#pragma warning restore CS1998
 
         private PhonemeResult PhonemizeInternal(string text, string language, PhonemeOptions options)
         {

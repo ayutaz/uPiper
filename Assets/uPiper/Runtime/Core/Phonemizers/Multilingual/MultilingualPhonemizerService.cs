@@ -33,6 +33,46 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// </summary>
         private void InitializeBackends()
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL: initialize backends directly on main thread
+            try
+            {
+                var fliteBackend = new Backend.Flite.FlitePhonemizerBackend();
+                fliteBackend.InitializeAsync(new PhonemizerBackendOptions()).ContinueWith(t =>
+                {
+                    if (t.IsCompletedSuccessfully)
+                    {
+                        foreach (var lang in fliteBackend.SupportedLanguages)
+                        {
+                            AddBackend(lang, fliteBackend);
+                        }
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to initialize Flite backend: {ex.Message}");
+            }
+
+            try
+            {
+                var ruleBasedBackend = new uPiper.Core.Phonemizers.Backend.RuleBased.RuleBasedPhonemizer();
+                ruleBasedBackend.InitializeAsync(new PhonemizerBackendOptions()).ContinueWith(t =>
+                {
+                    if (t.IsCompletedSuccessfully)
+                    {
+                        foreach (var lang in ruleBasedBackend.SupportedLanguages)
+                        {
+                            AddBackend(lang, ruleBasedBackend);
+                        }
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Failed to initialize rule-based backend: {ex.Message}");
+            }
+#else
             // Create Flite backend for English variants
             Task.Run(async () =>
             {
@@ -82,6 +122,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     Debug.LogError($"Failed to initialize language backends: {ex.Message}");
                 }
             });
+#endif
         }
 
         private void AddBackend(string language, IPhonemizerBackend backend)

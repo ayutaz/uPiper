@@ -55,6 +55,12 @@ namespace uPiper.Core.Platform
             Platform == RuntimePlatform.WebGLPlayer;
 
         /// <summary>
+        /// Checks if running on WebGPU (WebGL platform with WebGPU graphics API).
+        /// </summary>
+        public static bool IsWebGPU =>
+            IsWebGL && SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.WebGPU;
+
+        /// <summary>
         /// Gets the native library extension for the current platform.
         /// </summary>
         public static string NativeLibraryExtension

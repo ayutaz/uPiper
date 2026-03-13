@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core;
+using uPiper.Core.Platform;
 
 namespace uPiper.Core.Phonemizers.Backend.RuleBased
 {
@@ -38,10 +39,49 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
             try
             {
                 var dict = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+                var fileName = Path.GetFileName(filePath);
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+                // WebGL: load via WebGLStreamingAssetsLoader (no file system access)
+                var relativePath = Path.Combine("uPiper", "Phonemizers", fileName);
+                var text = await WebGLStreamingAssetsLoader.LoadTextAsync(relativePath, cancellationToken);
+
+                var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var line in lines)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    // Skip comments and empty lines
+                    if (string.IsNullOrWhiteSpace(line) || line.StartsWith(";;;"))
+                        continue;
+
+                    // Parse the line - find first space as separator
+                    var spaceIndex = line.IndexOf(' ');
+                    if (spaceIndex > 0 && spaceIndex < line.Length - 1)
+                    {
+                        var word = line[..spaceIndex].Trim();
+                        var phonemesPart = line[(spaceIndex + 1)..].Trim();
+                        var phonemes = phonemesPart.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                        // Handle multiple pronunciations (e.g., "WORD(1)", "WORD(2)")
+                        var baseWord = ExtractBaseWord(word);
+
+                        if (!dict.ContainsKey(baseWord))
+                        {
+                            dict[baseWord] = phonemes;
+                        }
+                    }
+                }
+
+                lock (lockObject)
+                {
+                    pronunciations = dict;
+                    isLoaded = true;
+                }
+                Debug.Log($"Loaded CMU dictionary with {pronunciations.Count} words from {relativePath}");
+#else
                 // After initial setup, files should be in fixed location
                 var actualFilePath = filePath;
-                var fileName = Path.GetFileName(filePath);
 
 #if UNITY_EDITOR && UPIPER_DEVELOPMENT
                 // Development environment: Load directly from Samples~
@@ -64,7 +104,8 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 Debug.Log($"[CMUDictionary] Android platform: Using persistent path: {actualFilePath}");
 #else
                 // Primary path after setup - using shared constant for consistency
-                var streamingAssetsPath = Path.Combine(Application.streamingAssetsPath, "uPiper", "Phonemizers", fileName);
+                var streamingAssetsPath = Path.Combine(
+                    Application.streamingAssetsPath, "uPiper", "Phonemizers", fileName);
 
                 // Check primary path first
                 if (File.Exists(streamingAssetsPath))
@@ -81,14 +122,16 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 else
                 {
                     Debug.LogError($"[CMUDictionary] Dictionary file not found at: {streamingAssetsPath}");
-                    Debug.LogError($"[CMUDictionary] Please run 'uPiper/Setup/Run Initial Setup' from the menu.");
+                    Debug.LogError(
+                        $"[CMUDictionary] Please run 'uPiper/Setup/Run Initial Setup' from the menu.");
                 }
 #endif
 
                 // Debug path information
                 Debug.Log($"[CMUDictionary] Attempting to load from: {actualFilePath}");
                 Debug.Log($"[CMUDictionary] File exists: {File.Exists(actualFilePath)}");
-                Debug.Log($"[CMUDictionary] Directory exists: {Directory.Exists(Path.GetDirectoryName(actualFilePath))}");
+                Debug.Log(
+                    $"[CMUDictionary] Directory exists: {Directory.Exists(Path.GetDirectoryName(actualFilePath))}");
 
                 // Check if file exists
                 if (!File.Exists(actualFilePath))
@@ -125,7 +168,8 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                             {
                                 var word = line[..spaceIndex].Trim();
                                 var phonemesPart = line[(spaceIndex + 1)..].Trim();
-                                var phonemes = phonemesPart.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                                var phonemes = phonemesPart.Split(
+                                    new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
                                 // Handle multiple pronunciations (e.g., "WORD(1)", "WORD(2)")
                                 var baseWord = ExtractBaseWord(word);
@@ -146,7 +190,8 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 }, cancellationToken);
 
                 // Wait with timeout
-                if (await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromSeconds(10), cancellationToken)) == readTask)
+                if (await Task.WhenAny(readTask, Task.Delay(TimeSpan.FromSeconds(10), cancellationToken))
+                    == readTask)
                 {
                     dict = await readTask;
                     lock (lockObject)
@@ -160,6 +205,7 @@ namespace uPiper.Core.Phonemizers.Backend.RuleBased
                 {
                     throw new TimeoutException("Dictionary loading timed out after 10 seconds");
                 }
+#endif
             }
             catch (OperationCanceledException)
             {

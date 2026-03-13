@@ -31,9 +31,9 @@ After installing uPiper:
 4. In the package details, locate the **Samples** section
 5. Import the following samples:
 
-   - **OpenJTalk Dictionary Data** (103MB)
+   - **MeCab Dictionary Data** (103MB)
      - Required for Japanese text-to-speech
-     - Contains NAIST Japanese Dictionary
+     - Contains NAIST Japanese Dictionary (used by dot-net-g2p)
    
    - **CMU Pronouncing Dictionary** (3.5MB)
      - Required for English text-to-speech
@@ -67,7 +67,7 @@ If you prefer to manage data files manually:
 
 ### Dictionary Files
 Place dictionary files in `Assets/StreamingAssets/uPiper/`:
-- OpenJTalk: `OpenJTalk/naist_jdic/`
+- MeCab Dictionary: `MeCab/naist_jdic/`
 - CMU Dictionary: `Phonemizers/cmudict-0.7b.txt`
 
 ### Voice Models
@@ -81,7 +81,7 @@ Place ONNX models in `Assets/uPiper/Resources/Models/`:
 
 **Full dictionary data is required for uPiper to function properly.** The package does not include fallback dictionaries.
 
-- **Japanese TTS**: Requires OpenJTalk Dictionary Data
+- **Japanese TTS**: Requires MeCab Dictionary Data (NAIST Japanese Dictionary)
 - **English TTS**: Requires CMU Pronouncing Dictionary
 
 Without these dictionaries, the phonemizers will throw errors and TTS functionality will not work.
@@ -111,9 +111,11 @@ For developers working on uPiper itself:
 ## Platform-Specific Notes
 
 ### WebGL
-- StreamingAssets access may be limited
-- Consider using Resources folder for critical data
-- Voice models may need optimization for web deployment
+- StreamingAssets are loaded asynchronously via `UnityWebRequest`
+- Custom dictionaries are loaded asynchronously during initialization
+- Large model files (100MB+) are automatically split for GitHub Pages deployment
+- WebGPU browsers use GPUCompute, WebGL2 browsers use GPUPixel
+- [Demo Page](https://ayutaz.github.io/uPiper/)
 
 ### Android
 - Dictionary files are automatically copied from StreamingAssets

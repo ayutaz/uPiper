@@ -22,7 +22,7 @@ namespace uPiper.Editor
     {
         private const string SETUP_COMPLETE_KEY = "uPiper_InitialSetupComplete_v1";
         private const string PACKAGE_NAME = "com.ayutaz.upiper";
-        private const string PACKAGE_VERSION = "1.2.0";
+        private const string PACKAGE_VERSION = "1.3.0";
 
         // Target paths in Assets (made public for shared use)
         public const string TARGET_STREAMING_ASSETS_PATH = "Assets/StreamingAssets/uPiper";
@@ -68,7 +68,7 @@ namespace uPiper.Editor
                             "3. Find and select 'uPiper'\n" +
                             "4. In the package details, find 'Samples'\n" +
                             "5. Import the following:\n" +
-                            "   • OpenJTalk Dictionary Data (Required for Japanese)\n" +
+                            "   • MeCab Dictionary Data (Required for Japanese)\n" +
                             "   • CMU Pronouncing Dictionary (Required for English)\n" +
                             "   • Voice Models (Optional - for high quality voices)\n" +
                             "6. After importing, run 'uPiper/Setup/Install from Samples'",
@@ -383,11 +383,11 @@ namespace uPiper.Editor
             var status = new SamplesStatus();
 
             // Check for imported OpenJTalk sample
-            var openJTalkSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", PACKAGE_VERSION, "OpenJTalk Dictionary Data");
+            var openJTalkSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", PACKAGE_VERSION, "MeCab Dictionary Data");
             if (!Directory.Exists(openJTalkSamplePath))
             {
                 // Try without version number
-                openJTalkSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "OpenJTalk Dictionary Data");
+                openJTalkSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "MeCab Dictionary Data");
             }
             status.hasOpenJTalkSample = Directory.Exists(openJTalkSamplePath) &&
                 Directory.Exists(Path.Combine(openJTalkSamplePath, "naist_jdic"));
@@ -428,8 +428,8 @@ namespace uPiper.Editor
                 {
                     var sourcePaths = new[]
                     {
-                        Path.Combine(Application.dataPath, "Samples", "uPiper", PACKAGE_VERSION, "OpenJTalk Dictionary Data"),
-                        Path.Combine(Application.dataPath, "Samples", "uPiper", "OpenJTalk Dictionary Data")
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", PACKAGE_VERSION, "MeCab Dictionary Data"),
+                        Path.Combine(Application.dataPath, "Samples", "uPiper", "MeCab Dictionary Data")
                     };
 
                     string sourcePath = null;

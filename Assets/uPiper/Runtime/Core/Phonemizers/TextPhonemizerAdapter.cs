@@ -30,8 +30,13 @@ namespace uPiper.Core.Phonemizers
 
         public PhonemeResult Phonemize(string text, string language)
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // WebGL: execute directly on main thread
+            return _phonemizer.PhonemizeAsync(text, language).GetAwaiter().GetResult();
+#else
             // Use the async method synchronously
             return Task.Run(() => _phonemizer.PhonemizeAsync(text, language)).GetAwaiter().GetResult();
+#endif
         }
     }
 }
