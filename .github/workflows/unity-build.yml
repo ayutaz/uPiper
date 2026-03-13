@@ -75,7 +75,7 @@ jobs:
 
     # Free up disk space for Unity builds
     - name: Free Disk Space (Ubuntu)
-      uses: jlumbroso/free-disk-space@main
+      uses: jlumbroso/free-disk-space@v1.3.1
       with:
         tool-cache: false
         android: ${{ matrix.targetPlatform != 'Android' }}
@@ -390,7 +390,7 @@ jobs:
         fi
         
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.version.outputs.tag_name }}
         name: uPiper ${{ steps.version.outputs.version }}
