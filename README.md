@@ -2,6 +2,7 @@
 
 [English](README.en.md) | 日本語
 
+[![openupm](https://img.shields.io/npm/v/com.ayutaz.upiper?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.ayutaz.upiper/)
 [![Unity Tests](https://github.com/ayutaz/uPiper/actions/workflows/unity-tests.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-tests.yml)
 [![Unity Build](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml)
 
@@ -12,7 +13,8 @@
 - [機能](#機能)
 - [Requirements](#requirements)
 - [インストール](#インストール)
-  - [Unity Package Manager経由（推奨）](#unity-package-manager経由推奨)
+  - [OpenUPM経由（推奨）](#openupm経由推奨)
+  - [Git URL経由](#git-url経由)
   - [パッケージファイルからのインストール](#パッケージファイルからのインストール)
   - [トラブルシューティング](#トラブルシューティング)
 - [サポートプラットフォーム](#サポートプラットフォーム)
@@ -40,11 +42,40 @@
 
 ## Requirements
 * Unity 6000.0.58f2
-* Unity AI Inference Engine (com.unity.ai.inference) 2.5.0
+* Unity AI Inference Engine (com.unity.ai.inference) 2.2.2
 
 ## インストール
 
-### Unity Package Manager経由（推奨）
+### OpenUPM経由（推奨）
+
+#### openupm-cliを使用する場合
+
+```bash
+openupm add com.ayutaz.upiper
+```
+
+#### manifest.jsonを直接編集する場合
+
+`Packages/manifest.json` に以下のscoped registryを追加してください：
+
+```json
+{
+  "scopedRegistries": [
+    {
+      "name": "package.openupm.com",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.ayutaz.upiper"
+      ]
+    }
+  ],
+  "dependencies": {
+    "com.ayutaz.upiper": "1.3.0"
+  }
+}
+```
+
+### Git URL経由
 
 #### ステップ1: パッケージのインストール
 1. Unity Editorで `Window > Package Manager` を開く
