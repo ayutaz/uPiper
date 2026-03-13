@@ -1,16 +1,18 @@
-#if UNITY_EDITOR
+#if UNITY_EDITOR && UPIPER_DEVELOPMENT
 using System;
 using System.IO;
 using UnityEditor;
-using UnityEditor.Callbacks;
 using UnityEngine;
 
 namespace uPiper.Editor.WebGL
 {
     /// <summary>
-    /// WebGLビルド後に大容量ファイルを分割してGitHub Pagesデプロイ可能にする。
+    /// WebGLビルド出力の大容量ファイルを分割してGitHub Pagesデプロイ可能にする。
     /// GitHub Pagesの100MBファイルサイズ制限に対応するため、
     /// 90MBチャンクに分割し、split-file-loader.jsで透過的に再結合する。
+    ///
+    /// 開発者向けツール（UPIPER_DEVELOPMENT定義時のみ有効）。
+    /// CI環境ではdeploy-webgl.ymlのbashスクリプトが同等の処理を行う。
     /// </summary>
     public static class WebGLSplitDataProcessor
     {
@@ -18,11 +20,28 @@ namespace uPiper.Editor.WebGL
         private const long SplitThreshold = 100L * 1024 * 1024; // 100MB threshold
         private const string LogPrefix = "[WebGLSplitDataProcessor]";
 
-        [PostProcessBuild(999)]
-        public static void OnPostProcessBuild(BuildTarget target, string pathToBuiltProject)
+        [MenuItem("uPiper/Development/Prepare WebGL for GitHub Pages")]
+        public static void PrepareWebGLForGitHubPages()
         {
-            if (target != BuildTarget.WebGL) return;
+            var buildPath = EditorUtility.OpenFolderPanel(
+                "Select WebGL Build Output Folder", "", "");
 
+            if (string.IsNullOrEmpty(buildPath)) return;
+
+            if (!File.Exists(Path.Combine(buildPath, "index.html")))
+            {
+                EditorUtility.DisplayDialog(
+                    "Invalid Folder",
+                    "Selected folder does not contain index.html. Please select a WebGL build output folder.",
+                    "OK");
+                return;
+            }
+
+            OnPostProcessBuild(buildPath);
+        }
+
+        public static void OnPostProcessBuild(string pathToBuiltProject)
+        {
             Debug.Log($"{LogPrefix} Processing WebGL build for GitHub Pages deployment...");
 
             SplitLargeFiles(pathToBuiltProject);
