@@ -5,4 +5,21 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
     open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+    groups:
+      # GitHub公式アクションをグループ化（1つのPRにまとめる）
+      github-actions-official:
+        patterns:
+          - "actions/*"
+      # GameCI関連をグループ化
+      game-ci:
+        patterns:
+          - "game-ci/*"
