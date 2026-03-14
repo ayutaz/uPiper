@@ -284,3 +284,8 @@ Assets/uPiper/Resources/Models/tsukuyomi-chan.onnx
 Assets/uPiper/Resources/Models/tsukuyomi-chan.onnx.meta
 Assets/uPiper/Resources/Models/tsukuyomi-chan.onnx.json
 Assets/uPiper/Resources/Models/tsukuyomi-chan.onnx.json.meta
+
+# semantic-release
+node_modules/
+dist/
+package-lock.json
