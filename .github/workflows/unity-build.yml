@@ -169,3 +169,59 @@ jobs:
         name: Build-${{ matrix.targetPlatform }}
         path: build/${{ matrix.targetPlatform }}
         retention-days: 7
+
+  # リリースへのビルド成果物アップロード（タグプッシュ時）
+  upload-to-release:
+    name: Upload Build Artifacts to Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+    - name: Extract version from tag
+      id: version
+      run: |
+        TAG_NAME="${{ github.ref_name }}"
+        VERSION="${TAG_NAME#v}"
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v8
+      with:
+        path: ./artifacts
+
+    - name: Package builds
+      run: |
+        cd artifacts
+        for platform in Build-*; do
+          if [ -d "$platform" ]; then
+            echo "Packaging $platform"
+            cd "$platform"
+            zip -r "../${platform}.zip" .
+            cd ..
+          fi
+        done
+
+    - name: Upload to GitHub Release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        TAG="${{ steps.version.outputs.tag_name }}"
+        echo "Waiting for release $TAG to be created..."
+        for i in $(seq 1 30); do
+          if gh release view "$TAG" --repo "${{ github.repository }}" > /dev/null 2>&1; then
+            echo "Release found!"
+            break
+          fi
+          echo "Attempt $i: Release not found yet, waiting 30s..."
+          sleep 30
+        done
+        for zip in artifacts/Build-*.zip; do
+          if [ -f "$zip" ]; then
+            echo "Uploading $zip"
+            gh release upload "$TAG" "$zip" --repo "${{ github.repository }}" --clobber
+          fi
+        done

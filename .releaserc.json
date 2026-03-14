@@ -57,20 +57,6 @@
       {
         "replacements": [
           {
-            "files": ["Assets/uPiper/package.json"],
-            "from": "\"version\": \".*\"",
-            "to": "\"version\": \"${nextRelease.version}\"",
-            "results": [
-              {
-                "file": "Assets/uPiper/package.json",
-                "hasChanged": true,
-                "numMatches": 1,
-                "numReplacements": 1
-              }
-            ],
-            "countMatches": true
-          },
-          {
             "files": ["Assets/uPiper/Editor/uPiperSetup.cs"],
             "from": "PACKAGE_VERSION = \".*\"",
             "to": "PACKAGE_VERSION = \"${nextRelease.version}\"",
@@ -120,6 +106,12 @@
       {
         "npmPublish": false,
         "pkgRoot": "Assets/uPiper"
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "mkdir -p dist && cd Assets/uPiper && npm pack --pack-destination ../../dist"
       }
     ],
     [
