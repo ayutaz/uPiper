@@ -82,7 +82,10 @@ jobs:
 
     - name: Fix coverage file permissions
       if: always()
-      run: sudo chown -R $(id -u):$(id -g) test-results/
+      run: |
+        if [ -d test-results ]; then
+          sudo chown -R $(id -u):$(id -g) test-results/
+        fi
 
     - name: Setup .NET for ReportGenerator
       if: always()
@@ -92,7 +95,7 @@ jobs:
       if: always()
       uses: danielpalme/ReportGenerator-GitHub-Action@v5
       with:
-        reports: 'test-results/**/*.xml'
+        reports: 'test-results/**/TestCoverageResults_*.xml'
         targetdir: 'coveragereport'
         reporttypes: 'HtmlInline;MarkdownSummaryGithub;Cobertura'
         assemblyfilters: '+uPiper.Runtime'
