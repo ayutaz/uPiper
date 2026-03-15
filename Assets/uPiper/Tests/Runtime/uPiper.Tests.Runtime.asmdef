@@ -4,8 +4,7 @@
     "references": [
         "UnityEngine.TestRunner",
         "Unity.InferenceEngine",
-        "uPiper.Runtime",
-        "uPiper.Scripts.Runtime"
+        "uPiper.Runtime"
     ],
     "includePlatforms": [
         "Editor"
