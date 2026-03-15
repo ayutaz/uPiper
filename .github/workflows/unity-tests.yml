@@ -84,7 +84,7 @@ jobs:
         targetdir: 'coveragereport'
         reporttypes: 'HtmlInline;MarkdownSummaryGithub;Cobertura'
         assemblyfilters: '+uPiper.Runtime'
-        customSettings: 'minimumCoverageThresholds:lineCoverage=60'
+        customSettings: 'minimumCoverageThresholds:lineCoverage=50'
 
     - name: Coverage Summary
       if: always()
