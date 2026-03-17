@@ -3,23 +3,56 @@
 本ドキュメントは、uPiper 多言語対応のために dot-net-g2p リポジトリ (`ayutaz/dot-net-g2p`) 側で
 対応が必要なタスクをまとめたものです。
 
+## ステータスサマリ（Phase 5 完了時点）
+
+**Phase 5 で uPiper 側に独立実装を完了したため、dot-net-g2p 側タスクの優先度が大幅に低下。**
+
+- 中国語・韓国語の Phonemizer は piper-plus Python 実装から直接 C# にポートした
+- dot-net-g2p の `DotNetG2P.Chinese` / `DotNetG2P.Korean` は使用していない
+- 日本語 G2P（`DotNetG2PPhonemizer`）は Phase 5 で変更なし（安定稼働中）
+- 以下のタスクは将来的に dot-net-g2p 統合が必要になった場合のみ対応
+
 ## タスク概要
 
-| # | パッケージ | タスク | 優先度 | 難易度 | 工数見積 |
-|---|-----------|--------|--------|--------|---------|
-| 1 | DotNetG2P.Chinese | piper-plus互換IPA出力追加 | **高** | 中 | 2-3日 |
-| 2 | DotNetG2P.Chinese | PUAマッピング対応 | 高 | 低 | 1日 |
-| 3 | DotNetG2P.Chinese | Prosody情報出力API | 中 | 低 | 1日 |
-| 4 | DotNetG2P.Korean | Jamo→IPA変換API追加 | **高** | 低 | 1-2日 |
-| 5 | DotNetG2P.Korean | PUAマッピング対応 | 高 | 低 | 1日 |
-| 6 | DotNetG2P.Korean | Prosody情報出力API | 中 | 低 | 1日 |
-| 7 | DotNetG2P.Chinese | WebGL辞書ロード最適化 | 低 | 中 | 2-3日 |
+| # | パッケージ | タスク | 優先度 | ステータス | 備考 |
+|---|-----------|--------|--------|-----------|------|
+| 1 | DotNetG2P.Chinese | piper-plus互換IPA出力追加 | ~~高~~ → **低** | 未着手 | uPiper側で直接実装により不要化 |
+| 2 | DotNetG2P.Chinese | PUAマッピング対応 | ~~高~~ → **低** | 未着手 | PuaTokenMapper で uPiper 側対応済み |
+| 3 | DotNetG2P.Chinese | Prosody情報出力API | ~~中~~ → **低** | 未着手 | ChinesePhonemizerBackend で対応済み |
+| 4 | DotNetG2P.Korean | Jamo→IPA変換API追加 | ~~高~~ → **低** | 未着手 | KoreanPhonemizerBackend で対応済み |
+| 5 | DotNetG2P.Korean | PUAマッピング対応 | ~~高~~ → **低** | 未着手 | PuaTokenMapper で uPiper 側対応済み |
+| 6 | DotNetG2P.Korean | Prosody情報出力API | ~~中~~ → **低** | 未着手 | KoreanPhonemizerBackend で対応済み |
+| 7 | DotNetG2P.Chinese | WebGL辞書ロード最適化 | 低 | 未着手 | uPiper側がルックアップテーブルのため不要 |
 
 ---
 
-## タスク詳細
+## Phase 5 の影響
+
+### DotNetG2PPhonemizer（日本語）は変更なし
+
+Phase 5 で追加された多言語バックエンドは `DotNetG2PPhonemizer` に一切影響しない。
+
+- `DotNetG2PPhonemizer` は引き続き日本語 G2P 専用
+- `MultilingualPhonemizer` は日本語セグメントを `DotNetG2PPhonemizer` に委譲
+- dot-net-g2p パッケージ（`com.dotnetg2p`）のバージョン・API に変更なし
+- MeCab辞書・カスタム辞書の読み込みパスも変更なし
+
+### uPiper 側独立実装の採用理由
+
+1. **依存関係の最小化**: dot-net-g2p パッケージの更新を待たずに実装可能
+2. **piper-plus 完全互換**: Python 実装から直接ポートすることでIPA差異問題を回避
+3. **軽量性**: 中国語は ~700 エントリのルックアップテーブルで頻出文字をカバー（dot-net-g2p の 44,435 + 411,958 エントリと比較して大幅に軽量）
+4. **外部データ不要**: 韓国語は純粋アルゴリズム、中国語はコード内埋め込みテーブル
+
+---
+
+## タスク詳細（将来統合時の参考情報）
+
+以下は dot-net-g2p 側の実装が将来的に必要になった場合の参考情報として残す。
 
 ### タスク1: DotNetG2P.Chinese - piper-plus互換IPA出力追加
+
+**ステータス**: 未着手（uPiper側で直接実装により優先度低下）
 
 **背景**: 既存の `PinyinToIpa.cs` の IPA 出力が piper-plus のモデル学習時の IPA と一部異なる。
 
@@ -34,10 +67,10 @@
 | er | əɻ | ɚ | r-colored schwa表記 |
 | -iong | iʊŋ | iuŋ | ong同様 |
 
-**実装方針**:
-- `PinyinToIpa.cs` に `PiperCompatible` モード追加
-- または新クラス `PinyinToPiperIpa.cs` を作成
-- piper-plus の `chinese.py` の `_INITIAL_TO_IPA`, `_FINAL_TO_IPA` テーブルと完全一致させる
+**統合が必要になるケース**:
+- 中国語テキストのカバレッジが不足した場合（現在 ~700 エントリ → 44,435 単字辞書が必要）
+- 多音字（ポリフォン）の文脈依存読み分けが必要になった場合
+- 熟語単位のピンイン解決が必要になった場合
 
 **参照ファイル**:
 - piper-plus: `src/python/piper_train/phonemize/chinese.py` (行45-126)
@@ -47,150 +80,85 @@
 
 ### タスク2: DotNetG2P.Chinese - PUAマッピング対応
 
-**背景**: piper-plus の多言語モデルは中国語音素にPUA文字を使用する（0xE020-0xE04A）。
+**ステータス**: 未着手（uPiper側 `PuaTokenMapper.cs` で対応済み）
 
-**実装内容**:
-- piper-plus の `token_mapper.py` FIXED_PUA_MAPPING (中国語部分) に対応する変換メソッド追加
-- `ChineseG2PEngine.ToPiperPhonemes(string text) -> string[]` のようなAPI
-
-**PUAマッピング** (0xE020-0xE04A, 43エントリ):
-```
-0xE020: pʰ, 0xE021: tʰ, 0xE022: kʰ, 0xE023: tɕ, 0xE024: tɕʰ,
-0xE025: tʂ, 0xE026: tʂʰ, 0xE027: ɕ, 0xE028: ʂ, 0xE029: ɻ,
-0xE02A: tsʰ, ...（以下省略、token_mapper.py参照）
-```
+**PUAマッピング** (0xE020-0xE04A, 43エントリ): `PuaTokenMapper.FixedPuaMapping` で管理。
 
 ---
 
 ### タスク3: DotNetG2P.Chinese - Prosody情報出力API
 
-**背景**: piper-plus の中国語Phonemizerは `phonemize_with_prosody()` で声調・位置情報を返す。
-
-**実装内容**:
-```csharp
-// 新規API
-public (string[] phonemes, int[] a1, int[] a2, int[] a3)
-    PhonemizeWithProsody(string text);
-```
-
-- a1: 声調番号 (1-5)
-- a2: 語内のモーラ位置
-- a3: 語の長さ
-
-**参照**: piper-plus `chinese.py` 行426付近の `ProsodyInfo(a1=tone, a2=syl_pos, a3=word_len)`
+**ステータス**: 未着手（uPiper側 `ChinesePhonemizerBackend` で対応済み）
 
 ---
 
 ### タスク4: DotNetG2P.Korean - Jamo→IPA変換API追加
 
+**ステータス**: 未着手（uPiper側 `KoreanPhonemizerBackend` で対応済み）
+
 **背景**: 既存の `KoreanG2PEngine` は Jamo (ㄱ, ㅏ, ㄴ) を出力するが、piper-plus モデルは IPA (k, a, n) を入力とする。
 
-**実装内容**:
-```csharp
-// 新規API
-public string[] ToIpaPhonemes(string text);
-```
-
-**マッピングテーブル** (piper-plus `korean.py` から移植):
-
-初声 (19エントリ):
-```
-ㄱ→k, ㄲ→k͈, ㄴ→n, ㄷ→t, ㄸ→t͈, ㄹ→ɾ, ㅁ→m, ㅂ→p, ㅃ→p͈,
-ㅅ→s, ㅆ→s͈, ㅇ→(empty), ㅈ→tɕ, ㅉ→t͈ɕ, ㅊ→tɕʰ, ㅋ→kʰ, ㅌ→tʰ, ㅍ→pʰ, ㅎ→h
-```
-
-中声 (21エントリ):
-```
-ㅏ→a, ㅐ→ɛ, ㅑ→ja, ㅒ→jɛ, ㅓ→ʌ, ㅔ→e, ㅕ→jʌ, ㅖ→je,
-ㅗ→o, ㅘ→wa, ㅙ→wɛ, ㅚ→we, ㅛ→jo, ㅜ→u, ㅝ→wʌ, ㅞ→we,
-ㅟ→wi, ㅠ→ju, ㅡ→ɯ, ㅢ→ɰi, ㅣ→i
-```
-
-終声 (28エントリ):
-```
-(none)→(none), ㄱ→k̚, ㄲ→k̚, ㄳ→k̚, ㄴ→n, ㄵ→n, ㄶ→n,
-ㄷ→t̚, ㄹ→l, ㄺ→l, ㄻ→m, ㄼ→l, ㄽ→l, ㄾ→l, ㄿ→l, ㅀ→l,
-ㅁ→m, ㅂ→p̚, ㅄ→p̚, ㅅ→t̚, ㅆ→t̚, ㅇ→ŋ, ㅈ→t̚, ㅊ→t̚,
-ㅋ→k̚, ㅌ→t̚, ㅍ→p̚, ㅎ→(none)
-```
-
-**参照**: piper-plus `korean.py` 行38-123
+**uPiper Phase 5 での対応**: `KoreanPhonemizerBackend` 内に完全な Jamo→IPA マッピングテーブルを実装。
+初声19 + 中声21 + 終声28 の全エントリを `InitialToIpa`/`MedialToIpa`/`FinalToIpa` 配列で管理。
 
 ---
 
 ### タスク5: DotNetG2P.Korean - PUAマッピング対応
 
-**背景**: piper-plus の多言語モデルは韓国語音素にPUA文字を使用する（0xE04B-0xE052）。
+**ステータス**: 未着手（uPiper側 `KoreanPhonemizerBackend` + `PuaTokenMapper.cs` で対応済み）
 
-**PUAマッピング** (8エントリ):
+**PUAマッピング** (8エントリ + 中国語共有5エントリ):
 ```
-0xE04B: p͈, 0xE04C: t͈, 0xE04D: k͈, 0xE04E: s͈,
-0xE04F: t͈ɕ, 0xE050: k̚, 0xE051: t̚, 0xE052: p̚
-```
-
-中国語と共有するPUA:
-```
-0xE020: pʰ, 0xE021: tʰ, 0xE022: kʰ, 0xE023: tɕ, 0xE024: tɕʰ
+Korean固有: 0xE04B-0xE052 (tense consonants + unreleased finals)
+中国語共有: 0xE020-0xE024 (aspirated/affricate consonants)
 ```
 
 ---
 
 ### タスク6: DotNetG2P.Korean - Prosody情報出力API
 
-**実装内容**:
-```csharp
-public (string[] phonemes, int[] a1, int[] a2, int[] a3)
-    ToIpaPhonemesWithProsody(string text);
-```
+**ステータス**: 未着手（uPiper側 `KoreanPhonemizerBackend` で対応済み）
 
-- a1: 0（固定）
-- a2: 0（固定）
-- a3: 音節数（`max(syllable_count, 1)`）
-
-**参照**: piper-plus `korean.py` 行253
+uPiper Phase 5 での実装: a1=0, a2=0, a3=音節数 (piper-plus `korean.py` 互換)
 
 ---
 
 ### タスク7: DotNetG2P.Chinese - WebGL辞書ロード最適化（低優先度）
 
-**背景**: 中国語辞書（特に熟語辞書 9.14MB）が EmbeddedResource として DLL に含まれるため、WebGL の初回ダウンロードサイズに影響する。
+**ステータス**: 不要化
 
-**選択肢**:
-- A: EmbeddedResource のまま（シンプル、DLLサイズ +9MB）
-- B: StreamingAssets + 非同期読み込み（日本語MeCab辞書と同パターン）
-- C: gzip圧縮した EmbeddedResource（3.4MBに縮小、起動時展開コスト）
-
-**推奨**: まずは A（EmbeddedResource）で進め、WebGL パフォーマンスが問題になった場合に B に移行。
+uPiper Phase 5 では `PinyinData.cs` にルックアップテーブルをコード内埋め込みしたため、
+WebGL での辞書ロード問題は発生しない。dot-net-g2p の `DotNetG2P.Chinese` を統合する場合にのみ関連。
 
 ---
 
-## uPiper 側で対応するタスク（参考）
+## uPiper 側で完了したタスク（参考）
 
-dot-net-g2p 側のタスク完了後、uPiper 側で以下の対応が必要:
+Phase 5 で以下のタスクが全て完了:
 
-| タスク | 内容 | 依存 |
-|--------|------|------|
-| ChinesePhonemizerBackend 実装 | DotNetG2PPhonemizer と同パターン | タスク1,2,3 |
-| KoreanPhonemizerBackend 実装 | DotNetG2PPhonemizer と同パターン | タスク4,5,6 |
-| PhonemeEncoder 中国語PUA対応 | multiCharPhonemeMap 拡張 | タスク2 |
-| PhonemeEncoder 韓国語PUA対応 | multiCharPhonemeMap 拡張 | タスク5 |
-| LanguageDetector Hangul追加 | U+AC00-D7AF等の範囲追加 | なし |
+| タスク | 内容 | ステータス |
+|--------|------|-----------|
+| ChinesePhonemizerBackend 実装 | piper-plus chinese.py から直接ポート | **完了** |
+| KoreanPhonemizerBackend 実装 | piper-plus korean.py から直接ポート | **完了** |
+| SpanishPhonemizerBackend 実装 | ルールベースG2P | **完了** |
+| FrenchPhonemizerBackend 実装 | ルールベースG2P | **完了** |
+| PortuguesePhonemizerBackend 実装 | ルールベースG2P | **完了** |
+| PuaTokenMapper 実装 | 全言語PUA↔IPA双方向マッピング | **完了** |
+| LanguageConstants 実装 | 言語ID/コード定数 | **完了** |
+| UnicodeLanguageDetector 拡張 | 7言語対応（Hangul, CJK曖昧性解決） | **完了** |
+| MultilingualPhonemizer 統合 | 全バックエンドの初期化・委譲・結合 | **完了** |
+| Phase 5 テスト | 207テスト（6ファイル） | **完了** |
 
 ---
 
-## 実装順序の推奨
+## クロス言語依存関係
 
-```
-Phase 1 (dot-net-g2p):
-  タスク4 (Korean Jamo→IPA) → タスク5 (Korean PUA) → タスク6 (Korean Prosody)
-  ※ 韓国語は変更量が少なく、テストも既存179件ベースで拡張しやすい
+| 依存元 | 依存先 | 内容 | ステータス |
+|--------|--------|------|-----------|
+| MultilingualPhonemizer | DotNetG2PPhonemizer | 日本語セグメント委譲 | 安定 |
+| MultilingualPhonemizer | FliteLTSPhonemizer | 英語セグメント委譲 | 安定 |
+| KoreanPhonemizerBackend | PuaTokenMapper | PUAコードポイント共有（zh共通5エントリ） | 安定 |
+| ChinesePhonemizerBackend | PuaTokenMapper | PUAコードポイント（43エントリ） | 安定 |
+| PhonemeEncoder | PuaTokenMapper | IPAモデルでのPUA→IPA逆変換 | Phase 6 で検証予定 |
 
-Phase 2 (dot-net-g2p):
-  タスク1 (Chinese IPA互換) → タスク2 (Chinese PUA) → タスク3 (Chinese Prosody)
-  ※ 中国語はIPA差異の調整が必要で、慎重なテストが必要
-
-Phase 3 (uPiper):
-  ChinesePhonemizerBackend + KoreanPhonemizerBackend 実装
-  PhonemeEncoder 拡張
-  LanguageDetector Hangul 対応
-```
+**重要**: dot-net-g2p は別リポジトリ（`ayutaz/dot-net-g2p`）であり、uPiper 側の責務でコードを変更しないこと。

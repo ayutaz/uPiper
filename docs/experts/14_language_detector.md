@@ -10,16 +10,20 @@
 | CJK統合漢字 | U+4E00-9FFF | `ja`/`zh` (コンテキスト依存) |
 | CJK拡張A | U+3400-4DBF | `ja`/`zh` (コンテキスト依存) |
 | CJK互換漢字 | U+F900-FAFF | `ja`/`zh` (コンテキスト依存) |
-| CJK句読点 | U+3000-303F | `ja` |
+| CJK句読点 | U+3000-303F | `ja`/`zh` (コンテキスト依存) |
 | 全角形式 | U+FF00-FF20, U+FF3B-FF40, U+FF5B-FFEF | `ja` |
 | 全角ラテン | U+FF21-FF3A, U+FF41-FF5A | ラテン言語 |
 | Hangul音節 | U+AC00-D7AF | `ko` |
 | Hangul Jamo | U+1100-11FF | `ko` |
 | Hangul互換Jamo | U+3130-318F | `ko` |
 | ラテン基本 | A-Z, a-z | ラテン言語 (デフォルト`en`) |
-| ラテン拡張 | U+00C0-00D6, U+00D8-00F6, U+00F8-00FF | ラテン言語 |
+| ラテン拡張 (Latin-1 Supplement) | U+00C0-00D6, U+00D8-00F6, U+00F8-00FF | ラテン言語 |
+| ラテン拡張A (Latin Extended-A) | U+0100-017F | ラテン言語 |
+| ラテン拡張B (Latin Extended-B) | U+0180-024F | ラテン言語 |
 
 **除外文字**: × (U+00D7), ÷ (U+00F7) — 算術記号
+
+**ラテン拡張A/B**: フランス語（OE合字等）、ポルトガル語（鼻母音等）、スペイン語のアクセント付き文字を含む
 
 ## uPiper LanguageDetector の現在の判定ルール
 
@@ -31,15 +35,19 @@
 
 ## 差分分析 - 追加が必要なルール
 
-| 項目 | 優先度 | 説明 |
-|------|--------|------|
-| Katakana Phonetic (U+31F0-31FF) | P0 | 日本語精度向上 |
-| CJK曖昧性解決 (ja vs zh) | P0 | 中国語対応時必須 |
-| CJK互換漢字 (U+F900-FAFF) | P1 | 稀文字対応 |
-| 日本語句読点 (U+3000-303F) | P1 | セグメント精度向上 |
-| 全角形式 (U+FF00-FFEF) | P1 | 全角文字対応 |
-| Hangul (U+AC00-D7AF等) | P2 | 韓国語対応時 |
-| ラテン拡張 (U+00C0-00FF) | P2 | 多言語ラテン文字対応 |
+| 項目 | 優先度 | 状態 | 説明 |
+|------|--------|------|------|
+| Katakana Phonetic (U+31F0-31FF) | P0 | 実装済み | 日本語精度向上 |
+| CJK曖昧性解決 (ja vs zh) | P0 | 実装済み | Kanaコンテキストによる曖昧性解決 |
+| CJK互換漢字 (U+F900-FAFF) | P1 | 実装済み | 稀文字対応 |
+| 日本語/CJK句読点 (U+3000-303F) | P1 | 実装済み | コンテキスト依存のja/zh判定 |
+| 全角形式 (U+FF00-FFEF) | P1 | 実装済み | 全角文字対応 |
+| Hangul (U+AC00-D7AF等) | P2 | 実装済み | 韓国語対応 |
+| ラテン拡張 Latin-1 Supplement (U+00C0-00FF) | P2 | 実装済み | 多言語ラテン文字対応 |
+| ラテン拡張A (U+0100-017F) | P2 | 実装済み (Phase 5) | フランス語/ポルトガル語/スペイン語アクセント文字 |
+| ラテン拡張B (U+0180-024F) | P2 | 実装済み (Phase 5) | フランス語/ポルトガル語/スペイン語特殊文字 |
+| CJK句読点コンテキスト曖昧性解決 | P1 | 実装済み (Phase 5) | ja/zh句読点のKanaコンテキスト判定 |
+| es/fr/pt言語フラグ | P2 | 実装済み (Phase 5) | _hasEs, _hasFr, _hasPt フラグ追加 |
 
 ## CJK曖昧性解決ロジック
 
@@ -58,33 +66,55 @@ if _RE_CJK.match(ch):
 - 仮名あり → 漢字は日本語と判定
 - 仮名なし → 漢字は中国語と判定
 
-## C#実装案
+### CJK句読点の曖昧性解決 (Phase 5追加)
+
+Phase 5でCJK句読点（U+3000-303F, 全角形式）の判定が更新された。従来は常に`"ja"`を返していたが、CJK漢字と同様にKanaコンテキストによるja/zh曖昧性解決を行うようになった。
+
+```csharp
+// Priority 5: CJK punctuation → context-aware disambiguation
+if (IsCjkPunct(ch))
+{
+    if (_hasJa && _hasZh)
+        return contextHasKana ? "ja" : "zh";
+    if (_hasJa) return "ja";
+    if (_hasZh) return "zh";
+    return null;
+}
+```
+
+これにより、中国語テキスト中の`。`や`「」`が正しく`"zh"`として判定される。
+
+## C#実装 (Phase 5反映)
 
 ```csharp
 public class UnicodeLanguageDetector
 {
-    private readonly HashSet<string> _languages;
+    private readonly IReadOnlyList<string> _languages;
     private readonly string _defaultLatinLanguage;
     private readonly bool _hasJa, _hasZh, _hasKo;
+    private readonly bool _hasEs, _hasFr, _hasPt;
 
-    public UnicodeLanguageDetector(List<string> languages, string defaultLatinLanguage = "en")
+    public UnicodeLanguageDetector(IReadOnlyList<string> languages, string defaultLatinLanguage = "en")
     {
-        _languages = new HashSet<string>(languages);
+        _languages = languages;
         _defaultLatinLanguage = defaultLatinLanguage;
-        _hasJa = _languages.Contains("ja");
-        _hasZh = _languages.Contains("zh");
-        _hasKo = _languages.Contains("ko");
+        _hasJa = ContainsLanguage("ja");
+        _hasZh = ContainsLanguage("zh");
+        _hasKo = ContainsLanguage("ko");
+        _hasEs = ContainsLanguage("es");
+        _hasFr = ContainsLanguage("fr");
+        _hasPt = ContainsLanguage("pt");
     }
 
     public string DetectChar(char ch, bool contextHasKana = false)
     {
-        // Kana → ja
-        if (IsKana(ch)) return _hasJa ? "ja" : null;
+        // Priority 1: Kana → ja
+        if (_hasJa && IsKana(ch)) return "ja";
 
-        // Hangul → ko
-        if (IsHangul(ch)) return _hasKo ? "ko" : null;
+        // Priority 2: Hangul → ko
+        if (_hasKo && IsHangul(ch)) return "ko";
 
-        // CJK → ja or zh (コンテキスト依存)
+        // Priority 3: CJK → ja or zh (コンテキスト依存)
         if (IsCJK(ch))
         {
             if (_hasJa && _hasZh) return contextHasKana ? "ja" : "zh";
@@ -93,83 +123,61 @@ public class UnicodeLanguageDetector
             return null;
         }
 
-        // 全角ラテン → ラテン言語
+        // Priority 4: 全角ラテン → ラテン言語
         if (IsFullwidthLatin(ch))
-            return _languages.Contains(_defaultLatinLanguage) ? _defaultLatinLanguage : null;
+            return ContainsLanguage(_defaultLatinLanguage) ? _defaultLatinLanguage : null;
 
-        // 日本語句読点
-        if (IsJapanesePunct(ch)) return _hasJa ? "ja" : null;
+        // Priority 5: CJK句読点 → コンテキスト依存のja/zh判定
+        if (IsCjkPunct(ch))
+        {
+            if (_hasJa && _hasZh) return contextHasKana ? "ja" : "zh";
+            if (_hasJa) return "ja";
+            if (_hasZh) return "zh";
+            return null;
+        }
 
-        // ラテン文字 → ラテン言語
+        // Priority 6: ラテン文字 → ラテン言語
         if (IsLatin(ch))
-            return _languages.Contains(_defaultLatinLanguage) ? _defaultLatinLanguage : null;
+            return ContainsLanguage(_defaultLatinLanguage) ? _defaultLatinLanguage : null;
 
         return null;  // 中立文字
     }
 
-    public bool HasKana(string text)
-    {
-        foreach (var ch in text)
-            if (IsKana(ch)) return true;
-        return false;
-    }
+    // ---- 静的文字分類子 (AggressiveInlining) ----
 
-    public List<(string language, string text)> SegmentText(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return new();
-
-        var contextHasKana = HasKana(text);
-        var segments = new List<(string, string)>();
-        string currentLang = null;
-        var currentChars = new List<char>();
-
-        foreach (var ch in text)
-        {
-            var lang = DetectChar(ch, contextHasKana);
-            if (lang != null && lang != currentLang && currentLang != null)
-            {
-                segments.Add((currentLang, new string(currentChars.ToArray())));
-                currentChars.Clear();
-            }
-            if (lang != null) currentLang = lang;
-            currentChars.Add(ch);
-        }
-
-        if (currentChars.Count > 0 && currentLang != null)
-            segments.Add((currentLang, new string(currentChars.ToArray())));
-
-        return segments;
-    }
-
-    // ---- 判定ヘルパー ----
-
-    private static bool IsKana(char ch)
+    public static bool IsKana(char ch)
         => (ch >= '\u3040' && ch <= '\u309F')   // Hiragana
         || (ch >= '\u30A0' && ch <= '\u30FF')   // Katakana
         || (ch >= '\u31F0' && ch <= '\u31FF');   // Katakana Phonetic
 
-    private static bool IsCJK(char ch)
+    public static bool IsCJK(char ch)
         => (ch >= '\u4E00' && ch <= '\u9FFF')   // CJK統合漢字
         || (ch >= '\u3400' && ch <= '\u4DBF')   // CJK拡張A
         || (ch >= '\uF900' && ch <= '\uFAFF');   // CJK互換漢字
 
-    private static bool IsHangul(char ch)
+    public static bool IsHangul(char ch)
         => (ch >= '\uAC00' && ch <= '\uD7AF')   // Hangul音節
         || (ch >= '\u1100' && ch <= '\u11FF')   // Hangul Jamo
         || (ch >= '\u3130' && ch <= '\u318F');   // Hangul互換Jamo
 
-    private static bool IsLatin(char ch)
+    public static bool IsLatin(char ch)
         => (ch >= 'A' && ch <= 'Z')
         || (ch >= 'a' && ch <= 'z')
-        || (ch >= '\u00C0' && ch <= '\u00D6')
+        || (ch >= '\u00C0' && ch <= '\u00D6')   // Latin-1 Supplement
         || (ch >= '\u00D8' && ch <= '\u00F6')
-        || (ch >= '\u00F8' && ch <= '\u00FF');
+        || (ch >= '\u00F8' && ch <= '\u00FF')
+        || (ch >= '\u0100' && ch <= '\u017F')   // Latin Extended-A (Phase 5)
+        || (ch >= '\u0180' && ch <= '\u024F');   // Latin Extended-B (Phase 5)
 
-    private static bool IsFullwidthLatin(char ch)
+    public static bool IsLatinExtended(char ch)             // Phase 5追加
+        => (ch >= '\u0100' && ch <= '\u017F')   // Latin Extended-A
+        || (ch >= '\u0180' && ch <= '\u024F');   // Latin Extended-B
+
+    public static bool IsFullwidthLatin(char ch)
         => (ch >= '\uFF21' && ch <= '\uFF3A')
         || (ch >= '\uFF41' && ch <= '\uFF5A');
 
-    private static bool IsJapanesePunct(char ch)
+    public static bool IsCjkPunct(char ch)                  // Phase 5: IsJapanesePunctから改名
         => (ch >= '\u3000' && ch <= '\u303F')
         || (ch >= '\uFF00' && ch <= '\uFF20')
         || (ch >= '\uFF3B' && ch <= '\uFF40')
@@ -179,9 +187,12 @@ public class UnicodeLanguageDetector
 
 ## 処理フローの比較
 
-| 項目 | piper-plus | uPiper現在 | uPiper改修後 |
-|------|-----------|-----------|-------------|
-| 判定方式 | 文字単位ストリーミング | 複数パス正規表現 | 文字単位ストリーミング |
-| 対応言語 | ja,en,zh,ko,es,pt,fr | ja,en | ja,en,zh,ko,es,pt,fr |
-| CJK曖昧性 | Kanaコンテキスト | なし（常にja） | Kanaコンテキスト |
-| 中立文字 | 前セグメント吸収 | マージで部分対応 | 前セグメント吸収 |
+| 項目 | piper-plus | uPiper (Phase 5実装済み) |
+|------|-----------|--------------------------|
+| 判定方式 | 文字単位ストリーミング | 文字単位ストリーミング (AggressiveInlining) |
+| 対応言語 | ja,en,zh,ko,es,pt,fr | ja,en,zh,ko,es,pt,fr |
+| CJK曖昧性 | Kanaコンテキスト | Kanaコンテキスト |
+| CJK句読点曖昧性 | Kanaコンテキスト | Kanaコンテキスト (Phase 5で追加) |
+| 中立文字 | 前セグメント吸収 | 前セグメント吸収 |
+| ラテン拡張 | Latin-1 Supplement のみ | Latin-1 Supplement + Extended-A + Extended-B |
+| 言語フラグ | has_ja, has_zh, has_ko | _hasJa, _hasZh, _hasKo, _hasEs, _hasFr, _hasPt |

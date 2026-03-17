@@ -1,173 +1,192 @@
-# MultilingualPhonemizer C#移植設計
+# MultilingualPhonemizer 実装仕様（Phase 5）
 
-## piper-plus MultilingualPhonemizer 概要
+## 概要
+
+MultilingualPhonemizerは7言語（ja, en, es, fr, pt, zh, ko）をサポートする多言語音素化システム。
+テキストをUnicode範囲で言語セグメントに分割し、各セグメントを対応する言語バックエンドに委譲する。
 
 ### クラス構成
 
 ```
-MultilingualPhonemizer
-  ├── _languages: list[str]              # サポート言語リスト
-  ├── _default_latin_language: str       # ラテン文字のデフォルト言語
-  ├── _detector: UnicodeLanguageDetector # Unicode範囲言語検出
-  ├── _id_map: dict[str, list[int]]      # 統一音素IDマップ（遅延初期化）
-  └── _last_eos: str                     # 最後のEOSマーカー（スレッド非安全）
-
-BilingualPhonemizer(MultilingualPhonemizer)
-  └── ["ja", "en"] 固定のサブクラス（後方互換性）
+MultilingualPhonemizer : IDisposable
+  ├── _languages: IReadOnlyList<string>     # サポート言語リスト
+  ├── _defaultLatinLanguage: string         # ラテン文字のデフォルト言語（"en"）
+  ├── _detector: UnicodeLanguageDetector    # Unicode範囲言語検出
+  ├── _jaPhonemizer: DotNetG2PPhonemizer    # 日本語（直接、IPhonemizerBackend非経由）
+  ├── _enPhonemizer: IPhonemizerBackend     # 英語（Flite / RuleBased）
+  ├── _esPhonemizer: IPhonemizerBackend     # スペイン語
+  ├── _frPhonemizer: IPhonemizerBackend     # フランス語
+  ├── _ptPhonemizer: IPhonemizerBackend     # ポルトガル語
+  ├── _zhPhonemizer: IPhonemizerBackend     # 中国語
+  ├── _koPhonemizer: IPhonemizerBackend     # 韓国語
+  ├── _isInitialized: bool                  # 初期化済みフラグ
+  └── _disposed: bool                       # 破棄済みフラグ
 ```
 
-## phonemize() 処理フロー
+**注意**: 日本語はDotNetG2PPhonemizer（Prosody対応）を直接使用し、IPhonemizerBackend経由ではない。
+他の6言語はすべてIPhonemizerBackendインターフェース経由で統一的に扱われる。
 
-```
-入力テキスト
-  ↓
-1. _segment_text_multilingual(text, detector)
-   ├── has_kana(text) で事前スキャン（CJK曖昧性解決用）
-   ├── 文字単位で detect_char() → 言語判定
-   ├── 言語切り替え時にセグメント作成
-   └── 中立文字（スペース、数字等）は前セグメントに吸収
-   → List[(lang, text_segment)]
-  ↓
-2. セグメント別処理
-   for lang, segment_text in segments:
-     phonemizer = get_phonemizer(lang)  # レジストリから取得
-     phonemes = phonemizer.phonemize(segment_text)
-     → セグメント間のBOS/EOS除去
-     → 音素を連結
-  ↓
-3. 出力: 統一音素配列
-```
-
-## phonemize_with_prosody() 処理フロー
-
-```
-入力テキスト
-  ↓
-1. セグメント分割（同上）
-  ↓
-2. セグメント別 phonemize_with_prosody()
-   for lang, segment_text in segments:
-     phonemes, prosody = phonemizer.phonemize_with_prosody(segment_text)
-     ├── BOS/EOSトークンを削除（重複防止）
-     │   削除対象: ^, $, ?, ?!, ?., ?~
-     ├── 最後のEOSを _last_eos に保存
-     └── stripped phonemes + prosody を連結
-  ↓
-3. 出力: (all_phonemes, all_prosody)
-```
-
-## post_process_ids() 処理フロー
-
-```
-入力: phoneme_ids, prosody_features, phoneme_id_map
-  ↓
-1. Inter-phoneme パディング挿入
-   各非ゼロIDの後に PAD (ID=0) を挿入
-   例: [a, b, c] → [a, 0, b, 0, c, 0]
-  ↓
-2. BOS/EOS ラッピング
-   BOS (^) 追加: [^, 0, a, 0, b, 0, c, 0]
-   EOS (_last_eos) 追加: [^, 0, a, 0, b, 0, c, 0, $]
-  ↓
-3. Prosody配列も同サイズに拡張（PAD/BOS/EOS位置はNone）
-```
-
-## _last_eos スレッド安全性問題
-
-### 問題
-
-```python
-# phonemize_with_prosody() で設定
-self._last_eos = last_eos  # インスタンス変数書き込み
-
-# post_process_ids() で読み込み
-eos_ids = phoneme_id_map.get(self._last_eos, ...)
-```
-
-並行実行時に別スレッドの値を読み込むリスクがある。
-
-### C#での解決策（推奨: 戻り値に含める）
+## コンストラクタ
 
 ```csharp
-// _last_eos をインスタンス変数にせず、戻り値に含める
-private (string[] phonemes, ProsodyInfo[] prosody, string lastEos)
-    PhonemizeWithProsodyInternal(string text);
-
-// post_process_ids は外部から lastEos を受け取る
-public (int[] ids, ProsodyInfo[] prosody) PostProcessIds(
-    int[] phonemeIds,
-    ProsodyInfo[] prosodyFeatures,
-    Dictionary<string, int[]> phonemeIdMap,
-    string lastEos = "$");
+public MultilingualPhonemizer(
+    IReadOnlyList<string> languages,         // 必須: サポート言語リスト（1つ以上）
+    string defaultLatinLanguage = "en",      // ラテン文字のデフォルト言語
+    DotNetG2PPhonemizer jaPhonemizer = null,  // 日本語（Prosody対応、直接使用）
+    IPhonemizerBackend enPhonemizer = null,   // 英語
+    IPhonemizerBackend esPhonemizer = null,   // スペイン語
+    IPhonemizerBackend frPhonemizer = null,   // フランス語
+    IPhonemizerBackend ptPhonemizer = null,   // ポルトガル語
+    IPhonemizerBackend zhPhonemizer = null,   // 中国語
+    IPhonemizerBackend koPhonemizer = null)   // 韓国語
 ```
 
-## C# クラス設計案
+**後方互換性**: 新規追加の5言語パラメータ（es, fr, pt, zh, ko）はすべてnullデフォルト。
+既存の`MultilingualPhonemizer(languages, defaultLatinLanguage, jaPhonemizer, enPhonemizer)`呼び出しは
+変更なしで動作する。
+
+## InitializeAsync() 処理フロー
+
+```
+InitializeAsync(CancellationToken)
+  ↓
+1. 既に初期化済みなら即return
+  ↓
+2. 各言語について、languagesリストに含まれ かつ バックエンドがnullの場合のみ初期化:
+   ├── ja: DotNetG2PPhonemizer()を生成
+   │   ├── WebGL: InitializeAsync()で非同期初期化
+   │   └── 非WebGL: コンストラクタで同期初期化
+   ├── en: FlitePhonemizerBackend → 失敗時 RuleBasedPhonemizer にフォールバック
+   ├── es: SpanishPhonemizerBackend
+   ├── fr: FrenchPhonemizerBackend
+   ├── pt: PortuguesePhonemizerBackend
+   ├── zh: ChinesePhonemizerBackend
+   └── ko: KoreanPhonemizerBackend
+  ↓
+3. _isInitialized = true
+```
+
+**備考**: コンストラクタで事前構築済みバックエンドを渡した場合、該当言語のInitializeはスキップされる。
+
+## PhonemizeWithProsodyAsync() 処理フロー
+
+```
+入力テキスト
+  ↓
+1. _detector.SegmentText(text)
+   ├── Unicode範囲で言語判定
+   └── セグメントリスト: List<(string language, string text)>
+  ↓
+2. 文字数加重で主言語(DetectedPrimaryLanguage)を算出
+  ↓
+3. セグメント別音素化
+   for each (lang, segText) in segments:
+     ├── lang == "ja": _jaPhonemizer.PhonemizeWithProsody(segText) [直接呼び出し]
+     └── それ以外: GetBackendForLanguage(lang).PhonemizeAsync(segText, lang, ...) [IPhonemizerBackend経由]
+     ├── 中間セグメント: 末尾のEOS的トークン($, ?, ?!, ?., ?~)を除去
+     └── 音素・Prosody配列を連結
+  ↓
+4. Prosody配列をPadToLength()で音素数に揃える
+  ↓
+5. 出力: MultilingualPhonemizeResult
+   ├── Phonemes: string[]       （BOS/EOSなし。PhonemeEncoderが付与）
+   ├── ProsodyA1/A2/A3: int[]   （非日本語セグメントは0埋め）
+   └── DetectedPrimaryLanguage: string
+```
+
+## GetBackendForLanguage() ヘルパー
+
+非日本語セグメントのバックエンド解決を担うswitch式。
+
+```csharp
+private IPhonemizerBackend GetBackendForLanguage(string lang)
+{
+    return lang switch
+    {
+        "en" => _enPhonemizer,
+        "es" => _esPhonemizer,
+        "fr" => _frPhonemizer,
+        "pt" => _ptPhonemizer,
+        "zh" => _zhPhonemizer,
+        "ko" => _koPhonemizer,
+        _ => _enPhonemizer  // 未知の言語は英語にフォールバック
+    };
+}
+```
+
+## EOS処理
+
+中間セグメント末尾のEOS的トークンを除去し、最終セグメントのみEOSを保持する。
+BOS/EOSのラッピングはPhonemeEncoder側の責務であり、MultilingualPhonemizerは付与しない。
+
+```csharp
+private static readonly HashSet<string> EosLikeTokens =
+    new() { "$", "?", "?!", "?.", "?~" };
+```
+
+## C# クラス実装
 
 ```csharp
 namespace uPiper.Core.Phonemizers.Multilingual
 {
+    public class MultilingualPhonemizeResult
+    {
+        public string[] Phonemes { get; set; }             // BOS/EOSなし
+        public int[] ProsodyA1 { get; set; }               // 非日本語セグメントは0
+        public int[] ProsodyA2 { get; set; }
+        public int[] ProsodyA3 { get; set; }
+        public string DetectedPrimaryLanguage { get; set; } // 文字数加重の主言語
+    }
+
     public class MultilingualPhonemizer : IDisposable
     {
-        private readonly List<string> _languages;
-        private readonly string _defaultLatinLanguage;
-        private readonly UnicodeLanguageDetector _detector;
-        private Dictionary<string, int[]> _idMap;  // 遅延初期化
+        // Public properties
+        public bool IsInitialized { get; }
+        public IReadOnlyList<string> Languages { get; }
 
+        // Constructor (7言語対応、新規5言語はすべてoptional)
         public MultilingualPhonemizer(
-            List<string> languages,
-            string defaultLatinLanguage = "en");
+            IReadOnlyList<string> languages,
+            string defaultLatinLanguage = "en",
+            DotNetG2PPhonemizer jaPhonemizer = null,
+            IPhonemizerBackend enPhonemizer = null,
+            IPhonemizerBackend esPhonemizer = null,
+            IPhonemizerBackend frPhonemizer = null,
+            IPhonemizerBackend ptPhonemizer = null,
+            IPhonemizerBackend zhPhonemizer = null,
+            IPhonemizerBackend koPhonemizer = null);
 
-        public List<string> Languages { get; }
+        // Initialization (all configured backends)
+        public Task InitializeAsync(CancellationToken cancellationToken = default);
 
-        // 音素化
-        public async Task<string[]> PhonemizeAsync(string text);
+        // Phonemization with prosody
+        public Task<MultilingualPhonemizeResult> PhonemizeWithProsodyAsync(
+            string text, CancellationToken cancellationToken = default);
 
-        // Prosody付き音素化
-        public async Task<MultilingualPhonemizeResult> PhonemizeWithProsodyAsync(string text);
+        // Backend routing
+        private IPhonemizerBackend GetBackendForLanguage(string lang);
 
-        // ID後処理（パディング + BOS/EOS）
-        public PostProcessResult PostProcessIds(
-            int[] phonemeIds,
-            ProsodyInfo[] prosodyFeatures,
-            Dictionary<string, int[]> phonemeIdMap,
-            string lastEos = "$");
-
-        // 統一音素IDマップ取得
-        public Dictionary<string, int[]> GetPhonemeIdMap();
-    }
-
-    public struct MultilingualPhonemizeResult
-    {
-        public string[] Phonemes;
-        public ProsodyInfo[] Prosody;
-        public string LastEos;
-    }
-
-    public struct PostProcessResult
-    {
-        public int[] PhonemeIds;
-        public ProsodyInfo[] ProsodyFeatures;
+        // Dispose all backends
+        public void Dispose();
     }
 }
 ```
 
-## 既存 MixedLanguagePhonemizer との統合方針
+## 言語バックエンド対応表
 
-### 段階的移行
+| 言語コード | バックエンド型 | インターフェース | Prosody対応 |
+|-----------|--------------|-----------------|------------|
+| ja | DotNetG2PPhonemizer | 直接呼び出し | Yes（A1/A2/A3） |
+| en | FlitePhonemizerBackend (→ RuleBasedPhonemizer fallback) | IPhonemizerBackend | No（0埋め） |
+| es | SpanishPhonemizerBackend | IPhonemizerBackend | No（0埋め） |
+| fr | FrenchPhonemizerBackend | IPhonemizerBackend | No（0埋め） |
+| pt | PortuguesePhonemizerBackend | IPhonemizerBackend | No（0埋め） |
+| zh | ChinesePhonemizerBackend | IPhonemizerBackend | No（0埋め） |
+| ko | KoreanPhonemizerBackend | IPhonemizerBackend | No（0埋め） |
 
-1. **Phase 1**: MultilingualPhonemizer を独立実装（並行稼働）
-2. **Phase 2**: MixedLanguagePhonemizer を MultilingualPhonemizer(["ja","en"]) のラッパーに
-3. **Phase 3**: MixedLanguagePhonemizer を `[Obsolete]` 指定
+## Dispose
 
-### 互換性マトリックス
-
-| 機能 | MixedLanguagePhonemizer | MultilingualPhonemizer |
-|------|------------------------|----------------------|
-| JA/EN 二言語 | Yes | Yes |
-| N言語対応 | No | Yes |
-| Prosody情報 | No | Yes |
-| BOS/EOS処理 | No | Yes |
-| CJK曖昧性解決 | No | Yes |
+全7言語バックエンドのDisposeを呼び出す。二重Dispose防止済み（_disposedフラグ）。
 
 ## token_mapper の C# 対応
 

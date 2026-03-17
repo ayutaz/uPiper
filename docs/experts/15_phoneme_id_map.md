@@ -1,5 +1,10 @@
 # 統一音素IDマップと PhonemeEncoder
 
+## ステータス: Phase 5 実装済み
+
+PUA（Private Use Area）マッピングは `PuaTokenMapper.cs` で87個の固定マッピングとして一元管理される。
+言語IDマッピングは `LanguageConstants.cs` で管理される。
+
 ## 多言語統一音素IDマップの構造
 
 ### IDレイアウト
@@ -32,6 +37,44 @@ def get_multilingual_id_map(languages: list[str]) -> dict[str, list[int]]:
 ```
 
 **重要**: Unicode NFC正規化で合成形に統一
+
+## PuaTokenMapper（実装済み）
+
+**実装**: `Assets/uPiper/Runtime/Core/Phonemizers/Multilingual/PuaTokenMapper.cs`
+
+piper-plus Python実装（token_mapper.py）およびC++実装との完全互換を保証する固定PUAマッピングテーブル。
+
+### 固定PUAマッピング一覧（87エントリ）
+
+| 範囲 | 言語 | 内容 | エントリ数 |
+|------|------|------|-----------|
+| `\uE000`-`\uE01C` | 日本語 (JA) | 長母音, 促音, 拗音, 疑問マーカー, 撥音変種 | 29 |
+| `\uE01D`-`\uE01E` | 共有 | rr (スペイン語trill), y_vowel (ZH/FR) | 2 |
+| `\uE020`-`\uE04A` | 中国語 (ZH) | 有気音, 二重母音, 鼻韻母, 声調マーカー | 43 |
+| `\uE04B`-`\uE052` | 韓国語 (KO) | 濃音, 未破裂終声 | 8 |
+| `\uE054`-`\uE055` | ES/PT共有 | 破擦音 (tʃ, dʒ) | 2 |
+| `\uE056`-`\uE058` | フランス語 (FR) | 鼻母音 | 3 |
+
+### 主要API
+
+```csharp
+// トークン→PUA文字変換（未登録なら動的割当）
+char ch = PuaTokenMapper.Register("ch");  // → '\uE00E'
+
+// トークンリスト一括変換
+List<char> chars = PuaTokenMapper.MapSequence(new[] { "k", "o", "N", "n", "i", "ch", "i", "w", "a" });
+
+// PUA文字→元トークンへの逆変換
+string token = PuaTokenMapper.UnmapChar('\uE00E');  // → "ch"
+
+// 固定PUA範囲の判定
+bool isFixed = PuaTokenMapper.IsFixedPua('\uE00E');  // → true
+```
+
+### 動的割当
+
+固定テーブルに含まれないマルチ文字トークンは `0xE059` 以降に動的割当される。
+割当はスレッドセーフ（`lock` で保護）。
 
 ## 各言語の音素一覧
 
@@ -80,7 +123,7 @@ def get_multilingual_id_map(languages: list[str]) -> dict[str, list[int]]:
 - ʁ(ポルトガル語共有), ɲ(スペイン語共有)
 - 句読点: —, –, …, «, »
 
-## PhonemeEncoder の現在の動作
+## PhonemeEncoder の動作
 
 ### IPA/PUA判定（行69）
 
@@ -98,12 +141,9 @@ _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
 phoneme_id_map はモデルの `.onnx.json` に含まれるため、PhonemeEncoder は
 そのまま多言語モデルの音素マップを処理可能。
 
-### 変更が必要な点
-
-1. **multiCharPhonemeMap の拡張**: 中国語/韓国語等のPUA音素が未登録
-2. **IsESpeakModel() の改善**: 二者択一（eSpeak/OpenJTalk）→ 言語別判定
-3. **言語別MapPhoneme**: 言語に応じたマッピングテーブル切り替え
-4. **PADトークン戦略**: eSpeak方式以外のPAD挿入ルール対応
+PuaTokenMapper が全言語のPUA逆変換（PUA文字 → 元のマルチ文字トークン）を提供するため、
+PhonemeEncoder は PuaTokenMapper.UnmapChar() を使用して任意の言語のPUA音素を
+元トークンに復元し、phoneme_id_map でIDを取得できる。
 
 ## モデルタイプ別の音素数比較
 

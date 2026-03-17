@@ -1,10 +1,10 @@
 # 多言語対応テスト戦略
 
-## 既存テスト構造
+## テスト構造
 
 ### テスト統計
-- テストファイル数: 45個
-- テスト数: 455個
+- テストファイル数: 51個（既存45 + Phase 5で6個追加）
+- テスト数: 685個（既存455 + Phase 5で230個追加）
 - カバレッジ基準: 50%ライン（`uPiper.Runtime`対象）
 
 ### 主要な既存テスト
@@ -20,7 +20,20 @@
 | 言語検出 | `MixedLanguagePhonemizerTests.cs` | 混在言語 |
 | 推論 | `InferenceAudioGeneratorTests.cs` | ONNX推論 |
 
-## 追加が必要なテスト一覧
+### Phase 5 追加テスト（完了）
+
+全テストは `Tests/Editor/Phonemizers/` ディレクトリに配置。EditModeテスト（純粋C#音素化バックエンドのためPlayModeテスト不要）。NUnitパターンでOneTimeSetUp/OneTimeTearDownを使用。
+
+| ファイル | テスト数 | カバレッジ領域 |
+|---------|---------|--------------|
+| `SpanishPhonemizerTests.cs` | 36 | 基本語、ストレス検出、二重字（ch/ll/rr）、異音規則（intervocalic b/d/g）、音節化、句読点、seseo、Prosody出力、バックエンドプロパティ |
+| `FrenchPhonemizerTests.cs` | 38 | 基本語、鼻母音（an/in/on）、無声子音、二重字（ch/gn/ou/eau/oi）、e muet、-er語尾例外、-ille語例外、intervocalic s有声化、uvular r、Prosody出力 |
+| `PortuguesePhonemizerTests.cs` | 41 | 基本語、鼻母音（チルダ/n前/語末m）、子音クラスタ（nh/lh/ch/rr）、後処理4規則（coda-l母音化、t/d口蓋化、語末母音弱化e→i/o→u）、ストレス検出、cedilla、r分布 |
+| `ChinesePhonemizerTests.cs` | 38 | プロパティ・メタデータ、言語サポート、ピンイン→IPA変換（声母・韻母）、声調マーカー、第三声声調変化、中国語句読点、Prosody出力（A1=声調値）、PUAトークンマッピング、Dispose |
+| `KoreanPhonemizerTests.cs` | 48 | プロパティ・メタデータ、ハングル分解（初声/中声/終声）、初声IPA（平音/激音/濃音）、中声IPA（単母音/二重母音）、終声IPA（内破音/鼻音/流音）、音韻規則4種（連音化/鼻音化/激音化/濃音化）、非ハングル処理、Prosody出力（A1=A2=0, A3=音節数）、PUAマッピング、NFC正規化 |
+| `MultilingualPhonemizerPhase5Tests.cs` | 29 | コンストラクタ（zh/ko/全7言語/プレビルドバックエンド）、言語定数、セグメント処理（es/zh/ko/fr/pt）、混合言語テキスト（CJK曖昧性解消/韓英/日西）、UnicodeDetector新言語対応、全言語初期化、Prosody伝播、Dispose、エラーハンドリング |
+
+## 既存テスト計画（未実装）
 
 ### 1. LanguageDetector テスト
 
@@ -170,15 +183,26 @@ testTimeout: 120  # 60→120秒
 # カバレッジ対象追加
 pathFilters:
   +**/Assets/uPiper/Runtime/Core/Phonemizers/Multilingual/**
+  +**/Assets/uPiper/Runtime/Core/Phonemizers/Backend/Spanish/**
+  +**/Assets/uPiper/Runtime/Core/Phonemizers/Backend/French/**
+  +**/Assets/uPiper/Runtime/Core/Phonemizers/Backend/Portuguese/**
+  +**/Assets/uPiper/Runtime/Core/Phonemizers/Backend/Chinese/**
+  +**/Assets/uPiper/Runtime/Core/Phonemizers/Backend/Korean/**
 ```
 
 ### 予測実行時間
 
-| テストカテゴリ | 予測時間 |
-|--------------|---------|
-| LanguageDetector | ~30秒 |
-| PhonemeEncoder多言語 | ~20秒 |
-| MultilingualPhonemizer統合 | ~45秒 |
-| InferenceAudioGenerator多言語 | ~60秒 |
-| 統合テスト | ~30秒 |
-| **合計追加分** | **~3分** |
+| テストカテゴリ | テスト数 | 予測時間 | 状態 |
+|--------------|---------|---------|------|
+| SpanishPhonemizerTests | 36 | ~20秒 | 完了 |
+| FrenchPhonemizerTests | 38 | ~20秒 | 完了 |
+| PortuguesePhonemizerTests | 41 | ~20秒 | 完了 |
+| ChinesePhonemizerTests | 38 | ~25秒 | 完了 |
+| KoreanPhonemizerTests | 48 | ~25秒 | 完了 |
+| MultilingualPhonemizerPhase5Tests | 29 | ~30秒 | 完了 |
+| LanguageDetector | - | ~30秒 | 未実装 |
+| PhonemeEncoder多言語 | - | ~20秒 | 未実装 |
+| MultilingualPhonemizer統合 | - | ~45秒 | 未実装 |
+| InferenceAudioGenerator多言語 | - | ~60秒 | 未実装 |
+| 統合テスト | - | ~30秒 | 未実装 |
+| **Phase 5 合計** | **230** | **~2.5分** | **完了** |

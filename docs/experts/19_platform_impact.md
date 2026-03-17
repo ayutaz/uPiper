@@ -29,12 +29,74 @@
 | スレッド | フルサポート |
 | メモリ | 最大500MB |
 
+## Phase 5 新言語バックエンドのプラットフォーム互換性
+
+Phase 5で追加された5言語バックエンド（Spanish, French, Portuguese, Chinese, Korean）は全て純粋C#実装であり、ネイティブプラグインを一切必要としない。全プラットフォームでそのまま動作する。
+
+### バックエンド別プラットフォーム特性
+
+| バックエンド | 外部データファイル | ネイティブプラグイン | WebGL対応 | IL2CPP対応 |
+|------------|-----------------|-------------------|----------|-----------|
+| SpanishPhonemizerBackend | 不要（ルールベース） | 不要 | 対応済み | 対応済み |
+| FrenchPhonemizerBackend | 不要（ルールベース） | 不要 | 対応済み | 対応済み |
+| PortuguesePhonemizerBackend | 不要（ルールベース） | 不要 | 対応済み | 対応済み |
+| ChinesePhonemizerBackend | 不要（インメモリ lookup ~500文字） | 不要 | 対応済み | 対応済み |
+| KoreanPhonemizerBackend | 不要（Unicode演算によるHangul分解） | 不要 | 対応済み | 対応済み |
+
+### WebGL対応パターン
+
+全バックエンドが統一された `#if UNITY_WEBGL && !UNITY_EDITOR` パターンを使用:
+
+```csharp
+#pragma warning disable CS1998
+public override async Task<PhonemeResult> PhonemizeAsync(
+    string text, string language, PhonemeOptions options = null,
+    CancellationToken cancellationToken = default)
+{
+    EnsureInitialized();
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+    // WebGL: Task.Run不可 → 同期実行（lock付き）
+    lock (_syncLock)
+    {
+        return PhonemizeInternal(text, language);
+    }
+#else
+    // 非WebGL: Task.Runでバックグラウンドスレッド実行
+    return await Task.Run(() =>
+    {
+        lock (_syncLock)
+        {
+            return PhonemizeInternal(text, language);
+        }
+    }, cancellationToken);
+#endif
+}
+#pragma warning restore CS1998
+```
+
+**設計上のポイント**:
+- WebGLでは `Task.Run` を回避し、メインスレッドで同期実行
+- 非WebGLでは `Task.Run` + `lock(_syncLock)` でスレッドセーフなバックグラウンド実行
+- `#pragma warning disable CS1998` で WebGL 分岐時の async 警告を抑制
+- es/fr/pt は外部辞書ファイル不要のため、WebGL非同期ロード問題が発生しない
+- zh はインメモリ lookup テーブル (~500文字) のため同様に外部ファイル不要
+- ko は Unicode 演算 (U+AC00基点の除算・剰余) で Hangul 分解するため外部データ不要
+
+### スレッドセーフティ
+
+| コンポーネント | 方式 | 詳細 |
+|--------------|------|------|
+| 各PhonemizerBackend | `lock(_syncLock)` | インスタンスレベルの排他制御 |
+| PuaTokenMapper | `ConcurrentDictionary` | ロックフリーなスレッドセーフ lookup |
+| 静的データ (ルール/マッピング) | `readonly` / `static readonly` | 初期化後不変 |
+
 ## WebGL対応で必要な追加実装
 
 ### 新言語辞書の非同期ロード
 
-各新言語のPhonemizerは辞書/ルールデータを必要とする可能性がある。
-WebGLでは全て非同期でロードする必要がある。
+Phase 5のバックエンドはルールベースまたはインメモリデータを使用するため、StreamingAssetsからの辞書ロードは不要。
+将来、外部辞書ファイルを必要とするバックエンドを追加する場合は、以下のパターンに従う:
 
 ```csharp
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -109,46 +171,54 @@ static void PreserveMultilingualTypes()
 
 ## 辞書データのロード戦略
 
-### 非WebGLプラットフォーム
+### Phase 5バックエンドのデータ戦略
+
+Phase 5の新言語バックエンドはStreamingAssetsに追加の辞書ファイルを必要としない:
+
+| バックエンド | データ戦略 | StreamingAssets追加 |
+|------------|----------|-------------------|
+| Spanish (es) | 正書法ルールベース（静的データ埋め込み） | なし |
+| French (fr) | 正書法ルールベース（静的データ埋め込み） | なし |
+| Portuguese (pt) | 正書法ルールベース（静的データ埋め込み） | なし |
+| Chinese (zh) | インメモリ漢字→ピンイン lookup (~500文字) | なし |
+| Korean (ko) | Unicode演算によるHangul Jamo分解 | なし |
+
+### 既存言語の辞書ファイル（変更なし）
 
 ```
 StreamingAssets/uPiper/Dictionaries/
 ├── ja/  (日本語辞書 - 既存)
 ├── en/  (英語辞書 - Flite LTS)
-├── es/  (スペイン語ルール - 新規)
-├── fr/  (フランス語ルール - 新規)
-├── pt/  (ポルトガル語ルール - 新規)
-├── zh/  (中国語ピンイン辞書 - 新規)
-└── ko/  (韓国語Jamo辞書 - 新規)
+├── additional_tech_dict.json  (カスタム辞書)
+├── default_common_dict.json   (カスタム辞書)
+├── default_tech_dict.json     (カスタム辞書)
+└── user_custom_dict.json      (カスタム辞書)
 ```
 
-ロード方式: `Directory.GetFiles()` → 言語別に同期読み込み
+ロード方式: `Directory.GetFiles()` → 言語別に同期読み込み（日本語・英語のみ）
 
 ### WebGLプラットフォーム
 
-ロード方式: 既知ファイル名リスト → `WebGLStreamingAssetsLoader.LoadTextAsync()` → 非同期
+Phase 5バックエンドは外部ファイル不要のため、WebGL非同期ロードの追加対応は不要。
+既存の日本語・英語辞書のみ非同期ロード対象:
 
-```csharp
-private static readonly Dictionary<string, string[]> LanguageDictFiles = new()
-{
-    ["es"] = new[] { "es_rules.json" },
-    ["fr"] = new[] { "fr_rules.json" },
-    ["pt"] = new[] { "pt_rules.json" },
-    ["zh"] = new[] { "zh_pinyin_dict.json" },
-    ["ko"] = new[] { "ko_jamo_rules.json" },
-};
-```
+ロード方式: 既知ファイル名リスト → `WebGLStreamingAssetsLoader.LoadTextAsync()` → 非同期
 
 ## パフォーマンス影響予測
 
 ### 初期化時間
 
-| フェーズ | WebGL | Windows | iOS/Android |
-|---------|-------|---------|-------------|
-| 辞書ダウンロード | 2-5秒 | 0秒 | 0秒 |
+| コンポーネント | WebGL | Windows | iOS/Android |
+|--------------|-------|---------|-------------|
 | MeCab初期化(ja) | 1秒 | 1秒 | 1-2秒 |
-| 新言語Phonemizer初期化 | 0.5秒/言語 | 0.1秒/言語 | 0.2秒/言語 |
-| 合計(6言語) | 5-10秒 | 1.5秒 | 2-3秒 |
+| Flite LTS初期化(en) | 0.5秒 | 0.1秒 | 0.2秒 |
+| 新言語バックエンド(es/fr/pt) | <0.01秒 | <0.01秒 | <0.01秒 |
+| 中国語バックエンド(zh) | <0.01秒 | <0.01秒 | <0.01秒 |
+| 韓国語バックエンド(ko) | <0.01秒 | <0.01秒 | <0.01秒 |
+| 辞書ダウンロード(WebGLのみ) | 2-5秒 | - | - |
+| 合計(7言語) | 4-7秒 | 1.2秒 | 1.5-2.5秒 |
+
+Phase 5バックエンドは外部データ不要のため初期化は事実上即座に完了する。
 
 ### 推論パフォーマンス
 
@@ -159,6 +229,12 @@ private static readonly Dictionary<string, string[]> LanguageDictFiles = new()
 | 構成 | Phonemizer | Model | Dictionary | Cache | Total |
 |------|-----------|-------|-----------|-------|-------|
 | 1言語(ja) | 5MB | 61MB | 2MB | 10MB | 78MB |
-| 6言語(全部) | 15MB | 100MB | 8MB | 10MB | 133MB |
+| 2言語(ja+en) | 7MB | 61MB | 2MB | 10MB | 80MB |
+| 7言語(全部) | 10MB | 100MB | 2MB | 10MB | 122MB |
 
-**WebGL(25MB制限)**: モデルはGPUメモリに常駐するため、Phonemizer+辞書のみが制約対象
+Phase 5の新言語バックエンドはそれぞれ軽量:
+- es/fr/pt: 静的ルール + 小規模ランタイム状態 (<0.5MB/言語)
+- zh: インメモリ lookup テーブル (~500文字分, <0.5MB)
+- ko: ランタイム状態のみ、静的データ最小 (<0.1MB)
+
+**WebGL(25MB制限)**: モデルはGPUメモリに常駐するため、Phonemizer+辞書のみが制約対象。Phase 5バックエンドは外部辞書不要のため追加メモリ負荷は極めて小さい。

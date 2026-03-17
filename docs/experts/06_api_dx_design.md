@@ -16,6 +16,26 @@ var audio = await tts.Speak("こんにちは")
 ```
 - **難易度**: 中 / **インパクト**: 高
 
+### 多言語API（Phase 5実装済み）
+Phase 4-5で言語指定・検出APIを実装済み:
+```csharp
+// 対応言語の取得（7言語: ja, en, zh, es, fr, pt, ko）
+IReadOnlyList<string> languages = tts.GetSupportedLanguages();
+
+// テキストからの言語自動検出
+string detected = tts.DetectLanguage("Hello world");  // → "en"
+string detected2 = tts.DetectLanguage("こんにちは");    // → "ja"
+string detected3 = tts.DetectLanguage("Hola mundo");   // → "es"（defaultLatinLanguage設定時）
+
+// PiperConfig設定
+config.AutoDetectLanguage = true;
+config.SupportedLanguages = new[] { "ja", "en", "zh", "es", "fr", "pt", "ko" };
+config.DefaultLanguage = "ja";
+```
+- `IPiperTTS.DetectLanguage()` / `IPiperTTS.GetSupportedLanguages()` が公開API
+- `PiperConfig.AutoDetectLanguage` で自動言語検出を有効化
+- `MultilingualPhonemizer` がテキストを言語別に分割し各バックエンドに委譲
+
 ### 2. エラーコード体系
 ```csharp
 public enum PiperErrorCode

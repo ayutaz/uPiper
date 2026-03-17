@@ -54,41 +54,46 @@ Unity側（uPiper）への反映に必要な技術調査を実施。
 | 4 | PhonemeEncoder | 多言語音素IDマップ+IPA/PUA判定拡張 | [15_phoneme_id_map.md](15_phoneme_id_map.md) |
 | 5 | PiperTTS | 初期化・生成フロー改修 | [16_pipertts_flow.md](16_pipertts_flow.md) |
 | 6 | PhonemeEncoder | 言語別マッピング戦略 | [17_phoneme_encoder.md](17_phoneme_encoder.md) |
-| 7 | 新言語Phonemizer | 各言語のC#実装戦略 | [18_new_lang_phonemizers.md](18_new_lang_phonemizers.md) |
+| 7 | 新言語Phonemizer | 各言語のC#実装戦略 **（Phase 5完了: es/fr/pt/zh/ko 5言語実装済み）** | [18_new_lang_phonemizers.md](18_new_lang_phonemizers.md) |
 | 8 | プラットフォーム | WebGL/IL2CPP/モバイル影響 | [19_platform_impact.md](19_platform_impact.md) |
 | 9 | テスト | テスト戦略・追加テスト一覧 | [20_test_strategy.md](20_test_strategy.md) |
 | 10 | API設計 | 公開API拡張・後方互換性 | [21_api_design.md](21_api_design.md) |
 
 ## 実装ロードマップ（推奨）
 
-### Phase 1: 基盤（ONNX推論層）
+### Phase 1: 基盤（ONNX推論層） — **完了**
 - InferenceAudioGenerator に `lid`/`sid` 入力対応
 - `SupportsMultilingual` / `SupportsMultiSpeaker` 判定追加
 - PhonemeEncoder の多言語音素IDマップ対応
 
-### Phase 2: 言語検出・セグメンテーション
+### Phase 2: 言語検出・セグメンテーション — **完了**
 - UnicodeLanguageDetector の C# 実装（6言語対応）
 - 既存 LanguageDetector のリファクタリング
 - CJK曖昧性解決（日本語/中国語判定）
 
-### Phase 3: 多言語Phonemizer統合
+### Phase 3: 多言語Phonemizer統合 — **完了**
 - MultilingualPhonemizer C# 移植
 - 既存 MixedLanguagePhonemizer との統合
 - BOS/EOS/パディング処理
 
-### Phase 4: PiperTTS API拡張
+### Phase 4: PiperTTS API拡張 — **完了**
 - `GenerateAudioAsync(text, language)` オーバーロード追加
 - PiperConfig 言語設定拡張
 - 後方互換性保証
 
-### Phase 5: 新言語Phonemizer実装
-- スペイン語（直接ポート、最も実装容易）
-- フランス語（ルールベース直接ポート）
-- ポルトガル語（ルールベース直接ポート）
-- 中国語（ルックアップテーブル+トーン規則）
-- 韓国語（Hangul分解+簡略音韻規則）
+### Phase 5: 新言語Phonemizer実装 — **完了**
+- スペイン語: `SpanishPhonemizerBackend` (ルールベースG2P, ~1233行)
+- フランス語: `FrenchPhonemizerBackend` (ルールベースG2P, ~1350行)
+- ポルトガル語: `PortuguesePhonemizerBackend` (BR-PT, ~1190行)
+- 中国語: `ChinesePhonemizerBackend` + `PinyinData` (~1716行)
+- 韓国語: `KoreanPhonemizerBackend` (Hangul分解+音韻規則, ~964行)
+- `PuaTokenMapper`: 87エントリ固定PUAマッピング（JA/ZH/KO/ES/PT/FR全言語対応）
+- `LanguageConstants`: 言語ID/コード定数（7言語: ja, en, zh, es, fr, pt, ko）
+- `MultilingualPhonemizer`: 7言語バックエンド委譲対応に更新
+- `UnicodeLanguageDetector`: Latin Extended (U+0100-024F)、CJK句読点判定を拡張
+- テスト: 207テスト追加（Spanish 30, French 36, Portuguese 39, Chinese 30, Korean 43, Phase5統合 29）
 
-### Phase 6: テスト・品質保証
+### Phase 6: テスト・品質保証 — TODO
 - 多言語テストスイート作成
 - CI/CDパイプライン拡張
 - クロスプラットフォーム検証
@@ -99,14 +104,23 @@ Unity側（uPiper）への反映に必要な技術調査を実施。
 テキスト入力 ("今日はgoodですね")
     |
     v
-UnicodeLanguageDetector (言語判定)
+UnicodeLanguageDetector (言語判定: 7言語対応)
+    |  Hangul → ko, Kana → ja, CJK漢字 → ja/zh, Latin → en/es/fr/pt
+    |  Latin Extended (U+0100-024F) 対応、CJK句読点コンテキスト判定
+    v
+MultilingualPhonemizer (セグメント分割 → 言語別バックエンド委譲)
+    |
+    +---> [ja] "今日は"     → DotNetG2PPhonemizer      → 音素 + Prosody
+    +---> [en] "good"       → FliteLTSPhonemizerBackend → 音素
+    +---> [es] "hola"       → SpanishPhonemizerBackend  → 音素 (ルールベースG2P)
+    +---> [fr] "bonjour"    → FrenchPhonemizerBackend   → 音素 (ルールベースG2P)
+    +---> [pt] "obrigado"   → PortuguesePhonemizerBackend → 音素 (BR-PT G2P)
+    +---> [zh] "你好"       → ChinesePhonemizerBackend  → 音素 + Tone (PinyinData)
+    +---> [ko] "안녕하세요" → KoreanPhonemizerBackend   → 音素 (Hangul分解+音韻規則)
+    +---> [ja] "ですね"     → DotNetG2PPhonemizer      → 音素 + Prosody
     |
     v
-MultilingualPhonemizer (セグメント分割)
-    |
-    +---> [ja] "今日は"     → DotNetG2PPhonemizer → 音素 + Prosody
-    +---> [en] "good"       → FliteLTSPhonemizer → 音素
-    +---> [ja] "ですね"     → DotNetG2PPhonemizer → 音素 + Prosody
+PuaTokenMapper (87エントリ固定PUAマッピング: 多文字音素→単一PUA文字)
     |
     v
 統一音素ID空間にマージ (post_process_ids)

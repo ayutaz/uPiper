@@ -1,5 +1,30 @@
 # uPiper CI/CD・テスト改善レポート - 2026年3月版
 
+## 現在のテスト状況
+
+### テスト統計（Phase 5完了時点）
+- テストファイル数: 51個（既存45 + Phase 5で6個追加）
+- テスト数: 685個（既存455 + Phase 5で230個追加）
+- Phase 5テストは全てEditMode（`Tests/Editor/Phonemizers/`配置）
+- 純粋C#音素化バックエンドのためPlayModeテスト不要
+
+### Phase 5 追加テストファイル
+
+| ファイル | テスト数 | 内容 |
+|---------|---------|------|
+| `SpanishPhonemizerTests.cs` | 36 | スペイン語G2P（ストレス、二重字、異音規則、seseo、Prosody） |
+| `FrenchPhonemizerTests.cs` | 38 | フランス語G2P（鼻母音、e muet、-er/-ille例外、uvular r） |
+| `PortuguesePhonemizerTests.cs` | 41 | ポルトガル語G2P（鼻母音、後処理4規則、coda-l母音化、t/d口蓋化） |
+| `ChinesePhonemizerTests.cs` | 38 | 中国語G2P（ピンイン→IPA、声調、声調変化、PUAマッピング） |
+| `KoreanPhonemizerTests.cs` | 48 | 韓国語G2P（ハングル分解、IPA表、音韻規則4種、PUAマッピング） |
+| `MultilingualPhonemizerPhase5Tests.cs` | 29 | 多言語統合（言語ルーティング、混合テキスト、CJK曖昧性解消） |
+
+### CI実行時の注意点
+- Phase 5テストはOneTimeSetUp/OneTimeTearDownパターンを使用（バックエンド初期化を1回に集約）
+- ChinesePhonemizerTests: 環境依存でskipされる場合あり（`Assert.Ignore`使用）
+- KoreanPhonemizerTests: 同上
+- MCPテストランナー使用時はクラス単位でのフィルタ実行を推奨（タイムアウト回避）
+
 ## 即座に実装可能（設定のみ）
 
 ### 1. Dependabot有効化
@@ -26,19 +51,28 @@ updates:
 ### 3. テストカバレッジ品質ゲート
 - 最低カバレッジ閾値70%
 - PRで追加されたコードは80%以上
+- カバレッジ対象にPhase 5バックエンドを追加:
+  - `Assets/uPiper/Runtime/Core/Phonemizers/Backend/Spanish/`
+  - `Assets/uPiper/Runtime/Core/Phonemizers/Backend/French/`
+  - `Assets/uPiper/Runtime/Core/Phonemizers/Backend/Portuguese/`
+  - `Assets/uPiper/Runtime/Core/Phonemizers/Backend/Chinese/`
+  - `Assets/uPiper/Runtime/Core/Phonemizers/Backend/Korean/`
 - **難易度**: 低 / **インパクト**: 高
 
 ## テスト戦略改善
 
 ### テストピラミッド実装
 - Unit: 毎コミット（`-testCategory Unit`）
+  - Phase 5の言語別バックエンドテストはUnitカテゴリに該当
 - Integration: PR時のみ
+  - MultilingualPhonemizerPhase5TestsはIntegrationカテゴリに該当
 - E2E: 夜間実行
 - **難易度**: 中 / **インパクト**: 高
 
 ### テストタイムアウト改善
 - `[SetUpFixture]`で辞書を一度だけロード
 - モックデータ活用
+- Phase 5テストはOneTimeSetUpパターンを既に採用済み
 - **難易度**: 中 / **インパクト**: 高
 
 ## リリース自動化

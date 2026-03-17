@@ -1,8 +1,14 @@
 # PhonemeEncoder 多言語対応設計
 
-## 現在のクラス設計
+## ステータス: Phase 5 実装済み
 
-**場所**: `Assets/uPiper/Runtime/Core/AudioGeneration/PhonemeEncoder.cs` (603行)
+多言語PUAマッピングは `PuaTokenMapper.cs`（87固定マッピング、全7言語対応）に一元化済み。
+言語IDは `LanguageConstants.cs` で管理。PhonemeEncoder は phoneme_id_map ベースの
+直接検索と PuaTokenMapper による逆変換の両方に対応。
+
+## クラス設計
+
+**場所**: `Assets/uPiper/Runtime/Core/AudioGeneration/PhonemeEncoder.cs`
 
 ```csharp
 public class PhonemeEncoder
@@ -29,7 +35,14 @@ _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
 
 **多言語モデルでの影響**: `ɕ` は ID 102 で存在 → IPA判定される → 問題なし
 
-## PUA→元音素マッピング（行167-203）
+## PUA→元音素マッピング（PuaTokenMapper.cs で一元管理）
+
+**実装**: `Assets/uPiper/Runtime/Core/Phonemizers/Multilingual/PuaTokenMapper.cs`
+
+従来 PhonemeEncoder 内にハードコードされていた日本語PUAマッピングに加え、
+PuaTokenMapper が全7言語（JA, EN, ZH, KO, ES, FR, PT）の87固定マッピングを提供する。
+
+### 日本語PUAマッピング（既存、PuaTokenMapper にも含まれる）
 
 | PUA | 元音素 | 用途 |
 |-----|--------|------|
@@ -37,7 +50,20 @@ _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
 | \ue005 | cl | 促音 |
 | \ue006-\ue015 | ky, kw, gy, gw, ty, dy, py, by, ch, ts, sh, zy, hy, ny, my, ry | 複合子音 |
 | \ue016-\ue018 | ?!, ?., ?~ | 疑問マーカー |
-| \ue019-\ue01c | N (N_m, N_n, N_ng, N_uvular) | 撥音変種 |
+| \ue019-\ue01c | N_m, N_n, N_ng, N_uvular | 撥音変種 |
+
+### 多言語PUAマッピング（Phase 5 追加）
+
+| PUA範囲 | 言語 | 内容 | エントリ数 |
+|---------|------|------|-----------|
+| \ue01d-\ue01e | 共有 | rr, y_vowel | 2 |
+| \ue020-\ue04a | 中国語 | 有気音, 二重母音, 鼻韻母, 声調 | 43 |
+| \ue04b-\ue052 | 韓国語 | 濃音, 未破裂終声 | 8 |
+| \ue054-\ue055 | ES/PT共有 | 破擦音 | 2 |
+| \ue056-\ue058 | フランス語 | 鼻母音 | 3 |
+
+PhonemeEncoder は `PuaTokenMapper.UnmapChar()` を使用して任意のPUA文字を元トークンに
+逆変換し、その後 phoneme_id_map でIDを取得できる。
 
 ## 複文字→IPAマッピング（行141-163）
 
@@ -54,92 +80,72 @@ _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
 
 **重要**: `sh` → `ʃ`（ID 42）であり `ɕ`（ID 18）ではない（学習データとの整合性）
 
-## 多言語対応で必要な変更
+## 多言語対応の共有コンポーネント
 
-### 1. 言語別マッピングテーブル（行102-163）
+### PuaTokenMapper（実装済み）
 
-```csharp
-private static class LanguagePhonemeMapping
-{
-    public static class Japanese
-    {
-        public static readonly Dictionary<string, string> MultiCharToPua = new()
-        {
-            ["ch"] = "\ue00e", ["ts"] = "\ue00f", // ... 既存
-        };
-        public static readonly Dictionary<string, string> MultiCharToIpa = new()
-        {
-            ["ch"] = "tɕ", ["sh"] = "ʃ", // ... 既存
-        };
-    }
+**場所**: `Assets/uPiper/Runtime/Core/Phonemizers/Multilingual/PuaTokenMapper.cs`
 
-    public static class Chinese
-    {
-        public static readonly Dictionary<string, string> PuaMapping = new()
-        {
-            ["pʰ"] = "\ue020", ["tʂ"] = "\ue025", ["tɕ"] = "\ue023", // ...
-        };
-    }
-
-    public static class Korean
-    {
-        public static readonly Dictionary<string, string> PuaMapping = new()
-        {
-            ["p͈"] = "\ue04b", ["t͈"] = "\ue04c", ["k͈"] = "\ue04d", // ...
-        };
-    }
-}
-```
-
-### 2. IsESpeakModel() の拡張（行346-352）
-
-**現在**: 二者択一（eSpeak or OpenJTalk）
+全言語のPUAマッピングを統一管理。piper-plus Python/C++実装と完全互換。
 
 ```csharp
-// 改善案
-private PhonemizationMode DetectPhonemizationMode()
-{
-    if (!string.IsNullOrEmpty(_config.PhonemeType))
-    {
-        return _config.PhonemeType.ToLower() switch
-        {
-            "espeak" => PhonemizationMode.ESpeakWithPad,
-            "openjtalk" => PhonemizationMode.OpenJTalkNoPad,
-            "multilingual" => PhonemizationMode.MultilingualWithPad,
-            _ => PhonemizationMode.Generic
-        };
-    }
-    return _config.Language switch
-    {
-        "ja" => PhonemizationMode.OpenJTalkNoPad,
-        "en" => PhonemizationMode.ESpeakWithPad,
-        _ => PhonemizationMode.MultilingualWithPad
-    };
-}
+// PUA文字→元トークン逆変換
+string token = PuaTokenMapper.UnmapChar('\uE023');  // → "tɕ" (中国語)
+
+// トークン→PUA文字変換
+char ch = PuaTokenMapper.Register("tone1");  // → '\uE046'
+
+// 固定PUA範囲判定（\uE000..\uE058）
+bool isFixed = PuaTokenMapper.IsFixedPua(ch);
 ```
 
-### 3. MapPhoneme の言語対応（行357-388）
+### LanguageConstants（実装済み）
+
+**場所**: `Assets/uPiper/Runtime/Core/Phonemizers/Multilingual/LanguageConstants.cs`
+
+言語ID（ONNX `lid` テンソル用）と言語コードの双方向変換を提供。
 
 ```csharp
-private string MapPhoneme(string phoneme, string language = null)
-{
-    // 多言語モデルの場合: phoneme_id_map から直接検索
-    if (_phonemeToId.ContainsKey(phoneme))
-        return phoneme;
+// 言語コード→言語ID
+int id = LanguageConstants.GetLanguageId("zh");  // → 2
 
-    // 言語別フォールバック
-    if (_useIpaMapping)
-    {
-        // PUA→元音素→IPA変換（既存ロジック）
-        if (puaToPhonemeMap.TryGetValue(phoneme, out var orig))
-            if (multiCharToIpaMap.TryGetValue(orig, out var ipa))
-                return ipa;
-    }
-    return phoneme;
-}
+// 言語ID→言語コード
+string code = LanguageConstants.GetLanguageCode(2);  // → "zh"
+
+// 言語グループ判定
+bool isLatin = LanguageConstants.IsLatinLanguage("fr");  // → true
+bool isCjk = LanguageConstants.IsCjkLanguage("ko");      // → true
 ```
 
-### 4. EOS-likeトークン処理
+### 言語IDマッピング
+
+| 言語ID | コード | 定数 |
+|--------|-------|------|
+| 0 | ja | `LanguageConstants.LanguageIdJapanese` |
+| 1 | en | `LanguageConstants.LanguageIdEnglish` |
+| 2 | zh | `LanguageConstants.LanguageIdChinese` |
+| 3 | es | `LanguageConstants.LanguageIdSpanish` |
+| 4 | fr | `LanguageConstants.LanguageIdFrench` |
+| 5 | pt | `LanguageConstants.LanguageIdPortuguese` |
+| 6 | ko | `LanguageConstants.LanguageIdKorean` |
+
+## 音素エンコーディングフロー
+
+各言語のPhonemizerがIPA音素を出力し、PhonemeEncoder がモデルのIDに変換する:
+
+```
+言語別Phonemizer出力（IPA音素）
+    ↓
+PuaTokenMapper.MapSequence()（マルチ文字→PUA圧縮）
+    ↓
+PhonemeEncoder.Encode()
+    ├─ PUAモデル: PUA文字をそのまま phoneme_id_map で検索
+    └─ IPAモデル: PUA→元トークン逆変換 → IPA変換 → phoneme_id_map で検索
+    ↓
+音素ID配列（ONNX `input` テンソルへ）
+```
+
+## EOS-likeトークン処理
 
 ```csharp
 private static readonly HashSet<string> EosLikeTokens = new()
@@ -152,11 +158,9 @@ private static readonly HashSet<string> EosLikeTokens = new()
 
 ## Prosodyエンコーディングの言語対応
 
-**現在**: 日本語アクセント型のみ（A1/A2/A3）
-
 多言語モデルでは:
 - 日本語: A1/A2/A3 を正常に渡す
-- 他言語: A1=A2=A3=0 を渡す（モデル内部でゼロ化される）
+- 他言語: A1=A2=A3=0 を渡す（モデル内部の `prosody_language_ids` でゼロ化される）
 
 ```csharp
 public ProsodyEncodingResult EncodeWithProsody(

@@ -1,64 +1,43 @@
 # ONNX推論 `lid` テンソル入力対応
 
-## 現在のONNX入力テンソル
+## ステータス: Phase 5 実装済み
 
-`InferenceAudioGenerator.cs` の `ExecuteInference` メソッド (行250-279):
+`InferenceAudioGenerator.cs` は多言語モデルの `lid`/`sid` テンソル入力に対応済み。
+言語IDマッピングは `LanguageConstants.cs` で一元管理される。
 
-| テンソル名 | 形状 | データ型 | 説明 |
-|-----------|------|--------|------|
-| `input` | `(1, phoneme_length)` | `int` | 音素ID配列 |
-| `input_lengths` | `(1,)` | `int` | 入力長 |
-| `scales` | `(3,)` | `float` | noiseScale, lengthScale, noiseW |
-| `prosody_features` | `(1, phoneme_length, 3)` | `int` | A1/A2/A3値（条件付き） |
+## ONNX入力テンソル
 
-## 多言語モデルの追加テンソル
+`InferenceAudioGenerator.cs` の `ExecuteInference` メソッド:
 
-piper-plus `export_onnx.py` (行253-302) より:
+| テンソル名 | 形状 | データ型 | 説明 | 設定条件 |
+|-----------|------|--------|------|---------|
+| `input` | `(1, phoneme_length)` | `int` | 音素ID配列 | 常に設定 |
+| `input_lengths` | `(1,)` | `int` | 入力長 | 常に設定 |
+| `scales` | `(3,)` | `float` | noiseScale, lengthScale, noiseW | 常に設定 |
+| `sid` | `(1,)` | `int` | スピーカーID | `_supportsMultiSpeaker == true` |
+| `lid` | `(1,)` | `int` | 言語ID | `_supportsLanguageId == true` |
+| `prosody_features` | `(1, phoneme_length, 3)` | `int` | A1/A2/A3値 | `_supportsProsody == true` |
+
+## モデル能力の自動検出
+
+初期化時にモデルの入力テンソル名を検査して各機能の有無を判定:
+
+```csharp
+_supportsProsody = _model.inputs.Any(input => input.name == "prosody_features");
+_supportsMultiSpeaker = _model.inputs.Any(input => input.name == "sid");
+_supportsLanguageId = _model.inputs.Any(input => input.name == "lid");
+```
+
+piper-plus `export_onnx.py` での挿入条件:
 
 ```python
 include_sid = num_speakers > 1 or num_languages > 1
 include_lid = num_languages > 1
 ```
 
-| テンソル名 | 形状 | 型 | 挿入条件 |
-|-----------|------|-----|---------|
-| `sid` | `(1,)` | `int64` | `num_speakers > 1 OR num_languages > 1` |
-| `lid` | `(1,)` | `int64` | `num_languages > 1` |
+## テンソル挿入順序
 
-**テンソル挿入順序**: `input`, `input_lengths`, `scales`, [`sid`], [`lid`], [`prosody_features`]
-
-## 変更が必要な箇所
-
-### 1. 多言語/マルチスピーカー判定（行142付近）
-
-現在の `SupportsProsody` 判定:
-```csharp
-_supportsProsody = _model.inputs.Any(input => input.name == "prosody_features");
-```
-
-追加する判定:
-```csharp
-_supportsMultilingual = _model.inputs.Any(input => input.name == "lid");
-_supportsMultiSpeaker = _model.inputs.Any(input => input.name == "sid");
-```
-
-### 2. テンソル生成メソッド
-
-```csharp
-private Tensor<int> CreateLanguageIdTensor(int languageId)
-{
-    return new Tensor<int>(new TensorShape(1), new[] { languageId });
-}
-
-private Tensor<int> CreateSpeakerIdTensor(int speakerId)
-{
-    return new Tensor<int>(new TensorShape(1), new[] { speakerId });
-}
-```
-
-### 3. ExecuteInference メソッド拡張（行264-279付近）
-
-現在は固定位置でテンソルを設定しているが、名前ベースで動的に設定する方式に変更:
+名前ベースの `_worker.SetInput()` を使用するため、挿入順序に依存しない:
 
 ```csharp
 // 必須入力
@@ -66,45 +45,50 @@ _worker.SetInput("input", inputTensor);
 _worker.SetInput("input_lengths", inputLengthsTensor);
 _worker.SetInput("scales", scalesTensor);
 
-// 条件付き入力
+// 条件付き入力（モデル能力に応じて設定）
 if (_supportsMultiSpeaker)
 {
-    sidTensor = CreateSpeakerIdTensor(speakerId);
+    sidTensor = new Tensor<int>(new TensorShape(1), new[] { speakerId });
     _worker.SetInput("sid", sidTensor);
 }
 
-if (_supportsMultilingual)
+if (_supportsLanguageId)
 {
-    lidTensor = CreateLanguageIdTensor(languageId);
+    lidTensor = new Tensor<int>(new TensorShape(1), new[] { languageId });
     _worker.SetInput("lid", lidTensor);
 }
 
-if (_supportsProsody && prosodyA1 != null)
+if (_supportsProsody)
 {
     prosodyTensor = CreateProsodyTensor(sequenceLength, prosodyA1, prosodyA2, prosodyA3);
     _worker.SetInput("prosody_features", prosodyTensor);
 }
 ```
 
-### 4. メソッドシグネチャ拡張
+## メソッドシグネチャ
 
 ```csharp
-// 現在
+// 標準音声生成（languageId/speakerId対応済み）
 public async Task<float[]> GenerateAudioAsync(
     int[] phonemeIds,
     float lengthScale = 1.0f, float noiseScale = 0.667f, float noiseW = 0.8f,
+    int speakerId = 0,
+    int languageId = 0,
     CancellationToken cancellationToken = default)
 
-// 拡張案
-public async Task<float[]> GenerateAudioAsync(
+// Prosody対応音声生成（languageId/speakerId対応済み）
+public async Task<float[]> GenerateAudioWithProsodyAsync(
     int[] phonemeIds,
-    int languageId = 0,         // 新規
-    int speakerId = 0,          // 新規
+    int[] prosodyA1, int[] prosodyA2, int[] prosodyA3,
     float lengthScale = 1.0f, float noiseScale = 0.667f, float noiseW = 0.8f,
+    int speakerId = 0,
+    int languageId = 0,
     CancellationToken cancellationToken = default)
 ```
 
-### 5. Dispose処理（行306-313）
+## Dispose処理
+
+全テンソルが `finally` ブロックで適切にDisposeされる:
 
 ```csharp
 finally
@@ -112,20 +96,23 @@ finally
     inputTensor?.Dispose();
     inputLengthsTensor?.Dispose();
     scalesTensor?.Dispose();
+    sidTensor?.Dispose();
+    lidTensor?.Dispose();
     prosodyTensor?.Dispose();
-    lidTensor?.Dispose();     // 追加
-    sidTensor?.Dispose();     // 追加
 }
 ```
 
-## IInferenceAudioGenerator インターフェース拡張
+## IInferenceAudioGenerator インターフェース
 
 ```csharp
-/// <summary>モデルが多言語（lid）をサポートするか</summary>
-bool SupportsMultilingual { get; }
+/// <summary>モデルがProsody（韻律）をサポートするか</summary>
+bool SupportsProsody { get; }
 
 /// <summary>モデルがマルチスピーカー（sid）をサポートするか</summary>
 bool SupportsMultiSpeaker { get; }
+
+/// <summary>モデルが多言語（lid）をサポートするか</summary>
+bool SupportsLanguageId { get; }
 ```
 
 ## Prosody言語マスキング
@@ -136,15 +123,38 @@ piper-plus `models.py` (行900-910):
 - **C#側では特別な処理不要** - モデル内部で処理される
 - ただしProsody非対応言語では `prosody_features` にゼロを渡すのが推奨
 
-## 言語IDマッピング
+## 言語IDマッピング（LanguageConstants.cs で一元管理）
 
-| 言語ID | 言語コード | 言語名 |
-|--------|-----------|--------|
-| 0 | ja | 日本語 |
-| 1 | en | 英語 |
-| 2 | zh | 中国語 |
-| 3 | es | スペイン語 |
-| 4 | fr | フランス語 |
-| 5 | pt | ポルトガル語 |
+**実装**: `Assets/uPiper/Runtime/Core/Phonemizers/Multilingual/LanguageConstants.cs`
 
-この情報は `model.onnx.json` に含めるか、PiperVoiceConfig に追加フィールドとして管理。
+| 言語ID | 言語コード | 言語名 | 定数名 |
+|--------|-----------|--------|--------|
+| 0 | ja | 日本語 | `LanguageConstants.LanguageIdJapanese` |
+| 1 | en | 英語 | `LanguageConstants.LanguageIdEnglish` |
+| 2 | zh | 中国語 | `LanguageConstants.LanguageIdChinese` |
+| 3 | es | スペイン語 | `LanguageConstants.LanguageIdSpanish` |
+| 4 | fr | フランス語 | `LanguageConstants.LanguageIdFrench` |
+| 5 | pt | ポルトガル語 | `LanguageConstants.LanguageIdPortuguese` |
+| 6 | ko | 韓国語 | `LanguageConstants.LanguageIdKorean` |
+
+### 言語グループ分類
+
+| グループ | 言語 | 用途 |
+|---------|------|------|
+| `LatinLanguages` | en, es, fr, pt | Unicode範囲だけでは区別不可、言語ヒントが必要 |
+| `CjkLanguages` | ja, zh, ko | スクリプト特徴で検出可能（仮名/CJK/ハングル） |
+
+### ヘルパーメソッド
+
+```csharp
+// 言語コード → 言語ID
+int id = LanguageConstants.GetLanguageId("ja");  // → 0
+
+// 言語ID → 言語コード
+string code = LanguageConstants.GetLanguageCode(0);  // → "ja"
+
+// グループ判定
+bool isLatin = LanguageConstants.IsLatinLanguage("en");  // → true
+bool isCjk = LanguageConstants.IsCjkLanguage("ja");      // → true
+bool isSupported = LanguageConstants.IsSupportedLanguage("ja");  // → true
+```

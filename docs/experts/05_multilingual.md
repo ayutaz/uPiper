@@ -1,58 +1,87 @@
 # uPiper 多言語対応レポート - 2026年3月版
 
-## 最優先: Piperモデル追加（中国語・韓国語）
-- Piperは**50以上の言語**に対応、HuggingFaceで配布
-- G2Pさえあればモデルは既製品を利用可能
-- **難易度**: 低 / **インパクト**: 高
+## 現在の対応状況（Phase 5完了）
 
-## 追加言語G2P実装
+### 対応言語一覧（7言語）
+
+| 言語 | コード | バックエンド | G2P方式 | 状態 |
+|------|--------|-------------|---------|------|
+| 日本語 | ja | DotNetG2PPhonemizer | MeCab辞書 + Prosody | ✅ 実装済み |
+| 英語 | en | FlitePhonemizerBackend | Flite LTS | ✅ 実装済み |
+| スペイン語 | es | SpanishPhonemizerBackend | ルールベースG2P | ✅ Phase 5 |
+| フランス語 | fr | FrenchPhonemizerBackend | ルールベースG2P（鼻母音・黙字処理） | ✅ Phase 5 |
+| ポルトガル語 | pt | PortuguesePhonemizerBackend | ルールベースG2P（ブラジルポルトガル語） | ✅ Phase 5 |
+| 中国語 | zh | ChinesePhonemizerBackend | ピンイン変換テーブル + IPA変換 + 声調処理 | ✅ Phase 5 |
+| 韓国語 | ko | KoreanPhonemizerBackend | ハングル分解 + 音韻規則 | ✅ Phase 5 |
+
+### 共有インフラストラクチャ（Phase 5）
+
+| コンポーネント | 場所 | 役割 |
+|--------------|------|------|
+| `PuaTokenMapper` | `Multilingual/` | 全言語共通の87固定PUAマッピング |
+| `LanguageConstants` | `Multilingual/` | 言語コード（ISO 639-1）・言語IDマッピング |
+| `UnicodeLanguageDetector` | `Multilingual/` | Unicode範囲ベースの言語検出（7言語対応） |
+| `MultilingualPhonemizer` | `Multilingual/` | テキストを言語別に分割し各バックエンドに委譲 |
+
+### 言語検出の仕組み
+- **日本語**: カナ（ひらがな・カタカナ）で一意に検出
+- **韓国語**: ハングル文字で一意に検出
+- **中国語**: CJK統合漢字（カナ非存在時に日本語と区別）
+- **ラテン文字系（en/es/fr/pt）**: Unicode範囲のみでは区別不可。`defaultLatinLanguage`パラメータで指定
+
+### テスト
+- Phase 5で194件の新規テストを追加
+- 各バックエンドの単体テスト + MultilingualPhonemizer統合テスト
+
+## 今後の改善（未実装）
+
+### 追加言語G2P
 
 | 言語 | 難易度 | 話者数 | アプローチ |
 |------|--------|--------|-----------|
-| 中国語 | 中 | 13億人 | pypinyin-g2pのC#移植、声調処理 |
-| 韓国語 | 中 | 7700万人 | Hangul分解、音韻変化ルール |
-| スペイン語 | 低 | 5.5億人 | ルールベースG2P（正書法≒音素） |
-| フランス語 | 中 | 3億人 | サイレント文字・リエゾン処理 |
 | ドイツ語 | 中 | 1.3億人 | 複合語分解、ウムラウト処理 |
 
-## テキスト正規化（数字・日付・記号）
+### テキスト正規化（数字・日付・記号）
 - 数字→単語変換（言語別ルール）
 - URL除去/メールアドレス読み上げ
 - ハッシュタグ処理
 - **難易度**: 中 / **インパクト**: 高
 
-## 多言語混在処理（コードスイッチング）
-- Unicode範囲ベースの言語検出拡張（CJK、Hangul追加）
-- FastTextベース言語識別統合
+### 多言語混在処理（コードスイッチング）の高度化
+- ~~Unicode範囲ベースの言語検出拡張（CJK、Hangul追加）~~ ✅ Phase 5で実装済み
+- FastTextベース言語識別統合（ラテン文字系言語の自動判別向上）
 - 言語境界でのProsody平滑化
 - **難易度**: 高 / **インパクト**: 高
 
-## 固有名詞処理
+### 固有名詞処理
 - Universal NER統合で自動検出
 - 固有名詞辞書追加（`proper_nouns_dict.json`）
 - **難易度**: 高 / **インパクト**: 中
 
-## 音素体系の統一（IPA基盤）
+### 音素体系の統一（IPA基盤）
 - X-SAMPAベース中間表現で全言語統一
 - espeak-ng統合で100+言語対応
 - **難易度**: 高 / **インパクト**: 非常に高
 
 ## ロードマップ
 
-### Phase 1（3-6ヶ月）: 基礎多言語化
-1. 中国語G2P（pypinyin C#移植）
-2. 韓国語G2P（Hangul分解）
-3. テキスト正規化強化
+### ~~Phase 1~~ ✅ 完了: 基礎多言語化
+1. ~~中国語G2P~~ ✅ ChinesePhonemizerBackend
+2. ~~韓国語G2P~~ ✅ KoreanPhonemizerBackend
+3. ~~スペイン語・フランス語・ポルトガル語G2P~~ ✅ Phase 5
+4. ~~PuaTokenMapper・LanguageConstants共有インフラ~~ ✅ Phase 5
 
 ### Phase 2（3-6ヶ月）: UX向上
-1. 言語検出の高度化
+1. ラテン文字系言語の自動検出高度化（FastText等）
 2. 絵文字処理
-3. カスタム辞書拡張
+3. カスタム辞書の多言語拡張
+4. テキスト正規化強化
 
 ### Phase 3（6-12ヶ月）: アーキテクチャ刷新
 1. espeak-ng統合
 2. IPA統一音素体系
 3. NER統合
+4. ドイツ語G2P追加
 
 ## Sources
 
