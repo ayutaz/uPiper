@@ -32,6 +32,7 @@ namespace uPiper.Core
         private event Action<PiperVoiceConfig> _onVoiceLoaded;
         private event Action<PiperException> _onError;
         private event Action<float> _onProcessingProgress;
+        private Action<string> _onLanguageDetected;
 
         // Inference Engine related
         private BackendType _inferenceBackend;
@@ -207,6 +208,13 @@ namespace uPiper.Core
                     _onError -= value;
                 }
             }
+        }
+
+        /// <inheritdoc/>
+        public event Action<string> OnLanguageDetected
+        {
+            add => _onLanguageDetected += value;
+            remove => _onLanguageDetected -= value;
         }
 
         /// <summary>
@@ -447,6 +455,55 @@ namespace uPiper.Core
             {
                 return new List<PiperVoiceConfig>(_voices.Values);
             }
+        }
+
+        /// <inheritdoc/>
+        public IReadOnlyList<string> GetSupportedLanguages()
+        {
+            var languages = _config?.SupportedLanguages;
+            if (languages != null && languages.Count > 0)
+                return languages.AsReadOnly();
+            // Fallback: derive from current voice
+            var voiceLang = CurrentVoice?.Language;
+            return voiceLang != null
+                ? new System.Collections.Generic.List<string> { voiceLang }.AsReadOnly()
+                : new System.Collections.Generic.List<string> { _config?.DefaultLanguage ?? "ja" }.AsReadOnly();
+        }
+
+        /// <inheritdoc/>
+        public string DetectLanguage(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return _config?.DefaultLanguage ?? "ja";
+
+            var languages = GetSupportedLanguages();
+            var detector = new Phonemizers.Multilingual.UnicodeLanguageDetector(
+                languages,
+                _config?.DefaultLanguage ?? "en");
+
+            var segments = detector.SegmentText(text);
+            if (segments.Count == 0)
+                return _config?.DefaultLanguage ?? "ja";
+
+            // Return the language with the most characters
+            var langCounts = new System.Collections.Generic.Dictionary<string, int>();
+            foreach (var (lang, seg) in segments)
+            {
+                if (!langCounts.ContainsKey(lang))
+                    langCounts[lang] = 0;
+                langCounts[lang] += seg.Length;
+            }
+            var primary = "ja";
+            var max = 0;
+            foreach (var kvp in langCounts)
+            {
+                if (kvp.Value > max)
+                {
+                    max = kvp.Value;
+                    primary = kvp.Key;
+                }
+            }
+            return primary;
         }
 
         #endregion
@@ -777,6 +834,47 @@ namespace uPiper.Core
             }
         }
 
+        /// <inheritdoc/>
+        public async Task<AudioClip> GenerateAudioAsync(
+            string text,
+            string language,
+            CancellationToken cancellationToken = default)
+        {
+            ThrowIfDisposed();
+            ThrowIfNotInitialized();
+
+            if (string.IsNullOrWhiteSpace(text))
+                throw new ArgumentNullException(nameof(text));
+
+            // Resolve effective language
+            var effectiveLang = language?.Trim().ToLowerInvariant() ?? string.Empty;
+            if (effectiveLang == "auto" || string.IsNullOrEmpty(effectiveLang))
+            {
+                effectiveLang = DetectLanguage(text);
+                _onLanguageDetected?.Invoke(effectiveLang);
+            }
+
+            // Resolve language ID from current voice config
+            var languageId = -1;
+            if (_currentVoiceConfig?.LanguageIdMap != null &&
+                _currentVoiceConfig.LanguageIdMap.TryGetValue(effectiveLang, out var lid))
+            {
+                languageId = lid;
+            }
+
+            // Delegate to multilingual method if available, otherwise fall back
+            if (IsInferenceInitialized)
+            {
+                return await GenerateAudioWithMultilingualAsync(
+                    text,
+                    languageId: languageId,
+                    cancellationToken: cancellationToken);
+            }
+
+            // Non-inference fallback
+            return await GenerateAudioAsync(text, cancellationToken);
+        }
+
         /// <summary>
         /// Stream audio generation with specific voice configuration
         /// </summary>
@@ -971,6 +1069,7 @@ namespace uPiper.Core
                     _onVoiceLoaded = null;
                     _onError = null;
                     _onProcessingProgress = null;
+                    _onLanguageDetected = null;
 
                     // Clear voices
                     _voices.Clear();

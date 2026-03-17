@@ -64,6 +64,12 @@ namespace uPiper.Core
         [Tooltip("Languages supported by the loaded model (e.g., [\"ja\", \"en\"])")]
         public List<string> SupportedLanguages = new() { "ja", "en" };
 
+        /// <summary>
+        /// How to handle mixed-language input text.
+        /// </summary>
+        [Tooltip("Strategy for handling text that contains multiple languages")]
+        public MultiLanguageMode MixedLanguageMode = MultiLanguageMode.SegmentByLanguage;
+
         [Header("Performance Settings")]
 
         /// <summary>
@@ -288,5 +294,31 @@ namespace uPiper.Core
         /// GPU Pixel backend
         /// </summary>
         GPUPixel
+    }
+
+    /// <summary>
+    /// Strategy for handling mixed-language text input.
+    /// </summary>
+    public enum MultiLanguageMode
+    {
+        /// <summary>
+        /// Automatically segment text by detected language and process each segment separately.
+        /// </summary>
+        SegmentByLanguage = 0,
+
+        /// <summary>
+        /// Force all text to be processed as DefaultLanguage, ignoring language detection.
+        /// </summary>
+        ForceDefault = 1,
+
+        /// <summary>
+        /// Detect the dominant language of the entire text and process it as a single language.
+        /// </summary>
+        AutoDetectWhole = 2,
+
+        /// <summary>
+        /// Use the language specified in the current VoiceConfig as the primary language.
+        /// </summary>
+        VoiceConfigPrimary = 3
     }
 }
