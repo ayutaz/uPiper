@@ -231,6 +231,9 @@ namespace uPiper.Demo
 
             SetupUI();
             SetStatus("準備完了");
+#if !UNITY_WEBGL || UNITY_EDITOR
+            await System.Threading.Tasks.Task.CompletedTask;
+#endif
         }
 
         private void SetupFontFallback()
