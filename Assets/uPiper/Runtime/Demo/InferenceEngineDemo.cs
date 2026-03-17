@@ -1173,6 +1173,37 @@ namespace uPiper.Demo
                 {
                     PiperLogger.LogWarning("[ParseConfig] No phoneme_id_map found in JSON");
                 }
+
+                // Extract num_speakers and speaker_id_map
+                if (jsonObj["num_speakers"] != null)
+                {
+                    config.NumSpeakers = jsonObj["num_speakers"].ToObject<int>();
+                }
+                if (jsonObj["speaker_id_map"] is JObject speakerIdMap)
+                {
+                    config.SpeakerIdMap = new Dictionary<string, int>();
+                    foreach (var kvp in speakerIdMap)
+                    {
+                        config.SpeakerIdMap[kvp.Key] = kvp.Value.ToObject<int>();
+                    }
+                    PiperLogger.LogDebug($"[ParseConfig] Parsed {config.SpeakerIdMap.Count} speaker mappings");
+                }
+
+                // Extract num_languages and language_id_map
+                if (jsonObj["num_languages"] != null)
+                {
+                    config.NumLanguages = jsonObj["num_languages"].ToObject<int>();
+                    PiperLogger.LogDebug($"[ParseConfig] NumLanguages: {config.NumLanguages}");
+                }
+                if (jsonObj["language_id_map"] is JObject languageIdMap)
+                {
+                    config.LanguageIdMap = new Dictionary<string, int>();
+                    foreach (var kvp in languageIdMap)
+                    {
+                        config.LanguageIdMap[kvp.Key] = kvp.Value.ToObject<int>();
+                    }
+                    PiperLogger.LogDebug($"[ParseConfig] Parsed {config.LanguageIdMap.Count} language mappings");
+                }
             }
             catch (Exception ex)
             {

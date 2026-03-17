@@ -139,7 +139,7 @@ namespace uPiper.Core
                     lengthScale,
                     noiseScale,
                     noiseW,
-                    cancellationToken);
+                    cancellationToken: cancellationToken);
 
                 _onProcessingProgress?.Invoke(0.8f);
 

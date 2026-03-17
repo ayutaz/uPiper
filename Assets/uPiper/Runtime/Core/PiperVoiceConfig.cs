@@ -106,10 +106,28 @@ namespace uPiper.Core
         public int NumSpeakers = 1;
 
         /// <summary>
+        /// Number of languages supported by the model
+        /// </summary>
+        [Tooltip("Number of languages supported by the model")]
+        public int NumLanguages = 1;
+
+        /// <summary>
         /// Phoneme to ID mapping dictionary
         /// </summary>
         [HideInInspector]
         public Dictionary<string, int> PhonemeIdMap;
+
+        /// <summary>
+        /// Language code to ID mapping (e.g., {"ja": 0, "en": 1})
+        /// </summary>
+        [HideInInspector]
+        public Dictionary<string, int> LanguageIdMap;
+
+        /// <summary>
+        /// Speaker name to ID mapping
+        /// </summary>
+        [HideInInspector]
+        public Dictionary<string, int> SpeakerIdMap;
 
         /// <summary>
         /// Phoneme type for encoding (e.g., "espeak", "openjtalk")

@@ -25,6 +25,8 @@ namespace uPiper.Core.AudioGeneration
         private bool _disposed;
         private BackendType _actualBackendType;
         private bool _supportsProsody;
+        private bool _supportsMultiSpeaker;
+        private bool _supportsLanguageId;
 
         /// <inheritdoc/>
         public bool IsInitialized => _isInitialized;
@@ -39,6 +41,12 @@ namespace uPiper.Core.AudioGeneration
 
         /// <inheritdoc/>
         public bool SupportsProsody => _supportsProsody;
+
+        /// <inheritdoc/>
+        public bool SupportsMultiSpeaker => _supportsMultiSpeaker;
+
+        /// <inheritdoc/>
+        public bool SupportsLanguageId => _supportsLanguageId;
 
         /// <inheritdoc/>
         public async Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config, CancellationToken cancellationToken = default)
@@ -138,9 +146,13 @@ namespace uPiper.Core.AudioGeneration
                             PiperLogger.LogInfo($"  Output[{i}]: name='{output.name}'");
                         }
 
-                        // Check if model supports prosody_features input
+                        // Check model capability inputs
                         _supportsProsody = _model.inputs.Any(input => input.name == "prosody_features");
+                        _supportsMultiSpeaker = _model.inputs.Any(input => input.name == "sid");
+                        _supportsLanguageId = _model.inputs.Any(input => input.name == "lid");
                         PiperLogger.LogInfo($"[InferenceAudioGenerator] Model prosody support: {_supportsProsody}");
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Model multi-speaker support: {_supportsMultiSpeaker}");
+                        PiperLogger.LogInfo($"[InferenceAudioGenerator] Model language-id support: {_supportsLanguageId}");
 
                         // Validate prosody_features input type if model supports it
                         if (_supportsProsody)
@@ -175,6 +187,8 @@ namespace uPiper.Core.AudioGeneration
             float lengthScale = 1.0f,
             float noiseScale = 0.667f,
             float noiseW = 0.8f,
+            int speakerId = 0,
+            int languageId = 0,
             CancellationToken cancellationToken = default)
         {
             ValidateGenerationPrerequisites(phonemeIds);
@@ -184,8 +198,7 @@ namespace uPiper.Core.AudioGeneration
             {
                 lock (_lockObject)
                 {
-                    // デフォルトのprosody配列（すべてゼロ）を使用
-                    return ExecuteInference(phonemeIds, null, null, null, lengthScale, noiseScale, noiseW);
+                    return ExecuteInference(phonemeIds, null, null, null, lengthScale, noiseScale, noiseW, speakerId, languageId);
                 }
             });
         }
@@ -199,6 +212,8 @@ namespace uPiper.Core.AudioGeneration
             float lengthScale = 1.0f,
             float noiseScale = 0.667f,
             float noiseW = 0.8f,
+            int speakerId = 0,
+            int languageId = 0,
             CancellationToken cancellationToken = default)
         {
             ValidateGenerationPrerequisites(phonemeIds);
@@ -211,7 +226,7 @@ namespace uPiper.Core.AudioGeneration
             {
                 lock (_lockObject)
                 {
-                    return ExecuteInference(phonemeIds, prosodyA1, prosodyA2, prosodyA3, lengthScale, noiseScale, noiseW);
+                    return ExecuteInference(phonemeIds, prosodyA1, prosodyA2, prosodyA3, lengthScale, noiseScale, noiseW, speakerId, languageId);
                 }
             });
         }
@@ -241,7 +256,9 @@ namespace uPiper.Core.AudioGeneration
             int[] prosodyA3,
             float lengthScale,
             float noiseScale,
-            float noiseW)
+            float noiseW,
+            int speakerId = 0,
+            int languageId = 0)
         {
             var hasAnyProsodyInput = prosodyA1 != null || prosodyA2 != null || prosodyA3 != null;
             PiperLogger.LogInfo($"[InferenceAudioGenerator] Preparing model inputs{(hasAnyProsodyInput ? " with prosody" : "")}...");
@@ -252,23 +269,31 @@ namespace uPiper.Core.AudioGeneration
             var inputLengthsTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
             var scalesTensor = new Tensor<float>(new TensorShape(3), new[] { noiseScale, lengthScale, noiseW });
             Tensor<int> prosodyTensor = null;
+            Tensor<int> sidTensor = null;
+            Tensor<int> lidTensor = null;
 
             try
             {
-                // 基本の3入力を設定
-                if (_model.inputs.Count < 3)
+                // 基本の3入力を名前ベースで設定
+                _worker.SetInput("input", inputTensor);
+                _worker.SetInput("input_lengths", inputLengthsTensor);
+                _worker.SetInput("scales", scalesTensor);
+
+                // sid テンソルを設定（マルチスピーカーまたは多言語モデルの場合）
+                if (_supportsMultiSpeaker)
                 {
-                    throw new InvalidOperationException($"Model has {_model.inputs.Count} inputs, but Piper models require at least 3 inputs");
+                    sidTensor = new Tensor<int>(new TensorShape(1), new[] { speakerId });
+                    _worker.SetInput("sid", sidTensor);
+                    PiperLogger.LogInfo($"[InferenceAudioGenerator] Set sid tensor: {speakerId}");
                 }
 
-                var inputName = _model.inputs[0].name;
-                _worker.SetInput(inputName, inputTensor);
-
-                var lengthsName = _model.inputs[1].name;
-                _worker.SetInput(lengthsName, inputLengthsTensor);
-
-                var scalesName = _model.inputs[2].name;
-                _worker.SetInput(scalesName, scalesTensor);
+                // lid テンソルを設定（多言語モデルの場合）
+                if (_supportsLanguageId)
+                {
+                    lidTensor = new Tensor<int>(new TensorShape(1), new[] { languageId });
+                    _worker.SetInput("lid", lidTensor);
+                    PiperLogger.LogInfo($"[InferenceAudioGenerator] Set lid tensor: {languageId}");
+                }
 
                 // prosody_featuresテンソルを設定（モデルがサポートする場合）
                 if (_supportsProsody)
@@ -309,6 +334,8 @@ namespace uPiper.Core.AudioGeneration
                 inputTensor?.Dispose();
                 inputLengthsTensor?.Dispose();
                 scalesTensor?.Dispose();
+                sidTensor?.Dispose();
+                lidTensor?.Dispose();
                 prosodyTensor?.Dispose();
             }
         }
