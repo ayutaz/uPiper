@@ -45,6 +45,11 @@ namespace uPiper.Core.Phonemizers.Multilingual
         private readonly string _defaultLatinLanguage;
         private DotNetG2PPhonemizer _jaPhonemizer;
         private IPhonemizerBackend _enPhonemizer;
+        private IPhonemizerBackend _esPhonemizer;  // Spanish
+        private IPhonemizerBackend _frPhonemizer;  // French
+        private IPhonemizerBackend _ptPhonemizer;  // Portuguese
+        private IPhonemizerBackend _zhPhonemizer;  // Chinese
+        private IPhonemizerBackend _koPhonemizer;  // Korean
         private bool _isInitialized;
         private bool _disposed;
 
@@ -61,11 +66,21 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// <param name="defaultLatinLanguage">Default language for Latin text (default: "en").</param>
         /// <param name="jaPhonemizer">Optional pre-built Japanese phonemizer; one is created if null.</param>
         /// <param name="enPhonemizer">Optional pre-built English phonemizer backend.</param>
+        /// <param name="esPhonemizer">Optional pre-built Spanish phonemizer backend.</param>
+        /// <param name="frPhonemizer">Optional pre-built French phonemizer backend.</param>
+        /// <param name="ptPhonemizer">Optional pre-built Portuguese phonemizer backend.</param>
+        /// <param name="zhPhonemizer">Optional pre-built Chinese phonemizer backend.</param>
+        /// <param name="koPhonemizer">Optional pre-built Korean phonemizer backend.</param>
         public MultilingualPhonemizer(
             IReadOnlyList<string> languages,
             string defaultLatinLanguage = "en",
             DotNetG2PPhonemizer jaPhonemizer = null,
-            IPhonemizerBackend enPhonemizer = null)
+            IPhonemizerBackend enPhonemizer = null,
+            IPhonemizerBackend esPhonemizer = null,
+            IPhonemizerBackend frPhonemizer = null,
+            IPhonemizerBackend ptPhonemizer = null,
+            IPhonemizerBackend zhPhonemizer = null,
+            IPhonemizerBackend koPhonemizer = null)
         {
             if (languages == null || languages.Count == 0)
                 throw new ArgumentException("At least one language must be specified.", nameof(languages));
@@ -75,6 +90,11 @@ namespace uPiper.Core.Phonemizers.Multilingual
             _detector = new UnicodeLanguageDetector(languages, defaultLatinLanguage);
             _jaPhonemizer = jaPhonemizer;
             _enPhonemizer = enPhonemizer;
+            _esPhonemizer = esPhonemizer;
+            _frPhonemizer = frPhonemizer;
+            _ptPhonemizer = ptPhonemizer;
+            _zhPhonemizer = zhPhonemizer;
+            _koPhonemizer = koPhonemizer;
         }
 
         /// <summary>
@@ -119,6 +139,81 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     {
                         PiperLogger.LogWarning("[MultilingualPhonemizer] Failed to initialize English backend");
                     }
+                }
+            }
+
+            // Initialize Spanish phonemizer if needed
+            if (ContainsLanguage("es") && _esPhonemizer == null)
+            {
+                var backend = new Backend.Spanish.SpanishPhonemizerBackend();
+                if (await backend.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
+                {
+                    _esPhonemizer = backend;
+                    PiperLogger.LogInfo("[MultilingualPhonemizer] Spanish backend initialized");
+                }
+                else
+                {
+                    PiperLogger.LogWarning("[MultilingualPhonemizer] Failed to initialize Spanish backend");
+                }
+            }
+
+            // Initialize French phonemizer if needed
+            if (ContainsLanguage("fr") && _frPhonemizer == null)
+            {
+                var backend = new Backend.French.FrenchPhonemizerBackend();
+                if (await backend.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
+                {
+                    _frPhonemizer = backend;
+                    PiperLogger.LogInfo("[MultilingualPhonemizer] French backend initialized");
+                }
+                else
+                {
+                    PiperLogger.LogWarning("[MultilingualPhonemizer] Failed to initialize French backend");
+                }
+            }
+
+            // Initialize Portuguese phonemizer if needed
+            if (ContainsLanguage("pt") && _ptPhonemizer == null)
+            {
+                var backend = new Backend.Portuguese.PortuguesePhonemizerBackend();
+                if (await backend.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
+                {
+                    _ptPhonemizer = backend;
+                    PiperLogger.LogInfo("[MultilingualPhonemizer] Portuguese backend initialized");
+                }
+                else
+                {
+                    PiperLogger.LogWarning("[MultilingualPhonemizer] Failed to initialize Portuguese backend");
+                }
+            }
+
+            // Initialize Chinese phonemizer if needed
+            if (ContainsLanguage("zh") && _zhPhonemizer == null)
+            {
+                var backend = new Backend.Chinese.ChinesePhonemizerBackend();
+                if (await backend.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
+                {
+                    _zhPhonemizer = backend;
+                    PiperLogger.LogInfo("[MultilingualPhonemizer] Chinese backend initialized");
+                }
+                else
+                {
+                    PiperLogger.LogWarning("[MultilingualPhonemizer] Failed to initialize Chinese backend");
+                }
+            }
+
+            // Initialize Korean phonemizer if needed
+            if (ContainsLanguage("ko") && _koPhonemizer == null)
+            {
+                var backend = new Backend.Korean.KoreanPhonemizerBackend();
+                if (await backend.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
+                {
+                    _koPhonemizer = backend;
+                    PiperLogger.LogInfo("[MultilingualPhonemizer] Korean backend initialized");
+                }
+                else
+                {
+                    PiperLogger.LogWarning("[MultilingualPhonemizer] Failed to initialize Korean backend");
                 }
             }
 
@@ -200,19 +295,24 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     segA2 = result.ProsodyA2 ?? Array.Empty<int>();
                     segA3 = result.ProsodyA3 ?? Array.Empty<int>();
                 }
-                else if (_enPhonemizer != null)
-                {
-                    // English and fallback: use IPhonemizerBackend
-                    var result = await _enPhonemizer.PhonemizeAsync(segText, lang, null, cancellationToken);
-                    segPhonemes = result?.Phonemes ?? Array.Empty<string>();
-                    segA1 = new int[segPhonemes.Length];
-                    segA2 = new int[segPhonemes.Length];
-                    segA3 = new int[segPhonemes.Length];
-                }
                 else
                 {
-                    PiperLogger.LogWarning($"[MultilingualPhonemizer] No backend for language '{lang}', skipping segment.");
-                    continue;
+                    // Get the appropriate backend for the language
+                    var backend = GetBackendForLanguage(lang);
+                    if (backend != null)
+                    {
+                        var result = await backend.PhonemizeAsync(segText, lang, null, cancellationToken);
+                        segPhonemes = result?.Phonemes ?? Array.Empty<string>();
+                        segA1 = result?.ProsodyA1 ?? new int[segPhonemes.Length];
+                        segA2 = result?.ProsodyA2 ?? new int[segPhonemes.Length];
+                        segA3 = result?.ProsodyA3 ?? new int[segPhonemes.Length];
+                    }
+                    else
+                    {
+                        PiperLogger.LogWarning(
+                            $"[MultilingualPhonemizer] No backend for '{lang}', skipping segment.");
+                        continue;
+                    }
                 }
 
                 if (segPhonemes.Length == 0)
@@ -268,9 +368,28 @@ namespace uPiper.Core.Phonemizers.Multilingual
             _disposed = true;
             _jaPhonemizer?.Dispose();
             _enPhonemizer?.Dispose();
+            _esPhonemizer?.Dispose();
+            _frPhonemizer?.Dispose();
+            _ptPhonemizer?.Dispose();
+            _zhPhonemizer?.Dispose();
+            _koPhonemizer?.Dispose();
         }
 
         // ── Private helpers ───────────────────────────────────────────────────
+
+        private IPhonemizerBackend GetBackendForLanguage(string lang)
+        {
+            return lang switch
+            {
+                "en" => _enPhonemizer,
+                "es" => _esPhonemizer,
+                "fr" => _frPhonemizer,
+                "pt" => _ptPhonemizer,
+                "zh" => _zhPhonemizer,
+                "ko" => _koPhonemizer,
+                _ => _enPhonemizer // fallback to English
+            };
+        }
 
         private bool ContainsLanguage(string lang)
         {

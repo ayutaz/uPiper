@@ -17,6 +17,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
         private readonly bool _hasJa;
         private readonly bool _hasZh;
         private readonly bool _hasKo;
+        private readonly bool _hasEs;
+        private readonly bool _hasFr;
+        private readonly bool _hasPt;
 
         /// <summary>
         /// Gets the default Latin language code (e.g., "en").
@@ -43,6 +46,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
             _hasJa = ContainsLanguage("ja");
             _hasZh = ContainsLanguage("zh");
             _hasKo = ContainsLanguage("ko");
+            _hasEs = ContainsLanguage("es");
+            _hasFr = ContainsLanguage("fr");
+            _hasPt = ContainsLanguage("pt");
         }
 
         // ── Static character classifiers ──────────────────────────────────────
@@ -101,8 +107,11 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
         /// <summary>
         /// Returns true if the character is a Latin letter:
-        /// A-Z, a-z, or Latin Extended (U+00C0-00D6, U+00D8-00F6, U+00F8-00FF).
+        /// A-Z, a-z, Latin-1 Supplement (U+00C0-00D6, U+00D8-00F6, U+00F8-00FF),
+        /// Latin Extended-A (U+0100-017F), or Latin Extended-B (U+0180-024F).
         /// Excludes × (U+00D7) and ÷ (U+00F7).
+        /// Latin Extended ranges include accented characters used in French (e.g., OE ligature),
+        /// Portuguese (e.g., nasal vowels), and Spanish (e.g., inverted punctuation letters).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsLatin(char ch)
@@ -110,7 +119,34 @@ namespace uPiper.Core.Phonemizers.Multilingual
                (ch >= 'a' && ch <= 'z') ||
                (ch >= '\u00C0' && ch <= '\u00D6') ||
                (ch >= '\u00D8' && ch <= '\u00F6') ||
-               (ch >= '\u00F8' && ch <= '\u00FF');
+               (ch >= '\u00F8' && ch <= '\u00FF') ||
+               (ch >= '\u0100' && ch <= '\u017F') ||
+               (ch >= '\u0180' && ch <= '\u024F');
+
+        /// <summary>
+        /// Returns true if the character is in Latin Extended-A (U+0100-017F)
+        /// or Latin Extended-B (U+0180-024F).
+        /// These ranges contain accented and special characters used in French,
+        /// Portuguese, Spanish, and other European languages.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsLatinExtended(char ch)
+            => (ch >= '\u0100' && ch <= '\u017F') ||
+               (ch >= '\u0180' && ch <= '\u024F');
+
+        /// <summary>
+        /// Returns true if the character is a CJK punctuation or fullwidth form character.
+        /// This is the same range as IsJapanesePunct but named neutrally for use when
+        /// multiple CJK languages are supported.
+        /// CJK Symbols and Punctuation (U+3000-303F),
+        /// or Fullwidth Forms (U+FF00-FF20, U+FF3B-FF40, U+FF5B-FFEF).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsCjkPunct(char ch)
+            => (ch >= '\u3000' && ch <= '\u303F') ||
+               (ch >= '\uFF00' && ch <= '\uFF20') ||
+               (ch >= '\uFF3B' && ch <= '\uFF40') ||
+               (ch >= '\uFF5B' && ch <= '\uFFEF');
 
         // ── Instance methods ──────────────────────────────────────────────────
 
@@ -137,10 +173,10 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// Detection priority:
         /// 1. Kana → "ja"
         /// 2. Hangul → "ko"
-        /// 3. CJK → "ja" or "zh" based on contextHasKana
+        /// 3. CJK ideographs → "ja" or "zh" based on contextHasKana
         /// 4. Fullwidth Latin → defaultLatinLanguage
-        /// 5. Japanese punctuation → "ja"
-        /// 6. Latin → defaultLatinLanguage
+        /// 5. CJK punctuation → appropriate CJK language (ja/zh based on context)
+        /// 6. Latin characters → defaultLatinLanguage
         /// 7. Neutral (whitespace, digits, punctuation) → null
         /// </summary>
         /// <param name="ch">Character to detect.</param>
@@ -156,7 +192,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             if (_hasKo && IsHangul(ch))
                 return "ko";
 
-            // Priority 3: CJK → disambiguate by context
+            // Priority 3: CJK ideographs → disambiguate by context
             if (IsCJK(ch))
             {
                 if (_hasJa && _hasZh)
@@ -170,9 +206,17 @@ namespace uPiper.Core.Phonemizers.Multilingual
             if (IsFullwidthLatin(ch))
                 return ContainsLanguage(_defaultLatinLanguage) ? _defaultLatinLanguage : null;
 
-            // Priority 5: Japanese punctuation → Japanese
-            if (_hasJa && IsJapanesePunct(ch))
-                return "ja";
+            // Priority 5: CJK punctuation → appropriate CJK language
+            // When both Japanese and Chinese are in the language list, CJK punctuation
+            // (e.g., 。、「」) is disambiguated using Kana context, same as CJK ideographs.
+            if (IsCjkPunct(ch))
+            {
+                if (_hasJa && _hasZh)
+                    return contextHasKana ? "ja" : "zh";
+                if (_hasJa) return "ja";
+                if (_hasZh) return "zh";
+                return null;
+            }
 
             // Priority 6: Latin characters → default Latin language
             if (IsLatin(ch))
