@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using uPiper.Core.Logging;
 
@@ -48,6 +49,20 @@ namespace uPiper.Core
         /// </summary>
         [Tooltip("Default language code (e.g., 'ja' for Japanese, 'en' for English)")]
         public string DefaultLanguage = "ja";
+
+        /// <summary>
+        /// Automatically detect language from input text.
+        /// When enabled, text language is detected and the appropriate phonemizer is used.
+        /// </summary>
+        [Tooltip("Automatically detect language from text (requires multilingual model)")]
+        public bool AutoDetectLanguage = false;
+
+        /// <summary>
+        /// Supported languages for multilingual mode.
+        /// Used when AutoDetectLanguage is true.
+        /// </summary>
+        [Tooltip("Languages supported by the loaded model (e.g., [\"ja\", \"en\"])")]
+        public List<string> SupportedLanguages = new() { "ja", "en" };
 
         [Header("Performance Settings")]
 
