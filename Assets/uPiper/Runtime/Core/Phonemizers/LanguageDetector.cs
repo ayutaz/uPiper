@@ -29,7 +29,7 @@ namespace uPiper.Core.Phonemizers
 
         // Unicode ranges for different scripts
         private static readonly Regex JapaneseRegex = new(
-            @"[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF]+",
+            @"[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF]+",
             RegexOptions.Compiled
         );
 
@@ -44,7 +44,7 @@ namespace uPiper.Core.Phonemizers
         );
 
         private static readonly Regex PunctuationRegex = new(
-            @"[^\w\s\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\u3400-\u4DBF]+",
+            @"[^\w\s\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF\u3400-\u4DBF]+",
             RegexOptions.Compiled
         );
 
@@ -174,8 +174,8 @@ namespace uPiper.Core.Phonemizers
         {
             return (ch >= '\u3040' && ch <= '\u309F') || // Hiragana
                    (ch >= '\u30A0' && ch <= '\u30FF') || // Katakana
-                   (ch >= '\u4E00' && ch <= '\u9FAF') || // Kanji
-                   (ch >= '\u3400' && ch <= '\u4DBF');   // Kanji extension
+                   (ch >= '\u4E00' && ch <= '\u9FFF') || // Kanji (CJK Unified Ideographs)
+                   (ch >= '\u3400' && ch <= '\u4DBF');   // Kanji extension A
         }
 
         private bool IsEnglishChar(char ch)
