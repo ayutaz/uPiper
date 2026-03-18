@@ -111,7 +111,7 @@ namespace uPiper.Core.AudioGeneration
             }
         }
 
-        // Multi-character phonemes to PUA mapping (for PUA-based models like ja_JP-test-medium)
+        // Multi-character phonemes to PUA mapping (for PUA-based models)
         private static readonly Dictionary<string, string> multiCharPhonemeMap = new()
         {
             // Long vowels
@@ -150,7 +150,7 @@ namespace uPiper.Core.AudioGeneration
             ["N_uvular"] = "\ue01c" // N at end/before vowels (uvular)
         };
 
-        // Multi-character phonemes to IPA mapping (for IPA-based models like tsukuyomi-chan)
+        // Multi-character phonemes to IPA mapping (for IPA-based models)
         private static readonly Dictionary<string, string> multiCharToIpaMap = new()
         {
             // Palatalized consonants
@@ -170,8 +170,8 @@ namespace uPiper.Core.AudioGeneration
             ["sh"] = "ʃ",  // Use ʃ (ID 42), not ɕ (ID 18) - matches training data
             ["ts"] = "ts",  // Keep as-is (not in IPA model)
             // Special
-            ["cl"] = "q",   // 促音 maps to q (ID 24) in tsukuyomi-chan (glottal stop)
-            // Long vowels (tsukuyomi-chan uses ɯ for う)
+            ["cl"] = "q",   // 促音 maps to q (glottal stop)
+            // Long vowels (IPA models use ɯ for う)
             ["u:"] = "ɯ"
         };
 

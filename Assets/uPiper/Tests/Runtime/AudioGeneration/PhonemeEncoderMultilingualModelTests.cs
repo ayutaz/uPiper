@@ -266,7 +266,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // Japanese (OpenJTalk) model encoder
             _jaConfig = new PiperVoiceConfig
             {
-                VoiceId = "ja_JP-test-medium",
+                VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",
                 SampleRate = 22050,
                 PhonemeIdMap = BuildJapaneseModelMap()
@@ -276,7 +276,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // eSpeak English model encoder
             _espeakConfig = new PiperVoiceConfig
             {
-                VoiceId = "en_US-ljspeech-medium",
+                VoiceId = "multilingual-test-medium",
                 PhonemeType = "espeak",
                 SampleRate = 22050,
                 PhonemeIdMap = BuildESpeakModelMap()
@@ -286,7 +286,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // tsukuyomi-chan IPA model encoder
             _tsukuyomiConfig = new PiperVoiceConfig
             {
-                VoiceId = "tsukuyomi-chan",
+                VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",
                 SampleRate = 22050,
                 PhonemeIdMap = BuildTsukuyomiModelMap()

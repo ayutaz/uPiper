@@ -16,7 +16,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         {
             _config = new PiperVoiceConfig
             {
-                VoiceId = "ja_JP-test-medium",
+                VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",  // OpenJTalk方式（PADなし）
                 SampleRate = 22050,
                 PhonemeIdMap = new Dictionary<string, int>
@@ -198,7 +198,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // Arrange: Create encoder with question marker support
             var configWithQuestion = new PiperVoiceConfig
             {
-                VoiceId = "ja_JP-test-medium",
+                VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",
                 SampleRate = 22050,
                 PhonemeIdMap = new Dictionary<string, int>
@@ -237,7 +237,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // So the PhonemeIdMap needs to include the PUA characters, not the ASCII markers
             var configWithExtendedQuestions = new PiperVoiceConfig
             {
-                VoiceId = "ja_JP-test-medium",
+                VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",
                 SampleRate = 22050,
                 PhonemeIdMap = new Dictionary<string, int>

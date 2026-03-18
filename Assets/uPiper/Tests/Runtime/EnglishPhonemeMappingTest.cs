@@ -20,7 +20,7 @@ namespace uPiper.Tests.Runtime
             // Create test config with English phoneme mapping
             var config = new PiperVoiceConfig
             {
-                VoiceId = "en_US-ljspeech-medium",
+                VoiceId = "multilingual-test-medium",
                 PhonemeIdMap = new Dictionary<string, int>
                 {
                     ["_"] = 0,  // PAD

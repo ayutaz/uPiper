@@ -27,7 +27,7 @@ namespace uPiper.Tests.Runtime
             // Create English voice config
             _config = new PiperVoiceConfig
             {
-                VoiceId = "en_US-ljspeech-medium",
+                VoiceId = "multilingual-test-medium",
                 Language = "en",
                 SampleRate = 22050,
                 PhonemeIdMap = CreateEnglishPhonemeIdMap()

@@ -282,7 +282,7 @@ namespace uPiper.Tests.Runtime
             // Build a non-multilingual Japanese encoder for backward-compat tests
             var japaneseConfig = new PiperVoiceConfig
             {
-                VoiceId = "ja_JP-test-medium",
+                VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",
                 SampleRate = 22050,
                 PhonemeIdMap = BuildJapaneseOnlyPhonemeIdMap()

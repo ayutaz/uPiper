@@ -348,12 +348,9 @@ namespace uPiper.Editor
             status.cmuDictExists = File.Exists(cmuPath);
 
             // Check voice models (check both old and new locations)
-            var modelPath1 = Path.Combine(Application.dataPath, "Resources", "uPiper", "Models", "ja_JP-test-medium.onnx");
-            var modelPath2 = Path.Combine(Application.dataPath, "Resources", "uPiper", "Models", "en_US-ljspeech-medium.onnx");
-            var oldModelPath1 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "ja_JP-test-medium.onnx");
-            var oldModelPath2 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "en_US-ljspeech-medium.onnx");
-            status.modelsExist = File.Exists(modelPath1) || File.Exists(modelPath2) ||
-                                 File.Exists(oldModelPath1) || File.Exists(oldModelPath2);
+            var modelPath1 = Path.Combine(Application.dataPath, "Resources", "uPiper", "Models", "multilingual-test-medium.onnx");
+            var oldModelPath1 = Path.Combine(Application.dataPath, "uPiper", "Resources", "Models", "multilingual-test-medium.onnx");
+            status.modelsExist = File.Exists(modelPath1) || File.Exists(oldModelPath1);
 
             // Complete if we have plugins in package and at least minimal dictionary support and models
             status.isComplete = status.pluginsExist && (status.dictionaryExists || status.cmuDictExists) && status.modelsExist;
@@ -410,8 +407,7 @@ namespace uPiper.Editor
                 modelsSamplePath = Path.Combine(Application.dataPath, "Samples", "uPiper", "Voice Models");
             }
             status.hasModelsSample = Directory.Exists(modelsSamplePath) &&
-                (File.Exists(Path.Combine(modelsSamplePath, "ja_JP-test-medium.onnx")) ||
-                 File.Exists(Path.Combine(modelsSamplePath, "en_US-ljspeech-medium.onnx")));
+                File.Exists(Path.Combine(modelsSamplePath, "multilingual-test-medium.onnx"));
 
             return status;
         }

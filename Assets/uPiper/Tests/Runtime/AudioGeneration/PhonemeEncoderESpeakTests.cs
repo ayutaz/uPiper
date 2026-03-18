@@ -16,7 +16,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         {
             _config = new PiperVoiceConfig
             {
-                VoiceId = "en_US-ljspeech-medium", // eSpeak形式のモデル
+                VoiceId = "multilingual-test-medium", // eSpeak形式のモデル
                 SampleRate = 22050,
                 PhonemeIdMap = new Dictionary<string, int>
                 {

@@ -80,7 +80,7 @@ namespace uPiper.Core.Phonemizers
         /// </summary>
         private static readonly Dictionary<string, int> DefaultPiperPhonemeToId = new()
         {
-            // Special tokens (from ja_JP-test-medium.onnx.json)
+            // Special tokens (from model .onnx.json)
             { "_", 0 },      // Pad token
             { "^", 1 },      // Start token
             { "$", 2 },      // End token

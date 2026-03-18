@@ -21,7 +21,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // tsukuyomi-chanモデルのphoneme_id_mapを再現
             _config = new PiperVoiceConfig
             {
-                VoiceId = "tsukuyomi-chan",
+                VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",
                 SampleRate = 22050,
                 PhonemeIdMap = new Dictionary<string, int>

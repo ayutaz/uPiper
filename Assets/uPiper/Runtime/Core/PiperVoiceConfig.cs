@@ -182,7 +182,7 @@ namespace uPiper.Core
             var fileName = System.IO.Path.GetFileNameWithoutExtension(modelPath);
             config.VoiceId = fileName;
 
-            // Parse language from filename (e.g., "ja_JP-test-medium" -> "ja")
+            // Parse language from filename (e.g., "multilingual-test-medium" -> "multilingual")
             if (fileName.Contains("_") || fileName.Contains("-"))
             {
                 var parts = fileName.Split(new[] { '_', '-' }, StringSplitOptions.RemoveEmptyEntries);

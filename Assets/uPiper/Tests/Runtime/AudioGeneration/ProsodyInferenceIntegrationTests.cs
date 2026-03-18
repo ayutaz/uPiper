@@ -22,7 +22,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
     [Category("RequiresProsodyModel")]
     public class ProsodyInferenceIntegrationTests
     {
-        private const string MODEL_NAME = "tsukuyomi-chan";
+        private const string MODEL_NAME = "multilingual-test-medium";
         private InferenceAudioGenerator _generator;
         private DotNetG2PPhonemizer _phonemizer;
         private PhonemeEncoder _encoder;
