@@ -554,6 +554,21 @@ namespace uPiper.Core
             if (string.IsNullOrEmpty(_currentVoiceId))
                 throw new InvalidOperationException("No voice selected. Load a voice first.");
 
+            // Auto-route through multilingual path when model supports language IDs
+            if (_inferenceGenerator != null && _inferenceGenerator.SupportsLanguageId)
+            {
+                var detectedLang = DetectLanguage(text);
+                int languageId = 0;
+                if (_currentVoiceConfig?.LanguageIdMap != null &&
+                    _currentVoiceConfig.LanguageIdMap.TryGetValue(detectedLang, out var lid))
+                {
+                    languageId = lid;
+                }
+
+                PiperLogger.LogDebug($"[AutoMultilingual] Detected language '{detectedLang}' (lid={languageId}) for text: {text}");
+                return await GenerateAudioWithMultilingualAsync(text, languageId, cancellationToken: cancellationToken);
+            }
+
             try
             {
                 IsProcessing = true;

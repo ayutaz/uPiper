@@ -64,8 +64,11 @@ namespace uPiper.Core
                     _voices[_currentVoiceId] = voiceConfig;
                 }
 
-                // 多言語PhonemizerをAutoDetectLanguageが有効な場合に初期化
-                if (_config != null && _config.AutoDetectLanguage)
+                // Auto-promote to multilingual mode when model supports multiple languages
+                var isMultilingualModel = _currentVoiceConfig?.LanguageIdMap != null
+                    && _currentVoiceConfig.LanguageIdMap.Count > 1;
+
+                if (_config != null && (_config.AutoDetectLanguage || isMultilingualModel))
                 {
                     DisposeMultilingualPhonemizer();
                     var supportedLanguages = _config.SupportedLanguages ?? new System.Collections.Generic.List<string> { "ja", "en" };

@@ -23,7 +23,7 @@ uPiperは[piper-plus](https://github.com/ayutaz/piper-plus)ベースの高品質
 | ja_JP-test-medium | 日本語 | Yes | 標準日本語モデル（Prosody対応） |
 | en_US-ljspeech-medium | 英語 | No | 標準英語モデル |
 | tsukuyomi-chan | 日本語 | Yes | Prosody対応日本語モデル（より自然なイントネーション） |
-| tsukuyomi-6lang-v2-fixed | 多言語(6言語) | Yes | 多言語対応モデル（ja/en/zh/es/fr/pt） |
+| tsukuyomi-6lang-v2-fixed | 多言語(6言語) | Yes | 多言語対応モデル（ja/en/zh/es/fr/pt）、`phoneme_type: "multilingual"` |
 
 ## ビルド・テストコマンド
 
@@ -74,6 +74,15 @@ PuaTokenMapper (PUA↔IPA双方向マッピング, 87固定エントリ)
 │     • zh: A1=tone(1-5), A2=音節位置, A3=単語長       │
 │     • ko: A1=0, A2=0, A3=音節数                      │
 │     • es/fr/pt: A1=0, A2=stress(0/2), A3=語内音素数  │
+└──────────────────────────────────────────────────────┘
+    ↓
+┌──────────────────────────────────────────────────────┐
+│ 多言語モデルの場合                                    │
+│   • Auto-promotion: phoneme_type:"multilingual"の     │
+│     モデルは自動的にMultilingualPhonemizerを生成       │
+│   • PhonemeEncoder後にIntersperse PAD挿入:            │
+│     [^, _, p1, _, p2, _, ..., $]                      │
+│     （BOS後にもPADが入る）                             │
 └──────────────────────────────────────────────────────┘
     ↓
 VITS推論 (ONNX via Unity.InferenceEngine)
@@ -329,6 +338,27 @@ _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
 | `cl` (っ) | `\ue005` | 23 | `q` | 24 |
 | `ky` (きゃ) | `\ue006` | 26 | `kʲ` | - |
 | `N` (ん) | `N` | 22 | `ɴ` | 22 |
+
+### 多言語モデルエンコーディング（phoneme_type: "multilingual"）
+
+モデル設定の`phoneme_type`が`"multilingual"`の場合、PhonemeEncoderは以下の特殊動作を行う：
+
+**Intersperse PAD挿入**:
+多言語/espeakモデルではPhonemeEncoder処理後にPAD文字 (`_`, ID=0) を音素間に挿入する。BOS (`^`) の直後にもPADが入る：
+```
+通常モデル:   [^, phoneme1, phoneme2, ..., $]
+多言語モデル: [^, _, phoneme1, _, phoneme2, _, ..., $]
+```
+
+**PUA文字パススルー**:
+多言語モデルではPhonemeEncoderがPUA文字をIPA/PUA変換せずそのまま`phoneme_id_map`で検索する。PuaTokenMapperが事前に適切なPUA文字へ変換済みであるため、追加の変換は不要。
+
+**N変種の保持**:
+日本語の撥音「ん」は後続音素に応じて複数の異音を持つ。多言語モデルではこれらが区別されたIDを持つ：
+- `N_m` — 唇音前の「ん」（例: さんぽ）
+- `N_n` — 歯茎音前の「ん」（例: あんない）
+- `N_ng` — 軟口蓋音前の「ん」（例: さんかく）
+- `N_uvular` — その他の「ん」（語末等）
 
 ### デバッグ
 

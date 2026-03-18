@@ -38,7 +38,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
     {
         // EOS-like tokens that act as sentence terminators
         private static readonly HashSet<string> EosLikeTokens =
-            new() { "$", "?", "?!", "?.", "?~" };
+            new() { "$", "?", "?!", "?.", "?~", "\ue016", "\ue017", "\ue018" };
 
         private readonly UnicodeLanguageDetector _detector;
         private readonly IReadOnlyList<string> _languages;
@@ -317,6 +317,15 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     segA1 = result.ProsodyA1 ?? Array.Empty<int>();
                     segA2 = result.ProsodyA2 ?? Array.Empty<int>();
                     segA3 = result.ProsodyA3 ?? Array.Empty<int>();
+
+                    // Strip leading PAD ("_") from Japanese segments (added from "sil" conversion)
+                    if (segPhonemes.Length > 0 && segPhonemes[0] == "_")
+                    {
+                        segPhonemes = segPhonemes[1..];
+                        segA1 = segA1.Length > 1 ? segA1[1..] : segA1;
+                        segA2 = segA2.Length > 1 ? segA2[1..] : segA2;
+                        segA3 = segA3.Length > 1 ? segA3[1..] : segA3;
+                    }
                 }
                 else
                 {

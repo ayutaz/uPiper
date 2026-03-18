@@ -93,7 +93,22 @@ Unity側（uPiper）への反映に必要な技術調査を実施。
 - `UnicodeLanguageDetector`: Latin Extended (U+0100-024F)、CJK句読点判定を拡張
 - テスト: 207テスト追加（Spanish 30, French 36, Portuguese 39, Chinese 30, Korean 43, Phase5統合 29）
 
-### Phase 6: テスト・品質保証 — TODO
+### Phase 6: 多言語モデル互換性修正 — **完了**
+- PhonemeEncoder: `NeedsInterspersePadding()` メソッド追加（`IsESpeakModel()` を置き換え）
+  - `phoneme_type: "multilingual"` モデルに intersperse PAD を正しく適用
+  - `[BOS, PAD, ph1, PAD, ph2, PAD, ..., EOS]` 形式のID配列生成
+- PhonemeEncoder: `MapPhoneme()` 多言語パススルー対応
+  - 多言語モデルの音素はIPA/PUA変換をバイパスし、phoneme_id_map で直接検索
+- PhonemeEncoder: N variant 保持（`puaToPhonemeMapMultilingual`）
+  - 多言語モデルでは N_m / N_n / N_ng / N_uvular を個別IDとして保持
+- PhonemeEncoder: skip-after-pad ロジック（PAD ID の二重挿入防止）
+- MultilingualPhonemizer: EosLikeTokens に PUA トークン追加（`\ue016`, `\ue017`, `\ue018`）
+- MultilingualPhonemizer: 日本語セグメントの先頭PAD除去（"sil" 変換由来）
+- PiperTTS: 多言語モデル自動昇格（auto-promotion）ロジック
+  - `LanguageIdMap.Count > 1` のモデルで自動的に MultilingualPhonemizer を初期化
+  - `GenerateAudioAsync()` が `SupportsLanguageId` 検出時に多言語パスへ自動ルーティング
+
+### Phase 7: テスト・品質保証 — TODO
 - 多言語テストスイート作成
 - CI/CDパイプライン拡張
 - クロスプラットフォーム検証
@@ -104,11 +119,17 @@ Unity側（uPiper）への反映に必要な技術調査を実施。
 テキスト入力 ("今日はgoodですね")
     |
     v
+PiperTTS.GenerateAudioAsync()
+    |  SupportsLanguageId検出 → 自動的に多言語パスへルーティング (auto-promotion)
+    |  LanguageIdMap.Count > 1 → MultilingualPhonemizer 自動初期化
+    v
 UnicodeLanguageDetector (言語判定: 7言語対応)
     |  Hangul → ko, Kana → ja, CJK漢字 → ja/zh, Latin → en/es/fr/pt
     |  Latin Extended (U+0100-024F) 対応、CJK句読点コンテキスト判定
     v
 MultilingualPhonemizer (セグメント分割 → 言語別バックエンド委譲)
+    |  日本語セグメント: 先頭PAD除去 ("sil"変換由来の"_"を除去)
+    |  中間セグメント: EOS-likeトークン除去 (PUA形式含む)
     |
     +---> [ja] "今日は"     → DotNetG2PPhonemizer      → 音素 + Prosody
     +---> [en] "good"       → FliteLTSPhonemizerBackend → 音素
@@ -126,7 +147,13 @@ PuaTokenMapper (87エントリ固定PUAマッピング: 多文字音素→単一
 統一音素ID空間にマージ (post_process_ids)
     |
     v
-PhonemeEncoder (IPA/PUA判定 → ID配列)
+PhonemeEncoder (モデルタイプ別処理)
+    ├─ PUAモデル: PUA文字→phoneme_id_map で検索
+    ├─ IPAモデル: PUA→元音素→IPA変換→phoneme_id_map で検索
+    └─ 多言語モデル (phoneme_type: "multilingual"):
+       パススルー→phoneme_id_map で直接検索
+       intersperse PAD: [BOS, PAD, ph1, PAD, ph2, PAD, ..., EOS]
+       N variant 保持 (N_m/N_n/N_ng/N_uvular → 個別ID)
     |
     v
 InferenceAudioGenerator

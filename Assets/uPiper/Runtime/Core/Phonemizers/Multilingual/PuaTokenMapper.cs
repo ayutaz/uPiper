@@ -147,7 +147,8 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 { "k\u031A", 0xE050 },         // unreleased velar
                 { "t\u031A", 0xE051 },         // unreleased alveolar
                 { "p\u031A", 0xE052 },         // unreleased bilabial
-                // 0xE053 reserved (unused gap)
+                // English diphthong (dynamically allocated during multilingual training)
+                { "\u0254\u026A", 0xE053 },    // ɔɪ  (as in "boy")
 
                 // =================================================================
                 // Spanish (ES) / Portuguese (PT)

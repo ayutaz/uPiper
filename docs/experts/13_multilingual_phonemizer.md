@@ -1,9 +1,11 @@
-# MultilingualPhonemizer 実装仕様（Phase 5）
+# MultilingualPhonemizer 実装仕様（Phase 6）
 
 ## 概要
 
 MultilingualPhonemizerは7言語（ja, en, es, fr, pt, zh, ko）をサポートする多言語音素化システム。
 テキストをUnicode範囲で言語セグメントに分割し、各セグメントを対応する言語バックエンドに委譲する。
+
+Phase 6 追加: EOS PUA トークン対応、日本語セグメント先頭PAD除去、PiperTTSによる自動昇格。
 
 ### クラス構成
 
@@ -82,8 +84,9 @@ InitializeAsync(CancellationToken)
 3. セグメント別音素化
    for each (lang, segText) in segments:
      ├── lang == "ja": _jaPhonemizer.PhonemizeWithProsody(segText) [直接呼び出し]
+     │   └── 先頭PAD除去: segPhonemes[0] == "_" なら除去（"sil"変換由来）
      └── それ以外: GetBackendForLanguage(lang).PhonemizeAsync(segText, lang, ...) [IPhonemizerBackend経由]
-     ├── 中間セグメント: 末尾のEOS的トークン($, ?, ?!, ?., ?~)を除去
+     ├── 中間セグメント: 末尾のEOS的トークン除去（ASCII/PUA両形式対応）
      └── 音素・Prosody配列を連結
   ↓
 4. Prosody配列をPadToLength()で音素数に揃える
@@ -121,8 +124,34 @@ BOS/EOSのラッピングはPhonemeEncoder側の責務であり、MultilingualPh
 
 ```csharp
 private static readonly HashSet<string> EosLikeTokens =
-    new() { "$", "?", "?!", "?.", "?~" };
+    new() { "$", "?", "?!", "?.", "?~", "\ue016", "\ue017", "\ue018" };
 ```
+
+**Phase 6 追加**: PUA形式のEOSトークン（`\ue016` = ?!, `\ue017` = ?., `\ue018` = ?~）を追加。
+日本語セグメントの DotNetG2PPhonemizer 出力には OpenJTalkToPiperMapping 経由で
+PUA形式の疑問マーカーが含まれる場合があるため、ASCII形式とPUA形式の両方を網羅する。
+
+## 日本語セグメント先頭PAD除去
+
+DotNetG2PPhonemizer は OpenJTalk の "sil"（無音）を PAD トークン `"_"` に変換して出力する。
+MultilingualPhonemizer では、セグメント連結時にPADが音素列に紛れ込むのを防ぐため、
+日本語セグメントの先頭PADを除去する:
+
+```csharp
+// Strip leading PAD ("_") from Japanese segments (added from "sil" conversion)
+if (segPhonemes.Length > 0 && segPhonemes[0] == "_")
+{
+    segPhonemes = segPhonemes[1..];
+    segA1 = segA1.Length > 1 ? segA1[1..] : segA1;
+    segA2 = segA2.Length > 1 ? segA2[1..] : segA2;
+    segA3 = segA3.Length > 1 ? segA3[1..] : segA3;
+}
+```
+
+対応するProsody配列（A1/A2/A3）も同時にスライスし、音素数との整合性を維持する。
+
+**注意**: PhonemeEncoder が BOS + PAD を挿入するため、ここで除去しないと
+`[BOS, PAD, PAD(sil由来), ph1, ...]` のような余分なPADが入る。
 
 ## C# クラス実装
 
@@ -183,6 +212,45 @@ namespace uPiper.Core.Phonemizers.Multilingual
 | pt | PortuguesePhonemizerBackend | IPhonemizerBackend | No（0埋め） |
 | zh | ChinesePhonemizerBackend | IPhonemizerBackend | No（0埋め） |
 | ko | KoreanPhonemizerBackend | IPhonemizerBackend | No（0埋め） |
+
+## PiperTTS 自動昇格（auto-promotion）
+
+PiperTTS は多言語モデルのロード時に自動的に MultilingualPhonemizer を初期化する。
+ユーザーが明示的に `AutoDetectLanguage` を設定しなくても、モデルが多言語対応であれば自動昇格される。
+
+### 初期化時の自動昇格（`PiperTTS.Inference.cs`）
+
+```csharp
+// Auto-promote to multilingual mode when model supports multiple languages
+var isMultilingualModel = _currentVoiceConfig?.LanguageIdMap != null
+    && _currentVoiceConfig.LanguageIdMap.Count > 1;
+
+if (_config != null && (_config.AutoDetectLanguage || isMultilingualModel))
+{
+    // MultilingualPhonemizer を自動初期化
+    _multilingualPhonemizer = new MultilingualPhonemizer(...);
+    await _multilingualPhonemizer.InitializeAsync(cancellationToken);
+}
+```
+
+**判定条件**: `LanguageIdMap.Count > 1`（2言語以上のマッピングを持つモデル）
+
+### 生成時の自動ルーティング（`PiperTTS.cs`）
+
+`GenerateAudioAsync()` は `SupportsLanguageId` を検出すると、自動的に多言語パスへルーティングする:
+
+```csharp
+// Auto-route through multilingual path when model supports language IDs
+if (_inferenceGenerator != null && _inferenceGenerator.SupportsLanguageId)
+{
+    var detectedLang = DetectLanguage(text);
+    // ... 言語ID解決
+    return await GenerateAudioWithMultilingualAsync(text, languageId, ...);
+}
+```
+
+これにより、既存の `GenerateAudioAsync(text)` API を変更なしで使い続けても、
+多言語モデルでは自動的に言語検出と多言語音声合成が行われる。
 
 ## Dispose
 

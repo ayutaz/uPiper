@@ -63,15 +63,24 @@ namespace uPiper.Core.AudioGeneration
             _phonemeToId = new Dictionary<string, int>();
             _idToPhoneme = new Dictionary<int, string>();
 
+            // Detect multilingual model before initializing phoneme mapping
+            _isMultilingualModel = !string.IsNullOrEmpty(_config.PhonemeType)
+                && _config.PhonemeType.Equals("multilingual", StringComparison.OrdinalIgnoreCase);
+
             InitializePhonemeMapping();
 
             // IPAモデルかどうかを判定（phoneme_id_mapにIPA文字 "ɕ" が含まれているか）
-            _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
+            // Multilingual models: skip IPA detection — phonemes are already in the model's native format
+            _useIpaMapping = !_isMultilingualModel && _phonemeToId.ContainsKey("ɕ");
+
+            // Cache PAD ID for intersperse logic
+            _padId = GetPadId();
 
             // デバッグ: PhonemeIdMapの状態を出力
             PiperLogger.LogInfo($"[PhonemeEncoder] PhonemeIdMap count: {_config.PhonemeIdMap?.Count ?? 0}");
             PiperLogger.LogInfo($"[PhonemeEncoder] _phonemeToId count: {_phonemeToId.Count}");
             PiperLogger.LogInfo($"[PhonemeEncoder] _useIpaMapping: {_useIpaMapping}");
+            PiperLogger.LogInfo($"[PhonemeEncoder] _isMultilingualModel: {_isMultilingualModel}");
 
             if (_useIpaMapping)
             {
@@ -83,6 +92,10 @@ namespace uPiper.Core.AudioGeneration
                     var exists = _phonemeToId.ContainsKey(key);
                     PiperLogger.LogInfo($"[PhonemeEncoder] IPA key '{key}': {(exists ? "found" : "NOT FOUND")}");
                 }
+            }
+            else if (_isMultilingualModel)
+            {
+                PiperLogger.LogInfo("[PhonemeEncoder] Multilingual model detected, using native phoneme format (no IPA/PUA conversion)");
             }
             else
             {
@@ -162,8 +175,10 @@ namespace uPiper.Core.AudioGeneration
             ["u:"] = "ɯ"
         };
 
-        // PUA to original phoneme reverse mapping
+        // PUA to original phoneme reverse mapping (for single-language models)
         // OpenJTalkToPiperMapping outputs PUA characters, but IPA models need original phonemes first
+        // Note: N variants are collapsed to "N" here for backward compatibility.
+        // For multilingual models, use puaToPhonemeMapMultilingual instead.
         private static readonly Dictionary<string, string> puaToPhonemeMap = new()
         {
             ["\ue000"] = "a:",
@@ -195,15 +210,57 @@ namespace uPiper.Core.AudioGeneration
             // N phoneme variants (piper-plus Issue #207/#210)
             // Map to ASCII "N" (ID 22), NOT IPA "ɴ" (ID 20)
             // Note: These are kept as "N" for backward compatibility with existing models
-            // New models may have separate IDs for each N variant
             ["\ue019"] = "N",  // N_m (bilabial)
             ["\ue01a"] = "N",  // N_n (alveolar)
             ["\ue01b"] = "N",  // N_ng (velar)
             ["\ue01c"] = "N"   // N_uvular
         };
 
+        // PUA to original phoneme reverse mapping (for multilingual models)
+        // Preserves distinct N variant identities so the multilingual model can use separate IDs
+        private static readonly Dictionary<string, string> puaToPhonemeMapMultilingual = new()
+        {
+            ["\ue000"] = "a:",
+            ["\ue001"] = "i:",
+            ["\ue002"] = "u:",
+            ["\ue003"] = "e:",
+            ["\ue004"] = "o:",
+            ["\ue005"] = "cl",
+            ["\ue006"] = "ky",
+            ["\ue007"] = "kw",
+            ["\ue008"] = "gy",
+            ["\ue009"] = "gw",
+            ["\ue00a"] = "ty",
+            ["\ue00b"] = "dy",
+            ["\ue00c"] = "py",
+            ["\ue00d"] = "by",
+            ["\ue00e"] = "ch",
+            ["\ue00f"] = "ts",
+            ["\ue010"] = "sh",
+            ["\ue011"] = "zy",
+            ["\ue012"] = "hy",
+            ["\ue013"] = "ny",
+            ["\ue014"] = "my",
+            ["\ue015"] = "ry",
+            // Extended question markers (piper-plus #210)
+            ["\ue016"] = "?!",
+            ["\ue017"] = "?.",
+            ["\ue018"] = "?~",
+            // N phoneme variants — preserved as distinct for multilingual models
+            ["\ue019"] = "N_m",       // N before m/b/p (bilabial assimilation)
+            ["\ue01a"] = "N_n",       // N before n/t/d/ts/ch (alveolar assimilation)
+            ["\ue01b"] = "N_ng",      // N before k/g (velar assimilation)
+            ["\ue01c"] = "N_uvular"   // N at end/before vowels (uvular)
+        };
+
         // フィールド: IPAモデルかどうかを初期化時に判定
         private readonly bool _useIpaMapping;
+
+        // フィールド: 多言語モデルかどうか (PhonemeType == "multilingual")
+        private readonly bool _isMultilingualModel;
+
+        // Cached PAD ID for intersperse logic
+        private readonly int _padId;
 
         /// <summary>
         /// 音素配列をID配列にエンコードする
@@ -243,11 +300,17 @@ namespace uPiper.Core.AudioGeneration
             var expandedA2 = new List<int>();
             var expandedA3 = new List<int>();
 
-            var isESpeakModel = IsESpeakModel();
+            var needsInterspersePad = NeedsInterspersePadding();
             var hasProsody = prosodyA1 != null || prosodyA2 != null || prosodyA3 != null;
 
             // BOSトークン(^)を常に追加
             AddToken("^", ids, expandedA1, expandedA2, expandedA3, 0, 0, 0, "BOS");
+
+            // PAD after BOS (required by multilingual/espeak models, matches piper-plus post_process_ids)
+            if (needsInterspersePad)
+            {
+                AddPadToken(ids, expandedA1, expandedA2, expandedA3);
+            }
 
             // 各音素をIDに変換
             var phonemeIndex = 0;
@@ -266,26 +329,27 @@ namespace uPiper.Core.AudioGeneration
                 // "ts"の特殊処理
                 if (phonemeToLookup == "ts" && !_phonemeToId.ContainsKey("ts"))
                 {
-                    EncodePhonemeTs(ids, expandedA1, expandedA2, expandedA3, a1, a2, a3, isESpeakModel, hasProsody);
+                    EncodePhonemeTs(ids, expandedA1, expandedA2, expandedA3, a1, a2, a3, needsInterspersePad, hasProsody);
                 }
-                else if (_phonemeToId.TryGetValue(phonemeToLookup, out var id))
+                else if (_phonemeToId.TryGetValue(phonemeToLookup, out var phonemeId))
                 {
-                    ids.Add(id);
+                    ids.Add(phonemeId);
                     expandedA1.Add(a1);
                     expandedA2.Add(a2);
                     expandedA3.Add(a3);
 
                     if (hasProsody)
                     {
-                        PiperLogger.LogDebug($"Phoneme '{phoneme}' -> ID {id}, prosody=({a1},{a2},{a3})");
+                        PiperLogger.LogDebug($"Phoneme '{phoneme}' -> ID {phonemeId}, prosody=({a1},{a2},{a3})");
                     }
                     else
                     {
-                        PiperLogger.LogDebug($"Phoneme '{phoneme}' -> ID {id}");
+                        PiperLogger.LogDebug($"Phoneme '{phoneme}' -> ID {phonemeId}");
                     }
 
-                    // eSpeak方式では各音素の後にPADを追加
-                    if (isESpeakModel)
+                    // eSpeak/multilingual方式では各音素の後にPADを追加
+                    // Skip if the phoneme itself is already PAD (ID 0) to prevent triple-zero sequences
+                    if (needsInterspersePad && phonemeId != _padId)
                     {
                         AddPadToken(ids, expandedA1, expandedA2, expandedA3);
                     }
@@ -322,7 +386,7 @@ namespace uPiper.Core.AudioGeneration
                 expandedA3.Add(0);
             }
 
-            var modelType = !isESpeakModel ? "Japanese/OpenJTalk" : "eSpeak";
+            var modelType = !needsInterspersePad ? "Japanese/OpenJTalk" : (_isMultilingualModel ? "Multilingual" : "eSpeak");
             if (hasProsody)
             {
                 PiperLogger.LogInfo($"Encoded {phonemes.Length} phonemes with prosody to {ids.Count} IDs (model type: {modelType})");
@@ -342,13 +406,15 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// モデルがeSpeak方式かどうかを判定
+        /// モデルがintersperse padding（音素間PAD挿入）を必要とするかを判定。
+        /// espeak方式およびmultilingual方式の場合にtrue。
         /// </summary>
-        private bool IsESpeakModel()
+        private bool NeedsInterspersePadding()
         {
-            return !string.IsNullOrEmpty(_config.PhonemeType)
-                ? _config.PhonemeType.Equals("espeak", StringComparison.OrdinalIgnoreCase)
-                : !(_config.VoiceId != null && _config.VoiceId.Contains("ja_JP"));
+            if (!string.IsNullOrEmpty(_config.PhonemeType))
+                return _config.PhonemeType.Equals("espeak", StringComparison.OrdinalIgnoreCase)
+                    || _config.PhonemeType.Equals("multilingual", StringComparison.OrdinalIgnoreCase);
+            return !(_config.VoiceId != null && _config.VoiceId.Contains("ja_JP"));
         }
 
         /// <summary>
@@ -356,6 +422,14 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         private string MapPhoneme(string phoneme)
         {
+            // Multilingual models: phonemes are already in the model's native format
+            // (PUA chars for multi-char phonemes, IPA chars for single-char phonemes).
+            // No IPA<->PUA conversion needed — just pass through directly.
+            if (_isMultilingualModel)
+            {
+                return phoneme;
+            }
+
             if (_useIpaMapping)
             {
                 // For IPA models: First convert PUA back to original phoneme, then to IPA
@@ -425,7 +499,7 @@ namespace uPiper.Core.AudioGeneration
         /// "ts"音素を"t"+"s"に分割してエンコード
         /// </summary>
         private void EncodePhonemeTs(List<int> ids, List<int> a1, List<int> a2, List<int> a3,
-            int prosodyA1, int prosodyA2, int prosodyA3, bool isESpeakModel, bool hasProsody)
+            int prosodyA1, int prosodyA2, int prosodyA3, bool needsInterspersePad, bool hasProsody)
         {
             if (_phonemeToId.TryGetValue("t", out var tId) && _phonemeToId.TryGetValue("s", out var sId))
             {
@@ -443,7 +517,7 @@ namespace uPiper.Core.AudioGeneration
                     PiperLogger.LogDebug($"Split 'ts' -> 't' ID {tId}");
                 }
 
-                if (isESpeakModel)
+                if (needsInterspersePad)
                 {
                     AddPadToken(ids, a1, a2, a3);
                 }
@@ -462,7 +536,7 @@ namespace uPiper.Core.AudioGeneration
                     PiperLogger.LogDebug($"Split 'ts' -> 's' ID {sId}");
                 }
 
-                if (isESpeakModel)
+                if (needsInterspersePad)
                 {
                     AddPadToken(ids, a1, a2, a3);
                 }
