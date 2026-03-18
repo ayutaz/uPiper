@@ -27,6 +27,8 @@ namespace uPiper.Core.Platform
         private static extern void IndexedDB_Delete(string key);
 #endif
 
+        // NOTE: No locking needed. WebGL is single-threaded (no Task.Run, no thread pool).
+        // All access to _nextCallbackId and the dictionaries occurs on the main thread.
         private static int _nextCallbackId;
         private static readonly Dictionary<int, TaskCompletionSource<bool>> StoreTasks = new();
         private static readonly Dictionary<int, TaskCompletionSource<byte[]>> LoadTasks = new();

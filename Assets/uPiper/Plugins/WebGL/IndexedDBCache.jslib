@@ -70,6 +70,9 @@ var IndexedDBCacheLib = {
         var dataLength = data.length;
         var bufferPtr = _malloc(dataLength);
         HEAPU8.set(data, bufferPtr);
+        // NOTE: SendMessage is synchronous in Unity WebGL (single-threaded JS).
+        // The C# handler (Marshal.Copy) completes before _free executes,
+        // so this is NOT a use-after-free.
         SendMessage(IndexedDBCacheState.callbackGameObject, "OnLoadComplete", callbackId + "|" + bufferPtr + "|" + dataLength);
         _free(bufferPtr);
       };

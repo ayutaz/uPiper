@@ -477,9 +477,21 @@ namespace uPiper.Core
                 return _config?.DefaultLanguage ?? "ja";
 
             var languages = GetSupportedLanguages();
+            // Resolve the default Latin language from supported languages.
+            // DefaultLanguage may be non-Latin (e.g. "ja"), which would cause
+            // Latin text to be misclassified. Pick the first supported Latin language instead.
+            var defaultLatin = "en";
+            for (var i = 0; i < languages.Count; i++)
+            {
+                if (Phonemizers.Multilingual.LanguageConstants.IsLatinLanguage(languages[i]))
+                {
+                    defaultLatin = languages[i];
+                    break;
+                }
+            }
             var detector = new Phonemizers.Multilingual.UnicodeLanguageDetector(
                 languages,
-                _config?.DefaultLanguage ?? "en");
+                defaultLatin);
 
             var segments = detector.SegmentText(text);
             if (segments.Count == 0)
@@ -504,6 +516,36 @@ namespace uPiper.Core
                 }
             }
             return primary;
+        }
+
+        /// <summary>
+        /// Resolves a language code to a numeric language ID using the current voice config's LanguageIdMap.
+        /// Falls back to DefaultLanguage's ID when the detected language is not in the map,
+        /// rather than hardcoding 0 (Japanese).
+        /// </summary>
+        private int ResolveLanguageId(string languageCode)
+        {
+            if (_currentVoiceConfig?.LanguageIdMap != null &&
+                _currentVoiceConfig.LanguageIdMap.TryGetValue(languageCode, out var lid))
+            {
+                return lid;
+            }
+
+            // Fallback: use DefaultLanguage's ID instead of hardcoded 0
+            var defaultLang = _config?.DefaultLanguage ?? "ja";
+            if (_currentVoiceConfig?.LanguageIdMap != null &&
+                _currentVoiceConfig.LanguageIdMap.TryGetValue(defaultLang, out var defaultLid))
+            {
+                PiperLogger.LogWarning(
+                    "Language '{0}' not found in LanguageIdMap, falling back to DefaultLanguage '{1}' (lid={2})",
+                    languageCode, defaultLang, defaultLid);
+                return defaultLid;
+            }
+
+            PiperLogger.LogWarning(
+                "Language '{0}' not found in LanguageIdMap and DefaultLanguage '{1}' also missing, using lid=0",
+                languageCode, defaultLang);
+            return 0;
         }
 
         #endregion
@@ -558,12 +600,7 @@ namespace uPiper.Core
             if (_inferenceGenerator != null && _inferenceGenerator.SupportsLanguageId)
             {
                 var detectedLang = DetectLanguage(text);
-                int languageId = 0;
-                if (_currentVoiceConfig?.LanguageIdMap != null &&
-                    _currentVoiceConfig.LanguageIdMap.TryGetValue(detectedLang, out var lid))
-                {
-                    languageId = lid;
-                }
+                var languageId = ResolveLanguageId(detectedLang);
 
                 PiperLogger.LogDebug($"[AutoMultilingual] Detected language '{detectedLang}' (lid={languageId}) for text: {text}");
                 return await GenerateAudioWithMultilingualAsync(text, languageId, cancellationToken: cancellationToken);

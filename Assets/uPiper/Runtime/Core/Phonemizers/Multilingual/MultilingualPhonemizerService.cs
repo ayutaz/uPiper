@@ -265,24 +265,23 @@ namespace uPiper.Core.Phonemizers.Multilingual
         }
 
         /// <inheritdoc/>
-        public Task<Dictionary<string, PhonemeResult>> PhonemizeBatchAsync(
+        public async Task<Dictionary<string, PhonemeResult>> PhonemizeBatchAsync(
             Dictionary<string, string> textsByLanguage,
             CancellationToken cancellationToken = default)
         {
-            var tasks = textsByLanguage.Select(kvp =>
-                PhonemizeWithFallbackAsync(kvp.Value, kvp.Key, cancellationToken)
-                    .ContinueWith(t => new { Language = kvp.Key, t.Result })
+            var keys = textsByLanguage.Keys.ToArray();
+            var tasks = keys.Select(key =>
+                PhonemizeWithFallbackAsync(textsByLanguage[key], key, cancellationToken)
             ).ToArray();
 
-            return Task.WhenAll(tasks).ContinueWith(t =>
+            var phonemeResults = await Task.WhenAll(tasks);
+
+            var results = new Dictionary<string, PhonemeResult>();
+            for (var i = 0; i < keys.Length; i++)
             {
-                var results = new Dictionary<string, PhonemeResult>();
-                foreach (var item in t.Result)
-                {
-                    results[item.Language] = item.Result;
-                }
-                return results;
-            });
+                results[keys[i]] = phonemeResults[i];
+            }
+            return results;
         }
 
         /// <inheritdoc/>

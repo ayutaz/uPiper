@@ -8,13 +8,14 @@ namespace uPiper.Core.Phonemizers.Multilingual
     /// Language IDs match the multilingual ONNX model's lid (language_id) input tensor.
     /// The mapping is defined in piper-plus preprocess.py as:
     /// {lang: idx for idx, lang in enumerate(lang_parts)}
-    /// where lang_parts = ["ja", "en", "zh", "es", "fr", "pt"] for the 6-language model.
+    /// where lang_parts = ["ja", "en", "zh", "es", "fr", "pt"] for the current 6-language model.
+    /// Korean (ko, ID=6) is defined here for forward compatibility with future models.
     /// </summary>
     public static class LanguageConstants
     {
         // ── Language IDs matching the multilingual ONNX model's lid input ────
 
-        /// <summary>Language ID for Japanese (ja). Always 0 in the standard 6-language model.</summary>
+        /// <summary>Language ID for Japanese (ja). Always 0 in multilingual models.</summary>
         public const int LanguageIdJapanese = 0;
 
         /// <summary>Language ID for English (en).</summary>
@@ -60,7 +61,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
         // ── Language groupings ──────────────────────────────────────────────
 
-        /// <summary>All supported language codes.</summary>
+        /// <summary>All supported language codes (7 languages, including ko for forward compatibility).</summary>
         public static readonly string[] AllLanguages = { "ja", "en", "zh", "es", "fr", "pt", "ko" };
 
         /// <summary>
