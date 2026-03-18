@@ -24,15 +24,17 @@ namespace uPiper.Core.Phonemizers.Backend.Flite
         public override string Name => "Flite";
         public override string Version => "1.0.0";
         public override string License => "MIT/BSD";
-        public override string[] SupportedLanguages => new[] { "en-US", "en-GB", "en-IN" };
+        public override string[] SupportedLanguages => new[] { "en", "en-US", "en-GB", "en-IN" };
 
         public FlitePhonemizerBackend()
         {
             lexicon = new FliteLexicon();
             lts = new FliteLetterToSound();
+            var usVoice = new FliteUSEnglishVoice();
             voices = new Dictionary<string, IFliteVoice>
             {
-                ["en-US"] = new FliteUSEnglishVoice(),
+                ["en"] = usVoice,
+                ["en-US"] = usVoice,
                 ["en-GB"] = new FliteBritishEnglishVoice(),
                 ["en-IN"] = new FliteIndianEnglishVoice()
             };

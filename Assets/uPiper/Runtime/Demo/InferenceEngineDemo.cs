@@ -651,9 +651,8 @@ namespace uPiper.Demo
 
             try
             {
-                // モデル名を取得
-                var modelNames = new[] { "multilingual-test-medium" };
-                var modelName = modelNames[_modelDropdown?.value ?? 0];
+                // モデル名を取得（多言語モデルは1つのみ）
+                var modelName = "multilingual-test-medium";
                 PiperLogger.LogDebug($"Selected model: {modelName}");
 
                 // モデルをロード
