@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+// Note: DotNetG2P.Chinese embedded resources don't work in Unity (noEngineReferences: true).
+// Using built-in PinyinData lookup table instead.
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -10,8 +12,8 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
 {
     /// <summary>
     /// Chinese (Mandarin) phonemizer backend for uPiper TTS.
-    /// Converts Chinese text to IPA phonemes via pinyin intermediate representation.
-    /// Ported from piper-plus python implementation (chinese.py).
+    /// Uses DotNetG2P.Chinese (41,923 char + 47,111 phrase dictionary) for accurate
+    /// pinyin conversion, matching piper-plus ChinesePhonemizer output.
     /// </summary>
     public class ChinesePhonemizerBackend : PhonemizerBackendBase
     {
@@ -218,6 +220,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
 
         /// <summary>
         /// Core phonemization with prosody, mirroring python phonemize_chinese_with_prosody.
+        /// Uses built-in PinyinData lookup table for char→pinyin conversion.
         /// </summary>
         private (List<string> phonemes, List<int> a1, List<int> a2, List<int> a3)
             PhonemizeWithProsody(string text)
@@ -227,174 +230,83 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
             var prosodyA2 = new List<int>();
             var prosodyA3 = new List<int>();
 
-            // Build word groups for prosody
             var wordInfo = BuildWordInfo(text);
-
-            // ---- First pass: extract char-to-pinyin and tones ----
             var charTones = new Dictionary<int, (string normalized, int tone)>();
             var chineseIndices = new List<int>();
 
             for (int i = 0; i < text.Length; i++)
             {
                 char ch = text[i];
-                if (!IsChinese(ch))
-                    continue;
-
+                if (!IsChinese(ch)) continue;
                 chineseIndices.Add(i);
 
-                string pinyin;
-                if (PinyinData.CharToPinyin.TryGetValue(ch, out pinyin))
+                if (PinyinData.CharToPinyin.TryGetValue(ch, out var pinyin))
                 {
                     int tone = 5;
                     string syllableBase;
-                    if (pinyin.Length > 0 && char.IsDigit(pinyin[pinyin.Length - 1]))
+                    if (pinyin.Length > 0 && char.IsDigit(pinyin[^1]))
                     {
-                        tone = pinyin[pinyin.Length - 1] - '0';
-                        syllableBase = pinyin.Substring(0, pinyin.Length - 1);
+                        tone = pinyin[^1] - '0';
+                        syllableBase = pinyin[..^1];
                     }
                     else
                     {
                         syllableBase = pinyin;
                     }
-
-                    var normalized = NormalizePinyin(syllableBase);
-                    charTones[i] = (normalized, tone);
+                    charTones[i] = (NormalizePinyin(syllableBase), tone);
                 }
                 else
                 {
                     if (_enableDebugLogging)
-                    {
-                        Debug.LogWarning(
-                            $"[ChinesePhonemizer] Character not in lookup: " +
-                            $"U+{(int)ch:X4} '{ch}'");
-                    }
-                    // Default to neutral tone placeholder
+                        Debug.LogWarning($"[ChinesePhonemizer] Character not in lookup: U+{(int)ch:X4} '{ch}'");
                     charTones[i] = ("", 5);
                 }
             }
 
-            // ---- Apply tone sandhi to consecutive Chinese character sequences ----
             if (chineseIndices.Count > 0)
             {
                 var groups = GroupConsecutiveIndices(chineseIndices);
                 foreach (var group in groups)
                 {
                     var pyTones = new List<(string syllable, int tone)>();
-                    foreach (int idx in group)
-                    {
-                        pyTones.Add(charTones[idx]);
-                    }
-
+                    foreach (int idx in group) pyTones.Add(charTones[idx]);
                     var sandhiResult = ApplyToneSandhi(pyTones);
-                    for (int k = 0; k < group.Count; k++)
-                    {
-                        charTones[group[k]] = sandhiResult[k];
-                    }
+                    for (int k = 0; k < group.Count; k++) charTones[group[k]] = sandhiResult[k];
                 }
             }
 
-            // ---- Second pass: generate phonemes ----
             for (int charIdx = 0; charIdx < text.Length; charIdx++)
             {
                 char ch = text[charIdx];
 
-                // Handle Chinese punctuation
                 if (PinyinData.PunctuationMap.TryGetValue(ch, out char mappedPunct))
-                {
-                    phonemes.Add(mappedPunct.ToString());
-                    prosodyA1.Add(0);
-                    prosodyA2.Add(0);
-                    prosodyA3.Add(0);
-                    continue;
-                }
-
-                // Handle Western punctuation
+                { phonemes.Add(mappedPunct.ToString()); prosodyA1.Add(0); prosodyA2.Add(0); prosodyA3.Add(0); continue; }
                 if (PinyinData.PunctuationSet.Contains(ch))
-                {
-                    phonemes.Add(ch.ToString());
-                    prosodyA1.Add(0);
-                    prosodyA2.Add(0);
-                    prosodyA3.Add(0);
-                    continue;
-                }
-
-                // Handle whitespace
+                { phonemes.Add(ch.ToString()); prosodyA1.Add(0); prosodyA2.Add(0); prosodyA3.Add(0); continue; }
                 if (char.IsWhiteSpace(ch))
-                {
-                    phonemes.Add(" ");
-                    prosodyA1.Add(0);
-                    prosodyA2.Add(0);
-                    prosodyA3.Add(0);
-                    continue;
-                }
-
-                // Handle digits (pass through)
+                { phonemes.Add(" "); prosodyA1.Add(0); prosodyA2.Add(0); prosodyA3.Add(0); continue; }
                 if (char.IsDigit(ch))
-                {
-                    phonemes.Add(ch.ToString());
-                    prosodyA1.Add(0);
-                    prosodyA2.Add(0);
-                    prosodyA3.Add(1);
-                    continue;
-                }
-
-                // Handle non-Chinese characters (pass through if alphabetic)
+                { phonemes.Add(ch.ToString()); prosodyA1.Add(0); prosodyA2.Add(0); prosodyA3.Add(1); continue; }
                 if (!IsChinese(ch))
-                {
-                    if (char.IsLetter(ch))
-                    {
-                        phonemes.Add(ch.ToString());
-                        prosodyA1.Add(0);
-                        prosodyA2.Add(0);
-                        prosodyA3.Add(1);
-                    }
-                    continue;
-                }
+                { if (char.IsLetter(ch)) { phonemes.Add(ch.ToString()); prosodyA1.Add(0); prosodyA2.Add(0); prosodyA3.Add(1); } continue; }
 
-                // ---- Chinese character: use tone-sandhi-corrected data ----
-                if (!charTones.TryGetValue(charIdx, out var toneData))
-                    continue;
+                if (!charTones.TryGetValue(charIdx, out var toneData)) continue;
+                if (string.IsNullOrEmpty(toneData.normalized)) continue;
 
                 var normalized = toneData.normalized;
                 int toneVal = toneData.tone;
-
-                // Skip characters not in lookup (empty normalized)
-                if (string.IsNullOrEmpty(normalized))
-                    continue;
-
-                // Erhua handling
                 string erhuaToken = null;
-                if (normalized.Length > 1
-                    && normalized.EndsWith("r")
-                    && normalized != "er")
-                {
-                    erhuaToken = "\u025a"; // r-colored schwa
-                    normalized = normalized.Substring(0, normalized.Length - 1);
-                }
+                if (normalized.Length > 1 && normalized.EndsWith("r") && normalized != "er")
+                { erhuaToken = "\u025a"; normalized = normalized[..^1]; }
 
-                // Convert to IPA tokens
                 var ipaTokens = PinyinToIpa(normalized, toneVal);
-                if (erhuaToken != null)
-                {
-                    InsertErhua(ipaTokens, erhuaToken);
-                }
+                if (erhuaToken != null) InsertErhua(ipaTokens, erhuaToken);
 
-                // Prosody: a1=tone, a2=position in word, a3=word length
-                int sylPos = 1;
-                int wordLen = 1;
-                if (wordInfo.TryGetValue(charIdx, out var wInfo))
-                {
-                    sylPos = wInfo.position;
-                    wordLen = wInfo.length;
-                }
+                int sylPos = 1, wordLen = 1;
+                if (wordInfo.TryGetValue(charIdx, out var wInfo)) { sylPos = wInfo.position; wordLen = wInfo.length; }
 
                 foreach (var token in ipaTokens)
-                {
-                    phonemes.Add(MapToPua(token));
-                    prosodyA1.Add(toneVal);
-                    prosodyA2.Add(sylPos);
-                    prosodyA3.Add(wordLen);
-                }
+                { phonemes.Add(MapToPua(token)); prosodyA1.Add(toneVal); prosodyA2.Add(sylPos); prosodyA3.Add(wordLen); }
             }
 
             return (phonemes, prosodyA1, prosodyA2, prosodyA3);
