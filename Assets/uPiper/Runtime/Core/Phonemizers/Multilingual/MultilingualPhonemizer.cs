@@ -335,6 +335,14 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     {
                         var result = await backend.PhonemizeAsync(segText, lang, null, cancellationToken);
                         segPhonemes = result?.Phonemes ?? Array.Empty<string>();
+
+                        // English Flite backend outputs ARPABET phonemes — convert to IPA
+                        // so they match the multilingual model's phoneme_id_map
+                        if (lang == "en" && segPhonemes.Length > 0)
+                        {
+                            segPhonemes = ArpabetToIPAConverter.ConvertAll(segPhonemes);
+                        }
+
                         segA1 = result?.ProsodyA1 ?? new int[segPhonemes.Length];
                         segA2 = result?.ProsodyA2 ?? new int[segPhonemes.Length];
                         segA3 = result?.ProsodyA3 ?? new int[segPhonemes.Length];
