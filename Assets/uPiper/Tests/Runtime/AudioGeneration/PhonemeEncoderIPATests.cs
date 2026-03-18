@@ -7,7 +7,7 @@ using uPiper.Core.AudioGeneration;
 namespace uPiper.Tests.Runtime.AudioGeneration
 {
     /// <summary>
-    /// tsukuyomi-chanモデル用のIPAマッピングテスト
+    /// IPA対応モデル用のIPAマッピングテスト
     /// </summary>
     [TestFixture]
     public class PhonemeEncoderIPATests
@@ -18,7 +18,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         [SetUp]
         public void Setup()
         {
-            // tsukuyomi-chanモデルのphoneme_id_mapを再現
+            // IPA対応モデルのphoneme_id_mapを再現
             _config = new PiperVoiceConfig
             {
                 VoiceId = "multilingual-test-medium",
@@ -52,7 +52,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         [Test]
         public void Constructor_WithIPAPhonemes_DetectsIPAModel()
         {
-            // tsukuyomi-chanはIPA文字を含むのでIPA判定される
+            // phoneme_id_mapにIPA文字を含むのでIPA判定される
             Assert.IsTrue(_encoder.ContainsPhoneme("ɕ"), "IPA判定キー 'ɕ' should be recognized");
             Assert.IsTrue(_encoder.ContainsPhoneme("q"), "促音 'q' should be recognized");
             Assert.IsTrue(_encoder.ContainsPhoneme("N"), "撥音 'N' should be recognized");
@@ -113,7 +113,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
         /// <summary>
         /// ts(「つ」の子音)が正しく処理されることを確認
-        /// tsukuyomi-chanモデルには"ts"音素がないため、t+sに分解されるべき
+        /// IPA対応モデルには"ts"音素がないため、t+sに分解されるべき
         /// </summary>
         [Test]
         public void Encode_TsPhoneme_SplitsToTAndS()

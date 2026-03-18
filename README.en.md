@@ -25,7 +25,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 ## Features
 
 - High-quality speech synthesis (piper-plus based)
-- Multi-language support (Japanese, English, Chinese, Spanish, French, Portuguese)
+- Multi-language support (Japanese, English, Chinese, Spanish, French, Portuguese, Korean)
 - Fast inference with Unity AI Inference Engine
 - High-precision Japanese phonemization with dot-net-g2p (MeCab dictionary, all platforms)
 - GPU inference support (GPUCompute/GPUPixel)
@@ -36,7 +36,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 
 | Model Name | Language | Prosody | Description |
 |-----------|----------|---------|-------------|
-| multilingual-test-medium | Multilingual (ja/en/zh/es/fr/pt) | Yes | 6-language multilingual model (Prosody-enabled) |
+| multilingual-test-medium | Multilingual (ja/en/zh/es/fr/pt/ko) | Yes | 7-language multilingual model (Prosody-enabled) |
 
 ## Requirements
 * Unity 6000.0.58f2

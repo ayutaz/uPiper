@@ -224,7 +224,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         }
 
         /// <summary>
-        /// Build a mock tsukuyomi-chan (IPA) phoneme_id_map for backward compatibility.
+        /// Build a mock IPA-based Japanese phoneme_id_map for backward compatibility.
         /// </summary>
         private static Dictionary<string, int> BuildTsukuyomiModelMap()
         {
@@ -283,7 +283,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             };
             _espeakEncoder = new PhonemeEncoder(_espeakConfig);
 
-            // tsukuyomi-chan IPA model encoder
+            // IPA-based Japanese model encoder
             _tsukuyomiConfig = new PiperVoiceConfig
             {
                 VoiceId = "multilingual-test-medium",
@@ -546,7 +546,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         #region Backward compatibility
 
         /// <summary>
-        /// Verify that existing Japanese OpenJTalk model (ja_JP-test-medium) still encodes
+        /// Verify that existing Japanese OpenJTalk model still encodes
         /// correctly without intersperse PAD, preserving existing behaviour.
         /// </summary>
         [Test]
@@ -576,7 +576,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         }
 
         /// <summary>
-        /// Verify that existing tsukuyomi-chan IPA model still maps PUA input to IPA phonemes
+        /// Verify that existing IPA-based Japanese model still maps PUA input to IPA phonemes
         /// correctly via puaToPhonemeMap -> multiCharToIpaMap pipeline.
         /// </summary>
         [Test]
@@ -599,7 +599,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Verify no PAD between phonemes (OpenJTalk model)
             Assert.IsFalse(ids.Contains(0),
-                "tsukuyomi-chan (OpenJTalk) should not insert PAD between phonemes");
+                "IPA-based Japanese (OpenJTalk) model should not insert PAD between phonemes");
         }
 
         #endregion

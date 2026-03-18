@@ -110,10 +110,10 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void FixedPuaMapping_TotalCount_Is87()
+        public void FixedPuaMapping_TotalCount_Is88()
         {
-            Assert.AreEqual(87, PuaTokenMapper.FixedPuaMapping.Count,
-                "FixedPuaMapping should contain exactly 87 entries");
+            Assert.AreEqual(88, PuaTokenMapper.FixedPuaMapping.Count,
+                "FixedPuaMapping should contain exactly 88 entries");
         }
 
         [Test]

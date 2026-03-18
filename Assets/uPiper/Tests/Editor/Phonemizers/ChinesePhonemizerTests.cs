@@ -50,7 +50,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void Properties_Name_ReturnsChinese()
         {
             EnsureAvailable();
-            Assert.AreEqual("Chinese", _phonemizer.Name);
+            Assert.AreEqual("ChinesePhonemizer", _phonemizer.Name);
         }
 
         [Test]
