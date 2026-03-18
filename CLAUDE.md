@@ -29,7 +29,7 @@ uPiperは[piper-plus](https://github.com/ayutaz/piper-plus)ベースの高品質
 
 ### Unity テスト実行
 ```bash
-# GitHub Actions経由（EditModeテストのみ）
+# GitHub Actions経由（EditMode + PlayModeテスト）
 # .github/workflows/unity-tests.yml 参照
 
 # Unity Editor内
@@ -53,7 +53,7 @@ dotnet format --verify-no-changes
     ↓
 MultilingualPhonemizer (言語ルーティング)
     ├─ ja: DotNetG2PPhonemizer (dot-net-g2p, MeCab辞書)
-    ├─ en: FliteLTSPhonemizerBackend (純粋C#)
+    ├─ en: FlitePhonemizerBackend (純粋C#)
     ├─ es: SpanishPhonemizerBackend (ルールベースG2P)
     ├─ fr: FrenchPhonemizerBackend (ルールベースG2P)
     ├─ pt: PortuguesePhonemizerBackend (ルールベースG2P)
@@ -90,7 +90,9 @@ AudioClip出力 (22050Hz, float32)
 |--------------|------|------|
 | `IPiperTTS` / `PiperTTS` | `Runtime/Core/` | メインインターフェース |
 | `IPhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/` | 音素化バックエンド抽象 |
-| `FliteLTSPhonemizerBackend` | 同上 | 英語音素化（C#） |
+| `FlitePhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/Flite/` | 英語音素化（C#） |
+| `MultilingualPhonemizer` | `Runtime/Core/Phonemizers/Multilingual/` | 多言語テキスト分割・バックエンド委譲 |
+| `UnicodeLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Unicode文字範囲ベース言語検出 |
 | `DotNetG2PPhonemizer` | `Runtime/Core/Phonemizers/Implementations/` | 日本語G2P（dot-net-g2p, Prosody対応） |
 | `CustomDictionary` | `Runtime/Core/Phonemizers/` | カスタム辞書（技術用語・固有名詞の読み変換） |
 | `PiperConfig` | `Runtime/Core/` | 設定管理（GPU, キャッシュ, バックエンド選択） |

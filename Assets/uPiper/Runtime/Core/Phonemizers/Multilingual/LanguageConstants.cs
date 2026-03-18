@@ -76,52 +76,29 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// </summary>
         public static readonly string[] CjkLanguages = { "ja", "zh", "ko" };
 
-        // ── Lookup dictionaries (lazy-initialized for zero-cost when unused) ─
+        // ── Lookup dictionaries ───────────────────────────────────────────
 
-        private static Dictionary<string, int> _codeToId;
-        private static Dictionary<int, string> _idToCode;
-
-        private static Dictionary<string, int> CodeToId
+        private static readonly Dictionary<string, int> CodeToId = new(7)
         {
-            get
-            {
-                if (_codeToId == null)
-                {
-                    _codeToId = new Dictionary<string, int>(7)
-                    {
-                        { CodeJapanese, LanguageIdJapanese },
-                        { CodeEnglish, LanguageIdEnglish },
-                        { CodeChinese, LanguageIdChinese },
-                        { CodeSpanish, LanguageIdSpanish },
-                        { CodeFrench, LanguageIdFrench },
-                        { CodePortuguese, LanguageIdPortuguese },
-                        { CodeKorean, LanguageIdKorean }
-                    };
-                }
-                return _codeToId;
-            }
-        }
+            [CodeJapanese] = LanguageIdJapanese,
+            [CodeEnglish] = LanguageIdEnglish,
+            [CodeChinese] = LanguageIdChinese,
+            [CodeSpanish] = LanguageIdSpanish,
+            [CodeFrench] = LanguageIdFrench,
+            [CodePortuguese] = LanguageIdPortuguese,
+            [CodeKorean] = LanguageIdKorean
+        };
 
-        private static Dictionary<int, string> IdToCode
+        private static readonly Dictionary<int, string> IdToCode = new(7)
         {
-            get
-            {
-                if (_idToCode == null)
-                {
-                    _idToCode = new Dictionary<int, string>(7)
-                    {
-                        { LanguageIdJapanese, CodeJapanese },
-                        { LanguageIdEnglish, CodeEnglish },
-                        { LanguageIdChinese, CodeChinese },
-                        { LanguageIdSpanish, CodeSpanish },
-                        { LanguageIdFrench, CodeFrench },
-                        { LanguageIdPortuguese, CodePortuguese },
-                        { LanguageIdKorean, CodeKorean }
-                    };
-                }
-                return _idToCode;
-            }
-        }
+            [LanguageIdJapanese] = CodeJapanese,
+            [LanguageIdEnglish] = CodeEnglish,
+            [LanguageIdChinese] = CodeChinese,
+            [LanguageIdSpanish] = CodeSpanish,
+            [LanguageIdFrench] = CodeFrench,
+            [LanguageIdPortuguese] = CodePortuguese,
+            [LanguageIdKorean] = CodeKorean
+        };
 
         // ── Methods ─────────────────────────────────────────────────────────
 

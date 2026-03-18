@@ -17,9 +17,6 @@ namespace uPiper.Core.Phonemizers.Multilingual
         private readonly bool _hasJa;
         private readonly bool _hasZh;
         private readonly bool _hasKo;
-        private readonly bool _hasEs;
-        private readonly bool _hasFr;
-        private readonly bool _hasPt;
 
         /// <summary>
         /// Gets the default Latin language code (e.g., "en").
@@ -46,9 +43,6 @@ namespace uPiper.Core.Phonemizers.Multilingual
             _hasJa = ContainsLanguage("ja");
             _hasZh = ContainsLanguage("zh");
             _hasKo = ContainsLanguage("ko");
-            _hasEs = ContainsLanguage("es");
-            _hasFr = ContainsLanguage("fr");
-            _hasPt = ContainsLanguage("pt");
         }
 
         // ── Static character classifiers ──────────────────────────────────────
@@ -94,18 +88,6 @@ namespace uPiper.Core.Phonemizers.Multilingual
                (ch >= '\uFF41' && ch <= '\uFF5A');
 
         /// <summary>
-        /// Returns true if the character is a Japanese-specific punctuation mark:
-        /// CJK Symbols and Punctuation (U+3000-303F),
-        /// or Fullwidth Forms (U+FF00-FF20, U+FF3B-FF40, U+FF5B-FFEF).
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsJapanesePunct(char ch)
-            => (ch >= '\u3000' && ch <= '\u303F') ||
-               (ch >= '\uFF00' && ch <= '\uFF20') ||
-               (ch >= '\uFF3B' && ch <= '\uFF40') ||
-               (ch >= '\uFF5B' && ch <= '\uFFEF');
-
-        /// <summary>
         /// Returns true if the character is a Latin letter:
         /// A-Z, a-z, Latin-1 Supplement (U+00C0-00D6, U+00D8-00F6, U+00F8-00FF),
         /// Latin Extended-A (U+0100-017F), or Latin Extended-B (U+0180-024F).
@@ -136,8 +118,6 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
         /// <summary>
         /// Returns true if the character is a CJK punctuation or fullwidth form character.
-        /// This is the same range as IsJapanesePunct but named neutrally for use when
-        /// multiple CJK languages are supported.
         /// CJK Symbols and Punctuation (U+3000-303F),
         /// or Fullwidth Forms (U+FF00-FF20, U+FF3B-FF40, U+FF5B-FFEF).
         /// </summary>
@@ -284,7 +264,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 result.Add((finalLang, currentText.ToString()));
             }
 
-            // Fallback: if no language-specific chars were found, use default
+            // Defensive fallback: this branch is unreachable for non-empty text because the
+            // "Flush remaining characters" block above always emits at least one segment when
+            // text.Length > 0. Kept as a safety net against future refactoring.
             if (result.Count == 0 && !string.IsNullOrEmpty(text))
                 result.Add((_defaultLatinLanguage, text));
 

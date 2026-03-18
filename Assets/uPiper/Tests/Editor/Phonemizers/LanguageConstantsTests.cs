@@ -167,7 +167,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void GetLanguageId_Null_ThrowsException()
         {
-            // Null key causes either ArgumentNullException (from Dictionary) or ArgumentException.
+            // Null key causes ArgumentNullException from Dictionary.TryGetValue(null).
             Assert.Throws<ArgumentNullException>(() => LanguageConstants.GetLanguageId(null));
         }
 

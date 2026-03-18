@@ -112,7 +112,8 @@ namespace uPiper.Core.Phonemizers.Backend.Spanish
         public override string License => "MIT";
 
         /// <inheritdoc/>
-        public override string[] SupportedLanguages => new[] { "es", "es-ES", "es-MX" };
+        private static readonly string[] _supportedLanguages = { "es", "es-ES", "es-MX" };
+        public override string[] SupportedLanguages => _supportedLanguages;
 
         /// <inheritdoc/>
         protected override Task<bool> InitializeInternalAsync(
@@ -363,7 +364,7 @@ namespace uPiper.Core.Phonemizers.Backend.Spanish
 
         /// <summary>
         /// Split a word into grapheme units respecting Spanish digraphs.
-        /// Multi-character graphemes (ch, ll, rr, qu, gu, gu, sc before e/i)
+        /// Multi-character graphemes (ch, ll, rr, qu, gu, gü, sc before e/i)
         /// are kept as single units so that syllabification and the
         /// char-to-phoneme walker never tear them apart.
         /// </summary>
@@ -1104,6 +1105,10 @@ namespace uPiper.Core.Phonemizers.Backend.Spanish
 
             // x -> ks (2 phonemes)
             if (baseStr == "x")
+                return 2;
+
+            // xc -> k + s (2 phonemes)
+            if (baseStr == "xc")
                 return 2;
 
             // Everything else (single chars, ch, ll, rr, qu, gu) -> 1

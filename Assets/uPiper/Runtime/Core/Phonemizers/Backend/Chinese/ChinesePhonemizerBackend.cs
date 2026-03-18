@@ -28,7 +28,8 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         public override string License => "MIT";
 
         /// <inheritdoc/>
-        public override string[] SupportedLanguages => new[] { "zh", "zh-CN" };
+        private static readonly string[] _supportedLanguages = { "zh", "zh-CN" };
+        public override string[] SupportedLanguages => _supportedLanguages;
 
         /// <summary>
         /// Initializes internal state. Chinese phonemizer uses built-in lookup

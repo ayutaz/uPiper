@@ -32,7 +32,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
     /// <summary>
     /// Multilingual phonemizer that segments text by language and delegates to per-language backends.
     /// Supports Japanese (DotNetG2PPhonemizer) and English (IPhonemizerBackend) out of the box.
-    /// Additional languages (zh, ko, es, fr, pt) will be added in Phase 5.
+    /// Supports 7 languages: ja, en, es, fr, pt, zh, ko.
     /// </summary>
     public class MultilingualPhonemizer : IDisposable
     {
@@ -50,7 +50,14 @@ namespace uPiper.Core.Phonemizers.Multilingual
         private IPhonemizerBackend _ptPhonemizer;  // Portuguese
         private IPhonemizerBackend _zhPhonemizer;  // Chinese
         private IPhonemizerBackend _koPhonemizer;  // Korean
-        private bool _isInitialized;
+        private bool _ownsJa;
+        private bool _ownsEn;
+        private bool _ownsEs;
+        private bool _ownsFr;
+        private bool _ownsPt;
+        private bool _ownsZh;
+        private bool _ownsKo;
+        private volatile bool _isInitialized;
         private bool _disposed;
 
         /// <summary>Whether the phonemizer has been initialized.</summary>
@@ -116,6 +123,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 // Non-WebGL: synchronous initialization in constructor
                 await Task.CompletedTask;
 #endif
+                _ownsJa = true;
             }
 
             // Initialize English phonemizer if needed
@@ -125,6 +133,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 if (await flite.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
                 {
                     _enPhonemizer = flite;
+                    _ownsEn = true;
                     PiperLogger.LogInfo("[MultilingualPhonemizer] English backend initialized: Flite");
                 }
                 else
@@ -133,6 +142,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     if (await ruleBased.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
                     {
                         _enPhonemizer = ruleBased;
+                        _ownsEn = true;
                         PiperLogger.LogInfo("[MultilingualPhonemizer] English backend initialized: RuleBased");
                     }
                     else
@@ -149,6 +159,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 if (await backend.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
                 {
                     _esPhonemizer = backend;
+                    _ownsEs = true;
                     PiperLogger.LogInfo("[MultilingualPhonemizer] Spanish backend initialized");
                 }
                 else
@@ -164,6 +175,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 if (await backend.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
                 {
                     _frPhonemizer = backend;
+                    _ownsFr = true;
                     PiperLogger.LogInfo("[MultilingualPhonemizer] French backend initialized");
                 }
                 else
@@ -179,6 +191,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 if (await backend.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
                 {
                     _ptPhonemizer = backend;
+                    _ownsPt = true;
                     PiperLogger.LogInfo("[MultilingualPhonemizer] Portuguese backend initialized");
                 }
                 else
@@ -194,6 +207,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 if (await backend.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
                 {
                     _zhPhonemizer = backend;
+                    _ownsZh = true;
                     PiperLogger.LogInfo("[MultilingualPhonemizer] Chinese backend initialized");
                 }
                 else
@@ -209,12 +223,21 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 if (await backend.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
                 {
                     _koPhonemizer = backend;
+                    _ownsKo = true;
                     PiperLogger.LogInfo("[MultilingualPhonemizer] Korean backend initialized");
                 }
                 else
                 {
                     PiperLogger.LogWarning("[MultilingualPhonemizer] Failed to initialize Korean backend");
                 }
+            }
+
+            if (_jaPhonemizer == null && _enPhonemizer == null && _esPhonemizer == null &&
+                _frPhonemizer == null && _ptPhonemizer == null && _zhPhonemizer == null &&
+                _koPhonemizer == null)
+            {
+                PiperLogger.LogWarning(
+                    "[MultilingualPhonemizer] Warning: No backends were successfully initialized");
             }
 
             _isInitialized = true;
@@ -320,7 +343,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
                 // For intermediate segments: replace EOS-like markers with neutral "$"
                 // but trim them so the final text only has one EOS marker
-                if (!isLast && segPhonemes.Length > 0)
+                if (!isLast)
                 {
                     var lastToken = segPhonemes[^1];
                     if (EosLikeTokens.Contains(lastToken))
@@ -366,13 +389,13 @@ namespace uPiper.Core.Phonemizers.Multilingual
             if (_disposed)
                 return;
             _disposed = true;
-            _jaPhonemizer?.Dispose();
-            _enPhonemizer?.Dispose();
-            _esPhonemizer?.Dispose();
-            _frPhonemizer?.Dispose();
-            _ptPhonemizer?.Dispose();
-            _zhPhonemizer?.Dispose();
-            _koPhonemizer?.Dispose();
+            if (_ownsJa) _jaPhonemizer?.Dispose();
+            if (_ownsEn) _enPhonemizer?.Dispose();
+            if (_ownsEs) _esPhonemizer?.Dispose();
+            if (_ownsFr) _frPhonemizer?.Dispose();
+            if (_ownsPt) _ptPhonemizer?.Dispose();
+            if (_ownsZh) _zhPhonemizer?.Dispose();
+            if (_ownsKo) _koPhonemizer?.Dispose();
         }
 
         // ── Private helpers ───────────────────────────────────────────────────

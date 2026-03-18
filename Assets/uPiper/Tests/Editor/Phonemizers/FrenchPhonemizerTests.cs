@@ -77,7 +77,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.IsTrue(result.Success);
             // an/am -> nasal alpha (PUA \uE057 for mapped version)
             Assert.IsTrue(
-                result.Phonemes.Any(p => p == "\uE057" || p == "\u0251\u0303" || p == "\u0251\u0303"),
+                result.Phonemes.Any(p => p == "\uE057" || p == "\u0251\u0303"),
                 "France should contain nasal alpha vowel");
         }
 
@@ -299,6 +299,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             var result = Phonemize("");
 
             Assert.IsNotNull(result);
+            Assert.IsFalse(result.Success);
         }
 
         [Test]
@@ -308,6 +309,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                 .GetAwaiter().GetResult();
 
             Assert.IsNotNull(result);
+            Assert.IsFalse(result.Success);
         }
 
         // ── Prosody Output ─────────────────────────────────────────────

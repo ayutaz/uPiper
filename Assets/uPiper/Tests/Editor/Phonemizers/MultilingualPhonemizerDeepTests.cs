@@ -201,9 +201,9 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void ProsodyArrays_ChineseSegment_HasToneInA1()
+        public void ProsodyArrays_ChineseSegment_Aligned()
         {
-            // Chinese backend may produce tone info; verify arrays are aligned
+            // Verify prosody arrays are aligned with phoneme array for Chinese segments
             var zhBackend = new ChinesePhonemizerBackend();
             var initOk = Task.Run(async () => await zhBackend.InitializeAsync())
                 .GetAwaiter().GetResult();
@@ -642,11 +642,11 @@ namespace uPiper.Tests.Editor.Phonemizers
 
             // After dispose, _isInitialized is still true but backends are disposed.
             // Calling PhonemizeWithProsodyAsync should throw when the disposed backend
-            // is invoked (ObjectDisposedException from DotNetG2PPhonemizer or similar).
-            Assert.Throws<Exception>(() =>
+            // is invoked (ObjectDisposedException from DotNetG2PPhonemizer).
+            Assert.Throws<ObjectDisposedException>(() =>
             {
                 Phonemize(phonemizer, "テスト hello");
-            }, "Phonemizing after Dispose should throw due to disposed backends");
+            }, "Phonemizing after Dispose should throw ObjectDisposedException from disposed backends");
         }
 
         // ══════════════════════════════════════════════════════════════════════

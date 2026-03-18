@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -194,7 +193,8 @@ namespace uPiper.Core.Phonemizers.Backend.French
         public override string License => "MIT";
 
         /// <inheritdoc/>
-        public override string[] SupportedLanguages => new[] { "fr", "fr-FR" };
+        private static readonly string[] _supportedLanguages = { "fr", "fr-FR" };
+        public override string[] SupportedLanguages => _supportedLanguages;
 
         /// <inheritdoc/>
         protected override Task<bool> InitializeInternalAsync(

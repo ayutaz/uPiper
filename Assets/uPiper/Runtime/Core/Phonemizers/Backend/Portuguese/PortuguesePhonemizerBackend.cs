@@ -190,7 +190,8 @@ namespace uPiper.Core.Phonemizers.Backend.Portuguese
         public override string License => "MIT";
 
         /// <inheritdoc/>
-        public override string[] SupportedLanguages => new[] { "pt", "pt-BR" };
+        private static readonly string[] _supportedLanguages = { "pt", "pt-BR" };
+        public override string[] SupportedLanguages => _supportedLanguages;
 
         /// <inheritdoc/>
         protected override Task<bool> InitializeInternalAsync(
@@ -870,7 +871,7 @@ namespace uPiper.Core.Phonemizers.Backend.Portuguese
                 if (VowelChars.Contains(ch))
                 {
                     bool isStressed = currentVowelGroup == stressVowelTarget;
-                    char baseVowel = AccentedToBase.ContainsKey(ch) ? AccentedToBase[ch] : ch;
+                    char baseVowel = AccentedToBase.TryGetValue(ch, out var mapped) ? mapped : ch;
 
                     // Check for nasalization: tilde or vowel before n/m + consonant/end
                     // Exception: vowel before "nh" digraph is NOT nasal (nh = palatal nasal)
@@ -960,7 +961,7 @@ namespace uPiper.Core.Phonemizers.Backend.Portuguese
             }
 
             // Apply BR Portuguese post-processing
-            phonemes = RemoveDuplicateNasalCoda(phonemes);
+            stressIdx = RemoveDuplicateNasalCoda(phonemes, stressIdx);
             phonemes = ApplyCodaLVocalization(phonemes);
             phonemes = ApplyBrPostprocessing(phonemes, stressIdx);
 
@@ -977,10 +978,8 @@ namespace uPiper.Core.Phonemizers.Backend.Portuguese
         /// consonant is redundant because the nasality is already encoded in the vowel.
         /// Example: "bom" might produce [b, nasal-o, m] -> [b, nasal-o]
         /// </summary>
-        private static List<string> RemoveDuplicateNasalCoda(List<string> phonemes)
+        private static int RemoveDuplicateNasalCoda(List<string> result, int stressIdx)
         {
-            var result = new List<string>(phonemes);
-
             // Process from end, looking for patterns: nasal_vowel + n/m at word boundary
             int i = result.Count - 1;
             while (i >= 1)
@@ -995,12 +994,16 @@ namespace uPiper.Core.Phonemizers.Backend.Portuguese
                     if (atBoundary)
                     {
                         result.RemoveAt(i);
+                        if (i < stressIdx)
+                        {
+                            stressIdx--;
+                        }
                     }
                 }
                 i--;
             }
 
-            return result;
+            return stressIdx;
         }
 
         // =====================================================================

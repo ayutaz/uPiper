@@ -684,7 +684,10 @@ namespace uPiper.Tests.Runtime
         [Test]
         public void Pipeline_LanguageDetection_CorrectForAllLanguages()
         {
-            // Verify that pure-language texts are detected correctly
+            // Verify that pure-language texts are detected correctly.
+            // Note: Spanish, French, and Portuguese are excluded because they all use
+            // Latin script, making them indistinguishable by Unicode-range detection alone.
+            // Latin-script text is routed to the defaultLatinLanguage ("en") regardless.
             var testCases = new[]
             {
                 ("ja", "今日はいい天気ですね"),

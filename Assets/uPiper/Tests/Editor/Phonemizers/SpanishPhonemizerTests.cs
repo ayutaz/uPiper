@@ -268,6 +268,7 @@ namespace uPiper.Tests.Editor.Phonemizers
 
             // Empty string should return a result (possibly failed validation)
             Assert.IsNotNull(result);
+            Assert.IsFalse(result.Success);
         }
 
         [Test]
@@ -277,6 +278,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                 .GetAwaiter().GetResult();
 
             Assert.IsNotNull(result);
+            Assert.IsFalse(result.Success);
         }
 
         // ── Prosody Output ─────────────────────────────────────────────

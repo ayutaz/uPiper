@@ -302,6 +302,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             var result = Phonemize("");
 
             Assert.IsNotNull(result);
+            Assert.IsFalse(result.Success);
         }
 
         [Test]
@@ -311,6 +312,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                 .GetAwaiter().GetResult();
 
             Assert.IsNotNull(result);
+            Assert.IsFalse(result.Success);
         }
 
         // ── Prosody Output ─────────────────────────────────────────────

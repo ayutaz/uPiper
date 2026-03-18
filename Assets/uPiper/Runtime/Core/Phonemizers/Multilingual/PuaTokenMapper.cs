@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
@@ -241,6 +242,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 // Double-check after acquiring lock
                 if (Token2Char.TryGetValue(token, out existing))
                     return existing;
+
+                if (_nextDynamic > 0xF8FF)
+                    throw new InvalidOperationException("PUA codepoint space exhausted");
 
                 var ch = (char)_nextDynamic;
                 _nextDynamic++;
