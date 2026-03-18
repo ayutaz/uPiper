@@ -127,23 +127,25 @@ namespace uPiper.Core.Phonemizers.Multilingual
             }
 
             // Initialize English phonemizer if needed
+            // Use FliteLTSPhonemizer (CMU dictionary + LTS rules) for accurate ARPABET output
             if (ContainsLanguage("en") && _enPhonemizer == null)
             {
-                var flite = new Backend.Flite.FlitePhonemizerBackend();
-                if (await flite.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
+                var fliteLts = new Backend.Flite.FliteLTSPhonemizer();
+                if (await fliteLts.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
                 {
-                    _enPhonemizer = flite;
+                    _enPhonemizer = fliteLts;
                     _ownsEn = true;
-                    PiperLogger.LogInfo("[MultilingualPhonemizer] English backend initialized: Flite");
+                    PiperLogger.LogInfo("[MultilingualPhonemizer] English backend initialized: FliteLTS (CMU dict)");
                 }
                 else
                 {
-                    var ruleBased = new Backend.RuleBased.RuleBasedPhonemizer();
-                    if (await ruleBased.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
+                    // Fallback to FlitePhonemizerBackend (LTS rules only, no dictionary)
+                    var flite = new Backend.Flite.FlitePhonemizerBackend();
+                    if (await flite.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
                     {
-                        _enPhonemizer = ruleBased;
+                        _enPhonemizer = flite;
                         _ownsEn = true;
-                        PiperLogger.LogInfo("[MultilingualPhonemizer] English backend initialized: RuleBased");
+                        PiperLogger.LogWarning("[MultilingualPhonemizer] English backend fallback: FlitePhonemizerBackend (no CMU dict)");
                     }
                     else
                     {

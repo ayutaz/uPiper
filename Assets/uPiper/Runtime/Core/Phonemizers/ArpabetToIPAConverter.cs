@@ -5,40 +5,44 @@ namespace uPiper.Core.Phonemizers
     /// <summary>
     /// Converts Arpabet (CMU) phonemes to IPA phonemes compatible with
     /// the multilingual Piper model's phoneme_id_map.
-    /// Diphthongs are expanded to individual IPA characters.
-    /// Multi-char consonants (CH, JH) are mapped to PUA characters via PuaTokenMapper.
+    ///
+    /// Matches piper-plus EnglishPhonemizer output:
+    /// - Stress markers (ˈ, ˌ) emitted as separate tokens before stressed vowels
+    /// - Unstressed AH → ə (schwa)
+    /// - Long vowels with ː (IY→iː, UW→uː, AO→ɔː)
+    /// - Stressed ER → ɜː, Unstressed ER → ɚ
+    /// - Diphthongs expanded to individual IPA chars
+    /// - Word boundaries as space tokens
     /// </summary>
     public static class ArpabetToIPAConverter
     {
         /// <summary>
-        /// Maps ARPABET phonemes to one or more IPA phonemes.
-        /// Diphthongs expand to multiple entries (e.g., AW → ["a", "ʊ"]).
+        /// Maps ARPABET base phonemes (without stress) to IPA phoneme arrays.
+        /// Stress-dependent mappings are handled in ConvertToArray.
         /// </summary>
         private static readonly Dictionary<string, string[]> ArpabetToIPA = new()
         {
-            // Monophthong vowels (single IPA char)
-            ["AA"] = new[] { "ɑ" },    // father
-            ["AE"] = new[] { "æ" },    // cat
-            ["AH"] = new[] { "ʌ" },    // cup
-            ["AO"] = new[] { "ɔ" },    // caught
-            ["EH"] = new[] { "ɛ" },    // bet
-            ["ER"] = new[] { "ɚ" },    // bird
-            ["IH"] = new[] { "ɪ" },    // bit
-            ["IY"] = new[] { "i" },    // beat
-            ["UH"] = new[] { "ʊ" },    // book
-            ["UW"] = new[] { "u" },    // boot
+            // Vowels - stress-independent
+            ["AA"] = new[] { "ɑ" },
+            ["AE"] = new[] { "æ" },
+            ["AO"] = new[] { "ɔ", "ː" },     // caught → ɔː (piper-plus: AO → ɔː)
+            ["EH"] = new[] { "ɛ" },
+            ["IH"] = new[] { "ɪ" },
+            ["IY"] = new[] { "i", "ː" },      // beat → iː (piper-plus: IY → iː)
+            ["UH"] = new[] { "ʊ" },
+            ["UW"] = new[] { "u", "ː" },      // boot → uː (piper-plus: UW → uː)
 
-            // Diphthongs (expanded to individual IPA chars for phoneme_id_map)
-            ["AW"] = new[] { "a", "ʊ" },   // cow
-            ["AY"] = new[] { "a", "ɪ" },   // bite
-            ["EY"] = new[] { "e", "ɪ" },   // bait
-            ["OW"] = new[] { "o", "ʊ" },   // boat
-            ["OY"] = new[] { "ɔ", "ɪ" },   // boy
+            // Diphthongs (expanded to individual IPA chars)
+            ["AW"] = new[] { "a", "ʊ" },
+            ["AY"] = new[] { "a", "ɪ" },
+            ["EY"] = new[] { "e", "ɪ" },
+            ["OW"] = new[] { "o", "ʊ" },
+            ["OY"] = new[] { "ɔ", "ɪ" },
 
-            // Consonants (single IPA char)
+            // Consonants
             ["B"] = new[] { "b" },
             ["D"] = new[] { "d" },
-            ["DH"] = new[] { "ð" },    // this
+            ["DH"] = new[] { "ð" },
             ["F"] = new[] { "f" },
             ["G"] = new[] { "ɡ" },
             ["HH"] = new[] { "h" },
@@ -46,47 +50,85 @@ namespace uPiper.Core.Phonemizers
             ["L"] = new[] { "l" },
             ["M"] = new[] { "m" },
             ["N"] = new[] { "n" },
-            ["NG"] = new[] { "ŋ" },    // sing
+            ["NG"] = new[] { "ŋ" },
             ["P"] = new[] { "p" },
             ["R"] = new[] { "ɹ" },
             ["S"] = new[] { "s" },
-            ["SH"] = new[] { "ʃ" },    // ship
+            ["SH"] = new[] { "ʃ" },
             ["T"] = new[] { "t" },
-            ["TH"] = new[] { "θ" },    // think
+            ["TH"] = new[] { "θ" },
             ["V"] = new[] { "v" },
             ["W"] = new[] { "w" },
             ["Y"] = new[] { "j" },
             ["Z"] = new[] { "z" },
-            ["ZH"] = new[] { "ʒ" },    // vision
+            ["ZH"] = new[] { "ʒ" },
 
-            // Multi-char affricates → PUA (matched via PuaTokenMapper in PhonemeEncoder)
-            ["CH"] = new[] { "t", "ʃ" },   // church → t + ʃ
-            ["JH"] = new[] { "d", "ʒ" },   // judge → d + ʒ
-
-            // Pause/silence
-            ["PAU"] = new[] { "_" },
-            ["SIL"] = new[] { "_" },
-            ["SP"] = new[] { "_" },
+            // Affricates (expanded to components, matching piper-plus)
+            ["CH"] = new[] { "t", "ʃ" },
+            ["JH"] = new[] { "d", "ʒ" },
         };
 
         /// <summary>
-        /// Convert a single Arpabet phoneme to one or more IPA phonemes.
+        /// Convert a single Arpabet phoneme (with optional stress digit) to IPA phonemes.
+        /// Handles stress-dependent mappings matching piper-plus EnglishPhonemizer.
         /// </summary>
         public static string[] ConvertToArray(string arpabetPhoneme)
         {
             if (string.IsNullOrEmpty(arpabetPhoneme))
                 return System.Array.Empty<string>();
 
-            var basePhoneme = arpabetPhoneme.TrimEnd('0', '1', '2');
+            // Handle pause/silence (case-insensitive)
+            var upper = arpabetPhoneme.ToUpper();
+            if (upper == "PAU" || upper == "SIL" || upper == "SP")
+                return new[] { " " }; // Word boundary space (piper-plus uses space, not "_")
 
-            if (ArpabetToIPA.TryGetValue(basePhoneme.ToUpper(), out var ipa))
+            // Extract stress digit (0=unstressed, 1=primary, 2=secondary)
+            int stress = 0;
+            var basePhoneme = arpabetPhoneme;
+            if (basePhoneme.Length > 1 && char.IsDigit(basePhoneme[^1]))
+            {
+                stress = basePhoneme[^1] - '0';
+                basePhoneme = basePhoneme[..^1];
+            }
+            var baseUpper = basePhoneme.ToUpper();
+
+            // Stress-dependent special cases (matching piper-plus english.py)
+            // AH: unstressed → ə (schwa), stressed → ʌ
+            if (baseUpper == "AH")
+            {
+                var vowel = stress == 0 ? "ə" : "ʌ";
+                return stress >= 1
+                    ? new[] { stress == 1 ? "ˈ" : "ˌ", vowel }
+                    : new[] { vowel };
+            }
+
+            // ER: stressed → ɜː, unstressed → ɚ
+            if (baseUpper == "ER")
+            {
+                if (stress >= 1)
+                    return new[] { stress == 1 ? "ˈ" : "ˌ", "ɜ", "ː" };
+                return new[] { "ɚ" };
+            }
+
+            // Standard mapping
+            if (ArpabetToIPA.TryGetValue(baseUpper, out var ipa))
+            {
+                // Add stress marker before vowels if stressed
+                if (stress >= 1 && IsVowelPhoneme(baseUpper))
+                {
+                    var result = new List<string>();
+                    result.Add(stress == 1 ? "ˈ" : "ˌ");
+                    result.AddRange(ipa);
+                    return result.ToArray();
+                }
                 return ipa;
+            }
 
             return new[] { arpabetPhoneme.ToLower() };
         }
 
         /// <summary>
-        /// Convert Arpabet phoneme to IPA (returns first element for backward compatibility).
+        /// Convert Arpabet phoneme to IPA (returns joined string for backward compatibility).
         /// </summary>
         public static string Convert(string arpabetPhoneme)
         {
@@ -96,7 +138,7 @@ namespace uPiper.Core.Phonemizers
 
         /// <summary>
         /// Convert array of Arpabet phonemes to IPA, expanding diphthongs
-        /// into individual phonemes for the multilingual model.
+        /// and adding stress markers to match piper-plus output format.
         /// </summary>
         public static string[] ConvertAll(string[] arpabetPhonemes)
         {
@@ -107,6 +149,15 @@ namespace uPiper.Core.Phonemizers
                 result.AddRange(converted);
             }
             return result.ToArray();
+        }
+
+        private static bool IsVowelPhoneme(string baseUpper)
+        {
+            return baseUpper == "AA" || baseUpper == "AE" || baseUpper == "AO" ||
+                   baseUpper == "EH" || baseUpper == "IH" || baseUpper == "IY" ||
+                   baseUpper == "UH" || baseUpper == "UW" ||
+                   baseUpper == "AW" || baseUpper == "AY" || baseUpper == "EY" ||
+                   baseUpper == "OW" || baseUpper == "OY";
         }
     }
 }
