@@ -2499,7 +2499,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: multilingual-test-medium
+  m_text: "\u65E5\u672C\u8A9E (Japanese)"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5ed2cc6b6a0e84ed5af3aa945d2d2218, type: 2}
   m_sharedMaterial: {fileID: 1686443215293765764, guid: 5ed2cc6b6a0e84ed5af3aa945d2d2218, type: 2}
@@ -3871,8 +3871,7 @@ MonoBehaviour:
   _phraseDropdown: {fileID: 1081943954}
   _phonemeDetailsText: {fileID: 929973098}
   _backendDropdown: {fileID: 1682351233}
-  _defaultJapaneseText: 
-  _defaultEnglishText: Hello world
+  _languageDropdown: {fileID: 2006794012}
   _japaneseFontAsset: {fileID: 0}
   _defaultFontAsset: {fileID: 0}
 --- !u!82 &1475177959
@@ -5920,7 +5919,7 @@ MonoBehaviour:
   m_MultiSelect: 0
   m_Options:
     m_Options:
-    - m_Text: multilingual-test-medium
+    - m_Text: "\u65E5\u672C\u8A9E (Japanese)"
       m_Image: {fileID: 0}
       m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_OnValueChanged:
