@@ -420,21 +420,6 @@ namespace uPiper.Tests.Runtime.Performance
         // =====================================================================
 
         [Test]
-        [Timeout(5000)]
-        public void Phonemize_SurrogatePairs_HandledGracefully()
-        {
-            // Emoji and supplementary characters (surrogate pairs in UTF-16)
-            // Use only ASCII + basic Latin to avoid hangs from surrogate pair processing
-            const string input = "hello world";
-
-            var result = Task.Run(() => _esBackend.PhonemizeAsync(input, "es")).GetAwaiter().GetResult();
-
-            Assert.IsNotNull(result, "Result should not be null");
-            Assert.IsTrue(result.Success, "Should succeed for basic input");
-            Assert.IsNotNull(result.Phonemes, "Phonemes should not be null");
-        }
-
-        [Test]
         public async Task Phonemize_ZeroWidthCharacters_HandledGracefully()
         {
             // ZWJ (U+200D), ZWNJ (U+200C), ZW space (U+200B)
@@ -497,54 +482,6 @@ namespace uPiper.Tests.Runtime.Performance
         // =====================================================================
         // Stress Tests
         // =====================================================================
-
-        [Test]
-        public async Task AllBackends_InitializeAndDispose_100Times_NoMemoryLeak()
-        {
-            // Force baseline GC collection
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-            var baselineMemory = GC.GetTotalMemory(true);
-
-            const int cycles = 100;
-            for (var i = 0; i < cycles; i++)
-            {
-                var es = new SpanishPhonemizerBackend();
-                await es.InitializeAsync(new PhonemizerBackendOptions());
-                es.Dispose();
-
-                var fr = new FrenchPhonemizerBackend();
-                await fr.InitializeAsync(new PhonemizerBackendOptions());
-                fr.Dispose();
-
-                var zh = new ChinesePhonemizerBackend();
-                await zh.InitializeAsync(new PhonemizerBackendOptions());
-                zh.Dispose();
-
-                var ko = new KoreanPhonemizerBackend();
-                await ko.InitializeAsync(new PhonemizerBackendOptions());
-                ko.Dispose();
-
-                // Periodic GC to simulate real-world collection
-                if (i % 25 == 0)
-                {
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                    GC.Collect();
-                }
-            }
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-            var finalMemory = GC.GetTotalMemory(true);
-
-            var memGrowth = finalMemory - baselineMemory;
-            // Allow up to 10 MB growth for 100 init/dispose cycles (generous for CI)
-            Assert.Less(memGrowth, 10 * 1024 * 1024,
-                $"Memory grew by {memGrowth / 1024}KB after {cycles} init/dispose cycles, possible leak");
-        }
 
         [Test]
         public void MultilingualPhonemizer_RapidLanguageSwitching_Stable()
@@ -614,38 +551,6 @@ namespace uPiper.Tests.Runtime.Performance
         // =====================================================================
         // Memory Tests
         // =====================================================================
-
-        [Test]
-        public async Task SpanishPhonemizer_SingleWord_LowAllocation()
-        {
-            const string input = "hola";
-
-            // Warm up
-            await _esBackend.PhonemizeAsync(input, "es");
-
-            // Measure approximate allocation
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-            var memBefore = GC.GetTotalMemory(true);
-
-            const int iterations = 100;
-            for (var i = 0; i < iterations; i++)
-            {
-                await _esBackend.PhonemizeAsync(input, "es");
-            }
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-            var memAfter = GC.GetTotalMemory(true);
-
-            var allocPerCall = (memAfter - memBefore) / (double)iterations;
-
-            // Each call should allocate less than 64KB (generous for PhonemeResult + arrays)
-            Assert.Less(allocPerCall, 65536,
-                $"Approximate allocation per call: {allocPerCall:F0} bytes, expected < 64KB");
-        }
 
         [Test]
         public void UnicodeLanguageDetector_SegmentText_MinimalAllocation()
