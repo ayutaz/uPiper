@@ -424,9 +424,15 @@ namespace uPiper.Core.AudioGeneration
         {
             // Multilingual models: phonemes are already in the model's native format
             // (PUA chars for multi-char phonemes, IPA chars for single-char phonemes).
-            // No IPA<->PUA conversion needed — just pass through directly.
+            // However, some multi-char text tokens (e.g., N_m, N_n) may not have been
+            // PUA-converted yet — use PuaTokenMapper to resolve them.
             if (_isMultilingualModel)
             {
+                if (phoneme.Length > 1 &&
+                    Phonemizers.Multilingual.PuaTokenMapper.Token2Char.TryGetValue(phoneme, out var puaChar))
+                {
+                    return puaChar.ToString();
+                }
                 return phoneme;
             }
 
