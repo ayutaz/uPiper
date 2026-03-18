@@ -7,7 +7,7 @@
 var tts = await PiperTTS.CreateBuilder()
     .WithLanguage("ja")
     .WithBackend(InferenceBackend.Auto)
-    .WithVoice("ja_JP-test-medium")
+    .WithVoice("multilingual-test-medium")
     .BuildAsync();
 
 var audio = await tts.Speak("こんにちは")

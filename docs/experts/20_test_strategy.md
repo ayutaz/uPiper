@@ -168,8 +168,7 @@ var testTexts = new Dictionary<string, string[]>
 
 ### テストモデル
 
-- 既存: `ja_JP-test-medium.onnx`, `tsukuyomi-chan.onnx`
-- 新規: 多言語テストモデル（小型版があれば理想）
+- 既存: `multilingual-test-medium.onnx`
 - Mock: ダミーONNXモデル（構造確認用）
 
 ## CI/CDへの影響

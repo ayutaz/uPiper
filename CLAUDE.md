@@ -20,10 +20,7 @@ uPiperは[piper-plus](https://github.com/ayutaz/piper-plus)ベースの高品質
 
 | モデル名 | 言語 | Prosody対応 | 説明 |
 |---------|------|------------|------|
-| ja_JP-test-medium | 日本語 | Yes | 標準日本語モデル（Prosody対応） |
-| en_US-ljspeech-medium | 英語 | No | 標準英語モデル |
-| tsukuyomi-chan | 日本語 | Yes | Prosody対応日本語モデル（より自然なイントネーション） |
-| tsukuyomi-6lang-v2-fixed | 多言語(6言語) | Yes | 多言語対応モデル（ja/en/zh/es/fr/pt）、`phoneme_type: "multilingual"` |
+| multilingual-test-medium | 多言語(6言語) | Yes | 多言語対応モデル（ja/en/zh/es/fr/pt）、`phoneme_type: "multilingual"` |
 
 ## ビルド・テストコマンド
 
@@ -67,7 +64,7 @@ PuaTokenMapper (PUA↔IPA双方向マッピング, 87固定エントリ)
     • 複数文字音素（ky, ch, ts, sh等）→ Private Use Area文字
     ↓
 ┌──────────────────────────────────────────────────────┐
-│ Prosody対応モデルの場合（tsukuyomi-chan等）          │
+│ Prosody対応モデルの場合                               │
 │   Prosody情報取得 (言語別)                           │
 │     • ja: A1=モーラ位置, A2=アクセント核, A3=句位置  │
 │     • en: A1=0, A2=0, A3=0                           │
@@ -214,7 +211,7 @@ StreamingAssets/uPiper/     # 実行時データ（辞書）
 ## Prosody（韻律）機能
 
 ### 概要
-Prosody対応モデル（tsukuyomi-chan等）では、dot-net-g2p（MeCab辞書）から取得したアクセント情報を使用してより自然なイントネーションの音声を生成できる。
+Prosody対応モデル（multilingual-test-medium等）では、dot-net-g2p（MeCab辞書）から取得したアクセント情報を使用してより自然なイントネーションの音声を生成できる。
 
 ### Prosodyパラメータ
 - **A1 (ProsodyA1)**: アクセント句内でのモーラ位置（0始まり）
@@ -301,10 +298,10 @@ dict.AddWord("MyTerm", "マイターム", priority: 10);
 
 Piperモデルには2種類の音素表現がある：
 
-| モデルタイプ | 音素表現 | 例 | 対応モデル |
-|------------|---------|-----|-----------|
-| **PUA (Private Use Area)** | Unicode私用領域文字 | `ch` → `\ue00e` (ID 39) | ja_JP-test-medium |
-| **IPA (International Phonetic Alphabet)** | 国際音声記号 | `ch` → `tɕ` (ID 32) | tsukuyomi-chan |
+| モデルタイプ | 音素表現 | 例 |
+|------------|---------|-----|
+| **PUA (Private Use Area)** | Unicode私用領域文字 | `ch` → `\ue00e` (ID 39) |
+| **IPA (International Phonetic Alphabet)** | 国際音声記号 | `ch` → `tɕ` (ID 32) |
 
 ### PhonemeEncoder の動作
 

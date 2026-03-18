@@ -2499,7 +2499,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: ja_JP-test-medium
+  m_text: multilingual-test-medium
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5ed2cc6b6a0e84ed5af3aa945d2d2218, type: 2}
   m_sharedMaterial: {fileID: 1686443215293765764, guid: 5ed2cc6b6a0e84ed5af3aa945d2d2218, type: 2}
@@ -5920,10 +5920,7 @@ MonoBehaviour:
   m_MultiSelect: 0
   m_Options:
     m_Options:
-    - m_Text: ja_JP-test-medium
-      m_Image: {fileID: 0}
-      m_Color: {r: 1, g: 1, b: 1, a: 1}
-    - m_Text: en_US-ljspeech-medium
+    - m_Text: multilingual-test-medium
       m_Image: {fileID: 0}
       m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_OnValueChanged:

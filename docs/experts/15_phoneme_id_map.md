@@ -131,8 +131,8 @@ bool isFixed = PuaTokenMapper.IsFixedPua('\uE00E');  // → true
 _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
 ```
 
-- `ɕ` あり → IPAモデル（tsukuyomi-chan, 多言語モデル）
-- `ɕ` なし → PUAモデル（ja_JP-test-medium）
+- `ɕ` あり → IPAモデル（多言語モデル等）
+- `ɕ` なし → PUAモデル（レガシー単一言語モデル）
 
 ### 多言語モデルでの動作
 
@@ -149,7 +149,5 @@ PhonemeEncoder は PuaTokenMapper.UnmapChar() を使用して任意の言語のP
 
 | モデル | 言語数 | 音素数 | 特殊 | 共有 | 固有 |
 |--------|--------|--------|------|------|------|
-| ja_JP-test-medium | 1 | 65 (特殊10+音素55) | 10 | 55 | 0 |
-| tsukuyomi-chan | 1 | 65 (特殊10+音素55) | 10 | 55 | 0 |
-| multilingual-6lang | 6 | 173 | 10 | - | - |
+| multilingual-test-medium | 6 | 173 | 10 | - | - |
 | multilingual-7lang (ko含む) | 7 | 183 | 10 | - | - |

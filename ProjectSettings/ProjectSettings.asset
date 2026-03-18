@@ -779,6 +779,8 @@ PlayerSettings:
   webWasm2023: 0
   scriptingDefineSymbols:
     Android: UPIPER_DEVELOPMENT;ULOOPMCP_HAS_ROSLYN
+    Standalone: UPIPER_DEVELOPMENT;ULOOPMCP_HAS_ROSLYN
+    WebGL: UPIPER_DEVELOPMENT;ULOOPMCP_HAS_ROSLYN
   additionalCompilerArguments: {}
   platformArchitecture:
     iPhone: 1

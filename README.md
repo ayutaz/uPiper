@@ -25,7 +25,7 @@
 ## 機能
 
 - 高品質な音声合成（piper-plusベース）
-- 多言語対応（日本語、英語）
+- 多言語対応（日本語、英語、中国語、スペイン語、フランス語、ポルトガル語）
 - Unity AI Inference Engineによる高速推論
 - dot-net-g2p（MeCab辞書）による高精度な日本語音素化（全プラットフォーム対応）
 - GPU推論サポート（GPUCompute/GPUPixel）
@@ -36,9 +36,7 @@
 
 | モデル名 | 言語 | Prosody対応 | 説明 |
 |---------|------|------------|------|
-| ja_JP-test-medium | 日本語 | Yes | 標準日本語モデル（Prosody対応） |
-| en_US-ljspeech-medium | 英語 | No | 標準英語モデル |
-| tsukuyomi-chan | 日本語 | Yes | Prosody対応日本語モデル（より自然なイントネーション） |
+| multilingual-test-medium | 多言語(6言語: ja/en/zh/es/fr/pt) | Yes | 多言語対応モデル（Prosody対応） |
 
 ## Requirements
 * Unity 6000.0.58f2

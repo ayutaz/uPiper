@@ -48,8 +48,6 @@ _useIpaMapping = !_isMultilingualModel && _phonemeToId.ContainsKey("ɕ");
 
 | モデル | PhonemeType | `_isMultilingualModel` | `_useIpaMapping` |
 |--------|-------------|----------------------|-----------------|
-| ja_JP-test-medium | openjtalk | `false` | `false` (PUA) |
-| tsukuyomi-chan | espeak | `false` | `true` (IPA) |
 | multilingual-test-medium | multilingual | `true` | `false` (パススルー) |
 
 **多言語モデルでの動作**: `ɕ` は phoneme_id_map に存在するが、`_isMultilingualModel` が `true` のため
@@ -66,16 +64,14 @@ private bool NeedsInterspersePadding()
     if (!string.IsNullOrEmpty(_config.PhonemeType))
         return _config.PhonemeType.Equals("espeak", StringComparison.OrdinalIgnoreCase)
             || _config.PhonemeType.Equals("multilingual", StringComparison.OrdinalIgnoreCase);
-    return !(_config.VoiceId != null && _config.VoiceId.Contains("ja_JP"));
+    return !(_config.VoiceId != null && _config.VoiceId.Contains("multilingual"));
 }
 ```
 
 | PhonemeType | NeedsInterspersePadding | 備考 |
 |-------------|------------------------|------|
-| openjtalk | `false` | ja_JP-test-medium等 |
-| espeak | `true` | tsukuyomi-chan等 |
-| multilingual | `true` | 多言語モデル |
-| (未指定) | VoiceIdにja_JPが含まれなければ`true` | フォールバック |
+| multilingual | `true` | multilingual-test-medium等 |
+| (未指定) | VoiceIdにmultilingualが含まれなければ`true` | フォールバック |
 
 ## PUA→元音素マッピング（PuaTokenMapper.cs で一元管理）
 

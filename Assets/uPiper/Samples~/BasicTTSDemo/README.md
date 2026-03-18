@@ -1,20 +1,20 @@
 # uPiper Basic TTS Demo
 
-This sample demonstrates text-to-speech functionality using uPiper with Japanese and English text support.
+This sample demonstrates text-to-speech functionality using uPiper with multilingual text support (Japanese, English, Chinese, Spanish, French, Portuguese).
 
 ## Getting Started
 
 1. Import this sample through Unity Package Manager
 2. Open the `BasicTTSDemo.unity` scene
 3. Press Play to run the demo
-4. Select a model from the dropdown (ja_JP for Japanese, en_US for English)
+4. The multilingual model supports 6 languages (ja/en/zh/es/fr/pt)
 5. Choose a preset phrase or enter custom text
 6. Click "Generate Speech" to synthesize audio
 7. The generated audio will play automatically
 
 ## Features
 
-- Multi-language support (Japanese/English)
+- Multi-language support (6 languages: ja/en/zh/es/fr/pt)
 - dot-net-g2p integration for accurate Japanese phonemization (pure C#)
 - Preset phrases for quick testing
 - Real-time phoneme display
@@ -25,7 +25,7 @@ This sample demonstrates text-to-speech functionality using uPiper with Japanese
 
 - Unity 6000.0.58f2 or later
 - Unity AI Inference Engine 2.2.x
-- Japanese ONNX model (ja_JP-test-medium.onnx)
+- Multilingual ONNX model (multilingual-test-medium.onnx)
 - dot-net-g2p dictionary (included)
 
 ## Included Assets

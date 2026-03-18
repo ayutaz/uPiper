@@ -66,7 +66,7 @@ Unity Application Layer (PiperTTS)
 
 ### Prosodyパラメータ
 
-Prosody対応モデル (tsukuyomi-chan等) で使用:
+Prosody対応モデル (multilingual-test-medium等) で使用:
 
 | パラメータ | 説明 |
 |-----------|------|
@@ -103,8 +103,9 @@ Piperモデルには2種類の音素表現がある:
 
 | モデルタイプ | 音素表現 | 対応モデル |
 |------------|---------|-----------|
-| PUA (Private Use Area) | Unicode私用領域文字 | ja_JP-test-medium |
-| IPA (International Phonetic Alphabet) | 国際音声記号 | tsukuyomi-chan |
+| PUA (Private Use Area) | Unicode私用領域文字 | レガシー単一言語モデル |
+| IPA (International Phonetic Alphabet) | 国際音声記号 | レガシー単一言語モデル |
+| Multilingual | PUAパススルー（phoneme_id_map直接検索） | multilingual-test-medium |
 
 `PhonemeEncoder` はモデルの `phoneme_id_map` を検査し、IPA文字 (`ɕ` 等) の有無で自動判定する。
 
