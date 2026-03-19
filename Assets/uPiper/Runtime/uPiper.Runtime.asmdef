@@ -5,7 +5,8 @@
         "Unity.InferenceEngine",
         "Unity.TextMeshPro",
         "DotNetG2P",
-        "DotNetG2P.MeCab"
+        "DotNetG2P.MeCab",
+        "DotNetG2P.Chinese"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -7,10 +7,10 @@
     }
   ],
   "dependencies": {
-    "com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.7.0",
-    "com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.7.0",
-    "com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.7.0",
-    "com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.7.0",
+    "com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#47ccf9142a5247d1188c6a6b62fd2ed036a16ab3",
+    "com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#47ccf9142a5247d1188c6a6b62fd2ed036a16ab3",
+    "com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#47ccf9142a5247d1188c6a6b62fd2ed036a16ab3",
+    "com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#47ccf9142a5247d1188c6a6b62fd2ed036a16ab3",
     "io.github.hatayama.uloopmcp": "0.50.0",
     "org.nuget.microsoft.codeanalysis.csharp": "4.14.0",
     "com.unity.ai.inference": "2.5.0",
