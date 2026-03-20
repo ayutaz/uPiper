@@ -5,12 +5,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using DotNetG2P.Spanish;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Backend.Chinese;
 using uPiper.Core.Phonemizers.Backend.French;
 using uPiper.Core.Phonemizers.Backend.Korean;
 using uPiper.Core.Phonemizers.Backend.Portuguese;
-using uPiper.Core.Phonemizers.Backend.Spanish;
 using uPiper.Core.Phonemizers.Implementations;
 using uPiper.Core.Phonemizers.Multilingual;
 
@@ -598,9 +598,8 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             // Create with pre-built backends and verify dispose does not throw
             var koBackend = new KoreanPhonemizerBackend();
-            var esBackend = new SpanishPhonemizerBackend();
+            var esEngine = new SpanishG2PEngine();
             Task.Run(async () => await koBackend.InitializeAsync()).GetAwaiter().GetResult();
-            Task.Run(async () => await esBackend.InitializeAsync()).GetAwaiter().GetResult();
 
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
@@ -609,7 +608,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                 defaultLatinLanguage: "en",
                 jaPhonemizer: jaPhonemizer,
                 koPhonemizer: koBackend,
-                esPhonemizer: esBackend);
+                esEngine: esEngine);
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
@@ -694,14 +693,13 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void PhonemizeWithProsody_SpanishOnly_DetectsEsAsPrimary()
         {
-            // When defaultLatinLanguage is "es", Latin text routes to Spanish backend
-            var esBackend = new SpanishPhonemizerBackend();
-            Task.Run(async () => await esBackend.InitializeAsync()).GetAwaiter().GetResult();
+            // When defaultLatinLanguage is "es", Latin text routes to Spanish engine
+            var esEngine = new SpanishG2PEngine();
 
             var phonemizer = new MultilingualPhonemizer(
                 new[] { "es" },
                 defaultLatinLanguage: "es",
-                esPhonemizer: esBackend);
+                esEngine: esEngine);
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
             var result = Phonemize(phonemizer, "buenos dias amigo");

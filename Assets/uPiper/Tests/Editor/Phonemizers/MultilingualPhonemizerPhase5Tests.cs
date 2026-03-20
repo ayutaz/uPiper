@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using DotNetG2P.Spanish;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Backend.Chinese;
 using uPiper.Core.Phonemizers.Backend.Korean;
-using uPiper.Core.Phonemizers.Backend.Spanish;
 using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Editor.Phonemizers
@@ -121,16 +121,13 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void TestSpanishSegmentProcessing()
         {
-            // Pre-build Spanish backend and pass to MultilingualPhonemizer
-            var esBackend = new SpanishPhonemizerBackend();
-            Task.Run(async () => await esBackend.InitializeAsync()).GetAwaiter().GetResult();
-
-            Assert.IsTrue(esBackend.IsAvailable, "Spanish backend should initialize");
+            // Pre-build Spanish G2P engine and pass to MultilingualPhonemizer
+            var esEngine = new SpanishG2PEngine();
 
             var phonemizer = new MultilingualPhonemizer(
                 new[] { "es", "en" },
                 defaultLatinLanguage: "es",
-                esPhonemizer: esBackend);
+                esEngine: esEngine);
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
@@ -407,16 +404,17 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void TestAllLanguagesInitialized_SpanishBackend()
+        public void TestAllLanguagesInitialized_SpanishEngine()
         {
-            // Spanish is rule-based - should always initialize
-            var esBackend = new SpanishPhonemizerBackend();
-            var result = Task.Run(async () => await esBackend.InitializeAsync())
-                .GetAwaiter().GetResult();
+            // Spanish DotNetG2P engine - parameterless constructor, always available
+            var esEngine = new SpanishG2PEngine();
 
-            Assert.IsTrue(result, "Spanish backend should initialize (rule-based, no data files)");
-            Assert.IsTrue(esBackend.IsAvailable);
-            esBackend.Dispose();
+            // Verify basic phonemization works
+            var phonemes = esEngine.ToPuaPhonemes("hola");
+            Assert.IsNotNull(phonemes, "SpanishG2PEngine should produce phonemes");
+            Assert.IsTrue(phonemes.Length > 0, "SpanishG2PEngine should produce non-empty phonemes for 'hola'");
+
+            esEngine.Dispose();
         }
 
         [Test]
@@ -496,13 +494,13 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void Dispose_WithAllBackends_DoesNotThrow()
         {
             var koBackend = new KoreanPhonemizerBackend();
-            var esBackend = new SpanishPhonemizerBackend();
+            var esEngine = new SpanishG2PEngine();
 
             var phonemizer = new MultilingualPhonemizer(
                 new[] { "ko", "es", "en" },
                 defaultLatinLanguage: "en",
                 koPhonemizer: koBackend,
-                esPhonemizer: esBackend);
+                esEngine: esEngine);
 
             Assert.DoesNotThrow(() => phonemizer.Dispose());
         }

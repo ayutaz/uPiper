@@ -4,11 +4,11 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using DotNetG2P.Spanish;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Backend.Chinese;
 using uPiper.Core.Phonemizers.Backend.French;
 using uPiper.Core.Phonemizers.Backend.Korean;
-using uPiper.Core.Phonemizers.Backend.Spanish;
 using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Runtime.Performance
@@ -20,7 +20,7 @@ namespace uPiper.Tests.Runtime.Performance
     {
         // ── Backends (shared across tests) ──────────────────────────────────────
 
-        private SpanishPhonemizerBackend _esBackend;
+        private SpanishG2PEngine _esEngine;
         private FrenchPhonemizerBackend _frBackend;
         private ChinesePhonemizerBackend _zhBackend;
         private KoreanPhonemizerBackend _koBackend;
@@ -88,8 +88,7 @@ namespace uPiper.Tests.Runtime.Performance
         public async Task OneTimeSetUp()
         {
             // Initialize language backends
-            _esBackend = new SpanishPhonemizerBackend();
-            await _esBackend.InitializeAsync(new PhonemizerBackendOptions());
+            _esEngine = new SpanishG2PEngine();
 
             _frBackend = new FrenchPhonemizerBackend();
             await _frBackend.InitializeAsync(new PhonemizerBackendOptions());
@@ -107,7 +106,7 @@ namespace uPiper.Tests.Runtime.Performance
         [OneTimeTearDown]
         public void OneTimeTearDown()
         {
-            _esBackend?.Dispose();
+            _esEngine?.Dispose();
             _frBackend?.Dispose();
             _zhBackend?.Dispose();
             _koBackend?.Dispose();
@@ -118,18 +117,17 @@ namespace uPiper.Tests.Runtime.Performance
         // =====================================================================
 
         [Test]
-        public async Task SpanishPhonemizer_ShortText_Under200ms()
+        public void SpanishPhonemizer_ShortText_Under200ms()
         {
             // Warm up
-            await _esBackend.PhonemizeAsync(SpanishShort, "es");
+            _esEngine.ToPuaPhonemes(SpanishShort);
 
             var sw = Stopwatch.StartNew();
-            var result = await _esBackend.PhonemizeAsync(SpanishShort, "es");
+            var phonemes = _esEngine.ToPuaPhonemes(SpanishShort);
             sw.Stop();
 
-            Assert.IsTrue(result.Success, "Phonemization should succeed");
-            Assert.IsNotNull(result.Phonemes, "Phonemes should not be null");
-            Assert.Greater(result.Phonemes.Length, 0, "Should produce phonemes");
+            Assert.IsNotNull(phonemes, "Phonemes should not be null");
+            Assert.Greater(phonemes.Length, 0, "Should produce phonemes");
             Assert.Less(sw.ElapsedMilliseconds, 200,
                 $"Spanish short text took {sw.ElapsedMilliseconds}ms, expected < 200ms");
         }
@@ -213,16 +211,15 @@ namespace uPiper.Tests.Runtime.Performance
         // =====================================================================
 
         [Test]
-        public async Task SpanishPhonemizer_LongText_Succeeds()
+        public void SpanishPhonemizer_LongText_Succeeds()
         {
             Assert.GreaterOrEqual(SpanishLong.Length, 500,
                 $"Test data should be 500+ chars, got {SpanishLong.Length}");
 
-            var result = await _esBackend.PhonemizeAsync(SpanishLong, "es");
+            var phonemes = _esEngine.ToPuaPhonemes(SpanishLong);
 
-            Assert.IsTrue(result.Success, $"Phonemization failed: {result.Error}");
-            Assert.IsNotNull(result.Phonemes, "Phonemes should not be null");
-            Assert.Greater(result.Phonemes.Length, 0, "Should produce phonemes for long text");
+            Assert.IsNotNull(phonemes, "Phonemes should not be null");
+            Assert.Greater(phonemes.Length, 0, "Should produce phonemes for long text");
         }
 
         [Test]
@@ -420,16 +417,14 @@ namespace uPiper.Tests.Runtime.Performance
         // =====================================================================
 
         [Test]
-        public async Task Phonemize_ZeroWidthCharacters_HandledGracefully()
+        public void Phonemize_ZeroWidthCharacters_HandledGracefully()
         {
             // ZWJ (U+200D), ZWNJ (U+200C), ZW space (U+200B)
             const string input = "hello\u200Dworld\u200Ctest\u200Bfoo";
 
-            var result = await _esBackend.PhonemizeAsync(input, "es");
+            var phonemes = _esEngine.ToPuaPhonemes(input);
 
-            Assert.IsNotNull(result, "Result should not be null for zero-width char input");
-            Assert.IsTrue(result.Success || result.Phonemes != null,
-                "Should handle zero-width characters without crashing");
+            Assert.IsNotNull(phonemes, "Result should not be null for zero-width char input");
         }
 
         [Test]
@@ -453,30 +448,27 @@ namespace uPiper.Tests.Runtime.Performance
         }
 
         [Test]
-        public async Task Phonemize_RTLCharacters_HandledGracefully()
+        public void Phonemize_RTLCharacters_HandledGracefully()
         {
             // Arabic and Hebrew characters (unsupported languages -- should not crash)
             const string arabic = "\u0645\u0631\u062D\u0628\u0627";
             const string hebrew = "\u05E9\u05DC\u05D5\u05DD";
 
-            var resultArabic = await _esBackend.PhonemizeAsync(arabic, "es");
-            var resultHebrew = await _frBackend.PhonemizeAsync(hebrew, "fr");
-
-            // Should not throw an exception; may return empty or error result
-            Assert.IsNotNull(resultArabic, "Arabic input should not cause null result");
-            Assert.IsNotNull(resultHebrew, "Hebrew input should not cause null result");
+            Assert.DoesNotThrow(() => _esEngine.ToPuaPhonemes(arabic),
+                "Arabic input should not cause exception in Spanish engine");
+            Assert.DoesNotThrowAsync(async () =>
+                await _frBackend.PhonemizeAsync(hebrew, "fr"),
+                "Hebrew input should not cause exception in French backend");
         }
 
         [Test]
-        public async Task Phonemize_MixedLineBreaks_HandledCorrectly()
+        public void Phonemize_MixedLineBreaks_HandledCorrectly()
         {
             const string input = "primera l\u00EDnea\nsegunda l\u00EDnea\r\ntercera l\u00EDnea\rcuarta l\u00EDnea";
 
-            var result = await _esBackend.PhonemizeAsync(input, "es");
+            var phonemes = _esEngine.ToPuaPhonemes(input);
 
-            Assert.IsNotNull(result, "Result should not be null for mixed line breaks");
-            Assert.IsTrue(result.Success || result.Phonemes != null,
-                "Should handle mixed line breaks without crashing");
+            Assert.IsNotNull(phonemes, "Result should not be null for mixed line breaks");
         }
 
         // =====================================================================
@@ -591,8 +583,8 @@ namespace uPiper.Tests.Runtime.Performance
         [Test]
         public void Phonemize_EmptyString_DoesNotThrow()
         {
-            Assert.DoesNotThrowAsync(async () =>
-                await _esBackend.PhonemizeAsync("", "es"));
+            Assert.DoesNotThrow(() =>
+                _esEngine.ToPuaPhonemes(""));
             Assert.DoesNotThrowAsync(async () =>
                 await _frBackend.PhonemizeAsync("", "fr"));
             Assert.DoesNotThrowAsync(async () =>
@@ -604,8 +596,8 @@ namespace uPiper.Tests.Runtime.Performance
         [Test]
         public void Phonemize_WhitespaceOnly_DoesNotThrow()
         {
-            Assert.DoesNotThrowAsync(async () =>
-                await _esBackend.PhonemizeAsync("   \t\n  ", "es"));
+            Assert.DoesNotThrow(() =>
+                _esEngine.ToPuaPhonemes("   \t\n  "));
             Assert.DoesNotThrowAsync(async () =>
                 await _frBackend.PhonemizeAsync("   \t\n  ", "fr"));
             Assert.DoesNotThrowAsync(async () =>
