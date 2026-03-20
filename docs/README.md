@@ -14,14 +14,6 @@
 
 ### development/ - 開発者向け
 - CI_CD_GUIDE.md - CI/CDガイド
-- test-execution-guide.md - テスト実行ガイド
-
-### experts/ - 技術詳細
-- 02_unity_optimization.md - Unity最適化戦略
-- 03_webgl_web_technology.md - WebGL技術
-- 05_multilingual.md - 多言語ロードマップ
-- 06_api_dx_design.md - API設計
-- 09_cicd_testing.md - CI/CDテスト戦略
 
 ### ルートドキュメント
 - ARCHITECTURE_ja.md - アーキテクチャ（日本語）
