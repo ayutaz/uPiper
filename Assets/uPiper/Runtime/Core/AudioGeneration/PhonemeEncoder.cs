@@ -433,6 +433,12 @@ namespace uPiper.Core.AudioGeneration
                 {
                     return puaChar.ToString();
                 }
+                // NFC normalize decomposed IPA (e.g., u+\u0303 → ũ) to match phoneme_id_map
+                if (phoneme.Length > 1 && !System.Text.NormalizationForm.FormC.Equals(phoneme))
+                {
+                    var nfc = phoneme.Normalize(System.Text.NormalizationForm.FormC);
+                    if (nfc != phoneme) return nfc;
+                }
                 return phoneme;
             }
 

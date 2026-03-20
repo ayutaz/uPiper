@@ -355,6 +355,21 @@ namespace uPiper.Core.Phonemizers.Multilingual
                         segA3[i] = result.Prosody[i].A3;
                     }
                 }
+                else if (lang == "fr" && _frEngine != null)
+                {
+                    // Use DotNetG2P.French engine directly
+                    segPhonemes = _frEngine.ToPuaPhonemes(segText);
+                    var result = _frEngine.ToIpaWithProsody(segText);
+                    segA1 = new int[segPhonemes.Length];
+                    segA2 = new int[segPhonemes.Length];
+                    segA3 = new int[segPhonemes.Length];
+                    for (var fi = 0; fi < Math.Min(segPhonemes.Length, result.Prosody.Length); fi++)
+                    {
+                        segA1[fi] = result.Prosody[fi].A1;
+                        segA2[fi] = result.Prosody[fi].A2;
+                        segA3[fi] = result.Prosody[fi].A3;
+                    }
+                }
                 else if (lang == "pt" && _ptEngine != null)
                 {
                     // Use DotNetG2P.Portuguese engine directly
