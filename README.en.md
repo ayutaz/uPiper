@@ -26,8 +26,19 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 
 - High-quality speech synthesis (piper-plus based)
 - Multi-language support (Japanese, English, Chinese, Spanish, French, Portuguese, Korean)
+
+| Language | G2P Backend |
+|----------|-------------|
+| Japanese | DotNetG2P.Japanese (MeCab dictionary) |
+| English | DotNetG2P.English (Flite LTS) |
+| Chinese | DotNetG2P.Chinese (44K character dictionary) |
+| Spanish | DotNetG2P.Spanish |
+| French | DotNetG2P.French |
+| Portuguese | DotNetG2P.Portuguese |
+| Korean | DotNetG2P.Korean |
+
 - Fast inference with Unity AI Inference Engine
-- High-precision Japanese phonemization with dot-net-g2p (MeCab dictionary, all platforms)
+- High-precision multilingual phonemization with DotNetG2P packages (all platforms)
 - GPU inference support (GPUCompute/GPUPixel)
 - **Prosody Support**: More natural intonation in speech synthesis
 - **Custom Dictionary**: Reading conversion for technical terms and proper nouns

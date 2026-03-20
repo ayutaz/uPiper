@@ -25,32 +25,34 @@ uPiper is a plugin for using Piper TTS in Unity environments. It employs neural 
 
 ### 1. Text Input Layer
 
-- **Japanese**: Mixed text with Kanji, Hiragana, and Katakana (dot-net-g2p / MeCab dictionary)
-- **English**: Alphabetic text (Flite LTS, pure C#)
-- **Spanish**: Rule-based G2P
-- **French**: Rule-based G2P
-- **Portuguese**: Rule-based G2P (Brazilian variant)
-- **Chinese**: Pinyin lookup + IPA conversion
-- **Korean**: Hangul decomposition + phonological rules
+- **Japanese**: Mixed text with Kanji, Hiragana, and Katakana (DotNetG2P / MeCab dictionary)
+- **English**: Alphabetic text (DotNetG2P.English / CMU dictionary + LTS + homograph resolution)
+- **Spanish**: DotNetG2P.Spanish (rule-based G2P)
+- **French**: DotNetG2P.French (rule-based G2P)
+- **Portuguese**: DotNetG2P.Portuguese (rule-based G2P, Brazilian variant)
+- **Chinese**: DotNetG2P.Chinese (44K character + 47K phrase dictionary)
+- **Korean**: DotNetG2P.Korean (Hangul decomposition + phonological rules)
 
 ### 2. Phonemization Layer
 
 #### MultilingualPhonemizer
-- **Role**: Route text segments to language-specific G2P backends based on Unicode script detection
+- **Role**: Segment text by Unicode script ranges and delegate to per-language DotNetG2P engines
 - **Language Detection**: `UnicodeLanguageDetector` identifies language by character ranges (CJK, Hangul, Latin, etc.)
 - **PUA Token Mapping**: `PuaTokenMapper` provides unified PUA-to-IPA bidirectional mapping across all 7 languages (87 fixed entries)
 
-#### Language-Specific Backends
+#### Language-Specific DotNetG2P Engines
 
-| Backend | Language | Implementation |
-|---------|----------|---------------|
-| `DotNetG2PPhonemizer` | Japanese | dot-net-g2p / MeCab dictionary (789,120 entries) |
-| `FlitePhonemizerBackend` | English | Flite LTS (pure C#) |
-| `SpanishPhonemizerBackend` | Spanish | Rule-based G2P |
-| `FrenchPhonemizerBackend` | French | Rule-based G2P |
-| `PortuguesePhonemizerBackend` | Portuguese | Rule-based G2P (Brazilian variant) |
-| `ChinesePhonemizerBackend` | Chinese | Pinyin lookup + IPA conversion |
-| `KoreanPhonemizerBackend` | Korean | Hangul decomposition + phonological rules |
+| Engine | Language | Package | Implementation |
+|--------|----------|---------|---------------|
+| `DotNetG2PPhonemizer` | Japanese | dot-net-g2p | MeCab dictionary (789,120 entries) |
+| `EnglishG2PEngine` | English | DotNetG2P.English | CMU dictionary + LTS + homograph resolution |
+| `SpanishG2PEngine` | Spanish | DotNetG2P.Spanish | Rule-based G2P |
+| `FrenchG2PEngine` | French | DotNetG2P.French | Rule-based G2P |
+| `PortugueseG2PEngine` | Portuguese | DotNetG2P.Portuguese | Rule-based G2P (Brazilian variant) |
+| `ChineseG2PEngine` | Chinese | DotNetG2P.Chinese | 44K character + 47K phrase dictionary |
+| `KoreanG2PEngine` | Korean | DotNetG2P.Korean | Hangul decomposition + phonological rules |
+
+MultilingualPhonemizer calls each engine's `ToPuaPhonemes()` for PUA phonemes and `ToIpaWithProsody()` for prosody information.
 
 #### dot-net-g2p (Japanese)
 - **Role**: Convert Japanese text to phoneme sequences
@@ -150,28 +152,38 @@ Prosody-enabled models (such as multilingual-test-medium) can generate more natu
 ### Data Flow (Prosody-Enabled)
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Text Input    │ --> │ CustomDictionary │ --> │   DotNetG2P     │
-│   "Dockerを..."  │     │ (Preprocessing)  │     │   Phonemizer    │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-                                                         │
-                                 ┌───────────────────────┴───────────────────────┐
-                                 │                                               │
-                                 ↓                                               ↓
-                        ┌──────────────────┐                        ┌──────────────────┐
-                        │ Phoneme Sequence │                        │ Prosody Data     │
-                        │ "d o q k a ..."  │                        │ A1: [0,1,2,...]  │
-                        └──────────────────┘                        │ A2: [2,2,2,...]  │
-                                 │                                  │ A3: [1,1,1,...]  │
-                                 │                                  └──────────────────┘
-                                 │                                           │
-                                 ↓                                           │
-                        ┌──────────────────┐                                 │
-                        │ PhonemeEncoder   │                                 │
-                        │ IPA/PUA Convert  │                                 │
-                        └──────────────────┘                                 │
-                                 │                                           │
-                                 ↓                                           ↓
+┌─────────────────┐     ┌──────────────────┐     ┌──────────────────────────┐
+│   Text Input    │ --> │ CustomDictionary │ --> │ MultilingualPhonemizer   │
+│   "Dockerを..."  │     │ (Preprocessing)  │     │ (Language Detection &    │
+└─────────────────┘     └──────────────────┘     │  Routing)                │
+                                                  └──────────────────────────┘
+                                                             │
+                                    ┌────────────────────────┼────────────────────────┐
+                                    ↓                        ↓                        ↓
+                            ┌──────────────┐  ┌────────────────────┐  ┌──────────────────┐
+                            │ ja: DotNet   │  │ en: DotNetG2P      │  │ es/fr/pt/zh/ko:  │
+                            │   G2P        │  │   .English         │  │ DotNetG2P.*      │
+                            └──────┬───────┘  └────────┬───────────┘  └────────┬─────────┘
+                                   │                   │                       │
+                                   │     ToPuaPhonemes() / ToIpaWithProsody()  │
+                                   └───────────────────┼───────────────────────┘
+                                 ┌───────────────────────┬──┘
+                                 │                       │
+                                 ↓                       ↓
+                        ┌──────────────────┐  ┌──────────────────┐
+                        │ PUA Phonemes     │  │ Prosody Data     │
+                        │ "d o q k a ..."  │  │ A1: [0,1,2,...]  │
+                        └──────────────────┘  │ A2: [2,2,2,...]  │
+                                 │            │ A3: [1,1,1,...]  │
+                                 │            └──────────────────┘
+                                 │                       │
+                                 ↓                       │
+                        ┌──────────────────┐             │
+                        │ PhonemeEncoder   │             │
+                        │ IPA/PUA Convert  │             │
+                        └──────────────────┘             │
+                                 │                       │
+                                 ↓                       ↓
                         ┌─────────────────────────────────────────────────────────┐
                         │              VITS Model (ONNX)                          │
                         │  Input: phoneme_ids, a1, a2, a3                        │
@@ -314,7 +326,7 @@ Dictionaries are placed in `StreamingAssets/uPiper/Dictionaries/`:
 
 ### Platform-Specific Implementation
 
-All G2P backends (dot-net-g2p, Flite LTS, and the rule-based backends) are pure C# implementations, so no platform-specific native libraries are required.
+All G2P backends use DotNetG2P packages (pure C# implementations), so no platform-specific native libraries are required.
 
 #### Windows
 - Unity backend: Mono/IL2CPP

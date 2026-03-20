@@ -8,19 +8,19 @@ uPiperは[piper-plus](https://github.com/ayutaz/piper-plus)ベースの高品質
 
 | 言語 | G2Pバックエンド |
 |------|----------------|
-| 日本語 | dot-net-g2p / MeCab辞書 |
-| 英語 | Flite LTS (純粋C#) |
-| スペイン語 | ルールベースG2P |
-| フランス語 | ルールベースG2P |
-| ポルトガル語 | ルールベースG2P (ブラジル変種) |
-| 中国語 | ピンインルックアップ + IPA変換 |
-| 韓国語 | Hangul分解 + 音韻規則 |
+| 日本語 | DotNetG2P.MeCab (dot-net-g2p / MeCab辞書) |
+| 英語 | DotNetG2P.English (EnglishG2PEngine, CMU dict + LTS) |
+| スペイン語 | DotNetG2P.Spanish (SpanishG2PEngine) |
+| フランス語 | DotNetG2P.French (FrenchG2PEngine) |
+| ポルトガル語 | DotNetG2P.Portuguese (PortugueseG2PEngine) |
+| 中国語 | DotNetG2P.Chinese (ChineseG2PEngine, 44K文字辞書) |
+| 韓国語 | DotNetG2P.Korean (KoreanG2PEngine) |
 
 ### 対応モデル
 
 | モデル名 | 言語 | Prosody対応 | 説明 |
 |---------|------|------------|------|
-| multilingual-test-medium | 多言語(6言語) | Yes | 多言語対応モデル（ja/en/zh/es/fr/pt）、`phoneme_type: "multilingual"` |
+| multilingual-test-medium | 多言語(6言語) | Yes | 多言語対応モデル（ja/en/zh/es/fr/pt）、fp16、38MB、`phoneme_type: "multilingual"` |
 
 ## ビルド・テストコマンド
 
@@ -48,14 +48,14 @@ dotnet format --verify-no-changes
     • 技術用語・固有名詞の読み変換
     • 例: "Docker" → "ドッカー", "GitHub" → "ギットハブ"
     ↓
-MultilingualPhonemizer (言語ルーティング)
+MultilingualPhonemizer (言語ルーティング, DotNetG2Pエンジン直接呼び出し)
     ├─ ja: DotNetG2PPhonemizer (dot-net-g2p, MeCab辞書)
-    ├─ en: FlitePhonemizerBackend (純粋C#)
-    ├─ es: SpanishPhonemizerBackend (ルールベースG2P)
-    ├─ fr: FrenchPhonemizerBackend (ルールベースG2P)
-    ├─ pt: PortuguesePhonemizerBackend (ルールベースG2P)
-    ├─ zh: ChinesePhonemizerBackend (ピンインルックアップ)
-    └─ ko: KoreanPhonemizerBackend (Hangul分解)
+    ├─ en: EnglishG2PEngine (DotNetG2P.English, CMU dict + LTS)
+    ├─ es: SpanishG2PEngine (DotNetG2P.Spanish)
+    ├─ fr: FrenchG2PEngine (DotNetG2P.French)
+    ├─ pt: PortugueseG2PEngine (DotNetG2P.Portuguese)
+    ├─ zh: ChinesePhonemizerBackend (DotNetG2P.Chinese, 44K文字辞書)
+    └─ ko: KoreanG2PEngine (DotNetG2P.Korean)
     ↓
 PuaTokenMapper (PUA↔IPA双方向マッピング, 87固定エントリ)
     • 全7言語の音素をPUA文字にマッピング
@@ -95,23 +95,23 @@ AudioClip出力 (22050Hz, float32)
 | コンポーネント | 場所 | 役割 |
 |--------------|------|------|
 | `IPiperTTS` / `PiperTTS` | `Runtime/Core/` | メインインターフェース |
-| `IPhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/` | 音素化バックエンド抽象 |
-| `FlitePhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/Flite/` | 英語音素化（C#） |
-| `MultilingualPhonemizer` | `Runtime/Core/Phonemizers/Multilingual/` | 多言語テキスト分割・バックエンド委譲 |
+| `IPhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/` | 音素化バックエンド抽象（中国語のみ使用） |
+| `MultilingualPhonemizer` | `Runtime/Core/Phonemizers/Multilingual/` | 多言語テキスト分割・DotNetG2Pエンジン直接呼び出し |
 | `UnicodeLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Unicode文字範囲ベース言語検出 |
 | `DotNetG2PPhonemizer` | `Runtime/Core/Phonemizers/Implementations/` | 日本語G2P（dot-net-g2p, Prosody対応） |
 | `CustomDictionary` | `Runtime/Core/Phonemizers/` | カスタム辞書（技術用語・固有名詞の読み変換） |
 | `PiperConfig` | `Runtime/Core/` | 設定管理（GPU, キャッシュ, バックエンド選択） |
 | `AudioChunkBuilder` | `Runtime/Core/AudioGeneration/` | 音声波形→AudioClip変換 |
 | `InferenceAudioGenerator` | `Runtime/Core/AudioGeneration/` | ONNX直接推論（Prosody対応） |
-| `SpanishPhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/Spanish/` | スペイン語G2P |
-| `FrenchPhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/French/` | フランス語G2P |
-| `PortuguesePhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/Portuguese/` | ポルトガル語G2P |
-| `ChinesePhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/Chinese/` | 中国語G2P(ピンイン) |
-| `KoreanPhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/Korean/` | 韓国語G2P(Hangul) |
+| `EnglishG2PEngine` | DotNetG2P.English パッケージ | 英語G2P（CMU dict + LTS + 同音異義語解決） |
+| `SpanishG2PEngine` | DotNetG2P.Spanish パッケージ | スペイン語G2P |
+| `FrenchG2PEngine` | DotNetG2P.French パッケージ | フランス語G2P |
+| `PortugueseG2PEngine` | DotNetG2P.Portuguese パッケージ | ポルトガル語G2P |
+| `ChinesePhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/Chinese/` | 中国語G2P（DotNetG2P.Chinese wrapper） |
+| `KoreanG2PEngine` | DotNetG2P.Korean パッケージ | 韓国語G2P（Hangul分解 + 音韻規則） |
 | `PuaTokenMapper` | `Runtime/Core/Phonemizers/Multilingual/` | PUA↔IPA双方向マッピング |
 | `LanguageConstants` | `Runtime/Core/Phonemizers/Multilingual/` | 言語ID/コード定数 |
-| `InferenceEngineDemo` | `Runtime/Demo/` | テスト用デモUI |
+| `InferenceEngineDemo` | `Runtime/Demo/` | テスト用デモUI（6言語ドロップダウン） |
 
 ### ディレクトリ構造
 ```
@@ -120,12 +120,13 @@ Assets/uPiper/
 │   ├── Core/               # ランタイムコア
 │   │   ├── AudioGeneration/    # AudioClip生成、ONNX推論
 │   │   ├── Phonemizers/        # 音素化システム
-│   │   │   ├── Backend/        # バックエンド実装
-│   │   │   │   ├── Spanish/       # スペイン語G2Pバックエンド
-│   │   │   │   ├── French/        # フランス語G2Pバックエンド
-│   │   │   │   ├── Portuguese/    # ポルトガル語G2Pバックエンド
-│   │   │   │   ├── Chinese/       # 中国語G2P(ピンイン)バックエンド
-│   │   │   │   └── Korean/        # 韓国語G2P(Hangul)バックエンド
+│   │   │   ├── Backend/        # バックエンド実装（大半はDotNetG2Pパッケージに移行）
+│   │   │   │   ├── Chinese/       # 中国語G2P（DotNetG2P.Chinese wrapper）
+│   │   │   │   ├── Flite/         # 英語Flite LTS（レガシー、通常はDotNetG2P.Englishを使用）
+│   │   │   │   ├── Spanish/       # スペイン語（レガシー、DotNetG2P.Spanishに移行済み）
+│   │   │   │   ├── French/        # フランス語（レガシー、DotNetG2P.Frenchに移行済み）
+│   │   │   │   ├── Portuguese/    # ポルトガル語（レガシー、DotNetG2P.Portugueseに移行済み）
+│   │   │   │   └── Korean/        # 韓国語（レガシー、DotNetG2P.Koreanに移行済み）
 │   │   │   ├── Implementations/# Prosody対応実装
 │   │   │   ├── Multilingual/   # 多言語共通(PuaTokenMapper, LanguageConstants)
 │   │   │   ├── Native/         # P/Invoke定義
@@ -323,7 +324,7 @@ _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
 
 ### PuaTokenMapper（多言語対応）
 
-`PuaTokenMapper`は全7言語の音素に対する統一的なPUA↔IPAの双方向マッピングを提供する（87固定エントリ）。各言語のG2Pバックエンドが出力した音素をPUA文字に変換し、モデルの`phoneme_id_map`と照合する。
+`PuaTokenMapper`は全7言語の音素に対する統一的なPUA↔IPAの双方向マッピングを提供する（87固定エントリ）。各DotNetG2Pエンジンの`ToPuaPhonemes()`メソッドが内部でPUA変換を行い、`MultilingualPhonemizer`はその結果をそのままモデルの`phoneme_id_map`と照合する。
 
 ### 主要な音素マッピング
 

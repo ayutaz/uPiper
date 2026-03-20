@@ -23,15 +23,34 @@ uPiperは、Unity環境でPiper TTSを使用するためのプラグインです
 
 ### 1. テキスト入力層
 
-- **日本語**: 漢字・ひらがな・カタカナ混じりのテキスト
-- **英語**: アルファベットテキスト（Flite LTS 純粋C#実装）
-- **スペイン語**: ルールベースG2P
-- **フランス語**: ルールベースG2P
-- **ポルトガル語**: ルールベースG2P（ブラジル変種）
-- **中国語**: ピンインルックアップ + IPA変換
-- **韓国語**: Hangul分解 + 音韻規則
+- **日本語**: 漢字・ひらがな・カタカナ混じりのテキスト（DotNetG2P / MeCab辞書）
+- **英語**: アルファベットテキスト（DotNetG2P.English / CMU辞書 + LTS + 同形異義語解決）
+- **スペイン語**: DotNetG2P.Spanish（ルールベースG2P）
+- **フランス語**: DotNetG2P.French（ルールベースG2P）
+- **ポルトガル語**: DotNetG2P.Portuguese（ルールベースG2P、ブラジル変種）
+- **中国語**: DotNetG2P.Chinese（44K文字 + 47K語句辞書）
+- **韓国語**: DotNetG2P.Korean（Hangul分解 + 音韻規則）
 
 ### 2. 音素化層（Phonemizer）
+
+#### MultilingualPhonemizer
+- **役割**: テキストをUnicode文字範囲で言語セグメントに分割し、各言語のDotNetG2Pエンジンに委譲
+- **言語検出**: `UnicodeLanguageDetector`が文字種（CJK、Hangul、Latin等）で言語を識別
+- **PUAトークンマッピング**: `PuaTokenMapper`が全7言語の音素に対する統一的なPUA-IPA双方向マッピングを提供（87固定エントリ）
+
+#### 言語別DotNetG2Pエンジン
+
+| エンジン | 言語 | パッケージ | 実装 |
+|---------|------|-----------|------|
+| `DotNetG2PPhonemizer` | 日本語 | dot-net-g2p | MeCab辞書（789,120エントリ） |
+| `EnglishG2PEngine` | 英語 | DotNetG2P.English | CMU辞書 + LTS + 同形異義語解決 |
+| `SpanishG2PEngine` | スペイン語 | DotNetG2P.Spanish | ルールベースG2P |
+| `FrenchG2PEngine` | フランス語 | DotNetG2P.French | ルールベースG2P |
+| `PortugueseG2PEngine` | ポルトガル語 | DotNetG2P.Portuguese | ルールベースG2P（ブラジル変種） |
+| `ChineseG2PEngine` | 中国語 | DotNetG2P.Chinese | 44K文字 + 47K語句辞書 |
+| `KoreanG2PEngine` | 韓国語 | DotNetG2P.Korean | Hangul分解 + 音韻規則 |
+
+MultilingualPhonemizerは各エンジンの`ToPuaPhonemes()`でPUA音素を、`ToIpaWithProsody()`でProsody情報を取得します。
 
 #### dot-net-g2p（日本語）
 - **役割**: 日本語テキストを音素列に変換
@@ -129,18 +148,20 @@ Prosody対応モデル（multilingual-test-medium等）では、dot-net-g2p（Me
 │   "Dockerを..."  │     │ (前処理)         │     │ (言語検出・ルーティング)   │
 └─────────────────┘     └──────────────────┘     └──────────────────────────┘
                                                              │
-                                          ┌──────────────────┼──────────────────┐
-                                          ↓                  ↓                  ↓
-                                  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-                                  │ ja: DotNet   │  │ en: Flite    │  │ es/fr/pt/    │
-                                  │   G2P        │  │   LTS        │  │ zh/ko        │
-                                  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘
-                                         └─────────────────┼─────────────────┘
+                                    ┌────────────────────────┼────────────────────────┐
+                                    ↓                        ↓                        ↓
+                            ┌──────────────┐  ┌────────────────────┐  ┌──────────────────┐
+                            │ ja: DotNet   │  │ en: DotNetG2P      │  │ es/fr/pt/zh/ko:  │
+                            │   G2P        │  │   .English         │  │ DotNetG2P.*      │
+                            └──────┬───────┘  └────────┬───────────┘  └────────┬─────────┘
+                                   │                   │                       │
+                                   │     ToPuaPhonemes() / ToIpaWithProsody()  │
+                                   └───────────────────┼───────────────────────┘
                                  ┌───────────────────────┬──┘
                                  │                       │
                                  ↓                       ↓
                         ┌──────────────────┐  ┌──────────────────┐
-                        │ Phoneme Sequence │  │ Prosody Data     │
+                        │ PUA Phonemes     │  │ Prosody Data     │
                         │ "d o q k a ..."  │  │ A1: [0,1,2,...]  │
                         └──────────────────┘  │ A2: [2,2,2,...]  │
                                  │            │ A3: [1,1,1,...]  │
