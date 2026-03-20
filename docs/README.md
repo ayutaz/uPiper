@@ -5,20 +5,23 @@
 ### platforms/ - プラットフォーム別実装
 - **android/** - Android実装ガイド
   - build-settings.md - ビルド設定
-  - implementation-guide.md - 実装ガイド
-  - performance-optimization.md - パフォーマンス最適化
-  - technical-report.md - 技術レポート
 
 ### features/ - 機能別ドキュメント
 - **phonemization/** - 音素化システム
-  - README.md - 音素化システム概要（技術仕様・実装・ライセンス評価）
+  - README.md - 音素化システム概要
 - **gpu/** - GPU推論
   - gpu-inference.md - GPU推論ガイド
 
 ### development/ - 開発者向け
 - CI_CD_GUIDE.md - CI/CDガイド
-- additional-language-support.md - 追加言語サポート
 - test-execution-guide.md - テスト実行ガイド
+
+### experts/ - 技術詳細
+- 02_unity_optimization.md - Unity最適化戦略
+- 03_webgl_web_technology.md - WebGL技術
+- 05_multilingual.md - 多言語ロードマップ
+- 06_api_dx_design.md - API設計
+- 09_cicd_testing.md - CI/CDテスト戦略
 
 ### ルートドキュメント
 - ARCHITECTURE_ja.md - アーキテクチャ（日本語）
