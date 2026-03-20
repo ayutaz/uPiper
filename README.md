@@ -47,7 +47,7 @@
 
 | モデル名 | 言語 | Prosody対応 | 説明 |
 |---------|------|------------|------|
-| multilingual-test-medium | 多言語(7言語: ja/en/zh/es/fr/pt/ko) | Yes | 多言語対応モデル（Prosody対応） |
+| multilingual-test-medium | 多言語(6言語: ja/en/zh/es/fr/pt) | Yes | 多言語対応モデル（Prosody対応） |
 
 ## Requirements
 * Unity 6000.0.58f2

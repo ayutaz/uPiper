@@ -143,6 +143,128 @@ public static class LanguageConstants
 }
 ```
 
+## PiperTTS 初期化・音声生成フロー
+
+### 初期化シーケンス
+
+```
+InitializeAsync()
+  ├── ValidateRuntimeEnvironment()
+  ├── InitializeInferenceEngineAsync()
+  │   └── Backend選択: Auto/CPU/GPUCompute/GPUPixel
+  ├── InitializeCacheSystem()
+  ├── InitializePhonemizerAsync()
+  │   ├── DefaultLanguage == "ja"/"jp"/"japanese"
+  │   │   ├── WebGL → DotNetG2PPhonemizer.InitializeAsync()
+  │   │   └── 非WebGL → DotNetG2PPhonemizer() 同期
+  │   └── その他 → _phonemizer = null（フォールバック）
+  │
+  │   ※ MultilingualPhonemizer は GenerateAudioAsync(text, language) 経由で
+  │     必要時に PiperTTS 内部で生成・初期化される
+  └── _isInitialized = true
+```
+
+### MultilingualPhonemizer 初期化詳細
+
+```
+MultilingualPhonemizer(languages, defaultLatinLanguage,
+                       jaPhonemizer?, enPhonemizer?,
+                       esPhonemizer?, frPhonemizer?,
+                       ptPhonemizer?, zhPhonemizer?,
+                       koPhonemizer?)
+  │  ※ コンストラクタは全バックエンドをオプショナル引数で受け取り（DI対応）
+  │  ※ null の場合は InitializeAsync() で自動生成
+  │
+  └── InitializeAsync()
+      ├── "ja" → DotNetG2PPhonemizer()
+      │   ├── WebGL → InitializeAsync() (非同期)
+      │   └── 非WebGL → コンストラクタで同期初期化
+      ├── "en" → FlitePhonemizerBackend (Flite LTS)
+      │   └── フォールバック → RuleBasedPhonemizer
+      ├── "es" → SpanishPhonemizerBackend
+      ├── "fr" → FrenchPhonemizerBackend
+      ├── "pt" → PortuguesePhonemizerBackend
+      ├── "zh" → ChinesePhonemizerBackend
+      ├── "ko" → KoreanPhonemizerBackend
+      └── _isInitialized = true
+```
+
+### 音声生成フロー（基本: 言語指定なし）
+
+```
+GenerateAudioAsync(text)
+  ├── PhonemizeAsync(text)
+  │   ├── キャッシュチェック
+  │   ├── TextNormalizer.Normalize()
+  │   └── DotNetG2PPhonemizer.PhonemizeInternalAsync()
+  │       ├── CustomDictionary.ApplyToText()
+  │       ├── G2PEngine.ToPhonemes() / ToProsodyFeatures()
+  │       ├── OpenJTalkToPiperMapping変換
+  │       ├── N音素コンテキスト依存処理
+  │       └── 疑問形判定
+  ├── Prosody対応判定
+  │   ├── _inferenceGenerator.SupportsProsody
+  │   └── _phonemizer is DotNetG2PPhonemizer
+  ├── PhonemeEncoder.Encode[WithProsody]()
+  └── InferenceAudioGenerator.GenerateAudio[WithProsody]Async()
+      └── ExecuteInference() → AudioClip
+```
+
+### 音声生成フロー（言語指定: Phase 4/5）
+
+```
+GenerateAudioAsync(text, language)
+  ├── 言語解決
+  │   ├── language == "auto" || null → DetectLanguage(text)
+  │   │   └── UnicodeLanguageDetector.SegmentText() → 文字数加重で主言語決定
+  │   └── 明示的言語コード → そのまま使用
+  ├── LanguageIdMap から languageId 取得
+  └── GenerateAudioWithMultilingualAsync(text, languageId)
+      └── 内部で MultilingualPhonemizer.PhonemizeWithProsodyAsync() を使用
+```
+
+### 多言語音素化フロー（MultilingualPhonemizer）
+
+```
+PhonemizeWithProsodyAsync(text)
+  ├── UnicodeLanguageDetector.SegmentText(text)
+  │   └── テキストを言語別セグメントに分割
+  │       例: "今日はgoodですね" → [("ja","今日は"), ("en","good"), ("ja","ですね")]
+  ├── 主言語判定（文字数加重）
+  ├── セグメントごとに処理:
+  │   ├── lang == "ja" → DotNetG2PPhonemizer.PhonemizeWithProsody()
+  │   │   └── Prosody情報（A1, A2, A3）付き音素を返す
+  │   └── その他 → GetBackendForLanguage(lang)
+  │       ├── "en" → _enPhonemizer.PhonemizeAsync()
+  │       ├── "es" → _esPhonemizer.PhonemizeAsync()
+  │       ├── "fr" → _frPhonemizer.PhonemizeAsync()
+  │       ├── "pt" → _ptPhonemizer.PhonemizeAsync()
+  │       ├── "zh" → _zhPhonemizer.PhonemizeAsync()
+  │       ├── "ko" → _koPhonemizer.PhonemizeAsync()
+  │       └── 不明 → _enPhonemizer（英語フォールバック）
+  ├── 中間セグメントのEOS除去（"$", "?", "?!" 等）
+  ├── Prosody配列のパディング（非日本語セグメントは 0 埋め）
+  └── MultilingualPhonemizeResult
+      ├── Phonemes: 全セグメント結合済み音素配列
+      ├── ProsodyA1, ProsodyA2, ProsodyA3: Prosody値配列
+      └── DetectedPrimaryLanguage: 主言語コード
+```
+
+### VoiceConfig 言語マッピング
+
+`model.onnx.json` から言語情報を読み取り:
+- `num_languages`: 対応言語数
+- `language_id_map`: 言語コード→ID マッピング
+
+```json
+{
+  "num_languages": 7,
+  "language_id_map": {
+    "ja": 0, "en": 1, "zh": 2, "es": 3, "fr": 4, "pt": 5, "ko": 6
+  }
+}
+```
+
 ## Phonemizerバックエンド構成（Phase 5）
 
 ### 継承階層

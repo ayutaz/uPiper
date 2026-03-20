@@ -48,11 +48,11 @@ Unity側（uPiper）への反映に必要な技術調査を実施。
 
 | # | コンポーネント | 変更内容 | 詳細ドキュメント |
 |---|--------------|---------|----------------|
-| 1 | InferenceAudioGenerator | `lid`/`sid` テンソル入力対応 | [12_onnx_inference.md](12_onnx_inference.md) |
-| 2 | MultilingualPhonemizer | C#移植（言語セグメンテーション+委譲） | [13_multilingual_phonemizer.md](13_multilingual_phonemizer.md) |
-| 3 | LanguageDetector | Unicode範囲拡張（6言語対応） | [14_language_detector.md](14_language_detector.md) |
-| 4 | PhonemeEncoder | 多言語音素IDマップ+IPA/PUA判定拡張 | [15_phoneme_id_map.md](15_phoneme_id_map.md) |
-| 5 | PiperTTS | 初期化・生成フロー改修 | [16_pipertts_flow.md](16_pipertts_flow.md) |
+| 1 | InferenceAudioGenerator | `lid`/`sid` テンソル入力対応 | (実装済み、コード参照) |
+| 2 | MultilingualPhonemizer | C#移植（言語セグメンテーション+委譲） | (実装済み、コード参照) |
+| 3 | LanguageDetector | Unicode範囲拡張（6言語対応） | (実装済み、コード参照) |
+| 4 | PhonemeEncoder | 多言語音素IDマップ+IPA/PUA判定拡張 | [17_phoneme_encoder.md](17_phoneme_encoder.md) |
+| 5 | PiperTTS | 初期化・生成フロー改修 | [21_api_design.md](21_api_design.md) |
 | 6 | PhonemeEncoder | 言語別マッピング戦略 | [17_phoneme_encoder.md](17_phoneme_encoder.md) |
 | 7 | 新言語Phonemizer | 各言語のC#実装戦略 **（Phase 5完了: es/fr/pt/zh/ko 5言語実装済み）** | [18_new_lang_phonemizers.md](18_new_lang_phonemizers.md) |
 | 8 | プラットフォーム | WebGL/IL2CPP/モバイル影響 | [19_platform_impact.md](19_platform_impact.md) |

@@ -1,20 +1,22 @@
 # uPiper 多言語対応レポート - 2026年3月版
 
-## 現在の対応状況（Phase 5完了）
+## 現在の対応状況（Phase 6完了: DotNetG2P移行）
+
+> **Note**: Phase 5で実装した自前バックエンド（SpanishPhonemizerBackend等）はPhase 6でDotNetG2Pパッケージに移行済み。MultilingualPhonemizerはDotNetG2Pエンジンを直接呼び出す。中国語のみレガシーバックエンド（ChinesePhonemizerBackend）を継続使用。
 
 ### 対応言語一覧（7言語）
 
 | 言語 | コード | バックエンド | G2P方式 | 状態 |
 |------|--------|-------------|---------|------|
 | 日本語 | ja | DotNetG2PPhonemizer | MeCab辞書 + Prosody | ✅ 実装済み |
-| 英語 | en | FlitePhonemizerBackend | Flite LTS | ✅ 実装済み |
-| スペイン語 | es | SpanishPhonemizerBackend | ルールベースG2P | ✅ Phase 5 |
-| フランス語 | fr | FrenchPhonemizerBackend | ルールベースG2P（鼻母音・黙字処理） | ✅ Phase 5 |
-| ポルトガル語 | pt | PortuguesePhonemizerBackend | ルールベースG2P（ブラジルポルトガル語） | ✅ Phase 5 |
-| 中国語 | zh | ChinesePhonemizerBackend | ピンイン変換テーブル + IPA変換 + 声調処理 | ✅ Phase 5 |
-| 韓国語 | ko | KoreanPhonemizerBackend | ハングル分解 + 音韻規則 | ✅ Phase 5 |
+| 英語 | en | EnglishG2PEngine (DotNetG2P) | Flite LTS | ✅ Phase 6移行済み |
+| スペイン語 | es | SpanishG2PEngine (DotNetG2P) | ルールベースG2P | ✅ Phase 6移行済み |
+| フランス語 | fr | FrenchG2PEngine (DotNetG2P) | ルールベースG2P（鼻母音・黙字処理） | ✅ Phase 6移行済み |
+| ポルトガル語 | pt | PortugueseG2PEngine (DotNetG2P) | ルールベースG2P（ブラジルポルトガル語） | ✅ Phase 6移行済み |
+| 中国語 | zh | ChinesePhonemizerBackend | ピンイン変換テーブル + IPA変換 + 声調処理 | ✅ Phase 5（レガシー） |
+| 韓国語 | ko | KoreanG2PEngine (DotNetG2P) | ハングル分解 + 音韻規則 | ✅ Phase 6移行済み |
 
-### 共有インフラストラクチャ（Phase 5）
+### 共有インフラストラクチャ（Phase 5 → Phase 6）
 
 | コンポーネント | 場所 | 役割 |
 |--------------|------|------|

@@ -1,5 +1,7 @@
 # 新言語Phonemizer C#実装戦略
 
+> **Note: これらの自前実装（Phase 5）はDotNetG2Pパッケージに移行済み（Phase 6）。MultilingualPhonemizerはDotNetG2Pエンジン（SpanishG2PEngine, FrenchG2PEngine, PortugueseG2PEngine, KoreanG2PEngine等）を直接呼び出します。中国語のみChinesePhonemizerBackend（レガシー）を継続使用。以下は実装経緯の記録として残しています。**
+
 ## 言語別サマリ
 
 | 言語 | 難易度 | C#行数（実測） | 外部依存 | 実装戦略 | ステータス |
