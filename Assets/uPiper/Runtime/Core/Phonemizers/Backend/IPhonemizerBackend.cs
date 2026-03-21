@@ -31,11 +31,6 @@ namespace uPiper.Core.Phonemizers.Backend
         public string[] SupportedLanguages { get; }
 
         /// <summary>
-        /// Gets the priority of this backend (higher values are preferred).
-        /// </summary>
-        public int Priority { get; }
-
-        /// <summary>
         /// Checks if this backend is currently available and initialized.
         /// </summary>
         public bool IsAvailable { get; }

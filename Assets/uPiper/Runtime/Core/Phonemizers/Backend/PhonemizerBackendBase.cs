@@ -26,9 +26,6 @@ namespace uPiper.Core.Phonemizers.Backend
         public abstract string[] SupportedLanguages { get; }
 
         /// <inheritdoc/>
-        public virtual int Priority { get; protected set; } = 50;
-
-        /// <inheritdoc/>
         public bool IsAvailable => isInitialized && !isDisposed;
 
         /// <inheritdoc/>
