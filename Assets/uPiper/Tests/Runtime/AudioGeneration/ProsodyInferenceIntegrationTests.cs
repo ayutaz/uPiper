@@ -164,6 +164,12 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         [Test]
         public async Task GenerateAudioWithProsody_ProducesValidAudio()
         {
+            if (Application.isBatchMode)
+            {
+                Assert.Ignore("Skipping heavy inference test in CI batch mode");
+                return;
+            }
+
             if (_prosodyModelAsset == null)
             {
                 Assert.Ignore("Prosody model not available");
