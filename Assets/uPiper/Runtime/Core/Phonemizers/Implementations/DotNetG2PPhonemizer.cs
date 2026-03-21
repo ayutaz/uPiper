@@ -226,6 +226,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         {
             return new CacheStatistics();
         }
+#pragma warning restore CS1998
 
         private PhonemeResult PhonemizeInternal(string text)
         {
