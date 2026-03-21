@@ -67,10 +67,10 @@ namespace uPiper.Core.Phonemizers
         public bool IsLanguageSupported(string language);
 
         /// <summary>
-        /// Gets detailed information about a supported language.
+        /// Gets the display name for a supported language.
         /// </summary>
         /// <param name="language">The language code.</param>
-        /// <returns>Language information or null if not supported.</returns>
-        public LanguageInfo GetLanguageInfo(string language);
+        /// <returns>Language display name or null if not supported.</returns>
+        public string GetLanguageDisplayName(string language);
     }
 }

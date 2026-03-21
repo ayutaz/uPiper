@@ -28,7 +28,7 @@ namespace uPiper.Core.Phonemizers.Implementations
     /// Provides the same interface as OpenJTalkPhonemizer without native plugin dependency.
     /// </summary>
     [Preserve]
-    public class DotNetG2PPhonemizer : BasePhonemizer
+    public class DotNetG2PPhonemizer : IPhonemizer
     {
         #region Nested Types
 
@@ -59,9 +59,10 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region Properties
 
-        public override string Name => "DotNetG2P";
-        public override string Version => "1.1.0";
-        public override string[] SupportedLanguages => new[] { "ja" };
+        public string Name => "DotNetG2P";
+        public string Version => "1.1.0";
+        public string[] SupportedLanguages => new[] { "ja" };
+        public bool UseCache { get; set; } = true;
 
         #endregion
 
@@ -69,7 +70,6 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         public DotNetG2PPhonemizer(int cacheCapacity = 1000, string dictionaryPath = null,
             bool loadCustomDictionary = true)
-            : base(cacheCapacity)
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
             // WebGL: skip synchronous initialization, use InitializeAsync() instead
@@ -195,21 +195,74 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #endregion
 
-        #region BasePhonemizer Implementation
+        #region IPhonemizer Implementation
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators
-        protected override async Task<PhonemeResult> PhonemizeInternalAsync(
-            string normalizedText,
-            string language,
-            CancellationToken cancellationToken)
+        public async Task<PhonemeResult> PhonemizeAsync(
+            string text,
+            string language = "ja",
+            CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrEmpty(text))
+            {
+                return new PhonemeResult
+                {
+                    OriginalText = text ?? string.Empty,
+                    Language = language,
+                    Phonemes = Array.Empty<string>(),
+                    PhonemeIds = Array.Empty<int>(),
+                    Durations = Array.Empty<float>(),
+                    Pitches = Array.Empty<float>(),
+                    ProcessingTime = TimeSpan.Zero,
+                    FromCache = false
+                };
+            }
+
 #if UNITY_WEBGL && !UNITY_EDITOR
-            return PhonemizeInternal(normalizedText);
+            return PhonemizeInternal(text);
 #else
-            return await Task.Run(() => PhonemizeInternal(normalizedText), cancellationToken);
+            return await Task.Run(() => PhonemizeInternal(text), cancellationToken);
 #endif
         }
 #pragma warning restore CS1998
+
+        public async Task<PhonemeResult[]> PhonemizeBatchAsync(
+            string[] texts,
+            string language = "ja",
+            CancellationToken cancellationToken = default)
+        {
+            if (texts == null || texts.Length == 0)
+                return Array.Empty<PhonemeResult>();
+
+            var tasks = texts.Select(t => PhonemizeAsync(t, language, cancellationToken));
+            return await Task.WhenAll(tasks);
+        }
+
+        public void ClearCache()
+        {
+            // No-op: caching handled by PhonemeCache.Instance
+        }
+
+        public CacheStatistics GetCacheStatistics()
+        {
+            return new CacheStatistics();
+        }
+
+        public bool IsLanguageSupported(string language)
+        {
+            if (string.IsNullOrEmpty(language))
+                return false;
+            return SupportedLanguages.Contains(language.ToLowerInvariant());
+        }
+
+        public string GetLanguageDisplayName(string language)
+        {
+            return language switch
+            {
+                "ja" => "Japanese",
+                _ => null
+            };
+        }
 
         private PhonemeResult PhonemizeInternal(string text)
         {
@@ -582,7 +635,13 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region IDisposable Implementation
 
-        protected override void Dispose(bool disposing)
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
         {
             if (!_disposed)
             {
@@ -594,8 +653,6 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                 _disposed = true;
             }
-
-            base.Dispose(disposing);
         }
 
         #endregion

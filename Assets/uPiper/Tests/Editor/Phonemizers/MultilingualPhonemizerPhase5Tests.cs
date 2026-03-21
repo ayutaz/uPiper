@@ -6,7 +6,6 @@ using NUnit.Framework;
 using DotNetG2P.Spanish;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Backend.Chinese;
-using uPiper.Core.Phonemizers.Backend.Korean;
 using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Editor.Phonemizers
@@ -77,11 +76,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void Constructor_WithPrebuiltKoreanBackend_AcceptsIt()
         {
-            var koBackend = new KoreanPhonemizerBackend();
+            var koEngine = new DotNetG2P.Korean.KoreanG2PEngine();
             var phonemizer = new MultilingualPhonemizer(
                 new[] { "ko", "en" },
                 defaultLatinLanguage: "en",
-                koPhonemizer: koBackend);
+                koG2PEngine: koEngine);
 
             Assert.IsNotNull(phonemizer);
             Assert.AreEqual(2, phonemizer.Languages.Count);
@@ -184,16 +183,12 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void TestKoreanSegmentProcessing()
         {
-            var koBackend = new KoreanPhonemizerBackend();
-            var initOk = Task.Run(async () => await koBackend.InitializeAsync())
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(initOk, "Korean backend should initialize");
+            var koEngine = new DotNetG2P.Korean.KoreanG2PEngine();
 
             var phonemizer = new MultilingualPhonemizer(
                 new[] { "ko", "en" },
                 defaultLatinLanguage: "en",
-                koPhonemizer: koBackend);
+                koG2PEngine: koEngine);
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
@@ -394,13 +389,9 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void TestAllLanguagesInitialized_KoreanBackend()
         {
             // Korean is pure algorithmic - should always initialize successfully
-            var koBackend = new KoreanPhonemizerBackend();
-            var result = Task.Run(async () => await koBackend.InitializeAsync())
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result, "Korean backend should initialize (pure algorithmic, no data files)");
-            Assert.IsTrue(koBackend.IsAvailable);
-            koBackend.Dispose();
+            var koEngine = new DotNetG2P.Korean.KoreanG2PEngine();
+            Assert.IsNotNull(koEngine, "Korean engine should initialize");
+            koEngine.Dispose();
         }
 
         [Test]
@@ -439,13 +430,12 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void TestProsodyPropagation_KoreanThroughPipeline()
         {
-            var koBackend = new KoreanPhonemizerBackend();
-            Task.Run(async () => await koBackend.InitializeAsync()).GetAwaiter().GetResult();
+            var koEngine = new DotNetG2P.Korean.KoreanG2PEngine();
 
             var phonemizer = new MultilingualPhonemizer(
                 new[] { "ko", "en" },
                 defaultLatinLanguage: "en",
-                koPhonemizer: koBackend);
+                koG2PEngine: koEngine);
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
@@ -493,13 +483,13 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void Dispose_WithAllBackends_DoesNotThrow()
         {
-            var koBackend = new KoreanPhonemizerBackend();
+            var koEngine = new DotNetG2P.Korean.KoreanG2PEngine();
             var esEngine = new SpanishG2PEngine();
 
             var phonemizer = new MultilingualPhonemizer(
                 new[] { "ko", "es", "en" },
                 defaultLatinLanguage: "en",
-                koPhonemizer: koBackend,
+                koG2PEngine: koEngine,
                 esEngine: esEngine);
 
             Assert.DoesNotThrow(() => phonemizer.Dispose());

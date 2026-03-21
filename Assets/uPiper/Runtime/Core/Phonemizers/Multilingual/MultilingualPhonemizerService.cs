@@ -5,8 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 using uPiper.Core.Phonemizers.Backend;
-using uPiper.Core.Phonemizers.Backend.Flite;
-using uPiper.Core.Phonemizers.Backend.RuleBased;
 
 namespace uPiper.Core.Phonemizers.Multilingual
 {
@@ -29,100 +27,12 @@ namespace uPiper.Core.Phonemizers.Multilingual
         }
 
         /// <summary>
-        /// Initialize phonemizer backends
+        /// Initialize phonemizer backends.
+        /// Backends are registered externally via RegisterBackend().
         /// </summary>
         private void InitializeBackends()
         {
-#if UNITY_WEBGL && !UNITY_EDITOR
-            // WebGL: initialize backends directly on main thread
-            try
-            {
-                var fliteBackend = new Backend.Flite.FlitePhonemizerBackend();
-                fliteBackend.InitializeAsync(new PhonemizerBackendOptions()).ContinueWith(t =>
-                {
-                    if (t.IsCompletedSuccessfully)
-                    {
-                        foreach (var lang in fliteBackend.SupportedLanguages)
-                        {
-                            AddBackend(lang, fliteBackend);
-                        }
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Failed to initialize Flite backend: {ex.Message}");
-            }
-
-            try
-            {
-                var ruleBasedBackend = new uPiper.Core.Phonemizers.Backend.RuleBased.RuleBasedPhonemizer();
-                ruleBasedBackend.InitializeAsync(new PhonemizerBackendOptions()).ContinueWith(t =>
-                {
-                    if (t.IsCompletedSuccessfully)
-                    {
-                        foreach (var lang in ruleBasedBackend.SupportedLanguages)
-                        {
-                            AddBackend(lang, ruleBasedBackend);
-                        }
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"Failed to initialize rule-based backend: {ex.Message}");
-            }
-#else
-            // Create Flite backend for English variants
-            Task.Run(async () =>
-            {
-                try
-                {
-                    var fliteBackend = new Backend.Flite.FlitePhonemizerBackend();
-                    await fliteBackend.InitializeAsync(new PhonemizerBackendOptions());
-                    foreach (var lang in fliteBackend.SupportedLanguages)
-                    {
-                        AddBackend(lang, fliteBackend);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"Failed to initialize Flite backend: {ex.Message}");
-                }
-            });
-
-            // Create rule-based backend
-            Task.Run(async () =>
-            {
-                try
-                {
-                    var ruleBasedBackend = new uPiper.Core.Phonemizers.Backend.RuleBased.RuleBasedPhonemizer();
-                    await ruleBasedBackend.InitializeAsync(new PhonemizerBackendOptions());
-                    foreach (var lang in ruleBasedBackend.SupportedLanguages)
-                    {
-                        AddBackend(lang, ruleBasedBackend);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"Failed to initialize rule-based backend: {ex.Message}");
-                }
-            });
-
-            // Add other language backends
-            Task.Run(() =>
-            {
-                try
-                {
-                    // Currently only Japanese (via OpenJTalk) and English are supported
-                    // Additional language backends can be added here in the future
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"Failed to initialize language backends: {ex.Message}");
-                }
-            });
-#endif
+            // Backends are registered externally via RegisterBackend()
         }
 
         private void AddBackend(string language, IPhonemizerBackend backend)

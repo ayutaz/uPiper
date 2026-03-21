@@ -1,62 +1,62 @@
 {
   "dependencies": {
     "com.dotnetg2p.chinese": {
-      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#be020f58f91154ea2e077b3ccb10b2b9483f06e2",
+      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.8.2",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "be020f58f91154ea2e077b3ccb10b2b9483f06e2"
+      "hash": "0213e70db84321e582d7b1406ec86f4bc68fa252"
     },
     "com.dotnetg2p.core": {
-      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#be020f58f91154ea2e077b3ccb10b2b9483f06e2",
+      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.8.2",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "be020f58f91154ea2e077b3ccb10b2b9483f06e2"
+      "hash": "0213e70db84321e582d7b1406ec86f4bc68fa252"
     },
     "com.dotnetg2p.english": {
-      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#be020f58f91154ea2e077b3ccb10b2b9483f06e2",
+      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.8.2",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "be020f58f91154ea2e077b3ccb10b2b9483f06e2"
+      "hash": "0213e70db84321e582d7b1406ec86f4bc68fa252"
     },
     "com.dotnetg2p.french": {
-      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#be020f58f91154ea2e077b3ccb10b2b9483f06e2",
+      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.8.2",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "be020f58f91154ea2e077b3ccb10b2b9483f06e2"
+      "hash": "0213e70db84321e582d7b1406ec86f4bc68fa252"
     },
     "com.dotnetg2p.korean": {
-      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#be020f58f91154ea2e077b3ccb10b2b9483f06e2",
+      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.8.2",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "be020f58f91154ea2e077b3ccb10b2b9483f06e2"
+      "hash": "0213e70db84321e582d7b1406ec86f4bc68fa252"
     },
     "com.dotnetg2p.mecab": {
-      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#be020f58f91154ea2e077b3ccb10b2b9483f06e2",
+      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.8.2",
       "depth": 0,
       "source": "git",
       "dependencies": {
         "com.dotnetg2p.core": "1.8.2"
       },
-      "hash": "be020f58f91154ea2e077b3ccb10b2b9483f06e2"
+      "hash": "0213e70db84321e582d7b1406ec86f4bc68fa252"
     },
     "com.dotnetg2p.portuguese": {
-      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#be020f58f91154ea2e077b3ccb10b2b9483f06e2",
+      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.8.2",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "be020f58f91154ea2e077b3ccb10b2b9483f06e2"
+      "hash": "0213e70db84321e582d7b1406ec86f4bc68fa252"
     },
     "com.dotnetg2p.spanish": {
-      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#be020f58f91154ea2e077b3ccb10b2b9483f06e2",
+      "version": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.8.2",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "be020f58f91154ea2e077b3ccb10b2b9483f06e2"
+      "hash": "0213e70db84321e582d7b1406ec86f4bc68fa252"
     },
     "com.unity.ai.inference": {
       "version": "2.5.0",

@@ -8,9 +8,6 @@ using NUnit.Framework;
 using DotNetG2P.Spanish;
 using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Backend.Chinese;
-using uPiper.Core.Phonemizers.Backend.French;
-using uPiper.Core.Phonemizers.Backend.Korean;
-using uPiper.Core.Phonemizers.Backend.Portuguese;
 using uPiper.Core.Phonemizers.Implementations;
 using uPiper.Core.Phonemizers.Multilingual;
 
@@ -597,9 +594,8 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void Dispose_DisposesAllBackends()
         {
             // Create with pre-built backends and verify dispose does not throw
-            var koBackend = new KoreanPhonemizerBackend();
+            var koEngine = new DotNetG2P.Korean.KoreanG2PEngine();
             var esEngine = new SpanishG2PEngine();
-            Task.Run(async () => await koBackend.InitializeAsync()).GetAwaiter().GetResult();
 
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
@@ -607,7 +603,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                 new[] { "ja", "en", "ko", "es" },
                 defaultLatinLanguage: "en",
                 jaPhonemizer: jaPhonemizer,
-                koPhonemizer: koBackend,
+                koG2PEngine: koEngine,
                 esEngine: esEngine);
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();

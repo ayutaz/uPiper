@@ -69,8 +69,6 @@ namespace uPiper.Core.IL2CPP
             {
                 // Phonemizer result types
                 _ = typeof(Phonemizers.Backend.PhonemeResult);
-                _ = typeof(Phonemizers.Cache.CacheItem<string, Phonemizers.Backend.PhonemeResult>);
-                _ = typeof(Phonemizers.Cache.LRUCache<string, Phonemizers.Backend.PhonemeResult>);
             }
         }
 
