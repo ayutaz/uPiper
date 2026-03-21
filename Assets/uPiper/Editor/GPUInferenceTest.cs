@@ -48,8 +48,6 @@ namespace uPiper.Editor
 
             // GPU Settings
             EditorGUILayout.LabelField("GPU Settings", EditorStyles.boldLabel);
-            _config.GPUSettings.MaxBatchSize = EditorGUILayout.IntSlider("Max Batch Size", _config.GPUSettings.MaxBatchSize, 1, 16);
-            _config.GPUSettings.UseFloat16 = EditorGUILayout.Toggle("Use Float16", _config.GPUSettings.UseFloat16);
             _config.GPUSettings.MaxMemoryMB = EditorGUILayout.IntSlider("Max Memory (MB)", _config.GPUSettings.MaxMemoryMB, 128, 2048);
 
             EditorGUILayout.Space();

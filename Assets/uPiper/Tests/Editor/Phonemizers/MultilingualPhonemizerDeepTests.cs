@@ -4,10 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using NUnit.Framework;
+using DotNetG2P.Chinese;
 using DotNetG2P.Spanish;
-using uPiper.Core.Phonemizers.Backend;
-using uPiper.Core.Phonemizers.Backend.Chinese;
+using NUnit.Framework;
 using uPiper.Core.Phonemizers.Implementations;
 using uPiper.Core.Phonemizers.Multilingual;
 
@@ -201,20 +200,25 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void ProsodyArrays_ChineseSegment_Aligned()
         {
             // Verify prosody arrays are aligned with phoneme array for Chinese segments
-            var zhBackend = new ChinesePhonemizerBackend();
-            var initOk = Task.Run(async () => await zhBackend.InitializeAsync())
-                .GetAwaiter().GetResult();
+            var charPath = System.IO.Path.Combine(
+                UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_char.txt");
+            var phrasePath = System.IO.Path.Combine(
+                UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_phrase.txt");
 
-            if (!initOk)
+            if (!System.IO.File.Exists(charPath))
             {
-                Assert.Ignore("ChinesePhonemizerBackend not available in this environment");
+                Assert.Ignore("Chinese dictionary files not found in StreamingAssets");
                 return;
             }
+
+            var zhEngine = System.IO.File.Exists(phrasePath)
+                ? new ChineseG2PEngine(charPath, phrasePath)
+                : new ChineseG2PEngine(charPath);
 
             var phonemizer = new MultilingualPhonemizer(
                 new[] { "zh", "en" },
                 defaultLatinLanguage: "en",
-                zhPhonemizer: zhBackend);
+                zhEngine: zhEngine);
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
             var result = Phonemize(phonemizer, "你好世界");

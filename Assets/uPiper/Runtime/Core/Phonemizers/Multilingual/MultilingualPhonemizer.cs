@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using DotNetG2P.Chinese;
 using DotNetG2P.English;
 using DotNetG2P.French;
 using DotNetG2P.Korean;
@@ -47,18 +48,22 @@ namespace uPiper.Core.Phonemizers.Multilingual
         private static readonly HashSet<string> EosLikeTokens =
             new() { "$", "?", "?!", "?.", "?~", "\ue016", "\ue017", "\ue018" };
 
+        // Tone number -> PUA character mapping (tone1=E046 ... tone5=E04A)
+        private static readonly char[] TonePuaChars = { '\0', '\ue046', '\ue047', '\ue048', '\ue049', '\ue04a' };
+
         private readonly UnicodeLanguageDetector _detector;
         private readonly IReadOnlyList<string> _languages;
+        private readonly HashSet<string> _languageSet;
         private readonly string _defaultLatinLanguage;
         private DotNetG2PPhonemizer _jaPhonemizer;
         private EnglishG2PEngine _enEngine;              // English (DotNetG2P)
         private IPhonemizerBackend _enPhonemizer;        // English legacy (for test stub injection)
         private SpanishG2PEngine _esEngine;              // Spanish (DotNetG2P)
-        private FrenchG2PEngine _frEngine;         // French (DotNetG2P)
-        private PortugueseG2PEngine _ptEngine;     // Portuguese (DotNetG2P)
-        private IPhonemizerBackend _zhPhonemizer;  // Chinese
-        private IPhonemizerBackend _koPhonemizer;  // Korean (legacy backend, kept for backward compatibility)
-        private KoreanG2PEngine _koG2PEngine;      // Korean (DotNetG2P)
+        private FrenchG2PEngine _frEngine;               // French (DotNetG2P)
+        private PortugueseG2PEngine _ptEngine;           // Portuguese (DotNetG2P)
+        private ChineseG2PEngine _zhEngine;              // Chinese (DotNetG2P)
+        private IPhonemizerBackend _koPhonemizer;        // Korean (legacy backend, kept for backward compatibility)
+        private KoreanG2PEngine _koG2PEngine;            // Korean (DotNetG2P)
         private bool _ownsJa;
         private bool _ownsEn;
         private bool _ownsEs;
@@ -85,7 +90,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// <param name="esEngine">Optional pre-built Spanish G2P engine.</param>
         /// <param name="frEngine">Optional pre-built French G2P engine.</param>
         /// <param name="ptEngine">Optional pre-built Portuguese G2P engine.</param>
-        /// <param name="zhPhonemizer">Optional pre-built Chinese phonemizer backend.</param>
+        /// <param name="zhEngine">Optional pre-built Chinese G2P engine (DotNetG2P.Chinese).</param>
         /// <param name="koPhonemizer">Optional pre-built Korean phonemizer backend (legacy, prefer koG2PEngine).</param>
         /// <param name="koG2PEngine">Optional pre-built Korean G2P engine (DotNetG2P.Korean).</param>
         public MultilingualPhonemizer(
@@ -96,7 +101,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             SpanishG2PEngine esEngine = null,
             FrenchG2PEngine frEngine = null,
             PortugueseG2PEngine ptEngine = null,
-            IPhonemizerBackend zhPhonemizer = null,
+            ChineseG2PEngine zhEngine = null,
             IPhonemizerBackend koPhonemizer = null,
             KoreanG2PEngine koG2PEngine = null)
         {
@@ -104,6 +109,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 throw new ArgumentException("At least one language must be specified.", nameof(languages));
 
             _languages = languages;
+            _languageSet = new HashSet<string>(languages);
             _defaultLatinLanguage = defaultLatinLanguage;
             _detector = new UnicodeLanguageDetector(languages, defaultLatinLanguage);
             _jaPhonemizer = jaPhonemizer;
@@ -111,7 +117,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             _esEngine = esEngine;
             _frEngine = frEngine;
             _ptEngine = ptEngine;
-            _zhPhonemizer = zhPhonemizer;
+            _zhEngine = zhEngine;
             _koPhonemizer = koPhonemizer;
             _koG2PEngine = koG2PEngine;
         }
@@ -200,20 +206,38 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 await Task.CompletedTask;
             }
 
-            // Initialize Chinese phonemizer if needed
-            if (ContainsLanguage("zh") && _zhPhonemizer == null)
+            // Initialize Chinese G2P engine if needed
+            if (ContainsLanguage("zh") && _zhEngine == null)
             {
-                var backend = new Backend.Chinese.ChinesePhonemizerBackend();
-                if (await backend.InitializeAsync(new PhonemizerBackendOptions(), cancellationToken))
+                try
                 {
-                    _zhPhonemizer = backend;
-                    _ownsZh = true;
-                    PiperLogger.LogInfo("[MultilingualPhonemizer] Chinese backend initialized");
+                    var charPath = Path.Combine(
+                        Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_char.txt");
+                    var phrasePath = Path.Combine(
+                        Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_phrase.txt");
+
+                    if (File.Exists(charPath))
+                    {
+                        _zhEngine = File.Exists(phrasePath)
+                            ? new ChineseG2PEngine(charPath, phrasePath)
+                            : new ChineseG2PEngine(charPath);
+                        _ownsZh = true;
+                        PiperLogger.LogInfo(
+                            "[MultilingualPhonemizer] Chinese backend initialized: DotNetG2P.Chinese");
+                    }
+                    else
+                    {
+                        PiperLogger.LogWarning(
+                            $"[MultilingualPhonemizer] Chinese dictionary not found at {charPath}");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    PiperLogger.LogWarning("[MultilingualPhonemizer] Failed to initialize Chinese backend");
+                    PiperLogger.LogWarning(
+                        $"[MultilingualPhonemizer] Failed to initialize Chinese backend: {ex.Message}");
                 }
+
+                await Task.CompletedTask;
             }
 
             // Initialize Korean G2P engine if needed (prefer DotNetG2P.Korean over legacy backend)
@@ -227,7 +251,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
             if (_jaPhonemizer == null && _enEngine == null && _enPhonemizer == null &&
                 _esEngine == null && _frEngine == null && _ptEngine == null &&
-                _zhPhonemizer == null && _koG2PEngine == null && _koPhonemizer == null)
+                _zhEngine == null && _koG2PEngine == null && _koPhonemizer == null)
             {
                 PiperLogger.LogWarning(
                     "[MultilingualPhonemizer] Warning: No backends were successfully initialized");
@@ -345,44 +369,100 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     // Use DotNetG2P.Spanish engine directly with prosody
                     var result = _esEngine.ToIpaWithProsody(segText);
                     segPhonemes = result.Phonemes ?? Array.Empty<string>();
-                    segA1 = new int[segPhonemes.Length];
-                    segA2 = new int[segPhonemes.Length];
-                    segA3 = new int[segPhonemes.Length];
-                    for (var i = 0; i < result.Prosody.Length; i++)
-                    {
-                        segA1[i] = result.Prosody[i].A1;
-                        segA2[i] = result.Prosody[i].A2;
-                        segA3[i] = result.Prosody[i].A3;
-                    }
+                    (segA1, segA2, segA3) = ExtractProsodyArrays(
+                        result.Prosody, p => (p.A1, p.A2, p.A3), segPhonemes.Length);
                 }
                 else if (lang == "fr" && _frEngine != null)
                 {
                     // Use DotNetG2P.French engine directly
                     segPhonemes = _frEngine.ToPuaPhonemes(segText);
                     var result = _frEngine.ToIpaWithProsody(segText);
-                    segA1 = new int[segPhonemes.Length];
-                    segA2 = new int[segPhonemes.Length];
-                    segA3 = new int[segPhonemes.Length];
-                    for (var fi = 0; fi < Math.Min(segPhonemes.Length, result.Prosody.Length); fi++)
-                    {
-                        segA1[fi] = result.Prosody[fi].A1;
-                        segA2[fi] = result.Prosody[fi].A2;
-                        segA3[fi] = result.Prosody[fi].A3;
-                    }
+                    (segA1, segA2, segA3) = ExtractProsodyArrays(
+                        result.Prosody, p => (p.A1, p.A2, p.A3), segPhonemes.Length);
                 }
                 else if (lang == "pt" && _ptEngine != null)
                 {
                     // Use DotNetG2P.Portuguese engine directly
                     segPhonemes = _ptEngine.ToPuaPhonemes(segText);
                     var result = _ptEngine.ToIpaWithProsody(segText);
-                    segA1 = new int[segPhonemes.Length];
-                    segA2 = new int[segPhonemes.Length];
-                    segA3 = new int[segPhonemes.Length];
-                    for (var pi = 0; pi < Math.Min(segPhonemes.Length, result.Prosody.Length); pi++)
+                    (segA1, segA2, segA3) = ExtractProsodyArrays(
+                        result.Prosody, p => (p.A1, p.A2, p.A3), segPhonemes.Length);
+                }
+                else if (lang == "zh" && _zhEngine != null)
+                {
+                    // Use DotNetG2P.Chinese directly for Chinese text
+                    var puaPhonemes = _zhEngine.ToPuaPhonemes(segText);
+                    var prosodyResult = _zhEngine.ToIpaWithProsody(segText);
+
+                    var phonemeList = new List<string>();
+                    var prosodyA1List = new List<int>();
+                    var prosodyA2List = new List<int>();
+                    var prosodyA3List = new List<int>();
+
+                    int totalSyllables = prosodyResult.Prosody.Count;
+                    if (totalSyllables == 0)
                     {
-                        segA1[pi] = result.Prosody[pi].A1;
-                        segA2[pi] = result.Prosody[pi].A2;
-                        segA3[pi] = result.Prosody[pi].A3;
+                        // No syllables (all non-Chinese text)
+                        foreach (var p in puaPhonemes)
+                            phonemeList.Add(p);
+                    }
+                    else
+                    {
+                        // Distribute PUA phonemes across syllables and insert tone markers
+                        int phonemesPerSyllable = puaPhonemes.Length / totalSyllables;
+                        int remainder = puaPhonemes.Length % totalSyllables;
+                        int puaIdx = 0;
+
+                        for (int syl = 0; syl < totalSyllables; syl++)
+                        {
+                            int count = phonemesPerSyllable + (syl < remainder ? 1 : 0);
+                            int toneVal = syl < prosodyResult.Prosody.Count
+                                ? prosodyResult.Prosody[syl].A1 : 5;
+                            int sylPos = syl < prosodyResult.Prosody.Count
+                                ? prosodyResult.Prosody[syl].A2 : 1;
+                            int wordLen = syl < prosodyResult.Prosody.Count
+                                ? prosodyResult.Prosody[syl].A3 : 1;
+
+                            // Add initial + final phonemes for this syllable
+                            for (int j = 0; j < count && puaIdx < puaPhonemes.Length; j++, puaIdx++)
+                            {
+                                phonemeList.Add(puaPhonemes[puaIdx]);
+                                prosodyA1List.Add(toneVal);
+                                prosodyA2List.Add(sylPos);
+                                prosodyA3List.Add(wordLen);
+                            }
+
+                            // Append tone marker PUA (tone1=E046 ... tone5=E04A)
+                            if (toneVal >= 1 && toneVal <= 5)
+                            {
+                                phonemeList.Add(TonePuaChars[toneVal].ToString());
+                                prosodyA1List.Add(toneVal);
+                                prosodyA2List.Add(sylPos);
+                                prosodyA3List.Add(wordLen);
+                            }
+                        }
+
+                        // Add any remaining phonemes (non-Chinese tokens)
+                        for (; puaIdx < puaPhonemes.Length; puaIdx++)
+                        {
+                            phonemeList.Add(puaPhonemes[puaIdx]);
+                            prosodyA1List.Add(0);
+                            prosodyA2List.Add(0);
+                            prosodyA3List.Add(0);
+                        }
+                    }
+
+                    segPhonemes = phonemeList.ToArray();
+                    segA1 = prosodyA1List.ToArray();
+                    segA2 = prosodyA2List.ToArray();
+                    segA3 = prosodyA3List.ToArray();
+
+                    // Ensure prosody arrays are aligned with phoneme count
+                    if (segA1.Length < segPhonemes.Length)
+                    {
+                        Array.Resize(ref segA1, segPhonemes.Length);
+                        Array.Resize(ref segA2, segPhonemes.Length);
+                        Array.Resize(ref segA3, segPhonemes.Length);
                     }
                 }
                 else if (lang == "ko" && _koG2PEngine != null)
@@ -513,7 +593,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             if (_ownsEs) _esEngine?.Dispose();
             if (_ownsFr) _frEngine?.Dispose();
             if (_ownsPt) _ptEngine?.Dispose();
-            if (_ownsZh) _zhPhonemizer?.Dispose();
+            if (_ownsZh) _zhEngine?.Dispose();
             if (_ownsKo)
             {
                 _koG2PEngine?.Dispose();
@@ -530,17 +610,32 @@ namespace uPiper.Core.Phonemizers.Multilingual
             return lang switch
             {
                 "en" => _enPhonemizer,
-                "zh" => _zhPhonemizer,
                 "ko" => _koPhonemizer,
                 _ => _enPhonemizer // fallback to English legacy backend
             };
         }
 
-        private bool ContainsLanguage(string lang)
+        private bool ContainsLanguage(string lang) => _languageSet.Contains(lang);
+
+        /// <summary>
+        /// Extracts prosody A1/A2/A3 arrays from a prosody info array using the given accessor.
+        /// Used by ES/FR/PT branches to avoid duplicated extraction loops.
+        /// </summary>
+        private static (int[] a1, int[] a2, int[] a3) ExtractProsodyArrays<T>(
+            T[] prosody, Func<T, (int a1, int a2, int a3)> accessor, int phonemeCount)
         {
-            for (var i = 0; i < _languages.Count; i++)
-                if (_languages[i] == lang) return true;
-            return false;
+            var a1 = new int[phonemeCount];
+            var a2 = new int[phonemeCount];
+            var a3 = new int[phonemeCount];
+            for (var i = 0; i < Math.Min(phonemeCount, prosody.Length); i++)
+            {
+                var (pa1, pa2, pa3) = accessor(prosody[i]);
+                a1[i] = pa1;
+                a2[i] = pa2;
+                a3[i] = pa3;
+            }
+
+            return (a1, a2, a3);
         }
 
         private static void PadToLength(List<int> list, int targetLength)

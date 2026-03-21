@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using uPiper.Core.Logging;
 
@@ -38,7 +37,6 @@ namespace uPiper.Core.AudioGeneration
     public class PhonemeEncoder
     {
         private readonly Dictionary<string, int> _phonemeToId;
-        private readonly Dictionary<int, string> _idToPhoneme;
         private readonly PiperVoiceConfig _config;
 
         // 特殊トークン
@@ -61,7 +59,6 @@ namespace uPiper.Core.AudioGeneration
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _phonemeToId = new Dictionary<string, int>();
-            _idToPhoneme = new Dictionary<int, string>();
 
             // Detect multilingual model before initializing phoneme mapping
             _isMultilingualModel = !string.IsNullOrEmpty(_config.PhonemeType)
@@ -434,11 +431,8 @@ namespace uPiper.Core.AudioGeneration
                     return puaChar.ToString();
                 }
                 // NFC normalize decomposed IPA (e.g., u+\u0303 → ũ) to match phoneme_id_map
-                if (phoneme.Length > 1 && !System.Text.NormalizationForm.FormC.Equals(phoneme))
-                {
-                    var nfc = phoneme.Normalize(System.Text.NormalizationForm.FormC);
-                    if (nfc != phoneme) return nfc;
-                }
+                var nfc = phoneme.Normalize(System.Text.NormalizationForm.FormC);
+                if (nfc != phoneme) return nfc;
                 return phoneme;
             }
 
@@ -574,47 +568,6 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// ID配列を音素配列にデコードする
-        /// </summary>
-        /// <param name="ids">ID配列</param>
-        /// <returns>音素配列</returns>
-        public string[] Decode(int[] ids)
-        {
-            if (ids == null || ids.Length == 0)
-                return Array.Empty<string>();
-
-            var phonemes = new List<string>();
-
-            foreach (var id in ids)
-            {
-                if (_idToPhoneme.TryGetValue(id, out var phoneme))
-                {
-                    // 特殊トークンはスキップ
-                    if (phoneme != PAD_TOKEN && phoneme != BOS_TOKEN && phoneme != EOS_TOKEN)
-                    {
-                        phonemes.Add(phoneme);
-                    }
-                }
-                else
-                {
-                    PiperLogger.LogWarning($"Unknown ID: {id}");
-                }
-            }
-
-            return phonemes.ToArray();
-        }
-
-        /// <summary>
-        /// 音素が登録されているかチェック
-        /// </summary>
-        /// <param name="phoneme">音素</param>
-        /// <returns>登録されている場合true</returns>
-        public bool ContainsPhoneme(string phoneme)
-        {
-            return _phonemeToId.ContainsKey(phoneme);
-        }
-
-        /// <summary>
         /// 登録されている音素の数を取得
         /// </summary>
         public int PhonemeCount => _phonemeToId.Count;
@@ -625,10 +578,6 @@ namespace uPiper.Core.AudioGeneration
             _phonemeToId[PAD_TOKEN] = DEFAULT_PAD_ID;
             _phonemeToId[BOS_TOKEN] = DEFAULT_BOS_ID;
             _phonemeToId[EOS_TOKEN] = DEFAULT_EOS_ID;
-
-            _idToPhoneme[DEFAULT_PAD_ID] = PAD_TOKEN;
-            _idToPhoneme[DEFAULT_BOS_ID] = BOS_TOKEN;
-            _idToPhoneme[DEFAULT_EOS_ID] = EOS_TOKEN;
 
             // 設定から音素マッピングを読み込む
             if (_config.PhonemeIdMap != null)
@@ -641,7 +590,6 @@ namespace uPiper.Core.AudioGeneration
                     if (!_phonemeToId.ContainsKey(phoneme))
                     {
                         _phonemeToId[phoneme] = id;
-                        _idToPhoneme[id] = phoneme;
                     }
                 }
 
@@ -674,7 +622,6 @@ namespace uPiper.Core.AudioGeneration
                 if (!_phonemeToId.ContainsKey(phoneme))
                 {
                     _phonemeToId[phoneme] = nextId;
-                    _idToPhoneme[nextId] = phoneme;
                     nextId++;
                 }
             }
@@ -683,7 +630,5 @@ namespace uPiper.Core.AudioGeneration
         }
 
         private int GetPadId() => _phonemeToId.GetValueOrDefault(PAD_TOKEN, DEFAULT_PAD_ID);
-        private int GetBosId() => _phonemeToId.GetValueOrDefault(BOS_TOKEN, DEFAULT_BOS_ID);
-        private int GetEosId() => _phonemeToId.GetValueOrDefault(EOS_TOKEN, DEFAULT_EOS_ID);
     }
 }

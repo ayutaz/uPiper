@@ -13,27 +13,7 @@ namespace uPiper.Tests.Runtime.Core
         {
             var settings = new GPUInferenceSettings();
 
-            Assert.AreEqual(1, settings.MaxBatchSize);
-            Assert.AreEqual(false, settings.UseFloat16);
             Assert.AreEqual(512, settings.MaxMemoryMB);
-            Assert.AreEqual(GPUSyncMode.Automatic, settings.SyncMode);
-            Assert.AreEqual(false, settings.EnableProfiling);
-            Assert.AreEqual(-1, settings.PreferredDeviceIndex);
-        }
-
-        [Test]
-        public void Validate_ClampsMaxBatchSize()
-        {
-            var settings = new GPUInferenceSettings
-            {
-                MaxBatchSize = 100
-            };
-            settings.Validate();
-            Assert.AreEqual(16, settings.MaxBatchSize);
-
-            settings.MaxBatchSize = -5;
-            settings.Validate();
-            Assert.AreEqual(1, settings.MaxBatchSize);
         }
 
         [Test]
@@ -52,39 +32,14 @@ namespace uPiper.Tests.Runtime.Core
         }
 
         [Test]
-        public void Validate_FixesInvalidDeviceIndex()
-        {
-            var settings = new GPUInferenceSettings
-            {
-                PreferredDeviceIndex = -10
-            };
-            settings.Validate();
-            Assert.AreEqual(-1, settings.PreferredDeviceIndex);
-
-            settings.PreferredDeviceIndex = 5;
-            settings.Validate();
-            Assert.AreEqual(5, settings.PreferredDeviceIndex);
-        }
-
-        [Test]
         public void AllPropertiesCanBeSetAndRetrieved()
         {
             var settings = new GPUInferenceSettings
             {
-                MaxBatchSize = 8,
-                UseFloat16 = true,
                 MaxMemoryMB = 1024,
-                SyncMode = GPUSyncMode.Synchronous,
-                EnableProfiling = true,
-                PreferredDeviceIndex = 2
             };
 
-            Assert.AreEqual(8, settings.MaxBatchSize);
-            Assert.AreEqual(true, settings.UseFloat16);
             Assert.AreEqual(1024, settings.MaxMemoryMB);
-            Assert.AreEqual(GPUSyncMode.Synchronous, settings.SyncMode);
-            Assert.AreEqual(true, settings.EnableProfiling);
-            Assert.AreEqual(2, settings.PreferredDeviceIndex);
         }
     }
 }

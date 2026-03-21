@@ -2,10 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using NUnit.Framework;
+using DotNetG2P.Chinese;
 using DotNetG2P.Spanish;
-using uPiper.Core.Phonemizers.Backend;
-using uPiper.Core.Phonemizers.Backend.Chinese;
+using NUnit.Framework;
 using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Editor.Phonemizers
@@ -60,13 +59,30 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void Constructor_WithPrebuiltChineseBackend_AcceptsIt()
+        public void Constructor_WithPrebuiltChineseEngine_AcceptsIt()
         {
-            var zhBackend = new ChinesePhonemizerBackend();
+            var charPath = System.IO.Path.Combine(
+                UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_char.txt");
+            var phrasePath = System.IO.Path.Combine(
+                UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_phrase.txt");
+
+            ChineseG2PEngine zhEngine;
+            if (System.IO.File.Exists(charPath))
+            {
+                zhEngine = System.IO.File.Exists(phrasePath)
+                    ? new ChineseG2PEngine(charPath, phrasePath)
+                    : new ChineseG2PEngine(charPath);
+            }
+            else
+            {
+                Assert.Ignore("Chinese dictionary files not found in StreamingAssets");
+                return;
+            }
+
             var phonemizer = new MultilingualPhonemizer(
                 new[] { "zh", "en" },
                 defaultLatinLanguage: "en",
-                zhPhonemizer: zhBackend);
+                zhEngine: zhEngine);
 
             Assert.IsNotNull(phonemizer);
             Assert.AreEqual(2, phonemizer.Languages.Count);
@@ -147,20 +163,25 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void TestChineseSegmentProcessing()
         {
-            var zhBackend = new ChinesePhonemizerBackend();
-            var initOk = Task.Run(async () => await zhBackend.InitializeAsync())
-                .GetAwaiter().GetResult();
+            var charPath = System.IO.Path.Combine(
+                UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_char.txt");
+            var phrasePath = System.IO.Path.Combine(
+                UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_phrase.txt");
 
-            if (!initOk)
+            if (!System.IO.File.Exists(charPath))
             {
-                Assert.Ignore("ChinesePhonemizerBackend not available");
+                Assert.Ignore("Chinese dictionary files not found in StreamingAssets");
                 return;
             }
+
+            var zhEngine = System.IO.File.Exists(phrasePath)
+                ? new ChineseG2PEngine(charPath, phrasePath)
+                : new ChineseG2PEngine(charPath);
 
             var phonemizer = new MultilingualPhonemizer(
                 new[] { "zh", "en" },
                 defaultLatinLanguage: "en",
-                zhPhonemizer: zhBackend);
+                zhEngine: zhEngine);
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
@@ -409,16 +430,25 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void TestAllLanguagesInitialized_ChineseBackend()
+        public void TestAllLanguagesInitialized_ChineseEngine()
         {
-            var zhBackend = new ChinesePhonemizerBackend();
-            var result = Task.Run(async () => await zhBackend.InitializeAsync())
-                .GetAwaiter().GetResult();
+            var charPath = System.IO.Path.Combine(
+                UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_char.txt");
+            var phrasePath = System.IO.Path.Combine(
+                UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_phrase.txt");
 
-            // Chinese backend may or may not initialize depending on environment
-            Assert.IsNotNull(zhBackend);
+            if (!System.IO.File.Exists(charPath))
+            {
+                Assert.Ignore("Chinese dictionary files not found in StreamingAssets");
+                return;
+            }
 
-            zhBackend.Dispose();
+            var zhEngine = System.IO.File.Exists(phrasePath)
+                ? new ChineseG2PEngine(charPath, phrasePath)
+                : new ChineseG2PEngine(charPath);
+
+            Assert.IsNotNull(zhEngine);
+            zhEngine.Dispose();
         }
 
         // ── Prosody propagation through multilingual pipeline ────────────────

@@ -1,37 +1,25 @@
 # Phonemizer Backend Directory
 
-This directory contains phonemizer backend implementations for uPiper.
+This directory contains the phonemizer backend interface and shared types for uPiper. All G2P backends have been migrated to standalone DotNetG2P packages and are called directly from `MultilingualPhonemizer`.
 
-## Important Files
+## Current Files
 
-### Core Backends
-- **FliteLTSPhonemizerBackend.cs** - Letter-to-Sound phonemizer for English using Flite (pure C#)
-- **RuleBased/** - Rule-based phonemizer components
+- **IPhonemizerBackend.cs** - Interface for phonemizer backends (used by test stubs)
+- **PhonemeOptions.cs** - Shared phoneme option/result types
 
-### Supporting Components
-- **IPhonemizerBackend.cs** - Interface for all phonemizer backends
-- **PhonemizerBackendBase.cs** - Base class for backend implementations
+## Architecture
 
-## Japanese Phonemization
+G2P processing for each language is handled by the corresponding DotNetG2P package, called directly from `MultilingualPhonemizer` (in `../Multilingual/`):
 
-Japanese phonemization is handled by `DotNetG2PPhonemizer` (located in `../Implementations/`), which uses dot-net-g2p (pure C# MeCab implementation). No native libraries are required.
-
-## Unity Compilation Issues
-
-If Unity doesn't recognize the backend classes:
-
-1. **Reimport Assets**
-   - Right-click on this folder in Unity
-   - Select "Reimport"
-
-2. **Clear Library Cache**
-   - Close Unity Editor
-   - Delete the `Library` folder in project root
-   - Reopen Unity (it will rebuild)
-
-3. **Check Assembly Definition**
-   - Ensure `uPiper.Runtime.asmdef` includes this directory
-   - No circular dependencies exist
+| Language | DotNetG2P Package |
+|----------|-------------------|
+| Japanese | DotNetG2P.MeCab |
+| English | DotNetG2P.English |
+| Spanish | DotNetG2P.Spanish |
+| French | DotNetG2P.French |
+| Portuguese | DotNetG2P.Portuguese |
+| Chinese | DotNetG2P.Chinese |
+| Korean | DotNetG2P.Korean |
 
 ## License
 All backends use commercial-friendly licenses (MIT/BSD).

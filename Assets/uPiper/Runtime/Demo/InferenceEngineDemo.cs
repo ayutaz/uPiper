@@ -501,8 +501,6 @@ namespace uPiper.Demo
                 _backendDropdown.onValueChanged.AddListener(OnBackendChanged);
             }
 
-            _gpuSettings.UseFloat16 = false;
-
             // 生成ボタンの設定
             _generateButton?.onClick.AddListener(() => _ = GenerateAudioAsync());
 
@@ -925,8 +923,6 @@ namespace uPiper.Demo
                     if (_generator is InferenceAudioGenerator infGen)
                     {
                         _phonemeDetailsText.text += $"\n\n[GPU Info]\nBackend: {infGen.ActualBackendType}";
-                        _phonemeDetailsText.text += $"\nFloat16: {(_gpuSettings.UseFloat16 ? "Enabled" : "Disabled")}";
-                        _phonemeDetailsText.text += $"\nBatch Size: {_gpuSettings.MaxBatchSize}";
                     }
                 }
             }

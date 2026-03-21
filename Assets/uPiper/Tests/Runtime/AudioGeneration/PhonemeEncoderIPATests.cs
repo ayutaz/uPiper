@@ -46,19 +46,6 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         }
 
         /// <summary>
-        /// IPAモデル判定が正しく行われることを確認
-        /// phoneme_id_mapに"ɕ"が含まれている = IPAモデル
-        /// </summary>
-        [Test]
-        public void Constructor_WithIPAPhonemes_DetectsIPAModel()
-        {
-            // phoneme_id_mapにIPA文字を含むのでIPA判定される
-            Assert.IsTrue(_encoder.ContainsPhoneme("ɕ"), "IPA判定キー 'ɕ' should be recognized");
-            Assert.IsTrue(_encoder.ContainsPhoneme("q"), "促音 'q' should be recognized");
-            Assert.IsTrue(_encoder.ContainsPhoneme("N"), "撥音 'N' should be recognized");
-        }
-
-        /// <summary>
         /// 促音(cl)がq(ID 24)にマッピングされることを確認
         /// BUG: 現在は N(ID 22) にマッピングされている
         /// </summary>

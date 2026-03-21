@@ -247,95 +247,6 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 $"PUA encoder phoneme count mismatch (got {_puaEncoder.PhonemeCount})");
         }
 
-        [Test]
-        public void ContainsPhoneme_JapanesePhoneme_ReturnsTrue()
-        {
-            // IPA encoder: Japanese IPA phonemes
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("N"), "IPA encoder should contain 'N' (moraic nasal)");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("\u0274"), "IPA encoder should contain 'ɴ' (uvular nasal)");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("q"), "IPA encoder should contain 'q' (sokuon)");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("\u026F"), "IPA encoder should contain 'ɯ'");
-
-            // PUA encoder: Japanese PUA phonemes
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("N"), "PUA encoder should contain 'N'");
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue005"), "PUA encoder should contain PUA cl (0xE005)");
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue00e"), "PUA encoder should contain PUA ch (0xE00E)");
-        }
-
-        [Test]
-        public void ContainsPhoneme_ChinesePhoneme_ReturnsTrue()
-        {
-            // IPA encoder: Chinese aspirated/affricate phonemes
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("t\u0255"), "IPA encoder should contain 'tɕ'");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("p\u02B0"), "IPA encoder should contain 'pʰ' (aspirated)");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("t\u0282"), "IPA encoder should contain 'tʂ' (retroflex)");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("tone1"), "IPA encoder should contain 'tone1'");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("tone5"), "IPA encoder should contain 'tone5'");
-
-            // PUA encoder: Chinese PUA phonemes
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue020"), "PUA encoder should contain PUA pʰ (0xE020)");
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue023"), "PUA encoder should contain PUA tɕ (0xE023)");
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue046"), "PUA encoder should contain PUA tone1 (0xE046)");
-        }
-
-        [Test]
-        public void ContainsPhoneme_KoreanPhoneme_ReturnsTrue()
-        {
-            // IPA encoder: Korean tense/unreleased consonants
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("k\u0348"),
-                "IPA encoder should contain 'k͈' (tense velar)");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("p\u0348"),
-                "IPA encoder should contain 'p͈' (tense bilabial)");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("k\u031A"),
-                "IPA encoder should contain 'k̚' (unreleased velar)");
-
-            // PUA encoder: Korean PUA phonemes
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue04b"),
-                "PUA encoder should contain PUA tense bilabial (0xE04B)");
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue04d"),
-                "PUA encoder should contain PUA tense velar (0xE04D)");
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue050"),
-                "PUA encoder should contain PUA unreleased velar (0xE050)");
-        }
-
-        [Test]
-        public void ContainsPhoneme_SpanishPhoneme_ReturnsTrue()
-        {
-            // IPA encoder: Spanish trill and affricates
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("rr"),
-                "IPA encoder should contain 'rr' (alveolar trill)");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("t\u0283"),
-                "IPA encoder should contain 'tʃ' (postalveolar affricate)");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("d\u0292"),
-                "IPA encoder should contain 'dʒ' (voiced postalveolar affricate)");
-
-            // PUA encoder: Spanish PUA phonemes
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue01d"),
-                "PUA encoder should contain PUA rr (0xE01D)");
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue054"),
-                "PUA encoder should contain PUA tʃ (0xE054)");
-        }
-
-        [Test]
-        public void ContainsPhoneme_FrenchNasalVowel_ReturnsTrue()
-        {
-            // IPA encoder: French nasal vowels
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("\u025B\u0303"),
-                "IPA encoder should contain 'ɛ̃' (nasal open-mid front)");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("\u0251\u0303"),
-                "IPA encoder should contain 'ɑ̃' (nasal open back)");
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("\u0254\u0303"),
-                "IPA encoder should contain 'ɔ̃' (nasal open-mid back rounded)");
-
-            // PUA encoder: French PUA nasal vowels
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue056"),
-                "PUA encoder should contain PUA ɛ̃ (0xE056)");
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue057"),
-                "PUA encoder should contain PUA ɑ̃ (0xE057)");
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("\ue058"),
-                "PUA encoder should contain PUA ɔ̃ (0xE058)");
-        }
-
         #endregion
 
         #region IPA Detection
@@ -346,8 +257,6 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // The IPA map contains "ɕ" (U+0255), so IPA detection should be true.
             // We verify indirectly: if ch (\ue00e) is PUA-input but gets mapped to tɕ,
             // that means IPA mapping is active.
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("\u0255"),
-                "IPA encoder must contain 'ɕ' to trigger IPA mode");
 
             // Encode a PUA ch (\ue00e) -- in IPA mode it should be converted to tɕ (ID 34)
             var phonemes = new[] { "\ue00e" }; // PUA for "ch"
@@ -362,8 +271,6 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         public void UseIpaMapping_PuaOnlyMap_ReturnsFalse()
         {
             // The PUA map does NOT contain "ɕ", so IPA detection should be false.
-            Assert.IsFalse(_puaEncoder.ContainsPhoneme("\u0255"),
-                "PUA encoder must NOT contain 'ɕ'");
 
             // Encode multi-char "ch" -- in PUA mode it should map to PUA \ue00e (ID 40)
             var phonemes = new[] { "ch" };
@@ -605,8 +512,6 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         public void Encode_PadToken_SameId_AllLanguages()
         {
             // PAD token "_" should always be ID 0 across all encoder configurations
-            Assert.IsTrue(_ipaEncoder.ContainsPhoneme("_"), "IPA encoder should contain PAD '_'");
-            Assert.IsTrue(_puaEncoder.ContainsPhoneme("_"), "PUA encoder should contain PAD '_'");
 
             // Encode an empty-like input that falls back to PAD
             // Both encoders should produce the same PAD ID

@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DotNetG2P.Chinese;
 using NUnit.Framework;
-using uPiper.Core.Phonemizers.Backend;
-using uPiper.Core.Phonemizers.Backend.Chinese;
 using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Editor.Phonemizers
@@ -12,7 +10,8 @@ namespace uPiper.Tests.Editor.Phonemizers
     [TestFixture]
     public class ChinesePhonemizerTests
     {
-        private ChinesePhonemizerBackend _phonemizer;
+        private ChineseG2PEngine _engine;
+        private MultilingualPhonemizer _phonemizer;
         private bool _available;
 
         [OneTimeSetUp]
@@ -20,11 +19,32 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             try
             {
-                _phonemizer = new ChinesePhonemizerBackend();
-                Task.Run(async () =>
+                // Try StreamingAssets path first, then fall back to embedded dictionaries
+                var charPath = System.IO.Path.Combine(
+                    UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_char.txt");
+                var phrasePath = System.IO.Path.Combine(
+                    UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_phrase.txt");
+
+                if (System.IO.File.Exists(charPath))
                 {
-                    _available = await _phonemizer.InitializeAsync();
-                }).GetAwaiter().GetResult();
+                    _engine = System.IO.File.Exists(phrasePath)
+                        ? new ChineseG2PEngine(charPath, phrasePath)
+                        : new ChineseG2PEngine(charPath);
+                }
+                else
+                {
+                    throw new System.IO.FileNotFoundException(
+                        "Chinese dictionary files not found in StreamingAssets");
+                }
+
+                // Create MultilingualPhonemizer with pre-built engine for pipeline tests
+                _phonemizer = new MultilingualPhonemizer(
+                    new[] { "zh", "en" },
+                    defaultLatinLanguage: "en",
+                    zhEngine: _engine);
+                Task.Run(async () => await _phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+
+                _available = true;
             }
             catch (Exception)
             {
@@ -41,7 +61,14 @@ namespace uPiper.Tests.Editor.Phonemizers
         private void EnsureAvailable()
         {
             if (!_available)
-                Assert.Ignore("ChinesePhonemizerBackend not available, skipping test");
+                Assert.Ignore("ChineseG2PEngine not available, skipping test");
+        }
+
+        /// <summary>Helper to phonemize via MultilingualPhonemizer pipeline.</summary>
+        private MultilingualPhonemizeResult Phonemize(string text)
+        {
+            return Task.Run(async () => await _phonemizer.PhonemizeWithProsodyAsync(text))
+                .GetAwaiter().GetResult();
         }
 
         // ── Basic phonemization ──────────────────────────────────────────────
@@ -51,14 +78,9 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             EnsureAvailable();
 
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("你好", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success, "Phonemization should succeed");
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length > 0, "Should produce phonemes for '你好'");
-            Assert.AreEqual("zh", result.Language);
-            Assert.AreEqual("ChinesePhonemizer", result.Backend);
+            var phonemes = _engine.ToPuaPhonemes("你好");
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length > 0, "Should produce phonemes for '你好'");
         }
 
         [Test]
@@ -66,10 +88,9 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             EnsureAvailable();
 
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsFalse(result.Success, "Empty input should not succeed");
+            var phonemes = _engine.ToPuaPhonemes("");
+            Assert.IsNotNull(phonemes);
+            Assert.AreEqual(0, phonemes.Length, "Empty input should produce no phonemes");
         }
 
         [Test]
@@ -77,12 +98,9 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             EnsureAvailable();
 
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("大", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length > 0, "Should produce phonemes for '大'");
+            var phonemes = _engine.ToPuaPhonemes("大");
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length > 0, "Should produce phonemes for '大'");
         }
 
         // ── Pinyin initial -> IPA mapping ────────────────────────────────────
@@ -95,12 +113,9 @@ namespace uPiper.Tests.Editor.Phonemizers
             EnsureAvailable();
 
             // "八" (ba1) should produce bilabial stop [p] (Mandarin 'b' = unaspirated [p])
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("八", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length > 0);
+            var phonemes = _engine.ToPuaPhonemes("八");
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length > 0);
         }
 
         [Test]
@@ -109,12 +124,9 @@ namespace uPiper.Tests.Editor.Phonemizers
             EnsureAvailable();
 
             // "知" (zhi1) involves retroflex affricate [ts] / [ts_retroflex]
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("知", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length > 0, "Retroflex initial should produce phonemes");
+            var phonemes = _engine.ToPuaPhonemes("知");
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length > 0, "Retroflex initial should produce phonemes");
         }
 
         [Test]
@@ -123,12 +135,9 @@ namespace uPiper.Tests.Editor.Phonemizers
             EnsureAvailable();
 
             // "家" (jia1) involves alveolo-palatal affricate [tc]
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("家", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length >= 2, "Should include initial + final phonemes");
+            var phonemes = _engine.ToPuaPhonemes("家");
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length >= 2, "Should include initial + final phonemes");
         }
 
         // ── Pinyin final -> IPA mapping ──────────────────────────────────────
@@ -139,12 +148,9 @@ namespace uPiper.Tests.Editor.Phonemizers
             EnsureAvailable();
 
             // "阿" (a1) - simple vowel 'a'
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("阿", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length > 0);
+            var phonemes = _engine.ToPuaPhonemes("阿");
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length > 0);
         }
 
         [Test]
@@ -153,12 +159,9 @@ namespace uPiper.Tests.Editor.Phonemizers
             EnsureAvailable();
 
             // "爱" (ai4) - compound final 'ai' -> [aI]
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("爱", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length > 0, "Compound final should produce phonemes");
+            var phonemes = _engine.ToPuaPhonemes("爱");
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length > 0, "Compound final should produce phonemes");
         }
 
         [Test]
@@ -167,26 +170,20 @@ namespace uPiper.Tests.Editor.Phonemizers
             EnsureAvailable();
 
             // "安" (an1) - nasal final 'an'
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("安", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length > 0, "Nasal final should produce phonemes");
+            var phonemes = _engine.ToPuaPhonemes("安");
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length > 0, "Nasal final should produce phonemes");
         }
 
-        // ── Tone markers ─────────────────────────────────────────────────────
+        // ── Tone markers (via MultilingualPhonemizer pipeline) ──────────────
 
         [Test]
         public void TestToneMarkers_IncludedInOutput()
         {
             EnsureAvailable();
 
-            // "妈" (ma1) should include a tone marker in the output
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("妈", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
+            // "妈" (ma1) should include a tone marker in the pipeline output
+            var result = Phonemize("妈");
             Assert.IsNotNull(result.Phonemes);
             // Tone markers are mapped to PUA codepoints (tone1=0xE046..tone5=0xE04A)
             // At minimum, we should have more than just consonant+vowel
@@ -201,15 +198,9 @@ namespace uPiper.Tests.Editor.Phonemizers
 
             // Characters with different tones should produce different phoneme sequences:
             // "妈" (ma1) vs "马" (ma3)
-            var result1 = Task.Run(() => _phonemizer.PhonemizeAsync("妈", "zh"))
-                .GetAwaiter().GetResult();
-            var result2 = Task.Run(() => _phonemizer.PhonemizeAsync("马", "zh"))
-                .GetAwaiter().GetResult();
+            var result1 = Phonemize("妈");
+            var result2 = Phonemize("马");
 
-            Assert.IsTrue(result1.Success);
-            Assert.IsTrue(result2.Success);
-
-            // Both should produce phonemes; they may differ due to tone markers
             Assert.IsNotNull(result1.Phonemes);
             Assert.IsNotNull(result2.Phonemes);
             Assert.IsTrue(result1.Phonemes.Length > 0);
@@ -230,12 +221,9 @@ namespace uPiper.Tests.Editor.Phonemizers
             EnsureAvailable();
 
             // "你好" (ni3 hao3): T3+T3 -> T2+T3 (third tone sandhi)
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("你好", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length > 0,
+            var phonemes = _engine.ToPuaPhonemes("你好");
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length > 0,
                 "Tone sandhi should not prevent phonemization");
         }
 
@@ -245,12 +233,9 @@ namespace uPiper.Tests.Editor.Phonemizers
             EnsureAvailable();
 
             // "你好吗" - includes potential tone sandhi context
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("你好吗", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length > 0);
+            var phonemes = _engine.ToPuaPhonemes("你好吗");
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length > 0);
         }
 
         // ── Chinese punctuation ──────────────────────────────────────────────
@@ -261,12 +246,9 @@ namespace uPiper.Tests.Editor.Phonemizers
             EnsureAvailable();
 
             // "你好。" - Chinese period should be passed through or mapped
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("你好。", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length > 0);
+            var phonemes = _engine.ToPuaPhonemes("你好。");
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length > 0);
         }
 
         [TestCase("你好，世界")]
@@ -276,25 +258,20 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             EnsureAvailable();
 
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync(text, "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success, $"Should phonemize text with punctuation: {text}");
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length > 0);
+            var phonemes = _engine.ToPuaPhonemes(text);
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length > 0,
+                $"Should phonemize text with punctuation: {text}");
         }
 
-        // ── Prosody output ───────────────────────────────────────────────────
+        // ── Prosody output (via MultilingualPhonemizer pipeline) ────────────
 
         [Test]
         public void TestProsodyOutput_ArraysAligned()
         {
             EnsureAvailable();
 
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("你好世界", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
+            var result = Phonemize("你好世界");
             Assert.IsNotNull(result.Phonemes);
             Assert.IsNotNull(result.ProsodyA1);
             Assert.IsNotNull(result.ProsodyA2);
@@ -315,10 +292,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             EnsureAvailable();
 
             // Chinese prosody: a1 = tone number (1-5)
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("你好", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
+            var result = Phonemize("你好");
             Assert.IsNotNull(result.ProsodyA1);
 
             // At least some A1 values should be tone numbers (1-5)
@@ -333,10 +307,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             EnsureAvailable();
 
             // Chinese prosody: a3 = word length in syllables
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("中国人", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
+            var result = Phonemize("中国人");
             Assert.IsNotNull(result.ProsodyA3);
 
             // A3 values should be positive (word length >= 1)
@@ -352,10 +323,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             EnsureAvailable();
 
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("今天天气很好，我们去公园吧。", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
+            var result = Phonemize("今天天气很好，我们去公园吧。");
             Assert.IsNotNull(result.Phonemes);
             Assert.IsTrue(result.Phonemes.Length > 10,
                 "Longer Chinese text should produce many phonemes");
@@ -366,12 +334,9 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             EnsureAvailable();
 
-            var result = Task.Run(() => _phonemizer.PhonemizeAsync("我有3本书", "zh"))
-                .GetAwaiter().GetResult();
-
-            Assert.IsTrue(result.Success);
-            Assert.IsNotNull(result.Phonemes);
-            Assert.IsTrue(result.Phonemes.Length > 0,
+            var phonemes = _engine.ToPuaPhonemes("我有3本书");
+            Assert.IsNotNull(phonemes);
+            Assert.IsTrue(phonemes.Length > 0,
                 "Text with digits should produce phonemes");
         }
 
@@ -423,13 +388,29 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void Dispose_CalledTwice_DoesNotThrow()
         {
-            var phonemizer = new ChinesePhonemizerBackend();
+            var charPath = System.IO.Path.Combine(
+                UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_char.txt");
+            var phrasePath = System.IO.Path.Combine(
+                UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_phrase.txt");
+
+            ChineseG2PEngine engine;
+            if (System.IO.File.Exists(charPath))
+            {
+                engine = System.IO.File.Exists(phrasePath)
+                    ? new ChineseG2PEngine(charPath, phrasePath)
+                    : new ChineseG2PEngine(charPath);
+            }
+            else
+            {
+                Assert.Ignore("Chinese dictionary files not found in StreamingAssets");
+                return;
+            }
+
             Assert.DoesNotThrow(() =>
             {
-                phonemizer.Dispose();
-                phonemizer.Dispose();
+                engine.Dispose();
+                engine.Dispose();
             });
         }
-
     }
 }

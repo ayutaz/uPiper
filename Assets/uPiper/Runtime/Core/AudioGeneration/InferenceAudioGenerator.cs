@@ -481,11 +481,6 @@ namespace uPiper.Core.AudioGeneration
                 return BackendType.CPU;
             }
 
-            if (config.Backend == InferenceBackend.GPUCompute)
-            {
-                return BackendType.GPUCompute;
-            }
-
             if (config.Backend == InferenceBackend.GPUPixel)
             {
                 return BackendType.GPUPixel;

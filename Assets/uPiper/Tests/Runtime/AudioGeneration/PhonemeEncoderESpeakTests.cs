@@ -96,23 +96,5 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             Assert.AreEqual(0, ids.Length);
         }
 
-        [Test]
-        public void Decode_ESpeakModel_IgnoresSpecialTokens()
-        {
-            // Arrange
-            // BOS + a + PAD + b + PAD + c + PAD + EOS
-            var ids = new[] { 1, 3, 0, 4, 0, 5, 0, 2 };
-
-            // Act
-            var phonemes = _encoder.Decode(ids);
-
-            // Assert
-            Assert.IsNotNull(phonemes);
-            // 特殊トークン（BOS, PAD, EOS）は除外される
-            Assert.AreEqual(3, phonemes.Length);
-            Assert.AreEqual("a", phonemes[0]);
-            Assert.AreEqual("b", phonemes[1]);
-            Assert.AreEqual("c", phonemes[2]);
-        }
     }
 }
