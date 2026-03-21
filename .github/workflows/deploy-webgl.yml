@@ -29,11 +29,11 @@ jobs:
     name: Build WebGL
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         lfs: true
 
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         repository: ayutaz/dot-net-g2p
         ref: v1.8.2
@@ -207,7 +207,7 @@ jobs:
       uses: actions/configure-pages@v5
 
     - name: Upload Pages artifact
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v4
       with:
         path: ./site
 
