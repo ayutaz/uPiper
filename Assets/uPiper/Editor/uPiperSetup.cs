@@ -22,7 +22,7 @@ namespace uPiper.Editor
     {
         private const string SETUP_COMPLETE_KEY = "uPiper_InitialSetupComplete_v1";
         private const string PACKAGE_NAME = "com.ayutaz.upiper";
-        private const string PACKAGE_VERSION = "1.3.0";
+        private const string PACKAGE_VERSION = "1.4.0";
 
         // Target paths in Assets (made public for shared use)
         public const string TARGET_STREAMING_ASSETS_PATH = "Assets/StreamingAssets/uPiper";
