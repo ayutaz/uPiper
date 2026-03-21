@@ -70,7 +70,7 @@ void flite_unity_cleanup(flite_unity_context* ctx);
 
 ## Unity Integration
 
-The library is accessed through P/Invoke in `FliteNative.cs` and wrapped by `FlitePhonemizerBackend.cs`.
+The library was previously accessed through P/Invoke. As of v1.4.0, English G2P has been migrated to DotNetG2P.English (pure C#) and this native library is no longer used.
 
 ## Troubleshooting
 

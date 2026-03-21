@@ -30,7 +30,7 @@ uPiper is a plugin for using Piper TTS in Unity environments. It employs neural 
 - **Spanish**: DotNetG2P.Spanish (rule-based G2P)
 - **French**: DotNetG2P.French (rule-based G2P)
 - **Portuguese**: DotNetG2P.Portuguese (rule-based G2P, Brazilian variant)
-- **Chinese**: DotNetG2P.Chinese (44K character + 47K phrase dictionary)
+- **Chinese**: DotNetG2P.Chinese (44K character + 412K phrase dictionary)
 - **Korean**: DotNetG2P.Korean (Hangul decomposition + phonological rules)
 
 ### 2. Phonemization Layer
@@ -49,7 +49,7 @@ uPiper is a plugin for using Piper TTS in Unity environments. It employs neural 
 | `SpanishG2PEngine` | Spanish | DotNetG2P.Spanish | Rule-based G2P |
 | `FrenchG2PEngine` | French | DotNetG2P.French | Rule-based G2P |
 | `PortugueseG2PEngine` | Portuguese | DotNetG2P.Portuguese | Rule-based G2P (Brazilian variant) |
-| `ChineseG2PEngine` | Chinese | DotNetG2P.Chinese | 44K character + 47K phrase dictionary |
+| `ChineseG2PEngine` | Chinese | DotNetG2P.Chinese | 44K character + 412K phrase dictionary |
 | `KoreanG2PEngine` | Korean | DotNetG2P.Korean | Hangul decomposition + phonological rules |
 
 MultilingualPhonemizer calls each engine's `ToPuaPhonemes()` for PUA phonemes and `ToIpaWithProsody()` for prosody information.
