@@ -28,7 +28,7 @@ uPiperは、Unity環境でPiper TTSを使用するためのプラグインです
 - **スペイン語**: DotNetG2P.Spanish（ルールベースG2P）
 - **フランス語**: DotNetG2P.French（ルールベースG2P）
 - **ポルトガル語**: DotNetG2P.Portuguese（ルールベースG2P、ブラジル変種）
-- **中国語**: DotNetG2P.Chinese（44K文字 + 47K語句辞書）
+- **中国語**: DotNetG2P.Chinese（44K文字 + 412Kフレーズ辞書）
 - **韓国語**: DotNetG2P.Korean（Hangul分解 + 音韻規則）
 
 ### 2. 音素化層（Phonemizer）
@@ -47,7 +47,7 @@ uPiperは、Unity環境でPiper TTSを使用するためのプラグインです
 | `SpanishG2PEngine` | スペイン語 | DotNetG2P.Spanish | ルールベースG2P |
 | `FrenchG2PEngine` | フランス語 | DotNetG2P.French | ルールベースG2P |
 | `PortugueseG2PEngine` | ポルトガル語 | DotNetG2P.Portuguese | ルールベースG2P（ブラジル変種） |
-| `ChineseG2PEngine` | 中国語 | DotNetG2P.Chinese | 44K文字 + 47K語句辞書 |
+| `ChineseG2PEngine` | 中国語 | DotNetG2P.Chinese | 44K文字 + 412Kフレーズ辞書 |
 | `KoreanG2PEngine` | 韓国語 | DotNetG2P.Korean | Hangul分解 + 音韻規則 |
 
 MultilingualPhonemizerは各エンジンの`ToPuaPhonemes()`でPUA音素を、`ToIpaWithProsody()`でProsody情報を取得します。

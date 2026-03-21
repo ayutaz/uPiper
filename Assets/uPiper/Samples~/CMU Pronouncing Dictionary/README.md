@@ -4,7 +4,7 @@ This directory contains data files required for phonemization.
 
 ## CMU Pronouncing Dictionary
 
-The CMU Pronouncing Dictionary (cmudict) is required for the RuleBasedPhonemizer to function.
+The CMU Pronouncing Dictionary (cmudict) is used by DotNetG2P.English for English G2P.
 
 ### Download Instructions
 
