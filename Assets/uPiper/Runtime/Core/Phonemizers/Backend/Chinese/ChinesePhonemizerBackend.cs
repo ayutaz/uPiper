@@ -26,7 +26,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         public string Name => "ChinesePhonemizer";
 
         /// <inheritdoc/>
-        public string Version => "1.0.0";
+        public string Version => "1.3.0";
 
         /// <inheritdoc/>
         public string License => "MIT";

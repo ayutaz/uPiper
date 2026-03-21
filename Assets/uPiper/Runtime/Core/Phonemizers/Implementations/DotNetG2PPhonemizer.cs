@@ -60,7 +60,7 @@ namespace uPiper.Core.Phonemizers.Implementations
         #region Properties
 
         public string Name => "DotNetG2P";
-        public string Version => "1.1.0";
+        public string Version => "1.3.0";
         public string[] SupportedLanguages => new[] { "ja" };
         public bool UseCache { get; set; } = true;
 
