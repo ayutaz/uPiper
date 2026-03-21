@@ -4,21 +4,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-uPiperは[piper-plus](https://github.com/ayutaz/piper-plus)ベースの高品質ニューラルTTS（Text-to-Speech）Unityプラグイン。VITS（Variational Inference with adversarial learning for end-to-end Text-to-Speech）モデルを使用し、日本語（dot-net-g2p / MeCab辞書）と英語（Flite LTS）の多言語音声合成に対応。
+uPiperは[piper-plus](https://github.com/ayutaz/piper-plus)ベースの高品質ニューラルTTS（Text-to-Speech）Unityプラグイン。VITS（Variational Inference with adversarial learning for end-to-end Text-to-Speech）モデルを使用。G2Pは7言語対応、現行モデルは6言語（ja/en/zh/es/fr/pt）に対応。
+
+| 言語 | G2Pバックエンド |
+|------|----------------|
+| 日本語 | DotNetG2P.MeCab (dot-net-g2p / MeCab辞書) |
+| 英語 | DotNetG2P.English (EnglishG2PEngine, CMU dict + LTS) |
+| スペイン語 | DotNetG2P.Spanish (SpanishG2PEngine) |
+| フランス語 | DotNetG2P.French (FrenchG2PEngine) |
+| ポルトガル語 | DotNetG2P.Portuguese (PortugueseG2PEngine) |
+| 中国語 | DotNetG2P.Chinese (ChineseG2PEngine, 44K文字辞書) |
+| 韓国語 | DotNetG2P.Korean (KoreanG2PEngine) |
 
 ### 対応モデル
 
 | モデル名 | 言語 | Prosody対応 | 説明 |
 |---------|------|------------|------|
-| ja_JP-test-medium | 日本語 | Yes | 標準日本語モデル（Prosody対応） |
-| en_US-ljspeech-medium | 英語 | No | 標準英語モデル |
-| tsukuyomi-chan | 日本語 | Yes | Prosody対応日本語モデル（より自然なイントネーション） |
+| multilingual-test-medium | 多言語(6言語) | Yes | 多言語対応モデル（ja/en/zh/es/fr/pt）、fp16、38MB、`phoneme_type: "multilingual"` |
 
 ## ビルド・テストコマンド
 
 ### Unity テスト実行
 ```bash
-# GitHub Actions経由（EditModeテストのみ）
+# GitHub Actions経由（EditMode + PlayModeテスト）
 # .github/workflows/unity-tests.yml 参照
 
 # Unity Editor内
@@ -40,20 +48,39 @@ dotnet format --verify-no-changes
     • 技術用語・固有名詞の読み変換
     • 例: "Docker" → "ドッカー", "GitHub" → "ギットハブ"
     ↓
-Phonemizer (テキスト→音素変換)
-    • 日本語: dot-net-g2p (純粋C#実装, MeCab辞書)
-    • 英語: Flite LTS (純粋C#実装)
+MultilingualPhonemizer (言語ルーティング, DotNetG2Pエンジン直接呼び出し)
+    ├─ ja: DotNetG2PPhonemizer (dot-net-g2p, MeCab辞書)
+    ├─ en: EnglishG2PEngine (DotNetG2P.English, CMU dict + LTS)
+    ├─ es: SpanishG2PEngine (DotNetG2P.Spanish)
+    ├─ fr: FrenchG2PEngine (DotNetG2P.French)
+    ├─ pt: PortugueseG2PEngine (DotNetG2P.Portuguese)
+    ├─ zh: ChinesePhonemizerBackend (DotNetG2P.Chinese, 44K文字辞書)
+    └─ ko: KoreanG2PEngine (DotNetG2P.Korean)
+    ↓
+PuaTokenMapper (PUA↔IPA双方向マッピング, 87固定エントリ)
+    • 全7言語の音素をPUA文字にマッピング
     ↓
 音素エンコーディング (Unicode PUAマッピング)
     • 複数文字音素（ky, ch, ts, sh等）→ Private Use Area文字
     ↓
-┌─────────────────────────────────────────────────┐
-│ Prosody対応モデルの場合（tsukuyomi-chan等）     │
-│   Prosody情報取得 (DotNetG2PPhonemizer PhonemizeWithProsody)│
-│     • A1: アクセント句内モーラ位置              │
-│     • A2: アクセント句内アクセント位置          │
-│     • A3: 呼気段落内アクセント句位置            │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│ Prosody対応モデルの場合                               │
+│   Prosody情報取得 (言語別)                           │
+│     • ja: A1=モーラ位置, A2=アクセント核, A3=句位置  │
+│     • en: A1=0, A2=0, A3=0                           │
+│     • zh: A1=tone(1-5), A2=音節位置, A3=単語長       │
+│     • ko: A1=0, A2=0, A3=音節数                      │
+│     • es/fr/pt: A1=0, A2=stress(0/2), A3=語内音素数  │
+└──────────────────────────────────────────────────────┘
+    ↓
+┌──────────────────────────────────────────────────────┐
+│ 多言語モデルの場合                                    │
+│   • Auto-promotion: phoneme_type:"multilingual"の     │
+│     モデルは自動的にMultilingualPhonemizerを生成       │
+│   • PhonemeEncoder後にIntersperse PAD挿入:            │
+│     [^, _, p1, _, p2, _, ..., $]                      │
+│     （BOS後にもPADが入る）                             │
+└──────────────────────────────────────────────────────┘
     ↓
 VITS推論 (ONNX via Unity.InferenceEngine)
     • GPU: GPUPixel (推奨), GPUCompute (非推奨)
@@ -68,14 +95,23 @@ AudioClip出力 (22050Hz, float32)
 | コンポーネント | 場所 | 役割 |
 |--------------|------|------|
 | `IPiperTTS` / `PiperTTS` | `Runtime/Core/` | メインインターフェース |
-| `IPhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/` | 音素化バックエンド抽象 |
-| `FliteLTSPhonemizerBackend` | 同上 | 英語音素化（C#） |
+| `IPhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/` | 音素化バックエンド抽象（中国語のみ使用） |
+| `MultilingualPhonemizer` | `Runtime/Core/Phonemizers/Multilingual/` | 多言語テキスト分割・DotNetG2Pエンジン直接呼び出し |
+| `UnicodeLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Unicode文字範囲ベース言語検出 |
 | `DotNetG2PPhonemizer` | `Runtime/Core/Phonemizers/Implementations/` | 日本語G2P（dot-net-g2p, Prosody対応） |
 | `CustomDictionary` | `Runtime/Core/Phonemizers/` | カスタム辞書（技術用語・固有名詞の読み変換） |
 | `PiperConfig` | `Runtime/Core/` | 設定管理（GPU, キャッシュ, バックエンド選択） |
 | `AudioChunkBuilder` | `Runtime/Core/AudioGeneration/` | 音声波形→AudioClip変換 |
 | `InferenceAudioGenerator` | `Runtime/Core/AudioGeneration/` | ONNX直接推論（Prosody対応） |
-| `InferenceEngineDemo` | `Runtime/Demo/` | テスト用デモUI |
+| `EnglishG2PEngine` | DotNetG2P.English パッケージ | 英語G2P（CMU dict + LTS + 同音異義語解決） |
+| `SpanishG2PEngine` | DotNetG2P.Spanish パッケージ | スペイン語G2P |
+| `FrenchG2PEngine` | DotNetG2P.French パッケージ | フランス語G2P |
+| `PortugueseG2PEngine` | DotNetG2P.Portuguese パッケージ | ポルトガル語G2P |
+| `ChinesePhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/Chinese/` | 中国語G2P（DotNetG2P.Chinese wrapper） |
+| `KoreanG2PEngine` | DotNetG2P.Korean パッケージ | 韓国語G2P（Hangul分解 + 音韻規則） |
+| `PuaTokenMapper` | `Runtime/Core/Phonemizers/Multilingual/` | PUA↔IPA双方向マッピング |
+| `LanguageConstants` | `Runtime/Core/Phonemizers/Multilingual/` | 言語ID/コード定数 |
+| `InferenceEngineDemo` | `Runtime/Demo/` | テスト用デモUI（6言語ドロップダウン） |
 
 ### ディレクトリ構造
 ```
@@ -84,8 +120,15 @@ Assets/uPiper/
 │   ├── Core/               # ランタイムコア
 │   │   ├── AudioGeneration/    # AudioClip生成、ONNX推論
 │   │   ├── Phonemizers/        # 音素化システム
-│   │   │   ├── Backend/        # バックエンド実装
+│   │   │   ├── Backend/        # バックエンド実装（大半はDotNetG2Pパッケージに移行）
+│   │   │   │   ├── Chinese/       # 中国語G2P（DotNetG2P.Chinese wrapper）
+│   │   │   │   ├── Flite/         # 英語Flite LTS（レガシー、通常はDotNetG2P.Englishを使用）
+│   │   │   │   ├── Spanish/       # スペイン語（レガシー、DotNetG2P.Spanishに移行済み）
+│   │   │   │   ├── French/        # フランス語（レガシー、DotNetG2P.Frenchに移行済み）
+│   │   │   │   ├── Portuguese/    # ポルトガル語（レガシー、DotNetG2P.Portugueseに移行済み）
+│   │   │   │   └── Korean/        # 韓国語（レガシー、DotNetG2P.Koreanに移行済み）
 │   │   │   ├── Implementations/# Prosody対応実装
+│   │   │   ├── Multilingual/   # 多言語共通(PuaTokenMapper, LanguageConstants)
 │   │   │   ├── Native/         # P/Invoke定義
 │   │   │   └── Threading/      # マルチスレッド処理
 │   │   ├── IL2CPP/             # IL2CPP互換レイヤー
@@ -169,12 +212,22 @@ StreamingAssets/uPiper/     # 実行時データ（辞書）
 ## Prosody（韻律）機能
 
 ### 概要
-Prosody対応モデル（tsukuyomi-chan等）では、dot-net-g2p（MeCab辞書）から取得したアクセント情報を使用してより自然なイントネーションの音声を生成できる。
+Prosody対応モデル（multilingual-test-medium等）では、dot-net-g2p（MeCab辞書）から取得したアクセント情報を使用してより自然なイントネーションの音声を生成できる。
 
 ### Prosodyパラメータ
 - **A1 (ProsodyA1)**: アクセント句内でのモーラ位置（0始まり）
 - **A2 (ProsodyA2)**: アクセント句内のアクセント核位置（アクセント型）
 - **A3 (ProsodyA3)**: 呼気段落（イントネーション句）内でのアクセント句位置
+
+### 言語別Prosodyマッピング
+
+| 言語 | A1 | A2 | A3 |
+|------|----|----|-----|
+| ja | モーラ位置 | アクセント核位置 | アクセント句位置 |
+| en | 0 | 0 | 0 |
+| zh | tone(1-5) | 音節位置 | 単語長 |
+| ko | 0 | 0 | 音節数 |
+| es/fr/pt | 0 | stress (0/2) | 語内音素数 |
 
 ### 使用方法
 ```csharp
@@ -246,10 +299,10 @@ dict.AddWord("MyTerm", "マイターム", priority: 10);
 
 Piperモデルには2種類の音素表現がある：
 
-| モデルタイプ | 音素表現 | 例 | 対応モデル |
-|------------|---------|-----|-----------|
-| **PUA (Private Use Area)** | Unicode私用領域文字 | `ch` → `\ue00e` (ID 39) | ja_JP-test-medium |
-| **IPA (International Phonetic Alphabet)** | 国際音声記号 | `ch` → `tɕ` (ID 32) | tsukuyomi-chan |
+| モデルタイプ | 音素表現 | 例 |
+|------------|---------|-----|
+| **PUA (Private Use Area)** | Unicode私用領域文字 | `ch` → `\ue00e` (ID 39) |
+| **IPA (International Phonetic Alphabet)** | 国際音声記号 | `ch` → `tɕ` (ID 32) |
 
 ### PhonemeEncoder の動作
 
@@ -269,6 +322,10 @@ _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
 1. PUA文字をそのまま使用
 2. phoneme_id_mapでIDを取得
 
+### PuaTokenMapper（多言語対応）
+
+`PuaTokenMapper`は全7言語の音素に対する統一的なPUA↔IPAの双方向マッピングを提供する（87固定エントリ）。各DotNetG2Pエンジンの`ToPuaPhonemes()`メソッドが内部でPUA変換を行い、`MultilingualPhonemizer`はその結果をそのままモデルの`phoneme_id_map`と照合する。
+
 ### 主要な音素マッピング
 
 | G2P出力 | PUA文字 | PUA ID | IPA音素 | IPA ID |
@@ -279,6 +336,27 @@ _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
 | `cl` (っ) | `\ue005` | 23 | `q` | 24 |
 | `ky` (きゃ) | `\ue006` | 26 | `kʲ` | - |
 | `N` (ん) | `N` | 22 | `ɴ` | 22 |
+
+### 多言語モデルエンコーディング（phoneme_type: "multilingual"）
+
+モデル設定の`phoneme_type`が`"multilingual"`の場合、PhonemeEncoderは以下の特殊動作を行う：
+
+**Intersperse PAD挿入**:
+多言語/espeakモデルではPhonemeEncoder処理後にPAD文字 (`_`, ID=0) を音素間に挿入する。BOS (`^`) の直後にもPADが入る：
+```
+通常モデル:   [^, phoneme1, phoneme2, ..., $]
+多言語モデル: [^, _, phoneme1, _, phoneme2, _, ..., $]
+```
+
+**PUA文字パススルー**:
+多言語モデルではPhonemeEncoderがPUA文字をIPA/PUA変換せずそのまま`phoneme_id_map`で検索する。PuaTokenMapperが事前に適切なPUA文字へ変換済みであるため、追加の変換は不要。
+
+**N変種の保持**:
+日本語の撥音「ん」は後続音素に応じて複数の異音を持つ。多言語モデルではこれらが区別されたIDを持つ：
+- `N_m` — 唇音前の「ん」（例: さんぽ）
+- `N_n` — 歯茎音前の「ん」（例: あんない）
+- `N_ng` — 軟口蓋音前の「ん」（例: さんかく）
+- `N_uvular` — その他の「ん」（語末等）
 
 ### デバッグ
 

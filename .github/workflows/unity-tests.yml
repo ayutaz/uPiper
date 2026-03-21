@@ -23,7 +23,7 @@ jobs:
     - uses: actions/checkout@v5
       with:
         repository: ayutaz/dot-net-g2p
-        ref: main
+        ref: v1.8.2
         path: dot-net-g2p
 
     - name: Fix local package paths for CI
@@ -60,7 +60,7 @@ jobs:
         checkName: Unity Test Results
         # NOTE: coverageOptionsはセミコロン区切りの各オプション前にスペースを入れてはならない
         # (Unity Code Coverageパーサーが認識しないため)
-        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.Runtime;pathFilters:+**/Assets/uPiper/Runtime/**,-**/Assets/uPiper/Runtime/Demo/**,-**/Assets/uPiper/Runtime/Core/IL2CPP/**,-**/Assets/uPiper/Runtime/Core/Performance/**,-**/Assets/uPiper/Runtime/Core/Phonemizers/Unity/**,-**/Assets/uPiper/Runtime/Core/Phonemizers/Licenses/**,-**/Assets/uPiper/Runtime/Core/Phonemizers/Data/**,-**/IndexedDBCache.cs,-**/WebGLStreamingAssetsLoader.cs,-**/WebGLLoadingPanel.cs,-**/WebGLInteractionGate.cs,-**/IOSAudioSessionHelper.cs,-**/InferenceAudioGenerator.cs,-**/UnityMainThreadDispatcher.cs,-**/FliteLTSData.Generated.cs'
+        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.Runtime;pathFilters:+**/Assets/uPiper/Runtime/**,+**/Assets/uPiper/Runtime/Core/Phonemizers/Backend/Chinese/**,+**/Assets/uPiper/Runtime/Core/Phonemizers/Multilingual/**,-**/Assets/uPiper/Runtime/Demo/**,-**/Assets/uPiper/Runtime/Core/IL2CPP/**,-**/Assets/uPiper/Runtime/Core/Performance/**,-**/IndexedDBCache.cs,-**/WebGLStreamingAssetsLoader.cs,-**/WebGLLoadingPanel.cs,-**/WebGLInteractionGate.cs,-**/IOSAudioSessionHelper.cs,-**/InferenceAudioGenerator.cs,-**/UnityMainThreadDispatcher.cs'
         customParameters: '-debugCodeOptimization -enableCodeCoverage'
 
     - name: Fix coverage file permissions

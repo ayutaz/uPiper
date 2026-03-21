@@ -72,8 +72,7 @@ Place dictionary files in `Assets/StreamingAssets/uPiper/`:
 
 ### Voice Models
 Place ONNX models in `Assets/uPiper/Resources/Models/`:
-- `ja_JP-test-medium.onnx` and `.onnx.json`
-- `en_US-ljspeech-medium.onnx` and `.onnx.json`
+- `multilingual-test-medium.onnx` and `.onnx.json`
 
 ## Important Notes
 

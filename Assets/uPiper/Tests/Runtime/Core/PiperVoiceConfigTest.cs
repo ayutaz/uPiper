@@ -11,16 +11,16 @@ namespace uPiper.Tests.Runtime.Core
         {
             // Act
             var config = PiperVoiceConfig.FromModelPath(
-                "path/to/ja_JP-test-medium.onnx",
-                "path/to/ja_JP-test-medium.json"
+                "path/to/multilingual-test-medium.onnx",
+                "path/to/multilingual-test-medium.json"
             );
 
             // Assert
-            Assert.AreEqual("ja_JP-test-medium", config.VoiceId);
-            Assert.AreEqual("ja", config.Language);
-            Assert.AreEqual("ja JP test medium", config.DisplayName);
-            Assert.AreEqual("path/to/ja_JP-test-medium.onnx", config.ModelPath);
-            Assert.AreEqual("path/to/ja_JP-test-medium.json", config.ConfigPath);
+            Assert.AreEqual("multilingual-test-medium", config.VoiceId);
+            Assert.AreEqual("multilingual", config.Language);
+            Assert.AreEqual("multilingual test medium", config.DisplayName);
+            Assert.AreEqual("path/to/multilingual-test-medium.onnx", config.ModelPath);
+            Assert.AreEqual("path/to/multilingual-test-medium.json", config.ConfigPath);
         }
 
         [Test]

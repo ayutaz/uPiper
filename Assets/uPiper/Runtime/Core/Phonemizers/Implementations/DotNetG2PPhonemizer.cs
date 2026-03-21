@@ -28,7 +28,7 @@ namespace uPiper.Core.Phonemizers.Implementations
     /// Provides the same interface as OpenJTalkPhonemizer without native plugin dependency.
     /// </summary>
     [Preserve]
-    public class DotNetG2PPhonemizer : BasePhonemizer
+    public class DotNetG2PPhonemizer : IPhonemizer
     {
         #region Nested Types
 
@@ -57,19 +57,10 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #endregion
 
-        #region Properties
-
-        public override string Name => "DotNetG2P";
-        public override string Version => "1.1.0";
-        public override string[] SupportedLanguages => new[] { "ja" };
-
-        #endregion
-
         #region Constructor and Destructor
 
-        public DotNetG2PPhonemizer(int cacheCapacity = 1000, string dictionaryPath = null,
+        public DotNetG2PPhonemizer(string dictionaryPath = null,
             bool loadCustomDictionary = true)
-            : base(cacheCapacity)
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
             // WebGL: skip synchronous initialization, use InitializeAsync() instead
@@ -195,21 +186,46 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #endregion
 
-        #region BasePhonemizer Implementation
+        #region IPhonemizer Implementation
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators
-        protected override async Task<PhonemeResult> PhonemizeInternalAsync(
-            string normalizedText,
-            string language,
-            CancellationToken cancellationToken)
+        public async Task<PhonemeResult> PhonemizeAsync(
+            string text,
+            string language = "ja",
+            CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrEmpty(text))
+            {
+                return new PhonemeResult
+                {
+                    OriginalText = text ?? string.Empty,
+                    Language = language,
+                    Phonemes = Array.Empty<string>(),
+                    PhonemeIds = Array.Empty<int>(),
+                    Durations = Array.Empty<float>(),
+                    Pitches = Array.Empty<float>(),
+                    ProcessingTime = TimeSpan.Zero,
+                    FromCache = false
+                };
+            }
+
 #if UNITY_WEBGL && !UNITY_EDITOR
-            return PhonemizeInternal(normalizedText);
+            return PhonemizeInternal(text);
 #else
-            return await Task.Run(() => PhonemizeInternal(normalizedText), cancellationToken);
+            return await Task.Run(() => PhonemizeInternal(text), cancellationToken);
 #endif
         }
 #pragma warning restore CS1998
+
+        public void ClearCache()
+        {
+            // No-op: caching handled by PhonemeCache.Instance
+        }
+
+        public CacheStatistics GetCacheStatistics()
+        {
+            return new CacheStatistics();
+        }
 
         private PhonemeResult PhonemizeInternal(string text)
         {
@@ -227,13 +243,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 };
             }
 
-            // Apply custom dictionary replacements before phonemization
-            var processedText = _customDictionary.ApplyToText(text);
-            if (processedText != text)
-            {
-                PiperLogger.LogInfo(
-                    $"[DotNetG2PPhonemizer] Custom dictionary applied: '{text}' -> '{processedText}'");
-            }
+            var processedText = ApplyCustomDictionaryWithLogging(text);
 
             string phonemeString;
             lock (_engineLock)
@@ -258,20 +268,8 @@ namespace uPiper.Core.Phonemizers.Implementations
             var phonemeArray = phonemeString.Split(
                 new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-            // Convert OpenJTalk phonemes to Piper phonemes using the mapping
-            var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(phonemeArray);
+            var piperPhonemes = ConvertAndFinalizePhonemes(phonemeArray, text);
 
-            // Apply context-dependent N phoneme rules (piper-plus #210)
-            piperPhonemes = ApplyNPhonemeRules(piperPhonemes);
-
-            // Append question marker based on original text (piper-plus #210)
-            var questionType = GetQuestionType(text);
-            var piperPhonemesList = new List<string>(piperPhonemes);
-            piperPhonemesList.Add(questionType);
-            piperPhonemes = piperPhonemesList.ToArray();
-
-            PiperLogger.LogDebug(
-                $"[DotNetG2PPhonemizer] Question type detected: '{questionType}' for text: '{text}'");
             PiperLogger.LogDebug(
                 $"[DotNetG2PPhonemizer] Final phonemes: {string.Join(" ", piperPhonemes.Select(p => p.Length == 1 && p[0] >= '\ue000' && p[0] <= '\uf8ff' ? $"PUA(U+{((int)p[0]):X4})" : $"'{p}'"))}");
 
@@ -295,7 +293,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 Durations = durations,
                 Pitches = pitches,
                 Language = "ja",
-                ProcessingTime = TimeSpan.Zero, // Will be set by BasePhonemizer
+                ProcessingTime = TimeSpan.Zero, // Placeholder; not measured here
                 Metadata = new Dictionary<string, object>
                 {
                     ["TotalDuration"] = 0.0f
@@ -329,13 +327,7 @@ namespace uPiper.Core.Phonemizers.Implementations
                 };
             }
 
-            // Apply custom dictionary replacements before phonemization
-            var processedText = _customDictionary.ApplyToText(text);
-            if (processedText != text)
-            {
-                PiperLogger.LogInfo(
-                    $"[DotNetG2PPhonemizer] Custom dictionary applied: '{text}' -> '{processedText}'");
-            }
+            var processedText = ApplyCustomDictionaryWithLogging(text);
 
             ProsodyFeatures features;
             lock (_engineLock)
@@ -364,17 +356,7 @@ namespace uPiper.Core.Phonemizers.Implementations
             var rawA2 = features.A2.ToArray();
             var rawA3 = features.A3.ToArray();
 
-            // Convert OpenJTalk phonemes to Piper phonemes using the mapping
-            var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(rawPhonemes);
-
-            // Apply context-dependent N phoneme rules (piper-plus #210)
-            piperPhonemes = ApplyNPhonemeRules(piperPhonemes);
-
-            // Append question marker based on original text (piper-plus #210)
-            var questionType = GetQuestionType(text);
-            var piperPhonemesList = new List<string>(piperPhonemes);
-            piperPhonemesList.Add(questionType);
-            piperPhonemes = piperPhonemesList.ToArray();
+            var piperPhonemes = ConvertAndFinalizePhonemes(rawPhonemes, text);
 
             // Extend prosody arrays to match phoneme count (question marker gets 0)
             var totalCount = piperPhonemes.Length;
@@ -389,8 +371,6 @@ namespace uPiper.Core.Phonemizers.Implementations
             Array.Copy(rawA3, newA3, copyCount);
             // Question marker position remains 0
 
-            PiperLogger.LogDebug(
-                $"[DotNetG2PPhonemizer] Question type detected: '{questionType}' for text: '{text}'");
             PiperLogger.LogDebug(
                 $"[DotNetG2PPhonemizer] Prosody extraction complete: {totalCount} phonemes (including question marker)");
 
@@ -527,6 +507,47 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region Helper Methods
 
+        /// <summary>
+        /// Apply custom dictionary replacements and log if any substitution was made.
+        /// </summary>
+        private string ApplyCustomDictionaryWithLogging(string text)
+        {
+            var processedText = _customDictionary.ApplyToText(text);
+            if (processedText != text)
+            {
+                PiperLogger.LogInfo(
+                    $"[DotNetG2PPhonemizer] Custom dictionary applied: '{text}' -> '{processedText}'");
+            }
+
+            return processedText;
+        }
+
+        /// <summary>
+        /// Convert raw OpenJTalk phonemes to finalized Piper phonemes:
+        /// mapping conversion, N-variant rules, and question marker appending.
+        /// </summary>
+        /// <param name="rawPhonemes">OpenJTalk phoneme array</param>
+        /// <param name="originalText">Original input text (used for question detection)</param>
+        /// <returns>Finalized Piper phoneme array including trailing question marker</returns>
+        private static string[] ConvertAndFinalizePhonemes(string[] rawPhonemes, string originalText)
+        {
+            // Convert OpenJTalk phonemes to Piper phonemes using the mapping
+            var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(rawPhonemes);
+
+            // Apply context-dependent N phoneme rules (piper-plus #210)
+            piperPhonemes = ApplyNPhonemeRules(piperPhonemes);
+
+            // Append question marker based on original text (piper-plus #210)
+            var questionType = GetQuestionType(originalText);
+            var piperPhonemesList = new List<string>(piperPhonemes);
+            piperPhonemesList.Add(questionType);
+
+            PiperLogger.LogDebug(
+                $"[DotNetG2PPhonemizer] Question type detected: '{questionType}' for text: '{originalText}'");
+
+            return piperPhonemesList.ToArray();
+        }
+
         private static string GetDefaultDictionaryPath()
         {
 #if UNITY_EDITOR && UPIPER_DEVELOPMENT
@@ -582,7 +603,13 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #region IDisposable Implementation
 
-        protected override void Dispose(bool disposing)
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
         {
             if (!_disposed)
             {
@@ -594,8 +621,6 @@ namespace uPiper.Core.Phonemizers.Implementations
 
                 _disposed = true;
             }
-
-            base.Dispose(disposing);
         }
 
         #endregion

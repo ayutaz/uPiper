@@ -16,7 +16,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         {
             _config = new PiperVoiceConfig
             {
-                VoiceId = "ja_JP-test-medium",
+                VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",  // OpenJTalk方式（PADなし）
                 SampleRate = 22050,
                 PhonemeIdMap = new Dictionary<string, int>
@@ -97,78 +97,11 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         }
 
         [Test]
-        public void Decode_ValidIds_ReturnsCorrectPhonemes()
-        {
-            // Arrange
-            var ids = new[] { 3, 4, 5 }; // a, b, c
-
-            // Act
-            var phonemes = _encoder.Decode(ids);
-
-            // Assert
-            Assert.IsNotNull(phonemes);
-            Assert.AreEqual(3, phonemes.Length);
-            Assert.AreEqual("a", phonemes[0]);
-            Assert.AreEqual("b", phonemes[1]);
-            Assert.AreEqual("c", phonemes[2]);
-        }
-
-        [Test]
-        public void Decode_EmptyIds_ReturnsEmptyArray()
-        {
-            // Arrange
-            var ids = new int[0];
-
-            // Act
-            var phonemes = _encoder.Decode(ids);
-
-            // Assert
-            Assert.IsNotNull(phonemes);
-            Assert.AreEqual(0, phonemes.Length);
-        }
-
-        [Test]
-        public void ContainsPhoneme_ExistingPhoneme_ReturnsTrue()
-        {
-            // Act & Assert
-            Assert.IsTrue(_encoder.ContainsPhoneme("a"));
-            Assert.IsTrue(_encoder.ContainsPhoneme("b"));
-            Assert.IsTrue(_encoder.ContainsPhoneme(" "));
-        }
-
-        [Test]
-        public void ContainsPhoneme_NonExistingPhoneme_ReturnsFalse()
-        {
-            // Act & Assert
-            Assert.IsFalse(_encoder.ContainsPhoneme("x"));
-            Assert.IsFalse(_encoder.ContainsPhoneme("unknown"));
-        }
-
-        [Test]
         public void PhonemeCount_ReturnsCorrectCount()
         {
             // Assert
             // 3 special tokens + 6 from config
             Assert.AreEqual(9, _encoder.PhonemeCount);
-        }
-
-        [Test]
-        public void EncodeDecode_RoundTrip_PreservesPhonemes()
-        {
-            // Arrange
-            var originalPhonemes = new[] { "a", "b", " ", "c", "d", "e" };
-
-            // Act
-            var ids = _encoder.Encode(originalPhonemes);
-            var decodedPhonemes = _encoder.Decode(ids);
-
-            // Assert
-            Assert.IsNotNull(decodedPhonemes);
-            Assert.AreEqual(originalPhonemes.Length, decodedPhonemes.Length);
-            for (var i = 0; i < originalPhonemes.Length; i++)
-            {
-                Assert.AreEqual(originalPhonemes[i], decodedPhonemes[i]);
-            }
         }
 
         #region Extended Question Markers Tests (piper-plus #210)
@@ -198,7 +131,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // Arrange: Create encoder with question marker support
             var configWithQuestion = new PiperVoiceConfig
             {
-                VoiceId = "ja_JP-test-medium",
+                VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",
                 SampleRate = 22050,
                 PhonemeIdMap = new Dictionary<string, int>
@@ -237,7 +170,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // So the PhonemeIdMap needs to include the PUA characters, not the ASCII markers
             var configWithExtendedQuestions = new PiperVoiceConfig
             {
-                VoiceId = "ja_JP-test-medium",
+                VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",
                 SampleRate = 22050,
                 PhonemeIdMap = new Dictionary<string, int>

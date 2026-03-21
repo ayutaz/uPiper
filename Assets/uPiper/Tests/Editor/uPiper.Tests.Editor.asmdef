@@ -8,7 +8,13 @@
         "uPiper.Runtime",
         "uPiper.Editor",
         "DotNetG2P",
-        "DotNetG2P.MeCab"
+        "DotNetG2P.MeCab",
+        "DotNetG2P.Chinese",
+        "DotNetG2P.English",
+        "DotNetG2P.Korean",
+        "DotNetG2P.Spanish",
+        "DotNetG2P.French",
+        "DotNetG2P.Portuguese"
     ],
     "includePlatforms": [
         "Editor"
