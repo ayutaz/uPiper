@@ -14,66 +14,84 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
     /// Uses DotNetG2P.Chinese (41,923 char + 47,111 phrase dictionary) for accurate
     /// pinyin conversion, matching piper-plus ChinesePhonemizer output.
     /// </summary>
-    public class ChinesePhonemizerBackend : PhonemizerBackendBase
+    public class ChinesePhonemizerBackend : IPhonemizerBackend
     {
         private readonly object _syncLock = new();
         private bool _enableDebugLogging;
+        private bool _isInitialized;
+        private bool _isDisposed;
         private ChineseG2PEngine _g2pEngine;
 
         /// <inheritdoc/>
-        public override string Name => "ChinesePhonemizer";
+        public string Name => "ChinesePhonemizer";
 
         /// <inheritdoc/>
-        public override string Version => "1.0.0";
+        public string Version => "1.0.0";
 
         /// <inheritdoc/>
-        public override string License => "MIT";
+        public string License => "MIT";
 
         /// <inheritdoc/>
         private static readonly string[] _supportedLanguages = { "zh", "zh-CN" };
-        public override string[] SupportedLanguages => _supportedLanguages;
+        public string[] SupportedLanguages => _supportedLanguages;
 
-        /// <summary>
-        /// Initializes internal state. Loads DotNetG2P.Chinese dictionaries
-        /// from StreamingAssets for pinyin conversion.
-        /// </summary>
-        protected override Task<bool> InitializeInternalAsync(
-            PhonemizerBackendOptions options,
-            CancellationToken cancellationToken)
+        /// <inheritdoc/>
+        public bool IsAvailable => _isInitialized && !_isDisposed;
+
+        /// <inheritdoc/>
+        public async Task<bool> InitializeAsync(
+            PhonemizerBackendOptions options = null,
+            CancellationToken cancellationToken = default)
         {
-            _enableDebugLogging = options?.EnableDebugLogging ?? false;
+            if (_isInitialized)
+                return true;
 
-            // Load DotNetG2P.Chinese with StreamingAssets dictionary files
-            // (embedded resources don't work in Unity - see docs/dotnetg2p-unity-integration.md)
             try
             {
-                var charPath = System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_char.txt");
-                var phrasePath = System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_phrase.txt");
+                Debug.Log($"Initializing {Name} backend...");
 
-                if (System.IO.File.Exists(charPath))
+                _enableDebugLogging = options?.EnableDebugLogging ?? false;
+
+                // Load DotNetG2P.Chinese with StreamingAssets dictionary files
+                // (embedded resources don't work in Unity - see docs/dotnetg2p-unity-integration.md)
+                try
                 {
-                    _g2pEngine = System.IO.File.Exists(phrasePath)
-                        ? new ChineseG2PEngine(charPath, phrasePath)
-                        : new ChineseG2PEngine(charPath);
-                    Debug.Log($"[ChinesePhonemizer] DotNetG2P.Chinese initialized from StreamingAssets");
+                    var charPath = System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_char.txt");
+                    var phrasePath = System.IO.Path.Combine(Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_phrase.txt");
+
+                    if (System.IO.File.Exists(charPath))
+                    {
+                        _g2pEngine = System.IO.File.Exists(phrasePath)
+                            ? new ChineseG2PEngine(charPath, phrasePath)
+                            : new ChineseG2PEngine(charPath);
+                        Debug.Log($"[ChinesePhonemizer] DotNetG2P.Chinese initialized from StreamingAssets");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[ChinesePhonemizer] Dictionary not found at {charPath}. Chinese phonemization will not be available.");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    Debug.LogWarning($"[ChinesePhonemizer] Dictionary not found at {charPath}. Chinese phonemization will not be available.");
+                    Debug.LogWarning($"[ChinesePhonemizer] DotNetG2P.Chinese init failed: {ex.Message}. Chinese phonemization will not be available.");
+                    _g2pEngine = null;
                 }
+
+                _isInitialized = true;
+                Debug.Log($"{Name} backend initialized successfully.");
+                return true;
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"[ChinesePhonemizer] DotNetG2P.Chinese init failed: {ex.Message}. Chinese phonemization will not be available.");
-                _g2pEngine = null;
+                Debug.LogError($"Error initializing {Name} backend: {ex.Message}");
+                _isInitialized = false;
+                return false;
             }
-
-            return Task.FromResult(true);
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators
         /// <inheritdoc/>
-        public override async Task<PhonemeResult> PhonemizeAsync(
+        public async Task<PhonemeResult> PhonemizeAsync(
             string text,
             string language,
             PhonemeOptions options = null,
@@ -103,9 +121,103 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         }
 #pragma warning restore CS1998
 
+        /// <inheritdoc/>
+        public bool SupportsLanguage(string language)
+        {
+            if (string.IsNullOrEmpty(language))
+                return false;
+
+            foreach (var supported in SupportedLanguages)
+            {
+                if (string.Equals(supported, language, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc/>
+        public long GetMemoryUsage()
+        {
+            // Estimate: CharToPinyin ~500 entries * ~40 bytes + IPA tables
+            return 512 * 1024; // ~512 KB estimate
+        }
+
+        /// <inheritdoc/>
+        public BackendCapabilities GetCapabilities()
+        {
+            return new BackendCapabilities
+            {
+                SupportsIPA = true,
+                SupportsStress = false,
+                SupportsSyllables = false,
+                SupportsTones = true,
+                SupportsDuration = false,
+                SupportsBatchProcessing = false,
+                IsThreadSafe = true,
+                RequiresNetwork = false,
+            };
+        }
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            if (!_isDisposed)
+            {
+                _isDisposed = true;
+                _isInitialized = false;
+            }
+        }
+
         // =====================================================================
         // Internal implementation
         // =====================================================================
+
+        private void EnsureInitialized()
+        {
+            if (!_isInitialized)
+                throw new InvalidOperationException($"{Name} backend is not initialized");
+
+            if (_isDisposed)
+                throw new ObjectDisposedException(Name);
+        }
+
+        private bool ValidateInput(string text, string language, out string error)
+        {
+            error = null;
+
+            if (string.IsNullOrEmpty(text))
+            {
+                error = "Input text is null or empty";
+                return false;
+            }
+
+            if (text.Length > 10000)
+            {
+                error = "Input text exceeds maximum length (10000 characters)";
+                return false;
+            }
+
+            if (!SupportsLanguage(language))
+            {
+                error = $"Language '{language}' is not supported by {Name}";
+                return false;
+            }
+
+            return true;
+        }
+
+        private PhonemeResult CreateErrorResult(string error, string language = null)
+        {
+            return new PhonemeResult
+            {
+                Success = false,
+                ErrorMessage = error,
+                Language = language,
+                Backend = Name,
+                ProcessingTimeMs = 0
+            };
+        }
 
         private PhonemeResult PhonemizeInternal(
             string text, string language, PhonemeOptions options)
@@ -241,39 +353,6 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             return (ch >= '\u4e00' && ch <= '\u9fff')
                 || (ch >= '\u3400' && ch <= '\u4dbf');
-        }
-
-        // =====================================================================
-        // IPhonemizerBackend required members
-        // =====================================================================
-
-        /// <inheritdoc/>
-        public override long GetMemoryUsage()
-        {
-            // Estimate: CharToPinyin ~500 entries * ~40 bytes + IPA tables
-            return 512 * 1024; // ~512 KB estimate
-        }
-
-        /// <inheritdoc/>
-        public override BackendCapabilities GetCapabilities()
-        {
-            return new BackendCapabilities
-            {
-                SupportsIPA = true,
-                SupportsStress = false,
-                SupportsSyllables = false,
-                SupportsTones = true,
-                SupportsDuration = false,
-                SupportsBatchProcessing = false,
-                IsThreadSafe = true,
-                RequiresNetwork = false,
-            };
-        }
-
-        /// <inheritdoc/>
-        protected override void DisposeInternal()
-        {
-            // No unmanaged resources to dispose
         }
     }
 }
