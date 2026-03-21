@@ -2,6 +2,7 @@
 
 English | [日本語](README.md)
 
+[![openupm](https://img.shields.io/npm/v/com.ayutaz.upiper?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.ayutaz.upiper/)
 [![Unity Tests](https://github.com/ayutaz/uPiper/actions/workflows/unity-tests.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-tests.yml)
 [![Unity Build](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml)
 
@@ -12,7 +13,8 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 - [Features](#features)
 - [Requirements](#requirements)
 - [Installation](#installation)
-  - [Via Unity Package Manager (Recommended)](#via-unity-package-manager-recommended)
+  - [Via OpenUPM (Recommended)](#via-openupm-recommended)
+  - [Via Git URL](#via-git-url)
   - [From Package Files](#from-package-files)
   - [Troubleshooting](#troubleshooting)
 - [Supported Platforms](#supported-platforms)
@@ -23,9 +25,20 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 ## Features
 
 - High-quality speech synthesis (piper-plus based)
-- Multi-language support (Japanese, English)
+- Multi-language support (Japanese, English, Chinese, Spanish, French, Portuguese, Korean)
+
+| Language | G2P Backend |
+|----------|-------------|
+| Japanese | DotNetG2P.Japanese (MeCab dictionary) |
+| English | DotNetG2P.English (Flite LTS) |
+| Chinese | DotNetG2P.Chinese (44K character dictionary) |
+| Spanish | DotNetG2P.Spanish |
+| French | DotNetG2P.French |
+| Portuguese | DotNetG2P.Portuguese |
+| Korean | DotNetG2P.Korean |
+
 - Fast inference with Unity AI Inference Engine
-- High-precision Japanese phonemization with dot-net-g2p (MeCab dictionary, all platforms)
+- High-precision multilingual phonemization with DotNetG2P packages (all platforms)
 - GPU inference support (GPUCompute/GPUPixel)
 - **Prosody Support**: More natural intonation in speech synthesis
 - **Custom Dictionary**: Reading conversion for technical terms and proper nouns
@@ -34,17 +47,44 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 
 | Model Name | Language | Prosody | Description |
 |-----------|----------|---------|-------------|
-| ja_JP-test-medium | Japanese | Yes | Standard Japanese model (Prosody-enabled) |
-| en_US-ljspeech-medium | English | No | Standard English model |
-| tsukuyomi-chan | Japanese | Yes | Prosody-enabled Japanese model (more natural intonation) |
+| multilingual-test-medium | Multilingual (ja/en/zh/es/fr/pt) | Yes | 6-language multilingual model (Prosody-enabled) |
 
 ## Requirements
 * Unity 6000.0.58f2
-* Unity AI Inference Engine (com.unity.ai.inference) 2.5.0
+* Unity AI Inference Engine (com.unity.ai.inference) 2.2.2
 
 ## Installation
 
-### Via Unity Package Manager (Recommended)
+### Via OpenUPM (Recommended)
+
+#### Using openupm-cli
+
+```bash
+openupm add com.ayutaz.upiper
+```
+
+#### Manually editing manifest.json
+
+Add the following scoped registry to `Packages/manifest.json`:
+
+```json
+{
+  "scopedRegistries": [
+    {
+      "name": "package.openupm.com",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.ayutaz.upiper"
+      ]
+    }
+  ],
+  "dependencies": {
+    "com.ayutaz.upiper": "1.4.0"
+  }
+}
+```
+
+### Via Git URL
 
 #### Step 1: Install Package
 1. Open `Window > Package Manager` in Unity Editor

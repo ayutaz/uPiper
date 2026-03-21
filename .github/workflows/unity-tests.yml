@@ -23,7 +23,7 @@ jobs:
     - uses: actions/checkout@v5
       with:
         repository: ayutaz/dot-net-g2p
-        ref: main
+        ref: v1.8.2
         path: dot-net-g2p
 
     - name: Fix local package paths for CI
@@ -58,8 +58,42 @@ jobs:
         artifactsPath: test-results
         githubToken: ${{ github.token }}
         checkName: Unity Test Results
-        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.*,-uPiper.Tests.*'
-        customParameters: '-enableCodeCoverage'
+        # NOTE: coverageOptionsはセミコロン区切りの各オプション前にスペースを入れてはならない
+        # (Unity Code Coverageパーサーが認識しないため)
+        coverageOptions: 'generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;assemblyFilters:+uPiper.Runtime;pathFilters:+**/Assets/uPiper/Runtime/**,+**/Assets/uPiper/Runtime/Core/Phonemizers/Backend/Chinese/**,+**/Assets/uPiper/Runtime/Core/Phonemizers/Multilingual/**,-**/Assets/uPiper/Runtime/Demo/**,-**/Assets/uPiper/Runtime/Core/IL2CPP/**,-**/Assets/uPiper/Runtime/Core/Performance/**,-**/IndexedDBCache.cs,-**/WebGLStreamingAssetsLoader.cs,-**/WebGLLoadingPanel.cs,-**/WebGLInteractionGate.cs,-**/IOSAudioSessionHelper.cs,-**/InferenceAudioGenerator.cs,-**/UnityMainThreadDispatcher.cs'
+        customParameters: '-debugCodeOptimization -enableCodeCoverage'
+
+    - name: Fix coverage file permissions
+      if: always()
+      run: |
+        for dir in test-results CodeCoverage; do
+          if [ -d "$dir" ]; then
+            sudo chown -R $(id -u):$(id -g) "$dir"
+          fi
+        done
+
+    - name: Setup .NET for ReportGenerator
+      if: always()
+      uses: actions/setup-dotnet@v4
+
+    - name: Generate Coverage Report
+      if: always()
+      uses: danielpalme/ReportGenerator-GitHub-Action@v5
+      with:
+        reports: 'CodeCoverage/**/TestCoverageResults_*.xml'
+        targetdir: 'coveragereport'
+        reporttypes: 'HtmlInline;MarkdownSummaryGithub;Cobertura'
+        assemblyfilters: '+uPiper.Runtime'
+        customSettings: 'minimumCoverageThresholds:lineCoverage=50'
+
+    - name: Coverage Summary
+      if: always()
+      run: |
+        if [ -f coveragereport/SummaryGithub.md ]; then
+          cat coveragereport/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️ Coverage report not generated" >> $GITHUB_STEP_SUMMARY
+        fi
 
     - name: Upload Test Results
       uses: actions/upload-artifact@v7
@@ -68,3 +102,11 @@ jobs:
         name: Test Results
         path: test-results/
         retention-days: 7
+
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v7
+      if: always()
+      with:
+        name: Coverage Report
+        path: coveragereport/
+        retention-days: 14

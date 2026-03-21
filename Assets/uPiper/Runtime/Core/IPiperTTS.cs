@@ -93,6 +93,28 @@ namespace uPiper.Core
         public CacheStatistics GetCacheStatistics();
 
         /// <summary>
+        /// Generate audio from text with explicit language specification.
+        /// </summary>
+        /// <param name="text">Input text</param>
+        /// <param name="language">Language code (e.g., "ja", "en", "auto" for auto-detect)</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Generated audio clip</returns>
+        public Task<AudioClip> GenerateAudioAsync(string text, string language, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Detect the primary language of the given text using Unicode character analysis.
+        /// </summary>
+        /// <param name="text">Input text to analyze</param>
+        /// <returns>Detected language code (e.g., "ja", "en"), or the default language if undetermined</returns>
+        public string DetectLanguage(string text);
+
+        /// <summary>
+        /// Get the list of languages supported by the current model.
+        /// </summary>
+        /// <returns>Read-only list of language codes</returns>
+        public IReadOnlyList<string> GetSupportedLanguages();
+
+        /// <summary>
         /// Event raised when initialization completes
         /// </summary>
         public event Action<bool> OnInitialized;
@@ -106,5 +128,11 @@ namespace uPiper.Core
         /// Event raised on error
         /// </summary>
         public event Action<PiperException> OnError;
+
+        /// <summary>
+        /// Event raised when a language is detected in the input text.
+        /// The string argument is the detected language code.
+        /// </summary>
+        public event Action<string> OnLanguageDetected;
     }
 }

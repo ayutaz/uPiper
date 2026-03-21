@@ -80,7 +80,7 @@ namespace uPiper.Core.Phonemizers
         /// </summary>
         private static readonly Dictionary<string, int> DefaultPiperPhonemeToId = new()
         {
-            // Special tokens (from ja_JP-test-medium.onnx.json)
+            // Special tokens (from model .onnx.json)
             { "_", 0 },      // Pad token
             { "^", 1 },      // Start token
             { "$", 2 },      // End token
@@ -266,7 +266,7 @@ namespace uPiper.Core.Phonemizers
                 if (OpenJTalkToPiperPhoneme.TryGetValue(phoneme.ToLower(), out var piperPhoneme))
                 {
                     // IMPORTANT: Preserve case for unvoiced vowels (U, I, E, O, A) and moraic nasal (N)
-                    // These have separate phoneme IDs in IPA-based models like tsukuyomi-chan
+                    // These have separate phoneme IDs in IPA-based models
                     // - N (moraic nasal) → ID 22
                     // - n (regular consonant) → ID 50
                     // - U (unvoiced u) → ID 14

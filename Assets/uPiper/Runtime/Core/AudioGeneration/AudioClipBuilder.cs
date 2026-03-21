@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using UnityEngine;
 using uPiper.Core.Logging;
 
@@ -96,82 +95,5 @@ namespace uPiper.Core.AudioGeneration
             return normalizedData;
         }
 
-        /// <summary>
-        /// 音声データにフェードイン/フェードアウトを適用する
-        /// </summary>
-        /// <param name="audioData">音声データ</param>
-        /// <param name="fadeInSamples">フェードインサンプル数</param>
-        /// <param name="fadeOutSamples">フェードアウトサンプル数</param>
-        /// <returns>処理された音声データ</returns>
-        public float[] ApplyFade(float[] audioData, int fadeInSamples = 0, int fadeOutSamples = 0)
-        {
-            if (audioData == null || audioData.Length == 0)
-                return audioData;
-
-            var processedData = (float[])audioData.Clone();
-
-            // フェードイン
-            if (fadeInSamples > 0)
-            {
-                var actualFadeIn = Mathf.Min(fadeInSamples, audioData.Length / 2);
-                for (var i = 0; i < actualFadeIn; i++)
-                {
-                    var factor = (float)i / actualFadeIn;
-                    processedData[i] *= factor;
-                }
-            }
-
-            // フェードアウト
-            if (fadeOutSamples > 0)
-            {
-                var actualFadeOut = Mathf.Min(fadeOutSamples, audioData.Length / 2);
-                var startIndex = audioData.Length - actualFadeOut;
-                for (var i = 0; i < actualFadeOut; i++)
-                {
-                    var factor = 1f - ((float)i / actualFadeOut);
-                    processedData[startIndex + i] *= factor;
-                }
-            }
-
-            return processedData;
-        }
-
-        /// <summary>
-        /// 複数の音声データを結合する
-        /// </summary>
-        /// <param name="audioChunks">音声データの配列</param>
-        /// <param name="gapSamples">チャンク間のギャップ（サンプル数）</param>
-        /// <returns>結合された音声データ</returns>
-        public float[] ConcatenateAudio(float[][] audioChunks, int gapSamples = 0)
-        {
-            if (audioChunks == null || audioChunks.Length == 0)
-                return Array.Empty<float>();
-
-            // 有効なチャンクのみをフィルタリング
-            var validChunks = audioChunks.Where(chunk => chunk != null && chunk.Length > 0).ToArray();
-            if (validChunks.Length == 0)
-                return Array.Empty<float>();
-
-            // 合計サンプル数を計算
-            var totalSamples = validChunks.Sum(chunk => chunk.Length) + (validChunks.Length - 1) * Math.Max(0, gapSamples);
-            var concatenated = new float[totalSamples];
-
-            // データをコピー
-            var currentIndex = 0;
-            for (var i = 0; i < validChunks.Length; i++)
-            {
-                Array.Copy(validChunks[i], 0, concatenated, currentIndex, validChunks[i].Length);
-                currentIndex += validChunks[i].Length;
-
-                // ギャップを追加（最後のチャンク以外）
-                if (i < validChunks.Length - 1 && gapSamples > 0)
-                {
-                    currentIndex += gapSamples; // float配列は既に0で初期化されている
-                }
-            }
-
-            PiperLogger.LogDebug($"Concatenated {validChunks.Length} audio chunks into {totalSamples} samples");
-            return concatenated;
-        }
     }
 }

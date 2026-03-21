@@ -20,7 +20,7 @@ namespace uPiper.Tests.Runtime
             // Create test config with English phoneme mapping
             var config = new PiperVoiceConfig
             {
-                VoiceId = "en_US-ljspeech-medium",
+                VoiceId = "multilingual-test-medium",
                 PhonemeIdMap = new Dictionary<string, int>
                 {
                     ["_"] = 0,  // PAD
@@ -51,19 +51,20 @@ namespace uPiper.Tests.Runtime
 
             Debug.Log($"Output IDs ({ids.Length}): {string.Join(", ", ids)}");
 
-            // For eSpeak models, we expect:
-            // BOS + (phoneme + PAD)* + EOS
-            // So for 9 phonemes, we should get: 1 BOS + 9*(phoneme+PAD) + 1 EOS = 20 IDs
-            var expectedLength = 1 + (testPhonemes.Length * 2) + 1;
+            // For eSpeak/multilingual models, we expect:
+            // BOS + PAD + (phoneme + PAD)* + EOS
+            // So for 9 phonemes: 1 BOS + 1 PAD + 9*(phoneme+PAD) + 1 EOS = 21 IDs
+            var expectedLength = 1 + 1 + (testPhonemes.Length * 2) + 1;
 
             Debug.Log($"Expected length: {expectedLength}, Actual length: {ids.Length}");
 
             // Verify structure
             Assert.AreEqual(1, ids[0], "First ID should be BOS (1)");
+            Assert.AreEqual(0, ids[1], "Second ID should be PAD (0) after BOS");
             Assert.AreEqual(2, ids[ids.Length - 1], "Last ID should be EOS (2)");
 
-            // Verify each phoneme is followed by PAD
-            var idIndex = 1; // Skip BOS
+            // Verify each phoneme is followed by PAD (starting at index 2 due to PAD after BOS)
+            var idIndex = 2; // Skip BOS + PAD
             foreach (var phoneme in testPhonemes)
             {
                 if (config.PhonemeIdMap.TryGetValue(phoneme, out var expectedId))
@@ -77,9 +78,10 @@ namespace uPiper.Tests.Runtime
             // Log the detailed mapping
             Debug.Log("Detailed ID mapping:");
             Debug.Log($"  BOS: {ids[0]}");
+            Debug.Log($"  PAD after BOS: {ids[1]}");
             for (int i = 0; i < testPhonemes.Length; i++)
             {
-                var baseIndex = 1 + (i * 2);
+                var baseIndex = 2 + (i * 2);
                 if (baseIndex < ids.Length - 1)
                 {
                     Debug.Log($"  {testPhonemes[i]}: {ids[baseIndex]} + PAD: {ids[baseIndex + 1]}");

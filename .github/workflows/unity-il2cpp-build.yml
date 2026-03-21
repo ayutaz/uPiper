@@ -77,7 +77,7 @@ jobs:
     - uses: actions/checkout@v5
       with:
         repository: ayutaz/dot-net-g2p
-        ref: main
+        ref: v1.8.2
         path: dot-net-g2p
 
     - name: Fix local package paths for CI
@@ -95,7 +95,7 @@ jobs:
           
     # Free up disk space for IL2CPP builds (they need more space)
     - name: Free Disk Space (Ubuntu)
-      uses: jlumbroso/free-disk-space@main
+      uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
       if: matrix.os == 'ubuntu-latest'
       with:
         tool-cache: false

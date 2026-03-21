@@ -2,6 +2,7 @@
 
 [English](README.en.md) | 日本語
 
+[![openupm](https://img.shields.io/npm/v/com.ayutaz.upiper?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.ayutaz.upiper/)
 [![Unity Tests](https://github.com/ayutaz/uPiper/actions/workflows/unity-tests.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-tests.yml)
 [![Unity Build](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml/badge.svg)](https://github.com/ayutaz/uPiper/actions/workflows/unity-build.yml)
 
@@ -12,7 +13,8 @@
 - [機能](#機能)
 - [Requirements](#requirements)
 - [インストール](#インストール)
-  - [Unity Package Manager経由（推奨）](#unity-package-manager経由推奨)
+  - [OpenUPM経由（推奨）](#openupm経由推奨)
+  - [Git URL経由](#git-url経由)
   - [パッケージファイルからのインストール](#パッケージファイルからのインストール)
   - [トラブルシューティング](#トラブルシューティング)
 - [サポートプラットフォーム](#サポートプラットフォーム)
@@ -23,9 +25,20 @@
 ## 機能
 
 - 高品質な音声合成（piper-plusベース）
-- 多言語対応（日本語、英語）
+- 多言語対応（日本語、英語、中国語、スペイン語、フランス語、ポルトガル語、韓国語）
+
+| 言語 | G2Pバックエンド |
+|------|----------------|
+| 日本語 | DotNetG2P.Japanese (MeCab辞書) |
+| 英語 | DotNetG2P.English (Flite LTS) |
+| 中国語 | DotNetG2P.Chinese (44K文字辞書) |
+| スペイン語 | DotNetG2P.Spanish |
+| フランス語 | DotNetG2P.French |
+| ポルトガル語 | DotNetG2P.Portuguese |
+| 韓国語 | DotNetG2P.Korean |
+
 - Unity AI Inference Engineによる高速推論
-- dot-net-g2p（MeCab辞書）による高精度な日本語音素化（全プラットフォーム対応）
+- DotNetG2Pパッケージによる高精度な多言語音素化（全プラットフォーム対応）
 - GPU推論サポート（GPUCompute/GPUPixel）
 - **Prosody（韻律）サポート**: より自然なイントネーションの音声合成
 - **カスタム辞書**: 技術用語・固有名詞の読み変換
@@ -34,17 +47,44 @@
 
 | モデル名 | 言語 | Prosody対応 | 説明 |
 |---------|------|------------|------|
-| ja_JP-test-medium | 日本語 | Yes | 標準日本語モデル（Prosody対応） |
-| en_US-ljspeech-medium | 英語 | No | 標準英語モデル |
-| tsukuyomi-chan | 日本語 | Yes | Prosody対応日本語モデル（より自然なイントネーション） |
+| multilingual-test-medium | 多言語(6言語: ja/en/zh/es/fr/pt) | Yes | 多言語対応モデル（Prosody対応） |
 
 ## Requirements
 * Unity 6000.0.58f2
-* Unity AI Inference Engine (com.unity.ai.inference) 2.5.0
+* Unity AI Inference Engine (com.unity.ai.inference) 2.2.2
 
 ## インストール
 
-### Unity Package Manager経由（推奨）
+### OpenUPM経由（推奨）
+
+#### openupm-cliを使用する場合
+
+```bash
+openupm add com.ayutaz.upiper
+```
+
+#### manifest.jsonを直接編集する場合
+
+`Packages/manifest.json` に以下のscoped registryを追加してください：
+
+```json
+{
+  "scopedRegistries": [
+    {
+      "name": "package.openupm.com",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.ayutaz.upiper"
+      ]
+    }
+  ],
+  "dependencies": {
+    "com.ayutaz.upiper": "1.4.0"
+  }
+}
+```
+
+### Git URL経由
 
 #### ステップ1: パッケージのインストール
 1. Unity Editorで `Window > Package Manager` を開く

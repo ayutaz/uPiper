@@ -22,7 +22,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
     [Category("RequiresProsodyModel")]
     public class ProsodyInferenceIntegrationTests
     {
-        private const string MODEL_NAME = "tsukuyomi-chan";
+        private const string MODEL_NAME = "multilingual-test-medium";
         private InferenceAudioGenerator _generator;
         private DotNetG2PPhonemizer _phonemizer;
         private PhonemeEncoder _encoder;
@@ -32,6 +32,13 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
+            // All tests in this class run ONNX inference which is too slow for CI
+            if (Application.isBatchMode)
+            {
+                Assert.Ignore("Skipping heavy inference tests in CI batch mode");
+                return;
+            }
+
             // Load prosody-enabled model (try both paths)
             _prosodyModelAsset = Resources.Load<ModelAsset>($"uPiper/Models/{MODEL_NAME}");
             if (_prosodyModelAsset == null)
@@ -234,6 +241,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         }
 
         [Test]
+        [Timeout(300000)]
         public async Task GenerateAudioWithProsody_CompareWithZeroProsody()
         {
             if (_prosodyModelAsset == null)

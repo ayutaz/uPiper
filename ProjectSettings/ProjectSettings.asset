@@ -141,7 +141,7 @@ PlayerSettings:
   loadStoreDebugModeEnabled: 0
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
-  bundleVersion: 1.3.0
+  bundleVersion: 1.4.0
   preloadedAssets:
   - {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   metroInputSource: 0
@@ -779,6 +779,8 @@ PlayerSettings:
   webWasm2023: 0
   scriptingDefineSymbols:
     Android: UPIPER_DEVELOPMENT;ULOOPMCP_HAS_ROSLYN
+    Standalone: UPIPER_DEVELOPMENT;ULOOPMCP_HAS_ROSLYN
+    WebGL: UPIPER_DEVELOPMENT;ULOOPMCP_HAS_ROSLYN
   additionalCompilerArguments: {}
   platformArchitecture:
     iPhone: 1

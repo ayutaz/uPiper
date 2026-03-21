@@ -34,6 +34,8 @@ namespace uPiper.Core.AudioGeneration
             float lengthScale = 1.0f,
             float noiseScale = 0.667f,
             float noiseW = 0.8f,
+            int speakerId = 0,
+            int languageId = 0,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -56,6 +58,8 @@ namespace uPiper.Core.AudioGeneration
             float lengthScale = 1.0f,
             float noiseScale = 0.667f,
             float noiseW = 0.8f,
+            int speakerId = 0,
+            int languageId = 0,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -72,5 +76,15 @@ namespace uPiper.Core.AudioGeneration
         /// モデルがprosody_featuresをサポートするかどうか
         /// </summary>
         public bool SupportsProsody { get; }
+
+        /// <summary>
+        /// モデルがマルチスピーカー（sid入力）をサポートするかどうか
+        /// </summary>
+        public bool SupportsMultiSpeaker { get; }
+
+        /// <summary>
+        /// モデルが多言語（lid入力）をサポートするかどうか
+        /// </summary>
+        public bool SupportsLanguageId { get; }
     }
 }

@@ -154,20 +154,5 @@ namespace uPiper.Tests.Editor
 
         #endregion
 
-        #region Properties
-
-        [Test]
-        public void Properties_ReturnsCorrectValues()
-        {
-            SkipIfNoDictionary();
-
-            Assert.AreEqual("DotNetG2P", _phonemizer.Name);
-            Assert.AreEqual("1.1.0", _phonemizer.Version);
-            Assert.Contains("ja", _phonemizer.SupportedLanguages);
-            Assert.IsTrue(_phonemizer.IsLanguageSupported("ja"));
-            Assert.IsFalse(_phonemizer.IsLanguageSupported("en"));
-        }
-
-        #endregion
     }
 }

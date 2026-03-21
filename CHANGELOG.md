@@ -5,6 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026/03/21
+
+### Added
+
+- **多言語TTS対応（7言語G2P）**: piper-plus v1.7.0ベースの多言語音声合成
+  - 日本語(ja)、英語(en)、中国語(zh)、スペイン語(es)、フランス語(fr)、ポルトガル語(pt)、韓国語(ko)の7言語G2P対応
+  - DotNetG2Pパッケージによる純C# G2P実装（English, Chinese, Spanish, French, Portuguese, Korean）
+  - MultilingualPhonemizerによるUnicodeベース自動言語検出・ルーティング
+  - 言語別Prosody対応（ja: アクセント、zh: 声調、es/fr/pt: ストレス、ko: 音節数）
+  - multilingual-test-medium fp16モデル（38MB、6言語対応）
+- **中国語辞書**: DotNetG2P.Chinese（44,435文字 + 411,958フレーズ辞書）
+- **デモUI多言語対応**: 6言語切替ドロップダウン付きデモシーン
+- **PuaTokenMapper**: 全7言語87エントリの統一PUA/IPA双方向マッピング
+
+### Changed
+
+- DotNetG2Pパッケージをv1.8.2に更新（全8パッケージ）
+- PhonemeEncoderに多言語モデル向けIntersperse PAD挿入、NFC正規化を追加
+- IPhonemizerBackend/IPhonemizer/PhonemeOptionsインターフェースをスリム化（未使用メンバー大量削除）
+
+### Removed
+
+- レガシーG2Pバックエンド削除（Spanish, French, Portuguese, Korean, Flite/RuleBased English）: ~19,000行削減
+- ChinesePhonemizerBackend（MultilingualPhonemizerに直接統合）
+- PhonemizerBackendBase基底クラス
+- BackendCapabilities, PhonemeFormat等の未使用型
+- AudioClipBuilder.ApplyFade/ConcatenateAudio等の未使用メソッド
+- GPUInferenceSettings未使用フィールド（MaxBatchSize, UseFloat16等）
+- 不要ドキュメント34→8ファイルに整理
+
+### Fixed
+
+- PhonemeEncoder NFC正規化バグ修正（ポルトガル語ũ等の分解IPA文字対応）
+- 英語G2P品質改善（DotNetG2P.English CMU dict + LTS）
+- 中国語声調PUAマーカー挿入
+- InferenceAudioGenerator到達不能コード削除
+- CIテスト安定化（重い推論テストのバッチモードスキップ、cmu_lts_model.bin不在時のAssert.Ignore）
+
+### CI/CD
+
+- semantic-release導入によるリリースプロセス自動化
+- テストカバレッジ品質ゲート導入
+- Dependabot設定強化とGitHub Actionsバージョン更新
+
 ## [1.3.0] - 2026/03/12
 
 ### Added
@@ -324,6 +368,7 @@ Apache License 2.0 - See [LICENSE](LICENSE) file for details
 - [Documentation](https://github.com/ayutaz/uPiper/tree/main/docs)
 - [Issues](https://github.com/ayutaz/uPiper/issues)
 
+[1.4.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.4.0
 [1.3.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.3.0
 [1.2.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.2.0
 [1.1.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.1.0
