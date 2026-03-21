@@ -79,7 +79,7 @@ Add the following scoped registry to `Packages/manifest.json`:
     }
   ],
   "dependencies": {
-    "com.ayutaz.upiper": "1.3.0"
+    "com.ayutaz.upiper": "1.4.0"
   }
 }
 ```

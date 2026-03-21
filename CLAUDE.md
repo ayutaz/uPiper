@@ -54,7 +54,7 @@ MultilingualPhonemizer (言語ルーティング, DotNetG2Pエンジン直接呼
     ├─ es: SpanishG2PEngine (DotNetG2P.Spanish)
     ├─ fr: FrenchG2PEngine (DotNetG2P.French)
     ├─ pt: PortugueseG2PEngine (DotNetG2P.Portuguese)
-    ├─ zh: ChinesePhonemizerBackend (DotNetG2P.Chinese, 44K文字辞書)
+    ├─ zh: ChineseG2PEngine (DotNetG2P.Chinese, 44K文字辞書)
     └─ ko: KoreanG2PEngine (DotNetG2P.Korean)
     ↓
 PuaTokenMapper (PUA↔IPA双方向マッピング, 87固定エントリ)
@@ -95,7 +95,7 @@ AudioClip出力 (22050Hz, float32)
 | コンポーネント | 場所 | 役割 |
 |--------------|------|------|
 | `IPiperTTS` / `PiperTTS` | `Runtime/Core/` | メインインターフェース |
-| `IPhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/` | 音素化バックエンド抽象（中国語のみ使用） |
+| `IPhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/` | 音素化バックエンド抽象（テストスタブのみ使用） |
 | `MultilingualPhonemizer` | `Runtime/Core/Phonemizers/Multilingual/` | 多言語テキスト分割・DotNetG2Pエンジン直接呼び出し |
 | `UnicodeLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Unicode文字範囲ベース言語検出 |
 | `DotNetG2PPhonemizer` | `Runtime/Core/Phonemizers/Implementations/` | 日本語G2P（dot-net-g2p, Prosody対応） |
@@ -107,7 +107,7 @@ AudioClip出力 (22050Hz, float32)
 | `SpanishG2PEngine` | DotNetG2P.Spanish パッケージ | スペイン語G2P |
 | `FrenchG2PEngine` | DotNetG2P.French パッケージ | フランス語G2P |
 | `PortugueseG2PEngine` | DotNetG2P.Portuguese パッケージ | ポルトガル語G2P |
-| `ChinesePhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/Chinese/` | 中国語G2P（DotNetG2P.Chinese wrapper） |
+| `ChineseG2PEngine` | DotNetG2P.Chinese パッケージ | 中国語G2P（44K文字辞書） |
 | `KoreanG2PEngine` | DotNetG2P.Korean パッケージ | 韓国語G2P（Hangul分解 + 音韻規則） |
 | `PuaTokenMapper` | `Runtime/Core/Phonemizers/Multilingual/` | PUA↔IPA双方向マッピング |
 | `LanguageConstants` | `Runtime/Core/Phonemizers/Multilingual/` | 言語ID/コード定数 |
@@ -120,13 +120,7 @@ Assets/uPiper/
 │   ├── Core/               # ランタイムコア
 │   │   ├── AudioGeneration/    # AudioClip生成、ONNX推論
 │   │   ├── Phonemizers/        # 音素化システム
-│   │   │   ├── Backend/        # バックエンド実装（大半はDotNetG2Pパッケージに移行）
-│   │   │   │   ├── Chinese/       # 中国語G2P（DotNetG2P.Chinese wrapper）
-│   │   │   │   ├── Flite/         # 英語Flite LTS（レガシー、通常はDotNetG2P.Englishを使用）
-│   │   │   │   ├── Spanish/       # スペイン語（レガシー、DotNetG2P.Spanishに移行済み）
-│   │   │   │   ├── French/        # フランス語（レガシー、DotNetG2P.Frenchに移行済み）
-│   │   │   │   ├── Portuguese/    # ポルトガル語（レガシー、DotNetG2P.Portugueseに移行済み）
-│   │   │   │   └── Korean/        # 韓国語（レガシー、DotNetG2P.Koreanに移行済み）
+│   │   │   ├── Backend/        # バックエンドインターフェース・共有型（IPhonemizerBackend, PhonemeOptions）
 │   │   │   ├── Implementations/# Prosody対応実装
 │   │   │   ├── Multilingual/   # 多言語共通(PuaTokenMapper, LanguageConstants)
 │   │   │   ├── Native/         # P/Invoke定義

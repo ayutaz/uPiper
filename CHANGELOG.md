@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - InferenceAudioGenerator到達不能コード削除
 - CIテスト安定化（重い推論テストのバッチモードスキップ、cmu_lts_model.bin不在時のAssert.Ignore）
 
+### CI/CD
+
+- semantic-release導入によるリリースプロセス自動化
+- テストカバレッジ品質ゲート導入
+- Dependabot設定強化とGitHub Actionsバージョン更新
+
 ## [1.3.0] - 2026/03/12
 
 ### Added
@@ -362,6 +368,7 @@ Apache License 2.0 - See [LICENSE](LICENSE) file for details
 - [Documentation](https://github.com/ayutaz/uPiper/tree/main/docs)
 - [Issues](https://github.com/ayutaz/uPiper/issues)
 
+[1.4.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.4.0
 [1.3.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.3.0
 [1.2.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.2.0
 [1.1.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.1.0

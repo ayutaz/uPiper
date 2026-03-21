@@ -79,7 +79,7 @@ openupm add com.ayutaz.upiper
     }
   ],
   "dependencies": {
-    "com.ayutaz.upiper": "1.3.0"
+    "com.ayutaz.upiper": "1.4.0"
   }
 }
 ```

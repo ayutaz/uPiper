@@ -7,8 +7,6 @@
   - build-settings.md - ビルド設定
 
 ### features/ - 機能別ドキュメント
-- **phonemization/** - 音素化システム
-  - README.md - 音素化システム概要
 - **gpu/** - GPU推論
   - gpu-inference.md - GPU推論ガイド
 
