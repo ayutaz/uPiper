@@ -32,6 +32,13 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
+            // All tests in this class run ONNX inference which is too slow for CI
+            if (Application.isBatchMode)
+            {
+                Assert.Ignore("Skipping heavy inference tests in CI batch mode");
+                return;
+            }
+
             // Load prosody-enabled model (try both paths)
             _prosodyModelAsset = Resources.Load<ModelAsset>($"uPiper/Models/{MODEL_NAME}");
             if (_prosodyModelAsset == null)
@@ -164,12 +171,6 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         [Test]
         public async Task GenerateAudioWithProsody_ProducesValidAudio()
         {
-            if (Application.isBatchMode)
-            {
-                Assert.Ignore("Skipping heavy inference test in CI batch mode");
-                return;
-            }
-
             if (_prosodyModelAsset == null)
             {
                 Assert.Ignore("Prosody model not available");
@@ -243,14 +244,6 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         [Timeout(300000)]
         public async Task GenerateAudioWithProsody_CompareWithZeroProsody()
         {
-            // This test runs two full ONNX inferences on CPU, which exceeds CI timeout.
-            // Skip when running in batch mode (CI).
-            if (Application.isBatchMode)
-            {
-                Assert.Ignore("Skipping heavy inference test in CI batch mode");
-                return;
-            }
-
             if (_prosodyModelAsset == null)
             {
                 Assert.Ignore("Prosody model not available");
