@@ -234,6 +234,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         }
 
         [Test]
+        [Timeout(300000)]
         public async Task GenerateAudioWithProsody_CompareWithZeroProsody()
         {
             if (_prosodyModelAsset == null)

@@ -96,14 +96,15 @@ namespace uPiper.Tests.Editor.Phonemizers
             var phonemizer = CreateInitialized(
                 new[] { "ja", "en", "fr", "pt" }, defaultLatin: "en");
 
+            // "今日は" = 3 ja chars, "hello bonjour bom dia" = 21 latin chars -> "en" is primary
             var result = Phonemize(phonemizer, "今日はhello bonjour bom dia");
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "Four-language configured text should produce phonemes");
-            // Japanese segment is present
-            Assert.AreEqual("ja", result.DetectedPrimaryLanguage,
-                "With '今日は' as a segment, ja should be detected or at least present");
+            // Latin text dominates by character count and routes to default "en"
+            Assert.AreEqual("en", result.DetectedPrimaryLanguage,
+                "Latin text dominates by character count, primary should be 'en'");
 
             phonemizer.Dispose();
         }
@@ -177,7 +178,9 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void ProsodyArrays_NonJapaneseSegments_HaveZeroA1()
         {
-            // Pure English text -> all prosody values should be zero
+            // Pure English text -> A1 should be zero (English backend sets A1=0)
+            // A2 may be non-zero (English stress: 1=primary, 2=secondary)
+            // A3 may be non-zero (English word phoneme count)
             var phonemizer = CreateInitialized(new[] { "ja", "en" });
 
             var result = Phonemize(phonemizer, "hello world");
@@ -185,13 +188,11 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.IsTrue(result.Phonemes.Length > 0);
             Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
 
-            // English backend does not produce prosody -> all zeros
+            // English backend always sets A1=0 (no Japanese-style mora position)
             Assert.IsTrue(result.ProsodyA1.All(v => v == 0),
                 "English-only text should have all-zero A1 prosody");
-            Assert.IsTrue(result.ProsodyA2.All(v => v == 0),
-                "English-only text should have all-zero A2 prosody");
-            Assert.IsTrue(result.ProsodyA3.All(v => v == 0),
-                "English-only text should have all-zero A3 prosody");
+            // A2 (stress) and A3 (word phoneme count) may be non-zero for English;
+            // this is correct behavior per the EnglishG2PEngine prosody spec
 
             phonemizer.Dispose();
         }
@@ -615,10 +616,15 @@ namespace uPiper.Tests.Editor.Phonemizers
             // Dispose should not throw and should dispose all sub-backends
             Assert.DoesNotThrow(() => phonemizer.Dispose());
 
-            // After disposing MultilingualPhonemizer, the ja backend should be disposed
-            // DotNetG2PPhonemizer throws ObjectDisposedException after dispose
-            Assert.Throws<ObjectDisposedException>(() =>
-                jaPhonemizer.PhonemizeWithProsody("テスト"));
+            // When backends are passed to the constructor (not created internally),
+            // MultilingualPhonemizer does NOT own them (_ownsJa = false).
+            // The caller is responsible for disposing externally-provided backends.
+            // Verify that the externally-provided jaPhonemizer is NOT disposed by MultilingualPhonemizer.
+            Assert.DoesNotThrow(() => jaPhonemizer.PhonemizeWithProsody("テスト"),
+                "Externally-provided backend should NOT be disposed by MultilingualPhonemizer");
+
+            // Clean up externally-owned backends
+            jaPhonemizer.Dispose();
         }
 
         [Test]
