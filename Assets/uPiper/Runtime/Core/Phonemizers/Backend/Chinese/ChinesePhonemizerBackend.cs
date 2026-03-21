@@ -16,27 +16,13 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
     /// </summary>
     public class ChinesePhonemizerBackend : IPhonemizerBackend
     {
+        private const string BackendName = "ChinesePhonemizer";
+
         private readonly object _syncLock = new();
         private bool _enableDebugLogging;
         private bool _isInitialized;
         private bool _isDisposed;
         private ChineseG2PEngine _g2pEngine;
-
-        /// <inheritdoc/>
-        public string Name => "ChinesePhonemizer";
-
-        /// <inheritdoc/>
-        public string Version => "1.3.0";
-
-        /// <inheritdoc/>
-        public string License => "MIT";
-
-        /// <inheritdoc/>
-        private static readonly string[] _supportedLanguages = { "zh", "zh-CN" };
-        public string[] SupportedLanguages => _supportedLanguages;
-
-        /// <inheritdoc/>
-        public bool IsAvailable => _isInitialized && !_isDisposed;
 
         /// <inheritdoc/>
         public async Task<bool> InitializeAsync(
@@ -48,7 +34,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
 
             try
             {
-                Debug.Log($"Initializing {Name} backend...");
+                Debug.Log($"Initializing {BackendName} backend...");
 
                 _enableDebugLogging = options?.EnableDebugLogging ?? false;
 
@@ -78,12 +64,12 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 }
 
                 _isInitialized = true;
-                Debug.Log($"{Name} backend initialized successfully.");
+                Debug.Log($"{BackendName} backend initialized successfully.");
                 return true;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Error initializing {Name} backend: {ex.Message}");
+                Debug.LogError($"Error initializing {BackendName} backend: {ex.Message}");
                 _isInitialized = false;
                 return false;
             }
@@ -99,9 +85,9 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         {
             EnsureInitialized();
 
-            if (!ValidateInput(text, language, out var error))
+            if (string.IsNullOrEmpty(text))
             {
-                return CreateErrorResult(error, language);
+                return CreateErrorResult("Input text is null or empty", language);
             }
 
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -122,44 +108,6 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
 #pragma warning restore CS1998
 
         /// <inheritdoc/>
-        public bool SupportsLanguage(string language)
-        {
-            if (string.IsNullOrEmpty(language))
-                return false;
-
-            foreach (var supported in SupportedLanguages)
-            {
-                if (string.Equals(supported, language, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
-
-            return false;
-        }
-
-        /// <inheritdoc/>
-        public long GetMemoryUsage()
-        {
-            // Estimate: CharToPinyin ~500 entries * ~40 bytes + IPA tables
-            return 512 * 1024; // ~512 KB estimate
-        }
-
-        /// <inheritdoc/>
-        public BackendCapabilities GetCapabilities()
-        {
-            return new BackendCapabilities
-            {
-                SupportsIPA = true,
-                SupportsStress = false,
-                SupportsSyllables = false,
-                SupportsTones = true,
-                SupportsDuration = false,
-                SupportsBatchProcessing = false,
-                IsThreadSafe = true,
-                RequiresNetwork = false,
-            };
-        }
-
-        /// <inheritdoc/>
         public void Dispose()
         {
             if (!_isDisposed)
@@ -176,35 +124,10 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
         private void EnsureInitialized()
         {
             if (!_isInitialized)
-                throw new InvalidOperationException($"{Name} backend is not initialized");
+                throw new InvalidOperationException($"{BackendName} backend is not initialized");
 
             if (_isDisposed)
-                throw new ObjectDisposedException(Name);
-        }
-
-        private bool ValidateInput(string text, string language, out string error)
-        {
-            error = null;
-
-            if (string.IsNullOrEmpty(text))
-            {
-                error = "Input text is null or empty";
-                return false;
-            }
-
-            if (text.Length > 10000)
-            {
-                error = "Input text exceeds maximum length (10000 characters)";
-                return false;
-            }
-
-            if (!SupportsLanguage(language))
-            {
-                error = $"Language '{language}' is not supported by {Name}";
-                return false;
-            }
-
-            return true;
+                throw new ObjectDisposedException(BackendName);
         }
 
         private PhonemeResult CreateErrorResult(string error, string language = null)
@@ -214,7 +137,7 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 Success = false,
                 ErrorMessage = error,
                 Language = language,
-                Backend = Name,
+                Backend = BackendName,
                 ProcessingTimeMs = 0
             };
         }
@@ -235,12 +158,12 @@ namespace uPiper.Core.Phonemizers.Backend.Chinese
                 ProsodyA3 = a3.ToArray(),
                 Language = language,
                 Success = true,
-                Backend = Name,
+                Backend = BackendName,
                 ProcessingTimeMs = (float)sw.Elapsed.TotalMilliseconds,
                 ProcessingTime = sw.Elapsed,
                 Metadata = new Dictionary<string, object>
                 {
-                    ["backend"] = Name,
+                    ["backend"] = BackendName,
                 },
             };
         }

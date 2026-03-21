@@ -44,73 +44,6 @@ namespace uPiper.Tests.Editor.Phonemizers
                 Assert.Ignore("ChinesePhonemizerBackend not available, skipping test");
         }
 
-        // ── Properties & metadata ────────────────────────────────────────────
-
-        [Test]
-        public void Properties_Name_ReturnsChinese()
-        {
-            EnsureAvailable();
-            Assert.AreEqual("ChinesePhonemizer", _phonemizer.Name);
-        }
-
-        [Test]
-        public void Properties_License_ReturnsMIT()
-        {
-            EnsureAvailable();
-            Assert.AreEqual("MIT", _phonemizer.License);
-        }
-
-        [Test]
-        public void Properties_IsAvailable_AfterInit_ReturnsTrue()
-        {
-            EnsureAvailable();
-            Assert.IsTrue(_phonemizer.IsAvailable);
-        }
-
-        // ── Supported languages ──────────────────────────────────────────────
-
-        [TestCase("zh")]
-        [TestCase("zh-CN")]
-        public void SupportsLanguage_ChineseCode_ReturnsTrue(string lang)
-        {
-            EnsureAvailable();
-            Assert.IsTrue(_phonemizer.SupportsLanguage(lang));
-        }
-
-        [TestCase("en")]
-        [TestCase("ja")]
-        [TestCase("ko")]
-        public void SupportsLanguage_NonChinese_ReturnsFalse(string lang)
-        {
-            EnsureAvailable();
-            Assert.IsFalse(_phonemizer.SupportsLanguage(lang));
-        }
-
-        [Test]
-        public void SupportedLanguages_ContainsZh()
-        {
-            EnsureAvailable();
-            CollectionAssert.Contains(_phonemizer.SupportedLanguages, "zh");
-        }
-
-        // ── Capabilities ─────────────────────────────────────────────────────
-
-        [Test]
-        public void GetCapabilities_SupportsIPA()
-        {
-            EnsureAvailable();
-            var caps = _phonemizer.GetCapabilities();
-            Assert.IsTrue(caps.SupportsIPA);
-        }
-
-        [Test]
-        public void GetCapabilities_SupportsTones()
-        {
-            EnsureAvailable();
-            var caps = _phonemizer.GetCapabilities();
-            Assert.IsTrue(caps.SupportsTones);
-        }
-
         // ── Basic phonemization ──────────────────────────────────────────────
 
         [Test]
@@ -125,7 +58,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.IsNotNull(result.Phonemes);
             Assert.IsTrue(result.Phonemes.Length > 0, "Should produce phonemes for '你好'");
             Assert.AreEqual("zh", result.Language);
-            Assert.AreEqual("Chinese", result.Backend);
+            Assert.AreEqual("ChinesePhonemizer", result.Backend);
         }
 
         [Test]
@@ -498,12 +431,5 @@ namespace uPiper.Tests.Editor.Phonemizers
             });
         }
 
-        [Test]
-        public void IsAvailable_BeforeInit_ReturnsFalse()
-        {
-            var phonemizer = new ChinesePhonemizerBackend();
-            Assert.IsFalse(phonemizer.IsAvailable);
-            phonemizer.Dispose();
-        }
     }
 }

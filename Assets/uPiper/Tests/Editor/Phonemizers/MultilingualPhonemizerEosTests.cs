@@ -30,13 +30,6 @@ namespace uPiper.Tests.Editor.Phonemizers
                 _result = result;
             }
 
-            public string Name => "Stub";
-            public string Version => "1.0";
-            public string License => "Test";
-            public string[] SupportedLanguages => new[] { "en", "es", "fr", "pt", "zh", "ko" };
-            public int Priority => 0;
-            public bool IsAvailable => true;
-
             public Task<bool> InitializeAsync(
                 PhonemizerBackendOptions options = null,
                 CancellationToken cancellationToken = default)
@@ -49,9 +42,6 @@ namespace uPiper.Tests.Editor.Phonemizers
                 CancellationToken cancellationToken = default)
                 => Task.FromResult(_result);
 
-            public bool SupportsLanguage(string language) => true;
-            public long GetMemoryUsage() => 0;
-            public BackendCapabilities GetCapabilities() => new();
             public void Dispose() { }
         }
 

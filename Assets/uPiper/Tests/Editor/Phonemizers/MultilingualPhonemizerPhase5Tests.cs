@@ -417,10 +417,6 @@ namespace uPiper.Tests.Editor.Phonemizers
 
             // Chinese backend may or may not initialize depending on environment
             Assert.IsNotNull(zhBackend);
-            if (result)
-            {
-                Assert.IsTrue(zhBackend.IsAvailable);
-            }
 
             zhBackend.Dispose();
         }

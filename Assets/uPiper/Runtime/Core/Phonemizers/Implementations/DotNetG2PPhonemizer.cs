@@ -57,15 +57,6 @@ namespace uPiper.Core.Phonemizers.Implementations
 
         #endregion
 
-        #region Properties
-
-        public string Name => "DotNetG2P";
-        public string Version => "1.3.0";
-        public string[] SupportedLanguages => new[] { "ja" };
-        public bool UseCache { get; set; } = true;
-
-        #endregion
-
         #region Constructor and Destructor
 
         public DotNetG2PPhonemizer(int cacheCapacity = 1000, string dictionaryPath = null,
@@ -226,18 +217,6 @@ namespace uPiper.Core.Phonemizers.Implementations
         }
 #pragma warning restore CS1998
 
-        public async Task<PhonemeResult[]> PhonemizeBatchAsync(
-            string[] texts,
-            string language = "ja",
-            CancellationToken cancellationToken = default)
-        {
-            if (texts == null || texts.Length == 0)
-                return Array.Empty<PhonemeResult>();
-
-            var tasks = texts.Select(t => PhonemizeAsync(t, language, cancellationToken));
-            return await Task.WhenAll(tasks);
-        }
-
         public void ClearCache()
         {
             // No-op: caching handled by PhonemeCache.Instance
@@ -246,22 +225,6 @@ namespace uPiper.Core.Phonemizers.Implementations
         public CacheStatistics GetCacheStatistics()
         {
             return new CacheStatistics();
-        }
-
-        public bool IsLanguageSupported(string language)
-        {
-            if (string.IsNullOrEmpty(language))
-                return false;
-            return SupportedLanguages.Contains(language.ToLowerInvariant());
-        }
-
-        public string GetLanguageDisplayName(string language)
-        {
-            return language switch
-            {
-                "ja" => "Japanese",
-                _ => null
-            };
         }
 
         private PhonemeResult PhonemizeInternal(string text)
