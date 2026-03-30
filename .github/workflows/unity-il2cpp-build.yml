@@ -182,6 +182,8 @@ jobs:
     name: Performance Report
     needs: build-unity
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
     - uses: actions/checkout@v6
     
