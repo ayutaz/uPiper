@@ -1,0 +1,56 @@
+name: PR Target Branch Check
+
+on:
+  pull_request:
+    types: [opened, edited]
+    branches: [main]
+
+jobs:
+  check-source-branch:
+    name: Validate PR source branch
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+    - name: Check if source branch is allowed
+      uses: actions/github-script@v8
+      with:
+        script: |
+          const headRef = context.payload.pull_request.head.ref;
+
+          if (headRef !== 'develop') {
+            const body = [
+              `⚠️ **mainへのPRソースブランチが不正です**`,
+              ``,
+              `\`${headRef}\` → \`main\` へのPRは許可されていません。`,
+              `\`main\` へマージできるのは \`develop\` ブランチのみです。`,
+              ``,
+              `ベースブランチを \`develop\` に変更してください。`
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner, repo, issue_number, per_page: 100
+            });
+
+            const existing = comments.find(c =>
+              c.user && c.user.type === 'Bot' &&
+              c.body && c.body.includes('mainへのPRソースブランチが不正です')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: existing.id, body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number, body
+              });
+            }
+
+            core.setFailed(`Branch "${headRef}" is not allowed to merge into main. Only "develop" branch is permitted.`);
+          } else {
+            console.log(`Branch "${headRef}" is allowed to merge into main.`);
+          }
