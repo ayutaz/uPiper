@@ -22,7 +22,7 @@ jobs:
     name: IL2CPP Compatibility Check
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         lfs: true
         
@@ -70,11 +70,11 @@ jobs:
             scriptingBackend: IL2CPP
     
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         lfs: true
 
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         repository: ayutaz/dot-net-g2p
         ref: v1.8.2
@@ -183,7 +183,7 @@ jobs:
     needs: build-unity
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     
     - name: Generate Build Summary
       run: |
@@ -236,7 +236,7 @@ jobs:
     # Post summary as PR comment if this is a PR
     - name: Post IL2CPP summary to PR
       if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
