@@ -16,11 +16,11 @@ jobs:
       pull-requests: write
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         lfs: true
 
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         repository: ayutaz/dot-net-g2p
         ref: v1.8.2
@@ -74,7 +74,9 @@ jobs:
 
     - name: Setup .NET for ReportGenerator
       if: always()
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: '8.0.x'
 
     - name: Generate Coverage Report
       if: always()
