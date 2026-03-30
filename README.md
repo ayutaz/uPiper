@@ -124,9 +124,30 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 > ⚠️ **重要**: 辞書データをインポートしないとTTS機能は動作しません
 
 ### パッケージファイルからのインストール
-[Releases](https://github.com/ayutaz/uPiper/releases)から最新のパッケージファイルをダウンロード：
-- **Unity Package (.unitypackage)**: レガシー形式、全てのUnityバージョンで使用可能
-- **UPM Package (.tgz)**: Unity Package Manager用、Unity 2019.3以降
+
+[Releases](https://github.com/ayutaz/uPiper/releases)ページから最新版をダウンロードしてインストールできます。
+
+#### Unity Package (.unitypackage)
+
+1. [Releases](https://github.com/ayutaz/uPiper/releases)から `uPiper-vX.X.X.unitypackage` をダウンロード
+2. Unity Editorで `Assets > Import Package > Custom Package` を選択
+3. ダウンロードした `.unitypackage` ファイルを選択し、「Import」をクリック
+
+> **注意**: `.unitypackage`にはDotNetG2Pパッケージおよび一部のUnityパッケージが含まれません。`Packages/manifest.json` の `"dependencies"` に以下のエントリを追加してください（既存のエントリは削除しないでください）：
+
+```jsonc
+// Packages/manifest.json の "dependencies" 内に以下を追加:
+"com.unity.ai.inference": "2.5.0",
+"com.unity.nuget.newtonsoft-json": "3.2.1",
+"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.8.2",
+"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.8.2",
+"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.8.2",
+"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.8.2",
+"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.8.2",
+"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.8.2",
+"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.8.2",
+"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.8.2"
+```
 
 ### トラブルシューティング
 

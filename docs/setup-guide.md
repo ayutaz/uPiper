@@ -15,7 +15,26 @@ Add uPiper to your project via Package Manager:
 
 ### 2. Unity Package (.unitypackage)
 
-Download and import the latest release from [GitHub Releases](https://github.com/ayutaz/uPiper/releases)
+1. Download `uPiper-vX.X.X.unitypackage` from [GitHub Releases](https://github.com/ayutaz/uPiper/releases)
+2. In Unity Editor, go to **Assets > Import Package > Custom Package**
+3. Select the downloaded `.unitypackage` file and click **Import**
+4. Add the DotNetG2P dependency packages to your `Packages/manifest.json`
+
+The `.unitypackage` does not include DotNetG2P packages or some required Unity packages. Add the following entries to the `"dependencies"` section of your `Packages/manifest.json` (do not remove existing entries):
+
+```jsonc
+// Add the following to "dependencies" in Packages/manifest.json:
+"com.unity.ai.inference": "2.5.0",
+"com.unity.nuget.newtonsoft-json": "3.2.1",
+"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.8.2",
+"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.8.2",
+"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.8.2",
+"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.8.2",
+"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.8.2",
+"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.8.2",
+"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.8.2",
+"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.8.2"
+```
 
 ## Required Data Setup
 
