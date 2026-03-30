@@ -243,12 +243,6 @@ jobs:
       with:
         path: ./artifacts
 
-    - name: Download UnityPackage artifact
-      uses: actions/download-artifact@v8
-      with:
-        name: UnityPackage
-        path: ./artifacts/UnityPackage
-
     - name: Package builds
       run: |
         cd artifacts
