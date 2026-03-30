@@ -269,6 +269,13 @@ namespace uPiper.Editor
                 paths.Add(samplesPath);
             }
 
+            // Add StreamingAssets dictionaries if they exist
+            var streamingAssetsPath = "Assets/StreamingAssets/uPiper";
+            if (Directory.Exists(streamingAssetsPath))
+            {
+                paths.Add(streamingAssetsPath);
+            }
+
             return paths;
         }
 

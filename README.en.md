@@ -15,7 +15,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 - [Installation](#installation)
   - [Via OpenUPM (Recommended)](#via-openupm-recommended)
   - [Via Git URL](#via-git-url)
-  - [From Package Files](#from-package-files)
+  - [Install from Package File](#install-from-package-file)
   - [Troubleshooting](#troubleshooting)
 - [Supported Platforms](#supported-platforms)
 - [GPU Inference](#gpu-inference)
@@ -123,10 +123,28 @@ After importing samples:
 
 > ⚠️ **Important**: TTS functionality will not work without importing the dictionary data
 
-### From Package Files
-Download the latest package from [Releases](https://github.com/ayutaz/uPiper/releases):
-- **Unity Package (.unitypackage)**: Legacy format, compatible with all Unity versions
-- **UPM Package (.tgz)**: For Unity Package Manager, Unity 2019.3+
+### Install from Package File
+
+Download the latest version from the [Releases](https://github.com/ayutaz/uPiper/releases) page.
+
+#### Unity Package (.unitypackage)
+
+1. Download `uPiper-vX.X.X.unitypackage` from [Releases](https://github.com/ayutaz/uPiper/releases)
+2. In Unity Editor, go to `Assets > Import Package > Custom Package`
+3. Select the downloaded `.unitypackage` file and click "Import"
+
+> **Note**: The `.unitypackage` does not include DotNetG2P packages. Add the following packages to your `Packages/manifest.json` `dependencies`:
+
+```json
+"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.8.2",
+"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.8.2",
+"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.8.2",
+"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.8.2",
+"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.8.2",
+"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.8.2",
+"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.8.2",
+"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.8.2"
+```
 
 ### Troubleshooting
 
