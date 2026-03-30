@@ -1,0 +1,39 @@
+name: PR Target Branch Check
+
+on:
+  pull_request:
+    types: [opened, edited]
+    branches: [main]
+
+jobs:
+  check-source-branch:
+    name: Validate PR source branch
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check if source branch is allowed
+      uses: actions/github-script@v8
+      with:
+        script: |
+          const headRef = context.payload.pull_request.head.ref;
+
+          if (headRef !== 'develop') {
+            const body = [
+              `⚠️ **PRのターゲットブランチが不正です**`,
+              ``,
+              `\`${headRef}\` → \`main\` へのPRは許可されていません。`,
+              `\`main\` へマージできるのは \`develop\` ブランチのみです。`,
+              ``,
+              `ベースブランチを \`develop\` に変更してください。`
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+
+            core.setFailed(`Branch "${headRef}" is not allowed to merge into main. Only "develop" branch is permitted.`);
+          } else {
+            console.log(`Branch "${headRef}" is allowed to merge into main.`);
+          }
