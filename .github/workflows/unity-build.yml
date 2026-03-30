@@ -170,56 +170,6 @@ jobs:
         path: build/${{ matrix.targetPlatform }}
         retention-days: 7
 
-  # .unitypackageエクスポート（タグプッシュ時）
-  export-unitypackage:
-    name: Export .unitypackage
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-
-    steps:
-    - uses: actions/checkout@v6
-      with:
-        lfs: true
-
-    - uses: actions/checkout@v6
-      with:
-        repository: ayutaz/dot-net-g2p
-        ref: v1.8.2
-        path: dot-net-g2p
-
-    - name: Fix local package paths for CI
-      shell: bash
-      run: sed -i 's|file:../../dot-net-g2p/src|file:../dot-net-g2p/src|g' Packages/manifest.json
-
-    - name: Cache Library
-      uses: actions/cache@v5
-      with:
-        path: Library
-        key: Library-Export-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-        restore-keys: |
-          Library-Export-
-          Library-
-
-    - name: Export .unitypackage
-      uses: game-ci/unity-builder@v4
-      env:
-        CI: "true"
-        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-      with:
-        unityVersion: 6000.0.58f2
-        targetPlatform: StandaloneLinux64
-        buildMethod: uPiper.Editor.PackageExporter.ExportUnityPackageCI
-        allowDirtyBuild: true
-
-    - name: Upload .unitypackage artifact
-      uses: actions/upload-artifact@v7
-      with:
-        name: UnityPackage
-        path: ./Exports/*.unitypackage
-        retention-days: 7
-
   # リリースへのビルド成果物アップロード（タグプッシュ時）
   upload-to-release:
     name: Upload Build Artifacts to Release
