@@ -52,8 +52,28 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 
 ### 手動インストール
 
-1. [Releases](https://github.com/ayutaz/uPiper/releases) から最新版をダウンロード
-2. Unity プロジェクトにインポート
+#### .unitypackage を使用する場合
+
+1. [Releases](https://github.com/ayutaz/uPiper/releases) ページから最新の `.unitypackage` ファイルをダウンロード
+2. Unity のメニューから `Assets > Import Package > Custom Package...` を選択
+3. ダウンロードした `.unitypackage` ファイルを選択してインポート
+
+> ⚠️ **注意**: `.unitypackage` には DotNetG2P パッケージが含まれていません。以下の依存パッケージを `Packages/manifest.json` の `dependencies` に手動で追加してください：
+
+```json
+{
+  "dependencies": {
+    "com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.8.2",
+    "com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.8.2",
+    "com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.8.2",
+    "com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.8.2",
+    "com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.8.2",
+    "com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.8.2",
+    "com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.8.2",
+    "com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.8.2"
+  }
+}
+```
 
 ### トラブルシューティング
 

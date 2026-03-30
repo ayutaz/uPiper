@@ -14,6 +14,7 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 - Unity 6000.0.58f2使用
 - Mono2x/IL2CPPバックエンド対応
 - 自動リリース作成（タグプッシュ時）
+- `.unitypackage`自動エクスポート・リリース添付（タグプッシュ時）
 
 ### 2. unity-build-matrix.yml (PR Quality Check)
 **目的**: PR時の包括的なビルド検証
@@ -139,6 +140,8 @@ developブランチにも同様のルールを設定：
 2. unity-build.ymlが自動的にビルドを開始
 3. 全プラットフォームのビルドが完了後、GitHubリリースを作成
 4. ビルド成果物が自動的にリリースに添付
+5. `export-unitypackage`ジョブで`PackageExporter.ExportUnityPackageCI`を呼び出し`.unitypackage`を自動生成
+6. `upload-to-release`ジョブで`.unitypackage`をGitHub Releaseに添付
 
 ## セキュリティ
 
