@@ -29,11 +29,11 @@ jobs:
     name: Build WebGL
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         lfs: true
 
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         repository: ayutaz/dot-net-g2p
         ref: v1.8.2
@@ -123,9 +123,6 @@ jobs:
         name: webgl-build
         path: ./site
 
-    - name: Add .nojekyll
-      run: touch ./site/.nojekyll
-
     - name: Split large files (100MB+ for GitHub Pages)
       run: |
         echo "Checking for files exceeding 100MB..."
@@ -204,16 +201,16 @@ jobs:
         fi
 
     - name: Setup Pages
-      uses: actions/configure-pages@v5
+      uses: actions/configure-pages@v6
 
     - name: Upload Pages artifact
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v4
       with:
         path: ./site
 
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v4
+      uses: actions/deploy-pages@v5
 
     - name: Verify deployment
       if: steps.deployment.outputs.page_url
