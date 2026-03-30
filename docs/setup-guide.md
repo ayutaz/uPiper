@@ -35,6 +35,7 @@ The `.unitypackage` does not include DotNetG2P packages. Add the following entri
     "com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.8.2"
   }
 }
+```
 
 ## Required Data Setup
 
