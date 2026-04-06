@@ -98,6 +98,28 @@ namespace uPiper.Core
         [Tooltip("Backend to use for neural network inference")]
         public InferenceBackend Backend = InferenceBackend.Auto;
 
+        [Header("Sentence Silence Settings")]
+
+        /// <summary>
+        /// 沈黙トークンによる句分割を有効にする
+        /// </summary>
+        [Tooltip("Split phoneme sequences at silence tokens and insert silence between phrases")]
+        public bool EnablePhonemeSilence = false;
+
+        /// <summary>
+        /// 沈黙トークンと沈黙秒数の設定文字列
+        /// 形式: "phoneme seconds" (カンマ区切りで複数指定可)
+        /// 例: "_ 0.5" または "_ 0.5,# 0.3"
+        /// </summary>
+        [Tooltip("Phoneme silence specification: '<phoneme> <seconds>' (comma-separated)")]
+        public string PhonemeSilenceSpec = "_ 0.5";
+
+        /// <summary>
+        /// パース済みの沈黙トークンマップ（Validate後に利用可能）
+        /// </summary>
+        [NonSerialized]
+        public Dictionary<string, float> ParsedPhonemeSilence;
+
         [Header("Audio Settings")]
 
         /// <summary>
@@ -283,6 +305,23 @@ namespace uPiper.Core
             {
                 PiperLogger.LogWarning("WarmupIterations ({0}) is less than 1, setting to 1", WarmupIterations);
                 WarmupIterations = 1;
+            }
+
+            // Phoneme silence validation
+            if (EnablePhonemeSilence)
+            {
+                try
+                {
+                    ParsedPhonemeSilence = AudioGeneration.PhonemeSilenceProcessor.Parse(PhonemeSilenceSpec);
+                }
+                catch (ArgumentException ex)
+                {
+                    throw new PiperException($"Invalid PhonemeSilenceSpec: {ex.Message}", ex);
+                }
+            }
+            else
+            {
+                ParsedPhonemeSilence = null;
             }
 
             // GPU settings validation
