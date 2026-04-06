@@ -121,11 +121,11 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         }
 
         // ============================================================
-        // GenerateAudioWithProsodyAsync with language parameter
+        // GenerateAudioAsync with prosody parameter
         // ============================================================
 
         [Test]
-        public void GenerateAudioWithProsodyAsync_NotInitialized_ThrowsInvalidOperationException()
+        public void GenerateAudioAsync_WithProsody_NotInitialized_ThrowsInvalidOperationException()
         {
             // Arrange
             var phonemeIds = new[] { 1, 3, 4, 5, 2 };
@@ -135,13 +135,13 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Act & Assert
             Assert.ThrowsAsync<InvalidOperationException>(async () =>
-                await _generator.GenerateAudioWithProsodyAsync(
+                await _generator.GenerateAudioAsync(
                     phonemeIds, prosodyA1, prosodyA2, prosodyA3,
                     languageId: 0));
         }
 
         [Test]
-        public void GenerateAudioWithProsodyAsync_NullProsodyArrays_NotInitialized_Throws()
+        public void GenerateAudioAsync_NullProsodyArrays_NotInitialized_Throws()
         {
             // Arrange - null prosody arrays should be handled gracefully by CreateProsodyTensor,
             // but the not-initialized guard fires first.
@@ -149,13 +149,13 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Act & Assert
             Assert.ThrowsAsync<InvalidOperationException>(async () =>
-                await _generator.GenerateAudioWithProsodyAsync(
+                await _generator.GenerateAudioAsync(
                     phonemeIds, null, null, null,
                     languageId: 0));
         }
 
         [Test]
-        public void GenerateAudioWithProsodyAsync_MismatchedArrayLengths_NotInitialized_Throws()
+        public void GenerateAudioAsync_WithProsody_MismatchedArrayLengths_NotInitialized_Throws()
         {
             // Arrange - mismatched lengths between phonemeIds and prosody arrays.
             // CreateProsodyTensor safely handles short arrays by zero-filling, but
@@ -167,7 +167,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Act & Assert
             Assert.ThrowsAsync<InvalidOperationException>(async () =>
-                await _generator.GenerateAudioWithProsodyAsync(
+                await _generator.GenerateAudioAsync(
                     phonemeIds, prosodyA1, prosodyA2, prosodyA3,
                     languageId: 0));
         }
@@ -270,7 +270,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         }
 
         [Test]
-        public void GenerateAudioWithProsodyAsync_AfterDispose_ThrowsObjectDisposedException()
+        public void GenerateAudioAsync_WithProsody_AfterDispose_ThrowsObjectDisposedException()
         {
             // Arrange
             _generator.Dispose();
@@ -279,7 +279,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Act & Assert
             Assert.ThrowsAsync<ObjectDisposedException>(async () =>
-                await _generator.GenerateAudioWithProsodyAsync(
+                await _generator.GenerateAudioAsync(
                     phonemeIds, prosody, prosody, prosody,
                     languageId: 2));
         }

@@ -710,13 +710,15 @@ namespace uPiper.Core
                         float[] audioData;
                         if (useProsody && expandedA1 != null)
                         {
-                            audioData = await _inferenceGenerator.GenerateAudioWithProsodyAsync(
+                            audioData = await _inferenceGenerator.GenerateAudioAsync(
                                 phonemeIds, expandedA1, expandedA2, expandedA3,
                                 cancellationToken: cancellationToken);
                         }
                         else
                         {
-                            audioData = await _inferenceGenerator.GenerateAudioAsync(phonemeIds, cancellationToken: cancellationToken);
+                            audioData = await _inferenceGenerator.GenerateAudioAsync(
+                                phonemeIds,
+                                cancellationToken: cancellationToken);
                         }
                         PiperLogger.LogInfo($"Generated {audioData.Length} audio samples");
 

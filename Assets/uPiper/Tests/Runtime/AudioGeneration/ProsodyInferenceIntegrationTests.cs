@@ -217,7 +217,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             Debug.Log($"ExpandedA1 ({encodingResult.ExpandedProsodyA1.Length}): [{string.Join(", ", encodingResult.ExpandedProsodyA1)}]");
 
             // Generate audio with prosody
-            var audioData = await _generator.GenerateAudioWithProsodyAsync(
+            var audioData = await _generator.GenerateAudioAsync(
                 encodingResult.PhonemeIds,
                 encodingResult.ExpandedProsodyA1,
                 encodingResult.ExpandedProsodyA2,
@@ -279,7 +279,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             );
 
             // Generate WITH prosody
-            var audioWithProsody = await _generator.GenerateAudioWithProsodyAsync(
+            var audioWithProsody = await _generator.GenerateAudioAsync(
                 encodingResult.PhonemeIds,
                 encodingResult.ExpandedProsodyA1,
                 encodingResult.ExpandedProsodyA2,
@@ -288,7 +288,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Generate with ZERO prosody (all zeros, same length as expanded arrays)
             var zeroProsody = new int[encodingResult.ExpandedProsodyA1.Length];
-            var audioWithoutProsody = await _generator.GenerateAudioWithProsodyAsync(
+            var audioWithoutProsody = await _generator.GenerateAudioAsync(
                 encodingResult.PhonemeIds,
                 zeroProsody,
                 zeroProsody,
@@ -352,7 +352,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             Debug.Log($"[InputTypeTest] Testing with {encodingResult.PhonemeIds.Length} phoneme IDs");
 
             // この呼び出しが成功すれば、Float型が正しいことが証明される
-            var audioData = await _generator.GenerateAudioWithProsodyAsync(
+            var audioData = await _generator.GenerateAudioAsync(
                 encodingResult.PhonemeIds,
                 encodingResult.ExpandedProsodyA1,
                 encodingResult.ExpandedProsodyA2,

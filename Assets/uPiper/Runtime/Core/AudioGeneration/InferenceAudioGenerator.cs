@@ -1,7 +1,6 @@
 using System;
 using System.Buffers;
 using System.Diagnostics;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -222,6 +221,9 @@ namespace uPiper.Core.AudioGeneration
         /// <inheritdoc/>
         public async Task<float[]> GenerateAudioAsync(
             int[] phonemeIds,
+            int[] prosodyA1 = null,
+            int[] prosodyA2 = null,
+            int[] prosodyA3 = null,
             float lengthScale = 1.0f,
             float noiseScale = 0.667f,
             float noiseW = 0.8f,
@@ -231,113 +233,26 @@ namespace uPiper.Core.AudioGeneration
         {
             ValidateGenerationPrerequisites(phonemeIds);
 
-            // Unity.InferenceEngineの操作はメインスレッドで実行する必要がある
+            var hasProsody = prosodyA1 != null || prosodyA2 != null || prosodyA3 != null;
+            if (hasProsody && !_supportsProsody)
+            {
+                PiperLogger.LogWarning(
+                    "[InferenceAudioGenerator] Prosody data provided but model does not support prosody. Ignoring prosody.");
+                prosodyA1 = null;
+                prosodyA2 = null;
+                prosodyA3 = null;
+            }
+
             return await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
             {
                 lock (_lockObject)
                 {
-                    return ExecuteInference(phonemeIds, null, null, null, lengthScale, noiseScale, noiseW, speakerId, languageId);
+                    return ExecuteInference(
+                        phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                        lengthScale, noiseScale, noiseW,
+                        speakerId, languageId);
                 }
             });
-        }
-
-        /// <inheritdoc/>
-        public async Task<float[]> GenerateAudioWithProsodyAsync(
-            int[] phonemeIds,
-            int[] prosodyA1,
-            int[] prosodyA2,
-            int[] prosodyA3,
-            float lengthScale = 1.0f,
-            float noiseScale = 0.667f,
-            float noiseW = 0.8f,
-            int speakerId = 0,
-            int languageId = 0,
-            CancellationToken cancellationToken = default)
-        {
-            ValidateGenerationPrerequisites(phonemeIds);
-
-            if (!_supportsProsody)
-                throw new InvalidOperationException("This model does not support prosody features. Use GenerateAudioAsync instead.");
-
-            // Unity.InferenceEngineの操作はメインスレッドで実行する必要がある
-            return await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
-            {
-                lock (_lockObject)
-                {
-                    return ExecuteInference(phonemeIds, prosodyA1, prosodyA2, prosodyA3, lengthScale, noiseScale, noiseW, speakerId, languageId);
-                }
-            });
-        }
-
-        /// <inheritdoc/>
-        public async Task<float[]> GenerateAudioWithSilenceSplitAsync(
-            int[] phonemeIds,
-            int[] prosodyA1,
-            int[] prosodyA2,
-            int[] prosodyA3,
-            Dictionary<string, float> phonemeSilence,
-            Dictionary<string, int> phonemeIdMap,
-            float lengthScale = 1.0f,
-            float noiseScale = 0.667f,
-            float noiseW = 0.8f,
-            int speakerId = 0,
-            int languageId = 0,
-            CancellationToken cancellationToken = default)
-        {
-            ValidateGenerationPrerequisites(phonemeIds);
-
-            // Split phoneme sequence at silence tokens
-            var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                phonemeIds, prosodyA1, prosodyA2, prosodyA3,
-                phonemeSilence, phonemeIdMap, SampleRate);
-
-            PiperLogger.LogInfo($"[InferenceAudioGenerator] Silence split: {phrases.Count} phrases from {phonemeIds.Length} phonemes");
-
-            // Execute inference for each phrase and collect results
-            var segments = new List<(float[] Audio, int SilenceSamples)>();
-            var totalLength = 0;
-
-            for (var p = 0; p < phrases.Count; p++)
-            {
-                var phrase = phrases[p];
-                if (phrase.PhonemeIds == null || phrase.PhonemeIds.Length == 0)
-                    continue;
-
-                cancellationToken.ThrowIfCancellationRequested();
-
-                // Per-phrase dispatch to main thread (releases main thread between phrases)
-                var phraseAudio = await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
-                {
-                    lock (_lockObject)
-                    {
-                        return ExecuteInference(
-                            phrase.PhonemeIds,
-                            phrase.ProsodyA1,
-                            phrase.ProsodyA2,
-                            phrase.ProsodyA3,
-                            lengthScale, noiseScale, noiseW,
-                            speakerId, languageId);
-                    }
-                });
-
-                segments.Add((phraseAudio, phrase.SilenceSamples));
-                totalLength += phraseAudio.Length + phrase.SilenceSamples;
-
-                PiperLogger.LogDebug($"[InferenceAudioGenerator] Phrase {p + 1}/{phrases.Count}: {phraseAudio.Length} samples + {phrase.SilenceSamples} silence");
-            }
-
-            // Concatenate all segments with silence gaps
-            var result = new float[totalLength];
-            var offset = 0;
-            foreach (var (audio, silenceSamples) in segments)
-            {
-                Array.Copy(audio, 0, result, offset, audio.Length);
-                offset += audio.Length;
-                offset += silenceSamples; // Zero-initialized (silence)
-            }
-
-            PiperLogger.LogInfo($"[InferenceAudioGenerator] Silence split complete: {totalLength} total samples ({segments.Count} phrases)");
-            return result;
         }
 
         /// <summary>

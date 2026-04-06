@@ -175,9 +175,9 @@ namespace uPiper.Core
                 {
                     audioData = await _inferenceGenerator.GenerateAudioAsync(
                         phonemeIds,
-                        lengthScale,
-                        noiseScale,
-                        noiseW,
+                        lengthScale: lengthScale,
+                        noiseScale: noiseScale,
+                        noiseW: noiseW,
                         cancellationToken: cancellationToken);
                 }
 
@@ -311,20 +311,14 @@ namespace uPiper.Core
                         speakerId, resolvedLanguageId,
                         cancellationToken);
                 }
-                else if (prosodyA1 != null && _inferenceGenerator.SupportsProsody)
-                {
-                    audioData = await _inferenceGenerator.GenerateAudioWithProsodyAsync(
-                        phonemeIds, prosodyA1, prosodyA2, prosodyA3,
-                        lengthScale, noiseScale, noiseW,
-                        speakerId, resolvedLanguageId,
-                        cancellationToken: cancellationToken);
-                }
                 else
                 {
                     audioData = await _inferenceGenerator.GenerateAudioAsync(
-                        phonemeIds, lengthScale, noiseScale, noiseW,
+                        phonemeIds,
+                        prosodyA1, prosodyA2, prosodyA3,
+                        lengthScale, noiseScale, noiseW,
                         speakerId, resolvedLanguageId,
-                        cancellationToken: cancellationToken);
+                        cancellationToken);
                 }
 
                 _onProcessingProgress?.Invoke(0.8f);

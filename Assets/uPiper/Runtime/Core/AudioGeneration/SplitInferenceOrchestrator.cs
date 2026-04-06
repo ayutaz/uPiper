@@ -62,26 +62,12 @@ namespace uPiper.Core.AudioGeneration
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                float[] phraseAudio;
-                var hasProsody = phrase.ProsodyA1 != null && _generator.SupportsProsody;
-
-                if (hasProsody)
-                {
-                    phraseAudio = await _generator.GenerateAudioWithProsodyAsync(
-                        phrase.PhonemeIds,
-                        phrase.ProsodyA1, phrase.ProsodyA2, phrase.ProsodyA3,
-                        lengthScale, noiseScale, noiseW,
-                        speakerId, languageId,
-                        cancellationToken);
-                }
-                else
-                {
-                    phraseAudio = await _generator.GenerateAudioAsync(
-                        phrase.PhonemeIds,
-                        lengthScale, noiseScale, noiseW,
-                        speakerId, languageId,
-                        cancellationToken);
-                }
+                var phraseAudio = await _generator.GenerateAudioAsync(
+                    phrase.PhonemeIds,
+                    phrase.ProsodyA1, phrase.ProsodyA2, phrase.ProsodyA3,
+                    lengthScale, noiseScale, noiseW,
+                    speakerId, languageId,
+                    cancellationToken);
 
                 segments.Add((phraseAudio, phrase.SilenceSamples));
                 totalLength += phraseAudio.Length + phrase.SilenceSamples;

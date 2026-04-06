@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.InferenceEngine;
@@ -32,58 +31,14 @@ namespace uPiper.Core.AudioGeneration
         public Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config, PiperConfig piperConfig, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// 音素から音声を生成する
+        /// 音素から音声を生成する（Prosody対応統合版）。
+        /// prosodyA1/A2/A3がnullの場合はProsodyなしで推論する。
         /// </summary>
-        /// <param name="phonemeIds">音素ID配列</param>
-        /// <param name="lengthScale">長さスケール</param>
-        /// <param name="noiseScale">ノイズスケール</param>
-        /// <param name="noiseW">ノイズ幅</param>
-        /// <param name="cancellationToken">キャンセルトークン</param>
-        /// <returns>生成された音声データ</returns>
         public Task<float[]> GenerateAudioAsync(
             int[] phonemeIds,
-            float lengthScale = 1.0f,
-            float noiseScale = 0.667f,
-            float noiseW = 0.8f,
-            int speakerId = 0,
-            int languageId = 0,
-            CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// 音素から音声を生成する（prosody対応版）
-        /// </summary>
-        /// <param name="phonemeIds">音素ID配列</param>
-        /// <param name="prosodyA1">A1: アクセント核からの相対位置</param>
-        /// <param name="prosodyA2">A2: アクセント句内のモーラ位置</param>
-        /// <param name="prosodyA3">A3: アクセント句内の総モーラ数</param>
-        /// <param name="lengthScale">長さスケール</param>
-        /// <param name="noiseScale">ノイズスケール</param>
-        /// <param name="noiseW">ノイズ幅</param>
-        /// <param name="cancellationToken">キャンセルトークン</param>
-        /// <returns>生成された音声データ</returns>
-        public Task<float[]> GenerateAudioWithProsodyAsync(
-            int[] phonemeIds,
-            int[] prosodyA1,
-            int[] prosodyA2,
-            int[] prosodyA3,
-            float lengthScale = 1.0f,
-            float noiseScale = 0.667f,
-            float noiseW = 0.8f,
-            int speakerId = 0,
-            int languageId = 0,
-            CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// 沈黙句分割付きで音声を生成する。
-        /// 音素列を沈黙トークンの位置で分割し、句ごとに独立推論を行い、句間にゼロサンプルの無音区間を挿入して結合する。
-        /// </summary>
-        public Task<float[]> GenerateAudioWithSilenceSplitAsync(
-            int[] phonemeIds,
-            int[] prosodyA1,
-            int[] prosodyA2,
-            int[] prosodyA3,
-            Dictionary<string, float> phonemeSilence,
-            Dictionary<string, int> phonemeIdMap,
+            int[] prosodyA1 = null,
+            int[] prosodyA2 = null,
+            int[] prosodyA3 = null,
             float lengthScale = 1.0f,
             float noiseScale = 0.667f,
             float noiseW = 0.8f,
