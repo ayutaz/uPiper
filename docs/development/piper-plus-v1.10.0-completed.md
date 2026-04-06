@@ -26,6 +26,14 @@ piper-plus v1.10.0 の変更点11項目を調査し、5項目は対応不要（U
 | P1 PhonemeEncoder重複排除 | PUA辞書3つ削除 (~100行削減)、PuaTokenMapper に委譲 |
 | P2 PuaTokenMapper改善 | gap管理、ResetForTesting、ドメインリロード対応 |
 
+### piper-plus 統合の仕上げ
+
+| 項目 | 内容 |
+|------|------|
+| pua.json クロスバリデーション | piper-plus pua.json v1 の全96エントリとの双方向一致検証テスト（5テスト） |
+| WebGL Warmup 無効化 | `#if !UNITY_WEBGL` でWarmupスキップ（UIフリーズ防止） |
+| PiperConfig バリデーションテスト | Warmup/PhonemeSilence の設定検証テスト（11テスト） |
+
 ### ブロック中 (1チケット)
 
 | チケット | 内容 | ブロッカー |
@@ -47,6 +55,8 @@ piper-plus v1.10.0 の変更点11項目を調査し、5項目は対応不要（U
 ## コミット履歴
 
 ```
+3cf8e1e feat: piper-plus統合の仕上げ — pua.json検証・WebGL対応・設定テスト
+abee69f docs: 完了済みチケット・文書を統合整理
 8e77fc4 docs: MS3レビュー結果をロードマップに反映 + テスト欠落2件追加
 4933a8d feat: MS3-2 沈黙句分割 (PhonemeSilenceProcessor) 実装
 3ce1200 refactor: 設計レビュー指摘の即時修正 + 将来ロードマップ作成
