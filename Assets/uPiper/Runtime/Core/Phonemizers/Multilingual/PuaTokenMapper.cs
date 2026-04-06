@@ -2,6 +2,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("uPiper.Tests.Editor")]
+
 namespace uPiper.Core.Phonemizers.Multilingual
 {
     /// <summary>
@@ -147,6 +149,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 { "k\u031A", 0xE050 },         // unreleased velar
                 { "t\u031A", 0xE051 },         // unreleased alveolar
                 { "p\u031A", 0xE052 },         // unreleased bilabial
+                // 0xE053 reserved (unused gap — was ɔɪ in early training, removed for piper-plus pua.json compat)
                 // =================================================================
                 // Spanish (ES) / Portuguese (PT)
                 // =================================================================
@@ -315,5 +318,48 @@ namespace uPiper.Core.Phonemizers.Multilingual
         {
             return ch >= '\uE000' && ch <= (char)LastFixedCodepoint;
         }
+
+        /// <summary>
+        /// Resets dynamic PUA state for testing purposes.
+        /// Clears all entries and re-initializes from fixed mappings.
+        /// </summary>
+        internal static void ResetForTesting()
+        {
+            lock (_dynamicLock)
+            {
+                Token2Char.Clear();
+                Char2Token.Clear();
+
+                foreach (var kvp in FixedPuaMapping)
+                {
+                    var ch = (char)kvp.Value;
+                    Token2Char[kvp.Key] = ch;
+                    Char2Token[ch] = kvp.Key;
+                }
+
+                _nextDynamic = DynamicPuaStart;
+            }
+        }
+
+#if UNITY_EDITOR
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnDomainReload()
+        {
+            lock (_dynamicLock)
+            {
+                Token2Char.Clear();
+                Char2Token.Clear();
+
+                foreach (var kvp in FixedPuaMapping)
+                {
+                    var ch = (char)kvp.Value;
+                    Token2Char[kvp.Key] = ch;
+                    Char2Token[ch] = kvp.Key;
+                }
+
+                _nextDynamic = DynamicPuaStart;
+            }
+        }
+#endif
     }
 }

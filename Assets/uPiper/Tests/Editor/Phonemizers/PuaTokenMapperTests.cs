@@ -137,6 +137,15 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
+        public void FixedPuaMapping_DoesNotContain0xE01F()
+        {
+            // 0xE01F is a reserved gap in piper-plus (not assigned to any token)
+            var hasE01F = PuaTokenMapper.FixedPuaMapping.Values.Any(v => v == 0xE01F);
+            Assert.IsFalse(hasE01F,
+                "0xE01F should be a reserved gap (not assigned to any token)");
+        }
+
+        [Test]
         public void FixedPuaMapping_TotalCount_Is96()
         {
             Assert.AreEqual(96, PuaTokenMapper.FixedPuaMapping.Count,

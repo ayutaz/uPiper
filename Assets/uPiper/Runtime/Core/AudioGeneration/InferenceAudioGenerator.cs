@@ -361,6 +361,8 @@ namespace uPiper.Core.AudioGeneration
             int[] rentedProsody = null;
             Tensor<int> sidTensor = null;
             Tensor<int> lidTensor = null;
+            Tensor<float> outputTensor = null;
+            Tensor<float> readableTensor = null;
 
             try
             {
@@ -399,17 +401,13 @@ namespace uPiper.Core.AudioGeneration
                 PiperLogger.LogInfo("[InferenceAudioGenerator] Inference completed");
 
                 // 出力を取得
-                var outputTensor = GetOutputTensor();
+                outputTensor = GetOutputTensor();
 
                 // GPUからCPUにデータを読み戻す
-                var readableTensor = outputTensor.ReadbackAndClone();
+                readableTensor = outputTensor.ReadbackAndClone();
                 var audioData = ExtractAudioData(readableTensor);
 
                 PiperLogger.LogInfo($"[InferenceAudioGenerator] Generated {audioData.Length} samples{(hasAnyProsodyInput ? " with prosody" : "")}");
-
-                // テンソルを破棄
-                readableTensor.Dispose();
-                outputTensor.Dispose();
 
                 return audioData;
             }
@@ -421,6 +419,8 @@ namespace uPiper.Core.AudioGeneration
             finally
             {
                 // テンソルをクリーンアップ
+                readableTensor?.Dispose();
+                outputTensor?.Dispose();
                 inputTensor?.Dispose();
                 inputLengthsTensor?.Dispose();
                 scalesTensor?.Dispose();

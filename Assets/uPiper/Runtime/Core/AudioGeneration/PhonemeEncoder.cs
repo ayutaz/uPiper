@@ -108,45 +108,6 @@ namespace uPiper.Core.AudioGeneration
             }
         }
 
-        // Multi-character phonemes to PUA mapping (for PUA-based models)
-        private static readonly Dictionary<string, string> multiCharPhonemeMap = new()
-        {
-            // Long vowels
-            ["a:"] = "\ue000",
-            ["i:"] = "\ue001",
-            ["u:"] = "\ue002",
-            ["e:"] = "\ue003",
-            ["o:"] = "\ue004",
-            // Special consonants
-            ["cl"] = "\ue005",
-            // Palatalized consonants
-            ["ky"] = "\ue006",
-            ["kw"] = "\ue007",
-            ["gy"] = "\ue008",
-            ["gw"] = "\ue009",
-            ["ty"] = "\ue00a",
-            ["dy"] = "\ue00b",
-            ["py"] = "\ue00c",
-            ["by"] = "\ue00d",
-            ["ch"] = "\ue00e",  // ID 39 in PUA models (different from ty)
-            ["ts"] = "\ue00f",
-            ["sh"] = "\ue010",
-            ["zy"] = "\ue011",
-            ["hy"] = "\ue012",
-            ["ny"] = "\ue013",
-            ["my"] = "\ue014",
-            ["ry"] = "\ue015",
-            // Extended question markers (piper-plus #210)
-            ["?!"] = "\ue016",      // Emphatic question (強調疑問)
-            ["?."] = "\ue017",      // Declarative question (平叙疑問)
-            ["?~"] = "\ue018",      // Confirmatory question (確認疑問)
-            // Context-dependent N phoneme variants (piper-plus #207/#210)
-            ["N_m"] = "\ue019",     // N before m/b/p (bilabial assimilation)
-            ["N_n"] = "\ue01a",     // N before n/t/d/ts/ch (alveolar assimilation)
-            ["N_ng"] = "\ue01b",    // N before k/g (velar assimilation)
-            ["N_uvular"] = "\ue01c" // N at end/before vowels (uvular)
-        };
-
         // Multi-character phonemes to IPA mapping (for IPA-based models)
         private static readonly Dictionary<string, string> multiCharToIpaMap = new()
         {
@@ -170,84 +131,6 @@ namespace uPiper.Core.AudioGeneration
             ["cl"] = "q",   // 促音 maps to q (glottal stop)
             // Long vowels (IPA models use ɯ for う)
             ["u:"] = "ɯ"
-        };
-
-        // PUA to original phoneme reverse mapping (for single-language models)
-        // OpenJTalkToPiperMapping outputs PUA characters, but IPA models need original phonemes first
-        // Note: N variants are collapsed to "N" here for backward compatibility.
-        // For multilingual models, use puaToPhonemeMapMultilingual instead.
-        private static readonly Dictionary<string, string> puaToPhonemeMap = new()
-        {
-            ["\ue000"] = "a:",
-            ["\ue001"] = "i:",
-            ["\ue002"] = "u:",
-            ["\ue003"] = "e:",
-            ["\ue004"] = "o:",
-            ["\ue005"] = "cl",
-            ["\ue006"] = "ky",
-            ["\ue007"] = "kw",
-            ["\ue008"] = "gy",
-            ["\ue009"] = "gw",
-            ["\ue00a"] = "ty",  // ty maps to 0xE00A
-            ["\ue00b"] = "dy",
-            ["\ue00c"] = "py",
-            ["\ue00d"] = "by",
-            ["\ue00e"] = "ch",  // ch maps to 0xE00E (ち、ちゃ sounds)
-            ["\ue00f"] = "ts",
-            ["\ue010"] = "sh",
-            ["\ue011"] = "zy",
-            ["\ue012"] = "hy",
-            ["\ue013"] = "ny",
-            ["\ue014"] = "my",
-            ["\ue015"] = "ry",
-            // Extended question markers (piper-plus #210)
-            ["\ue016"] = "?!",       // Emphatic question
-            ["\ue017"] = "?.",       // Declarative question
-            ["\ue018"] = "?~",       // Confirmatory question
-            // N phoneme variants (piper-plus Issue #207/#210)
-            // Map to ASCII "N" (ID 22), NOT IPA "ɴ" (ID 20)
-            // Note: These are kept as "N" for backward compatibility with existing models
-            ["\ue019"] = "N",  // N_m (bilabial)
-            ["\ue01a"] = "N",  // N_n (alveolar)
-            ["\ue01b"] = "N",  // N_ng (velar)
-            ["\ue01c"] = "N"   // N_uvular
-        };
-
-        // PUA to original phoneme reverse mapping (for multilingual models)
-        // Preserves distinct N variant identities so the multilingual model can use separate IDs
-        private static readonly Dictionary<string, string> puaToPhonemeMapMultilingual = new()
-        {
-            ["\ue000"] = "a:",
-            ["\ue001"] = "i:",
-            ["\ue002"] = "u:",
-            ["\ue003"] = "e:",
-            ["\ue004"] = "o:",
-            ["\ue005"] = "cl",
-            ["\ue006"] = "ky",
-            ["\ue007"] = "kw",
-            ["\ue008"] = "gy",
-            ["\ue009"] = "gw",
-            ["\ue00a"] = "ty",
-            ["\ue00b"] = "dy",
-            ["\ue00c"] = "py",
-            ["\ue00d"] = "by",
-            ["\ue00e"] = "ch",
-            ["\ue00f"] = "ts",
-            ["\ue010"] = "sh",
-            ["\ue011"] = "zy",
-            ["\ue012"] = "hy",
-            ["\ue013"] = "ny",
-            ["\ue014"] = "my",
-            ["\ue015"] = "ry",
-            // Extended question markers (piper-plus #210)
-            ["\ue016"] = "?!",
-            ["\ue017"] = "?.",
-            ["\ue018"] = "?~",
-            // N phoneme variants — preserved as distinct for multilingual models
-            ["\ue019"] = "N_m",       // N before m/b/p (bilabial assimilation)
-            ["\ue01a"] = "N_n",       // N before n/t/d/ts/ch (alveolar assimilation)
-            ["\ue01b"] = "N_ng",      // N before k/g (velar assimilation)
-            ["\ue01c"] = "N_uvular"   // N at end/before vowels (uvular)
         };
 
         // フィールド: IPAモデルかどうかを初期化時に判定
@@ -439,11 +322,19 @@ namespace uPiper.Core.AudioGeneration
             if (_useIpaMapping)
             {
                 // For IPA models: First convert PUA back to original phoneme, then to IPA
+                // Uses PuaTokenMapper.Char2Token for reverse lookup instead of a local dictionary.
+                // N variants (N_m, N_n, N_ng, N_uvular) are collapsed to "N" for backward
+                // compatibility with single-language IPA models (piper-plus Issue #207/#210).
                 var phonemeToConvert = phoneme;
-                if (puaToPhonemeMap.TryGetValue(phoneme, out var originalPhoneme))
+                if (phoneme.Length == 1 &&
+                    Phonemizers.Multilingual.PuaTokenMapper.Char2Token.TryGetValue(phoneme[0], out var originalToken))
                 {
-                    phonemeToConvert = originalPhoneme;
-                    PiperLogger.LogDebug($"Reversed PUA U+{((int)phoneme[0]):X4} to original phoneme '{originalPhoneme}'");
+                    phonemeToConvert = originalToken switch
+                    {
+                        "N_m" or "N_n" or "N_ng" or "N_uvular" => "N",
+                        _ => originalToken
+                    };
+                    PiperLogger.LogDebug($"Reversed PUA U+{(int)phoneme[0]:X4} to original phoneme '{phonemeToConvert}'");
                 }
 
                 // Now convert to IPA if applicable
@@ -457,11 +348,10 @@ namespace uPiper.Core.AudioGeneration
                     return phonemeToConvert;
                 }
             }
-            else if (multiCharPhonemeMap.TryGetValue(phoneme, out var puaChar))
+            else if (Phonemizers.Multilingual.PuaTokenMapper.Token2Char.TryGetValue(phoneme, out var puaCh))
             {
-                var puaCode = ((int)puaChar[0]).ToString("X4", System.Globalization.CultureInfo.InvariantCulture);
-                PiperLogger.LogDebug($"Mapped multi-char phoneme '{phoneme}' to PUA U+{puaCode}");
-                return puaChar;
+                PiperLogger.LogDebug($"Mapped multi-char phoneme '{phoneme}' to PUA U+{(int)puaCh:X4}");
+                return puaCh.ToString();
             }
 
             return phoneme;
