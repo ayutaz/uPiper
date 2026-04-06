@@ -14,6 +14,7 @@ namespace uPiper.Core
     public partial class PiperTTS
     {
         private IInferenceAudioGenerator _inferenceGenerator;
+        private SplitInferenceOrchestrator _splitOrchestrator;
         private PhonemeEncoder _phonemeEncoder;
         private AudioClipBuilder _audioClipBuilder;
         private ModelAsset _currentModelAsset;
@@ -49,6 +50,7 @@ namespace uPiper.Core
 
                 // Inferenceコンポーネントを初期化
                 _inferenceGenerator = new InferenceAudioGenerator();
+                _splitOrchestrator = new SplitInferenceOrchestrator(_inferenceGenerator);
                 _phonemeEncoder = new PhonemeEncoder(voiceConfig);
                 _audioClipBuilder = new AudioClipBuilder();
                 _currentModelAsset = modelAsset;
@@ -158,10 +160,11 @@ namespace uPiper.Core
                     && _parsedPhonemeSilence.Count > 0
                     && _currentVoiceConfig?.PhonemeIdMap != null)
                 {
-                    audioData = await _inferenceGenerator.GenerateAudioWithSilenceSplitAsync(
+                    audioData = await _splitOrchestrator.GenerateWithSilenceSplitAsync(
                         phonemeIds, null, null, null,
                         _parsedPhonemeSilence,
                         _currentVoiceConfig.PhonemeIdMap,
+                        _inferenceGenerator.SampleRate,
                         lengthScale, noiseScale, noiseW,
                         cancellationToken: cancellationToken);
                 }
@@ -296,10 +299,11 @@ namespace uPiper.Core
                     && _parsedPhonemeSilence.Count > 0
                     && _currentVoiceConfig?.PhonemeIdMap != null)
                 {
-                    audioData = await _inferenceGenerator.GenerateAudioWithSilenceSplitAsync(
+                    audioData = await _splitOrchestrator.GenerateWithSilenceSplitAsync(
                         phonemeIds, prosodyA1, prosodyA2, prosodyA3,
                         _parsedPhonemeSilence,
                         _currentVoiceConfig.PhonemeIdMap,
+                        _inferenceGenerator.SampleRate,
                         lengthScale, noiseScale, noiseW,
                         speakerId, resolvedLanguageId,
                         cancellationToken);
@@ -352,6 +356,7 @@ namespace uPiper.Core
 
         private void DisposeInferenceResources()
         {
+            _splitOrchestrator = null;
             _inferenceGenerator?.Dispose();
             _inferenceGenerator = null;
             _phonemeEncoder = null;
