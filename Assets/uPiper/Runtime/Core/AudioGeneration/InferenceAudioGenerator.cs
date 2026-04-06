@@ -196,10 +196,18 @@ namespace uPiper.Core.AudioGeneration
                         }
 
                         // Warmup: run dummy inference to eliminate first-call JIT overhead
+                        // WebGL is single-threaded; warmup would block the browser UI thread
+#if !UNITY_WEBGL
                         if (_piperConfig.EnableWarmup && _piperConfig.WarmupIterations > 0)
                         {
                             ExecuteWarmup(_piperConfig.WarmupIterations);
                         }
+#else
+                        if (_piperConfig.EnableWarmup)
+                        {
+                            PiperLogger.LogWarning("[InferenceAudioGenerator] Warmup is disabled on WebGL to prevent UI freeze. Set EnableWarmup = false to suppress this warning.");
+                        }
+#endif
                     }
                     catch (Exception ex)
                     {
