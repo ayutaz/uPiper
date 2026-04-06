@@ -36,8 +36,8 @@ uPiperは、Unity環境でPiper TTSを使用するためのプラグインです
 #### MultilingualPhonemizer
 - **役割**: テキストをUnicode文字範囲で言語セグメントに分割し、各言語のDotNetG2Pエンジンに委譲
 - **言語検出**: `UnicodeLanguageDetector`が文字種（CJK、Hangul、Latin等）で言語を識別
-- **PUAトークンマッピング**: `PuaTokenMapper`が全7言語の音素に対する統一的なPUA-IPA双方向マッピングを提供（87固定エントリ）
-- **言語ルーティング実装**: `PhonemizeWithProsodyAsync` 内の言語分岐を `switch` 文 + 8つの private メソッド（`ProcessJapanese`、`ProcessEnglish`、`ProcessSpanish`、`ProcessFrench`、`ProcessPortuguese`、`ProcessChinese`、`ProcessKorean` 等）に抽出。外部インターフェースは不変のままリファクタリング済み
+- **PUAトークンマッピング**: `PuaTokenMapper`が全7言語の音素に対する統一的なPUA-IPA双方向マッピングを提供（96固定エントリ）
+- **言語ルーティング実装**: `PhonemizeWithProsodyAsync` 内の言語分岐を `switch` 文 + 7つの private メソッド（`ProcessJapanese`、`ProcessEnglish`、`ProcessSpanish`、`ProcessFrench`、`ProcessPortuguese`、`ProcessChinese`、`ProcessKorean`）+ `ProcessFallbackAsync` に抽出。外部インターフェースは不変のままリファクタリング済み
 
 #### 言語別DotNetG2Pエンジン
 
@@ -97,6 +97,8 @@ MultilingualPhonemizerは各エンジンの`ToPuaPhonemes()`でPUA音素を、`T
 - **役割**: `PiperConfig.ToValidated()` で生成される不変（immutable）の設定スナップショット
 - **取得方法**: `PiperConfig.ToValidated()` を呼び出すと検証済みの `ValidatedPiperConfig` が返る。`PiperTTS` 内部では `_validatedConfig` として保持される
 - **全プロパティがread-only**: バリデーション後の値を変更不可の形で提供し、設定の一貫性を保証
+- **GPUSettings の不変性**: `GPUSettings` は防御的コピーにより不変性を保証（`new GPUInferenceSettings { MaxMemoryMB = source.GPUSettings.MaxMemoryMB }`）。元の `PiperConfig` 側の値を後から変更しても `ValidatedPiperConfig` には影響しない
+- **注意: `PiperConfig.Validate()` は副作用あり**: `Validate()` はフィールドを直接変更する（例: `WorkerThreads=0` → 自動検出値、`DefaultLanguage` → 小文字正規化、範囲外の値のクランプ等）。`ToValidated()` 内部で `Validate()` を呼ぶため、元の `PiperConfig` インスタンスも変更される
 - **主要プロパティ**:
   - `ParsedPhonemeSilence: IReadOnlyDictionary<string, float>` — `EnablePhonemeSilence=true` のとき `PhonemeSilenceSpec` をパース済みのマップとして提供。`false` のときは `null`（`PiperTTS` 側で都度パースする冗長処理を排除）
   - 言語・パフォーマンス・推論・音声・サイレンス設定の全フィールドを一括提供
@@ -119,6 +121,9 @@ MultilingualPhonemizerは各エンジンの`ToPuaPhonemes()`でPUA音素を、`T
 
 #### InferenceAudioGenerator と InferenceContext
 - **場所**: `Runtime/Core/AudioGeneration/InferenceAudioGenerator.cs`
+- **出力テンソル名キャッシュ**: 初期化時に `_model.outputs[0].name` を `_cachedOutputName` にキャッシュし、推論ごとの名前解決を排除。catch-all フォールバックは除去済み
+- **ArrayPool**: Prosodyテンソル構築時に `ArrayPool<int>.Shared` を常に使用（閾値による分岐は廃止）。`InferenceContext.Dispose()` でレンタル配列を返却
+- **デッドコード削除**: `CreateProsodyTensor`（非プール版）は削除済み。現在は `CreateProsodyTensorPooled` のみ
 - **InferenceContext** (`private sealed class`、`IDisposable`):
   - `PrepareInputs()` が返す7要素タプルを置換した private nested class
   - `using var ctx = PrepareInputs(...)` パターンにより、`Dispose()` 時に全入力テンソルおよび `ArrayPool` レンタル配列を一括解放
@@ -127,24 +132,38 @@ MultilingualPhonemizerは各エンジンの`ToPuaPhonemes()`でPUA音素を、`T
 #### TTSSynthesisOrchestrator
 - **場所**: `Runtime/Core/AudioGeneration/TTSSynthesisOrchestrator.cs`（`internal sealed`）
 - **役割**: 音素文字列配列 → `AudioClip` 変換パイプライン全体を一元管理し、`PiperTTS.Inference.cs` の2メソッドに存在した重複ロジックを排除
+- **コンストラクタ**: `ValidatedPiperConfig config` と `PiperVoiceConfig voiceConfig` をコンストラクタで受け取り、フィールドとして保持。`SynthesizeAsync` 呼び出し時に毎回渡す必要がない
 - **パイプライン**:
   1. **PhonemeEncoder** — 音素をモデルIDにエンコード（Prosodyあり/なし自動切替）
   2. **IInferenceAudioGenerator** — ONNX推論により float 音声波形を生成
   3. **SplitInferenceOrchestrator** — `EnablePhonemeSilence=true` の場合は句分割推論を実行
-  4. **AudioClipBuilder** — 正規化（`NormalizeAudioInPlace`）後に `AudioClip` を構築
+  4. **AudioClipBuilder** — 正規化（`NormalizeAudioInPlace`）後に `AudioClip` を構築。AudioClip名は `TTS_{Guid.NewGuid():N}` で一意に命名
+- **SynthesisRequest** (`internal readonly struct`):
+  ```csharp
+  internal readonly struct SynthesisRequest
+  {
+      public readonly string[] Phonemes;
+      public readonly int[] ProsodyA1, ProsodyA2, ProsodyA3;
+      public readonly float LengthScale, NoiseScale, NoiseW;
+      public readonly int SpeakerId, LanguageId;
+      public bool HasProsody => ProsodyA1 != null;
+  }
+  ```
+  - 音素・Prosody・合成パラメータを単一の不変データオブジェクトに集約
+  - `HasProsody` で Prosodyあり/なしパスを自動切替
 - **主要メソッド**:
   ```csharp
   Task<AudioClip> SynthesizeAsync(
-      string[] phonemes,
-      int[] prosodyA1, int[] prosodyA2, int[] prosodyA3,
-      float lengthScale, float noiseScale, float noiseW,
-      int speakerId, int languageId,
-      ValidatedPiperConfig config,
-      PiperVoiceConfig voiceConfig,
+      SynthesisRequest request,
       CancellationToken cancellationToken = default)
   ```
-  - `prosodyA1` が `null` の場合は Prosodyなしパスで処理
-  - `config.ParsedPhonemeSilence` の有無により句分割パスを自動選択
+  - `request.HasProsody` が `false` の場合は Prosodyなしパスで処理
+  - `_config.ParsedPhonemeSilence` の有無により句分割パスを自動選択
+
+#### SplitInferenceOrchestrator
+- **場所**: `Runtime/Core/AudioGeneration/SplitInferenceOrchestrator.cs`（`internal class`、publicからinternalに変更済み）
+- **役割**: 沈黙句分割のオーケストレーション。音素列を沈黙トークンの位置で分割し、句ごとに独立推論を行い、句間にゼロサンプルの無音区間を挿入して結合する
+- **パラメータ受け取り**: `phonemeSilence` を `IReadOnlyDictionary<string, float>` で受け取る（`Dictionary` キャスト除去済み）
 
 ### 5. 音声出力層
 
@@ -249,12 +268,12 @@ var result = phonemizer.PhonemizeWithProsody("こんにちは");
 // result.Phonemes: 音素配列
 // result.ProsodyA1, ProsodyA2, ProsodyA3: 各音素に対応するProsody値
 
-// Prosody対応音声生成
+// Prosody対応音声生成（統合API: GenerateAudioAsync）
 var generator = new InferenceAudioGenerator();
 await generator.InitializeAsync(modelAsset, voiceConfig);
 if (generator.SupportsProsody)
 {
-    var audio = await generator.GenerateAudioWithProsodyAsync(
+    var audio = await generator.GenerateAudioAsync(
         phonemeIds, prosodyA1, prosodyA2, prosodyA3);
 }
 ```
