@@ -152,19 +152,35 @@ namespace uPiper.Core
 
                 // Unity.InferenceEngineで音声を生成
                 PiperLogger.LogDebug("Generating audio with Inference");
-                var audioData = await _inferenceGenerator.GenerateAudioAsync(
-                    phonemeIds,
-                    lengthScale,
-                    noiseScale,
-                    noiseW,
-                    cancellationToken: cancellationToken);
+                float[] audioData;
+                if (_config != null && _config.EnablePhonemeSilence
+                    && _config.ParsedPhonemeSilence != null
+                    && _config.ParsedPhonemeSilence.Count > 0
+                    && _currentVoiceConfig?.PhonemeIdMap != null)
+                {
+                    audioData = await _inferenceGenerator.GenerateAudioWithSilenceSplitAsync(
+                        phonemeIds, null, null, null,
+                        _config.ParsedPhonemeSilence,
+                        _currentVoiceConfig.PhonemeIdMap,
+                        lengthScale, noiseScale, noiseW,
+                        cancellationToken: cancellationToken);
+                }
+                else
+                {
+                    audioData = await _inferenceGenerator.GenerateAudioAsync(
+                        phonemeIds,
+                        lengthScale,
+                        noiseScale,
+                        noiseW,
+                        cancellationToken: cancellationToken);
+                }
 
                 _onProcessingProgress?.Invoke(0.8f);
 
                 // AudioClipを作成
-                var normalizedAudio = _audioClipBuilder.NormalizeAudio(audioData, 0.95f);
+                _audioClipBuilder.NormalizeAudioInPlace(audioData, 0.95f);
                 var audioClip = _audioClipBuilder.BuildAudioClip(
-                    normalizedAudio,
+                    audioData,
                     _inferenceGenerator.SampleRate,
                     $"TTS_{DateTime.Now:yyyyMMddHHmmss}");
 
@@ -275,7 +291,20 @@ namespace uPiper.Core
 
                 // Unity.InferenceEngineで音声を生成
                 float[] audioData;
-                if (prosodyA1 != null && _inferenceGenerator.SupportsProsody)
+                if (_config != null && _config.EnablePhonemeSilence
+                    && _config.ParsedPhonemeSilence != null
+                    && _config.ParsedPhonemeSilence.Count > 0
+                    && _currentVoiceConfig?.PhonemeIdMap != null)
+                {
+                    audioData = await _inferenceGenerator.GenerateAudioWithSilenceSplitAsync(
+                        phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                        _config.ParsedPhonemeSilence,
+                        _currentVoiceConfig.PhonemeIdMap,
+                        lengthScale, noiseScale, noiseW,
+                        speakerId, resolvedLanguageId,
+                        cancellationToken);
+                }
+                else if (prosodyA1 != null && _inferenceGenerator.SupportsProsody)
                 {
                     audioData = await _inferenceGenerator.GenerateAudioWithProsodyAsync(
                         phonemeIds, prosodyA1, prosodyA2, prosodyA3,
@@ -293,9 +322,9 @@ namespace uPiper.Core
 
                 _onProcessingProgress?.Invoke(0.8f);
 
-                var normalizedAudio = _audioClipBuilder.NormalizeAudio(audioData, 0.95f);
+                _audioClipBuilder.NormalizeAudioInPlace(audioData, 0.95f);
                 var audioClip = _audioClipBuilder.BuildAudioClip(
-                    normalizedAudio,
+                    audioData,
                     _inferenceGenerator.SampleRate,
                     $"TTS_{System.DateTime.Now:yyyyMMddHHmmss}");
 

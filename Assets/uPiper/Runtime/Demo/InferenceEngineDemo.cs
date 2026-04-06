@@ -845,7 +845,8 @@ namespace uPiper.Demo
                     // 音声データを正規化
                     SetStatus("音声データを正規化中...");
                     PiperLogger.LogDebug("Normalizing audio data...");
-                    processedAudio = _audioBuilder.NormalizeAudio(audioData, 0.95f);
+                    _audioBuilder.NormalizeAudioInPlace(audioData, 0.95f);
+                    processedAudio = audioData;
                 }
                 else
                 {

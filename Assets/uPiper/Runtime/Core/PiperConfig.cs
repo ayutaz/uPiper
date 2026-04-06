@@ -98,6 +98,28 @@ namespace uPiper.Core
         [Tooltip("Backend to use for neural network inference")]
         public InferenceBackend Backend = InferenceBackend.Auto;
 
+        [Header("Sentence Silence Settings")]
+
+        /// <summary>
+        /// 沈黙トークンによる句分割を有効にする
+        /// </summary>
+        [Tooltip("Split phoneme sequences at silence tokens and insert silence between phrases")]
+        public bool EnablePhonemeSilence = false;
+
+        /// <summary>
+        /// 沈黙トークンと沈黙秒数の設定文字列
+        /// 形式: "phoneme seconds" (カンマ区切りで複数指定可)
+        /// 例: "_ 0.5" または "_ 0.5,# 0.3"
+        /// </summary>
+        [Tooltip("Phoneme silence specification: '<phoneme> <seconds>' (comma-separated)")]
+        public string PhonemeSilenceSpec = "_ 0.5";
+
+        /// <summary>
+        /// パース済みの沈黙トークンマップ（Validate後に利用可能）
+        /// </summary>
+        [NonSerialized]
+        public Dictionary<string, float> ParsedPhonemeSilence;
+
         [Header("Audio Settings")]
 
         /// <summary>
@@ -120,6 +142,21 @@ namespace uPiper.Core
         public float TargetRMSLevel = -20f;
 
         [Header("Advanced Settings")]
+
+        /// <summary>
+        /// Enable warmup inference after model initialization.
+        /// Reduces first inference latency by ~500-800ms.
+        /// </summary>
+        [Tooltip("Run dummy inference after initialization to reduce first call latency")]
+        public bool EnableWarmup = false;
+
+        /// <summary>
+        /// Number of warmup inference iterations.
+        /// ORT JIT cache stabilises in 1-2 runs; 2 provides a safety margin.
+        /// </summary>
+        [Tooltip("Number of warmup iterations (piper-plus default: 2)")]
+        [Range(1, 5)]
+        public int WarmupIterations = 2;
 
         /// <summary>
         /// Timeout for operations in milliseconds
@@ -261,6 +298,30 @@ namespace uPiper.Core
                     PiperLogger.LogWarning("TargetRMSLevel ({0}dB) is too low, setting to {1}dB", TargetRMSLevel, MinRMSLevel);
                     TargetRMSLevel = MinRMSLevel;
                 }
+            }
+
+            // Warmup iterations validation
+            if (EnableWarmup && WarmupIterations < 1)
+            {
+                PiperLogger.LogWarning("WarmupIterations ({0}) is less than 1, setting to 1", WarmupIterations);
+                WarmupIterations = 1;
+            }
+
+            // Phoneme silence validation
+            if (EnablePhonemeSilence)
+            {
+                try
+                {
+                    ParsedPhonemeSilence = AudioGeneration.PhonemeSilenceProcessor.Parse(PhonemeSilenceSpec);
+                }
+                catch (ArgumentException ex)
+                {
+                    throw new PiperException($"Invalid PhonemeSilenceSpec: {ex.Message}", ex);
+                }
+            }
+            else
+            {
+                ParsedPhonemeSilence = null;
             }
 
             // GPU settings validation

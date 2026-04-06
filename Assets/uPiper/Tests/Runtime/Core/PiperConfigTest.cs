@@ -288,5 +288,136 @@ namespace uPiper.Tests.Runtime.Core
             LogAssert.Expect(LogType.Log, "[uPiper] PiperConfig validated successfully");
             config.Validate();
         }
+
+        // ================================================================
+        // PhonemeSilence validation tests
+        // ================================================================
+
+        [Test]
+        public void Validate_EnablePhonemeSilence_ValidSpec_ParsesCorrectly()
+        {
+            var config = new PiperConfig
+            {
+                EnablePhonemeSilence = true,
+                PhonemeSilenceSpec = "_ 0.5"
+            };
+            config.Validate();
+
+            Assert.IsNotNull(config.ParsedPhonemeSilence);
+            Assert.AreEqual(1, config.ParsedPhonemeSilence.Count);
+            Assert.AreEqual(0.5f, config.ParsedPhonemeSilence["_"], 0.001f);
+        }
+
+        [Test]
+        public void Validate_EnablePhonemeSilence_MultipleEntries_ParsesAll()
+        {
+            var config = new PiperConfig
+            {
+                EnablePhonemeSilence = true,
+                PhonemeSilenceSpec = "_ 0.5,# 0.3"
+            };
+            config.Validate();
+
+            Assert.IsNotNull(config.ParsedPhonemeSilence);
+            Assert.AreEqual(2, config.ParsedPhonemeSilence.Count);
+            Assert.AreEqual(0.5f, config.ParsedPhonemeSilence["_"], 0.001f);
+            Assert.AreEqual(0.3f, config.ParsedPhonemeSilence["#"], 0.001f);
+        }
+
+        [Test]
+        public void Validate_EnablePhonemeSilence_InvalidSpec_ThrowsPiperException()
+        {
+            var config = new PiperConfig
+            {
+                EnablePhonemeSilence = true,
+                PhonemeSilenceSpec = "invalid"
+            };
+            Assert.Throws<PiperException>(() => config.Validate());
+        }
+
+        [Test]
+        public void Validate_EnablePhonemeSilence_EmptySpec_ThrowsPiperException()
+        {
+            var config = new PiperConfig
+            {
+                EnablePhonemeSilence = true,
+                PhonemeSilenceSpec = ""
+            };
+            Assert.Throws<PiperException>(() => config.Validate());
+        }
+
+        [Test]
+        public void Validate_DisablePhonemeSilence_ParsedIsNull()
+        {
+            var config = new PiperConfig
+            {
+                EnablePhonemeSilence = false,
+                PhonemeSilenceSpec = "_ 0.5"
+            };
+            config.Validate();
+
+            Assert.IsNull(config.ParsedPhonemeSilence);
+        }
+
+        // ================================================================
+        // PhonemeSilence default value tests
+        // ================================================================
+
+        [Test]
+        public void PiperConfig_EnablePhonemeSilence_DefaultFalse()
+        {
+            var config = new PiperConfig();
+            Assert.IsFalse(config.EnablePhonemeSilence);
+        }
+
+        [Test]
+        public void PiperConfig_PhonemeSilenceSpec_DefaultValue()
+        {
+            var config = new PiperConfig();
+            Assert.AreEqual("_ 0.5", config.PhonemeSilenceSpec);
+        }
+
+        // ================================================================
+        // Warmup default value tests
+        // ================================================================
+
+        [Test]
+        public void PiperConfig_EnableWarmup_DefaultFalse()
+        {
+            var config = new PiperConfig();
+            Assert.IsFalse(config.EnableWarmup);
+        }
+
+        [Test]
+        public void PiperConfig_WarmupIterations_DefaultTwo()
+        {
+            var config = new PiperConfig();
+            Assert.AreEqual(2, config.WarmupIterations);
+        }
+
+        [Test]
+        public void Validate_WarmupEnabled_IterationsZero_ClampsToOne()
+        {
+            var config = new PiperConfig
+            {
+                EnableWarmup = true,
+                WarmupIterations = 0
+            };
+            LogAssert.Expect(LogType.Warning, "[uPiper] WarmupIterations (0) is less than 1, setting to 1");
+            config.Validate();
+            Assert.AreEqual(1, config.WarmupIterations);
+        }
+
+        [Test]
+        public void Validate_WarmupDisabled_IterationsZero_NotClamped()
+        {
+            var config = new PiperConfig
+            {
+                EnableWarmup = false,
+                WarmupIterations = 0
+            };
+            config.Validate();
+            Assert.AreEqual(0, config.WarmupIterations);
+        }
     }
 }

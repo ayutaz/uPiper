@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.InferenceEngine;
@@ -55,6 +56,24 @@ namespace uPiper.Core.AudioGeneration
             int[] prosodyA1,
             int[] prosodyA2,
             int[] prosodyA3,
+            float lengthScale = 1.0f,
+            float noiseScale = 0.667f,
+            float noiseW = 0.8f,
+            int speakerId = 0,
+            int languageId = 0,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// 沈黙句分割付きで音声を生成する。
+        /// 音素列を沈黙トークンの位置で分割し、句ごとに独立推論を行い、句間にゼロサンプルの無音区間を挿入して結合する。
+        /// </summary>
+        public Task<float[]> GenerateAudioWithSilenceSplitAsync(
+            int[] phonemeIds,
+            int[] prosodyA1,
+            int[] prosodyA2,
+            int[] prosodyA3,
+            Dictionary<string, float> phonemeSilence,
+            Dictionary<string, int> phonemeIdMap,
             float lengthScale = 1.0f,
             float noiseScale = 0.667f,
             float noiseW = 0.8f,

@@ -46,6 +46,10 @@ namespace uPiper.Core.IL2CPP
 
                 // LinkedList for LRU cache
                 _ = new System.Collections.Generic.LinkedList<string>();
+
+                // ArrayPool types for memory optimization
+                _ = System.Buffers.ArrayPool<float>.Shared;
+                _ = System.Buffers.ArrayPool<int>.Shared;
             }
 
             [Preserve]

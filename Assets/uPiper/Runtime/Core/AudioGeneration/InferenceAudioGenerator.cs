@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -15,6 +16,30 @@ namespace uPiper.Core.AudioGeneration
     /// </summary>
     public class InferenceAudioGenerator : IInferenceAudioGenerator
     {
+        /// <summary>
+        /// Length of the dummy phoneme input used during warmup.
+        /// Matches piper-plus ort-session-contract.toml: phoneme_length = 100
+        /// </summary>
+        private const int WarmupPhonemeLength = 100;
+
+        /// <summary>BOS token ID per ort-session-contract.toml</summary>
+        private const int WarmupBosToken = 1;
+
+        /// <summary>EOS token ID per ort-session-contract.toml</summary>
+        private const int WarmupEosToken = 2;
+
+        /// <summary>Dummy phoneme ID for warmup filler per ort-session-contract.toml</summary>
+        private const int WarmupDummyPhoneme = 8;
+
+        /// <summary>Warmup noise scale per ort-session-contract.toml</summary>
+        private const float WarmupNoiseScale = 0.667f;
+
+        /// <summary>Warmup length scale per ort-session-contract.toml</summary>
+        private const float WarmupLengthScale = 1.0f;
+
+        /// <summary>Warmup noise W per ort-session-contract.toml</summary>
+        private const float WarmupNoiseW = 0.8f;
+
         private Worker _worker;
         private Model _model;
         private ModelAsset _modelAsset;
@@ -169,6 +194,20 @@ namespace uPiper.Core.AudioGeneration
                                 }
                             }
                         }
+
+                        // Warmup: run dummy inference to eliminate first-call JIT overhead
+                        // WebGL is single-threaded; warmup would block the browser UI thread
+#if !UNITY_WEBGL
+                        if (_piperConfig.EnableWarmup && _piperConfig.WarmupIterations > 0)
+                        {
+                            ExecuteWarmup(_piperConfig.WarmupIterations);
+                        }
+#else
+                        if (_piperConfig.EnableWarmup)
+                        {
+                            PiperLogger.LogWarning("[InferenceAudioGenerator] Warmup is disabled on WebGL to prevent UI freeze. Set EnableWarmup = false to suppress this warning.");
+                        }
+#endif
                     }
                     catch (Exception ex)
                     {
@@ -231,6 +270,77 @@ namespace uPiper.Core.AudioGeneration
             });
         }
 
+        /// <inheritdoc/>
+        public async Task<float[]> GenerateAudioWithSilenceSplitAsync(
+            int[] phonemeIds,
+            int[] prosodyA1,
+            int[] prosodyA2,
+            int[] prosodyA3,
+            Dictionary<string, float> phonemeSilence,
+            Dictionary<string, int> phonemeIdMap,
+            float lengthScale = 1.0f,
+            float noiseScale = 0.667f,
+            float noiseW = 0.8f,
+            int speakerId = 0,
+            int languageId = 0,
+            CancellationToken cancellationToken = default)
+        {
+            ValidateGenerationPrerequisites(phonemeIds);
+
+            // Split phoneme sequence at silence tokens
+            var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
+                phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                phonemeSilence, phonemeIdMap, SampleRate);
+
+            PiperLogger.LogInfo($"[InferenceAudioGenerator] Silence split: {phrases.Count} phrases from {phonemeIds.Length} phonemes");
+
+            // Execute inference for each phrase and collect results
+            var segments = new List<(float[] Audio, int SilenceSamples)>();
+            var totalLength = 0;
+
+            for (var p = 0; p < phrases.Count; p++)
+            {
+                var phrase = phrases[p];
+                if (phrase.PhonemeIds == null || phrase.PhonemeIds.Length == 0)
+                    continue;
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Per-phrase dispatch to main thread (releases main thread between phrases)
+                var phraseAudio = await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
+                {
+                    lock (_lockObject)
+                    {
+                        return ExecuteInference(
+                            phrase.PhonemeIds,
+                            phrase.ProsodyA1,
+                            phrase.ProsodyA2,
+                            phrase.ProsodyA3,
+                            lengthScale, noiseScale, noiseW,
+                            speakerId, languageId);
+                    }
+                });
+
+                segments.Add((phraseAudio, phrase.SilenceSamples));
+                totalLength += phraseAudio.Length + phrase.SilenceSamples;
+
+                PiperLogger.LogDebug($"[InferenceAudioGenerator] Phrase {p + 1}/{phrases.Count}: {phraseAudio.Length} samples + {phrase.SilenceSamples} silence");
+            }
+
+            // Concatenate all segments with silence gaps
+            var result = new float[totalLength];
+            var offset = 0;
+            foreach (var (audio, silenceSamples) in segments)
+            {
+                Array.Copy(audio, 0, result, offset, audio.Length);
+                offset += audio.Length;
+                offset += silenceSamples; // Zero-initialized (silence)
+            }
+
+            PiperLogger.LogInfo($"[InferenceAudioGenerator] Silence split complete: {totalLength} total samples ({segments.Count} phrases)");
+            return result;
+        }
+
         /// <summary>
         /// Validate common prerequisites for audio generation
         /// </summary>
@@ -244,6 +354,64 @@ namespace uPiper.Core.AudioGeneration
 
             if (phonemeIds == null || phonemeIds.Length == 0)
                 throw new ArgumentException("Phoneme IDs cannot be null or empty.", nameof(phonemeIds));
+        }
+
+        /// <summary>
+        /// Warms up the inference engine by running dummy inferences.
+        /// Eliminates JIT/kernel compilation overhead on the user's first real synthesis call.
+        /// </summary>
+        private void ExecuteWarmup(int iterations)
+        {
+            PiperLogger.LogInfo($"[InferenceAudioGenerator] Starting warmup ({iterations} iterations)...");
+
+            try
+            {
+                // Build dummy phoneme IDs: BOS(1) + dummy(8) x 98 + EOS(2) = 100 tokens
+                var dummyPhonemeIds = new int[WarmupPhonemeLength];
+                dummyPhonemeIds[0] = WarmupBosToken;
+                for (var i = 1; i < WarmupPhonemeLength - 1; i++)
+                {
+                    dummyPhonemeIds[i] = WarmupDummyPhoneme;
+                }
+                dummyPhonemeIds[WarmupPhonemeLength - 1] = WarmupEosToken;
+
+                // Build dummy prosody arrays if model supports prosody
+                int[] dummyProsodyA1 = null;
+                int[] dummyProsodyA2 = null;
+                int[] dummyProsodyA3 = null;
+                if (_supportsProsody)
+                {
+                    dummyProsodyA1 = new int[WarmupPhonemeLength]; // zero-filled
+                    dummyProsodyA2 = new int[WarmupPhonemeLength];
+                    dummyProsodyA3 = new int[WarmupPhonemeLength];
+                }
+
+                for (var i = 0; i < iterations; i++)
+                {
+                    PiperLogger.LogDebug($"[InferenceAudioGenerator] Warmup iteration {i + 1}/{iterations}");
+
+                    // ExecuteInference handles sid/lid based on _supportsMultiSpeaker/_supportsLanguageId
+                    var warmupAudio = ExecuteInference(
+                        dummyPhonemeIds,
+                        dummyProsodyA1,
+                        dummyProsodyA2,
+                        dummyProsodyA3,
+                        WarmupLengthScale,
+                        WarmupNoiseScale,
+                        WarmupNoiseW,
+                        speakerId: 0,
+                        languageId: 0);
+
+                    PiperLogger.LogDebug($"[InferenceAudioGenerator] Warmup iteration {i + 1} generated {warmupAudio.Length} samples (discarded)");
+                }
+
+                PiperLogger.LogInfo($"[InferenceAudioGenerator] Warmup completed ({iterations} iterations)");
+            }
+            catch (Exception ex)
+            {
+                // Warmup failure must never prevent the application from starting
+                PiperLogger.LogWarning($"[InferenceAudioGenerator] Warmup failed (non-fatal, inference will still work): {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -269,8 +437,11 @@ namespace uPiper.Core.AudioGeneration
             var inputLengthsTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
             var scalesTensor = new Tensor<float>(new TensorShape(3), new[] { noiseScale, lengthScale, noiseW });
             Tensor<int> prosodyTensor = null;
+            int[] rentedProsody = null;
             Tensor<int> sidTensor = null;
             Tensor<int> lidTensor = null;
+            Tensor<float> outputTensor = null;
+            Tensor<float> readableTensor = null;
 
             try
             {
@@ -298,7 +469,7 @@ namespace uPiper.Core.AudioGeneration
                 // prosody_featuresテンソルを設定（モデルがサポートする場合）
                 if (_supportsProsody)
                 {
-                    prosodyTensor = CreateProsodyTensor(phonemeIds.Length, prosodyA1, prosodyA2, prosodyA3);
+                    prosodyTensor = CreateProsodyTensorPooled(phonemeIds.Length, prosodyA1, prosodyA2, prosodyA3, out rentedProsody);
                     _worker.SetInput("prosody_features", prosodyTensor);
                     PiperLogger.LogInfo($"[InferenceAudioGenerator] Set prosody_features tensor with shape (1, {phonemeIds.Length}, 3)");
                 }
@@ -309,17 +480,13 @@ namespace uPiper.Core.AudioGeneration
                 PiperLogger.LogInfo("[InferenceAudioGenerator] Inference completed");
 
                 // 出力を取得
-                var outputTensor = GetOutputTensor();
+                outputTensor = GetOutputTensor();
 
                 // GPUからCPUにデータを読み戻す
-                var readableTensor = outputTensor.ReadbackAndClone();
+                readableTensor = outputTensor.ReadbackAndClone();
                 var audioData = ExtractAudioData(readableTensor);
 
                 PiperLogger.LogInfo($"[InferenceAudioGenerator] Generated {audioData.Length} samples{(hasAnyProsodyInput ? " with prosody" : "")}");
-
-                // テンソルを破棄
-                readableTensor.Dispose();
-                outputTensor.Dispose();
 
                 return audioData;
             }
@@ -331,12 +498,16 @@ namespace uPiper.Core.AudioGeneration
             finally
             {
                 // テンソルをクリーンアップ
+                readableTensor?.Dispose();
+                outputTensor?.Dispose();
                 inputTensor?.Dispose();
                 inputLengthsTensor?.Dispose();
                 scalesTensor?.Dispose();
                 sidTensor?.Dispose();
                 lidTensor?.Dispose();
                 prosodyTensor?.Dispose();
+                if (rentedProsody != null)
+                    ArrayPool<int>.Shared.Return(rentedProsody);
             }
         }
 
@@ -348,6 +519,39 @@ namespace uPiper.Core.AudioGeneration
             // Shape: (1, sequence_length, 3)
             // Note: ONNX model expects Int (int64 in Python, mapped to Int in Sentis)
             var prosodyData = new int[sequenceLength * 3];
+            for (var i = 0; i < sequenceLength; i++)
+            {
+                prosodyData[i * 3 + 0] = prosodyA1 != null && i < prosodyA1.Length ? prosodyA1[i] : 0;
+                prosodyData[i * 3 + 1] = prosodyA2 != null && i < prosodyA2.Length ? prosodyA2[i] : 0;
+                prosodyData[i * 3 + 2] = prosodyA3 != null && i < prosodyA3.Length ? prosodyA3[i] : 0;
+            }
+
+            return new Tensor<int>(new TensorShape(1, sequenceLength, 3), prosodyData);
+        }
+
+        /// <summary>
+        /// Create prosody tensor using ArrayPool for reduced GC pressure.
+        /// The rented array must be returned after the tensor is disposed.
+        /// </summary>
+        private Tensor<int> CreateProsodyTensorPooled(
+            int sequenceLength, int[] prosodyA1, int[] prosodyA2, int[] prosodyA3,
+            out int[] rentedArray)
+        {
+            var prosodySize = sequenceLength * 3;
+
+            int[] prosodyData;
+            if (prosodySize > 64)
+            {
+                rentedArray = ArrayPool<int>.Shared.Rent(prosodySize);
+                Array.Clear(rentedArray, 0, prosodySize);
+                prosodyData = rentedArray;
+            }
+            else
+            {
+                rentedArray = null;
+                prosodyData = new int[prosodySize];
+            }
+
             for (var i = 0; i < sequenceLength; i++)
             {
                 prosodyData[i * 3 + 0] = prosodyA1 != null && i < prosodyA1.Length ? prosodyA1[i] : 0;

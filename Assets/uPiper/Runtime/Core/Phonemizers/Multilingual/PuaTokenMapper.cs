@@ -2,6 +2,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("uPiper.Tests.Editor")]
+
 namespace uPiper.Core.Phonemizers.Multilingual
 {
     /// <summary>
@@ -147,9 +149,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 { "k\u031A", 0xE050 },         // unreleased velar
                 { "t\u031A", 0xE051 },         // unreleased alveolar
                 { "p\u031A", 0xE052 },         // unreleased bilabial
-                // English diphthong (dynamically allocated during multilingual training)
-                { "\u0254\u026A", 0xE053 },    // ɔɪ  (as in "boy")
-
+                // 0xE053 reserved (unused gap — was ɔɪ in early training, removed for piper-plus pua.json compat)
                 // =================================================================
                 // Spanish (ES) / Portuguese (PT)
                 // =================================================================
@@ -163,17 +163,31 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 { "\u025B\u0303", 0xE056 },    // nasal open-mid front unrounded (vin, pain)
                 { "\u0251\u0303", 0xE057 },    // nasal open back unrounded (France, temps)
                 { "\u0254\u0303", 0xE058 },    // nasal open-mid back rounded (bon, nom)
+
+                // =================================================================
+                // Swedish (SV) -- swedish_phonemize.cpp
+                // =================================================================
+                // --- Long vowels (Complementary Quantity) ---
+                { "i\u02D0", 0xE059 },          // iː  close front unrounded long
+                { "y\u02D0", 0xE05A },          // yː  close front rounded long
+                { "e\u02D0", 0xE05B },          // eː  close-mid front unrounded long
+                { "\u025B\u02D0", 0xE05C },     // ɛː  open-mid front unrounded long
+                { "\u00F8\u02D0", 0xE05D },     // øː  close-mid front rounded long
+                { "\u0251\u02D0", 0xE05E },     // ɑː  open back unrounded long
+                { "o\u02D0", 0xE05F },          // oː  close-mid back rounded long
+                { "u\u02D0", 0xE060 },          // uː  close back rounded long
+                { "\u0289\u02D0", 0xE061 },     // ʉː  close central rounded long
             };
 
         /// <summary>
         /// Last fixed PUA codepoint. Dynamic allocation starts after this.
         /// </summary>
-        private const int LastFixedCodepoint = 0xE058;
+        private const int LastFixedCodepoint = 0xE061;
 
         /// <summary>
         /// First codepoint available for dynamic allocation.
         /// </summary>
-        private const int DynamicPuaStart = 0xE059;
+        private const int DynamicPuaStart = 0xE062;
 
         // ── Bidirectional lookup dictionaries ───────────────────────────────────
 
@@ -296,7 +310,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
         }
 
         /// <summary>
-        /// Checks whether a character falls within the fixed PUA range (0xE000 .. 0xE058).
+        /// Checks whether a character falls within the fixed PUA range (0xE000 .. 0xE061).
         /// </summary>
         /// <param name="ch">The character to test.</param>
         /// <returns><c>true</c> if the character is a fixed PUA mapping; otherwise <c>false</c>.</returns>
@@ -304,5 +318,48 @@ namespace uPiper.Core.Phonemizers.Multilingual
         {
             return ch >= '\uE000' && ch <= (char)LastFixedCodepoint;
         }
+
+        /// <summary>
+        /// Resets dynamic PUA state for testing purposes.
+        /// Clears all entries and re-initializes from fixed mappings.
+        /// </summary>
+        internal static void ResetForTesting()
+        {
+            lock (_dynamicLock)
+            {
+                Token2Char.Clear();
+                Char2Token.Clear();
+
+                foreach (var kvp in FixedPuaMapping)
+                {
+                    var ch = (char)kvp.Value;
+                    Token2Char[kvp.Key] = ch;
+                    Char2Token[ch] = kvp.Key;
+                }
+
+                _nextDynamic = DynamicPuaStart;
+            }
+        }
+
+#if UNITY_EDITOR
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetOnDomainReload()
+        {
+            lock (_dynamicLock)
+            {
+                Token2Char.Clear();
+                Char2Token.Clear();
+
+                foreach (var kvp in FixedPuaMapping)
+                {
+                    var ch = (char)kvp.Value;
+                    Token2Char[kvp.Key] = ch;
+                    Char2Token[ch] = kvp.Key;
+                }
+
+                _nextDynamic = DynamicPuaStart;
+            }
+        }
+#endif
     }
 }
