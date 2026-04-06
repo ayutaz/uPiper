@@ -263,7 +263,8 @@ namespace uPiper.Tests.Editor.AudioGeneration
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
-            // PhonemeIdMap: a=3, i=4 + BOS(1) + EOS(2) → expected: [1, 3, 4, 2]
+            // PhonemeIdMap: a=3, i=4 + BOS(1) + EOS(2) + PAD(0) intersperse
+            // → expected: [1, 0, 3, 0, 4, 0, 2]
             var request = new SynthesisRequest(
                 new[] { "a", "i" },
                 null, null, null,
@@ -273,12 +274,14 @@ namespace uPiper.Tests.Editor.AudioGeneration
             // Act
             await orchestrator.SynthesizeAsync(request);
 
-            // Assert: PhonemeEncoder adds BOS(^=1) and EOS($=2)
+            // Assert: PhonemeEncoder adds BOS(^=1), PAD(0) intersperse, EOS($=2)
             var ids = _stubGenerator.LastPhonemeIds;
             Assert.IsNotNull(ids);
+            Assert.AreEqual(7, ids.Length, "BOS + PAD + a + PAD + i + PAD + EOS = 7要素");
             Assert.AreEqual(1, ids[0], "先頭が BOS(1) であること");
-            Assert.AreEqual(3, ids[1], "a が ID=3 にエンコードされること");
-            Assert.AreEqual(4, ids[2], "i が ID=4 にエンコードされること");
+            Assert.AreEqual(0, ids[1], "BOS後にPAD(0)が挿入されること");
+            Assert.AreEqual(3, ids[2], "a が ID=3 にエンコードされること");
+            Assert.AreEqual(4, ids[4], "i が ID=4 にエンコードされること");
             Assert.AreEqual(2, ids[^1], "末尾が EOS(2) であること");
         }
 
