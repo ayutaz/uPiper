@@ -379,6 +379,37 @@ namespace uPiper.Tests.Editor
             }
         }
 
+        [Test]
+        public void Split_ProsodyOnTrailingEmptyPhrase_IsEmptyArray()
+        {
+            // Phoneme sequence ending with silence token -> trailing empty phrase
+            var phonemeIds = new[] { 5, 0 }; // a, _ (silence)
+            var prosodyA1 = new[] { 1, 0 };
+            var prosodyA2 = new[] { 2, 0 };
+            var prosodyA3 = new[] { 3, 0 };
+            var silence = new Dictionary<string, float> { { "_", 0.5f } };
+
+            var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
+                phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                silence, TestPhonemeIdMap, TestSampleRate);
+
+            Assert.AreEqual(2, phrases.Count);
+
+            // First phrase: has data
+            Assert.AreEqual(2, phrases[0].PhonemeIds.Length);
+            Assert.IsNotNull(phrases[0].ProsodyA1);
+            Assert.AreEqual(2, phrases[0].ProsodyA1.Length);
+
+            // Trailing empty phrase: prosody should be empty arrays (not null)
+            Assert.AreEqual(0, phrases[1].PhonemeIds.Length);
+            Assert.IsNotNull(phrases[1].ProsodyA1, "Trailing empty phrase ProsodyA1 should not be null when prosody is active");
+            Assert.IsNotNull(phrases[1].ProsodyA2, "Trailing empty phrase ProsodyA2 should not be null when prosody is active");
+            Assert.IsNotNull(phrases[1].ProsodyA3, "Trailing empty phrase ProsodyA3 should not be null when prosody is active");
+            Assert.AreEqual(0, phrases[1].ProsodyA1.Length, "Trailing empty phrase ProsodyA1 should be empty");
+            Assert.AreEqual(0, phrases[1].ProsodyA2.Length, "Trailing empty phrase ProsodyA2 should be empty");
+            Assert.AreEqual(0, phrases[1].ProsodyA3.Length, "Trailing empty phrase ProsodyA3 should be empty");
+        }
+
         // ================================================================
         // SplitAtPhonemeSilence -- silence sample calculation
         // ================================================================
@@ -420,6 +451,21 @@ namespace uPiper.Tests.Editor
 
             // 0.5s * 16000 = 8000 samples
             Assert.AreEqual(8000, phrases[0].SilenceSamples);
+        }
+
+        [Test]
+        public void Split_ZeroSecondsSilence_ZeroSamples()
+        {
+            var phonemeIds = new[] { 5, 0, 6 }; // a, _ (silence), b
+            var silence = new Dictionary<string, float> { { "_", 0.0f } };
+
+            var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
+                phonemeIds, null, null, null,
+                silence, TestPhonemeIdMap, TestSampleRate);
+
+            Assert.AreEqual(2, phrases.Count);
+            Assert.AreEqual(0, phrases[0].SilenceSamples,
+                "0.0 seconds silence should produce 0 samples");
         }
 
         // ================================================================
