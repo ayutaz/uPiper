@@ -57,7 +57,7 @@ MultilingualPhonemizer (言語ルーティング, DotNetG2Pエンジン直接呼
     ├─ zh: ChineseG2PEngine (DotNetG2P.Chinese, 44K文字辞書)
     └─ ko: KoreanG2PEngine (DotNetG2P.Korean)
     ↓
-PuaTokenMapper (PUA↔IPA双方向マッピング, 87固定エントリ)
+PuaTokenMapper (PUA↔IPA双方向マッピング, 96固定エントリ)
     • 全7言語の音素をPUA文字にマッピング
     ↓
 音素エンコーディング (Unicode PUAマッピング)
@@ -109,7 +109,7 @@ AudioClip出力 (22050Hz, float32)
 | `PortugueseG2PEngine` | DotNetG2P.Portuguese パッケージ | ポルトガル語G2P |
 | `ChineseG2PEngine` | DotNetG2P.Chinese パッケージ | 中国語G2P（44K文字辞書） |
 | `KoreanG2PEngine` | DotNetG2P.Korean パッケージ | 韓国語G2P（Hangul分解 + 音韻規則） |
-| `PuaTokenMapper` | `Runtime/Core/Phonemizers/Multilingual/` | PUA↔IPA双方向マッピング |
+| `PuaTokenMapper` | `Runtime/Core/Phonemizers/Multilingual/` | PUA↔IPA双方向マッピング（96固定エントリ） |
 | `LanguageConstants` | `Runtime/Core/Phonemizers/Multilingual/` | 言語ID/コード定数 |
 | `InferenceEngineDemo` | `Runtime/Demo/` | テスト用デモUI（6言語ドロップダウン） |
 
@@ -318,7 +318,7 @@ _useIpaMapping = _phonemeToId.ContainsKey("ɕ");
 
 ### PuaTokenMapper（多言語対応）
 
-`PuaTokenMapper`は全7言語の音素に対する統一的なPUA↔IPAの双方向マッピングを提供する（87固定エントリ）。各DotNetG2Pエンジンの`ToPuaPhonemes()`メソッドが内部でPUA変換を行い、`MultilingualPhonemizer`はその結果をそのままモデルの`phoneme_id_map`と照合する。
+`PuaTokenMapper`は全7言語の音素に対する統一的なPUA↔IPAの双方向マッピングを提供する（96固定エントリ）。各DotNetG2Pエンジンの`ToPuaPhonemes()`メソッドが内部でPUA変換を行い、`MultilingualPhonemizer`はその結果をそのままモデルの`phoneme_id_map`と照合する。
 
 ### 主要な音素マッピング
 

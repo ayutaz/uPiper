@@ -95,5 +95,39 @@ namespace uPiper.Core.AudioGeneration
             return normalizedData;
         }
 
+        /// <summary>
+        /// 音声データをin-placeで正規化する。元の配列が直接変更される。
+        /// </summary>
+        /// <param name="audioData">音声データ（変更される）</param>
+        /// <param name="targetPeak">目標ピーク値（0-1）</param>
+        public void NormalizeAudioInPlace(float[] audioData, float targetPeak = 0.95f)
+        {
+            if (audioData == null || audioData.Length == 0)
+                return;
+
+            targetPeak = Mathf.Clamp01(targetPeak);
+
+            // 最大振幅を見つける
+            var maxAmplitude = 0f;
+            for (var i = 0; i < audioData.Length; i++)
+            {
+                var absValue = Mathf.Abs(audioData[i]);
+                if (absValue > maxAmplitude)
+                    maxAmplitude = absValue;
+            }
+
+            // 既に正規化されている場合はスキップ
+            if (maxAmplitude <= 0f || Mathf.Approximately(maxAmplitude, targetPeak))
+                return;
+
+            var scale = targetPeak / maxAmplitude;
+            for (var i = 0; i < audioData.Length; i++)
+            {
+                audioData[i] *= scale;
+            }
+
+            PiperLogger.LogDebug($"Normalized audio in-place: max amplitude {maxAmplitude:F3} -> {targetPeak:F3}");
+        }
+
     }
 }

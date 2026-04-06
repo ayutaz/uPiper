@@ -162,9 +162,9 @@ namespace uPiper.Core
                 _onProcessingProgress?.Invoke(0.8f);
 
                 // AudioClipを作成
-                var normalizedAudio = _audioClipBuilder.NormalizeAudio(audioData, 0.95f);
+                _audioClipBuilder.NormalizeAudioInPlace(audioData, 0.95f);
                 var audioClip = _audioClipBuilder.BuildAudioClip(
-                    normalizedAudio,
+                    audioData,
                     _inferenceGenerator.SampleRate,
                     $"TTS_{DateTime.Now:yyyyMMddHHmmss}");
 
@@ -293,9 +293,9 @@ namespace uPiper.Core
 
                 _onProcessingProgress?.Invoke(0.8f);
 
-                var normalizedAudio = _audioClipBuilder.NormalizeAudio(audioData, 0.95f);
+                _audioClipBuilder.NormalizeAudioInPlace(audioData, 0.95f);
                 var audioClip = _audioClipBuilder.BuildAudioClip(
-                    normalizedAudio,
+                    audioData,
                     _inferenceGenerator.SampleRate,
                     $"TTS_{System.DateTime.Now:yyyyMMddHHmmss}");
 

@@ -122,6 +122,21 @@ namespace uPiper.Core
         [Header("Advanced Settings")]
 
         /// <summary>
+        /// Enable warmup inference after model initialization.
+        /// Reduces first inference latency by ~500-800ms.
+        /// </summary>
+        [Tooltip("Run dummy inference after initialization to reduce first call latency")]
+        public bool EnableWarmup = false;
+
+        /// <summary>
+        /// Number of warmup inference iterations.
+        /// ORT JIT cache stabilises in 1-2 runs; 2 provides a safety margin.
+        /// </summary>
+        [Tooltip("Number of warmup iterations (piper-plus default: 2)")]
+        [Range(1, 5)]
+        public int WarmupIterations = 2;
+
+        /// <summary>
         /// Timeout for operations in milliseconds
         /// </summary>
         [Tooltip("Operation timeout in milliseconds (0 = no timeout)")]
@@ -261,6 +276,13 @@ namespace uPiper.Core
                     PiperLogger.LogWarning("TargetRMSLevel ({0}dB) is too low, setting to {1}dB", TargetRMSLevel, MinRMSLevel);
                     TargetRMSLevel = MinRMSLevel;
                 }
+            }
+
+            // Warmup iterations validation
+            if (EnableWarmup && WarmupIterations < 1)
+            {
+                PiperLogger.LogWarning("WarmupIterations ({0}) is less than 1, setting to 1", WarmupIterations);
+                WarmupIterations = 1;
             }
 
             // GPU settings validation

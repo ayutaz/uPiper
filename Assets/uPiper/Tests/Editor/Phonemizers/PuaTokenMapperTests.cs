@@ -110,10 +110,37 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void FixedPuaMapping_TotalCount_Is88()
+        public void FixedPuaMapping_ContainsAllSwedishEntries()
         {
-            Assert.AreEqual(88, PuaTokenMapper.FixedPuaMapping.Count,
-                "FixedPuaMapping should contain exactly 88 entries");
+            var svTokens = new[]
+            {
+                "i\u02D0", "y\u02D0", "e\u02D0",
+                "\u025B\u02D0", "\u00F8\u02D0", "\u0251\u02D0",
+                "o\u02D0", "u\u02D0", "\u0289\u02D0"
+            };
+
+            foreach (var token in svTokens)
+            {
+                Assert.IsTrue(
+                    PuaTokenMapper.FixedPuaMapping.ContainsKey(token),
+                    $"FixedPuaMapping should contain Swedish token '{token}'");
+            }
+        }
+
+        [Test]
+        public void FixedPuaMapping_DoesNotContain0xE053()
+        {
+            // 0xE053 is a reserved gap in piper-plus (not assigned to any token)
+            var hasE053 = PuaTokenMapper.FixedPuaMapping.Values.Any(v => v == 0xE053);
+            Assert.IsFalse(hasE053,
+                "0xE053 should be a reserved gap (not assigned to any token)");
+        }
+
+        [Test]
+        public void FixedPuaMapping_TotalCount_Is96()
+        {
+            Assert.AreEqual(96, PuaTokenMapper.FixedPuaMapping.Count,
+                "FixedPuaMapping should contain exactly 96 entries (matching piper-plus pua.json)");
         }
 
         [Test]
@@ -201,8 +228,8 @@ namespace uPiper.Tests.Editor.Phonemizers
             var token = "_test_dynamic_maptoken_unique_001";
             var result = PuaTokenMapper.MapToken(token);
 
-            // Should be in the dynamic PUA range (>= 0xE059)
-            Assert.GreaterOrEqual((int)result, 0xE059,
+            // Should be in the dynamic PUA range (>= 0xE062)
+            Assert.GreaterOrEqual((int)result, 0xE062,
                 "Dynamically registered token should be in the dynamic PUA range");
 
             // Should be retrievable via Token2Char
@@ -313,6 +340,8 @@ namespace uPiper.Tests.Editor.Phonemizers
         [TestCase('\uE000', true)]
         [TestCase('\uE02A', true)]
         [TestCase('\uE058', true)]
+        [TestCase('\uE059', true)]    // SV PUA start
+        [TestCase('\uE061', true)]    // SV last entry
         public void IsFixedPua_InRange_ReturnsTrue(char ch, bool expected)
         {
             Assert.AreEqual(expected, PuaTokenMapper.IsFixedPua(ch),
@@ -320,7 +349,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [TestCase('\uDFFF', false)]
-        [TestCase('\uE059', false)]
+        [TestCase('\uE062', false)]   // first dynamic PUA
         [TestCase('\uE100', false)]
         [TestCase('a', false)]
         [TestCase('\u0000', false)]
@@ -340,10 +369,10 @@ namespace uPiper.Tests.Editor.Phonemizers
                 "0xDFFF (one below first) should NOT be in range");
 
             // Upper boundary
-            Assert.IsTrue(PuaTokenMapper.IsFixedPua('\uE058'),
-                "0xE058 (last fixed PUA) should be in range");
-            Assert.IsFalse(PuaTokenMapper.IsFixedPua('\uE059'),
-                "0xE059 (first dynamic PUA) should NOT be in range");
+            Assert.IsTrue(PuaTokenMapper.IsFixedPua('\uE061'),
+                "0xE061 (last fixed PUA) should be in range");
+            Assert.IsFalse(PuaTokenMapper.IsFixedPua('\uE062'),
+                "0xE062 (first dynamic PUA) should NOT be in range");
         }
 
         // ── Thread Safety ──────────────────────────────────────────────────
@@ -483,6 +512,21 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.AreEqual(0xE050, PuaTokenMapper.FixedPuaMapping["k\u031A"], "unreleased k -> 0xE050");
             Assert.AreEqual(0xE051, PuaTokenMapper.FixedPuaMapping["t\u031A"], "unreleased t -> 0xE051");
             Assert.AreEqual(0xE052, PuaTokenMapper.FixedPuaMapping["p\u031A"], "unreleased p -> 0xE052");
+        }
+
+        [Test]
+        public void VerifySwedishPuaValues()
+        {
+            // Long vowels
+            Assert.AreEqual(0xE059, PuaTokenMapper.FixedPuaMapping["i\u02D0"], "iː -> 0xE059");
+            Assert.AreEqual(0xE05A, PuaTokenMapper.FixedPuaMapping["y\u02D0"], "yː -> 0xE05A");
+            Assert.AreEqual(0xE05B, PuaTokenMapper.FixedPuaMapping["e\u02D0"], "eː -> 0xE05B");
+            Assert.AreEqual(0xE05C, PuaTokenMapper.FixedPuaMapping["\u025B\u02D0"], "ɛː -> 0xE05C");
+            Assert.AreEqual(0xE05D, PuaTokenMapper.FixedPuaMapping["\u00F8\u02D0"], "øː -> 0xE05D");
+            Assert.AreEqual(0xE05E, PuaTokenMapper.FixedPuaMapping["\u0251\u02D0"], "ɑː -> 0xE05E");
+            Assert.AreEqual(0xE05F, PuaTokenMapper.FixedPuaMapping["o\u02D0"], "oː -> 0xE05F");
+            Assert.AreEqual(0xE060, PuaTokenMapper.FixedPuaMapping["u\u02D0"], "uː -> 0xE060");
+            Assert.AreEqual(0xE061, PuaTokenMapper.FixedPuaMapping["\u0289\u02D0"], "ʉː -> 0xE061");
         }
     }
 }

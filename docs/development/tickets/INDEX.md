@@ -9,9 +9,9 @@
 
 | チケット | タイトル | 優先度 | ステータス | 見積もり |
 |---------|---------|--------|-----------|---------|
-| [MS1-1](MS1-1_pua-mapping-fix.md) | PUA マッピング差分修正 | P0 | 未着手 | 2-3h |
-| [MS2-1](MS2-1_warmup-implementation.md) | Warmup 実装 | P1 | 未着手 | 3-4h |
-| [MS2-2](MS2-2_arraypool-optimization.md) | ArrayPool メモリ最適化 | P1 | 未着手 | 1.5日 |
+| [MS1-1](MS1-1_pua-mapping-fix.md) | PUA マッピング差分修正 | P0 | 完了 | 2-3h |
+| [MS2-1](MS2-1_warmup-implementation.md) | Warmup 実装 | P1 | 完了 | 3-4h |
+| [MS2-2](MS2-2_arraypool-optimization.md) | ArrayPool メモリ最適化 | P1 | 完了 | 1.5日 |
 | [MS3-1](MS3-1_swedish-language-support.md) | スウェーデン語 (SV) 対応 | P2 | ブロック中 | 1.5人日 |
 | [MS3-2](MS3-2_phoneme-silence-processor.md) | 沈黙句分割 | P2 | 未着手 | 3人日 |
 
