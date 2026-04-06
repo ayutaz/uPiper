@@ -28,7 +28,7 @@ namespace uPiper.Core.AudioGeneration
             int[] prosodyA1,
             int[] prosodyA2,
             int[] prosodyA3,
-            Dictionary<string, float> phonemeSilence,
+            IReadOnlyDictionary<string, float> phonemeSilence,
             Dictionary<string, int> phonemeIdMap,
             int sampleRate,
             float lengthScale = 1.0f,
@@ -40,7 +40,7 @@ namespace uPiper.Core.AudioGeneration
         {
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
                 phonemeIds, prosodyA1, prosodyA2, prosodyA3,
-                phonemeSilence, phonemeIdMap, sampleRate);
+                (Dictionary<string, float>)phonemeSilence, phonemeIdMap, sampleRate);
 
             PiperLogger.LogInfo(
                 $"[SplitInferenceOrchestrator] Silence split: {phrases.Count} phrases from {phonemeIds.Length} phonemes");

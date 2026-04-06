@@ -319,6 +319,17 @@ namespace uPiper.Core
 
             PiperLogger.LogInfo("PiperConfig validated successfully");
         }
+
+        /// <summary>
+        /// このconfigをバリデーションし、不変スナップショットとして返す。
+        /// Validate()で値がクランプ・修正された後にスナップショットを取得する。
+        /// </summary>
+        /// <returns>バリデーション済みの不変設定オブジェクト</returns>
+        public ValidatedPiperConfig ToValidated()
+        {
+            Validate();
+            return new ValidatedPiperConfig(this);
+        }
     }
 
     /// <summary>
