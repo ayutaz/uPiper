@@ -57,7 +57,7 @@ namespace uPiper.Core
             DefaultLanguage = source.DefaultLanguage;
             AutoDetectLanguage = source.AutoDetectLanguage;
             SupportedLanguages = source.SupportedLanguages?.AsReadOnly()
-                ?? System.Array.Empty<string>();
+                ?? (IReadOnlyList<string>)System.Array.Empty<string>();
             MixedLanguageMode = source.MixedLanguageMode;
 
             MaxCacheSizeMB = source.MaxCacheSizeMB;

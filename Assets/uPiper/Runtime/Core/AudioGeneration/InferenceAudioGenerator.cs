@@ -437,7 +437,13 @@ namespace uPiper.Core.AudioGeneration
             var readableTensor = outputTensor.ReadbackAndClone();
             try
             {
-                return readableTensor.ToArray();
+                var audioLength = readableTensor.shape.length;
+                var audioData = new float[audioLength];
+                for (var i = 0; i < audioLength; i++)
+                {
+                    audioData[i] = readableTensor[i];
+                }
+                return audioData;
             }
             finally
             {
