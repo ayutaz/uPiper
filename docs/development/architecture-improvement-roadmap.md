@@ -2,7 +2,7 @@
 
 **作成日**: 2026-04-06
 **ベース**: MS1-MS3 設計レビュー結果
-**関連文書**: [piper-plus-v1.10.0-milestones.md](piper-plus-v1.10.0-milestones.md)
+**関連文書**: [piper-plus-v1.10.0-completed.md](piper-plus-v1.10.0-completed.md)
 
 ---
 
