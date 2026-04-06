@@ -81,18 +81,37 @@ namespace uPiper.Core.Phonemizers.Multilingual
         public IReadOnlyList<string> Languages => _languages;
 
         /// <summary>
+        /// Creates a MultilingualPhonemizer using an options object.
+        /// </summary>
+        /// <param name="options">Configuration options.</param>
+        public MultilingualPhonemizer(MultilingualPhonemizerOptions options)
+        {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            options.Validate();
+
+            _languages = options.Languages;
+            _languageSet = new HashSet<string>(options.Languages);
+            _defaultLatinLanguage = options.DefaultLatinLanguage ?? "en";
+            _detector = new UnicodeLanguageDetector(options.Languages, _defaultLatinLanguage);
+            _jaPhonemizer = options.JaPhonemizer;
+            _enEngine = options.EnEngine;
+#pragma warning disable CS0618
+            _enPhonemizer = options.EnPhonemizer;
+            _koPhonemizer = options.KoPhonemizer;
+#pragma warning restore CS0618
+            _esEngine = options.EsEngine;
+            _frEngine = options.FrEngine;
+            _ptEngine = options.PtEngine;
+            _zhEngine = options.ZhEngine;
+            _koG2PEngine = options.KoG2PEngine;
+        }
+
+        /// <summary>
         /// Creates a MultilingualPhonemizer for the specified language list.
         /// </summary>
-        /// <param name="languages">Languages to support (e.g., ["ja", "en"]).</param>
-        /// <param name="defaultLatinLanguage">Default language for Latin text (default: "en").</param>
-        /// <param name="jaPhonemizer">Optional pre-built Japanese phonemizer; one is created if null.</param>
-        /// <param name="enPhonemizer">Optional pre-built English phonemizer backend (legacy, for test stubs).</param>
-        /// <param name="esEngine">Optional pre-built Spanish G2P engine.</param>
-        /// <param name="frEngine">Optional pre-built French G2P engine.</param>
-        /// <param name="ptEngine">Optional pre-built Portuguese G2P engine.</param>
-        /// <param name="zhEngine">Optional pre-built Chinese G2P engine (DotNetG2P.Chinese).</param>
-        /// <param name="koPhonemizer">Optional pre-built Korean phonemizer backend (legacy, prefer koG2PEngine).</param>
-        /// <param name="koG2PEngine">Optional pre-built Korean G2P engine (DotNetG2P.Korean).</param>
+        [Obsolete("Use the constructor that takes MultilingualPhonemizerOptions instead. This constructor will be removed in v2.0.")]
         public MultilingualPhonemizer(
             IReadOnlyList<string> languages,
             string defaultLatinLanguage = "en",

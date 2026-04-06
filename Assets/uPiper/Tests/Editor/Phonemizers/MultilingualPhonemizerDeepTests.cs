@@ -10,6 +10,7 @@ using NUnit.Framework;
 using uPiper.Core.Phonemizers.Implementations;
 using uPiper.Core.Phonemizers.Multilingual;
 
+#pragma warning disable CS0618
 namespace uPiper.Tests.Editor.Phonemizers
 {
     /// <summary>

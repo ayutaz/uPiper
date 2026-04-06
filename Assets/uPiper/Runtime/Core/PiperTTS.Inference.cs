@@ -74,10 +74,13 @@ namespace uPiper.Core
                 {
                     DisposeMultilingualPhonemizer();
                     var supportedLanguages = _config.SupportedLanguages ?? new System.Collections.Generic.List<string> { "ja", "en" };
-                    _multilingualPhonemizer = new Phonemizers.Multilingual.MultilingualPhonemizer(
-                        supportedLanguages,
-                        _config.DefaultLanguage ?? "en",
-                        _phonemizer as Phonemizers.Implementations.DotNetG2PPhonemizer);
+                    var phonemizerOptions = new Phonemizers.Multilingual.MultilingualPhonemizerOptions
+                    {
+                        Languages = supportedLanguages,
+                        DefaultLatinLanguage = _config.DefaultLanguage ?? "en",
+                        JaPhonemizer = _phonemizer as Phonemizers.Implementations.DotNetG2PPhonemizer
+                    };
+                    _multilingualPhonemizer = new Phonemizers.Multilingual.MultilingualPhonemizer(phonemizerOptions);
                     await _multilingualPhonemizer.InitializeAsync(cancellationToken);
                 }
 
