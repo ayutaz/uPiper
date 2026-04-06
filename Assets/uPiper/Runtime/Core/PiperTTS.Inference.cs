@@ -55,7 +55,8 @@ namespace uPiper.Core
                 _phonemeEncoder = new PhonemeEncoder(voiceConfig);
                 _audioClipBuilder = new AudioClipBuilder();
                 _orchestrator = new TTSSynthesisOrchestrator(
-                    _inferenceGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder);
+                    _inferenceGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                    _validatedConfig, voiceConfig);
                 _currentModelAsset = modelAsset;
 
                 // Inferenceジェネレーターを初期化
@@ -155,13 +156,12 @@ namespace uPiper.Core
                 _onProcessingProgress?.Invoke(0.5f);
 
                 // エンコード〜AudioClip生成を一括
-                var audioClip = await _orchestrator.SynthesizeAsync(
+                var request = new AudioGeneration.SynthesisRequest(
                     phonemeResult.Phonemes,
-                    null, null, null, // prosodyなし
+                    null, null, null,
                     lengthScale, noiseScale, noiseW,
-                    0, 0,
-                    _validatedConfig, _currentVoiceConfig,
-                    cancellationToken);
+                    0, 0);
+                var audioClip = await _orchestrator.SynthesizeAsync(request, cancellationToken);
 
                 _onProcessingProgress?.Invoke(1.0f);
                 PiperLogger.LogInfo($"Successfully generated audio for text: \"{text}\" ({audioClip.samples} samples)");
@@ -254,13 +254,12 @@ namespace uPiper.Core
                 _onProcessingProgress?.Invoke(0.5f);
 
                 // エンコード〜AudioClip生成を一括
-                var audioClip = await _orchestrator.SynthesizeAsync(
+                var request = new AudioGeneration.SynthesisRequest(
                     phonemes,
                     prosodyA1, prosodyA2, prosodyA3,
                     lengthScale, noiseScale, noiseW,
-                    speakerId, resolvedLanguageId,
-                    _validatedConfig, _currentVoiceConfig,
-                    cancellationToken);
+                    speakerId, resolvedLanguageId);
+                var audioClip = await _orchestrator.SynthesizeAsync(request, cancellationToken);
 
                 _onProcessingProgress?.Invoke(1.0f);
                 PiperLogger.LogInfo($"[MultilingualTTS] Generated audio for: \"{text}\" (lid={resolvedLanguageId})");

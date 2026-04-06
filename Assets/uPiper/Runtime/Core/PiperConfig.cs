@@ -201,7 +201,9 @@ namespace uPiper.Core
         }
 
         /// <summary>
-        /// Validate configuration
+        /// 設定値を検証し、範囲外の値をクランプ・修正する。
+        /// <b>注意: このメソッドはフィールドを直接変更する（副作用あり）。</b>
+        /// WorkerThreads=0 は自動検出値に、DefaultLanguage は小文字正規化される等。
         /// </summary>
         public void Validate()
         {
@@ -322,6 +324,7 @@ namespace uPiper.Core
 
         /// <summary>
         /// このconfigをバリデーションし、不変スナップショットとして返す。
+        /// <b>注意: 内部で Validate() を呼ぶため、このインスタンスのフィールドが変更される。</b>
         /// Validate()で値がクランプ・修正された後にスナップショットを取得する。
         /// </summary>
         /// <returns>バリデーション済みの不変設定オブジェクト</returns>

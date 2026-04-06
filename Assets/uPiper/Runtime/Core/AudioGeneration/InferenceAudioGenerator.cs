@@ -52,6 +52,7 @@ namespace uPiper.Core.AudioGeneration
         private bool _supportsProsody;
         private bool _supportsMultiSpeaker;
         private bool _supportsLanguageId;
+        private string _cachedOutputName;
 
         /// <inheritdoc/>
         public bool IsInitialized => _isInitialized;
@@ -169,6 +170,9 @@ namespace uPiper.Core.AudioGeneration
                             PiperLogger.LogInfo($"  Output[{i}]: name='{output.name}'");
                         }
 
+                        // Cache the output tensor name for use during inference
+                        _cachedOutputName = _model.outputs[0].name;
+
                         // Check model capability inputs
                         _supportsProsody = _model.inputs.Any(input => input.name == "prosody_features");
                         _supportsMultiSpeaker = _model.inputs.Any(input => input.name == "sid");
@@ -245,6 +249,10 @@ namespace uPiper.Core.AudioGeneration
 
             return await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
             {
+                // lock protects against Dispose() being called from a background thread
+                // while inference is in progress on the main thread.
+                // MainThreadDispatcher serialises callbacks, so this lock is only needed
+                // for Generate-vs-Dispose coordination across threads.
                 lock (_lockObject)
                 {
                     return ExecuteInference(
@@ -438,24 +446,6 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// Create prosody tensor from A1/A2/A3 arrays
-        /// </summary>
-        private Tensor<int> CreateProsodyTensor(int sequenceLength, int[] prosodyA1, int[] prosodyA2, int[] prosodyA3)
-        {
-            // Shape: (1, sequence_length, 3)
-            // Note: ONNX model expects Int (int64 in Python, mapped to Int in Sentis)
-            var prosodyData = new int[sequenceLength * 3];
-            for (var i = 0; i < sequenceLength; i++)
-            {
-                prosodyData[i * 3 + 0] = prosodyA1 != null && i < prosodyA1.Length ? prosodyA1[i] : 0;
-                prosodyData[i * 3 + 1] = prosodyA2 != null && i < prosodyA2.Length ? prosodyA2[i] : 0;
-                prosodyData[i * 3 + 2] = prosodyA3 != null && i < prosodyA3.Length ? prosodyA3[i] : 0;
-            }
-
-            return new Tensor<int>(new TensorShape(1, sequenceLength, 3), prosodyData);
-        }
-
-        /// <summary>
         /// Create prosody tensor using ArrayPool for reduced GC pressure.
         /// The rented array must be returned after the tensor is disposed.
         /// </summary>
@@ -464,58 +454,30 @@ namespace uPiper.Core.AudioGeneration
             out int[] rentedArray)
         {
             var prosodySize = sequenceLength * 3;
-
-            int[] prosodyData;
-            if (prosodySize > 64)
-            {
-                rentedArray = ArrayPool<int>.Shared.Rent(prosodySize);
-                Array.Clear(rentedArray, 0, prosodySize);
-                prosodyData = rentedArray;
-            }
-            else
-            {
-                rentedArray = null;
-                prosodyData = new int[prosodySize];
-            }
+            rentedArray = ArrayPool<int>.Shared.Rent(prosodySize);
+            Array.Clear(rentedArray, 0, prosodySize);
 
             for (var i = 0; i < sequenceLength; i++)
             {
-                prosodyData[i * 3 + 0] = prosodyA1 != null && i < prosodyA1.Length ? prosodyA1[i] : 0;
-                prosodyData[i * 3 + 1] = prosodyA2 != null && i < prosodyA2.Length ? prosodyA2[i] : 0;
-                prosodyData[i * 3 + 2] = prosodyA3 != null && i < prosodyA3.Length ? prosodyA3[i] : 0;
+                rentedArray[i * 3 + 0] = prosodyA1 != null && i < prosodyA1.Length ? prosodyA1[i] : 0;
+                rentedArray[i * 3 + 1] = prosodyA2 != null && i < prosodyA2.Length ? prosodyA2[i] : 0;
+                rentedArray[i * 3 + 2] = prosodyA3 != null && i < prosodyA3.Length ? prosodyA3[i] : 0;
             }
 
-            return new Tensor<int>(new TensorShape(1, sequenceLength, 3), prosodyData);
+            return new Tensor<int>(new TensorShape(1, sequenceLength, 3), rentedArray);
         }
 
         /// <summary>
-        /// Get output tensor from worker
+        /// Get output tensor from worker using the cached output name.
         /// </summary>
         private Tensor<float> GetOutputTensor()
         {
-            Tensor<float> outputTensor = null;
+            if (string.IsNullOrEmpty(_cachedOutputName))
+                throw new InvalidOperationException("Output name not cached. Ensure InitializeAsync completed.");
 
-            if (_model.outputs.Count > 0)
-            {
-                var outputName = _model.outputs[0].name;
-                try
-                {
-                    outputTensor = _worker.PeekOutput(outputName) as Tensor<float>;
-                }
-                catch
-                {
-                    outputTensor = _worker.PeekOutput() as Tensor<float>;
-                }
-            }
-            else
-            {
-                outputTensor = _worker.PeekOutput() as Tensor<float>;
-            }
-
+            var outputTensor = _worker.PeekOutput(_cachedOutputName) as Tensor<float>;
             if (outputTensor == null)
-            {
-                throw new InvalidOperationException("Failed to get output from model");
-            }
+                throw new InvalidOperationException($"Failed to get output '{_cachedOutputName}' from model");
 
             return outputTensor;
         }
@@ -602,6 +564,7 @@ namespace uPiper.Core.AudioGeneration
                 _worker.Dispose();
                 _worker = null;
                 _isInitialized = false;
+                _cachedOutputName = null;
                 PiperLogger.LogDebug("InferenceAudioGenerator worker disposed");
             }
         }

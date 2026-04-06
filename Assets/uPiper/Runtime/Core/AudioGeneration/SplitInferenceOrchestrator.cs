@@ -11,7 +11,7 @@ namespace uPiper.Core.AudioGeneration
     /// 音素列を沈黙トークンの位置で分割し、句ごとに独立推論を行い、
     /// 句間にゼロサンプルの無音区間を挿入して結合する。
     /// </summary>
-    public class SplitInferenceOrchestrator
+    internal class SplitInferenceOrchestrator
     {
         private readonly IInferenceAudioGenerator _generator;
 
@@ -29,7 +29,7 @@ namespace uPiper.Core.AudioGeneration
             int[] prosodyA2,
             int[] prosodyA3,
             IReadOnlyDictionary<string, float> phonemeSilence,
-            Dictionary<string, int> phonemeIdMap,
+            IReadOnlyDictionary<string, int> phonemeIdMap,
             int sampleRate,
             float lengthScale = 1.0f,
             float noiseScale = 0.667f,
@@ -40,7 +40,7 @@ namespace uPiper.Core.AudioGeneration
         {
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
                 phonemeIds, prosodyA1, prosodyA2, prosodyA3,
-                (Dictionary<string, float>)phonemeSilence, phonemeIdMap, sampleRate);
+                phonemeSilence, phonemeIdMap, sampleRate);
 
             PiperLogger.LogInfo(
                 $"[SplitInferenceOrchestrator] Silence split: {phrases.Count} phrases from {phonemeIds.Length} phonemes");

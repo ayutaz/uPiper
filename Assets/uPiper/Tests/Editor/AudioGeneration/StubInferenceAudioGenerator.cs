@@ -34,6 +34,21 @@ namespace uPiper.Tests.Editor.AudioGeneration
         /// <summary>最後の GenerateAudioAsync 呼び出し時の prosodyA1</summary>
         public int[] LastProsodyA1 { get; private set; }
 
+        /// <summary>最後の GenerateAudioAsync 呼び出し時の lengthScale</summary>
+        public float LastLengthScale { get; private set; }
+
+        /// <summary>最後の GenerateAudioAsync 呼び出し時の noiseScale</summary>
+        public float LastNoiseScale { get; private set; }
+
+        /// <summary>最後の GenerateAudioAsync 呼び出し時の noiseW</summary>
+        public float LastNoiseW { get; private set; }
+
+        /// <summary>最後の GenerateAudioAsync 呼び出し時の speakerId</summary>
+        public int LastSpeakerId { get; private set; }
+
+        /// <summary>最後の GenerateAudioAsync 呼び出し時の languageId</summary>
+        public int LastLanguageId { get; private set; }
+
         public Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config,
             CancellationToken cancellationToken = default)
         {
@@ -58,6 +73,11 @@ namespace uPiper.Tests.Editor.AudioGeneration
             GenerateCallCount++;
             LastPhonemeIds = phonemeIds;
             LastProsodyA1 = prosodyA1;
+            LastLengthScale = lengthScale;
+            LastNoiseScale = noiseScale;
+            LastNoiseW = noiseW;
+            LastSpeakerId = speakerId;
+            LastLanguageId = languageId;
 
             var data = AudioDataToReturn ?? CreateDefaultAudioData();
             return Task.FromResult(data);

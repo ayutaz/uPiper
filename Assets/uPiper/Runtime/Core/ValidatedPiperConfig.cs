@@ -70,7 +70,7 @@ namespace uPiper.Core
             EnableWarmup = source.EnableWarmup;
             WarmupIterations = source.WarmupIterations;
             AllowFallbackToCPU = source.AllowFallbackToCPU;
-            GPUSettings = source.GPUSettings;
+            GPUSettings = new GPUInferenceSettings { MaxMemoryMB = source.GPUSettings.MaxMemoryMB };
 
             SampleRate = source.SampleRate;
             NormalizeAudio = source.NormalizeAudio;

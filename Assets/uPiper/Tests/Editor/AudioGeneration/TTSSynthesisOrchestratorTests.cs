@@ -74,18 +74,18 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public async Task SynthesizeAsync_NoProsody_ReturnsAudioClip()
         {
             // Arrange
-            var orchestrator = new TTSSynthesisOrchestrator(
-                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder);
-            var phonemes = new[] { "k", "o", "N", "n", "i", "t", "i", "w", "a" };
             var config = CreateValidatedConfig(enableSilence: false);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            var request = new SynthesisRequest(
+                new[] { "k", "o", "N", "n", "i", "t", "i", "w", "a" },
+                null, null, null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
 
             // Act
-            var clip = await orchestrator.SynthesizeAsync(
-                phonemes,
-                prosodyA1: null, prosodyA2: null, prosodyA3: null,
-                lengthScale: 1.0f, noiseScale: 0.667f, noiseW: 0.8f,
-                speakerId: 0, languageId: 0,
-                config, _voiceConfig);
+            var clip = await orchestrator.SynthesizeAsync(request);
 
             // Assert
             Assert.IsNotNull(clip, "AudioClip を返すこと");
@@ -102,21 +102,20 @@ namespace uPiper.Tests.Editor.AudioGeneration
         {
             // Arrange
             _stubGenerator.SupportsProsody = true;
-            var orchestrator = new TTSSynthesisOrchestrator(
-                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder);
-            var phonemes = new[] { "k", "o", "N" };
-            var prosodyA1 = new[] { 0, 1, 2 };
-            var prosodyA2 = new[] { 1, 1, 1 };
-            var prosodyA3 = new[] { 0, 0, 0 };
             var config = CreateValidatedConfig(enableSilence: false);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            var request = new SynthesisRequest(
+                new[] { "k", "o", "N" },
+                new[] { 0, 1, 2 },
+                new[] { 1, 1, 1 },
+                new[] { 0, 0, 0 },
+                1.0f, 0.667f, 0.8f,
+                0, 0);
 
             // Act
-            var clip = await orchestrator.SynthesizeAsync(
-                phonemes,
-                prosodyA1, prosodyA2, prosodyA3,
-                lengthScale: 1.0f, noiseScale: 0.667f, noiseW: 0.8f,
-                speakerId: 0, languageId: 0,
-                config, _voiceConfig);
+            var clip = await orchestrator.SynthesizeAsync(request);
 
             // Assert
             Assert.IsNotNull(clip, "Prosody付きでも AudioClip を返すこと");
@@ -132,19 +131,19 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public async Task SynthesizeAsync_WithSilenceSplit_UsesOrchestrator()
         {
             // Arrange: 沈黙トークン "_" に0.5秒の無音を設定
-            var orchestrator = new TTSSynthesisOrchestrator(
-                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder);
-            // "_" を含む音素列（"_" がPAD/沈黙トークンとして句分割のトリガーになる）
-            var phonemes = new[] { "a", "_", "k", "o" };
             var config = CreateValidatedConfig(enableSilence: true, silenceSpec: "_ 0.5");
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            // "_" を含む音素列（"_" がPAD/沈黙トークンとして句分割のトリガーになる）
+            var request = new SynthesisRequest(
+                new[] { "a", "_", "k", "o" },
+                null, null, null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
 
             // Act
-            var clip = await orchestrator.SynthesizeAsync(
-                phonemes,
-                prosodyA1: null, prosodyA2: null, prosodyA3: null,
-                lengthScale: 1.0f, noiseScale: 0.667f, noiseW: 0.8f,
-                speakerId: 0, languageId: 0,
-                config, _voiceConfig);
+            var clip = await orchestrator.SynthesizeAsync(request);
 
             // Assert
             Assert.IsNotNull(clip, "句分割パスでも AudioClip を返すこと");
@@ -159,36 +158,38 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public void SynthesizeAsync_NullPhonemes_ThrowsArgumentException()
         {
             // Arrange
-            var orchestrator = new TTSSynthesisOrchestrator(
-                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder);
             var config = CreateValidatedConfig(enableSilence: false);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            var request = new SynthesisRequest(
+                null,
+                null, null, null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
 
             // Act & Assert
             Assert.ThrowsAsync<ArgumentException>(async () =>
-                await orchestrator.SynthesizeAsync(
-                    null,
-                    prosodyA1: null, prosodyA2: null, prosodyA3: null,
-                    lengthScale: 1.0f, noiseScale: 0.667f, noiseW: 0.8f,
-                    speakerId: 0, languageId: 0,
-                    config, _voiceConfig));
+                await orchestrator.SynthesizeAsync(request));
         }
 
         [Test]
         public void SynthesizeAsync_EmptyPhonemes_ThrowsArgumentException()
         {
             // Arrange
-            var orchestrator = new TTSSynthesisOrchestrator(
-                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder);
             var config = CreateValidatedConfig(enableSilence: false);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            var request = new SynthesisRequest(
+                Array.Empty<string>(),
+                null, null, null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
 
             // Act & Assert
             Assert.ThrowsAsync<ArgumentException>(async () =>
-                await orchestrator.SynthesizeAsync(
-                    Array.Empty<string>(),
-                    prosodyA1: null, prosodyA2: null, prosodyA3: null,
-                    lengthScale: 1.0f, noiseScale: 0.667f, noiseW: 0.8f,
-                    speakerId: 0, languageId: 0,
-                    config, _voiceConfig));
+                await orchestrator.SynthesizeAsync(request));
         }
 
         // ── コンストラクタ null チェック ──────────────────────────
@@ -197,28 +198,111 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public void Constructor_NullGenerator_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() =>
-                new TTSSynthesisOrchestrator(null, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder));
+                new TTSSynthesisOrchestrator(null, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                    null, _voiceConfig));
         }
 
         [Test]
         public void Constructor_NullSplitOrchestrator_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() =>
-                new TTSSynthesisOrchestrator(_stubGenerator, null, _phonemeEncoder, _audioClipBuilder));
+                new TTSSynthesisOrchestrator(_stubGenerator, null, _phonemeEncoder, _audioClipBuilder,
+                    null, _voiceConfig));
         }
 
         [Test]
         public void Constructor_NullPhonemeEncoder_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() =>
-                new TTSSynthesisOrchestrator(_stubGenerator, _splitOrchestrator, null, _audioClipBuilder));
+                new TTSSynthesisOrchestrator(_stubGenerator, _splitOrchestrator, null, _audioClipBuilder,
+                    null, _voiceConfig));
         }
 
         [Test]
         public void Constructor_NullAudioClipBuilder_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() =>
-                new TTSSynthesisOrchestrator(_stubGenerator, _splitOrchestrator, _phonemeEncoder, null));
+                new TTSSynthesisOrchestrator(_stubGenerator, _splitOrchestrator, _phonemeEncoder, null,
+                    null, _voiceConfig));
+        }
+
+        // ── パラメータ伝播 ──────────────────────────────────────────
+
+        [Test]
+        public async Task SynthesizeAsync_CustomParams_PropagatedToGenerator()
+        {
+            // Arrange: 非デフォルトパラメータを設定
+            var config = CreateValidatedConfig(enableSilence: false);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            var request = new SynthesisRequest(
+                new[] { "a", "i" },
+                null, null, null,
+                2.0f, 0.5f, 0.9f,  // non-default values
+                3, 1);
+
+            // Act
+            await orchestrator.SynthesizeAsync(request);
+
+            // Assert
+            Assert.AreEqual(2.0f, _stubGenerator.LastLengthScale, "lengthScale が伝播されること");
+            Assert.AreEqual(0.5f, _stubGenerator.LastNoiseScale, "noiseScale が伝播されること");
+            Assert.AreEqual(0.9f, _stubGenerator.LastNoiseW, "noiseW が伝播されること");
+            Assert.AreEqual(3, _stubGenerator.LastSpeakerId, "speakerId が伝播されること");
+            Assert.AreEqual(1, _stubGenerator.LastLanguageId, "languageId が伝播されること");
+        }
+
+        // ── エンコード結果検証 ──────────────────────────────────────
+
+        [Test]
+        public async Task SynthesizeAsync_NoProsody_EncodesPhonemeIdsCorrectly()
+        {
+            // Arrange
+            var config = CreateValidatedConfig(enableSilence: false);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            // PhonemeIdMap: a=3, i=4 + BOS(1) + EOS(2) → expected: [1, 3, 4, 2]
+            var request = new SynthesisRequest(
+                new[] { "a", "i" },
+                null, null, null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
+
+            // Act
+            await orchestrator.SynthesizeAsync(request);
+
+            // Assert: PhonemeEncoder adds BOS(^=1) and EOS($=2)
+            var ids = _stubGenerator.LastPhonemeIds;
+            Assert.IsNotNull(ids);
+            Assert.AreEqual(1, ids[0], "先頭が BOS(1) であること");
+            Assert.AreEqual(3, ids[1], "a が ID=3 にエンコードされること");
+            Assert.AreEqual(4, ids[2], "i が ID=4 にエンコードされること");
+            Assert.AreEqual(2, ids[^1], "末尾が EOS(2) であること");
+        }
+
+        // ── config=null ハンドリング ─────────────────────────────────
+
+        [Test]
+        public async Task SynthesizeAsync_NullConfig_UsesDirectGeneration()
+        {
+            // Arrange: config=null の場合は句分割なしで直接生成
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                null, _voiceConfig);
+            var request = new SynthesisRequest(
+                new[] { "a" },
+                null, null, null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
+
+            // Act
+            var clip = await orchestrator.SynthesizeAsync(request);
+
+            // Assert
+            Assert.IsNotNull(clip);
+            Assert.AreEqual(1, _stubGenerator.GenerateCallCount);
         }
 
         // ── ヘルパー ─────────────────────────────────────────────

@@ -145,6 +145,35 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 "空入力に対して空のオーディオデータが返ること");
         }
 
+        // ── Prosody付き句分割 ─────────────────────────────────────
+
+        [Test]
+        public async Task GenerateWithSilenceSplitAsync_WithProsody_PropagatesProsodyToGenerator()
+        {
+            // Arrange: phonemeIds に沈黙トークン "_" (ID=0) を含め、prosody配列も設定
+            var phonemeIds = new[] { 1, 3, 0, 8, 7, 2 };  // ^, a, _, k, o, $
+            var prosodyA1 = new[] { 0, 1, 0, 2, 3, 0 };
+            var prosodyA2 = new[] { 1, 1, 0, 2, 2, 0 };
+            var prosodyA3 = new[] { 0, 0, 0, 1, 1, 0 };
+            var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+
+            // Act
+            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds,
+                prosodyA1, prosodyA2, prosodyA3,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050);
+
+            // Assert
+            Assert.IsNotNull(result);
+            Assert.AreEqual(2, _stubGenerator.GenerateCallCount,
+                "Prosody付きでも2句に分割されること");
+            // 最後の呼び出しの prosodyA1 が non-null であることを確認
+            Assert.IsNotNull(_stubGenerator.LastProsodyA1,
+                "Prosody配列が下流に伝播されること");
+        }
+
         // ── コンストラクタ null チェック ──────────────────────────
 
         [Test]
