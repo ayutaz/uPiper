@@ -114,12 +114,6 @@ namespace uPiper.Core
         [Tooltip("Phoneme silence specification: '<phoneme> <seconds>' (comma-separated)")]
         public string PhonemeSilenceSpec = "_ 0.5";
 
-        /// <summary>
-        /// パース済みの沈黙トークンマップ（Validate後に利用可能）
-        /// </summary>
-        [NonSerialized]
-        public Dictionary<string, float> ParsedPhonemeSilence;
-
         [Header("Audio Settings")]
 
         /// <summary>
@@ -307,21 +301,17 @@ namespace uPiper.Core
                 WarmupIterations = 1;
             }
 
-            // Phoneme silence validation
+            // Phoneme silence validation (parse only for validation, discard result)
             if (EnablePhonemeSilence)
             {
                 try
                 {
-                    ParsedPhonemeSilence = AudioGeneration.PhonemeSilenceProcessor.Parse(PhonemeSilenceSpec);
+                    AudioGeneration.PhonemeSilenceProcessor.Parse(PhonemeSilenceSpec);
                 }
                 catch (ArgumentException ex)
                 {
                     throw new PiperException($"Invalid PhonemeSilenceSpec: {ex.Message}", ex);
                 }
-            }
-            else
-            {
-                ParsedPhonemeSilence = null;
             }
 
             // GPU settings validation

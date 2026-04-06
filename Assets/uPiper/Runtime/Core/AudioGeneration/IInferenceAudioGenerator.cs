@@ -22,6 +22,16 @@ namespace uPiper.Core.AudioGeneration
         public Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// PiperConfig指定で音声生成モデルを初期化する
+        /// </summary>
+        /// <param name="modelAsset">ONNXモデルアセット</param>
+        /// <param name="config">音声設定</param>
+        /// <param name="piperConfig">Piper全体設定（バックエンド選択等）</param>
+        /// <param name="cancellationToken">キャンセルトークン</param>
+        /// <returns>初期化タスク</returns>
+        public Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config, PiperConfig piperConfig, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// 音素から音声を生成する
         /// </summary>
         /// <param name="phonemeIds">音素ID配列</param>

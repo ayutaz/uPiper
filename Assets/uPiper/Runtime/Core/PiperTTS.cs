@@ -21,6 +21,7 @@ namespace uPiper.Core
         #region Fields
 
         private readonly PiperConfig _config;
+        private Dictionary<string, float> _parsedPhonemeSilence;
         private readonly Dictionary<string, PiperVoiceConfig> _voices;
         private string _currentVoiceId;
         private bool _isInitialized;
@@ -265,6 +266,12 @@ namespace uPiper.Core
 
             // Validate configuration on construction
             _config.Validate();
+
+            // Parse phoneme silence spec after validation
+            if (_config.EnablePhonemeSilence)
+            {
+                _parsedPhonemeSilence = PhonemeSilenceProcessor.Parse(_config.PhonemeSilenceSpec);
+            }
 
             PiperLogger.LogInfo("PiperTTS instance created with config: SampleRate={0}Hz, Language={1}",
                 _config.SampleRate, _config.DefaultLanguage);

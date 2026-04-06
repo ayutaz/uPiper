@@ -294,34 +294,25 @@ namespace uPiper.Tests.Runtime.Core
         // ================================================================
 
         [Test]
-        public void Validate_EnablePhonemeSilence_ValidSpec_ParsesCorrectly()
+        public void Validate_EnablePhonemeSilence_ValidSpec_DoesNotThrow()
         {
             var config = new PiperConfig
             {
                 EnablePhonemeSilence = true,
                 PhonemeSilenceSpec = "_ 0.5"
             };
-            config.Validate();
-
-            Assert.IsNotNull(config.ParsedPhonemeSilence);
-            Assert.AreEqual(1, config.ParsedPhonemeSilence.Count);
-            Assert.AreEqual(0.5f, config.ParsedPhonemeSilence["_"], 0.001f);
+            Assert.DoesNotThrow(() => config.Validate());
         }
 
         [Test]
-        public void Validate_EnablePhonemeSilence_MultipleEntries_ParsesAll()
+        public void Validate_EnablePhonemeSilence_MultipleEntries_DoesNotThrow()
         {
             var config = new PiperConfig
             {
                 EnablePhonemeSilence = true,
                 PhonemeSilenceSpec = "_ 0.5,# 0.3"
             };
-            config.Validate();
-
-            Assert.IsNotNull(config.ParsedPhonemeSilence);
-            Assert.AreEqual(2, config.ParsedPhonemeSilence.Count);
-            Assert.AreEqual(0.5f, config.ParsedPhonemeSilence["_"], 0.001f);
-            Assert.AreEqual(0.3f, config.ParsedPhonemeSilence["#"], 0.001f);
+            Assert.DoesNotThrow(() => config.Validate());
         }
 
         [Test]
@@ -347,16 +338,14 @@ namespace uPiper.Tests.Runtime.Core
         }
 
         [Test]
-        public void Validate_DisablePhonemeSilence_ParsedIsNull()
+        public void Validate_DisablePhonemeSilence_DoesNotThrow()
         {
             var config = new PiperConfig
             {
                 EnablePhonemeSilence = false,
                 PhonemeSilenceSpec = "_ 0.5"
             };
-            config.Validate();
-
-            Assert.IsNull(config.ParsedPhonemeSilence);
+            Assert.DoesNotThrow(() => config.Validate());
         }
 
         // ================================================================

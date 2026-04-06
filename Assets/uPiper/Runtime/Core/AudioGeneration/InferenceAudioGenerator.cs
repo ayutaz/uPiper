@@ -80,9 +80,7 @@ namespace uPiper.Core.AudioGeneration
             await InitializeAsync(modelAsset, config, PiperConfig.CreateDefault(), cancellationToken);
         }
 
-        /// <summary>
-        /// Initialize with PiperConfig for backend selection
-        /// </summary>
+        /// <inheritdoc/>
         public async Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig voiceConfig, PiperConfig piperConfig, CancellationToken cancellationToken = default)
         {
             PiperLogger.LogDebug("[InferenceAudioGenerator] InitializeAsync started");
@@ -484,7 +482,7 @@ namespace uPiper.Core.AudioGeneration
 
                 // GPUからCPUにデータを読み戻す
                 readableTensor = outputTensor.ReadbackAndClone();
-                var audioData = ExtractAudioData(readableTensor);
+                var audioData = readableTensor.ToArray();
 
                 PiperLogger.LogInfo($"[InferenceAudioGenerator] Generated {audioData.Length} samples{(hasAnyProsodyInput ? " with prosody" : "")}");
 
@@ -592,22 +590,6 @@ namespace uPiper.Core.AudioGeneration
             }
 
             return outputTensor;
-        }
-
-        /// <summary>
-        /// Extract audio data from tensor
-        /// </summary>
-        private float[] ExtractAudioData(Tensor<float> tensor)
-        {
-            var audioLength = tensor.shape.length;
-            var audioData = new float[audioLength];
-
-            for (var i = 0; i < audioLength; i++)
-            {
-                audioData[i] = tensor[i];
-            }
-
-            return audioData;
         }
 
         /// <inheritdoc/>
