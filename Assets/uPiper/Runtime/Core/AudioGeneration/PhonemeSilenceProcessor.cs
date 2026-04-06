@@ -142,6 +142,13 @@ namespace uPiper.Core.AudioGeneration
                         nameof(specification));
                 }
 
+                if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0f)
+                {
+                    throw new ArgumentException(
+                        $"Seconds value '{secondsStr}' in entry: '{entry}' must be a finite, non-negative number.",
+                        nameof(specification));
+                }
+
                 result[phoneme] = seconds;
             }
 

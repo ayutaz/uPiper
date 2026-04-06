@@ -243,17 +243,17 @@ if (_ownsSv) _svEngine?.Dispose();
 **対応方針**: 完全な自動検出は困難であるため、以下の2段階アプローチを採用する。
 
 **(a) 簡易ヒューリスティック検出** (最小限の変更):
-- `a` (U+00E5) が含まれるセグメントは SV と判定する
+- `å` (U+00E5) が含まれるセグメントは SV と判定する
 - `_hasSv` フラグをコンストラクタで追加 (行19、`_hasKo` の後)
 - `DetectChar` (行165-207) で Latin 判定の前にスウェーデン語固有文字チェックを挿入:
 
 ```csharp
-// Priority 6a: Swedish-specific characters (a U+00E5, A U+00C5)
+// Priority 6a: Swedish-specific characters (å U+00E5, Å U+00C5)
 if (_hasSv && (ch == '\u00E5' || ch == '\u00C5'))
     return "sv";
 ```
 
-> `a` (U+00E4) と `o` (U+00F6) は他のラテン文字言語 (特にドイツ語) でも使われるため、判定文字には含めない。`a` は uPiper の対応言語セット内ではスウェーデン語の強い指標となる。
+> `ä` (U+00E4) と `ö` (U+00F6) は他のラテン文字言語 (特にドイツ語) でも使われるため、判定文字には含めない。`å` は uPiper の対応言語セット内ではスウェーデン語の強い指標となる。
 
 **(b) defaultLatinLanguage による明示指定** (既存機構の活用):
 - ユーザーが `defaultLatinLanguage = "sv"` を指定した場合、ラテン文字全般がスウェーデン語として処理される
@@ -296,9 +296,9 @@ private static readonly string[] SupportedLanguages = { "ja", "en", "zh", "es", 
     "Fri inmatning",
     "Hej",
     "God morgon",
-    "Tack sa mycket",
-    "Hur mar du idag?",
-    "Valkommen till rostsyntes"
+    "Tack så mycket",
+    "Hur mår du idag?",
+    "Välkommen till röstsyntes"
 }
 ```
 
@@ -391,7 +391,7 @@ private static readonly string[] SupportedLanguages = { "ja", "en", "zh", "es", 
 
 | テストケース | 内容 | 検証ポイント |
 |------------|------|------------|
-| SV テキスト -> AudioClip 生成 | `"Hej, hur mar du?"` で音声生成 | 全パイプラインの疎通 |
+| SV テキスト -> AudioClip 生成 | `"Hej, hur mår du?"` で音声生成 | 全パイプラインの疎通 |
 | SV Prosody 値の伝搬 | Prosody対応モデルで A1/A2/A3 がゼロでないことを確認 | Prosody パイプライン |
 | JA + SV 混在テキスト | `"こんにちは Hej"` で音声生成 | 多言語セグメント化 + 推論 |
 | デモUI での SV 選択 | ドロップダウンから SV を選択し音声生成 | UI 統合 |
