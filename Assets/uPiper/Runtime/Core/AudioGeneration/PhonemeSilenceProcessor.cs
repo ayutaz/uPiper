@@ -107,11 +107,15 @@ namespace uPiper.Core.AudioGeneration
             var result = new Dictionary<string, float>();
 
             // Split on comma for multi-phoneme specifications.
-            string[] entries = specification.Split(',',
-                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            // Note: StringSplitOptions.TrimEntries requires .NET 5+; not available in all Unity versions.
+            var rawEntries = specification.Split(',', StringSplitOptions.RemoveEmptyEntries);
 
-            foreach (var entry in entries)
+            foreach (var rawEntry in rawEntries)
             {
+                var entry = rawEntry.Trim();
+                if (string.IsNullOrEmpty(entry))
+                    continue;
+
                 // Each entry is "<phoneme> <seconds>".
                 // Split on whitespace; the phoneme is everything before the last
                 // whitespace-delimited token (the seconds value).
