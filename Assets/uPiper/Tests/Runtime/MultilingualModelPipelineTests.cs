@@ -7,6 +7,7 @@ using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers.Multilingual;
 
+#pragma warning disable CS0618
 namespace uPiper.Tests.Runtime
 {
     /// <summary>

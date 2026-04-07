@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using uPiper.Core.Phonemizers.Multilingual;
 
+#pragma warning disable CS0618
 namespace uPiper.Tests.Editor
 {
     [TestFixture]
@@ -95,7 +96,7 @@ namespace uPiper.Tests.Editor
         [Test]
         public void Constructor_NullLanguages_ThrowsArgumentException()
         {
-            Assert.Throws<System.ArgumentException>(() =>
+            Assert.Throws<System.ArgumentNullException>(() =>
                 new MultilingualPhonemizer(null));
         }
 

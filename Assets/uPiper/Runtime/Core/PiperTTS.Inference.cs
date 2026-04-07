@@ -14,8 +14,10 @@ namespace uPiper.Core
     public partial class PiperTTS
     {
         private IInferenceAudioGenerator _inferenceGenerator;
+        private SplitInferenceOrchestrator _splitOrchestrator;
         private PhonemeEncoder _phonemeEncoder;
         private AudioClipBuilder _audioClipBuilder;
+        private TTSSynthesisOrchestrator _orchestrator;
         private ModelAsset _currentModelAsset;
         private PiperVoiceConfig _currentVoiceConfig;
         private Phonemizers.Multilingual.MultilingualPhonemizer _multilingualPhonemizer;
@@ -49,8 +51,12 @@ namespace uPiper.Core
 
                 // Inferenceコンポーネントを初期化
                 _inferenceGenerator = new InferenceAudioGenerator();
+                _splitOrchestrator = new SplitInferenceOrchestrator(_inferenceGenerator);
                 _phonemeEncoder = new PhonemeEncoder(voiceConfig);
                 _audioClipBuilder = new AudioClipBuilder();
+                _orchestrator = new TTSSynthesisOrchestrator(
+                    _inferenceGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                    _validatedConfig, voiceConfig);
                 _currentModelAsset = modelAsset;
 
                 // Inferenceジェネレーターを初期化
@@ -72,10 +78,13 @@ namespace uPiper.Core
                 {
                     DisposeMultilingualPhonemizer();
                     var supportedLanguages = _config.SupportedLanguages ?? new System.Collections.Generic.List<string> { "ja", "en" };
-                    _multilingualPhonemizer = new Phonemizers.Multilingual.MultilingualPhonemizer(
-                        supportedLanguages,
-                        _config.DefaultLanguage ?? "en",
-                        _phonemizer as Phonemizers.Implementations.DotNetG2PPhonemizer);
+                    var phonemizerOptions = new Phonemizers.Multilingual.MultilingualPhonemizerOptions
+                    {
+                        Languages = supportedLanguages,
+                        DefaultLatinLanguage = _config.DefaultLanguage ?? "en",
+                        JaPhonemizer = _phonemizer as Phonemizers.Implementations.DotNetG2PPhonemizer
+                    };
+                    _multilingualPhonemizer = new Phonemizers.Multilingual.MultilingualPhonemizer(phonemizerOptions);
                     await _multilingualPhonemizer.InitializeAsync(cancellationToken);
                 }
 
@@ -144,49 +153,18 @@ namespace uPiper.Core
 
                 _onProcessingProgress?.Invoke(0.3f);
 
-                // 音素をIDにエンコード
-                PiperLogger.LogDebug($"Encoding {phonemeResult.Phonemes.Length} phonemes");
-                var phonemeIds = _phonemeEncoder.Encode(phonemeResult.Phonemes);
-
                 _onProcessingProgress?.Invoke(0.5f);
 
-                // Unity.InferenceEngineで音声を生成
-                PiperLogger.LogDebug("Generating audio with Inference");
-                float[] audioData;
-                if (_config != null && _config.EnablePhonemeSilence
-                    && _config.ParsedPhonemeSilence != null
-                    && _config.ParsedPhonemeSilence.Count > 0
-                    && _currentVoiceConfig?.PhonemeIdMap != null)
-                {
-                    audioData = await _inferenceGenerator.GenerateAudioWithSilenceSplitAsync(
-                        phonemeIds, null, null, null,
-                        _config.ParsedPhonemeSilence,
-                        _currentVoiceConfig.PhonemeIdMap,
-                        lengthScale, noiseScale, noiseW,
-                        cancellationToken: cancellationToken);
-                }
-                else
-                {
-                    audioData = await _inferenceGenerator.GenerateAudioAsync(
-                        phonemeIds,
-                        lengthScale,
-                        noiseScale,
-                        noiseW,
-                        cancellationToken: cancellationToken);
-                }
-
-                _onProcessingProgress?.Invoke(0.8f);
-
-                // AudioClipを作成
-                _audioClipBuilder.NormalizeAudioInPlace(audioData, 0.95f);
-                var audioClip = _audioClipBuilder.BuildAudioClip(
-                    audioData,
-                    _inferenceGenerator.SampleRate,
-                    $"TTS_{DateTime.Now:yyyyMMddHHmmss}");
+                // エンコード〜AudioClip生成を一括
+                var request = new AudioGeneration.SynthesisRequest(
+                    phonemeResult.Phonemes,
+                    null, null, null,
+                    lengthScale, noiseScale, noiseW,
+                    0, 0);
+                var audioClip = await _orchestrator.SynthesizeAsync(request, cancellationToken);
 
                 _onProcessingProgress?.Invoke(1.0f);
-
-                PiperLogger.LogInfo($"Successfully generated audio for text: \"{text}\" ({audioData.Length} samples)");
+                PiperLogger.LogInfo($"Successfully generated audio for text: \"{text}\" ({audioClip.samples} samples)");
                 return audioClip;
             }
             catch (Exception ex)
@@ -273,63 +251,18 @@ namespace uPiper.Core
                 if (phonemes == null || phonemes.Length == 0)
                     throw new PiperException("No phonemes generated");
 
-                int[] phonemeIds;
-                if (prosodyA1 != null && _phonemeEncoder != null)
-                {
-                    var encResult = _phonemeEncoder.EncodeWithProsody(phonemes, prosodyA1, prosodyA2, prosodyA3);
-                    phonemeIds = encResult.PhonemeIds;
-                    prosodyA1 = encResult.ExpandedProsodyA1;
-                    prosodyA2 = encResult.ExpandedProsodyA2;
-                    prosodyA3 = encResult.ExpandedProsodyA3;
-                }
-                else
-                {
-                    phonemeIds = _phonemeEncoder?.Encode(phonemes) ?? Array.Empty<int>();
-                }
-
                 _onProcessingProgress?.Invoke(0.5f);
 
-                // Unity.InferenceEngineで音声を生成
-                float[] audioData;
-                if (_config != null && _config.EnablePhonemeSilence
-                    && _config.ParsedPhonemeSilence != null
-                    && _config.ParsedPhonemeSilence.Count > 0
-                    && _currentVoiceConfig?.PhonemeIdMap != null)
-                {
-                    audioData = await _inferenceGenerator.GenerateAudioWithSilenceSplitAsync(
-                        phonemeIds, prosodyA1, prosodyA2, prosodyA3,
-                        _config.ParsedPhonemeSilence,
-                        _currentVoiceConfig.PhonemeIdMap,
-                        lengthScale, noiseScale, noiseW,
-                        speakerId, resolvedLanguageId,
-                        cancellationToken);
-                }
-                else if (prosodyA1 != null && _inferenceGenerator.SupportsProsody)
-                {
-                    audioData = await _inferenceGenerator.GenerateAudioWithProsodyAsync(
-                        phonemeIds, prosodyA1, prosodyA2, prosodyA3,
-                        lengthScale, noiseScale, noiseW,
-                        speakerId, resolvedLanguageId,
-                        cancellationToken: cancellationToken);
-                }
-                else
-                {
-                    audioData = await _inferenceGenerator.GenerateAudioAsync(
-                        phonemeIds, lengthScale, noiseScale, noiseW,
-                        speakerId, resolvedLanguageId,
-                        cancellationToken: cancellationToken);
-                }
-
-                _onProcessingProgress?.Invoke(0.8f);
-
-                _audioClipBuilder.NormalizeAudioInPlace(audioData, 0.95f);
-                var audioClip = _audioClipBuilder.BuildAudioClip(
-                    audioData,
-                    _inferenceGenerator.SampleRate,
-                    $"TTS_{System.DateTime.Now:yyyyMMddHHmmss}");
+                // エンコード〜AudioClip生成を一括
+                var request = new AudioGeneration.SynthesisRequest(
+                    phonemes,
+                    prosodyA1, prosodyA2, prosodyA3,
+                    lengthScale, noiseScale, noiseW,
+                    speakerId, resolvedLanguageId);
+                var audioClip = await _orchestrator.SynthesizeAsync(request, cancellationToken);
 
                 _onProcessingProgress?.Invoke(1.0f);
-                PiperLogger.LogInfo($"[MultilingualTTS] Generated audio for: \"{text}\" ({audioData.Length} samples, lid={resolvedLanguageId})");
+                PiperLogger.LogInfo($"[MultilingualTTS] Generated audio for: \"{text}\" (lid={resolvedLanguageId})");
                 return audioClip;
             }
             catch (Exception ex)
@@ -352,6 +285,8 @@ namespace uPiper.Core
 
         private void DisposeInferenceResources()
         {
+            _splitOrchestrator = null;
+            _orchestrator = null;
             _inferenceGenerator?.Dispose();
             _inferenceGenerator = null;
             _phonemeEncoder = null;

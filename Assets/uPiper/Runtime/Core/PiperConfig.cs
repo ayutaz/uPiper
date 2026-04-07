@@ -114,12 +114,6 @@ namespace uPiper.Core
         [Tooltip("Phoneme silence specification: '<phoneme> <seconds>' (comma-separated)")]
         public string PhonemeSilenceSpec = "_ 0.5";
 
-        /// <summary>
-        /// パース済みの沈黙トークンマップ（Validate後に利用可能）
-        /// </summary>
-        [NonSerialized]
-        public Dictionary<string, float> ParsedPhonemeSilence;
-
         [Header("Audio Settings")]
 
         /// <summary>
@@ -207,7 +201,9 @@ namespace uPiper.Core
         }
 
         /// <summary>
-        /// Validate configuration
+        /// 設定値を検証し、範囲外の値をクランプ・修正する。
+        /// <b>注意: このメソッドはフィールドを直接変更する（副作用あり）。</b>
+        /// WorkerThreads=0 は自動検出値に、DefaultLanguage は小文字正規化される等。
         /// </summary>
         public void Validate()
         {
@@ -307,27 +303,35 @@ namespace uPiper.Core
                 WarmupIterations = 1;
             }
 
-            // Phoneme silence validation
+            // Phoneme silence validation (parse only for validation, discard result)
             if (EnablePhonemeSilence)
             {
                 try
                 {
-                    ParsedPhonemeSilence = AudioGeneration.PhonemeSilenceProcessor.Parse(PhonemeSilenceSpec);
+                    AudioGeneration.PhonemeSilenceProcessor.Parse(PhonemeSilenceSpec);
                 }
                 catch (ArgumentException ex)
                 {
                     throw new PiperException($"Invalid PhonemeSilenceSpec: {ex.Message}", ex);
                 }
             }
-            else
-            {
-                ParsedPhonemeSilence = null;
-            }
 
             // GPU settings validation
             GPUSettings?.Validate();
 
             PiperLogger.LogInfo("PiperConfig validated successfully");
+        }
+
+        /// <summary>
+        /// このconfigをバリデーションし、不変スナップショットとして返す。
+        /// <b>注意: 内部で Validate() を呼ぶため、このインスタンスのフィールドが変更される。</b>
+        /// Validate()で値がクランプ・修正された後にスナップショットを取得する。
+        /// </summary>
+        /// <returns>バリデーション済みの不変設定オブジェクト</returns>
+        public ValidatedPiperConfig ToValidated()
+        {
+            Validate();
+            return new ValidatedPiperConfig(this);
         }
     }
 

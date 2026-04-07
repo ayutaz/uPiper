@@ -21,6 +21,7 @@ namespace uPiper.Core
         #region Fields
 
         private readonly PiperConfig _config;
+        private ValidatedPiperConfig _validatedConfig;
         private readonly Dictionary<string, PiperVoiceConfig> _voices;
         private string _currentVoiceId;
         private bool _isInitialized;
@@ -263,8 +264,8 @@ namespace uPiper.Core
             _cacheMissCount = 0;
             _cacheEvictionCount = 0;
 
-            // Validate configuration on construction
-            _config.Validate();
+            // Validate configuration on construction and create immutable snapshot
+            _validatedConfig = _config.ToValidated(); // Validate()を内部で呼ぶ
 
             PiperLogger.LogInfo("PiperTTS instance created with config: SampleRate={0}Hz, Language={1}",
                 _config.SampleRate, _config.DefaultLanguage);
@@ -703,13 +704,15 @@ namespace uPiper.Core
                         float[] audioData;
                         if (useProsody && expandedA1 != null)
                         {
-                            audioData = await _inferenceGenerator.GenerateAudioWithProsodyAsync(
+                            audioData = await _inferenceGenerator.GenerateAudioAsync(
                                 phonemeIds, expandedA1, expandedA2, expandedA3,
                                 cancellationToken: cancellationToken);
                         }
                         else
                         {
-                            audioData = await _inferenceGenerator.GenerateAudioAsync(phonemeIds, cancellationToken: cancellationToken);
+                            audioData = await _inferenceGenerator.GenerateAudioAsync(
+                                phonemeIds,
+                                cancellationToken: cancellationToken);
                         }
                         PiperLogger.LogInfo($"Generated {audioData.Length} audio samples");
 

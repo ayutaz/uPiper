@@ -4,6 +4,7 @@ using NUnit.Framework;
 using uPiper.Core;
 using uPiper.Core.Phonemizers.Multilingual;
 
+#pragma warning disable CS0618
 namespace uPiper.Tests.Editor.Phonemizers
 {
     /// <summary>

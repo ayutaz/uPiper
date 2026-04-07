@@ -81,18 +81,37 @@ namespace uPiper.Core.Phonemizers.Multilingual
         public IReadOnlyList<string> Languages => _languages;
 
         /// <summary>
+        /// Creates a MultilingualPhonemizer using an options object.
+        /// </summary>
+        /// <param name="options">Configuration options.</param>
+        public MultilingualPhonemizer(MultilingualPhonemizerOptions options)
+        {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            options.Validate();
+
+            _languages = options.Languages;
+            _languageSet = new HashSet<string>(options.Languages);
+            _defaultLatinLanguage = options.DefaultLatinLanguage ?? "en";
+            _detector = new UnicodeLanguageDetector(options.Languages, _defaultLatinLanguage);
+            _jaPhonemizer = options.JaPhonemizer;
+            _enEngine = options.EnEngine;
+#pragma warning disable CS0618
+            _enPhonemizer = options.EnPhonemizer;
+            _koPhonemizer = options.KoPhonemizer;
+#pragma warning restore CS0618
+            _esEngine = options.EsEngine;
+            _frEngine = options.FrEngine;
+            _ptEngine = options.PtEngine;
+            _zhEngine = options.ZhEngine;
+            _koG2PEngine = options.KoG2PEngine;
+        }
+
+        /// <summary>
         /// Creates a MultilingualPhonemizer for the specified language list.
         /// </summary>
-        /// <param name="languages">Languages to support (e.g., ["ja", "en"]).</param>
-        /// <param name="defaultLatinLanguage">Default language for Latin text (default: "en").</param>
-        /// <param name="jaPhonemizer">Optional pre-built Japanese phonemizer; one is created if null.</param>
-        /// <param name="enPhonemizer">Optional pre-built English phonemizer backend (legacy, for test stubs).</param>
-        /// <param name="esEngine">Optional pre-built Spanish G2P engine.</param>
-        /// <param name="frEngine">Optional pre-built French G2P engine.</param>
-        /// <param name="ptEngine">Optional pre-built Portuguese G2P engine.</param>
-        /// <param name="zhEngine">Optional pre-built Chinese G2P engine (DotNetG2P.Chinese).</param>
-        /// <param name="koPhonemizer">Optional pre-built Korean phonemizer backend (legacy, prefer koG2PEngine).</param>
-        /// <param name="koG2PEngine">Optional pre-built Korean G2P engine (DotNetG2P.Korean).</param>
+        [Obsolete("Use the constructor that takes MultilingualPhonemizerOptions instead. This constructor will be removed in v2.0.")]
         public MultilingualPhonemizer(
             IReadOnlyList<string> languages,
             string defaultLatinLanguage = "en",
@@ -321,216 +340,41 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                string[] segPhonemes;
-                int[] segA1;
-                int[] segA2;
-                int[] segA3;
-
                 // Phonemize each segment
-                if (lang == "ja" && _jaPhonemizer != null)
+                string[] segPhonemes = null;
+                int[] segA1 = null;
+                int[] segA2 = null;
+                int[] segA3 = null;
+
+                switch (lang)
                 {
-                    var result = _jaPhonemizer.PhonemizeWithProsody(segText);
-                    segPhonemes = result.Phonemes ?? Array.Empty<string>();
-                    segA1 = result.ProsodyA1 ?? Array.Empty<int>();
-                    segA2 = result.ProsodyA2 ?? Array.Empty<int>();
-                    segA3 = result.ProsodyA3 ?? Array.Empty<int>();
-
-                    // Strip leading PAD ("_") from Japanese segments (added from "sil" conversion)
-                    if (segPhonemes.Length > 0 && segPhonemes[0] == "_")
-                    {
-                        segPhonemes = segPhonemes[1..];
-                        segA1 = segA1.Length > 1 ? segA1[1..] : segA1;
-                        segA2 = segA2.Length > 1 ? segA2[1..] : segA2;
-                        segA3 = segA3.Length > 1 ? segA3[1..] : segA3;
-                    }
-                }
-                else if (lang == "en" && _enEngine != null)
-                {
-                    // Use DotNetG2P.English — outputs piper-plus compatible IPA with PUA mapping + prosody
-                    var prosodyResult = _enEngine.ToIpaWithProsody(segText);
-
-                    // Apply PUA mapping (multi-char IPA -> single PUA char)
-                    segPhonemes = _enEngine.ToPuaPhonemes(segText);
-
-                    // Extract prosody A1/A2/A3 from EnglishProsodyInfo
-                    var prosody = prosodyResult.Prosody;
-                    segA1 = new int[segPhonemes.Length];
-                    segA2 = new int[segPhonemes.Length];
-                    segA3 = new int[segPhonemes.Length];
-                    for (var i = 0; i < segPhonemes.Length && i < prosody.Length; i++)
-                    {
-                        segA1[i] = prosody[i].A1;
-                        segA2[i] = prosody[i].A2;
-                        segA3[i] = prosody[i].A3;
-                    }
-                }
-                else if (lang == "es" && _esEngine != null)
-                {
-                    // Use DotNetG2P.Spanish engine directly with prosody
-                    var result = _esEngine.ToIpaWithProsody(segText);
-                    segPhonemes = result.Phonemes ?? Array.Empty<string>();
-                    (segA1, segA2, segA3) = ExtractProsodyArrays(
-                        result.Prosody, p => (p.A1, p.A2, p.A3), segPhonemes.Length);
-                }
-                else if (lang == "fr" && _frEngine != null)
-                {
-                    // Use DotNetG2P.French engine directly
-                    segPhonemes = _frEngine.ToPuaPhonemes(segText);
-                    var result = _frEngine.ToIpaWithProsody(segText);
-                    (segA1, segA2, segA3) = ExtractProsodyArrays(
-                        result.Prosody, p => (p.A1, p.A2, p.A3), segPhonemes.Length);
-                }
-                else if (lang == "pt" && _ptEngine != null)
-                {
-                    // Use DotNetG2P.Portuguese engine directly
-                    segPhonemes = _ptEngine.ToPuaPhonemes(segText);
-                    var result = _ptEngine.ToIpaWithProsody(segText);
-                    (segA1, segA2, segA3) = ExtractProsodyArrays(
-                        result.Prosody, p => (p.A1, p.A2, p.A3), segPhonemes.Length);
-                }
-                else if (lang == "zh" && _zhEngine != null)
-                {
-                    // Use DotNetG2P.Chinese directly for Chinese text
-                    var puaPhonemes = _zhEngine.ToPuaPhonemes(segText);
-                    var prosodyResult = _zhEngine.ToIpaWithProsody(segText);
-
-                    var phonemeList = new List<string>();
-                    var prosodyA1List = new List<int>();
-                    var prosodyA2List = new List<int>();
-                    var prosodyA3List = new List<int>();
-
-                    int totalSyllables = prosodyResult.Prosody.Count;
-                    if (totalSyllables == 0)
-                    {
-                        // No syllables (all non-Chinese text)
-                        foreach (var p in puaPhonemes)
-                            phonemeList.Add(p);
-                    }
-                    else
-                    {
-                        // Distribute PUA phonemes across syllables and insert tone markers
-                        int phonemesPerSyllable = puaPhonemes.Length / totalSyllables;
-                        int remainder = puaPhonemes.Length % totalSyllables;
-                        int puaIdx = 0;
-
-                        for (int syl = 0; syl < totalSyllables; syl++)
-                        {
-                            int count = phonemesPerSyllable + (syl < remainder ? 1 : 0);
-                            int toneVal = syl < prosodyResult.Prosody.Count
-                                ? prosodyResult.Prosody[syl].A1 : 5;
-                            int sylPos = syl < prosodyResult.Prosody.Count
-                                ? prosodyResult.Prosody[syl].A2 : 1;
-                            int wordLen = syl < prosodyResult.Prosody.Count
-                                ? prosodyResult.Prosody[syl].A3 : 1;
-
-                            // Add initial + final phonemes for this syllable
-                            for (int j = 0; j < count && puaIdx < puaPhonemes.Length; j++, puaIdx++)
-                            {
-                                phonemeList.Add(puaPhonemes[puaIdx]);
-                                prosodyA1List.Add(toneVal);
-                                prosodyA2List.Add(sylPos);
-                                prosodyA3List.Add(wordLen);
-                            }
-
-                            // Append tone marker PUA (tone1=E046 ... tone5=E04A)
-                            if (toneVal >= 1 && toneVal <= 5)
-                            {
-                                phonemeList.Add(TonePuaChars[toneVal].ToString());
-                                prosodyA1List.Add(toneVal);
-                                prosodyA2List.Add(sylPos);
-                                prosodyA3List.Add(wordLen);
-                            }
-                        }
-
-                        // Add any remaining phonemes (non-Chinese tokens)
-                        for (; puaIdx < puaPhonemes.Length; puaIdx++)
-                        {
-                            phonemeList.Add(puaPhonemes[puaIdx]);
-                            prosodyA1List.Add(0);
-                            prosodyA2List.Add(0);
-                            prosodyA3List.Add(0);
-                        }
-                    }
-
-                    segPhonemes = phonemeList.ToArray();
-                    segA1 = prosodyA1List.ToArray();
-                    segA2 = prosodyA2List.ToArray();
-                    segA3 = prosodyA3List.ToArray();
-
-                    // Ensure prosody arrays are aligned with phoneme count
-                    if (segA1.Length < segPhonemes.Length)
-                    {
-                        Array.Resize(ref segA1, segPhonemes.Length);
-                        Array.Resize(ref segA2, segPhonemes.Length);
-                        Array.Resize(ref segA3, segPhonemes.Length);
-                    }
-                }
-                else if (lang == "ko" && _koG2PEngine != null)
-                {
-                    // Use DotNetG2P.Korean directly for Korean text
-                    var puaPhonemes = _koG2PEngine.ToPuaPhonemes(segText);
-                    var prosodyResult = _koG2PEngine.ToIpaWithProsody(segText);
-
-                    segPhonemes = puaPhonemes ?? Array.Empty<string>();
-
-                    // Map prosody from IPA-based result to PUA phonemes.
-                    // PUA phonemes and IPA phonemes should have the same count
-                    // (PuaMapper only replaces multi-char IPA with single PUA chars,
-                    // preserving the 1:1 phoneme correspondence).
-                    if (prosodyResult.Prosody.Length == segPhonemes.Length)
-                    {
-                        segA1 = new int[segPhonemes.Length];
-                        segA2 = new int[segPhonemes.Length];
-                        segA3 = new int[segPhonemes.Length];
-                        for (var i = 0; i < prosodyResult.Prosody.Length; i++)
-                        {
-                            segA1[i] = prosodyResult.Prosody[i].A1;
-                            segA2[i] = prosodyResult.Prosody[i].A2;
-                            segA3[i] = prosodyResult.Prosody[i].A3;
-                        }
-                    }
-                    else
-                    {
-                        // Fallback: if lengths differ, use zeros for A1/A2 and
-                        // derive A3 from prosody result when possible
-                        segA1 = new int[segPhonemes.Length];
-                        segA2 = new int[segPhonemes.Length];
-                        segA3 = new int[segPhonemes.Length];
-                        if (prosodyResult.Prosody.Length > 0)
-                        {
-                            var defaultA3 = prosodyResult.Prosody[0].A3;
-                            for (var i = 0; i < segPhonemes.Length; i++)
-                            {
-                                segA3[i] = i < prosodyResult.Prosody.Length
-                                    ? prosodyResult.Prosody[i].A3
-                                    : defaultA3;
-                            }
-                        }
-
-                        PiperLogger.LogWarning(
-                            $"[MultilingualPhonemizer] Korean PUA/prosody length mismatch: " +
-                            $"PUA={segPhonemes.Length}, Prosody={prosodyResult.Prosody.Length}");
-                    }
-                }
-                else
-                {
-                    // Get the appropriate backend for the language
-                    var backend = GetBackendForLanguage(lang);
-                    if (backend != null)
-                    {
-                        var result = await backend.PhonemizeAsync(segText, lang, null, cancellationToken);
-                        segPhonemes = result?.Phonemes ?? Array.Empty<string>();
-
-                        segA1 = result?.ProsodyA1 ?? new int[segPhonemes.Length];
-                        segA2 = result?.ProsodyA2 ?? new int[segPhonemes.Length];
-                        segA3 = result?.ProsodyA3 ?? new int[segPhonemes.Length];
-                    }
-                    else
-                    {
-                        PiperLogger.LogWarning(
-                            $"[MultilingualPhonemizer] No backend for '{lang}', skipping segment.");
-                        continue;
-                    }
+                    case "ja" when _jaPhonemizer != null:
+                        (segPhonemes, segA1, segA2, segA3) = ProcessJapanese(segText);
+                        break;
+                    case "en" when _enEngine != null:
+                        (segPhonemes, segA1, segA2, segA3) = ProcessEnglish(segText);
+                        break;
+                    case "es" when _esEngine != null:
+                        (segPhonemes, segA1, segA2, segA3) = ProcessSpanish(segText);
+                        break;
+                    case "fr" when _frEngine != null:
+                        (segPhonemes, segA1, segA2, segA3) = ProcessFrench(segText);
+                        break;
+                    case "pt" when _ptEngine != null:
+                        (segPhonemes, segA1, segA2, segA3) = ProcessPortuguese(segText);
+                        break;
+                    case "zh" when _zhEngine != null:
+                        (segPhonemes, segA1, segA2, segA3) = ProcessChinese(segText);
+                        break;
+                    case "ko" when _koG2PEngine != null:
+                        (segPhonemes, segA1, segA2, segA3) = ProcessKorean(segText);
+                        break;
+                    default:
+                        var fallbackResult = await ProcessFallbackAsync(lang, segText, cancellationToken);
+                        if (fallbackResult.phonemes == null)
+                            continue;
+                        (segPhonemes, segA1, segA2, segA3) = fallbackResult;
+                        break;
                 }
 
                 if (segPhonemes.Length == 0)
@@ -599,6 +443,224 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 _koG2PEngine?.Dispose();
                 _koPhonemizer?.Dispose();
             }
+        }
+
+        // ── Language-specific processing methods ──────────────────────────────
+
+        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessJapanese(string text)
+        {
+            var result = _jaPhonemizer.PhonemizeWithProsody(text);
+            var phonemes = result.Phonemes ?? Array.Empty<string>();
+            var a1 = result.ProsodyA1 ?? Array.Empty<int>();
+            var a2 = result.ProsodyA2 ?? Array.Empty<int>();
+            var a3 = result.ProsodyA3 ?? Array.Empty<int>();
+
+            // Strip leading PAD ("_") from Japanese segments (added from "sil" conversion)
+            if (phonemes.Length > 0 && phonemes[0] == "_")
+            {
+                phonemes = phonemes[1..];
+                a1 = a1.Length > 1 ? a1[1..] : a1;
+                a2 = a2.Length > 1 ? a2[1..] : a2;
+                a3 = a3.Length > 1 ? a3[1..] : a3;
+            }
+
+            return (phonemes, a1, a2, a3);
+        }
+
+        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessEnglish(string text)
+        {
+            var prosodyResult = _enEngine.ToIpaWithProsody(text);
+            var phonemes = _enEngine.ToPuaPhonemes(text);
+            var prosody = prosodyResult.Prosody;
+            var a1 = new int[phonemes.Length];
+            var a2 = new int[phonemes.Length];
+            var a3 = new int[phonemes.Length];
+            for (var i = 0; i < phonemes.Length && i < prosody.Length; i++)
+            {
+                a1[i] = prosody[i].A1;
+                a2[i] = prosody[i].A2;
+                a3[i] = prosody[i].A3;
+            }
+
+            return (phonemes, a1, a2, a3);
+        }
+
+        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessSpanish(string text)
+        {
+            var result = _esEngine.ToIpaWithProsody(text);
+            var phonemes = result.Phonemes ?? Array.Empty<string>();
+            var (a1, a2, a3) = ExtractProsodyArrays(
+                result.Prosody, p => (p.A1, p.A2, p.A3), phonemes.Length);
+            return (phonemes, a1, a2, a3);
+        }
+
+        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessFrench(string text)
+        {
+            var phonemes = _frEngine.ToPuaPhonemes(text);
+            var result = _frEngine.ToIpaWithProsody(text);
+            var (a1, a2, a3) = ExtractProsodyArrays(
+                result.Prosody, p => (p.A1, p.A2, p.A3), phonemes.Length);
+            return (phonemes, a1, a2, a3);
+        }
+
+        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessPortuguese(string text)
+        {
+            var phonemes = _ptEngine.ToPuaPhonemes(text);
+            var result = _ptEngine.ToIpaWithProsody(text);
+            var (a1, a2, a3) = ExtractProsodyArrays(
+                result.Prosody, p => (p.A1, p.A2, p.A3), phonemes.Length);
+            return (phonemes, a1, a2, a3);
+        }
+
+        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessChinese(string text)
+        {
+            // Use DotNetG2P.Chinese directly for Chinese text
+            var puaPhonemes = _zhEngine.ToPuaPhonemes(text);
+            var prosodyResult = _zhEngine.ToIpaWithProsody(text);
+
+            var phonemeList = new List<string>();
+            var prosodyA1List = new List<int>();
+            var prosodyA2List = new List<int>();
+            var prosodyA3List = new List<int>();
+
+            int totalSyllables = prosodyResult.Prosody.Count;
+            if (totalSyllables == 0)
+            {
+                // No syllables (all non-Chinese text)
+                foreach (var p in puaPhonemes)
+                    phonemeList.Add(p);
+            }
+            else
+            {
+                // Distribute PUA phonemes across syllables and insert tone markers
+                int phonemesPerSyllable = puaPhonemes.Length / totalSyllables;
+                int remainder = puaPhonemes.Length % totalSyllables;
+                int puaIdx = 0;
+
+                for (int syl = 0; syl < totalSyllables; syl++)
+                {
+                    int count = phonemesPerSyllable + (syl < remainder ? 1 : 0);
+                    int toneVal = syl < prosodyResult.Prosody.Count
+                        ? prosodyResult.Prosody[syl].A1 : 5;
+                    int sylPos = syl < prosodyResult.Prosody.Count
+                        ? prosodyResult.Prosody[syl].A2 : 1;
+                    int wordLen = syl < prosodyResult.Prosody.Count
+                        ? prosodyResult.Prosody[syl].A3 : 1;
+
+                    // Add initial + final phonemes for this syllable
+                    for (int j = 0; j < count && puaIdx < puaPhonemes.Length; j++, puaIdx++)
+                    {
+                        phonemeList.Add(puaPhonemes[puaIdx]);
+                        prosodyA1List.Add(toneVal);
+                        prosodyA2List.Add(sylPos);
+                        prosodyA3List.Add(wordLen);
+                    }
+
+                    // Append tone marker PUA (tone1=E046 ... tone5=E04A)
+                    if (toneVal >= 1 && toneVal <= 5)
+                    {
+                        phonemeList.Add(TonePuaChars[toneVal].ToString());
+                        prosodyA1List.Add(toneVal);
+                        prosodyA2List.Add(sylPos);
+                        prosodyA3List.Add(wordLen);
+                    }
+                }
+
+                // Add any remaining phonemes (non-Chinese tokens)
+                for (; puaIdx < puaPhonemes.Length; puaIdx++)
+                {
+                    phonemeList.Add(puaPhonemes[puaIdx]);
+                    prosodyA1List.Add(0);
+                    prosodyA2List.Add(0);
+                    prosodyA3List.Add(0);
+                }
+            }
+
+            var segPhonemes = phonemeList.ToArray();
+            var segA1 = prosodyA1List.ToArray();
+            var segA2 = prosodyA2List.ToArray();
+            var segA3 = prosodyA3List.ToArray();
+
+            // Ensure prosody arrays are aligned with phoneme count
+            if (segA1.Length < segPhonemes.Length)
+            {
+                Array.Resize(ref segA1, segPhonemes.Length);
+                Array.Resize(ref segA2, segPhonemes.Length);
+                Array.Resize(ref segA3, segPhonemes.Length);
+            }
+
+            return (segPhonemes, segA1, segA2, segA3);
+        }
+
+        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessKorean(string text)
+        {
+            // Use DotNetG2P.Korean directly for Korean text
+            var puaPhonemes = _koG2PEngine.ToPuaPhonemes(text);
+            var prosodyResult = _koG2PEngine.ToIpaWithProsody(text);
+
+            var phonemes = puaPhonemes ?? Array.Empty<string>();
+
+            int[] segA1, segA2, segA3;
+
+            // Map prosody from IPA-based result to PUA phonemes.
+            // PUA phonemes and IPA phonemes should have the same count
+            // (PuaMapper only replaces multi-char IPA with single PUA chars,
+            // preserving the 1:1 phoneme correspondence).
+            if (prosodyResult.Prosody.Length == phonemes.Length)
+            {
+                segA1 = new int[phonemes.Length];
+                segA2 = new int[phonemes.Length];
+                segA3 = new int[phonemes.Length];
+                for (var i = 0; i < prosodyResult.Prosody.Length; i++)
+                {
+                    segA1[i] = prosodyResult.Prosody[i].A1;
+                    segA2[i] = prosodyResult.Prosody[i].A2;
+                    segA3[i] = prosodyResult.Prosody[i].A3;
+                }
+            }
+            else
+            {
+                // Fallback: if lengths differ, use zeros for A1/A2 and
+                // derive A3 from prosody result when possible
+                segA1 = new int[phonemes.Length];
+                segA2 = new int[phonemes.Length];
+                segA3 = new int[phonemes.Length];
+                if (prosodyResult.Prosody.Length > 0)
+                {
+                    var defaultA3 = prosodyResult.Prosody[0].A3;
+                    for (var i = 0; i < phonemes.Length; i++)
+                    {
+                        segA3[i] = i < prosodyResult.Prosody.Length
+                            ? prosodyResult.Prosody[i].A3
+                            : defaultA3;
+                    }
+                }
+
+                PiperLogger.LogWarning(
+                    $"[MultilingualPhonemizer] Korean PUA/prosody length mismatch: " +
+                    $"PUA={phonemes.Length}, Prosody={prosodyResult.Prosody.Length}");
+            }
+
+            return (phonemes, segA1, segA2, segA3);
+        }
+
+        private async Task<(string[] phonemes, int[] a1, int[] a2, int[] a3)> ProcessFallbackAsync(
+            string lang, string text, CancellationToken cancellationToken)
+        {
+            var backend = GetBackendForLanguage(lang);
+            if (backend != null)
+            {
+                var result = await backend.PhonemizeAsync(text, lang, null, cancellationToken);
+                var phonemes = result?.Phonemes ?? Array.Empty<string>();
+                var a1 = result?.ProsodyA1 ?? new int[phonemes.Length];
+                var a2 = result?.ProsodyA2 ?? new int[phonemes.Length];
+                var a3 = result?.ProsodyA3 ?? new int[phonemes.Length];
+                return (phonemes, a1, a2, a3);
+            }
+
+            PiperLogger.LogWarning(
+                $"[MultilingualPhonemizer] No backend for '{lang}', skipping segment.");
+            return (null, null, null, null);
         }
 
         // ── Private helpers ───────────────────────────────────────────────────

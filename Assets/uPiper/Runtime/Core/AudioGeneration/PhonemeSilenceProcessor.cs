@@ -213,8 +213,8 @@ namespace uPiper.Core.AudioGeneration
             int[] prosodyA1,
             int[] prosodyA2,
             int[] prosodyA3,
-            Dictionary<string, float> phonemeSilence,
-            Dictionary<string, int> phonemeIdMap,
+            IReadOnlyDictionary<string, float> phonemeSilence,
+            IReadOnlyDictionary<string, int> phonemeIdMap,
             int sampleRate)
         {
             if (phonemeIds == null)
@@ -303,8 +303,8 @@ namespace uPiper.Core.AudioGeneration
         /// in seconds that should follow them.
         /// </summary>
         private static Dictionary<int, float> BuildSilenceIdMap(
-            Dictionary<string, float> phonemeSilence,
-            Dictionary<string, int> phonemeIdMap)
+            IReadOnlyDictionary<string, float> phonemeSilence,
+            IReadOnlyDictionary<string, int> phonemeIdMap)
         {
             var map = new Dictionary<int, float>();
 

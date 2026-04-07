@@ -15,6 +15,7 @@ using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Implementations;
 using uPiper.Core.Phonemizers.Multilingual;
 
+#pragma warning disable CS0618
 namespace uPiper.Demo
 {
     /// <summary>
@@ -803,8 +804,8 @@ namespace uPiper.Demo
                 float[] audioData;
                 if (useProsody && expandedA1 != null)
                 {
-                    PiperLogger.LogDebug($"Calling GenerateAudioWithProsodyAsync (languageId={languageId})...");
-                    audioData = await _generator.GenerateAudioWithProsodyAsync(
+                    PiperLogger.LogDebug($"Calling GenerateAudioAsync with prosody (languageId={languageId})...");
+                    audioData = await _generator.GenerateAudioAsync(
                         phonemeIds, expandedA1, expandedA2, expandedA3,
                         languageId: languageId);
                 }
