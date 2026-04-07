@@ -148,11 +148,11 @@ Phoneme IDs → TextEncoder → Duration Predictor → Flow Decoder → Audio Wa
       public readonly int[] ProsodyA1, ProsodyA2, ProsodyA3;
       public readonly float LengthScale, NoiseScale, NoiseW;
       public readonly int SpeakerId, LanguageId;
-      public bool HasProsody => ProsodyA1 != null;
+      public bool HasProsody => ProsodyA1 != null || ProsodyA2 != null || ProsodyA3 != null;
   }
   ```
   - Aggregates phonemes, prosody, and synthesis parameters into a single immutable data object
-  - `HasProsody` auto-switches between prosody/non-prosody paths
+  - `HasProsody` auto-switches between prosody/non-prosody paths when any of `ProsodyA1`, `ProsodyA2`, or `ProsodyA3` is non-null
 - **Key method**:
   ```csharp
   Task<AudioClip> SynthesizeAsync(
