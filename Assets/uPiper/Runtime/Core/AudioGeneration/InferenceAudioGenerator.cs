@@ -470,7 +470,12 @@ namespace uPiper.Core.AudioGeneration
                 rentedArray[i * 3 + 2] = prosodyA3 != null && i < prosodyA3.Length ? prosodyA3[i] : 0;
             }
 
-            return new Tensor<int>(new TensorShape(1, sequenceLength, 3), rentedArray);
+            // ArrayPool.Rent returns arrays >= prosodySize; Tensor requires exact length.
+            // Copy to exact-size array for Tensor constructor, keep rented array for later return.
+            var exactData = new int[prosodySize];
+            Array.Copy(rentedArray, exactData, prosodySize);
+
+            return new Tensor<int>(new TensorShape(1, sequenceLength, 3), exactData);
         }
 
         /// <summary>
