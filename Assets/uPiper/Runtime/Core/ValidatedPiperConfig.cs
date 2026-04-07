@@ -56,8 +56,9 @@ namespace uPiper.Core
         {
             DefaultLanguage = source.DefaultLanguage;
             AutoDetectLanguage = source.AutoDetectLanguage;
-            SupportedLanguages = source.SupportedLanguages?.AsReadOnly()
-                ?? (IReadOnlyList<string>)System.Array.Empty<string>();
+            SupportedLanguages = source.SupportedLanguages != null
+                ? new List<string>(source.SupportedLanguages)
+                : (IReadOnlyList<string>)System.Array.Empty<string>();
             MixedLanguageMode = source.MixedLanguageMode;
 
             MaxCacheSizeMB = source.MaxCacheSizeMB;
@@ -70,7 +71,10 @@ namespace uPiper.Core
             EnableWarmup = source.EnableWarmup;
             WarmupIterations = source.WarmupIterations;
             AllowFallbackToCPU = source.AllowFallbackToCPU;
-            GPUSettings = new GPUInferenceSettings { MaxMemoryMB = source.GPUSettings.MaxMemoryMB };
+            GPUSettings = new GPUInferenceSettings
+            {
+                MaxMemoryMB = source.GPUSettings != null ? source.GPUSettings.MaxMemoryMB : 512
+            };
 
             SampleRate = source.SampleRate;
             NormalizeAudio = source.NormalizeAudio;

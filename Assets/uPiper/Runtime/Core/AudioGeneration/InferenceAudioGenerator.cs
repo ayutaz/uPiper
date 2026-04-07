@@ -171,6 +171,11 @@ namespace uPiper.Core.AudioGeneration
                         }
 
                         // Cache the output tensor name for use during inference
+                        if (_model.outputs == null || _model.outputs.Count == 0)
+                        {
+                            throw new InvalidOperationException(
+                                $"Model '{_modelAsset.name}' has no outputs. Cannot cache output tensor name.");
+                        }
                         _cachedOutputName = _model.outputs[0].name;
 
                         // Check model capability inputs

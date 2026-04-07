@@ -38,6 +38,6 @@ namespace uPiper.Core.AudioGeneration
             LanguageId = languageId;
         }
 
-        public bool HasProsody => ProsodyA1 != null;
+        public bool HasProsody => ProsodyA1 != null || ProsodyA2 != null || ProsodyA3 != null;
     }
 }
