@@ -96,7 +96,7 @@ namespace uPiper.Tests.Editor
         [Test]
         public void Constructor_NullLanguages_ThrowsArgumentException()
         {
-            Assert.Throws<System.ArgumentException>(() =>
+            Assert.Throws<System.ArgumentNullException>(() =>
                 new MultilingualPhonemizer(null));
         }
 
