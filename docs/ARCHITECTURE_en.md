@@ -38,7 +38,8 @@ uPiper is a plugin for using Piper TTS in Unity environments. It employs neural 
 #### MultilingualPhonemizer
 - **Role**: Segment text by Unicode script ranges and delegate to per-language DotNetG2P engines
 - **Language Detection**: `UnicodeLanguageDetector` identifies language by character ranges (CJK, Hangul, Latin, etc.)
-- **PUA Token Mapping**: `PuaTokenMapper` provides unified PUA-to-IPA bidirectional mapping across all 7 languages (87 fixed entries)
+- **PUA Token Mapping**: `PuaTokenMapper` provides unified PUA-to-IPA bidirectional mapping across all 7 languages (96 fixed entries)
+- **Language Routing Implementation**: Language branching within `PhonemizeWithProsodyAsync` is extracted into a `switch` statement + 7 private methods (`ProcessJapanese`, `ProcessEnglish`, `ProcessSpanish`, `ProcessFrench`, `ProcessPortuguese`, `ProcessChinese`, `ProcessKorean`) + `ProcessFallbackAsync`. The external interface remains unchanged after this refactoring
 
 #### Language-Specific DotNetG2P Engines
 
@@ -91,6 +92,19 @@ Maps multi-character phonemes to single Unicode characters:
 - `ts` → `\ue00f` (tsu)
 - `sh` → `\ue010` (shi, sha, shu, sho)
 
+### 3.5 Configuration Management Layer
+
+#### ValidatedPiperConfig
+- **Location**: `Runtime/Core/ValidatedPiperConfig.cs`
+- **Role**: An immutable configuration snapshot generated via `PiperConfig.ToValidated()`
+- **How to obtain**: Call `PiperConfig.ToValidated()` to receive a validated `ValidatedPiperConfig`. Internally `PiperTTS` holds this as `_validatedConfig`
+- **All properties are read-only**: Provides post-validation values in an immutable form, guaranteeing configuration consistency
+- **GPUSettings immutability**: `GPUSettings` guarantees immutability via defensive copy (`new GPUInferenceSettings { MaxMemoryMB = source.GPUSettings.MaxMemoryMB }`). Subsequent changes to the original `PiperConfig` do not affect the `ValidatedPiperConfig`
+- **Note: `PiperConfig.Validate()` has side effects**: `Validate()` directly modifies fields (e.g., `WorkerThreads=0` is replaced with an auto-detected value, `DefaultLanguage` is lowercased, out-of-range values are clamped, etc.). Since `ToValidated()` calls `Validate()` internally, the original `PiperConfig` instance is also modified
+- **Key properties**:
+  - `ParsedPhonemeSilence: IReadOnlyDictionary<string, float>` -- When `EnablePhonemeSilence=true`, provides a pre-parsed map from `PhonemeSilenceSpec`. Returns `null` when `false` (eliminates redundant per-call parsing in `PiperTTS`)
+  - Provides all language, performance, inference, audio, and silence settings in a single object
+
 ### 4. Speech Synthesis Layer (VITS Model)
 
 #### Unity AI Inference Engine Integration
@@ -106,6 +120,52 @@ Phoneme IDs → TextEncoder → Duration Predictor → Flow Decoder → Audio Wa
             Latent Representation → Stochastic Duration Predictor
                                    (Automatic phoneme timing estimation)
 ```
+
+#### InferenceAudioGenerator and InferenceContext
+- **Location**: `Runtime/Core/AudioGeneration/InferenceAudioGenerator.cs`
+- **Output tensor name caching**: At initialization, `_model.outputs[0].name` is cached in `_cachedOutputName`, eliminating per-inference name resolution. The catch-all fallback has been removed
+- **ArrayPool**: `ArrayPool<int>.Shared` is always used when building prosody tensors (threshold-based branching has been removed). `InferenceContext.Dispose()` returns the rented array
+- **Dead code removal**: `CreateProsodyTensor` (non-pooled version) has been removed. Only `CreateProsodyTensorPooled` remains
+- **InferenceContext** (`private sealed class`, `IDisposable`):
+  - A private nested class that replaces the 7-element tuple previously returned by `PrepareInputs()`
+  - Using the `using var ctx = PrepareInputs(...)` pattern, all input tensors and `ArrayPool` rented arrays are released atomically in `Dispose()`
+  - Provides safe scope-based resource management to prevent resource leaks
+
+#### TTSSynthesisOrchestrator
+- **Location**: `Runtime/Core/AudioGeneration/TTSSynthesisOrchestrator.cs` (`internal sealed`)
+- **Role**: Centrally manages the entire phoneme-string-array-to-`AudioClip` conversion pipeline, eliminating duplicated logic that previously existed across two methods in `PiperTTS.Inference.cs`
+- **Constructor**: Receives `ValidatedPiperConfig config` and `PiperVoiceConfig voiceConfig` via the constructor and holds them as fields. These do not need to be passed on each `SynthesizeAsync` call
+- **Pipeline**:
+  1. **PhonemeEncoder** -- Encodes phonemes to model IDs (auto-switches between prosody/non-prosody paths)
+  2. **IInferenceAudioGenerator** -- Generates float audio waveform via ONNX inference
+  3. **SplitInferenceOrchestrator** -- Executes phrase-split inference when `EnablePhonemeSilence=true`
+  4. **AudioClipBuilder** -- Normalizes (`NormalizeAudioInPlace`) then builds `AudioClip`. AudioClip names are uniquely generated as `TTS_{Guid.NewGuid():N}`
+- **SynthesisRequest** (`internal readonly struct`):
+  ```csharp
+  internal readonly struct SynthesisRequest
+  {
+      public readonly string[] Phonemes;
+      public readonly int[] ProsodyA1, ProsodyA2, ProsodyA3;
+      public readonly float LengthScale, NoiseScale, NoiseW;
+      public readonly int SpeakerId, LanguageId;
+      public bool HasProsody => ProsodyA1 != null || ProsodyA2 != null || ProsodyA3 != null;
+  }
+  ```
+  - Aggregates phonemes, prosody, and synthesis parameters into a single immutable data object
+  - `HasProsody` auto-switches between prosody/non-prosody paths when any of `ProsodyA1`, `ProsodyA2`, or `ProsodyA3` is non-null
+- **Key method**:
+  ```csharp
+  Task<AudioClip> SynthesizeAsync(
+      SynthesisRequest request,
+      CancellationToken cancellationToken = default)
+  ```
+  - When `request.HasProsody` is `false`, processes via the non-prosody path
+  - Automatically selects the phrase-split path based on the presence of `_config.ParsedPhonemeSilence`
+
+#### SplitInferenceOrchestrator
+- **Location**: `Runtime/Core/AudioGeneration/SplitInferenceOrchestrator.cs` (`internal class`, changed from public to internal)
+- **Role**: Orchestrates silence-based phrase splitting. Splits the phoneme sequence at silence token positions, performs independent inference per phrase, and inserts zero-sample silence intervals between phrases before concatenation
+- **Parameter type**: Receives `phonemeSilence` as `IReadOnlyDictionary<string, float>` (removed `Dictionary` cast)
 
 ### 5. Audio Output Layer
 
@@ -224,12 +284,12 @@ var result = phonemizer.PhonemizeWithProsody("こんにちは");
 // result.Phonemes: phoneme array
 // result.ProsodyA1, ProsodyA2, ProsodyA3: prosody values for each phoneme
 
-// Prosody-enabled audio generation
+// Prosody-enabled audio generation (unified API: GenerateAudioAsync)
 var generator = new InferenceAudioGenerator();
 await generator.InitializeAsync(modelAsset, voiceConfig);
 if (generator.SupportsProsody)
 {
-    var audio = await generator.GenerateAudioWithProsodyAsync(
+    var audio = await generator.GenerateAudioAsync(
         phonemeIds, prosodyA1, prosodyA2, prosodyA3);
 }
 ```
