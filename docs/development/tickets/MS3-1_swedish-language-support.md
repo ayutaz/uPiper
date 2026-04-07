@@ -2,11 +2,23 @@
 
 **マイルストーン**: [MS3: 新機能追加](../piper-plus-v1.10.0-milestones.md#ms3-新機能追加)
 **優先度**: P2
-**ステータス**: ブロック中（スウェーデン語対応モデル待ち）
+**ステータス**: 対応可能（G2P/PUAブロッカー解除済み、SV対応モデルのみ未提供）
 **見積もり**: 1.5人日（実装1日 + テスト・調整0.5日）
-**依存チケット**: MS1-1 (PUA マッピングにSV PUA 0xE059-0xE061 追加が含まれる)
-**前提条件（DotNetG2P.Swedish側）**: `SwedishPuaMapper` に長母音PUA（0xE059-0xE061）のマッピングを追加する必要がある。現在の `SwedishPuaMapper` には `t͡ɕ` → 0xE023 のマッピングしか含まれておらず、長母音はIPA形式のまま出力される。`ToPuaPhonemes()` が長母音をPUA文字に変換できるよう、DotNetG2P.Swedish リポジトリ側で対応が必要。他言語（Chinese, Korean）もそれぞれの PuaMapper で PUA 変換を完結させているアーキテクチャに合わせる。
+**依存チケット**: MS1-1 (PUA マッピングにSV PUA 0xE059-0xE061 追加が含まれる) → **完了済み**（PuaTokenMapper.csに反映済み）
+**前提条件（DotNetG2P.Swedish側）**: ~~`SwedishPuaMapper` に長母音PUA（0xE059-0xE061）のマッピングを追加する必要がある。~~ → **解決済み**: DotNetG2P.Swedish の `SwedishPuaMapper` は `t͡ɕ` → 0xE023 のみだが、長母音（`iː`, `yː` 等）は IPA 形式のまま `ToPuaPhonemes()` から出力される。uPiper 側の `PuaTokenMapper`（96固定エントリ）が `iː` → 0xE059 等の PUA 変換を担うため、DotNetG2P.Swedish 側の変更は不要。
 **後続チケット**: なし
+
+---
+
+### ブロッカー解除履歴
+
+| ブロッカー | 状態 | 解除時期 | 備考 |
+|-----------|------|---------|------|
+| DotNetG2P.Swedish パッケージ | **解決済み** | dot-net-g2p v1.9.0 | `SwedishG2PEngine` 実装完了（5フェーズG2P、47音素、方言対応、399+テスト） |
+| piper-plus 全プラットフォーム SV G2P | **解決済み** | piper-plus PR #297 | Rust/C#/Go/JS/Python 全て実装済み。`SwedishPhonemizer`, `phonemize_swedish_with_prosody()` |
+| DotNetG2P.Swedish PuaMapper 長母音 | **解決済み（回避策）** | uPiper MS1-1 完了時 | `SwedishPuaMapper` は `t͡ɕ` のみだが、uPiper `PuaTokenMapper` が長母音PUA変換を担当（0xE059-0xE061） |
+| PuaTokenMapper SV エントリ | **解決済み** | uPiper MS1-1 | `PuaTokenMapper.cs` に SV 長母音9エントリ追加済み。`LastFixedCodepoint` = 0xE061 |
+| SV 対応 ONNX モデル | **未提供** | — | E2E テストおよびデモ動作にはモデルが必要。G2Pパイプラインの Unit テストはモデルなしで実行可能 |
 
 ---
 
@@ -20,13 +32,22 @@ uPiperの8番目の言語としてスウェーデン語 (SV) を追加する。D
 - 既存7言語 (ja/en/zh/es/fr/pt/ko) の動作に影響を与えない
 - デモUI (`InferenceEngineDemo`) でスウェーデン語が選択・テスト可能になる
 
-**DotNetG2P.Swedish の準備状況** (確認済み):
+**DotNetG2P.Swedish の準備状況** (確認済み、全項目クリア):
 - `SwedishG2PEngine`: 5フェーズG2Pルール、47音素定義、方言対応 (Central/FinlandSwedish)
 - Prosody API: `ToIpaWithProsody()` -> `SwedishProsodyResult` (A1/A2/A3)
 - PUA API: `ToPuaPhonemes()` / `ToPuaString()` (内部で `SwedishPuaMapper` を使用)
-- PUAマッピング: `t͡ɕ` -> 0xE023 (中国語/韓国語と共有) のみ。長母音PUAはモデル側で 0xE059-0xE061
+- PUAマッピング: `SwedishPuaMapper` は `t͡ɕ` -> 0xE023 のみ。長母音はIPA形式で出力され、uPiper側 `PuaTokenMapper` で PUA 変換される（0xE059-0xE061、追加済み）
 - テスト: 399+テストケース
 - Unity対応: asmdef定義、`[Preserve]` アノテーション済み
+
+**piper-plus の準備状況** (確認済み、全プラットフォーム実装完了):
+- C#: `SwedishG2PEngine` (`PiperPlus.Core.Phonemize`), `SwedishPhonemizer` (IPhonemizer実装)
+- Rust: `phonemize_swedish_with_prosody()` (`piper-core`, `piper-plus-g2p`)
+- Go: `swedish.go` / `swedish_test.go` (`phonemize` パッケージ)
+- JS/WASM: npm Language型に `'sv'` 含む
+- Python: `piper_plus_g2p.swedish` モジュール
+- PUA: `token_map.rs` / `OpenJTalkToPiperMapping` に SV 長母音9エントリ (0xE059-0xE061)
+- PR #297 でマージ済み
 
 ---
 
@@ -306,26 +327,26 @@ private static readonly string[] SupportedLanguages = { "ja", "en", "zh", "es", 
 
 **ファイル**: `Assets/uPiper/Runtime/Core/Phonemizers/Multilingual/PuaTokenMapper.cs`
 
-> **MS1-1 で対応済みの場合はスキップ**。MS1-1 チケットに以下のSV PUAエントリ追加が含まれている。MS1-1 が未完了の場合は本チケットで追加する。
+> **MS1-1 で対応済み → スキップ**。以下の SV PUA エントリは MS1-1 完了時に `PuaTokenMapper.cs` に追加済み。本チケットでの追加作業は不要。
 
-追加エントリ (9件、行166 の French ブロック後に挿入):
+**追加済みエントリ (9件)** (行167-179、French ブロック後):
 ```csharp
 // =================================================================
-// Swedish (SV) -- swedish long vowels
+// Swedish (SV) -- swedish_phonemize.cpp
 // =================================================================
-{ "i\u02D0", 0xE059 },    // long close front unrounded (SV i:)
-{ "y\u02D0", 0xE05A },    // long close front rounded (SV y:)
-{ "e\u02D0", 0xE05B },    // long close-mid front unrounded (SV e:)
-{ "\u025B\u02D0", 0xE05C },  // long open-mid front unrounded (SV a:)
-{ "\u00F8\u02D0", 0xE05D },  // long close-mid front rounded (SV o:)
-{ "\u0251\u02D0", 0xE05E },  // long open back unrounded (SV a:)
-{ "o\u02D0", 0xE05F },    // long close-mid back rounded (SV o:)
-{ "u\u02D0", 0xE060 },    // long close back rounded (SV u:)
-{ "\u0289\u02D0", 0xE061 },  // long close central rounded (SV u:)
+// --- Long vowels (Complementary Quantity) ---
+{ "i\u02D0", 0xE059 },          // iː  close front unrounded long
+{ "y\u02D0", 0xE05A },          // yː  close front rounded long
+{ "e\u02D0", 0xE05B },          // eː  close-mid front unrounded long
+{ "\u025B\u02D0", 0xE05C },     // ɛː  open-mid front unrounded long
+{ "\u00F8\u02D0", 0xE05D },     // øː  close-mid front rounded long
+{ "\u0251\u02D0", 0xE05E },     // ɑː  open back unrounded long
+{ "o\u02D0", 0xE05F },          // oː  close-mid back rounded long
+{ "u\u02D0", 0xE060 },          // uː  close back rounded long
+{ "\u0289\u02D0", 0xE061 },     // ʉː  close central rounded long
 ```
 
-`LastFixedCodepoint` を `0xE058` -> `0xE061` に更新 (行171)。
-`DynamicPuaStart` を `0xE059` -> `0xE062` に更新 (行176)。
+`LastFixedCodepoint` = `0xE061`、`DynamicPuaStart` = `0xE062` → 既に正しい値に更新済み。
 
 ---
 
@@ -408,11 +429,12 @@ private static readonly string[] SupportedLanguages = { "ja", "en", "zh", "es", 
 - **`a` / `o` の非使用**: これらはドイツ語 (`a`, `o`, `u`) と重複するため、判定文字に含めていない
 - **推奨運用**: ユーザーには `defaultLatinLanguage = "sv"` による明示的言語指定を推奨する。デモUIの言語ドロップダウン選択時に `InitializeMultilingualPhonemizerAsync("sv")` が呼ばれる既存機構 (`InferenceEngineDemo.cs` 行530-533) でこれは自動的に実現される
 
-### 5.2 モデル可用性
+### 5.2 モデル可用性（唯一の残ブロッカー）
 
 - 現行モデル (`multilingual-test-medium`) は 6言語 (ja/en/zh/es/fr/pt) のみ対応
 - SV を含むモデルが利用可能になるまで、E2E テストは実施不可
 - G2P パイプラインの Unit テスト (音素化 + Prosody) はモデルなしで実行可能
+- **注**: G2P/PUA の全ブロッカーは解除済み。uPiper 統合作業（セクション2.1-2.7）はモデルなしで着手・完了可能
 
 ### 5.3 asmdef 参照の整合性
 
@@ -479,6 +501,6 @@ private static readonly string[] SupportedLanguages = { "ja", "en", "zh", "es", 
    - Prosody マッピングテーブルに `sv | pitch_accent (0/1/2) | stress (0/1/2) | syllable_count` を追加
    - `AllLanguages` の記述を "7言語" -> "8言語" に更新
    - データフロー図の `MultilingualPhonemizer` 分岐に `sv: SwedishG2PEngine` を追加
-3. **MS1-1 との依存関係**: PuaTokenMapper への SV PUA 追加は MS1-1 に含まれている。MS1-1 が先に完了した場合、本チケットのセクション 2.8 はスキップできる。MS1-1 が未着手の場合は本チケットで PUA 追加も実施し、MS1-1 チケットから該当部分を除外する。
+3. **MS1-1 との依存関係**: PuaTokenMapper への SV PUA 追加は MS1-1 で完了済み。本チケットのセクション 2.8 はスキップ。
 4. **全パッケージバージョンバンプ**: DotNetG2P パッケージ群を v1.8.2 -> v1.9.0 (or later) に統一するバンプは別チケットとして管理する。本チケットでは Swedish のみ v1.9.0 を参照する。
 5. **FinlandSwedish 方言 UI**: 将来、方言切り替えが必要になった場合は `SwedishG2POptions(dialect: SwedishDialect.FinlandSwedish)` を `SwedishG2PEngine` コンストラクタに渡す。`PiperConfig` への方言設定追加が必要になる。

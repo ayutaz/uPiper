@@ -8,7 +8,7 @@
 
 | チケット | タイトル | 優先度 | ステータス | ブロッカー |
 |---------|---------|--------|-----------|-----------|
-| [MS3-1](MS3-1_swedish-language-support.md) | スウェーデン語 (SV) 対応 | P2 | ブロック中 | SV対応モデル + DotNetG2P.Swedish PuaMapper更新 |
+| [MS3-1](MS3-1_swedish-language-support.md) | スウェーデン語 (SV) 対応 | P2 | 対応可能 | ~~DotNetG2P.Swedish PuaMapper更新~~ 解決済み。SV対応ONNXモデルのみ未提供（E2Eテストに必要、G2P統合作業はモデルなしで着手可能） |
 
 ## 完了済みチケット (4件)
 
