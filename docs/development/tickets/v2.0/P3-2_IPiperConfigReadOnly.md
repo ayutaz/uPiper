@@ -290,6 +290,31 @@ public interface IPiperTTS : IDisposable
 2. **PiperTTS._config 参照の部分的移行が中途半端**: P3-2 で一部の `_config` 参照を `_validatedConfig` に移行するが、完全排除はスコープ外。結果として「一部は `_config`、一部は `_validatedConfig`」という混在状態が残る。
 3. **InferenceAudioGenerator の PiperConfig 依存が残存**: P3-4 まで解消されないため、P3-2 完了時点では設定アクセスの一貫性が不完全。
 
+### 6.5 Phase 2+3 統合設計考察
+
+#### Config 三部作の依存チェーン内での P3-2 の位置付け
+
+P3-2 は P3-1 → P3-3 → P3-2 の依存チェーンの末端であり、0.5 人日と最小工数のチケットである。P3-2 を独立チケットとする価値は以下の点にある:
+- P3-1/P3-3 がマージされた時点で、P3-2 なしでも Config 改善の大部分（ネスト構造化 + 副作用排除）が完了している。P3-2 はインターフェース抽出という「仕上げ」であり、遅延実施しても他チケットをブロックしない。
+- P3-2 は P3-4（BackendSelector）の `InferenceAudioGenerator` 側 config アクセスにも影響するため、P3-4 との順序を柔軟に調整できる利点がある。
+
+**P3-3 との統合を推奨しない理由**: P3-3 は `Validate()` の副作用排除（テスト 27 件移行 + 12 件新規）が工数の大半を占める。P3-2 を混ぜるとレビュー範囲が「副作用排除」と「インターフェース導入」の 2 つの独立した設計判断を含むことになり、レビューの焦点がぼやける。
+
+#### P3-4（BackendSelector）との順序関係の明確化
+
+P3-2 と P3-4 は M3 の別グループ（Group B / Group C）に属し、並行実行可能とされている。しかし以下の間接的な関係がある:
+
+- P3-4 は `InferenceAudioGenerator.InitializeAsync` 内で `_piperConfig.Backend` と `_piperConfig.GPUSettings.MaxMemoryMB` を参照する。P3-2 で `PiperTTS._validatedConfig` が `IPiperConfigReadOnly` 型になった場合、`InferenceAudioGenerator` への config 伝播が変わる可能性がある。
+- ただし、P3-4 の `BackendSelector.Determine()` はプリミティブ値（`InferenceBackend` enum + `int`）を受け取る設計のため、`IPiperConfigReadOnly` の導入有無に関わらず `BackendSelector` 自体は影響を受けない。影響があるのは `InferenceAudioGenerator.InitializeAsync` の呼び出し箇所のみ。
+
+**結論**: P3-2 と P3-4 は真に独立しており、マージ順序の制約はない。P3-4 のセクション 7 に記載されている「P3-2 適用後の呼び出し箇所変更」の記述は正確であり、追加の相互参照は不要。
+
+#### Group A（P2-1/P2-2）からの影響
+
+P3-2 は `TTSSynthesisOrchestrator` のコンストラクタ引数型を `ValidatedPiperConfig` → `IPiperConfigReadOnly` に変更する。P2-1 は同メソッドの `PhonemeSilenceProcessor.SplitAtPhonemeSilence` パススルーのシグネチャを変更し、P2-2 は `SynthesizeAsync` 内の Prosody 変数を変更する。
+
+これらの変更は `TTSSynthesisOrchestrator.cs` 内の異なるメソッド・行に対する変更であり、3-way マージで自動解決可能。P3-2 担当エージェントが Group A のマージ後にリベースする場合、`TTSSynthesisOrchestrator.cs` のコンフリクト解決は容易。
+
 ---
 
 ## 7. ファイル一覧

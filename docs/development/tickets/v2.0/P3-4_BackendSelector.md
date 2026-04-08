@@ -394,6 +394,39 @@ public static (BackendType backend, string reason) Determine(...) { ... }
 
 3. **DetermineAutoBackend の private 化**: Auto 選択ロジックは `Determine` 内の private メソッドとして実装する。テストは public な `Determine(Auto, ...)` 経由で間接的にテストする。Auto ロジックを直接テストしたい場合は `internal` + `InternalsVisibleTo` が必要になるが、14テストケースで全パスを網羅しているため不要と判断。
 
+### 6.6 Phase 2+3 統合設計考察
+
+#### P3-5（AudioNormalizer）との共通リファクタリング原則
+
+P3-4 と P3-5 は同じ「ロジック切り出し」パターンに従う。共通原則を明文化する:
+
+**共通リファクタリング原則（Cut-Out Pattern）**:
+1. **新規 static クラスを `AudioGeneration/` ディレクトリに作成**: 切り出し先は元クラスと同一ディレクトリに配置し、namespace を維持する
+2. **元クラスから対象メソッドを完全削除**: 互換ファサード（`[Obsolete]` 委譲メソッド）は設けない。v2.0 は Breaking Change リリースのため一括移行
+3. **呼び出し元をインスタンスメソッド → static メソッドに変更**: DI による差し替え能力は失われるが、状態を持たない純粋関数に対しては static が適切
+4. **テストは新規クラスに移動/新規作成**: 元クラスのテストから切り出し対象のテストを削除し、新クラスのテストに移植
+5. **ロジック変更なし**: 移動のみ。アルゴリズムの改善は別チケットで実施
+
+**P3-4 固有の追加パターン**: P3-4 は上記共通原則に加え、`PlatformInfo` readonly struct によるプラットフォーム依存のカプセル化を行う。これはP3-5 にはない追加設計要素であり、「テスト不能な `SystemInfo` 依存を注入可能にする」というテスト容易性の改善パターンである。P3-5 は `Mathf` 依存のみであり（テスト時も問題なく動作する）、カプセル化の必要がない。
+
+#### Group A（P2-1/P2-2）との `InferenceAudioGenerator.cs` 同時変更
+
+P3-4 と P2-2 は共に `InferenceAudioGenerator.cs` を変更する:
+- P3-4: `DetermineBackendType` メソッド削除（L591-L680、約 90 行）+ `InitializeAsync` 呼び出し変更（L132）
+- P2-2: `GenerateAudioAsync`, `ExecuteInference`, `PrepareInputs`, `CreateProsodyTensorPooled`, `ExecuteWarmup`
+
+変更対象メソッドが完全に独立しており、コンフリクトリスクは低い。ただし P3-4 による約 90 行の削除が行番号をシフトさせるため、後からリベースする側（P2-2 推奨）は diff の再適用に注意が必要。
+
+**推奨マージ順序**: P3-4 を先にマージ → P2-2 がリベース。理由は P3-4 が 0.5 人日と小規模で先に完了する見込みが高いこと、および P2-2 が 3 人日と長期作業のため、途中のリベースを組み込みやすいこと。
+
+#### P3-2（IPiperConfigReadOnly）との関係
+
+P3-4 は `InferenceAudioGenerator` 内で `_piperConfig.Backend` と `_piperConfig.GPUSettings.MaxMemoryMB` を参照している。P3-2 で `IPiperConfigReadOnly` が導入された後は、これらのアクセスパスが変わる可能性がある:
+- P3-2 前: `_piperConfig.Backend` → `BackendSelector.Determine(requested: _piperConfig.Backend, ...)`
+- P3-2 後: `_config.Inference.Backend` → `BackendSelector.Determine(requested: _config.Inference.Backend, ...)`
+
+`BackendSelector.Determine()` 自体はプリミティブ値を受け取る設計のため、`IPiperConfigReadOnly` の導入に影響されない。変更が必要なのは呼び出し側の `InferenceAudioGenerator.InitializeAsync` のみであり、P3-2 のセクション 7 に適切に記載されている。追加の相互参照は不要。
+
 ---
 
 ## 7. 後続タスクへの連絡事項

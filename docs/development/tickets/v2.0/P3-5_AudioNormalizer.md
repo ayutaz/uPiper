@@ -323,6 +323,44 @@ P3-5 では `AudioNormalizer.Normalize` として移植し、API 互換性を維
 
 3. **ログ出力の static 依存**: `AudioNormalizer` は `PiperLogger.LogDebug` を直接呼び出す。テスト時にログ出力を制御したい場合（例: ログが期待通りに出力されることを検証したい場合）に不便だが、正規化ロジックのテストでログ内容のアサートは不要と判断。
 
+### 6.6 Phase 2+3 統合設計考察
+
+#### P3-4（BackendSelector）との共通リファクタリング原則
+
+P3-5 と P3-4 は同一の「ロジック切り出し」パターン（Cut-Out Pattern）に従う。P3-5 を先に実施してパターンを確立し、P3-4 で同パターンを適用するという実施順序は、以下のパターンの確立を意図している:
+
+**Cut-Out Pattern の定義**:
+1. 新規 static クラスを `AudioGeneration/` ディレクトリに作成
+2. 元クラスから対象メソッドを完全削除（互換ファサードなし）
+3. 呼び出し元をインスタンスメソッド → static メソッドに変更
+4. テストを新規クラスに移動/新規作成
+5. ロジック変更なし（振る舞い不変の保証）
+
+P3-5 は最もシンプルな適用例（状態なし純粋関数の移動のみ）であり、P3-4 はこのパターンに `PlatformInfo` による依存カプセル化を追加した発展形である。P3-5 の成果物が P3-4 の「テンプレート」となる。
+
+#### Group A（P2-1/P2-2）・Group B（P3-1/P3-3/P3-2）とのファイル競合
+
+P3-5 が変更するファイルと他グループの競合:
+
+| P3-5 変更ファイル | Group A 競合 | Group B 競合 |
+|------------------|-------------|-------------|
+| `AudioNormalizer.cs`（新規） | なし | なし |
+| `AudioClipBuilder.cs` | なし | なし |
+| `TTSSynthesisOrchestrator.cs` | P2-1（シグネチャ）、P2-2（Prosody 変数） | P3-1（プロパティアクセス）、P3-2（型変更） |
+| `InferenceEngineDemo.cs` | P2-1（JSON デシリアライズ） | なし |
+| `AudioNormalizerTests.cs`（新規） | なし | なし |
+| `AudioClipBuilderTests.cs` | なし | なし |
+
+**`TTSSynthesisOrchestrator.cs` の変更箇所分析**: P3-5 は L99 の `_audioClipBuilder.NormalizeAudioInPlace(audioData, 0.95f)` を `AudioNormalizer.NormalizeInPlace(audioData, 0.95f)` に変更する 1 行のみ。他グループの変更箇所（P2-1 のシグネチャパススルー、P2-2 の Prosody 変数名、P3-1 の Silence プロパティアクセス）とは完全に独立した行であり、コンフリクトなし。
+
+**`InferenceEngineDemo.cs` の変更箇所分析**: P3-5 は L849 の正規化呼び出し変更のみ。P2-1 は同ファイルの L986, L1044-1046（JSON デシリアライズ）を変更。変更箇所が約 200 行離れており、コンフリクトリスクなし。
+
+#### Group C 全体の独立性
+
+Group C（P3-5 + P3-4）は Group A、Group B と変更ファイルが部分的に重複するが、変更箇所が行レベルで非重複であることが確認できた。Group C は M3 の 3 並行グループの中で最も独立性が高く、最も早く完了する見込み（合計 1 人日）。
+
+**推奨**: Group C を最初にマージし、Group A・Group B のリベースベースとして確定させる。これにより、Group A・Group B は Group C の変更が確定した状態で作業を継続でき、最終マージ時のコンフリクト解決が最小化される。
+
 ---
 
 ## 7. 後続タスクへの連絡事項
