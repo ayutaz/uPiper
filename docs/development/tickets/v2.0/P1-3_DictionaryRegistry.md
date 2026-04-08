@@ -517,6 +517,65 @@ public sealed class LanguageHandlerRegistry : IDisposable
 
 **不採用理由**: 現実的には日本語/英語/中国語のハンドラは内部にエンジンインスタンス（`DotNetG2PPhonemizer`, `EnglishG2PEngine`, `ChineseG2PEngine`）を保持する必要があり、完全なステートレス化は困難。エンジンインスタンスとハンドラを分離して `Resource` として渡すのは、ハンドラの `Process()` メソッド内でエンジンを参照する必要があるため、逆に結合が増える。現設計の `HandlerEntry`（ハンドラ + 所有権フラグ）は、この現実的制約に対する pragmatic な解である。
 
+### 6.6 Phase 1 全体のゼロベース設計考察
+
+P1-3 を Phase 1 全体（P1-1 ~ P1-6）の一部として統合的に評価する。（P1-1 セクション 6.6、P1-4 セクション 6.7 と相互参照）
+
+#### P1-4 との分割粒度の妥当性
+
+P1-3 と P1-4 は「ハンドラ分離」と「レジストリ化」という、本来は一つの設計変更の前半・後半である。P1-4 がハンドラクラスを分離し `Dictionary<string, ILanguageG2PHandler>` を導入した後、P1-3 が `HandlerEntry` struct で所有権管理を改善する。この分割の結果、P1-4 完了時点で「各ハンドラが `_ownsEngine` を持つ」中間状態が生まれる。
+
+**統合した場合のメリット**: P1-4 + P1-3 を同一 PR で実施すれば、所有権管理の中間状態が消え、最初から `HandlerEntry` ベースの設計になる。P1-4 のハンドラ実装時に `_ownsEngine` フラグを入れる必要がなく、ハンドラは処理ロジックに専念できる。
+
+**統合しない理由（現設計の判断）**: PR サイズが 5.5 + 2.0 = 7.5 人日相当となり、レビュー可能な限界（P1-4 セクション 6.6 参照）を超える。また、P1-4 の7ハンドラ実装は単体テストで品質を担保する必要があり、P1-3 のレジストリ変更と混在するとテスト失敗時の原因切り分けが困難になる。
+
+**妥協の現実的影響**: P1-4 完了 → P1-3 完了の間（推定数日〜1週間）、各ハンドラの `_ownsEngine` フラグと `MultilingualPhonemizer` 側の所有権知識が二重管理になる。この期間にバグが発生した場合、所有権関連のリソースリーク/二重 Dispose の原因切り分けが必要。P1-3 を P1-4 直後に着手し、中間状態の滞留期間を最小化することが重要。
+
+#### DI 戦略の統一性: P1-1 コンストラクタ注入 vs P1-3 Options Dictionary 注入
+
+P1-1 は `PhonemeEncoder(config, tokenMapper)` のコンストラクタ注入、P1-3 は `MultilingualPhonemizerOptions.Handlers` Dictionary 注入という異なる DI パターンを採用する。この非対称性について:
+
+- **P1-1 のコンストラクタ注入**: 依存が `PiperVoiceConfig` と `PuaTokenMapper` の2つのみ。パラメータ数が少なく、コンストラクタが自然。null 時は即座に `ArgumentNullException`。
+- **P1-3 の Options Dictionary 注入**: 依存が7言語分のハンドラ + 所有権フラグの計14要素。コンストラクタパラメータにすると引数が爆発する（v1.x の14引数コンストラクタの教訓）。Dictionary + `HandlerEntry` が自然。
+
+**統一するとしたら**: 両方を Options パターンに揃える案（P1-1 セクション 6.6 の `PhonemeEncoderOptions` 案）は、`PhonemeEncoder` の依存が2つしかないため冗長。逆に両方をコンストラクタ注入にする案は、ハンドラ7つを個別パラメータにすると v1.x の失敗を繰り返す。**現設計の非対称性は、依存の数と性質の違いに基づく合理的な判断**であり、統一する必然性はない。
+
+#### 所有権管理の Phase 1 全体での一貫性
+
+Phase 1 で所有権管理が関わるコンポーネントを横断的に整理する:
+
+| コンポーネント | リソース | 所有権管理 | 管理者 |
+|-------------|---------|-----------|-------|
+| `PuaTokenMapper` (P1-1) | ConcurrentDictionary | インスタンスのライフサイクル | `PiperTTS` (Composition Root) |
+| `PhonemeEncoder` (P1-1) | `PuaTokenMapper` 参照 | 参照のみ（所有しない） | `PiperTTS` が TokenMapper を別途管理 |
+| ハンドラ (P1-4) | DotNetG2P エンジン等 | `_ownsEngine` フラグ → P1-3 で `HandlerEntry.IsOwned` に移行 | `MultilingualPhonemizer` |
+| `MultilingualPhonemizer` (P1-3) | `Dictionary<string, HandlerEntry>` | `HandlerEntry.IsOwned` で Dispose 判断 | 自身（`IDisposable`） |
+
+この表が示す通り、Phase 1 完了後の所有権管理は2つのパターンに収束する:
+1. **Composition Root 管理**: `PuaTokenMapper` は `PiperTTS` が生成し、ライフサイクルを管理
+2. **Registry 管理**: ハンドラは `HandlerEntry.IsOwned` フラグにより `MultilingualPhonemizer` が選択的に Dispose
+
+この2パターンの共存は、コンポーネントの性質の違い（単一の共有リソース vs 複数の言語別リソース）に基づくものであり、一貫性は保たれている。
+
+#### テスト戦略: HandlerEntry のテスタビリティ
+
+`HandlerEntry` は `internal readonly struct` であり、テストアセンブリからアクセスするには `[assembly: InternalsVisibleTo]` が必要。P1-1 ではこの属性を削除する方針（P1-1 セクション 2 Step 1-7）だが、P1-3 で再追加が必要になる。
+
+**Phase 1 全体のテストヘルパー共通化**: P1-4 で導入される `StubG2PHandler` は P1-3 / P1-5 / P1-6 のテストでも共用される。テストヘルパーの配置先を統一すべき:
+
+| テストヘルパー | 導入チケット | 使用チケット | 推奨配置 |
+|-------------|-----------|-----------|---------|
+| `StubG2PHandler` | P1-4 | P1-3, P1-5, P1-6 | `Tests/Editor/Helpers/StubG2PHandler.cs` |
+| `TestPuaJsonHelper` (pua.json パス解決) | P1-2 | P1-2 のみ | テストファイル内 (ローカル) |
+
+`StubG2PHandler` は4チケットにまたがって使用されるため、テストヘルパーディレクトリへの配置が望ましい。P1-6 セクション 6.4 で指摘されている `CreatePhonemizer` ファクトリも同ディレクトリに配置することで、テストコードの DRY 原則が守られる。
+
+#### Phase 1 完了後の理想 vs 現実
+
+**理想**: P1-3 + P1-4 が統合され、ハンドラは最初から `HandlerEntry` ベースで登録。各ハンドラに `_ownsEngine` フラグが存在しない。所有権管理は `MultilingualPhonemizer` の `HandlerEntry` レジストリに完全集約。P1-5/P1-6 のレガシー掃除も同時に完了し、`MultilingualPhonemizer` は「ハンドラ Dictionary + 所有権管理」のみのクリーンな状態。
+
+**現実の妥協**: P1-4 → P1-3 の段階的移行により、`_ownsEngine` フラグの中間状態が一時的に存在。P1-3 完了後も P1-5/P1-6 のレガシーコード（`IPhonemizerBackend`, Obsolete コンストラクタ）が残存し、`MultilingualPhonemizer` は「新旧混在」の状態が M2 完了まで続く。この妥協は PR サイズとレビュー負荷のバランスに起因する実務的制約。
+
 ---
 
 ## 7. 後続タスクへの連絡事項

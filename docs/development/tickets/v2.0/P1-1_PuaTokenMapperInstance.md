@@ -342,7 +342,7 @@ C# の `static class` は Java/Python のシングルトンとは異なり、App
 
 ### 6.6 Phase 1 全体のゼロベース設計考察
 
-P1-1 と P1-4 を含む Phase 1 全体を統合的に設計する場合の考察。（P1-4 チケットのセクション 6.7 と相互参照）
+P1-1 と P1-4 を含む Phase 1 全体を統合的に設計する場合の考察。（P1-4 セクション 6.7、P1-2 セクション 6.5、P1-3 セクション 6.6 と相互参照）
 
 #### DI パターンの整合性
 
@@ -351,7 +351,7 @@ Phase 1 で導入される DI パターンは2種類:
 - **P1-1**: `PuaTokenMapper` を `PiperTTS` で生成し、`PhonemeEncoder(config, tokenMapper)` でコンストラクタ注入
 - **P1-4**: `ILanguageG2PHandler` を `MultilingualPhonemizerOptions.Handlers` Dictionary 経由で注入
 
-この非対称性は意図的である。`PuaTokenMapper` は単一の依存（1:1 関係）であり、コンストラクタパラメータが自然。`Handlers` は言語コードをキーとする複数の依存（1:N 関係）であり、Dictionary プロパティが自然。
+この非対称性は意図的である。`PuaTokenMapper` は単一の依存（1:1 関係）であり、コンストラクタパラメータが自然。`Handlers` は言語コードをキーとする複数の依存（1:N 関係）であり、Dictionary プロパティが自然。P1-3 セクション 6.6 で詳細に分析した通り、この非対称性は依存の数と性質の違いに基づく合理的な判断であり、統一する必然性はない。
 
 **もし統一するなら**: 全依存を `Options` / `Config` オブジェクトに集約するパターンが考えられる:
 
@@ -364,7 +364,34 @@ var encoderOptions = new PhonemeEncoderOptions
 var encoder = new PhonemeEncoder(encoderOptions);
 ```
 
-しかし、`PhonemeEncoder` の依存は `PiperVoiceConfig` と `PuaTokenMapper` の2つだけであり、Options オブジェクトを導入するとかえって冗長になる。Options パターンは依存が3つ以上、かつオプショナルなものが混在する場合に適している（`MultilingualPhonemizerOptions` がまさにそのケース）。
+しかし、`PhonemeEncoder` の依存は `PiperVoiceConfig` と `PuaTokenMapper` の2つだけであり、Options オブジェクトを導入するとかえって冗長になる。Options パターンは依存が3つ以上、かつオプショナルなものが混在する場合に適している（`MultilingualPhonemizerOptions` がまさにそのケース）。P1-6 セクション 6.6 で示す通り、Phase 1 完了後の `MultilingualPhonemizerOptions` は3プロパティ（Languages, DefaultLatinLanguage, Handlers）に簡素化され、Options パターンの適用条件にちょうど合致する。
+
+#### P1-2 との設計的連続性
+
+P1-1 のハイブリッド設計（`FixedPuaMapping` が static、動的状態がインスタンス）は、P1-2 で pua.json ランタイム読み込みを追加する際に緊張関係を生む（セクション 6.5 で指摘済み）。P1-2 セクション 6.5 でも「P1-1 + P1-2 を統合するなら、コンストラクタで pua.json パスを受け取り `FixedPuaMapping` を廃止する設計が最もクリーン」と結論している。
+
+一から設計する場合の P1-1 + P1-2 統合後の姿:
+
+```csharp
+// 統合設計: ハードコードフォールバックなし
+public sealed class PuaTokenMapper
+{
+    private readonly Dictionary<string, char> _token2Char;
+    private readonly Dictionary<char, string> _char2Token;
+
+    public PuaTokenMapper(PuaJsonData data)  // pua.json のパース結果を受け取る
+    {
+        foreach (var entry in data.Entries)
+        {
+            var ch = (char)entry.Codepoint;
+            _token2Char[entry.Token] = ch;
+            _char2Token[ch] = entry.Token;
+        }
+    }
+}
+```
+
+この統合設計では `FixedPuaMapping` static フィールド、`IsFixedPua` static メソッド、`ResetForTesting`/`ResetOnDomainReload` がいずれも不要。しかし M1/M2 のマイルストーン分割により、P1-1 単体で動作する状態を維持する必要があるため、ハイブリッド設計を採用する。
 
 #### テスタビリティの統合評価
 
@@ -378,6 +405,26 @@ Phase 1 完了後のテストパターン:
 | `ILanguageG2PHandler` 実装 | 各ハンドラを単体テスト | ProcessXxx のテスト分離 |
 
 この構造は「各コンポーネントが自身の依存を明示し、テスト時に差し替え可能」という DI の基本原則を満たしている。ただし、`PuaTokenMapper` はインターフェースを持たないため、PhonemeEncoder テストで「特定のマッピングだけを持つ PuaTokenMapper」を作ることができない。テスト時は常に96固定エントリ + 動的割り当てを含む完全な PuaTokenMapper を使うことになる。これは現時点では問題ないが、マッピングテーブルが拡大した場合（100+ 言語対応等）にテストの初期化コストが増大する可能性がある。
+
+#### テストヘルパーの共通化
+
+Phase 1 全体のテスト書き換え量は P1-1 の17箇所 + P1-4 の35箇所 + P1-6 の46箇所 = 98箇所以上に及ぶ。P1-6 セクション 6.4 および 6.6 で指摘されている通り、テストヘルパー（`CreatePhonemizer` ファクトリ等）を P1-4 の時点で早期導入していれば、後続チケットの書き換えコストを大幅に削減できた。
+
+推奨される共通テストヘルパーの配置（P1-3 セクション 6.6 参照）:
+
+```
+Tests/Editor/Helpers/
+  StubG2PHandler.cs          // P1-4 で導入、P1-5/P1-6 で共用
+  PhonemizerTestHelper.cs    // CreatePhonemizer ファクトリ（P1-6 で活用）
+```
+
+P1-1 の `PhonemeEncoder` テスト17箇所の書き換えについては、各テストの `[SetUp]` で `_mapper = new PuaTokenMapper()` を生成するパターンが十分シンプルであり、追加のテストヘルパーは不要。
+
+#### Phase 1 完了後の理想 vs 現実
+
+**理想**: P1-1 + P1-2 が統合され、`PuaTokenMapper` は pua.json のデータで初期化される完全なインスタンスクラス。`FixedPuaMapping` static フィールドは存在しない。`IPuaTokenMapper` インターフェースにより PhonemeEncoder テストでマッピングのモック化が可能。Phase 1 全体の DI 戦略が Composition Root パターンで統一。
+
+**現実の妥協**: ハイブリッド設計（static `FixedPuaMapping` + インスタンスフィールド）を採用。`IPuaTokenMapper` は YAGNI として見送り。P1-2 での pua.json 読み込みは二段階初期化（コンストラクタ + `InitializeFromFile`/`InitializeAsync`）。これらの妥協は M1/M2 のマイルストーン分割と YAGNI 原則に基づく実務的判断。
 
 ---
 

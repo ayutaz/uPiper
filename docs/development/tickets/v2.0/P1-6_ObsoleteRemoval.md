@@ -424,6 +424,130 @@ P1-4（ハンドラ分離）→ P1-5（IPhonemizerBackend 廃止）→ P1-6（Ob
 
 **不採用の理由**: P1-5 は「非同期フォールバックパスの廃止 + 未対応言語の処理設計」という固有の設計判断を含む。P1-6 は「機械的な削除 + テスト書き換え」が主体。性質の異なるタスクを分離することで、レビュー時の焦点が明確になる。ただし、M2 の推奨マージ順序（P1-5 → P1-6）を遵守し、P1-5 完了後に即座に P1-6 を実施することで、中間状態の滞留期間を最小化すべき。
 
+### 6.6 Phase 1 全体のゼロベース設計考察
+
+P1-6 を Phase 1 全体（P1-1 ~ P1-6）の一部として統合的に評価する。Phase 1 の最終タスクとして、全体の完了像を定義する。（P1-1 セクション 6.6、P1-4 セクション 6.7、P1-5 セクション 6.5 と相互参照）
+
+#### Phase 1 完了後の `MultilingualPhonemizer` の姿
+
+P1-6 完了後（= Phase 1 完了後）の `MultilingualPhonemizer` は以下の状態になる:
+
+```csharp
+public sealed class MultilingualPhonemizer : IDisposable
+{
+    // P1-3: HandlerEntry レジストリ（所有権管理込み）
+    private readonly Dictionary<string, HandlerEntry> _handlers;
+
+    // P1-4: Options ベースコンストラクタのみ（P1-6 で旧コンストラクタ削除済み）
+    public MultilingualPhonemizer(MultilingualPhonemizerOptions options) { ... }
+
+    // P1-4: ハンドラ dispatch（P1-5 で ProcessFallbackAsync 廃止済み）
+    public async Task<(string[], int[], int[], int[])> PhonemizeWithProsodyAsync(...)
+    {
+        if (_handlers.TryGetValue(lang, out var entry))
+            return entry.Handler.Process(text);
+        else
+            PiperLogger.LogWarning(...);  // P1-5
+    }
+
+    // P1-3: IsOwned ベースの選択的 Dispose
+    public void Dispose()
+    {
+        foreach (var entry in _handlers.Values)
+            if (entry.IsOwned) entry.Handler?.Dispose();
+    }
+}
+```
+
+この姿は P1-4 セクション 6.7 の「P1-1 ~ P1-6 を統合した場合のアーキテクチャ」と合致する。P1-6 はこの最終形に到達するための最後のステップ。
+
+#### `MultilingualPhonemizerOptions` の最終形
+
+P1-6 完了後の Options は3プロパティに簡素化される（セクション 6.3 参照）:
+
+```csharp
+public class MultilingualPhonemizerOptions
+{
+    public IReadOnlyList<string> Languages { get; set; }
+    public string DefaultLatinLanguage { get; set; } = "en";
+    public Dictionary<string, ILanguageG2PHandler> Handlers { get; set; }
+}
+```
+
+v1.4.0 の11プロパティから v2.0 の3プロパティへの削減は、Phase 1 の主要成果の一つ。この最終形は P1-4 セクション 6.6 の「Options パターンは依存が3つ以上、かつオプショナルなものが混在する場合に適している」という原則にちょうど合致する。`Languages` は必須、`DefaultLatinLanguage` はオプショナル（デフォルト "en"）、`Handlers` はオプショナル（未指定言語は `CreateDefaultHandler` で自動生成）。
+
+**P1-3 との整合性に関する注意**: P1-3 セクション 2 Step 2 では `Handlers` の型が `Dictionary<string, ILanguageG2PHandler>` だが、P1-3 の `HandlerEntry` 導入後、Options 経由の注入では `ILanguageG2PHandler` を受け取り、`MultilingualPhonemizer` 内部で `new HandlerEntry(handler, isOwned: false)` にラップする設計。つまり **Options の公開型は `ILanguageG2PHandler` のまま**で、`HandlerEntry` は内部実装詳細。この区別が P1-3 と P1-6 の間で一貫していることを確認すること。
+
+#### テスト書き換えの横断戦略
+
+P1-6 の46箇所のテスト書き換えは Phase 1 最大のテスト修正量。Phase 1 全体のテスト書き換えを横断的に整理する:
+
+| チケット | テスト書き換え量 | 主な内容 | テストヘルパー |
+|---------|---------------|---------|-------------|
+| P1-1 | 17箇所 | `PhonemeEncoder` コンストラクタ引数追加 | `new PuaTokenMapper()` |
+| P1-2 | 1ファイル改修 | `PuaJsonCrossValidationTests` スナップショット廃止 | `TestPuaJsonHelper` |
+| P1-3 | 8ファイル | Options + Handlers パターン移行 | `StubG2PHandler` (P1-4 由来) |
+| P1-4 | 35箇所 | Options パターン移行 + ハンドラ単体テスト新規 | `StubG2PHandler` 導入 |
+| P1-5 | 11箇所 | `StubPhonemizerBackend` → `StubG2PHandler` 移行 | `StubG2PHandler` |
+| **P1-6** | **46箇所** | 旧コンストラクタ → Options 版 + pragma 除去 | `StubG2PHandler`, `CreatePhonemizer` |
+
+**テストヘルパー共通化の優先度**: セクション 6.4 で指摘した `CreatePhonemizer(params string[] languages)` ファクトリは、P1-4/P1-6 の合計 81 箇所の書き換えを 2 箇所（ファクトリ定義 + 各テストでの呼び出し）に集約できる。一から設計するなら、P1-4 の時点でこのファクトリを導入し、P1-6 での書き換えコストを大幅に削減すべきだった。
+
+推奨される `CreatePhonemizer` の配置先は P1-3 セクション 6.6 で示した `Tests/Editor/Helpers/` ディレクトリ。`StubG2PHandler` と共に配置することで、テストヘルパーの発見可能性を高める:
+
+```
+Tests/Editor/Helpers/
+  StubG2PHandler.cs          // P1-4 で導入、P1-5/P1-6 で共用
+  PhonemizerTestHelper.cs    // CreatePhonemizer ファクトリ
+```
+
+#### P1-5 + P1-6 統合の最終判断
+
+P1-5 セクション 6.5 で統合の再検討を行い、「一から計画するなら統合が効率的」と結論した。P1-6 側からも同じ結論に至る:
+
+- P1-5 の `EnPhonemizer`/`KoPhonemizer` 削除と P1-6 の個別エンジンプロパティ削除は、両方とも `MultilingualPhonemizerOptions.cs` の変更
+- P1-5 の `_enPhonemizer`/`_koPhonemizer` フィールド削除と P1-6 の Obsolete コンストラクタ削除は、両方とも `MultilingualPhonemizer.cs` の変更
+- 統合すれば `MultilingualPhonemizer.cs` への変更が1回で済み、リベースのコンフリクトリスクが消滅
+
+**Phase 1 全体の最適な分割**: 一から設計するなら、以下の3タスク分割が最適:
+
+| タスク | 内容 | 見積もり |
+|-------|------|---------|
+| P1-A: PuaTokenMapper 完全インスタンス化 + pua.json | P1-1 + P1-2 統合 | 2.5 人日 |
+| P1-B: ILanguageG2PHandler + HandlerEntry Registry | P1-4 + P1-3 統合 | 7.5 人日 |
+| P1-C: レガシー API 全廃 | P1-5 + P1-6 統合 | 1.5 人日 |
+
+しかし P1-B の 7.5 人日は PR サイズが大きすぎるため、P1-4 と P1-3 の分離は維持が妥当。最終的には:
+
+| タスク | 内容 | 見積もり |
+|-------|------|---------|
+| P1-A: PuaTokenMapper インスタンス化 | P1-1（現行通り） | 1.5 人日 |
+| P1-B: pua.json ランタイム読み込み | P1-2（現行通り） | 1 人日 |
+| P1-C: ILanguageG2PHandler 全面移行 | P1-4（現行通り） | 5.5 人日 |
+| P1-D: Dictionary Registry 化 | P1-3（現行通り） | 2 人日 |
+| **P1-E: レガシー API 全廃** | **P1-5 + P1-6 統合** | **1.5 人日** |
+
+5タスク分割が最適解。ただし現計画の6タスク分割も、安全性を重視する判断として不合理ではない。
+
+#### piper-plus 互換性の Phase 1 全体評価
+
+P1-6 は piper-plus との互換性に直接関係しない（Obsolete コンストラクタは C# 固有の API）。Phase 1 全体の piper-plus 互換性は P1-2 セクション 6.5 で整理済みだが、P1-6 完了後の最終状態として改めて確認する:
+
+Phase 1 完了後、uPiper は以下の点で piper-plus と設計思想が整合する:
+- **データソース**: pua.json を single source of truth として共有（P1-2）
+- **言語プラグイン**: `ILanguageG2PHandler` は piper-plus の `trait LanguageProcessor` に概念対応（P1-4）
+- **同期 G2P**: piper-plus と同様に全言語がインプロセス同期処理（P1-5）
+
+整合しない点:
+- **所有権管理**: piper-plus は Rust の所有権システムで型安全に管理。uPiper は `HandlerEntry.IsOwned` フラグで実行時管理（P1-3、P1-4 セクション 6.4 参照）
+- **DI パターン**: piper-plus はモジュールスコープのシングルトン。uPiper は Composition Root + Options パターン（C# + Unity 固有の要件）
+
+#### Phase 1 完了後の理想 vs 現実
+
+**理想**: P1-5 + P1-6 が統合され、レガシー API（`IPhonemizerBackend`, Obsolete コンストラクタ, 個別エンジンプロパティ, `CreateDummyAudioClip`）が一括削除。テストは全て Options + Handlers パターンに統一済み。`#pragma warning disable CS0618` はゼロ。`MultilingualPhonemizerOptions` は3プロパティのクリーンな構造。
+
+**現実の妥協**: P1-5 → P1-6 の2段階削除により、P1-5 完了後に Obsolete コンストラクタと個別エンジンプロパティがまだ残存する中間状態が数日間存在。この期間にテストで `#pragma warning disable` が残り続ける。P1-6 完了で全て解消されるが、中間状態でのデバッグ時にレガシーコードの存在が混乱を招く可能性がある。
+
 ---
 
 ## 7. 後続タスクへの連絡事項

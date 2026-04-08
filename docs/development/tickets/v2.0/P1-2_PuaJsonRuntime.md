@@ -436,6 +436,66 @@ P1-1 Section 6.5 で指摘された「FixedPuaMapping (static) と pua.json (イ
 
 v2.0 でフォールバックを維持する理由は移行リスクの最小化のみであり、将来的な廃止は設計意図として明確にしておく。
 
+### 6.5 Phase 1 全体のゼロベース設計考察
+
+P1-2 を Phase 1 全体（P1-1 ~ P1-6）の一部として統合的に評価する。（P1-1 セクション 6.6、P1-4 セクション 6.7 と相互参照）
+
+#### P1-1 との設計的連続性
+
+P1-1 で `PuaTokenMapper` をインスタンス化し、P1-2 で pua.json ランタイム読み込みを追加するという2段階は、設計的には自然な積み上げである。しかし P1-1 セクション 6.3 で指摘されている通り、P1-1 のハイブリッド設計（`FixedPuaMapping` が static、動的状態がインスタンス）と P1-2 のランタイム読み込みは緊張関係にある。
+
+**もし P1-1 と P1-2 を統合するなら**: コンストラクタで pua.json パスを受け取り、`FixedPuaMapping` を廃止して全マッピングをインスタンスフィールドに統一する設計が最もクリーンになる:
+
+```csharp
+public PuaTokenMapper(string puaJsonPath)
+{
+    var entries = LoadFromJsonFile(puaJsonPath);
+    foreach (var e in entries) { _token2Char[e.Token] = e.Char; ... }
+}
+```
+
+この統合設計のメリットは「ハードコードフォールバック」という概念自体が消滅すること。ファイルが存在しなければコンストラクタが例外を投げるだけのシンプルな設計になる。不採用の理由は P1-1 と P1-2 がそれぞれ M1 / M2 に配置されており、M1 完了時点で動作する状態を維持する必要があるため。しかし「一から作るなら」の観点では、P1-1 + P1-2 の統合が最善。
+
+#### DI 戦略における位置づけ
+
+P1-2 は Phase 1 の DI 戦略において「データソースの外部化」を担う。P1-1 のコンストラクタ注入（`PhonemeEncoder(config, tokenMapper)`）が「依存オブジェクトの外部化」であるのに対し、P1-2 は依存オブジェクト（`PuaTokenMapper`）自体のデータ供給源を外部化する。この2つは DI の異なるレイヤーであり、分離されていることは設計上正当である。
+
+ただし、P1-4 の `MultilingualPhonemizerOptions.Handlers` Dictionary 注入と対比すると、`PuaTokenMapper` の初期化方法（コンストラクタ + 後から `InitializeFromFile`/`InitializeAsync`）は二段階初期化であり、「生成時点で完全な状態」というコンストラクタ注入の利点を損なっている。一から設計するなら、`PuaTokenMapper` のコンストラクタが pua.json の内容を直接受け取り、生成時点でマッピングが完全に確定する設計が望ましい。（P1-1 セクション 6.4 の「コンストラクタ注入は生成時点で完全な状態が保証される」の原則と整合する。）
+
+#### テスト戦略の横断評価
+
+P1-2 のテスト改修（`PuaJsonCrossValidationTests` のスナップショット配列廃止）は、Phase 1 全体のテスト戦略と整合している:
+
+| チケット | テスト改修方針 | テストヘルパー |
+|---------|-------------|-------------|
+| P1-1 | `[SetUp]` で `new PuaTokenMapper()` | なし（コンストラクタ直接呼び出し） |
+| **P1-2** | ファイル読み込みベースに移行 | `TestPuaJsonHelper`（pua.json パス解決） |
+| P1-4 | `StubG2PHandler` 導入 | `StubG2PHandler`（テスト共通スタブ） |
+| P1-6 | Options パターンに統一 | `CreatePhonemizer` ファクトリ（未導入、6.4 参照） |
+
+P1-2 のテストでは pua.json のファイルパスを解決するヘルパーが必要になる。これは `PuaJsonCrossValidationTests` と新規の `PuaTokenMapperJsonTests` で共用可能であり、テストヘルパーの共通化の好例。ただし、P1-6 セクション 6.4 で指摘されている `CreatePhonemizer` テストファクトリとは対象が異なるため（PuaTokenMapper vs MultilingualPhonemizer）、共通化は不要。
+
+#### piper-plus 互換性の Phase 1 全体評価
+
+P1-2 は Phase 1 の中で最も piper-plus との互換性に直接的に関わるタスクである。pua.json を共有データソースとして採用することで、C# 実装が piper-plus エコシステムの「正規メンバー」になる。Phase 1 全体の piper-plus 互換性を整理すると:
+
+| チケット | piper-plus との関係 |
+|---------|-------------------|
+| P1-1 | C# 固有の設計（piper-plus は static/module-level で問題なし） |
+| **P1-2** | **直接的な互換性向上**（pua.json 共有により single source of truth に参加） |
+| P1-3 | C# 固有の設計（Registry パターンは piper-plus に対応物なし） |
+| P1-4 | piper-plus の `trait LanguageProcessor` に概念的に対応するが、C# 実装は独自設計 |
+| P1-5 | C# 固有の掃除（piper-plus は最初から同期 G2P） |
+| P1-6 | C# 固有の掃除（Deprecation は piper-plus に無関係） |
+
+P1-2 は「piper-plus との設計思想の差異を縮小する」唯一のタスクであり、Phase 1 全体の中で最も戦略的意義が高い。
+
+#### Phase 1 完了後の理想 vs 現実
+
+**理想**: P1-1 + P1-2 が統合され、`PuaTokenMapper` は生成時点で pua.json の内容が確定。`FixedPuaMapping` static フィールドは存在しない。全テストが `new PuaTokenMapper(testPuaJson)` でテスト用マッピングを注入可能。
+
+**現実の妥協**: P1-1 のハイブリッド設計を引き継ぎ、ハードコードフォールバック + pua.json 上書きの二段階初期化。`FixedPuaMapping` と `_token2Char` の不整合リスクが残存（P1-1 セクション 6.5 参照）。この妥協は M1/M2 のマイルストーン分割に起因する実務的制約であり、v2.x+ で段階的に解消予定（セクション 6.4 の廃止計画参照）。
+
 ---
 
 ## 7. 後続タスクへの連絡事項
