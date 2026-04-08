@@ -342,6 +342,65 @@ uPiper の P4-1 は piper-plus に存在しない機能（N-gram 言語検出）
 1. **15文字の閾値が TTS 用途で厳しい**: TTS への入力は短いフレーズが多く、"Bonjour" (7文字), "Buenos dias" (11文字) 等が検出不可。辞書ベース補完（設計ドキュメント 13.2）を早期に導入すべきだった可能性がある。
 2. **プロファイル生成がオフライン前提**: Python スクリプトで事前生成する設計のため、ユーザーがカスタムコーパスから独自プロファイルを生成する手段がランタイムに存在しない。
 3. **ラテン文字内コードスイッチング非対応**: "I went to the bibliotheque" のようなラテン文字間の言語混合は検出不可。サブセグメント分割のスライディングウィンドウ方式は v2.0 スコープ外。
+4. **Trigram プロファイルの StreamingAssets 配置がプラットフォーム間で非統一**: デスクトップでは同期ファイル読み込み、WebGL では `UnityWebRequest` 非同期読み込みと、`TrigramProfileLoader` に2パスが必要。P1-2（pua.json ランタイム読み込み）と同一の WebGL 制約パターンだが、プロファイルファイルが増えるたびにローダーの複雑度が上がる。StreamingAssets ファイル読み込みの統一ヘルパーを Phase 1 で導入しておくべきだった可能性がある。
+5. **精度目標の非対称性**: 50文字以上で en vs 他 > 98% は達成可能だが、es/fr/pt 間 > 88% はロマンス言語の言語学的類似性から楽観的な目標である。実運用で 80-85% 程度に留まる場合、ユーザーが `defaultLatinLanguage` を手動設定した方が結果が良いケースが生じ、N-gram 検出が「賢いが不安定」という評価になるリスクがある。
+
+### 6.6 v2.0 全体俯瞰レビュー
+
+本セクションは P4-1 を v2.0 全16タスクの文脈で俯瞰し、タスク間の整合性と設計一貫性を検証する。
+
+#### P4-1 の独立性: Phase 1-3 との接続点の検証
+
+P4-1 は M5 に配置されているが、M2 完了後（Phase 1 完了後）であれば M3/M4 と並行で開始可能とされている。この独立性の主張を検証する。
+
+**Phase 1 との接続点**:
+
+| P1 チケット | P4-1 との接続 | 独立性への影響 |
+|------------|-------------|-------------|
+| P1-3 (Dictionary Registry) | `MultilingualPhonemizer` が `Dictionary<string, HandlerEntry>` で言語ハンドラを管理。P4-1 の `ILanguageDetector` は言語検出のみを担当し、ハンドラ呼び出しは `MultilingualPhonemizer` が引き続き行う | 独立。検出結果（language code 文字列）をキーにハンドラを lookup するだけ。Registry の内部構造に依存しない |
+| P1-4 (ILanguageG2PHandler) | ハンドラの `Process(text)` メソッドは言語コードで dispatch される。P4-1 はこの dispatch に渡す言語コードの精度を向上させるだけ | 独立。ハンドラインターフェースの変更は不要。`ILanguageG2PHandler.LanguageCode` と `ILanguageDetector` の出力する言語コードが一致していれば動作する |
+| P1-5 (G2P 全同期化) | `IPhonemizerBackend` 廃止後、未対応言語は警告ログのみ。P4-1 で新たに検出される言語が `_handlers` に登録されていない場合も同じ警告パス | 独立。ただし P4-1 が es/fr/pt を正しく検出した結果、対応するハンドラが未登録の場合のエラーメッセージが適切か確認が必要 |
+
+**Phase 2/3 との接続点**:
+
+| チケット | P4-1 との接続 | 独立性への影響 |
+|---------|-------------|-------------|
+| P2-2 (Prosody フラット配列) | `ILanguageG2PHandler.Process()` の戻り値型が変更されるが、P4-1 はハンドラを呼び出さない（検出のみ） | 完全に独立 |
+| P2-3 (NativeArray) | 推論パイプラインの内部変更。言語検出とは無関係 | 完全に独立 |
+| P3-6 (SynthesisRequest public) | 外部ユーザーが `LanguageId` を手動指定する低レベル API。P4-1 の自動検出とは別パス | 完全に独立 |
+
+**結論**: P4-1 は Phase 1-3 の変更と真に独立している。唯一の接続点は `MultilingualPhonemizer._detector` フィールドの型変更（`UnicodeLanguageDetector` → `ILanguageDetector`）だが、これは P4-1 自身が行う変更であり、他チケットとの競合はない。M3/M4 と並行開始しても問題ない。
+
+ただし、**最終統合テスト**では以下の組み合わせを検証する必要がある:
+- P1-3 の Registry + P4-1 の `HybridLanguageDetector` が連携して、検出された言語コードに対応するハンドラが正しく lookup されること
+- P4-1 で新たに es/fr/pt が検出されるようになった場合、それらの言語ハンドラが `InitializeAsync` で正しく初期化されていること
+
+#### ILanguageG2PHandler の言語ルーティングとの接続
+
+P4-1 の `ILanguageDetector.SegmentText()` は `(language, text)` タプルリストを返す。この `language` 文字列が `ILanguageG2PHandler.LanguageCode` と一致している必要がある。現行では両方とも `LanguageConstants` の定数（"ja", "en", "es", "fr", "pt", "zh", "ko"）を使用するため問題ないが、以下の暗黙的結合に注意:
+
+1. **`LanguageConstants.LatinLanguages`**: P4-1 の Trigram 検出対象言語リストは `LatinLanguages` に基づく。新しいラテン言語（例: sv）を追加する場合、`LatinLanguages` への追加 + Trigram プロファイルの追加 + `ILanguageG2PHandler` 実装の追加が必要。この3点セットが `LanguageConstants` で暗黙的に結合されている。
+2. **`MultilingualPhonemizerOptions.Languages`**: 初期化時に指定される言語リスト。`HybridLanguageDetector` はこのリストを参照してラテン言語が2つ以上かどうかを判定する。`ILanguageG2PHandler` のハンドラ登録リストとも一致している必要がある。
+
+この暗黙的結合は v2.0 の16タスクを通して `LanguageConstants` に集約される設計方針と一致しているが、明示的な整合性チェック（例: 初期化時に `detector.Languages` と `handlers.Keys` の差集合を警告ログで出力する）があると堅牢性が向上する。
+
+#### v2.0 全体の設計一貫性
+
+P4-1 の設計思想を他チケットと照合する:
+
+| 設計原則 | P4-1 での適用 | 他チケットとの一貫性 |
+|---------|-------------|-------------------|
+| **インターフェース抽出による DI 可能化** | `ILanguageDetector` 抽出、`MultilingualPhonemizer` への DI | P1-4（`ILanguageG2PHandler`）、P3-2（`IPiperConfigReadOnly`）と同一パターン。v2.0 では「必要になった時点でインターフェースを抽出する」YAGNI 方針で一貫 |
+| **ハイブリッド方式（既存 + 新規の組み合わせ）** | Unicode 検出（高速・確実）+ Trigram 検出（ラテン文字のみ） | P1-2（ハードコード固定マッピング + pua.json ランタイム読み込みのフォールバック設計）と同一パターン |
+| **フォールバック安全設計** | プロファイル未配置時は Unicode のみモード、短文は `defaultLatinLanguage` | P1-2（pua.json 未配置時はハードコードフォールバック）と同一パターン。v2.0 全体で「新機能が利用不可でも既存動作を維持する」方針が一貫 |
+| **StreamingAssets データファイルの配置** | `StreamingAssets/uPiper/LanguageProfiles/trigram_profiles.json` | P1-2（`StreamingAssets/uPiper/pua.json`）、既存辞書（`StreamingAssets/uPiper/Dictionaries/`）と同一の配置規約 |
+
+#### beta リリース判定への影響
+
+P4-1 は M5（RC リリース）に配置されており、M4（beta）の判定基準には含まれない。ただし、P4-1 の実装が M3/M4 と並行して進む場合、以下の点に注意:
+
+- P4-1 の `MultilingualPhonemizer._detector` 型変更は、M3/M4 で `MultilingualPhonemizer` に加えられる他の変更（P2-2 のハンドラ戻り値型変更等）とコンフリクトする可能性がある。P4-1 のブランチは M4 完了後にリベースして最終統合する運用が安全。
+- P4-1 が RC に間に合わない場合でも、`EnableTrigramDetection = false`（デフォルト true だが設定可能）で無効化して RC リリースは可能。ただしこの場合、v2.0 GA までに P4-1 を完了させるか、v2.1 に延期するかの判断が必要。
 
 ---
 

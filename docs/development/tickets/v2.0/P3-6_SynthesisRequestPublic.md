@@ -303,7 +303,58 @@ public class PiperTTS : IPiperTTS
 
 4. **internal コンストラクタとファクトリメソッドの二重性**: 内部コードは `internal` コンストラクタで直接構築し、外部コードはファクトリメソッドで構築する。この二重性により、内部コードがファクトリメソッドのバリデーションをバイパスするが、内部コードの入力は既にバリデーション済み（Phonemizer の出力）であるため実質的な問題はない
 
-### 6.4 ユーザー要望の収集方法
+5. **P2-3 NativeArray との関係が不明確**: `SynthesisRequest` は音素列と Prosody データ（`string[]` / `int[]`、GC 管理の managed 配列）を保持するが、P2-3 が推論パイプラインを NativeArray 化した後も `SynthesisRequest` の入力側は managed 配列のまま残る。public API として managed 配列を受け取り、内部で NativeArray に変換する境界が `TTSSynthesisOrchestrator` に暗黙的に存在するが、この境界がドキュメント化されていない
+
+6. **`PhonemizeAsync` の戻り値型とファクトリメソッドの型不一致リスク**: `PhonemizeAsync` が返す `MultilingualPhonemizeResult` の Prosody データは P2-2 完了後に `ProsodyFlat`（stride=3）になるが、`FromPhonemesWithProsody` のバリデーション（`prosodyFlat.Length == phonemes.Length * 3`）は stride=3 前提でハードコードされている。将来 stride が変更された場合（例: Prosody パラメータ追加で stride=4）、ファクトリメソッドのバリデーションも破壊的変更が必要になる
+
+### 6.4 v2.0 全体俯瞰レビュー
+
+本セクションは P3-6 を v2.0 全16タスクの文脈で俯瞰し、タスク間の整合性と設計一貫性を検証する。
+
+#### M4 のメモリ管理戦略: P2-3 との Dispose 責務の整合
+
+P3-6 の public API（`PiperTTS.SynthesizeAsync(SynthesisRequest)`）は `AudioClip` を返す。P2-3 の NativeArray パイプラインは `PiperTTS` 内部に閉じており、外部ユーザーに NativeArray の Dispose 責務を負わせない。この設計は整合している。
+
+ただし、将来的に以下のような低レベル API を追加する場合は再検討が必要:
+
+```csharp
+// 現在はスコープ外だが、将来の拡張で検討されうる API
+public Task<NativeArray<float>> SynthesizeToBufferAsync(SynthesisRequest request);
+```
+
+このような API を追加した場合、外部ユーザーに NativeArray の Dispose 責務が発生する。P2-3 セクション 6.1 の `OwnedAudioBuffer` ラッパーがこのケースで必要になる。P3-6 の現設計（`AudioClip` 返却のみ）はこの問題を回避しているが、低レベル API 拡張の設計余地として `SynthesisRequest` に `OutputFormat` enum を将来追加する可能性を意識しておくべきである。
+
+#### P4-1 との接続: 言語検出結果の SynthesisRequest への反映
+
+P4-1（N-gram 言語検出）は `MultilingualPhonemizer` のセグメンテーション精度を向上させるが、`SynthesisRequest` の `LanguageId` フィールドには直接影響しない。理由:
+
+1. `PiperTTS.GenerateAudioAsync(string text)` の高レベル API パスでは、`MultilingualPhonemizer` がテキストを言語セグメントに分割し、各セグメントごとに内部で `SynthesisRequest` を構築する。`LanguageId` は各セグメントの言語に基づいて自動設定される。
+2. `PiperTTS.SynthesizeAsync(SynthesisRequest)` の低レベル API パスでは、外部ユーザーが `LanguageId` を明示的に指定する。P4-1 の言語検出は関与しない。
+
+この分離は適切だが、外部ユーザーが「テキストの言語を自動検出して SynthesisRequest を構築したい」というユースケースには対応できない。`PhonemizeAsync` がこのギャップを埋めるが、`PhonemizeAsync` の戻り値に言語検出結果（detected language code）を含めるかどうかは P3-6 のスコープ外であり、v2.1 の検討事項として残る。
+
+#### v2.0 全体の設計一貫性
+
+P3-6 の設計思想を他チケットと照合する:
+
+| 設計原則 | P3-6 での適用 | 他チケットとの一貫性 |
+|---------|-------------|-------------------|
+| **ファクトリメソッドによるバリデーション強制** | `FromPhonemes` / `FromPhonemesWithProsody` で入力を検証 | P3-3（`ValidatedPiperConfig` コンストラクタ内バリデーション）と同一パターン。「構築時に不正データを排除する」方針で一貫 |
+| **internal コンストラクタ + public ファクトリ** | 外部はファクトリ経由、内部は直接構築 | P1-4（`ILanguageG2PHandler` は Options 経由で外部注入、内部はデフォルトファクトリ生成）と類似の二重性パターン |
+| **条件付き実施（beta フィードバック待ち）** | GA で internal に戻す選択肢を保持 | v2.0 全体で P3-6 のみが条件付き。他15タスクは無条件実施。この特殊性は適切（public API の不可逆性に対するリスク管理） |
+| **YAGNI（Builder, WithXxx 不採用）** | フィールド数7で Builder の恩恵薄い | P1-1（`IPuaTokenMapper` 不採用）、P2-3（`OwnedAudioBuffer` 不採用）と同一の YAGNI 判断基準 |
+
+#### beta リリース判定: P3-6 が条件付きの場合
+
+v2.0-milestones.md の M4 ゲートでは「`SynthesisRequest` が public API として公開（条件付き）」が完了条件に含まれている。P3-6 の条件付き実施には以下の3パターンがある:
+
+1. **P3-6 完了 + public のまま beta リリース**: 標準パス。beta テスターに低レベル API を公開し、フィードバックを収集する。
+2. **P3-6 未着手のまま beta リリース**: P2-3 完了のみで beta とする。低レベル API なしの beta。beta の目的（NativeArray パイプラインの安定性検証）は達成できるため、beta リリースとして成立する。
+3. **P3-6 完了後に GA で internal に戻す**: beta フィードバックが否定的な場合。ファクトリメソッドパターンのため、`public` → `internal` の変更影響は限定的（外部参照の削除のみ）。
+
+**推奨**: M4 ゲートの完了条件を「P2-3 必須 + P3-6 任意（完了していれば public として公開、未完了でも beta リリース可）」に明確化する。P2-3 セクション 6.5 の結論と整合する。
+
+### 6.5 ユーザー要望の収集方法
 
 現時点ではユーザーベースが限定的であるため、以下の段階的アプローチを採用:
 

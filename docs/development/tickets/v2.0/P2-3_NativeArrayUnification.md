@@ -297,6 +297,43 @@ public sealed class AudioBufferPool : IDisposable
 1. **Dispose 責務の暗黙性**: 戻り値の `NativeArray<float>` を Dispose する責務が API 契約として明文化されていない。XML doc コメントで `<remarks>Caller must dispose the returned NativeArray</remarks>` を記載するが、コンパイラ強制ではない
 2. **StubInferenceAudioGenerator の複雑化**: テストスタブが NativeArray を返すようになると、TearDown での Dispose 管理が必要になり、テストコードが複雑化する
 3. **`AudioChunk` の未対応**: ストリーミングパスの `AudioChunk.Samples` が `float[]` のまま残り、NativeArray パイプラインの一貫性が損なわれる。ただし `AudioChunk` はレガシーコードの位置づけであり、v2.0 のスコープ外
+4. **P3-6（SynthesisRequest public API）との Dispose 責務の矛盾**: P2-3 で内部パイプラインの NativeArray Dispose を `TTSSynthesisOrchestrator` に集約する設計だが、P3-6 で `PiperTTS.SynthesizeAsync(SynthesisRequest)` を public 化した場合、外部ユーザーは NativeArray の存在を意識しない（戻り値は `AudioClip`）。現設計では NativeArray が `PiperTTS` 内部に閉じているため外部への Dispose 責務漏洩はないが、将来 NativeArray を直接返す低レベル API を追加する場合にこの暗黙性が問題化する
+5. **Allocator.Persistent の過剰使用**: 全箇所で `Allocator.Persistent` を使用するが、`TTSSynthesisOrchestrator.SynthesizeAsync` 内で確保→使用→Dispose が同一メソッド内で完結するケースでは `Allocator.TempJob` の方が効率的な場合がある。async メソッドチェーンで4フレーム超えの可能性があるため安全側に倒しているが、実測でフレーム数が少ない場合はオーバースペック
+
+### 6.5 v2.0 全体俯瞰レビュー
+
+本セクションは P2-3 を v2.0 全16タスクの文脈で俯瞰し、タスク間の整合性と設計一貫性を検証する。
+
+#### M4 のメモリ管理戦略: P2-3 と P3-6 の整合性
+
+P2-3 の NativeArray パイプラインと P3-6 の public API は、メモリ管理の責務境界が明確に分離されている:
+
+- **P2-3 の NativeArray**: `IInferenceAudioGenerator` → `SplitInferenceOrchestrator` → `TTSSynthesisOrchestrator` の内部パイプライン限定。最終消費者は `AudioClip.SetData(NativeArray<float>)` であり、SetData 完了後に Dispose される。外部ユーザーは NativeArray の存在を一切意識しない。
+- **P3-6 の SynthesisRequest**: 外部ユーザーが構築する `readonly struct`（GC 管理の `string[]` / `int[]`）。NativeArray とは無関係。
+
+この分離は設計として正しいが、**暗黙の前提**が存在する: P3-6 の `PiperTTS.SynthesizeAsync(SynthesisRequest)` は `AudioClip` を返し、内部で NativeArray の確保→使用→Dispose を完結させる。外部ユーザーに Dispose 責務を負わせない。この前提が崩れるケース（例: 将来の `SynthesizeToBufferAsync` が `NativeArray<float>` を直接返す API）では、P2-3 の Dispose 責務チェーンの再設計が必要になる。
+
+**結論**: M4 時点では整合しているが、v2.1 以降で低レベルバッファ API を追加する場合は `OwnedAudioBuffer`（セクション 6.1 戦略A）の導入を再検討すべき。
+
+#### v2.0 全体の設計一貫性
+
+P2-3 の設計思想を他チケットと照合する:
+
+| 設計原則 | P2-3 での適用 | 他チケットとの一貫性 |
+|---------|-------------|-------------------|
+| **内部最適化、外部 API 不変** | NativeArray は内部パイプライン限定。public API（`PiperTTS.GenerateAudioAsync`）の戻り値は `AudioClip` のまま | P3-6 も public API 追加であり外部影響を最小化する方針で一貫 |
+| **try-finally による例外安全性** | 全 NativeArray 確保箇所で適用 | P1-3（Registry Dispose）、P1-4（ハンドラ Dispose）と同一パターン |
+| **段階的移行（`[Obsolete]` 付与）** | `AudioClipBuilder.BuildAudioClip(float[])` に `[Obsolete]` | P1-6（Obsolete 削除）が Phase 1 で旧 API を掃除する方針と一貫。P2-3 で新たに `[Obsolete]` を追加し、将来の掃除チケットに委ねる |
+| **YAGNI（過剰抽象の回避）** | `OwnedAudioBuffer` ラッパーや `AudioBufferPool` を不採用 | P1-1（`IPuaTokenMapper` 不採用）、P1-4（`IPhonemeEncoder` 不採用）と同一の YAGNI 判断基準 |
+
+#### beta リリース判定への影響
+
+M4 ゲート = beta リリースの判定基準において、P2-3 は必須条件、P3-6 は条件付きである:
+
+- **P2-3 が完了、P3-6 が未完了の場合**: beta リリース可能と判断してよい。NativeArray パイプラインは内部最適化であり、外部 API への影響はない。P3-6 は beta テスターからのフィードバックを待つ設計のため、beta 時点で未完了でも beta の目的（テスター配布）は達成できる。
+- **P2-3 が未完了の場合**: beta リリース不可。`IInferenceAudioGenerator` のシグネチャ変更が P2-2 と連動しており、中間状態の API を公開するリスクがある。
+
+M4 ゲートの完了条件を「P2-3 必須 + P3-6 任意」に明確化することを推奨する。
 
 ---
 
