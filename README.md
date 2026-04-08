@@ -30,7 +30,7 @@
 | 言語 | G2Pバックエンド |
 |------|----------------|
 | 日本語 | DotNetG2P.Japanese (MeCab辞書) |
-| 英語 | DotNetG2P.English (Flite LTS) |
+| 英語 | DotNetG2P.English (CMU dict + LTS) |
 | 中国語 | DotNetG2P.Chinese (44K文字辞書) |
 | スペイン語 | DotNetG2P.Spanish |
 | フランス語 | DotNetG2P.French |
@@ -138,7 +138,7 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 ```jsonc
 // Packages/manifest.json の "dependencies" 内に以下を追加:
 "com.unity.ai.inference": "2.5.0",
-"com.unity.nuget.newtonsoft-json": "3.2.1",
+"com.unity.nuget.newtonsoft-json": "3.2.2",
 "com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.8.2",
 "com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.8.2",
 "com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.8.2",

@@ -146,11 +146,11 @@ MultilingualPhonemizerは各エンジンの`ToPuaPhonemes()`でPUA音素を、`T
       public readonly int[] ProsodyA1, ProsodyA2, ProsodyA3;
       public readonly float LengthScale, NoiseScale, NoiseW;
       public readonly int SpeakerId, LanguageId;
-      public bool HasProsody => ProsodyA1 != null;
+      public bool HasProsody => ProsodyA1 != null || ProsodyA2 != null || ProsodyA3 != null;
   }
   ```
   - 音素・Prosody・合成パラメータを単一の不変データオブジェクトに集約
-  - `HasProsody` で Prosodyあり/なしパスを自動切替
+  - `HasProsody` で `ProsodyA1`/`ProsodyA2`/`ProsodyA3` いずれかが非nullの場合にProsodyありパスを自動切替
 - **主要メソッド**:
   ```csharp
   Task<AudioClip> SynthesizeAsync(

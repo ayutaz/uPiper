@@ -30,7 +30,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 | Language | G2P Backend |
 |----------|-------------|
 | Japanese | DotNetG2P.Japanese (MeCab dictionary) |
-| English | DotNetG2P.English (Flite LTS) |
+| English | DotNetG2P.English (CMU dict + LTS) |
 | Chinese | DotNetG2P.Chinese (44K character dictionary) |
 | Spanish | DotNetG2P.Spanish |
 | French | DotNetG2P.French |
@@ -138,7 +138,7 @@ Download the latest version from the [Releases](https://github.com/ayutaz/uPiper
 ```jsonc
 // Add the following to "dependencies" in Packages/manifest.json:
 "com.unity.ai.inference": "2.5.0",
-"com.unity.nuget.newtonsoft-json": "3.2.1",
+"com.unity.nuget.newtonsoft-json": "3.2.2",
 "com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.8.2",
 "com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.8.2",
 "com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.8.2",
