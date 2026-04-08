@@ -1,11 +1,12 @@
 # P1-2: pua.json ランタイム読み込み
 
-**マイルストーン**: M2 - Phase 1 Completion (alpha)
+**マイルストーン**: M2 - Phase 1 完了 (alpha)
 **優先度**: P1
 **見積もり**: 7h (1 人日)
 **依存チケット**: P1-1（PuaTokenMapperインスタンス化が前提）
 **後続チケット**: なし（Phase 1完了ゲート）
 **ブランチ名**: `feature/v2.0-P1-2-pua-json-runtime`
+**設計ドキュメント**: [P1-2_PuaJsonRuntime.md](../../v2.0-design/P1-2_PuaJsonRuntime.md)
 
 ---
 
@@ -116,10 +117,12 @@ pua.json スキーマ (v1):
 
 **バリデーション項目**:
 1. `version` と `entries` フィールドの存在確認
-2. `version == SupportedVersion` の検証
+2. バージョンチェックは`version >= SupportedVersion`で前方互換（`==`ではなく`>=`で比較）
 3. 各エントリの `token` 非空、`codepoint` パース可能性
-4. コードポイント範囲 `0xE000` - `0xF8FF` (PUA-A) の検証
-5. 同一 token / 同一 codepoint の重複検出 (Warning ログ)
+4. tokenのバリデーション: 空白のみ・制御文字のみのトークンを拒否
+5. コードポイント範囲 `0xE000` - `0xF8FF` (PUA-A) の検証
+6. 同一 token / 同一 codepoint の重複検出 (Warning ログ)
+7. エントリ数上限: `MaxEntries = 500`（現行96の約5倍。超過時はWarning + ハードコードフォールバック）
 
 **エラー時の挙動**: パース失敗・バージョン不一致・データ不正の場合は全て Warning/Error ログを出力し、コンストラクタで初期化済みのハードコードマッピングを維持（`return` で処理を中断、辞書のクリアは行わない）。個別エントリの不正はスキップし、残りのエントリは読み込む。
 

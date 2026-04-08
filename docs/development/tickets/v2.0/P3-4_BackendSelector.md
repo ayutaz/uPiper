@@ -1,6 +1,7 @@
 # P3-4: BackendSelector 切り出し
 
-**マイルストーン**: M3 - Data Model + Config
+**マイルストーン**: M3 - データモデル + 設定整理
+**設計ドキュメント**: [P3-4_BackendSelector.md](../../v2.0-design/P3-4_BackendSelector.md)
 **優先度**: P2
 **見積もり**: 0.5 人日
 **依存チケット**: P3-5（マイルストーンではP3-5→P3-4の順）
@@ -280,6 +281,7 @@ public void Determine_Auto_Desktop_SufficientVRAM_ReturnsGPUPixel()
 | **PiperLogger への依存** | 低 | 切り出し先でも `PiperLogger` を使用。テスト時はログ出力を無視する設計（ログ内容のアサートは行わない） |
 | **BackendType 列挙値の変更** | 低 | `BackendType` は Unity.InferenceEngine の型であり、uPiper 側で制御できない。ただし現行の `CPU` / `GPUCompute` / `GPUPixel` のみを使用しており、新規値追加時は `Determine` のフォールバックが CPU を返す |
 | **InferenceEngineDemo の呼び出し変更なし** | なし | Demo は `InferenceAudioGenerator.InitializeAsync` 経由で間接的に `DetermineBackendType` を使用しており、Demo コード自体の変更は不要 |
+| **PlatformInfo の init プロパティと C# 9.0+ 互換性** | 中 | `PlatformInfo` の `init` プロパティは C# 9.0+ だが、Unity 6 の .NET Framework 4.7.1 で `IsExternalInit` ポリフィルが未導入の可能性がある。コンストラクタで全フィールドを受け取る方式に変更すること。`init` を使用する場合は `IsExternalInit` の存在を事前に確認 |
 
 ### 5.2 レビューチェックリスト
 

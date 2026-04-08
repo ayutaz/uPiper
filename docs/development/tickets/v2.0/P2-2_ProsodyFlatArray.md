@@ -1,9 +1,10 @@
 # P2-2: Prosodyフラット配列化
 
-**マイルストーン**: M3 - Data Model + Config
+**マイルストーン**: M3 - データモデル + 設定整理
+**設計ドキュメント**: [P2-2_ProsodyFlatArray.md](../../v2.0-design/P2-2_ProsodyFlatArray.md)
 **優先度**: P0（クリティカルパス: P1-4 → P1-3 → P2-2 → P3-6）
 **見積もり**: 3 人日（Step1: 0.5 + Step2: 1.0 + Step3: 0.5 + Step4: 1.0）
-**依存チケット**: P2-1（PhonemeIdMap int[] 型変更。同一エージェントが P2-1 → P2-2 の順で実施推奨）
+**依存チケット**: P2-1（PhonemeIdMap int[] 型変更。同一エージェントが P2-1 → P2-2 の順で実施推奨）、M2完了（特にP1-4ハンドラ実装に強く依存）
 **後続チケット**: P3-6（SynthesisRequest public 昇格、条件付き実施）
 **ブランチ名**: `feature/v2.0-P2-2-prosody-flat-array`
 
@@ -16,7 +17,7 @@
 現在 uPiper では Prosody データを A1/A2/A3 の **3本の別配列** (`int[]`) として全パイプラインで伝播している。しかし最終的な ONNX テンソル入力は `[1, phoneme_len, 3]` の単一テンソルであり、`CreateProsodyTensorPooled` で3本配列をインターリーブしている。この3本別管理には以下の問題がある:
 
 1. **冗長なデータ伝播**: A1/A2/A3 は常にセットで存在し、単独で使われることがない。にもかかわらず、`MultilingualPhonemizeResult`, `SynthesisRequest`, `ProsodyEncodingResult`, `PhonemeResult`, `PhonemeSilenceProcessor.Phrase` の5つの型で3プロパティ × 5 = 15のフィールドとして管理されている。
-2. **piper-plus との非互換**: piper-plus（Rust/C#/Python）は全て stride=3 のフラット配列 `[a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, ...]` で統一管理している。uPiper の3本別管理は piper-plus との互換性を損なう。
+2. **piper-plus との内部表現の差異**: piper-plus Rustは`Vec<[i32; 3]>`(構造体の配列)、uPiperはstride=3フラット配列。内部表現は異なるが最終ONNXテンソル`[1, phoneme_len, 3]`は同一。piper-plus（Rust/C#/Python）は全て stride=3 のフラット配列 `[a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, ...]` で統一管理しているが、uPiper の現行3本別管理はこのレイアウトと不一致であり、テンソル構築時にインターリーブが必要になっている。
 3. **テンソル構築コスト**: `CreateProsodyTensorPooled` 内のインターリーブループ（`i * 3 + 0/1/2` を各配列から読み出し）が、フラット配列なら `Array.Copy` 1回で済む。
 4. **EOS トリミング・パディングの3重実行**: EOS 除去時に `segA1[..^1]`, `segA2[..^1]`, `segA3[..^1]` の3回スライス、パディング時に `PadToLength` を3回呼び出しなど、操作が冗長。
 
@@ -199,7 +200,7 @@ public ProsodyEncodingResult EncodeWithProsody(
     string[] phonemes, int[] prosodyFlat)
 ```
 
-内部ロジック: 3本の `List<int>` (`expandedA1`, `expandedA2`, `expandedA3`) を1本の `List<int>` (`expandedProsody`, stride=3) に統合。
+内部ロジック: 3本の `List<int>` (`expandedA1`, `expandedA2`, `expandedA3`) を1本の `List<int>` (`expandedProsody`, stride=3) に統合。`expandedProsody` にはcapacity事前確保を追加: `new List<int>((phonemes.Length * 2 + 2) * ProsodyStride)` でList再確保を防止する（BOS/EOS + PAD挿入分を見込んだ容量）。
 
 ```csharp
 // BOS トークン追加時
@@ -393,6 +394,7 @@ var request = new SynthesisRequest(
 | `ProsodyFlat_PadToLength` | パディング時に3要素単位でゼロ埋め |
 | `ProsodyFlat_EosTrimming` | EOS トリミング時に末尾3要素除去 |
 | `ProsodyFlat_TensorShape` | テンソル `[1, N, 3]` との整合性検証 |
+| `SplitAtPhonemeSilence_FlatProsody_SliceAlignment` | 分割位置がstride境界と一致することを検証 |
 
 ---
 

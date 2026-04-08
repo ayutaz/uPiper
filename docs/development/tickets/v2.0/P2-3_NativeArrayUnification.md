@@ -1,6 +1,7 @@
 # P2-3: NativeArray統一
 
-**マイルストーン**: M4 - NativeArray + Public API (beta)
+**マイルストーン**: M4 - NativeArray + パブリックAPI (beta)
+**設計ドキュメント**: [P2-3_NativeArrayUnification.md](../../v2.0-design/P2-3_NativeArrayUnification.md)
 **優先度**: P1
 **見積もり**: 2人日（実装1.5日 + テスト・調整0.5日）
 **依存チケット**: P2-2（Prosody フラット配列化）、P3-5（AudioNormalizer 切り出し）
@@ -11,7 +12,7 @@
 
 ## 1. タスク目的とゴール
 
-`InferenceAudioGenerator.ExtractResults()` から `AudioClip.SetData()` に至るデータフローは、現在 `float[]` 中間バッファを複数回経由しており、不要なメモリコピーとGCアロケーションが発生している。本チケットでは `NativeArray<float>` をデータパイプライン全体の統一型として採用し、中間バッファの完全排除を目指す。
+`InferenceAudioGenerator.ExtractResults()` から `AudioClip.SetData()` に至るデータフローは、現在 `float[]` 中間バッファを複数回経由しており、不要なメモリコピーとGCアロケーションが発生している。本チケットでは `NativeArray<float>` をデータパイプライン全体の統一型として採用し、managed配列の直接確保を排除し、GCアロケーションの主要発生源をNativeArrayに置換する（Sentis内部のmanaged確保は残存する）。
 
 **解決する問題**:
 
@@ -211,6 +212,10 @@ TTSSynthesisOrchestrator.SynthesizeAsync()
 | **IL2CPP 対応** | 低 | `NativeArray<T>` は IL2CPP 完全対応。`unsafe` コードは使用せず、`NativeArrayOptions.ClearMemory` と `NativeArray<T>.CopyFrom` のみで実装する方針 |
 | **NativeArray の Dispose 漏れ** | 中 | 全箇所で try-finally パターンを適用。テストで Dispose 検証を実施。`IsCreated` チェックで二重 Dispose を防止 |
 | **P2-2 との同時変更** | 低 | `IInferenceAudioGenerator` のシグネチャ変更が重複。同一エージェントが順次実施すれば問題なし |
+| **Sentis 2.5.0 の ToReadOnlyNativeArray() API** | 中 | 実装着手前に `Tensor<float>.ToReadOnlyNativeArray()` API の存在を確認すること。存在しない場合はフォールバックパス（`ReadbackAndClone()` + NativeArray 版 for ループ）を用意 |
+| **WebGL での AudioClip.SetData(NativeArray)** | 中 | WebGL での `AudioClip.SetData(NativeArray<float>)` の動作を検証するステップを追加すること |
+| **SplitInferenceOrchestrator の例外安全性** | 中 | 結合バッファ確保後の例外安全性: catch 内で `combined.IsCreated` チェック + `Dispose` を行い、リソースリークを防止 |
+| **SynthesizeAsync のスレッド安全性** | 中 | `SynthesizeAsync` は必ずメインスレッドから呼び出すこと。API 契約として XMLDoc に明記する |
 
 ### 5.2 レビューチェックリスト
 
@@ -225,6 +230,7 @@ TTSSynthesisOrchestrator.SynthesizeAsync()
 - [ ] `TTSSynthesisOrchestrator` で try-finally パターンによる Dispose が保証されているか
 - [ ] テストの TearDown で NativeArray が Dispose されているか（二重 Dispose に注意）
 - [ ] `using Unity.Collections;` が必要な全ファイルに追加されているか
+- [ ] 全NativeArray返却メソッドに `<remarks>Caller owns and must Dispose the returned NativeArray</remarks>` がXMLDocとして追加されているか
 - [ ] `dotnet format --verify-no-changes` が通過するか
 
 ---

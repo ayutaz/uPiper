@@ -1,6 +1,7 @@
 # v2.0 チケット INDEX
 
-**全16チケット** | [マイルストーン定義](../../v2.0-milestones.md) | **合計見積もり**: 約33人日
+**全16チケット** | [マイルストーン定義](../../v2.0-milestones.md) | **合計見積もり**: 約30.5人日（チケット29 + M5ドキュメント1.5）  
+**レビュー補正見積もり**: 約37人日（統合バッファ2.5 + エージェント補正3 + 個別修正2含む）
 
 ---
 
@@ -39,12 +40,12 @@
 | チケット | タスク名 | 優先度 | 見積もり | 依存 | ステータス |
 |---------|---------|--------|---------|------|-----------|
 | [P2-1](P2-1_PhonemeIdMapArray.md) | PhonemeIdMap int[] 型変更 | P0 | 1.5 人日 | M2完了 | 未着手 |
-| [P2-2](P2-2_ProsodyFlatArray.md) | Prosodyフラット配列化 | P0 | 3 人日 | P2-1 | 未着手 |
-| [P3-1](P3-1_ValidatedPiperConfigNested.md) | ValidatedPiperConfig ネスト構造化 | P1 | 1 人日 | M2完了 | 未着手 |
+| [P2-2](P2-2_ProsodyFlatArray.md) | Prosodyフラット配列化 | P0 | 3 人日 | P2-1, P1-4ハンドラ | 未着手 |
+| [P3-1](P3-1_ValidatedPiperConfigNested.md) | ValidatedPiperConfig ネスト構造化 | P1 | 0.5 人日 | M2完了 | 未着手 |
 | [P3-3](P3-3_ValidatePureFunction.md) | Validate() 純粋関数化 | P1 | 1 人日 | P3-1 | 未着手 |
 | [P3-2](P3-2_IPiperConfigReadOnly.md) | IPiperConfigReadOnly インターフェース | P2 | 0.5 人日 | P3-1, P3-3 | 未着手 |
 | [P3-5](P3-5_AudioNormalizer.md) | AudioNormalizer 切り出し | P2 | 0.5 人日 | M2完了 | 未着手 |
-| [P3-4](P3-4_BackendSelector.md) | BackendSelector 切り出し | P2 | 0.5 人日 | P3-5 | 未着手 |
+| [P3-4](P3-4_BackendSelector.md) | BackendSelector 切り出し | P2 | 0.5 人日 | M2完了 (P3-5後推奨) | 未着手 |
 
 **並行グループ**: A (P2-1 → P2-2) / B (P3-1 → P3-3 → P3-2) / C (P3-5 → P3-4) は全て並行実行可能。
 
@@ -81,12 +82,13 @@
 |-------------|-----------|------------|---------|
 | [M1: 基盤リファクタリング起点](../../v2.0-milestones.md#milestone-1-基盤リファクタリング起点) | 2 | 7 人日 | - |
 | [M2: Phase 1 完成](../../v2.0-milestones.md#milestone-2-phase-1-完成) | 4 | 5 人日 | alpha |
-| [M3: データモデル + 設定整理](../../v2.0-milestones.md#milestone-3-データモデル--設定整理) | 7 | 8 人日 | - |
+| [M3: データモデル + 設定整理](../../v2.0-milestones.md#milestone-3-データモデル--設定整理) | 7 | 7.5 人日 | - |
 | [M4: NativeArray + public API](../../v2.0-milestones.md#milestone-4-nativearray-統一--public-api) | 2 | 3 人日 | beta |
 | [M5: 言語検出 + 仕上げ](../../v2.0-milestones.md#milestone-5-言語検出高度化--リリース準備) | 1 | 6.5 人日 | RC |
-| **合計** | **16** | **29.5 人日** | - |
+| **合計** | **16** | **29 人日** | - |
 
-**クリティカルパス**: P1-4 → P1-3 → P2-2 → P3-6
+**クリティカルパス**: P1-4 → (M2ゲート) → P2-1 → P2-2 → P2-3 (14人日)  
+**準クリティカルパス**: P1-4 → (M2ゲート) → P4-1 (14人日)
 
 ---
 

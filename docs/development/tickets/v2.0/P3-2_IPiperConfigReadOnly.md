@@ -1,6 +1,7 @@
 # P3-2: IPiperConfigReadOnly インターフェース
 
-**マイルストーン**: M3 - Data Model + Config
+**マイルストーン**: M3 - データモデル + 設定整理
+**設計ドキュメント**: [P3-2_IPiperConfigReadOnly.md](../../v2.0-design/P3-2_IPiperConfigReadOnly.md)
 **優先度**: P2
 **見積もり**: 0.5 人日
 **依存チケット**: P3-1（ValidatedPiperConfig ネスト構造化）, P3-3（Validate() 純粋関数化）
@@ -52,7 +53,7 @@ namespace uPiper.Core
         LanguageSettings Language { get; }
         PerformanceSettings Performance { get; }
         InferenceSettings Inference { get; }
-        AudioSettings Audio { get; }
+        PiperAudioSettings Audio { get; }
         SilenceSettings Silence { get; }
         GeneralSettings General { get; }
     }
@@ -69,7 +70,7 @@ public sealed class ValidatedPiperConfig : IPiperConfigReadOnly
     public LanguageSettings Language { get; }
     public PerformanceSettings Performance { get; }
     public InferenceSettings Inference { get; }
-    public AudioSettings Audio { get; }
+    public PiperAudioSettings Audio { get; }
     public SilenceSettings Silence { get; }
     public GeneralSettings General { get; }
     // ... コンストラクタは P3-1/P3-3 で変更済み

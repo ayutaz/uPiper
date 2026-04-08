@@ -1,6 +1,7 @@
 # P3-5: AudioNormalizer 切り出し
 
-**マイルストーン**: M3 - Data Model + Config
+**マイルストーン**: M3 - データモデル + 設定整理
+**設計ドキュメント**: [P3-5_AudioNormalizer.md](../../v2.0-design/P3-5_AudioNormalizer.md)
 **優先度**: P2
 **見積もり**: 0.5 人日
 **依存チケット**: Phase 1 完了（M2 ゲート通過）

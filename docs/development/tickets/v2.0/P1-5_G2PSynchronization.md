@@ -1,11 +1,12 @@
 # P1-5: G2P全同期化（IPhonemizerBackend廃止）
 
-**マイルストーン**: M2 - Phase 1 Completion (alpha)
+**マイルストーン**: M2 - Phase 1 完了 (alpha)
 **優先度**: P0
 **見積もり**: 1 人日
 **依存チケット**: P1-4
 **後続チケット**: P1-6
 **ブランチ名**: `feature/v2.0-P1-5-g2p-synchronization`
+**設計ドキュメント**: [P1-5_G2PSynchronization.md](../../v2.0-design/P1-5_G2PSynchronization.md)
 
 ---
 
@@ -253,6 +254,7 @@ P1-5 は P1-4 の成果物に対する「削除 + 掃除」が主体であり、
 | **Obsolete コンストラクタ内の `IPhonemizerBackend` パラメータ削除の影響** | P1-6 の Obsolete コンストラクタ削除と作業が重複する可能性 | P1-5 ではパラメータの削除のみ行い、コンストラクタ自体の削除は P1-6 に委譲。P1-5 を先にマージし、P1-6 はリベース後に実施 |
 | **P1-4 の完了状態への依存** | P1-4 で `StubPhonemizerBackend` が完全に `StubG2PHandler` に移行されていない場合、P1-5 での追加書き換えが増える | P1-4 の後続タスク連絡事項（セクション7）に「一部テストが `IPhonemizerBackend` ベースのスタブをまだ使用している可能性」と明記済み。P1-5 着手前に grep で残存箇所を確認 |
 | **using 参照の削除漏れ** | `using uPiper.Core.Phonemizers.Backend` が `IPhonemizerBackend` 削除後もコンパイルエラーにならない場合がある（`PhonemeResult` 参照で using が必要なファイル）| `IPhonemizerBackend` のみを参照していたファイルから using を削除。`PhonemeResult` を参照するファイルは using を保持。設計ドキュメントの using 参照一覧表（セクション2.5）で判定 |
+| **WebGLでの長文入力のフレームドロップ** | WebGLでの長文入力(500文字超)の場合、同期G2P処理がフレームドロップの可能性あり | v2.0ではドキュメント記載のみで対応。v2.1でTask.Yield()による処理分割を検討 |
 
 ### 5.2 IPhonemizerBackend がプロダクション未使用である根拠
 

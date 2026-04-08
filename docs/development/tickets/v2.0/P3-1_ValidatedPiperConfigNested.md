@@ -1,6 +1,7 @@
 # P3-1: ValidatedPiperConfig ネスト構造化
 
-**マイルストーン**: M3 - Data Model + Config
+**マイルストーン**: M3 - データモデル + 設定整理
+**設計ドキュメント**: [P3-1_ValidatedPiperConfigNested.md](../../v2.0-design/P3-1_ValidatedPiperConfigNested.md)
 **優先度**: P1
 **見積もり**: 1 人日（実装 0.5 人日 + テスト修正・確認 0.5 人日）
 **依存チケット**: Phase 1 完了（M2 ゲート通過後）
@@ -21,7 +22,7 @@
 
 **完了状態（Definition of Done）**:
 
-- 6 つの `readonly record struct`（`LanguageSettings`, `PerformanceSettings`, `InferenceSettings`, `AudioSettings`, `SilenceSettings`, `GeneralSettings`）が定義されている
+- 6 つの `readonly record struct`（`LanguageSettings`, `PerformanceSettings`, `InferenceSettings`, `PiperAudioSettings`, `SilenceSettings`, `GeneralSettings`）が定義されている
 - `ValidatedPiperConfig` が 6 つのネストプロパティ（`Language`, `Performance`, `Inference`, `Audio`, `Silence`, `General`）を公開している
 - 旧 22 トップレベルプロパティが削除されている
 - `TTSSynthesisOrchestrator` の 2 箇所のアクセスパスが更新されている
@@ -66,7 +67,7 @@ namespace uPiper.Core
         GPUInferenceSettings GPUSettings);
 
     // ── Audio ────────────────────────────────────────────
-    public readonly record struct AudioSettings(
+    public readonly record struct PiperAudioSettings(
         int SampleRate,
         bool NormalizeAudio,
         float TargetRMSLevel);
@@ -103,7 +104,7 @@ public sealed class ValidatedPiperConfig
     public LanguageSettings Language { get; }
     public PerformanceSettings Performance { get; }
     public InferenceSettings Inference { get; }
-    public AudioSettings Audio { get; }
+    public PiperAudioSettings Audio { get; }
     public SilenceSettings Silence { get; }
     public GeneralSettings General { get; }
 
@@ -135,7 +136,7 @@ public sealed class ValidatedPiperConfig
                     ? source.GPUSettings.MaxMemoryMB : 512
             });
 
-        Audio = new AudioSettings(
+        Audio = new PiperAudioSettings(
             SampleRate: source.SampleRate,
             NormalizeAudio: source.NormalizeAudio,
             TargetRMSLevel: source.TargetRMSLevel);
@@ -162,7 +163,7 @@ public sealed class ValidatedPiperConfig
 | Language | `LanguageSettings` | 4 | DefaultLanguage, AutoDetectLanguage, SupportedLanguages, MixedLanguageMode |
 | Performance | `PerformanceSettings` | 5 | MaxCacheSizeMB, EnablePhonemeCache, WorkerThreads, EnableMultiThreadedInference, InferenceBatchSize |
 | Inference | `InferenceSettings` | 5 | Backend, EnableWarmup, WarmupIterations, AllowFallbackToCPU, GPUSettings |
-| Audio | `AudioSettings` | 3 | SampleRate, NormalizeAudio, TargetRMSLevel |
+| Audio | `PiperAudioSettings` | 3 | SampleRate, NormalizeAudio, TargetRMSLevel |
 | Silence | `SilenceSettings` | 3 | EnablePhonemeSilence, PhonemeSilenceSpec, ParsedPhonemeSilence |
 | General | `GeneralSettings` | 2 | EnableDebugLogging, TimeoutMs |
 | **合計** | | **22** | *(ParsedPhonemeSilence は派生値として SilenceSettings に含む)* |
@@ -263,6 +264,10 @@ public ValidatedPiperConfig ToValidated()
 **PiperConfigTest（変更不要の確認）**:
 
 PiperConfig 自体は変更なし。`ToValidated()` の呼び出しは引き続き動作する。
+
+**record struct 等価性テストの注意事項**:
+
+record struct の等価性テストでは参照型プロパティ（`IReadOnlyDictionary`、`IReadOnlyList` 等）に注意すること。これらは参照等価で判定されるため、異なるインスタンスで同一内容の辞書/リストを持つ場合でも `Equals` は `false` を返す。テストで構造的等価性を前提とする比較を行う場合は、個別プロパティのアサーションを使用すること。
 
 ### 4.4 E2E テスト
 
@@ -468,6 +473,7 @@ P3-1 のセクション 7 で P3-3 と P3-2 への引き継ぎ事項が記載さ
 1. **6 つの record struct 型が `uPiper.Core` namespace で公開済み**。P3-2 では `IPiperConfigReadOnly` インターフェースを定義し、これらの型をプロパティとして参照する。
 2. **`ValidatedPiperConfig` の 6 つのネストプロパティ名が確定済み**（`Language`, `Performance`, `Inference`, `Audio`, `Silence`, `General`）。P3-2 ではこれらと同名のプロパティをインターフェースに定義し、`ValidatedPiperConfig : IPiperConfigReadOnly` として実装する。
 3. **TTSSynthesisOrchestrator のアクセスパスは P3-1 で変更済み**。P3-2 ではフィールドの型のみを `ValidatedPiperConfig` -> `IPiperConfigReadOnly` に変更する。アクセスパス自体の再変更は不要。
+4. **record struct の個別ファイル分離の検討**: P3-2 で必要に応じて record struct の個別ファイル分離を検討する。`IPiperConfigReadOnly` の利用者が `ValidatedPiperConfig.cs` の型に依存する問題を回避するため、record struct を独立ファイルに抽出することを P3-2 実装時に判断すること。
 
 ### マイグレーションガイド（将来の参照用）
 

@@ -1,11 +1,12 @@
 # P3-6: SynthesisRequest public API昇格
 
-**マイルストーン**: M4 - NativeArray + Public API (beta)
+**マイルストーン**: M4 - NativeArray 統一 + public API (beta)
 **優先度**: P2（条件付き実施）
 **見積もり**: 1人日
 **依存チケット**: P2-2（Prosody フラット配列化）
 **後続チケット**: なし
 **ブランチ名**: `feature/v2.0-P3-6-synthesis-request-public`
+**設計ドキュメント**: [P3-6_SynthesisRequestPublic.md](../../v2.0-design/P3-6_SynthesisRequestPublic.md)
 
 ---
 
@@ -68,6 +69,10 @@ public readonly struct SynthesisRequest
 ```
 
 **設計意図**: コンストラクタを `internal` に維持し、外部ユーザーにはファクトリメソッド経由の構築を強制する。これによりバリデーションをバイパスする構築を防止する。内部コードは引き続き `internal` コンストラクタで直接構築可能。
+
+**Phonemes フィールドのプロパティ化**: Phonemesフィールドをpublic化する際、フィールドからプロパティ(`public string[] Phonemes { get; }`)に変更するステップを明示する。これにより将来のカプセル化変更（ReadOnlyCollection等）の余地を残す。
+
+**防御的コピーの検討**: ファクトリメソッド内で`(string[])phonemes.Clone()`による防御的コピーの実施を検討する。外部からの配列書き換え防止が目的であり、パフォーマンス影響は初期化時の1回のみ。
 
 ### Step 2: ファクトリメソッド追加
 
@@ -208,6 +213,10 @@ var audioClip = await piperTTS.SynthesizeAsync(request);
 | CI `unity-tests.yml` 全通過 | EditMode + PlayMode テストの GREEN 確認 |
 | 音素直接入力の手動確認 | `FromPhonemes` で構築した SynthesisRequest から音声が正常に生成されること |
 
+### 4.4 XMLdoc サンプルコード
+
+XMLdocの`<example>`タグにファクトリメソッドのサンプルコードを追加する。PUA音素という特殊入力のAPIはサンプルなしでは使用困難であるため、`FromPhonemes`/`FromPhonemesWithProsody`のそれぞれに`<example>`タグ付きのコード例を含める。
+
 ---
 
 ## 5. 懸念事項とレビュー項目
@@ -222,6 +231,7 @@ var audioClip = await piperTTS.SynthesizeAsync(request);
 | **Prosody 配列長の不整合** | 低 | ファクトリメソッドで `prosodyFlat.Length != phonemes.Length * 3` を検証 |
 | **beta テスターの否定的フィードバック** | 中 | GA で internal に戻す選択肢を保持。ファクトリメソッドパターンのため、public → internal 変更時の影響は限定的 |
 | **P2-2 設計ドキュメントとの整合** | 低 | P2-2 のセクション10「SynthesisRequest は internal のため外部互換性影響なし」の前提が覆る。P2-2 → P3-6 の順序であればこの問題は発生しない |
+| **ProsodyFlat の直接公開リスク** | 中 | ProsodyFlatを直接公開するのではなく、ReadOnlySpan<int>やアクセサメソッド経由にすることで将来のstride変更をカプセル化する案を検討する。直接公開の場合、stride=3→stride=4等の変更が破壊的変更になる |
 
 ### 5.2 レビューチェックリスト
 

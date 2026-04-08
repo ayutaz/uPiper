@@ -1,11 +1,12 @@
 # P1-1: PuaTokenMapper インスタンスクラス化
 
-**マイルストーン**: M1 - Foundation Start
+**マイルストーン**: M1 - 基盤リファクタリング起点
 **優先度**: P1
 **見積もり**: 1.5 人日
 **依存チケット**: なし（独立チェーン）
 **後続チケット**: P1-2（pua.json ランタイム読み込み）
 **ブランチ名**: `feature/v2.0-P1-1-puatokenmapper-instance`
+**設計ドキュメント**: [P1-1_PuaTokenMapperInstance.md](../../v2.0-design/P1-1_PuaTokenMapperInstance.md)
 
 ---
 
@@ -249,6 +250,7 @@
 | **P1-4 との MultilingualPhonemizer 競合** | 中 | P1-1 は `PhonemeEncoder` 側がメイン変更対象、P1-4 は `MultilingualPhonemizer` がメイン。直接の競合は限定的だが、同時にマージする場合はコンフリクト解決が必要 |
 | **DotNetG2P エンジンへの影響** | なし | 各言語エンジンは内部で `ToPuaPhonemes()` を呼び、`PuaTokenMapper` を直接参照していない。別リポジトリであり uPiper 側の責務外 |
 | **パフォーマンス: インスタンス生成コスト** | 低 | コンストラクタで96エントリの辞書初期化が発生するが、TTS 初期化時に1回のみ。ベンチマーク不要レベル |
+| **ConcurrentDictionaryとlockの維持** | 低 | `ConcurrentDictionary`と`lock(_dynamicLock)`は維持する（同一`PiperTTS`インスタンスでの並行async呼び出し対策）。削除するのは`ResetForTesting()`/`ResetOnDomainReload()`のみ |
 
 ### 5.2 レビューチェックリスト
 

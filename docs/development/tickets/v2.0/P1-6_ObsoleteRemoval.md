@@ -1,11 +1,12 @@
 # P1-6: Obsoleteコンストラクタ削除
 
-**マイルストーン**: M2 - Phase 1 Completion (alpha)
+**マイルストーン**: M2 - Phase 1 完了 (alpha)
 **優先度**: P1
 **見積もり**: 1 人日
 **依存チケット**: P1-4, P1-5
 **後続チケット**: なし（Phase 1 完了ゲート）
 **ブランチ名**: `feature/v2.0-P1-6-obsolete-removal`
+**設計ドキュメント**: [P1-6_ObsoleteRemoval.md](../../v2.0-design/P1-6_ObsoleteRemoval.md)
 
 ---
 
@@ -331,6 +332,7 @@ Step 1-7 完了後に残っている pragma を一括削除する。
 | **`CreateDummyAudioClip` 削除後のエラーパス** | 低 | 削除後は `null` 返却 + `_onError` コールバック。呼び出し元で `AudioClip` が `null` の場合のハンドリングが必要。既存の `PiperTTS` 利用者が `null` チェックをしていない場合、`NullReferenceException` が発生する。v2.0 は破壊的変更リリースのため許容範囲だが、CHANGELOG での明記が必要 |
 | **P1-4 の `[Obsolete]` 付与確認** | 低 | P1-4 の Step 5 で `MultilingualPhonemizerOptions` の個別エンジンプロパティに `[Obsolete]` が付与されているはず。P1-6 実施前に `[Obsolete]` の存在を確認し、付与されていなければ先に付与してから削除する（1リリースの猶予なしの即削除は避けたい。ただし v2.0 = メジャーバージョンアップのため、SemVer 上は問題なし） |
 | **テスト46箇所の機械的書き換えにおける漏れ** | 低 | 書き換え後に `new MultilingualPhonemizer(` で Grep し、Options 版以外の呼び出しが残っていないことを確認する。また、`CS0618` で Grep し、pragma が残っていないことを確認する |
+| **CreateDummyAudioClip削除後のnull返却時ログ改善** | 低 | `CreateDummyAudioClip`削除後のnull返却時に`PiperLogger.LogError`でテキスト冒頭(30文字)+null返却の事実を含めること。呼び出し側がデバッグしやすいようにログメッセージを充実させる |
 
 ### 5.2 レビューチェックリスト
 
@@ -569,6 +571,10 @@ P1-6 で `CreateDummyAudioClip` を削除し null 返却に変更することで
 - `Task<AudioClip?>` の null 返却パターンを正式 API として採用するか
 - Result 型パターン（`Task<TTSResult>`）に移行するか
 - エラー時の挙動を `_onError` コールバックから `Exception` ベースに統一するか
+
+### Breaking Change Note
+
+- **Breaking Change**: `GenerateAudioAsync`が`CreateDummyAudioClip`削除に伴いnullを返す可能性がある。呼び出し後にnullチェックが必要。v2.0のCHANGELOGおよびマイグレーションガイドに明記すること
 
 ### P1-3（Dictionary Registry 化）との連携
 

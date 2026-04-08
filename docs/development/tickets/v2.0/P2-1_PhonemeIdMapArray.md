@@ -1,6 +1,7 @@
 # P2-1: PhonemeIdMap int → int[] 型変更
 
-**マイルストーン**: M3 - Data Model + Config
+**マイルストーン**: M3 - データモデル + 設定整理
+**設計ドキュメント**: [P2-1_PhonemeIdMapArray.md](../../v2.0-design/P2-1_PhonemeIdMapArray.md)
 **優先度**: P0（Phase 2起点）
 **見積もり**: 1.5 人日
 **依存チケット**: Phase 1完了（M2ゲート通過）
@@ -429,6 +430,7 @@ JSON デシリアライズ時に `Dictionary<string, int[]>` で受け取り、`
 
 1. **`ids[0]` と `ids[^1]` の非対称性**: `PhonemeEncoder` は先頭ID（`ids[0]`）を使用し、`PhonemeSilenceProcessor` は最後のID（`ids[^1]`）を使用する。1要素配列では同じ値だが、複数ID配列では異なる値を参照する。この非対称性は piper-plus 準拠だが、コードレビューで「なぜ違うのか」という質問が予想される。設計ドキュメントとコードコメントでの説明が必要。
 2. **将来の P2-1b との二段階変更**: 型だけ `int[]` にして内部ロジックは `ids[0]` のままにすることで、「型は配列だが実質的にスカラーとして使用」という中間状態が生まれる。コードの意図が読み取りにくくなるリスクがある。ただし、これは現行モデルが1要素配列であるという現実に対するプラグマティックな判断であり、過度な先行実装を避ける正当な理由がある。
+3. **`ids[0]`/`ids[^1]` の使い分けルール**: `InitializePhonemeMapping`（先頭ID: `ids[0]`）と `BuildSilenceIdMap`（末尾ID: `ids[^1]`）で異なるインデックスを使用する理由を、XMLDoc に piper-plus コード参照付きで記載すること。piper-plus 側の対応箇所（phoneme encode 時の先頭ID使用、silence split 時の末尾ID使用）を明示し、コードレビュー時の「なぜ違うのか」という疑問を事前に解消する。
 
 ### 6.5 Phase 2+3 統合設計考察
 

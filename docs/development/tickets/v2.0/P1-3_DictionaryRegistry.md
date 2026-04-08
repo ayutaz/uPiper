@@ -1,11 +1,12 @@
 # P1-3: MultilingualPhonemizer Dictionary Registry化
 
-**マイルストーン**: M2 - Phase 1 Completion (alpha)
+**マイルストーン**: M2 - Phase 1 完了 (alpha)
 **優先度**: P0
 **見積もり**: 2 人日
 **依存チケット**: P1-4（ILanguageG2PHandler定義が前提）
 **後続チケット**: なし（直接の後続なし。Phase 2へのゲート）
 **ブランチ名**: `feature/v2.0-P1-3-dictionary-registry`
+**設計ドキュメント**: [P1-3_DictionaryRegistry.md](../../v2.0-design/P1-3_DictionaryRegistry.md)
 
 ---
 

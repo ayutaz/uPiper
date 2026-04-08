@@ -1,6 +1,7 @@
 # P3-3: Validate() 純粋関数化
 
-**マイルストーン**: M3 - Data Model + Config
+**マイルストーン**: M3 - データモデル + 設定整理
+**設計ドキュメント**: [P3-3_ValidatePureFunction.md](../../v2.0-design/P3-3_ValidatePureFunction.md)
 **優先度**: P1
 **見積もり**: 1 人日
 **依存チケット**: P3-1（ValidatedPiperConfig ネスト構造化）
@@ -142,7 +143,7 @@ internal ValidatedPiperConfig(PiperConfig source)
               { MaxMemoryMB = Mathf.Clamp(source.GPUSettings.MaxMemoryMB, 128, 2048) }  // GPUクランプ
             : new GPUInferenceSettings());
 
-    Audio = new AudioSettings(
+    Audio = new PiperAudioSettings(
         source.SampleRate,
         source.NormalizeAudio,
         source.NormalizeAudio
