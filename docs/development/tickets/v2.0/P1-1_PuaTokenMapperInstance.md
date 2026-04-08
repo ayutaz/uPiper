@@ -272,49 +272,112 @@
 
 ## 6. 一から作り直すとしたら
 
-### PUA マッピングという設計自体の妥当性
+### 6.1 PUA マッピングという設計自体の妥当性
 
 PUA（Private Use Area）マッピングは、複数文字の音素トークン（`ch`, `ts`, `N_m` 等）を単一の Unicode コードポイントに圧縮する仕組みである。この設計は piper-plus の Python/C++ 実装から継承されたもので、以下の前提に基づく:
 
 - VITS モデルの `phoneme_id_map` が単一文字キーを前提とする
 - 複数文字トークンをそのまま渡すと、文字単位で分解されて誤った ID にマッピングされる
 
-**問うべき点**: もし piper-plus の制約がなく、uPiper 独自にモデル入力パイプラインを設計できるなら、PUA マッピングは不要である。トークン文字列を直接 ID にマッピングする `Dictionary<string, int>` で十分であり、中間の PUA 変換レイヤーは余分な複雑性を持ち込んでいる。
+**問うべき点**: もし piper-plus の制約がなく、uPiper 独自にモデル入力パイプラインを設計できるなら、PUA マッピングは不要である。トークン文字列を直接 ID にマッピングする `Dictionary<string, int>` で十分であり、中間の PUA 変換レイヤーは余分な複雑性を持ち込んでいる。実際に `PhonemeEncoder` 内の `MapPhoneme()` メソッドは、PUA 文字を受け取った後に `_tokenMapper.Char2Token` で逆変換し、さらに IPA マッピングを経て最終的な ID を取得するという二重変換を行っている。文字列キーベースなら `phonemeIdMap["ch"]` の一発で済む処理に、PUA エンコード → PUA デコード → IPA 変換 → ID 取得という4段パイプラインが必要になっている。
 
 しかし現実として:
 1. piper-plus のモデルとの互換性が必須（モデル再学習は範囲外）
-2. DotNetG2P の各エンジンが `ToPuaPhonemes()` で PUA 変換済みの出力を返す設計
+2. DotNetG2P の各エンジンが `ToPuaPhonemes()` で PUA 変換済みの出力を返す設計（dot-net-g2p リポジトリ側の責務であり、uPiper 側から API を変更できない）
 3. pua.json というデータファイルで piper-plus 側と整合性を保つ仕組みが確立済み
+4. 多言語モデル（`phoneme_type: "multilingual"`）の `phoneme_id_map` が PUA 文字をキーとして含む
 
-以上から、PUA マッピング自体を廃止する選択肢は現実的ではない。ただし、将来的に uPiper 独自モデルを学習する場合は、`phoneme_id_map` を文字列キーベースで再設計し、PUA レイヤーを省略する方が保守性が高い。
+以上から、PUA マッピング自体を廃止する選択肢は現実的ではない。ただし、将来的に uPiper 独自モデルを学習する場合は、`phoneme_id_map` を文字列キーベースで再設計し、PUA レイヤーを省略する方が保守性が高い。その場合、`PhonemeEncoder` は `Dictionary<string, int>` ベースのルックアップに簡素化でき、`PuaTokenMapper` クラス自体が不要になる。
 
-### インスタンス化のアプローチ
+### 6.2 piper-plus との設計思想の違い: 静的型付け vs 動的管理
+
+piper-plus（Rust/Python）の PUA マッピングは `token_mapper.py` の module-level dictionary として実装されており、Python のモジュールスコープが事実上のシングルトンとして機能する。Rust 版も `lazy_static` マクロでプロセス生存期間のグローバル状態として管理される。これらの言語では:
+
+- **Python**: GC + 参照カウントにより、テスト終了時にモジュールが自然にクリーンアップされる。テスト間状態リークは `importlib.reload` で対処可能。
+- **Rust**: 所有権システムが生存期間を保証。`lazy_static` は `Drop` トレイトで安全にクリーンアップ。
+
+C# の `static class` は Java/Python のシングルトンとは異なり、AppDomain の生存期間にバインドされる。Unity のテストランナーは同一 AppDomain 内で複数テストを実行するため、static フィールドの状態がテスト間でリークする。この問題は piper-plus では存在しない（テストごとに別プロセスを起動するか、Rust のスレッドローカルストレージで分離するため）。
+
+つまり、`PuaTokenMapper` のインスタンス化は **C# + Unity 特有の要件** であり、piper-plus の設計をそのまま移植した結果生じた技術的負債の解消である。ゼロから C# で設計していれば、最初からインスタンスクラスとして実装し、Composition Root から注入する設計にしていたはずである。
+
+### 6.3 インスタンス化のアプローチ: ハイブリッド設計の妥当性
 
 本チケットでは「固定マッピングは static、動的状態はインスタンス」のハイブリッド設計を採用する。一から設計するなら、以下の代替案も検討に値する:
 
 **案 A: 完全インスタンス化（FixedPuaMapping もインスタンス）**
 - メリット: テスト時に固定マッピングも差し替え可能。異なるモデル（PUA テーブルが異なる）への対応が容易。
-- デメリット: 全インスタンスで96エントリの辞書が重複。メモリ効率低下。実際に固定マッピングを差し替えるユースケースが P1-2 まで存在しない。
+- デメリット: 全インスタンスで96エントリの辞書が重複。メモリ効率低下（約 96 * 2 * (string + char) = 数 KB 程度なので実質無視可能だが、「同じデータを複数インスタンスに持つ」という設計の不自然さが残る）。
+- **P1-2 との関係**: P1-2 で pua.json からの動的読み込みを実装する際、`FixedPuaMapping` が static のままだと「ファイルから読んだマッピングで static を上書きする」という不自然なパターンになる。完全インスタンス化ならコンストラクタに pua.json のパスを渡す自然な設計になる。**この点では案 A の方が優れている**。
 
 **案 B: インターフェース抽出（`IPuaTokenMapper`）**
-- メリット: テスト時にモックが容易。PhonemeEncoder のテストで PUA マッピングを完全制御可能。
-- デメリット: 現時点でモック需要が薄い（PhonemeEncoder テストは実データで十分動作）。インターフェース追加はオーバーエンジニアリング。
+- メリット: PhonemeEncoder のテストで PUA マッピングをモック可能。例えば「特定のトークンだけを含むモック mapper」を注入して PhonemeEncoder の IPA 変換ロジックを分離テストできる。
+- デメリット: 現時点で PhonemeEncoder テストは実データの PuaTokenMapper で十分動作しており、モック需要が具体的にない。`IPuaTokenMapper` を導入すると、P1-4 の `ILanguageG2PHandler` と合わせてインターフェースが2つ増え、依存解決の複雑度が上がる。
+- **Phase 1 全体の DI 戦略**: P1-4 では `ILanguageG2PHandler` インターフェースを導入するが、P1-1 では `IPuaTokenMapper` を導入しない。この非対称性は、テスト時のモック需要の有無で判断している。ハンドラは「言語ごとに異なる処理ロジック」を持つためモック化の価値が高いが、PuaTokenMapper は「固定テーブル + 動的割り当て」のシンプルなデータ構造であり、モック化よりも新規インスタンス生成の方が簡潔。
 
-**採用判断**: 案 A は P1-2（pua.json ランタイム読み込み）で固定マッピングをファイルから上書きする際に自然に対応可能。案 B は YAGNI と判断。現設計のハイブリッドが最も費用対効果が高い。
+**採用判断**: 案 A は P1-2 で自然に対応可能（`FixedPuaMapping` を `static readonly` からインスタンスフィールドに降格するだけ）。案 B は YAGNI と判断。現設計のハイブリッドが P1-1 単体として最も費用対効果が高い。ただし、P1-2 実装時にハイブリッド設計の限界が見えた場合、完全インスタンス化への移行を検討すべき。
 
-### PhonemeEncoder への注入方法
+### 6.4 PhonemeEncoder への注入方法
 
 コンストラクタ注入以外に以下も考えられる:
 
 **案 C: メソッド注入（`MapPhoneme` の引数に PuaTokenMapper を渡す）**
-- メリット: PhonemeEncoder のコンストラクタ変更が不要。
-- デメリット: 3箇所の内部メソッド呼び出しで毎回引数を渡す煩雑さ。呼び出し元の責務が増える。
+- メリット: PhonemeEncoder のコンストラクタ変更が不要。テスト17箇所の書き換えが不要。
+- デメリット: `MapPhoneme` は `Encode` / `EncodeWithProsody` の内部メソッドから呼ばれるため、`PuaTokenMapper` を3階層の呼び出しチェーン（`Encode` → `EncodePhonemes` → `MapPhoneme`）で引き回す必要がある。呼び出し元の責務が増え、引数が汚染される。
+- **Phase 2 との関係**: P2-1（PhonemeIdMap `int[]` 型変更）で `PhonemeEncoder.Encode` のシグネチャが再び変更される。メソッド注入を選ぶとこのタイミングでさらに引数が増える。
 
 **案 D: プロパティ注入（`PhonemeEncoder.TokenMapper { set; }`）**
-- メリット: コンストラクタ互換性を維持できる。
-- デメリット: 初期化忘れのリスク。null 状態の PhonemeEncoder が存在しうる。
+- メリット: コンストラクタ互換性を維持でき、テスト17箇所の書き換えが不要。
+- デメリット: 初期化忘れのリスク。`TokenMapper` が null の状態で `Encode` を呼ぶと `NullReferenceException` が発生する。コンストラクタ注入なら「生成時点で完全な状態」が保証される。
+- **Unity での実績**: Unity の `MonoBehaviour` はプロパティ注入（`[SerializeField]`）が主流だが、`PhonemeEncoder` は非 MonoBehaviour の POCO クラスであり、コンストラクタ注入が自然。
 
-**採用判断**: コンストラクタ注入が最もシンプルかつ安全。v2.0 は破壊的変更リリースであり、コンストラクタ変更のコストは許容範囲内。
+**採用判断**: コンストラクタ注入が最もシンプルかつ安全。v2.0 は破壊的変更リリースであり、コンストラクタ変更のコストは許容範囲内。テスト17箇所の書き換えは機械的であり、リスクは低い。
+
+### 6.5 現設計の正直な弱点
+
+1. **FixedPuaMapping の static 残存がP1-2で問題になる可能性**: ハイブリッド設計では `FixedPuaMapping` が全インスタンスで共有される。P1-2 で pua.json の内容がハードコードと異なる場合、「static な FixedPuaMapping」と「インスタンスの `_token2Char`（pua.json で上書き済み）」の間に不整合が生じる。`IsFixedPua()` メソッドが static な `LastFixedCodepoint` を参照するため、pua.json でコードポイント範囲が変わると判定が狂う。
+
+2. **ConcurrentDictionary のオーバーヘッド**: TTS パイプラインでは `PuaTokenMapper` の読み書きが初期化時に集中し、推論時は読み取りのみ。`ConcurrentDictionary` のロックフリー読み取りは十分高速だが、初期化時の96エントリ登録で各エントリが個別の CAS 操作を行う。`Dictionary` + 初期化後の `AsReadOnly()` パターンの方が初期化コストは低い。ただし、動的割り当て（`Register`）のスレッドセーフティが必要な限り `ConcurrentDictionary` は妥当。
+
+3. **PhonemeEncoder コンストラクタの破壊的変更の波及**: ランタイム3箇所 + テスト17箇所の書き換えが必要。P2-1（PhonemeIdMap `int[]`）でもコンストラクタが変更される可能性があり、短期間で2回の破壊的変更が発生する。
+
+### 6.6 Phase 1 全体のゼロベース設計考察
+
+P1-1 と P1-4 を含む Phase 1 全体を統合的に設計する場合の考察。（P1-4 チケットのセクション 6.7 と相互参照）
+
+#### DI パターンの整合性
+
+Phase 1 で導入される DI パターンは2種類:
+
+- **P1-1**: `PuaTokenMapper` を `PiperTTS` で生成し、`PhonemeEncoder(config, tokenMapper)` でコンストラクタ注入
+- **P1-4**: `ILanguageG2PHandler` を `MultilingualPhonemizerOptions.Handlers` Dictionary 経由で注入
+
+この非対称性は意図的である。`PuaTokenMapper` は単一の依存（1:1 関係）であり、コンストラクタパラメータが自然。`Handlers` は言語コードをキーとする複数の依存（1:N 関係）であり、Dictionary プロパティが自然。
+
+**もし統一するなら**: 全依存を `Options` / `Config` オブジェクトに集約するパターンが考えられる:
+
+```csharp
+var encoderOptions = new PhonemeEncoderOptions
+{
+    VoiceConfig = voiceConfig,
+    TokenMapper = tokenMapper,  // P1-1
+};
+var encoder = new PhonemeEncoder(encoderOptions);
+```
+
+しかし、`PhonemeEncoder` の依存は `PiperVoiceConfig` と `PuaTokenMapper` の2つだけであり、Options オブジェクトを導入するとかえって冗長になる。Options パターンは依存が3つ以上、かつオプショナルなものが混在する場合に適している（`MultilingualPhonemizerOptions` がまさにそのケース）。
+
+#### テスタビリティの統合評価
+
+Phase 1 完了後のテストパターン:
+
+| コンポーネント | テスト時の DI | 改善点 |
+|--------------|-------------|-------|
+| `PuaTokenMapper` | `new PuaTokenMapper()`（各テスト独立インスタンス） | テスト間状態リーク解消 |
+| `PhonemeEncoder` | `new PhonemeEncoder(config, new PuaTokenMapper())` | PUA 依存が明示的に |
+| `MultilingualPhonemizer` | `Options.Handlers = { ["ja"] = stub }` | 言語処理のモック化が可能に |
+| `ILanguageG2PHandler` 実装 | 各ハンドラを単体テスト | ProcessXxx のテスト分離 |
+
+この構造は「各コンポーネントが自身の依存を明示し、テスト時に差し替え可能」という DI の基本原則を満たしている。ただし、`PuaTokenMapper` はインターフェースを持たないため、PhonemeEncoder テストで「特定のマッピングだけを持つ PuaTokenMapper」を作ることができない。テスト時は常に96固定エントリ + 動的割り当てを含む完全な PuaTokenMapper を使うことになる。これは現時点では問題ないが、マッピングテーブルが拡大した場合（100+ 言語対応等）にテストの初期化コストが増大する可能性がある。
 
 ---
 

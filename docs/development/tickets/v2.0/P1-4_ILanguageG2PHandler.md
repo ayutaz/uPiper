@@ -360,22 +360,52 @@ Agent B は Step2 完了後に合流し、Step3 と並行でテスト実装。
 
 ## 6. 一から作り直すとしたら
 
-### 設計思想
+### 6.1 現設計が抱える構造的妥協
 
-もしゼロから同じ問題（多言語 G2P ルーティング）を解決するなら、以下の原則で設計する:
+本チケットの設計は「v1.4.0 の switch + ProcessXxx パターンからの段階的移行」を前提としている。この前提自体が設計上の妥協をいくつか含む:
 
-1. **Open/Closed Principle の徹底**: 言語追加時に既存コードの変更が不要であること
-2. **Self-Registration パターン**: 各ハンドラが自身の言語コードを宣言し、自動登録されるメカニズム
-3. **初期化の遅延と分離**: 辞書ロードなどの重い処理はファクトリに分離し、ハンドラ自体は軽量に
+1. **レガシー互換層の残存**: P1-5/P1-6 で削除予定の `IPhonemizerBackend`、`ProcessFallbackAsync`、`[Obsolete]` コンストラクタが P1-4 完了後も残存する。これにより、P1-4 単体では `MultilingualPhonemizer` のコードが「新旧混在」の状態になり、リファクタリングの効果が半減する。v2.0 リリース時にはクリーンになるが、開発期間中はテストの `#pragma warning disable` が残り続ける。
 
-### アーキテクチャ: Attribute-based Auto-Discovery
+2. **ハンドラ内部の所有権管理が冗長**: 各ハンドラが `_ownsEngine` フラグを持ち、Dispose 時に条件分岐する。これは P1-3 の `HandlerEntry` struct 導入で解消される予定だが、P1-4 単体では所有権管理が「ハンドラ内部のフラグ」と「MultilingualPhonemizer の `_handlers` Dictionary」の2層に分散する。
+
+3. **InitializeAsync の責務分散**: ハンドラごとに `InitializeAsync` を持つ設計だが、実際に非同期初期化が必要なのは日本語（WebGL の MeCab 辞書）と英語（CMUdict ファイル存在チェック）のみ。残り5言語は `Task.CompletedTask` を返す no-op である。「全ハンドラが一律に `InitializeAsync` を持つ」設計は一貫性があるが、実態との乖離が大きい。
+
+### 6.2 ゼロベース設計: 所有権を外に出す
+
+ゼロから設計するなら、ハンドラは「純粋な処理ロジック」のみを担い、ライフサイクル管理は外部（Composition Root）が行う:
 
 ```csharp
-// ハンドラが自身を宣言
+// ハンドラは処理に専念。IDisposable を継承しない。
+public interface ILanguageG2PHandler
+{
+    string LanguageCode { get; }
+    G2PResult Process(string text);
+}
+
+// ライフサイクル管理は Composition Root が担う
+public sealed class LanguageHandlerRegistry : IDisposable
+{
+    private readonly Dictionary<string, OwnedHandler> _handlers;
+
+    public void Register(string lang, ILanguageG2PHandler handler, bool ownsLifecycle) { ... }
+    public ILanguageG2PHandler Get(string lang) => _handlers[lang].Handler;
+    public void Dispose() { /* ownsLifecycle == true のハンドラのみ Dispose */ }
+}
+```
+
+**利点**: ハンドラのテストが完全に分離される。テスト時にモックを渡す際、所有権フラグの設定が不要。ハンドラ自体がステートレスに近づく。
+
+**不採用の理由**: 現実的には、各ハンドラが内部にエンジンインスタンスを保持する必要があり（`DotNetG2PPhonemizer`, `EnglishG2PEngine` 等）、完全なステートレス化は困難。また、`LanguageHandlerRegistry` を導入すると P1-3 の Dictionary Registry 化と責務が重複する。段階的移行を重視する現設計では、ハンドラ内部に所有権管理を留めた方がマージコンフリクトが少ない。
+
+### 6.3 Attribute-based Auto-Discovery の検討
+
+もしゼロからなら、Open/Closed Principle を徹底し、言語追加時に既存コードの変更を不要にする設計も考えられる:
+
+```csharp
 [LanguageHandler("ja")]
 public class JapaneseG2PHandler : ILanguageG2PHandler { ... }
 
-// MultilingualPhonemizer が起動時にリフレクションで自動発見
+// 起動時にリフレクションで自動発見
 var handlers = Assembly.GetExecutingAssembly()
     .GetTypes()
     .Where(t => t.GetCustomAttribute<LanguageHandlerAttribute>() != null)
@@ -384,34 +414,103 @@ var handlers = Assembly.GetExecutingAssembly()
         t => (ILanguageG2PHandler)Activator.CreateInstance(t));
 ```
 
-利点:
-- 言語追加時にハンドラクラスを1つ追加するだけで完了
-- `MultilingualPhonemizer` やファクトリメソッドの switch 文が不要
-- プラグインとして外部アセンブリからの言語追加も可能
-
-### 実装アプローチ: 現設計との差分
-
-**理想 vs 現実の判断**:
-
-| 観点 | 理想（Auto-Discovery） | 現設計（Dictionary + Factory） | 判断理由 |
-|------|----------------------|------------------------------|---------|
+| 観点 | Auto-Discovery | 現設計（Dictionary + Factory） | 判断 |
+|------|---------------|-------------------------------|------|
 | 言語追加の容易さ | クラス追加のみ | ファクトリに1行追加 | 7言語固定のため差は微小 |
-| パフォーマンス | リフレクションコスト | Dictionary lookup（O(1)） | IL2CPP 環境ではリフレクション制約あり |
-| Unity 互換性 | IL2CPP strip 対策が必要 | 問題なし | Unity 制約を考慮すると明示的登録が安全 |
-| テスト容易性 | モック登録が容易 | Handlers Dictionary で同等 | 同等 |
-| 複雑度 | Attribute + リフレクション + strip 対策 | 単純な Dictionary | KISS 原則 |
+| パフォーマンス | リフレクションコスト | Dictionary lookup | IL2CPP ではリフレクション制約あり |
+| Unity IL2CPP 互換 | `link.xml` で strip 対策が必須 | 問題なし | **決定打**: Unity 制約が重い |
+| コンストラクタ DI | `Activator.CreateInstance` ではコンストラクタ引数を渡せない | Options で自由に注入可能 | DI の柔軟性で劣る |
 
-**結論**: 現設計（Dictionary + `CreateDefaultHandler` ファクトリ）を採用した理由は正当である。Unity の IL2CPP strip 対策コスト、7言語固定という現実的な制約、KISS 原則を考慮すると、Attribute-based Auto-Discovery はオーバーエンジニアリングとなる。
+**不採用理由**: IL2CPP の managed code stripping が Auto-Discovery の最大の障壁。`link.xml` で全ハンドラクラスを preserve 指定する必要があり、「クラス追加だけで完了」という利点が消える。さらに、`Activator.CreateInstance` ではコンストラクタ引数（外部注入された `DotNetG2PPhonemizer` 等）を渡せないため、ファクトリメソッドとの併用が必要になり、複雑度が増す。
 
-### 見送った代替案
+### 6.4 piper-plus との設計思想の違い
 
-| 代替案 | 見送り理由 |
-|--------|-----------|
-| **基底抽象クラス `LanguageG2PHandlerBase`** | 現時点で共通ロジックが `ExtractProsodyArrays` 1つのみ。YAGNI。将来的に共通ロジックが増えた場合に導入を検討 |
-| **`Process` を async にする** | 現在の7言語の `ProcessXxx` は全て同期。非同期パスは P1-5 で廃止する `ProcessFallbackAsync` のみ。async の伝播コストに見合わない |
-| **ハンドラのジェネリック化 (`ILanguageG2PHandler<TEngine>`)** | エンジン型ごとの処理ロジックが大きく異なる（JA の先頭PAD除去、ZH のトーンPUA挿入等）。ジェネリックで吸収できる共通性が乏しい |
-| **Enum-based dispatch (`LanguageCode` enum)** | ISO 639-1 の string と enum の相互変換が煩雑。piper-plus が string ベースのため互換性も低下 |
-| **P1-3 と P1-4 の同一 PR 実施** | 設計ドキュメントでは「推奨」とされているが、PR が巨大化しレビュー負担が増大。P1-4 完了後に P1-3 を薄いレイヤーとして追加する方が安全 |
+piper-plus は Rust で実装されており、言語ハンドラは trait object（`Box<dyn LanguageProcessor>`）として管理される。Rust の所有権システムが「誰がリソースを解放するか」を型レベルで強制するため、`_ownsEngine` のような実行時フラグは不要である。
+
+C# + Unity 環境では:
+- **`IDisposable` の呼び出しは規約ベース** であり、呼び忘れは実行時にリソースリークとして現れる（コンパイルエラーにならない）
+- **Unity の `Object.Destroy` と `IDisposable.Dispose` が二重のライフサイクル管理** を要求し、ネイティブリソース（MeCab 辞書等）の解放タイミングが複雑になる
+- **`GC.SuppressFinalize` の呼び忘れ** がファイナライザスレッドからの二重解放を引き起こすリスクがある
+
+この差異を踏まえると、C# 側で所有権管理を完全にゼロコストにすることは言語仕様上困難であり、`_ownsEngine` フラグによる明示的管理は実用的な妥協である。ただし、P1-3 で `HandlerEntry` struct に所有権を集約することで、フラグの散在は解消される予定。
+
+### 6.5 ProcessXxx 移植の正直なリスク
+
+7つの `ProcessXxx` メソッドをハンドラクラスに「忠実に移植」する方針だが、これには見えにくいリスクがある:
+
+1. **中国語ハンドラの78行ロジック**: `ProcessChinese` の音節分配 + トーンPUA挿入ロジックは、移植時に「変数名のリネーム」や「this 参照の追加」を行う過程でオフバイワンエラーが混入しやすい。特に `phonemesPerSyllable + (syl < remainder ? 1 : 0)` の分配ロジックは、テスト入力の網羅性が不十分だと回帰バグを見逃す。
+
+2. **スペイン語の微妙な非対称性**: `ProcessSpanish` は `ToIpaWithProsody().Phonemes` を音素として使用するが、`ProcessFrench` / `ProcessPortuguese` は `ToPuaPhonemes()` を使用する。この3言語が「同一パターン」として G2PHandlerUtils を共有する設計だが、音素取得元の違いはハンドラ内部に隠蔽される。レビュー時にこの非対称性を見落とすと、スペイン語だけ IPA 音素が返る（PUA 変換されない）バグが残存するリスクがある。
+
+3. **テストの「同一入出力」検証の限界**: 移植前後で「同じ入力に対して同じ出力」を検証するが、`MultilingualPhonemizer` 内での EOS トリム処理（L383-396）はハンドラの外側で行われるため、ハンドラ単体テストではカバーされない。統合テスト（MultilingualPhonemizerTests）でのみ検証可能な振る舞いが存在する。
+
+### 6.6 見送った代替案
+
+| 代替案 | 検討内容 | 見送り理由 |
+|--------|---------|-----------|
+| **基底抽象クラス `LanguageG2PHandlerBase`** | `InitializeAsync` の no-op デフォルト実装、`Dispose` パターンの共通化 | 共通ロジックが `ExtractProsodyArrays` 1つ + no-op `InitializeAsync` のみ。7クラス中5クラスが no-op を override するだけの thin wrapper になる。YAGNI |
+| **`Process` を async にする** | 将来的に WebGL で全言語の辞書が非同期読み込みになる可能性 | 現在の7言語は全て同期。P1-5 で `ProcessFallbackAsync` を廃止する方向性と矛盾。async の ValueTask 化を検討するなら Phase 2 以降 |
+| **ハンドラのジェネリック化 (`ILanguageG2PHandler<TEngine>`)** | エンジン型をジェネリックパラメータとして注入 | JA の先頭PAD除去、ZH のトーンPUA挿入、KO のProsody長不一致フォールバック等、言語固有ロジックが大きく異なる。ジェネリックで吸収できる共通性が乏しい |
+| **Enum-based dispatch (`LanguageCode` enum)** | string の typo を防ぐ型安全性 | piper-plus のモデル設定が `"ja"`, `"en"` 等の string ベース。enum 変換層が増える上、新言語追加時に enum の拡張が必要になり OCP に反する |
+| **P1-3 と P1-4 の同一 PR 実施** | Registry 化とハンドラ分離を一括実施 | PR が 30+ ファイル変更となりレビュー負荷が過大。P1-4 の7ハンドラ実装だけで十分に大きい（5.5人日）。P1-3 は P1-4 完了後の薄い追加レイヤー |
+| **`G2PResult` record struct の導入** | `(string[], int[], int[], int[])` タプルを型付き構造体に置換 | P2-2（Prosody フラット配列化）で `int[] ProsodyFlat` に統合予定。現時点で中間型を導入すると二重の破壊的変更になる |
+
+### 6.7 Phase 1 全体のゼロベース設計考察
+
+P1-1（PuaTokenMapper インスタンス化）と P1-4（ILanguageG2PHandler）を含む Phase 1 全体（P1-1 ~ P1-6）を、個別タスクではなく一つの統合リファクタリングとして設計する場合を考察する。
+
+#### DI 戦略の統一
+
+P1-1 は PuaTokenMapper を Composition Root（`PiperTTS`）からコンストラクタ注入する設計。P1-4 は `MultilingualPhonemizerOptions.Handlers` Dictionary 経由でハンドラを注入する設計。この2つの DI パターンは異なっている:
+
+| 項目 | P1-1（PuaTokenMapper） | P1-4（ILanguageG2PHandler） |
+|------|----------------------|---------------------------|
+| 注入方式 | コンストラクタパラメータ | Options オブジェクトの Dictionary プロパティ |
+| 注入元 | `PiperTTS`（Composition Root） | `PiperTTS.Inference.cs`（同じ Composition Root） |
+| null 時の挙動 | `ArgumentNullException` | `InitializeAsync` でデフォルト生成 |
+| テスト時 | `new PhonemeEncoder(config, new PuaTokenMapper())` | `Options.Handlers = new Dictionary<...> { ["ja"] = stub }` |
+
+**統合するなら**: `PiperTTS` が `PuaTokenMapper` と `Dictionary<string, ILanguageG2PHandler>` の両方を生成し、`MultilingualPhonemizer` と `PhonemeEncoder` に注入する一元的な Composition Root パターンにできる。しかし現実的には:
+- `PuaTokenMapper` は `PhonemeEncoder` が消費し、`MultilingualPhonemizer` は直接参照しない（DotNetG2P エンジンが内部で PUA 変換済み出力を返すため）
+- ハンドラ Dictionary は `MultilingualPhonemizer` のみが消費し、`PhonemeEncoder` は無関係
+
+つまり、2つの依存は消費者が異なるため、DI パターンを無理に統一する必要はない。Options 経由の注入は「複数の依存を名前付きで渡す」ケースに適しており、コンストラクタ注入は「単一の依存を渡す」ケースに適している。現設計のパターン混在は合理的である。
+
+#### テスタビリティ最優先の設計
+
+テスト容易性を最優先にするなら、インターフェース境界は以下に引くのが最適:
+
+1. **`ILanguageG2PHandler`**（本チケット）: 言語別処理のモック化。最も効果が高い。
+2. **`IPuaTokenMapper`**: PhonemeEncoder テストで PUA マッピングをモック可能にする。ただし P1-1 チケットで YAGNI と判断済み。PhonemeEncoder テストは実データの PuaTokenMapper で十分動作するため、モック化の実需がない。
+3. **`ILanguageDetector`**: 言語検出のモック化。Phase 4（P4-1）で N-gram 検出器との差し替えが必要になった時点で導入が妥当。
+4. **`IPhonemeEncoder`**: エンコーダのモック化。TTSSynthesisOrchestrator のテストで有用だが、現時点ではオーバーエンジニアリング。
+
+現設計では (1) のみを導入する。(2)-(4) は各フェーズの必要性が顕在化した時点で追加する YAGNI 方針。この判断は、Unity プロジェクトでは「インターフェース1つ追加 = asmdef の依存解決 + IDE のインデックス更新 + リファクタリングコスト」が非ゼロであるという現実的な制約に基づく。
+
+#### P1-1 ~ P1-6 を統合した場合のアーキテクチャ
+
+6つのタスクを一括実施するなら、以下の構造が最終形になる:
+
+```
+PiperTTS (Composition Root)
+  ├─ new PuaTokenMapper()                     // P1-1
+  ├─ new PhonemeEncoder(config, tokenMapper)   // P1-1
+  ├─ new MultilingualPhonemizer(options)       // P1-4 + P1-3 + P1-6
+  │     ├─ LanguageHandlerRegistry             // P1-3
+  │     │   ├─ JapaneseG2PHandler              // P1-4
+  │     │   ├─ EnglishG2PHandler               // P1-4
+  │     │   └─ ...（7言語）                     // P1-4
+  │     └─ (IPhonemizerBackend 廃止)           // P1-5
+  └─ TTSSynthesisOrchestrator(encoder, ...)
+```
+
+この最終形から逆算すると、P1-4 と P1-3 は同一 PR で実施した方が中間状態の「新旧混在」を回避できる。しかし、PR サイズ（30+ ファイル、5.5 + 1.5 = 7.0 人日）がレビュー可能な限界を超えるため、分割実施が現実的。P1-1 は依存グラフが独立しているため、P1-4 と並行実施して問題ない。
+
+#### 現設計の正直な弱点
+
+1. **中間状態の長期残存**: P1-4 完了から P1-5/P1-6 完了まで、`MultilingualPhonemizer` は「ハンドラ Dictionary + レガシー IPhonemizerBackend + Obsolete コンストラクタ」の三重構造を持つ。この中間状態でバグが見つかった場合、原因の切り分けが困難になる。
+2. **CreateDefaultHandler ファクトリの switch 文**: ハンドラ分離によって `PhonemizeWithProsodyAsync` 内の switch は消えるが、`CreateDefaultHandler` 内に新たな switch 文が生まれる。OCP の観点では switch 文の移動に過ぎない。ただし、ファクトリの switch は「初期化時に1回」なので、ランタイムパスの分岐削減という効果は得られる。
+3. **7ハンドラの重複コード**: `InitializeAsync` の no-op パターン（5言語）、`_ownsEngine` フラグによる Dispose パターン（7言語共通）がボイラープレートとして7ファイルに分散する。基底クラスを入れない判断（YAGNI）の代償。
 
 ---
 
