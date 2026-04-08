@@ -218,10 +218,8 @@ public PhonemeEncoder(PiperVoiceConfig config, PuaTokenMapper tokenMapper)
 | `CLAUDE.md` | PuaTokenMapper の役割説明 |
 | `docs/development/v2.0-plan.md` | P1-1 チケット記述 |
 | `docs/development/architecture-improvement-roadmap.md` | ロードマップ記述 |
-| `docs/development/piper-plus-v1.10.0-completed.md` | 完了チケット記述 |
 | `CHANGELOG.md` | リリースノート |
 | `docs/development/tickets/MS3-1_swedish-language-support.md` | PuaTokenMapper 言及 |
-| `docs/development/tickets/v1.4.0-P5-3_integration-tests.md` | PuaTokenMapper 言及 |
 
 ---
 
