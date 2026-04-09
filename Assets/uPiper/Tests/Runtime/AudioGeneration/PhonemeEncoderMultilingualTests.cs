@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Runtime.AudioGeneration
 {
@@ -19,100 +20,101 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
         private PhonemeEncoder _puaEncoder;
         private PiperVoiceConfig _puaConfig;
+        private PuaTokenMapper _mapper;
 
         /// <summary>
         /// Build a mock multilingual IPA phoneme_id_map (173 entries representative).
         /// Contains phonemes from JA, ZH, KO, ES, FR plus special tokens.
         /// The map includes the IPA marker character "ɕ" so the encoder detects IPA mode.
         /// </summary>
-        private static Dictionary<string, int> BuildMultilingualIpaMap()
+        private static Dictionary<string, int[]> BuildMultilingualIpaMap()
         {
-            return new Dictionary<string, int>
+            return new Dictionary<string, int[]>
             {
                 // ── Special tokens ──
-                { "_", 0 },   // PAD
-                { "^", 1 },   // BOS
-                { "$", 2 },   // EOS
+                { "_", new[] { 0 } },   // PAD
+                { "^", new[] { 1 } },   // BOS
+                { "$", new[] { 2 } },   // EOS
 
                 // ── Shared basic phonemes (used across many languages) ──
-                { "a", 3 }, { "i", 4 }, { "u", 5 }, { "e", 6 }, { "o", 7 },
-                { "b", 8 }, { "d", 9 }, { "f", 10 }, { "g", 11 }, { "h", 12 },
-                { "j", 13 }, { "k", 14 }, { "l", 15 }, { "m", 16 }, { "n", 17 },
-                { "p", 18 }, { "r", 19 }, { "s", 20 }, { "t", 21 }, { "v", 22 },
-                { "w", 23 }, { "y", 24 }, { "z", 25 },
-                { " ", 26 }, { ".", 27 }, { ",", 28 }, { "?", 29 }, { "!", 30 },
+                { "a", new[] { 3 } }, { "i", new[] { 4 } }, { "u", new[] { 5 } }, { "e", new[] { 6 } }, { "o", new[] { 7 } },
+                { "b", new[] { 8 } }, { "d", new[] { 9 } }, { "f", new[] { 10 } }, { "g", new[] { 11 } }, { "h", new[] { 12 } },
+                { "j", new[] { 13 } }, { "k", new[] { 14 } }, { "l", new[] { 15 } }, { "m", new[] { 16 } }, { "n", new[] { 17 } },
+                { "p", new[] { 18 } }, { "r", new[] { 19 } }, { "s", new[] { 20 } }, { "t", new[] { 21 } }, { "v", new[] { 22 } },
+                { "w", new[] { 23 } }, { "y", new[] { 24 } }, { "z", new[] { 25 } },
+                { " ", new[] { 26 } }, { ".", new[] { 27 } }, { ",", new[] { 28 } }, { "?", new[] { 29 } }, { "!", new[] { 30 } },
 
                 // ── Japanese IPA phonemes ──
-                { "N", 31 },     // Japanese moraic nasal (ASCII)
-                { "\u0274", 32 }, // ɴ  uvular nasal (IPA)
-                { "\u0255", 33 }, // ɕ  voiceless alveolo-palatal fricative (IPA detection key)
-                { "t\u0255", 34 }, // tɕ  alveolo-palatal affricate
-                { "q", 35 },      // glottal stop (sokuon)
-                { "\u026F", 36 }, // ɯ  close back unrounded vowel
-                { "\u027E", 37 }, // ɾ  alveolar tap
-                { "\u0291", 38 }, // ʑ  voiced alveolo-palatal fricative
-                { "k\u02B2", 39 }, // kʲ  palatalized velar
-                { "\u0261\u02B2", 40 }, // ɡʲ  voiced palatalized velar
-                { "d\u02B2", 41 }, // dʲ  palatalized alveolar
-                { "p\u02B2", 42 }, // pʲ  palatalized bilabial
-                { "b\u02B2", 43 }, // bʲ  palatalized voiced bilabial
-                { "h\u02B2", 44 }, // hʲ  palatalized glottal
-                { "\u0272", 45 }, // ɲ  palatal nasal
-                { "m\u02B2", 46 }, // mʲ  palatalized bilabial nasal
-                { "\u027D", 47 }, // ɽ  retroflex flap
-                { "\u00E7", 48 }, // ç  voiceless palatal fricative
-                { "\u0283", 49 }, // ʃ  voiceless postalveolar fricative
+                { "N", new[] { 31 } },     // Japanese moraic nasal (ASCII)
+                { "\u0274", new[] { 32 } }, // ɴ  uvular nasal (IPA)
+                { "\u0255", new[] { 33 } }, // ɕ  voiceless alveolo-palatal fricative (IPA detection key)
+                { "t\u0255", new[] { 34 } }, // tɕ  alveolo-palatal affricate
+                { "q", new[] { 35 } },      // glottal stop (sokuon)
+                { "\u026F", new[] { 36 } }, // ɯ  close back unrounded vowel
+                { "\u027E", new[] { 37 } }, // ɾ  alveolar tap
+                { "\u0291", new[] { 38 } }, // ʑ  voiced alveolo-palatal fricative
+                { "k\u02B2", new[] { 39 } }, // kʲ  palatalized velar
+                { "\u0261\u02B2", new[] { 40 } }, // ɡʲ  voiced palatalized velar
+                { "d\u02B2", new[] { 41 } }, // dʲ  palatalized alveolar
+                { "p\u02B2", new[] { 42 } }, // pʲ  palatalized bilabial
+                { "b\u02B2", new[] { 43 } }, // bʲ  palatalized voiced bilabial
+                { "h\u02B2", new[] { 44 } }, // hʲ  palatalized glottal
+                { "\u0272", new[] { 45 } }, // ɲ  palatal nasal
+                { "m\u02B2", new[] { 46 } }, // mʲ  palatalized bilabial nasal
+                { "\u027D", new[] { 47 } }, // ɽ  retroflex flap
+                { "\u00E7", new[] { 48 } }, // ç  voiceless palatal fricative
+                { "\u0283", new[] { 49 } }, // ʃ  voiceless postalveolar fricative
 
                 // ── Chinese phonemes ──
-                { "p\u02B0", 50 },   // pʰ  aspirated bilabial
-                { "t\u02B0", 51 },   // tʰ  aspirated alveolar
-                { "k\u02B0", 52 },   // kʰ  aspirated velar
-                { "t\u0255\u02B0", 53 }, // tɕʰ  aspirated alveolo-palatal affricate
-                { "t\u0282", 54 },   // tʂ  retroflex affricate
-                { "t\u0282\u02B0", 55 }, // tʂʰ  aspirated retroflex affricate
-                { "ts\u02B0", 56 },  // tsʰ  aspirated alveolar affricate
-                { "a\u026A", 57 },   // aɪ  diphthong ai
-                { "e\u026A", 58 },   // eɪ  diphthong ei
-                { "a\u028A", 59 },   // aʊ  diphthong ao
-                { "o\u028A", 60 },   // oʊ  diphthong ou
-                { "an", 61 },        // an  nasal final
-                { "\u0259n", 62 },   // ən  nasal final en
-                { "a\u014B", 63 },   // aŋ  nasal final ang
-                { "\u0259\u014B", 64 }, // əŋ  nasal final eng
-                { "tone1", 65 },     // high level tone
-                { "tone2", 66 },     // rising tone
-                { "tone3", 67 },     // dipping tone
-                { "tone4", 68 },     // falling tone
-                { "tone5", 69 },     // neutral tone
+                { "p\u02B0", new[] { 50 } },   // pʰ  aspirated bilabial
+                { "t\u02B0", new[] { 51 } },   // tʰ  aspirated alveolar
+                { "k\u02B0", new[] { 52 } },   // kʰ  aspirated velar
+                { "t\u0255\u02B0", new[] { 53 } }, // tɕʰ  aspirated alveolo-palatal affricate
+                { "t\u0282", new[] { 54 } },   // tʂ  retroflex affricate
+                { "t\u0282\u02B0", new[] { 55 } }, // tʂʰ  aspirated retroflex affricate
+                { "ts\u02B0", new[] { 56 } },  // tsʰ  aspirated alveolar affricate
+                { "a\u026A", new[] { 57 } },   // aɪ  diphthong ai
+                { "e\u026A", new[] { 58 } },   // eɪ  diphthong ei
+                { "a\u028A", new[] { 59 } },   // aʊ  diphthong ao
+                { "o\u028A", new[] { 60 } },   // oʊ  diphthong ou
+                { "an", new[] { 61 } },        // an  nasal final
+                { "\u0259n", new[] { 62 } },   // ən  nasal final en
+                { "a\u014B", new[] { 63 } },   // aŋ  nasal final ang
+                { "\u0259\u014B", new[] { 64 } }, // əŋ  nasal final eng
+                { "tone1", new[] { 65 } },     // high level tone
+                { "tone2", new[] { 66 } },     // rising tone
+                { "tone3", new[] { 67 } },     // dipping tone
+                { "tone4", new[] { 68 } },     // falling tone
+                { "tone5", new[] { 69 } },     // neutral tone
 
                 // ── Korean phonemes ──
-                { "p\u0348", 70 },   // p͈  tense bilabial
-                { "t\u0348", 71 },   // t͈  tense alveolar
-                { "k\u0348", 72 },   // k͈  tense velar
-                { "s\u0348", 73 },   // s͈  tense sibilant
-                { "t\u0348\u0255", 74 }, // t͈ɕ  tense alveolo-palatal affricate
-                { "k\u031A", 75 },   // k̚  unreleased velar
-                { "t\u031A", 76 },   // t̚  unreleased alveolar
-                { "p\u031A", 77 },   // p̚  unreleased bilabial
+                { "p\u0348", new[] { 70 } },   // p͈  tense bilabial
+                { "t\u0348", new[] { 71 } },   // t͈  tense alveolar
+                { "k\u0348", new[] { 72 } },   // k͈  tense velar
+                { "s\u0348", new[] { 73 } },   // s͈  tense sibilant
+                { "t\u0348\u0255", new[] { 74 } }, // t͈ɕ  tense alveolo-palatal affricate
+                { "k\u031A", new[] { 75 } },   // k̚  unreleased velar
+                { "t\u031A", new[] { 76 } },   // t̚  unreleased alveolar
+                { "p\u031A", new[] { 77 } },   // p̚  unreleased bilabial
 
                 // ── Spanish phonemes ──
-                { "rr", 78 },        // alveolar trill (mapped via PUA 0xE01D)
-                { "t\u0283", 79 },   // tʃ  voiceless postalveolar affricate
-                { "d\u0292", 80 },   // dʒ  voiced postalveolar affricate
-                { "\u014B", 81 },    // ŋ  velar nasal (shared)
+                { "rr", new[] { 78 } },        // alveolar trill (mapped via PUA 0xE01D)
+                { "t\u0283", new[] { 79 } },   // tʃ  voiceless postalveolar affricate
+                { "d\u0292", new[] { 80 } },   // dʒ  voiced postalveolar affricate
+                { "\u014B", new[] { 81 } },    // ŋ  velar nasal (shared)
 
                 // ── French nasal vowels ──
-                { "\u025B\u0303", 82 }, // ɛ̃  nasal open-mid front unrounded
-                { "\u0251\u0303", 83 }, // ɑ̃  nasal open back unrounded
-                { "\u0254\u0303", 84 }, // ɔ̃  nasal open-mid back rounded
+                { "\u025B\u0303", new[] { 82 } }, // ɛ̃  nasal open-mid front unrounded
+                { "\u0251\u0303", new[] { 83 } }, // ɑ̃  nasal open back unrounded
+                { "\u0254\u0303", new[] { 84 } }, // ɔ̃  nasal open-mid back rounded
 
                 // ── French/Chinese shared ──
-                { "y_vowel", 85 },   // close front rounded vowel [y]
+                { "y_vowel", new[] { 85 } },   // close front rounded vowel [y]
 
                 // ── Extended question markers ──
-                { "\ue016", 86 },    // ?! PUA
-                { "\ue017", 87 },    // ?. PUA
-                { "\ue018", 88 },    // ?~ PUA
+                { "\ue016", new[] { 86 } },    // ?! PUA
+                { "\ue017", new[] { 87 } },    // ?. PUA
+                { "\ue018", new[] { 88 } },    // ?~ PUA
             };
         }
 
@@ -121,87 +123,89 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         /// Uses PUA codepoints for multi-character phonemes.
         /// Does NOT contain "ɕ", so encoder stays in PUA mode.
         /// </summary>
-        private static Dictionary<string, int> BuildMultilingualPuaMap()
+        private static Dictionary<string, int[]> BuildMultilingualPuaMap()
         {
-            return new Dictionary<string, int>
+            return new Dictionary<string, int[]>
             {
                 // ── Special tokens ──
-                { "_", 0 },   // PAD
-                { "^", 1 },   // BOS
-                { "$", 2 },   // EOS
+                { "_", new[] { 0 } },   // PAD
+                { "^", new[] { 1 } },   // BOS
+                { "$", new[] { 2 } },   // EOS
 
                 // ── Basic shared phonemes ──
-                { "a", 3 }, { "i", 4 }, { "u", 5 }, { "e", 6 }, { "o", 7 },
-                { "b", 8 }, { "d", 9 }, { "f", 10 }, { "g", 11 }, { "h", 12 },
-                { "k", 13 }, { "m", 14 }, { "n", 15 }, { "p", 16 }, { "r", 17 },
-                { "s", 18 }, { "t", 19 }, { "w", 20 }, { "y", 21 }, { "z", 22 },
-                { "N", 23 },
-                { " ", 24 }, { ".", 25 }, { ",", 26 }, { "?", 27 },
+                { "a", new[] { 3 } }, { "i", new[] { 4 } }, { "u", new[] { 5 } }, { "e", new[] { 6 } }, { "o", new[] { 7 } },
+                { "b", new[] { 8 } }, { "d", new[] { 9 } }, { "f", new[] { 10 } }, { "g", new[] { 11 } }, { "h", new[] { 12 } },
+                { "k", new[] { 13 } }, { "m", new[] { 14 } }, { "n", new[] { 15 } }, { "p", new[] { 16 } }, { "r", new[] { 17 } },
+                { "s", new[] { 18 } }, { "t", new[] { 19 } }, { "w", new[] { 20 } }, { "y", new[] { 21 } }, { "z", new[] { 22 } },
+                { "N", new[] { 23 } },
+                { " ", new[] { 24 } }, { ".", new[] { 25 } }, { ",", new[] { 26 } }, { "?", new[] { 27 } },
 
                 // ── Japanese PUA phonemes ──
-                { "\ue000", 28 }, // a:
-                { "\ue001", 29 }, // i:
-                { "\ue002", 30 }, // u:
-                { "\ue003", 31 }, // e:
-                { "\ue004", 32 }, // o:
-                { "\ue005", 33 }, // cl (sokuon)
-                { "\ue006", 34 }, // ky
-                { "\ue008", 35 }, // gy
-                { "\ue00a", 36 }, // ty
-                { "\ue00b", 37 }, // dy
-                { "\ue00c", 38 }, // py
-                { "\ue00d", 39 }, // by
-                { "\ue00e", 40 }, // ch
-                { "\ue00f", 41 }, // ts
-                { "\ue010", 42 }, // sh
-                { "\ue011", 43 }, // zy
-                { "\ue012", 44 }, // hy
-                { "\ue013", 45 }, // ny
-                { "\ue014", 46 }, // my
-                { "\ue015", 47 }, // ry
+                { "\ue000", new[] { 28 } }, // a:
+                { "\ue001", new[] { 29 } }, // i:
+                { "\ue002", new[] { 30 } }, // u:
+                { "\ue003", new[] { 31 } }, // e:
+                { "\ue004", new[] { 32 } }, // o:
+                { "\ue005", new[] { 33 } }, // cl (sokuon)
+                { "\ue006", new[] { 34 } }, // ky
+                { "\ue008", new[] { 35 } }, // gy
+                { "\ue00a", new[] { 36 } }, // ty
+                { "\ue00b", new[] { 37 } }, // dy
+                { "\ue00c", new[] { 38 } }, // py
+                { "\ue00d", new[] { 39 } }, // by
+                { "\ue00e", new[] { 40 } }, // ch
+                { "\ue00f", new[] { 41 } }, // ts
+                { "\ue010", new[] { 42 } }, // sh
+                { "\ue011", new[] { 43 } }, // zy
+                { "\ue012", new[] { 44 } }, // hy
+                { "\ue013", new[] { 45 } }, // ny
+                { "\ue014", new[] { 46 } }, // my
+                { "\ue015", new[] { 47 } }, // ry
 
                 // ── Chinese PUA phonemes ──
-                { "\ue020", 48 }, // pʰ
-                { "\ue021", 49 }, // tʰ
-                { "\ue022", 50 }, // kʰ
-                { "\ue023", 51 }, // tɕ (ZH j)
-                { "\ue028", 52 }, // aɪ
-                { "\ue029", 53 }, // eɪ
-                { "\ue046", 54 }, // tone1
-                { "\ue047", 55 }, // tone2
-                { "\ue048", 56 }, // tone3
-                { "\ue049", 57 }, // tone4
-                { "\ue04a", 58 }, // tone5
+                { "\ue020", new[] { 48 } }, // pʰ
+                { "\ue021", new[] { 49 } }, // tʰ
+                { "\ue022", new[] { 50 } }, // kʰ
+                { "\ue023", new[] { 51 } }, // tɕ (ZH j)
+                { "\ue028", new[] { 52 } }, // aɪ
+                { "\ue029", new[] { 53 } }, // eɪ
+                { "\ue046", new[] { 54 } }, // tone1
+                { "\ue047", new[] { 55 } }, // tone2
+                { "\ue048", new[] { 56 } }, // tone3
+                { "\ue049", new[] { 57 } }, // tone4
+                { "\ue04a", new[] { 58 } }, // tone5
 
                 // ── Korean PUA phonemes ──
-                { "\ue04b", 59 }, // tense bilabial
-                { "\ue04c", 60 }, // tense alveolar
-                { "\ue04d", 61 }, // tense velar
-                { "\ue04e", 62 }, // tense sibilant
-                { "\ue050", 63 }, // unreleased velar
-                { "\ue051", 64 }, // unreleased alveolar
-                { "\ue052", 65 }, // unreleased bilabial
+                { "\ue04b", new[] { 59 } }, // tense bilabial
+                { "\ue04c", new[] { 60 } }, // tense alveolar
+                { "\ue04d", new[] { 61 } }, // tense velar
+                { "\ue04e", new[] { 62 } }, // tense sibilant
+                { "\ue050", new[] { 63 } }, // unreleased velar
+                { "\ue051", new[] { 64 } }, // unreleased alveolar
+                { "\ue052", new[] { 65 } }, // unreleased bilabial
 
                 // ── Spanish PUA phonemes ──
-                { "\ue01d", 66 }, // rr (trill)
-                { "\ue054", 67 }, // tʃ voiceless postalveolar affricate
-                { "\ue055", 68 }, // dʒ voiced postalveolar affricate
+                { "\ue01d", new[] { 66 } }, // rr (trill)
+                { "\ue054", new[] { 67 } }, // tʃ voiceless postalveolar affricate
+                { "\ue055", new[] { 68 } }, // dʒ voiced postalveolar affricate
 
                 // ── French PUA nasal vowels ──
-                { "\ue056", 69 }, // ɛ̃
-                { "\ue057", 70 }, // ɑ̃
-                { "\ue058", 71 }, // ɔ̃
+                { "\ue056", new[] { 69 } }, // ɛ̃
+                { "\ue057", new[] { 70 } }, // ɑ̃
+                { "\ue058", new[] { 71 } }, // ɔ̃
 
                 // ── Extended question markers ──
-                { "\ue016", 72 }, // ?!
-                { "\ue017", 73 }, // ?.
-                { "\ue018", 74 }, // ?~
+                { "\ue016", new[] { 72 } }, // ?!
+                { "\ue017", new[] { 73 } }, // ?.
+                { "\ue018", new[] { 74 } }, // ?~
             };
         }
 
         [SetUp]
         public void Setup()
         {
+            _mapper = new PuaTokenMapper();
+
             // IPA-based multilingual encoder
             _ipaConfig = new PiperVoiceConfig
             {
@@ -210,7 +214,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 SampleRate = 22050,
                 PhonemeIdMap = BuildMultilingualIpaMap()
             };
-            _ipaEncoder = new PhonemeEncoder(_ipaConfig);
+            _ipaEncoder = new PhonemeEncoder(_ipaConfig, _mapper);
 
             // PUA-based multilingual encoder
             _puaConfig = new PiperVoiceConfig
@@ -220,7 +224,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 SampleRate = 22050,
                 PhonemeIdMap = BuildMultilingualPuaMap()
             };
-            _puaEncoder = new PhonemeEncoder(_puaConfig);
+            _puaEncoder = new PhonemeEncoder(_puaConfig, _mapper);
         }
 
         #region Multilingual PhonemeIdMap Initialization
@@ -634,39 +638,33 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         }
 
         [Test]
-        public void EncodeWithProsody_MultilingualPhonemes_ExpandsProsodyArrays()
+        public void EncodeWithProsody_MultilingualPhonemes_ExpandsProsodyFlat()
         {
-            // Verify that prosody arrays are correctly expanded for multilingual phonemes
+            // Verify that prosody flat array is correctly expanded for multilingual phonemes
             var phonemes = new[] { "a", "b", "k" };
-            var prosodyA1 = new[] { 1, 2, 3 };
-            var prosodyA2 = new[] { 4, 5, 6 };
-            var prosodyA3 = new[] { 7, 8, 9 };
+            // stride=3 flat: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, a1_2, a2_2, a3_2]
+            var prosodyFlat = new[] { 1, 4, 7, 2, 5, 8, 3, 6, 9 };
 
-            var result = _ipaEncoder.EncodeWithProsody(phonemes, prosodyA1, prosodyA2, prosodyA3);
+            var result = _ipaEncoder.EncodeWithProsody(phonemes, prosodyFlat);
 
             Assert.IsNotNull(result);
             Assert.IsNotNull(result.PhonemeIds);
-            Assert.IsNotNull(result.ExpandedProsodyA1);
-            Assert.IsNotNull(result.ExpandedProsodyA2);
-            Assert.IsNotNull(result.ExpandedProsodyA3);
+            Assert.IsNotNull(result.ExpandedProsodyFlat);
 
-            // All arrays should have the same length: BOS + 3 phonemes + EOS = 5
-            Assert.AreEqual(result.PhonemeIds.Length, result.ExpandedProsodyA1.Length,
-                "ProsodyA1 should match PhonemeIds length");
-            Assert.AreEqual(result.PhonemeIds.Length, result.ExpandedProsodyA2.Length,
-                "ProsodyA2 should match PhonemeIds length");
-            Assert.AreEqual(result.PhonemeIds.Length, result.ExpandedProsodyA3.Length,
-                "ProsodyA3 should match PhonemeIds length");
+            // ExpandedProsodyFlat.Length = PhonemeIds.Length * 3
+            Assert.AreEqual(result.PhonemeIds.Length * 3, result.ExpandedProsodyFlat.Length,
+                "ExpandedProsodyFlat should be PhonemeIds.Length * 3");
 
-            // BOS prosody should be 0
-            Assert.AreEqual(0, result.ExpandedProsodyA1[0], "BOS prosody A1 should be 0");
-            Assert.AreEqual(0, result.ExpandedProsodyA2[0], "BOS prosody A2 should be 0");
-            Assert.AreEqual(0, result.ExpandedProsodyA3[0], "BOS prosody A3 should be 0");
+            // BOS prosody should be 0 (all 3 components)
+            Assert.AreEqual(0, result.ExpandedProsodyFlat[0 * 3 + 0], "BOS prosody A1 should be 0");
+            Assert.AreEqual(0, result.ExpandedProsodyFlat[0 * 3 + 1], "BOS prosody A2 should be 0");
+            Assert.AreEqual(0, result.ExpandedProsodyFlat[0 * 3 + 2], "BOS prosody A3 should be 0");
 
-            // Phoneme prosody values should be preserved
-            Assert.AreEqual(1, result.ExpandedProsodyA1[1], "A1 for 'a'");
-            Assert.AreEqual(5, result.ExpandedProsodyA2[2], "A2 for 'b'");
-            Assert.AreEqual(9, result.ExpandedProsodyA3[3], "A3 for 'k'");
+            // Phoneme prosody values should be preserved (after BOS at index 0)
+            // Note: with intersperse PAD, layout is [BOS, PAD, a, PAD, b, PAD, k, PAD, EOS]
+            // Without intersperse (IPA model), layout is [BOS, a, b, k, EOS]
+            // Check the A1 value for phoneme 'a' (index 1 in non-intersperse)
+            Assert.AreEqual(1, result.ExpandedProsodyFlat[1 * 3 + 0], "A1 for 'a'");
         }
 
         #endregion

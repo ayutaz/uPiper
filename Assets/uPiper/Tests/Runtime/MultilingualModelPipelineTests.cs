@@ -7,7 +7,6 @@ using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers.Multilingual;
 
-#pragma warning disable CS0618
 namespace uPiper.Tests.Runtime
 {
     /// <summary>
@@ -23,6 +22,7 @@ namespace uPiper.Tests.Runtime
         private MultilingualPhonemizer _phonemizer;
         private PhonemeEncoder _multilingualEncoder;
         private PhonemeEncoder _japaneseEncoder;
+        private PuaTokenMapper _mapper;
 
         /// <summary>
         /// Build a mock multilingual phoneme_id_map based on the actual
@@ -30,204 +30,204 @@ namespace uPiper.Tests.Runtime
         /// Includes special tokens, Japanese PUA/IPA, English IPA, Chinese tones,
         /// Spanish, French, and Portuguese phonemes.
         /// </summary>
-        private static Dictionary<string, int> BuildMultilingualModelPhonemeIdMap()
+        private static Dictionary<string, int[]> BuildMultilingualModelPhonemeIdMap()
         {
-            return new Dictionary<string, int>
+            return new Dictionary<string, int[]>
             {
                 // ── Special tokens ──
-                { "_", 0 },           // PAD
-                { "^", 1 },           // BOS
-                { "$", 2 },           // EOS
-                { "?", 3 },           // Question
+                { "_", new[] { 0 } },           // PAD
+                { "^", new[] { 1 } },           // BOS
+                { "$", new[] { 2 } },           // EOS
+                { "?", new[] { 3 } },           // Question
 
                 // ── Extended question markers (PUA) ──
-                { "\ue016", 4 },      // ?!
-                { "\ue017", 5 },      // ?.
-                { "\ue018", 6 },      // ?~
+                { "\ue016", new[] { 4 } },      // ?!
+                { "\ue017", new[] { 5 } },      // ?.
+                { "\ue018", new[] { 6 } },      // ?~
 
                 // ── Sentence structure tokens ──
-                { "#", 7 },           // Word boundary
-                { "[", 8 },           // Phrase open
-                { "]", 9 },           // Phrase close
+                { "#", new[] { 7 } },           // Word boundary
+                { "[", new[] { 8 } },           // Phrase open
+                { "]", new[] { 9 } },           // Phrase close
 
                 // ── Japanese vowels (lowercase + uppercase long) ──
-                { "a", 10 }, { "i", 11 }, { "u", 12 }, { "e", 13 }, { "o", 14 },
-                { "A", 15 }, { "I", 16 }, { "U", 17 }, { "E", 18 }, { "O", 19 },
+                { "a", new[] { 10 } }, { "i", new[] { 11 } }, { "u", new[] { 12 } }, { "e", new[] { 13 } }, { "o", new[] { 14 } },
+                { "A", new[] { 15 } }, { "I", new[] { 16 } }, { "U", new[] { 17 } }, { "E", new[] { 18 } }, { "O", new[] { 19 } },
 
                 // ── Japanese PUA long vowels ──
-                { "\ue000", 20 },     // a:
-                { "\ue001", 21 },     // i:
-                { "\ue002", 22 },     // u:
-                { "\ue003", 23 },     // e:
-                { "\ue004", 24 },     // o:
+                { "\ue000", new[] { 20 } },     // a:
+                { "\ue001", new[] { 21 } },     // i:
+                { "\ue002", new[] { 22 } },     // u:
+                { "\ue003", new[] { 23 } },     // e:
+                { "\ue004", new[] { 24 } },     // o:
 
                 // ── Japanese moraic nasal and N variants (PUA) ──
-                { "N", 25 },          // ASCII N (moraic nasal)
-                { "\ue019", 26 },     // N_m (bilabial)
-                { "\ue01a", 27 },     // N_n (alveolar)
-                { "\ue01b", 28 },     // N_ng (velar)
-                { "\ue01c", 29 },     // N_uvular
+                { "N", new[] { 25 } },          // ASCII N (moraic nasal)
+                { "\ue019", new[] { 26 } },     // N_m (bilabial)
+                { "\ue01a", new[] { 27 } },     // N_n (alveolar)
+                { "\ue01b", new[] { 28 } },     // N_ng (velar)
+                { "\ue01c", new[] { 29 } },     // N_uvular
 
                 // ── Japanese consonants / affricates (PUA) ──
-                { "\ue005", 30 },     // cl (sokuon)
-                { "q", 31 },          // glottal stop
-                { "k", 32 },
-                { "\ue006", 33 },     // ky
-                { "\ue007", 34 },     // kw
-                { "g", 35 },
-                { "\ue008", 36 },     // gy
-                { "\ue009", 37 },     // gw
-                { "t", 38 },
-                { "\ue00a", 39 },     // ty
-                { "d", 40 },
-                { "\ue00b", 41 },     // dy
-                { "p", 42 },
-                { "\ue00c", 43 },     // py
-                { "b", 44 },
-                { "\ue00d", 45 },     // by
-                { "\ue00e", 46 },     // ch
-                { "\ue00f", 47 },     // ts
-                { "s", 48 },
-                { "\ue010", 49 },     // sh
-                { "z", 50 },
-                { "j", 51 },
-                { "\ue011", 52 },     // zy
-                { "f", 53 },
-                { "h", 54 },
-                { "\ue012", 55 },     // hy
-                { "v", 56 },
-                { "n", 57 },
-                { "\ue013", 58 },     // ny
-                { "m", 59 },
-                { "\ue014", 60 },     // my
-                { "r", 61 },
-                { "\ue015", 62 },     // ry
-                { "w", 63 },
-                { "y", 64 },
+                { "\ue005", new[] { 30 } },     // cl (sokuon)
+                { "q", new[] { 31 } },          // glottal stop
+                { "k", new[] { 32 } },
+                { "\ue006", new[] { 33 } },     // ky
+                { "\ue007", new[] { 34 } },     // kw
+                { "g", new[] { 35 } },
+                { "\ue008", new[] { 36 } },     // gy
+                { "\ue009", new[] { 37 } },     // gw
+                { "t", new[] { 38 } },
+                { "\ue00a", new[] { 39 } },     // ty
+                { "d", new[] { 40 } },
+                { "\ue00b", new[] { 41 } },     // dy
+                { "p", new[] { 42 } },
+                { "\ue00c", new[] { 43 } },     // py
+                { "b", new[] { 44 } },
+                { "\ue00d", new[] { 45 } },     // by
+                { "\ue00e", new[] { 46 } },     // ch
+                { "\ue00f", new[] { 47 } },     // ts
+                { "s", new[] { 48 } },
+                { "\ue010", new[] { 49 } },     // sh
+                { "z", new[] { 50 } },
+                { "j", new[] { 51 } },
+                { "\ue011", new[] { 52 } },     // zy
+                { "f", new[] { 53 } },
+                { "h", new[] { 54 } },
+                { "\ue012", new[] { 55 } },     // hy
+                { "v", new[] { 56 } },
+                { "n", new[] { 57 } },
+                { "\ue013", new[] { 58 } },     // ny
+                { "m", new[] { 59 } },
+                { "\ue014", new[] { 60 } },     // my
+                { "r", new[] { 61 } },
+                { "\ue015", new[] { 62 } },     // ry
+                { "w", new[] { 63 } },
+                { "y", new[] { 64 } },
 
                 // ── English IPA vowels / consonants ──
-                { "\u0251", 65 },     // open back unrounded (father)
-                { "\u00e6", 66 },     // near-open front unrounded (cat)
-                { "\u028c", 67 },     // open-mid back unrounded (strut)
-                { "\u0259", 68 },     // schwa
-                { "\u0254", 69 },     // open-mid back rounded (thought)
-                { "\u025b", 70 },     // open-mid front unrounded (dress)
-                { "\u025a", 71 },     // rhotacised schwa
-                { "\u025c", 72 },     // open-mid central unrounded
-                { "\u026a", 73 },     // near-close near-front unrounded (kit)
-                { "\u028a", 74 },     // near-close near-back rounded (foot)
-                { "\u02d0", 75 },     // length mark
-                { "\ue053", 76 },     // (reserved)
-                { "l", 77 },
-                { "\u0261", 78 },     // voiced velar plosive (script g)
-                { "\u014b", 79 },     // velar nasal (ng)
-                { "\u0279", 80 },     // alveolar approximant (English r)
-                { "\u0283", 81 },     // voiceless postalveolar fricative (sh)
-                { "\u0292", 82 },     // voiced postalveolar fricative (zh)
-                { "\u03b8", 83 },     // voiceless dental fricative (th)
-                { "\u00f0", 84 },     // voiced dental fricative (dh)
-                { "\ue054", 85 },     // voiceless postalveolar affricate (ch, tS)
-                { "\ue055", 86 },     // voiced postalveolar affricate (dZ)
-                { "\u02c8", 87 },     // primary stress
-                { "\u02cc", 88 },     // secondary stress
-                { " ", 89 },          // space
-                { ",", 90 },
-                { ".", 91 },
-                { ";", 92 },
-                { ":", 93 },
-                { "!", 94 },
-                { "-", 95 },
-                { "'", 96 },
+                { "\u0251", new[] { 65 } },     // open back unrounded (father)
+                { "\u00e6", new[] { 66 } },     // near-open front unrounded (cat)
+                { "\u028c", new[] { 67 } },     // open-mid back unrounded (strut)
+                { "\u0259", new[] { 68 } },     // schwa
+                { "\u0254", new[] { 69 } },     // open-mid back rounded (thought)
+                { "\u025b", new[] { 70 } },     // open-mid front unrounded (dress)
+                { "\u025a", new[] { 71 } },     // rhotacised schwa
+                { "\u025c", new[] { 72 } },     // open-mid central unrounded
+                { "\u026a", new[] { 73 } },     // near-close near-front unrounded (kit)
+                { "\u028a", new[] { 74 } },     // near-close near-back rounded (foot)
+                { "\u02d0", new[] { 75 } },     // length mark
+                { "\ue053", new[] { 76 } },     // (reserved)
+                { "l", new[] { 77 } },
+                { "\u0261", new[] { 78 } },     // voiced velar plosive (script g)
+                { "\u014b", new[] { 79 } },     // velar nasal (ng)
+                { "\u0279", new[] { 80 } },     // alveolar approximant (English r)
+                { "\u0283", new[] { 81 } },     // voiceless postalveolar fricative (sh)
+                { "\u0292", new[] { 82 } },     // voiced postalveolar fricative (zh)
+                { "\u03b8", new[] { 83 } },     // voiceless dental fricative (th)
+                { "\u00f0", new[] { 84 } },     // voiced dental fricative (dh)
+                { "\ue054", new[] { 85 } },     // voiceless postalveolar affricate (ch, tS)
+                { "\ue055", new[] { 86 } },     // voiced postalveolar affricate (dZ)
+                { "\u02c8", new[] { 87 } },     // primary stress
+                { "\u02cc", new[] { 88 } },     // secondary stress
+                { " ", new[] { 89 } },          // space
+                { ",", new[] { 90 } },
+                { ".", new[] { 91 } },
+                { ";", new[] { 92 } },
+                { ":", new[] { 93 } },
+                { "!", new[] { 94 } },
+                { "-", new[] { 95 } },
+                { "'", new[] { 96 } },
 
                 // ── Chinese phonemes (PUA) ──
-                { "\ue020", 97 },     // aspirated bilabial (ph)
-                { "\ue021", 98 },     // aspirated alveolar (th)
-                { "\ue022", 99 },     // aspirated velar (kh)
-                { "\ue023", 100 },    // alveolo-palatal affricate (j)
-                { "\ue024", 101 },    // aspirated alveolo-palatal (q)
-                { "\u0255", 102 },    // voiceless alveolo-palatal fricative (x)
-                { "\ue025", 103 },    // retroflex affricate (zh)
-                { "\ue026", 104 },    // aspirated retroflex (ch)
-                { "\u0282", 105 },    // retroflex fricative (sh)
-                { "\u027b", 106 },    // retroflex approximant (r)
-                { "\ue027", 107 },    // aspirated alveolar affricate (c)
-                { "x", 108 },         // velar fricative
-                { "\u0264", 109 },    // close-mid back unrounded
-                { "\ue01e", 110 },    // (reserved Chinese)
-                { "\ue028", 111 },    // diphthong ai
-                { "\ue029", 112 },    // diphthong ei
-                { "\ue02a", 113 },    // diphthong ao
-                { "\ue02b", 114 },    // diphthong ou
-                { "\ue02c", 115 },    // nasal final an
-                { "\ue02d", 116 },    // nasal final en
-                { "\ue02e", 117 },    // nasal final ang
-                { "\ue02f", 118 },    // nasal final eng
-                { "\ue030", 119 },    // diphthong ia
-                { "\ue031", 120 },    // diphthong ie
-                { "\ue032", 121 },    // diphthong iao
-                { "\ue033", 122 },    // diphthong iu
-                { "\ue034", 123 },    // diphthong ian
-                { "\ue035", 124 },    // diphthong in
-                { "\ue036", 125 },    // diphthong iang
-                { "\ue037", 126 },    // diphthong ing
-                { "\ue038", 127 },    // diphthong ua
-                { "\ue039", 128 },    // diphthong uo
-                { "\ue03a", 129 },    // diphthong uai
-                { "\ue03b", 130 },    // diphthong ui
-                { "\ue03c", 131 },    // diphthong uan
-                { "\ue03d", 132 },    // diphthong un
-                { "\ue03e", 133 },    // diphthong uang
-                { "\ue03f", 134 },    // diphthong ong
-                { "\ue040", 135 },    // diphthong ue
-                { "\ue041", 136 },    // diphthong uan (v)
-                { "\ue042", 137 },    // diphthong un (v)
-                { "\ue043", 138 },    // diphthong iong
-                { "\ue044", 139 },    // tone1
-                { "\ue045", 140 },    // tone2
-                { "\u0268", 141 },    // close central unrounded
-                { "\ue046", 142 },    // tone3
-                { "\ue047", 143 },    // tone4
-                { "\ue048", 144 },    // tone5
-                { "\ue049", 145 },    // er final
-                { "\ue04a", 146 },    // (reserved)
+                { "\ue020", new[] { 97 } },     // aspirated bilabial (ph)
+                { "\ue021", new[] { 98 } },     // aspirated alveolar (th)
+                { "\ue022", new[] { 99 } },     // aspirated velar (kh)
+                { "\ue023", new[] { 100 } },    // alveolo-palatal affricate (j)
+                { "\ue024", new[] { 101 } },    // aspirated alveolo-palatal (q)
+                { "\u0255", new[] { 102 } },    // voiceless alveolo-palatal fricative (x)
+                { "\ue025", new[] { 103 } },    // retroflex affricate (zh)
+                { "\ue026", new[] { 104 } },    // aspirated retroflex (ch)
+                { "\u0282", new[] { 105 } },    // retroflex fricative (sh)
+                { "\u027b", new[] { 106 } },    // retroflex approximant (r)
+                { "\ue027", new[] { 107 } },    // aspirated alveolar affricate (c)
+                { "x", new[] { 108 } },         // velar fricative
+                { "\u0264", new[] { 109 } },    // close-mid back unrounded
+                { "\ue01e", new[] { 110 } },    // (reserved Chinese)
+                { "\ue028", new[] { 111 } },    // diphthong ai
+                { "\ue029", new[] { 112 } },    // diphthong ei
+                { "\ue02a", new[] { 113 } },    // diphthong ao
+                { "\ue02b", new[] { 114 } },    // diphthong ou
+                { "\ue02c", new[] { 115 } },    // nasal final an
+                { "\ue02d", new[] { 116 } },    // nasal final en
+                { "\ue02e", new[] { 117 } },    // nasal final ang
+                { "\ue02f", new[] { 118 } },    // nasal final eng
+                { "\ue030", new[] { 119 } },    // diphthong ia
+                { "\ue031", new[] { 120 } },    // diphthong ie
+                { "\ue032", new[] { 121 } },    // diphthong iao
+                { "\ue033", new[] { 122 } },    // diphthong iu
+                { "\ue034", new[] { 123 } },    // diphthong ian
+                { "\ue035", new[] { 124 } },    // diphthong in
+                { "\ue036", new[] { 125 } },    // diphthong iang
+                { "\ue037", new[] { 126 } },    // diphthong ing
+                { "\ue038", new[] { 127 } },    // diphthong ua
+                { "\ue039", new[] { 128 } },    // diphthong uo
+                { "\ue03a", new[] { 129 } },    // diphthong uai
+                { "\ue03b", new[] { 130 } },    // diphthong ui
+                { "\ue03c", new[] { 131 } },    // diphthong uan
+                { "\ue03d", new[] { 132 } },    // diphthong un
+                { "\ue03e", new[] { 133 } },    // diphthong uang
+                { "\ue03f", new[] { 134 } },    // diphthong ong
+                { "\ue040", new[] { 135 } },    // diphthong ue
+                { "\ue041", new[] { 136 } },    // diphthong uan (v)
+                { "\ue042", new[] { 137 } },    // diphthong un (v)
+                { "\ue043", new[] { 138 } },    // diphthong iong
+                { "\ue044", new[] { 139 } },    // tone1
+                { "\ue045", new[] { 140 } },    // tone2
+                { "\u0268", new[] { 141 } },    // close central unrounded
+                { "\ue046", new[] { 142 } },    // tone3
+                { "\ue047", new[] { 143 } },    // tone4
+                { "\ue048", new[] { 144 } },    // tone5
+                { "\ue049", new[] { 145 } },    // er final
+                { "\ue04a", new[] { 146 } },    // (reserved)
 
                 // ── Spanish / Portuguese shared phonemes ──
-                { "\u0272", 147 },    // palatal nasal (Spanish n-tilde)
-                { "\u027e", 148 },    // alveolar flap (Spanish/Portuguese r)
-                { "\ue01d", 149 },    // rr (alveolar trill, PUA)
-                { "\u03b2", 150 },    // voiced bilabial fricative (Spanish b allophone)
-                { "\u0263", 151 },    // voiced velar fricative (Spanish g allophone)
-                { "\u029d", 152 },    // voiced palatal fricative (Spanish y allophone)
-                { "\u00a1", 153 },    // inverted exclamation
-                { "\u00bf", 154 },    // inverted question
+                { "\u0272", new[] { 147 } },    // palatal nasal (Spanish n-tilde)
+                { "\u027e", new[] { 148 } },    // alveolar flap (Spanish/Portuguese r)
+                { "\ue01d", new[] { 149 } },    // rr (alveolar trill, PUA)
+                { "\u03b2", new[] { 150 } },    // voiced bilabial fricative (Spanish b allophone)
+                { "\u0263", new[] { 151 } },    // voiced velar fricative (Spanish g allophone)
+                { "\u029d", new[] { 152 } },    // voiced palatal fricative (Spanish y allophone)
+                { "\u00a1", new[] { 153 } },    // inverted exclamation
+                { "\u00bf", new[] { 154 } },    // inverted question
 
                 // ── Spanish PUA affricates ──
-                { "\ue056", 155 },    // (reserved Spanish)
-                { "\ue057", 156 },    // (reserved Spanish)
-                { "\ue058", 157 },    // (reserved Spanish)
+                { "\ue056", new[] { 155 } },    // (reserved Spanish)
+                { "\ue057", new[] { 156 } },    // (reserved Spanish)
+                { "\ue058", new[] { 157 } },    // (reserved Spanish)
 
                 // ── French phonemes ──
-                { "\u00f8", 158 },    // close-mid front rounded (eu)
-                { "\u0153", 159 },    // open-mid front rounded (coeur)
-                { "\u0265", 160 },    // labial-palatal approximant (huit)
-                { "\u0281", 161 },    // uvular fricative (French r)
+                { "\u00f8", new[] { 158 } },    // close-mid front rounded (eu)
+                { "\u0153", new[] { 159 } },    // open-mid front rounded (coeur)
+                { "\u0265", new[] { 160 } },    // labial-palatal approximant (huit)
+                { "\u0281", new[] { 161 } },    // uvular fricative (French r)
 
                 // ── Punctuation / typography ──
-                { "\u2014", 162 },    // em dash
-                { "\u2013", 163 },    // en dash
-                { "\u2026", 164 },    // ellipsis
-                { "\u00ab", 165 },    // left guillemet
-                { "\u00bb", 166 },    // right guillemet
+                { "\u2014", new[] { 162 } },    // em dash
+                { "\u2013", new[] { 163 } },    // en dash
+                { "\u2026", new[] { 164 } },    // ellipsis
+                { "\u00ab", new[] { 165 } },    // left guillemet
+                { "\u00bb", new[] { 166 } },    // right guillemet
 
                 // ── Portuguese nasal vowels ──
-                { "\u00e3", 167 },    // nasal a
-                { "\u1ebd", 168 },    // nasal e
-                { "\u0129", 169 },    // nasal i
-                { "\u00f5", 170 },    // nasal o
-                { "\u0169", 171 },    // nasal u
+                { "\u00e3", new[] { 167 } },    // nasal a
+                { "\u1ebd", new[] { 168 } },    // nasal e
+                { "\u0129", new[] { 169 } },    // nasal i
+                { "\u00f5", new[] { 170 } },    // nasal o
+                { "\u0169", new[] { 171 } },    // nasal u
 
                 // ── Portuguese ──
-                { "\u028e", 172 },    // palatal lateral approximant (lh)
+                { "\u028e", new[] { 172 } },    // palatal lateral approximant (lh)
             };
         }
 
@@ -235,34 +235,39 @@ namespace uPiper.Tests.Runtime
         /// Build a non-multilingual Japanese model config for backward-compatibility testing.
         /// Uses PhonemeType="openjtalk" (no intersperse PAD).
         /// </summary>
-        private static Dictionary<string, int> BuildJapaneseOnlyPhonemeIdMap()
+        private static Dictionary<string, int[]> BuildJapaneseOnlyPhonemeIdMap()
         {
-            return new Dictionary<string, int>
+            return new Dictionary<string, int[]>
             {
-                { "_", 0 }, { "^", 1 }, { "$", 2 }, { "?", 3 },
-                { "a", 4 }, { "i", 5 }, { "u", 6 }, { "e", 7 }, { "o", 8 },
-                { "A", 9 }, { "I", 10 }, { "U", 11 }, { "E", 12 }, { "O", 13 },
-                { "N", 14 }, { "k", 15 }, { "g", 16 }, { "s", 17 }, { "z", 18 },
-                { "t", 19 }, { "d", 20 }, { "n", 21 }, { "h", 22 }, { "b", 23 },
-                { "p", 24 }, { "m", 25 }, { "y", 26 }, { "r", 27 }, { "w", 28 },
-                { "j", 29 }, { "f", 30 }, { "v", 31 }, { "q", 32 },
-                { "\ue005", 33 }, // cl
-                { "\ue006", 34 }, // ky
-                { "\ue00e", 35 }, // ch
-                { "\ue00f", 36 }, // ts
-                { "\ue010", 37 }, // sh
-                { "\ue013", 38 }, // ny
-                { " ", 39 }, { ".", 40 }, { ",", 41 },
+                { "_", new[] { 0 } }, { "^", new[] { 1 } }, { "$", new[] { 2 } }, { "?", new[] { 3 } },
+                { "a", new[] { 4 } }, { "i", new[] { 5 } }, { "u", new[] { 6 } }, { "e", new[] { 7 } }, { "o", new[] { 8 } },
+                { "A", new[] { 9 } }, { "I", new[] { 10 } }, { "U", new[] { 11 } }, { "E", new[] { 12 } }, { "O", new[] { 13 } },
+                { "N", new[] { 14 } }, { "k", new[] { 15 } }, { "g", new[] { 16 } }, { "s", new[] { 17 } }, { "z", new[] { 18 } },
+                { "t", new[] { 19 } }, { "d", new[] { 20 } }, { "n", new[] { 21 } }, { "h", new[] { 22 } }, { "b", new[] { 23 } },
+                { "p", new[] { 24 } }, { "m", new[] { 25 } }, { "y", new[] { 26 } }, { "r", new[] { 27 } }, { "w", new[] { 28 } },
+                { "j", new[] { 29 } }, { "f", new[] { 30 } }, { "v", new[] { 31 } }, { "q", new[] { 32 } },
+                { "\ue005", new[] { 33 } }, // cl
+                { "\ue006", new[] { 34 } }, // ky
+                { "\ue00e", new[] { 35 } }, // ch
+                { "\ue00f", new[] { 36 } }, // ts
+                { "\ue010", new[] { 37 } }, // sh
+                { "\ue013", new[] { 38 } }, // ny
+                { " ", new[] { 39 } }, { ".", new[] { 40 } }, { ",", new[] { 41 } },
             };
         }
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
+            _mapper = new PuaTokenMapper();
+
             // Initialize MultilingualPhonemizer with the 6 model languages + ko
             _phonemizer = new MultilingualPhonemizer(
-                LanguageConstants.AllLanguages,
-                defaultLatinLanguage: "en");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = LanguageConstants.AllLanguages,
+                    DefaultLatinLanguage = "en"
+                });
 
             Task.Run(async () => await _phonemizer.InitializeAsync()).GetAwaiter().GetResult();
             Assert.IsTrue(_phonemizer.IsInitialized,
@@ -277,7 +282,7 @@ namespace uPiper.Tests.Runtime
                 NumLanguages = 6,
                 PhonemeIdMap = BuildMultilingualModelPhonemeIdMap()
             };
-            _multilingualEncoder = new PhonemeEncoder(multilingualConfig);
+            _multilingualEncoder = new PhonemeEncoder(multilingualConfig, _mapper);
             Assert.IsNotNull(_multilingualEncoder);
 
             // Build a non-multilingual Japanese encoder for backward-compat tests
@@ -288,7 +293,7 @@ namespace uPiper.Tests.Runtime
                 SampleRate = 22050,
                 PhonemeIdMap = BuildJapaneseOnlyPhonemeIdMap()
             };
-            _japaneseEncoder = new PhonemeEncoder(japaneseConfig);
+            _japaneseEncoder = new PhonemeEncoder(japaneseConfig, _mapper);
             Assert.IsNotNull(_japaneseEncoder);
         }
 

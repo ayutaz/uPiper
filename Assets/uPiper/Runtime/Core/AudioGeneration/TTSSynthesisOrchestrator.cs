@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Collections;
 using UnityEngine;
 using uPiper.Core.Logging;
 
@@ -18,31 +19,45 @@ namespace uPiper.Core.AudioGeneration
         private readonly SplitInferenceOrchestrator _splitOrchestrator;
         private readonly PhonemeEncoder _phonemeEncoder;
         private readonly AudioClipBuilder _audioClipBuilder;
-        private readonly ValidatedPiperConfig _config;
+        private readonly IPiperConfigReadOnly _config;
         private readonly PiperVoiceConfig _voiceConfig;
 
+        /// <summary>
+        /// Initializes the orchestrator with the specified dependencies.
+        /// </summary>
+        /// <param name="generator">ONNX inference audio generator (required).</param>
+        /// <param name="splitOrchestrator">Silence-based split inference orchestrator (required).</param>
+        /// <param name="phonemeEncoder">Phoneme-to-ID encoder (required).</param>
+        /// <param name="audioClipBuilder">Audio clip builder (required).</param>
+        /// <param name="config">Optional validated config. When null, defaults to:
+        /// audio normalization ON (0.95 peak), silence-based splitting OFF.
+        /// This allows SynthesizeAsync to work without a PiperConfig when only basic
+        /// synthesis is needed.</param>
+        /// <param name="voiceConfig">Voice config with phoneme ID map (optional, required for silence split).</param>
         public TTSSynthesisOrchestrator(
             IInferenceAudioGenerator generator,
             SplitInferenceOrchestrator splitOrchestrator,
             PhonemeEncoder phonemeEncoder,
             AudioClipBuilder audioClipBuilder,
-            ValidatedPiperConfig config,
+            IPiperConfigReadOnly config,
             PiperVoiceConfig voiceConfig)
         {
             _generator = generator ?? throw new ArgumentNullException(nameof(generator));
             _splitOrchestrator = splitOrchestrator ?? throw new ArgumentNullException(nameof(splitOrchestrator));
             _phonemeEncoder = phonemeEncoder ?? throw new ArgumentNullException(nameof(phonemeEncoder));
             _audioClipBuilder = audioClipBuilder ?? throw new ArgumentNullException(nameof(audioClipBuilder));
-            _config = config;
+            _config = config; // nullable: defaults to normalization ON, silence split OFF
             _voiceConfig = voiceConfig;
         }
 
         /// <summary>
         /// 音素列からAudioClipを生成する。
         /// request.HasProsodyがfalseの場合はProsodyなしでエンコードする。
+        /// NativeArrayの最終Dispose地点。AudioClip.SetData完了後にDisposeする。
         /// </summary>
         /// <param name="request">音声合成リクエスト（音素・Prosody・合成パラメータを集約）</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
+        /// <remarks>Must be called from the main thread.</remarks>
         public async Task<AudioClip> SynthesizeAsync(
             SynthesisRequest request,
             CancellationToken cancellationToken = default)
@@ -52,16 +67,14 @@ namespace uPiper.Core.AudioGeneration
 
             // 1. 音素をIDにエンコード（Prosodyあり/なし）
             int[] phonemeIds;
-            int[] expandedA1 = null, expandedA2 = null, expandedA3 = null;
+            int[] expandedProsodyFlat = null;
 
             if (request.HasProsody)
             {
                 var encResult = _phonemeEncoder.EncodeWithProsody(
-                    request.Phonemes, request.ProsodyA1, request.ProsodyA2, request.ProsodyA3);
+                    request.Phonemes, request.ProsodyFlat);
                 phonemeIds = encResult.PhonemeIds;
-                expandedA1 = encResult.ExpandedProsodyA1;
-                expandedA2 = encResult.ExpandedProsodyA2;
-                expandedA3 = encResult.ExpandedProsodyA3;
+                expandedProsodyFlat = encResult.ExpandedProsodyFlat;
             }
             else
             {
@@ -69,44 +82,58 @@ namespace uPiper.Core.AudioGeneration
             }
 
             // 2. 音声を生成（句分割あり/なし）
-            var silenceParsed = _config?.ParsedPhonemeSilence;
-            var useSilenceSplit = _config is { EnablePhonemeSilence: true }
+            var silenceParsed = _config?.Silence.ParsedPhonemeSilence;
+            var useSilenceSplit = _config != null
+                && _config.Silence.EnablePhonemeSilence
                 && silenceParsed?.Count > 0
                 && _voiceConfig?.PhonemeIdMap != null;
 
-            float[] audioData;
-            if (useSilenceSplit)
+            NativeArray<float> audioData = default;
+            try
             {
-                audioData = await _splitOrchestrator.GenerateWithSilenceSplitAsync(
-                    phonemeIds, expandedA1, expandedA2, expandedA3,
-                    silenceParsed,
-                    _voiceConfig.PhonemeIdMap,
+                if (useSilenceSplit)
+                {
+                    audioData = await _splitOrchestrator.GenerateWithSilenceSplitAsync(
+                        phonemeIds, expandedProsodyFlat,
+                        silenceParsed,
+                        _voiceConfig.PhonemeIdMap,
+                        _generator.SampleRate,
+                        request.LengthScale, request.NoiseScale, request.NoiseW,
+                        request.SpeakerId, request.LanguageId,
+                        cancellationToken);
+                }
+                else
+                {
+                    audioData = await _generator.GenerateAudioAsync(
+                        phonemeIds, expandedProsodyFlat,
+                        request.LengthScale, request.NoiseScale, request.NoiseW,
+                        request.SpeakerId, request.LanguageId,
+                        cancellationToken);
+                }
+
+                // 3. 正規化してAudioClipを構築（設定で無効化可能、後方互換のためnull時は正規化）
+                if (_config == null || _config.Audio.NormalizeAudio)
+                {
+                    AudioNormalizer.NormalizeInPlace(audioData, 0.95f);
+                }
+                var clip = _audioClipBuilder.BuildAudioClip(
+                    audioData,
                     _generator.SampleRate,
-                    request.LengthScale, request.NoiseScale, request.NoiseW,
-                    request.SpeakerId, request.LanguageId,
-                    cancellationToken);
+                    $"TTS_{Guid.NewGuid():N}");
+
+                PiperLogger.LogInfo(
+                    $"[TTSSynthesisOrchestrator] Synthesized {audioData.Length} samples " +
+                    $"from {request.Phonemes.Length} phonemes");
+
+                return clip;
             }
-            else
+            finally
             {
-                audioData = await _generator.GenerateAudioAsync(
-                    phonemeIds, expandedA1, expandedA2, expandedA3,
-                    request.LengthScale, request.NoiseScale, request.NoiseW,
-                    request.SpeakerId, request.LanguageId,
-                    cancellationToken);
+                // NativeArray の最終 Dispose 地点。
+                // AudioClip.SetData は NativeArray 内容をコピー済みのため、Dispose しても安全。
+                if (audioData.IsCreated)
+                    audioData.Dispose();
             }
-
-            // 3. 正規化してAudioClipを構築
-            _audioClipBuilder.NormalizeAudioInPlace(audioData, 0.95f);
-            var clip = _audioClipBuilder.BuildAudioClip(
-                audioData,
-                _generator.SampleRate,
-                $"TTS_{System.Guid.NewGuid():N}");
-
-            PiperLogger.LogInfo(
-                $"[TTSSynthesisOrchestrator] Synthesized {audioData.Length} samples " +
-                $"from {request.Phonemes.Length} phonemes");
-
-            return clip;
         }
     }
 }

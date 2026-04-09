@@ -14,8 +14,8 @@ using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Implementations;
 using uPiper.Core.Phonemizers.Multilingual;
+using uPiper.Core.Phonemizers.Multilingual.Handlers;
 
-#pragma warning disable CS0618
 namespace uPiper.Demo
 {
     /// <summary>
@@ -224,10 +224,16 @@ namespace uPiper.Demo
             try
             {
                 _multilingualPhonemizer?.Dispose();
+                var handlers = new Dictionary<string, ILanguageG2PHandler>();
+                if (_japanesePhonemizer != null)
+                    handlers["ja"] = new JapaneseG2PHandler(_japanesePhonemizer);
                 _multilingualPhonemizer = new MultilingualPhonemizer(
-                    SupportedLanguages,
-                    defaultLatinLanguage: defaultLatinLanguage,
-                    jaPhonemizer: _japanesePhonemizer);
+                    new MultilingualPhonemizerOptions
+                    {
+                        Languages = SupportedLanguages,
+                        DefaultLatinLanguage = defaultLatinLanguage,
+                        Handlers = handlers
+                    });
                 await _multilingualPhonemizer.InitializeAsync();
                 _currentLatinDefault = defaultLatinLanguage;
                 PiperLogger.LogInfo($"[InferenceEngineDemo] MultilingualPhonemizer initialized (defaultLatin={defaultLatinLanguage})");
@@ -697,16 +703,16 @@ namespace uPiper.Demo
                 PiperLogger.LogDebug($"Config loaded, parsing JSON ({jsonAsset.text.Length} chars)");
 
                 var config = ParseConfig(jsonAsset.text, modelName);
-                _encoder = new PhonemeEncoder(config);
+                _encoder = new PhonemeEncoder(config, new PuaTokenMapper());
                 PiperLogger.LogDebug($"PhonemeEncoder created with {config.PhonemeIdMap.Count} phonemes");
 
                 // デバッグ用：日本語音素に関連するマッピングを表示
                 string[] importantPhonemes = { "ch", "ts", "sh", "k", "o", "n", "i", "h", "a", "w", "N", "_", "^", "$" };
                 foreach (var phoneme in importantPhonemes)
                 {
-                    if (config.PhonemeIdMap.TryGetValue(phoneme, out var id))
+                    if (config.PhonemeIdMap.TryGetValue(phoneme, out var ids))
                     {
-                        PiperLogger.LogDebug($"  Important phoneme '{phoneme}' -> ID {id}");
+                        PiperLogger.LogDebug($"  Important phoneme '{phoneme}' -> IDs [{string.Join(", ", ids)}]");
                     }
                     else
                     {
@@ -754,22 +760,20 @@ namespace uPiper.Demo
                 timings["G2P"] = g2pStopwatch.ElapsedMilliseconds;
 
                 var phonemes = multiResult.Phonemes;
-                var prosodyA1 = multiResult.ProsodyA1;
-                var prosodyA2 = multiResult.ProsodyA2;
-                var prosodyA3 = multiResult.ProsodyA3;
-                var useProsody = _generator.SupportsProsody && prosodyA1 != null && prosodyA1.Length > 0;
+                var prosodyFlat = multiResult.ProsodyFlat;
+                var useProsody = _generator.SupportsProsody && prosodyFlat != null && prosodyFlat.Length > 0;
 
                 PiperLogger.LogInfo($"[G2P] Detected language: {multiResult.DetectedPrimaryLanguage}, Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                 if (useProsody)
                 {
-                    PiperLogger.LogInfo($"[G2P] Prosody A1: [{string.Join(",", prosodyA1.Take(Math.Min(10, prosodyA1.Length)))}...]");
+                    PiperLogger.LogInfo($"[G2P] ProsodyFlat length: {prosodyFlat.Length} (stride=3, {prosodyFlat.Length / 3} phonemes)");
                 }
 
                 // Show phoneme details in UI
                 if (_phonemeDetailsText != null)
                 {
                     var langInfo = $"Lang: {language} (detected: {multiResult.DetectedPrimaryLanguage})";
-                    var prosodyInfo = useProsody ? $"\nProsody: A1=[{string.Join(",", prosodyA1.Take(5))}...], A2=[{string.Join(",", prosodyA2.Take(5))}...], A3=[{string.Join(",", prosodyA3.Take(5))}...]" : "";
+                    var prosodyInfo = useProsody ? $"\nProsody: flat[{prosodyFlat.Length}] (stride=3)" : "";
                     _phonemeDetailsText.text = $"{langInfo}\nPhonemes: {string.Join(" ", phonemes)}{prosodyInfo}";
                 }
 
@@ -778,15 +782,13 @@ namespace uPiper.Demo
                 // 音素をIDに変換（Prosody対応時は展開済みProsody配列も取得）
                 var encodeStopwatch = Stopwatch.StartNew();
                 int[] phonemeIds;
-                int[] expandedA1 = null, expandedA2 = null, expandedA3 = null;
+                int[] expandedProsodyFlat = null;
 
                 if (useProsody)
                 {
-                    var encodingResult = _encoder.EncodeWithProsody(phonemes, prosodyA1, prosodyA2, prosodyA3);
+                    var encodingResult = _encoder.EncodeWithProsody(phonemes, prosodyFlat);
                     phonemeIds = encodingResult.PhonemeIds;
-                    expandedA1 = encodingResult.ExpandedProsodyA1;
-                    expandedA2 = encodingResult.ExpandedProsodyA2;
-                    expandedA3 = encodingResult.ExpandedProsodyA3;
+                    expandedProsodyFlat = encodingResult.ExpandedProsodyFlat;
                     PiperLogger.LogInfo($"Encoded with prosody: {phonemes.Length} phonemes -> {phonemeIds.Length} IDs");
                 }
                 else
@@ -801,70 +803,85 @@ namespace uPiper.Demo
                 SetStatus("音声を生成中...");
                 var synthesisStopwatch = Stopwatch.StartNew();
 
-                float[] audioData;
-                if (useProsody && expandedA1 != null)
+                UnityEngine.AudioClip audioClip = null;
+                Unity.Collections.NativeArray<float> nativeAudioData = default;
+                try
                 {
-                    PiperLogger.LogDebug($"Calling GenerateAudioAsync with prosody (languageId={languageId})...");
-                    audioData = await _generator.GenerateAudioAsync(
-                        phonemeIds, expandedA1, expandedA2, expandedA3,
-                        languageId: languageId);
+                    if (useProsody && expandedProsodyFlat != null)
+                    {
+                        PiperLogger.LogDebug($"Calling GenerateAudioAsync with prosody (languageId={languageId})...");
+                        nativeAudioData = await _generator.GenerateAudioAsync(
+                            phonemeIds, expandedProsodyFlat,
+                            languageId: languageId);
+                    }
+                    else
+                    {
+                        PiperLogger.LogDebug($"Calling GenerateAudioAsync (languageId={languageId})...");
+                        nativeAudioData = await _generator.GenerateAudioAsync(
+                            phonemeIds, languageId: languageId);
+                    }
+                    timings["Synthesis"] = synthesisStopwatch.ElapsedMilliseconds;
+                    PiperLogger.LogInfo($"Audio generated: {nativeAudioData.Length} samples");
+
+                    // Convert to managed array for diagnostic LINQ operations
+                    var audioData = nativeAudioData.ToArray();
+
+                    // 音声データの最大値を確認
+                    var maxVal = audioData.Max(x => Math.Abs(x));
+                    PiperLogger.LogInfo($"Original audio max amplitude: {maxVal:F4}");
+
+                    // 音声データが既に小さい値の場合は増幅、大きい値の場合は正規化
+                    float[] processedAudio;
+
+                    // 音声データの詳細な統計情報
+                    PiperLogger.LogInfo($"Audio statistics before processing:");
+                    PiperLogger.LogInfo($"  - Sample count: {audioData.Length}");
+                    PiperLogger.LogInfo($"  - Duration: {audioData.Length / (float)config.SampleRate:F2} seconds");
+                    PiperLogger.LogInfo($"  - Max absolute value: {maxVal:F6}");
+                    PiperLogger.LogInfo($"  - Mean absolute value: {audioData.Select(x => Math.Abs(x)).Average():F6}");
+                    PiperLogger.LogInfo($"  - First 10 samples: {string.Join(", ", audioData.Take(10).Select(x => x.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)))}");
+
+                    if (maxVal < 0.01f)
+                    {
+                        // 音声が小さすぎる場合は増幅
+                        SetStatus("音声データを増幅中...");
+                        PiperLogger.LogWarning($"Audio data is extremely quiet (max: {maxVal:F6}). This may indicate a model output issue.");
+                        var amplificationFactor = 0.3f / maxVal; // 最大値を0.3にする
+                        processedAudio = audioData.Select(x => x * amplificationFactor).ToArray();
+                        PiperLogger.LogInfo($"Amplified audio by factor {amplificationFactor:F2}");
+                    }
+                    else if (maxVal > 1.0f)
+                    {
+                        // 音声データを正規化
+                        SetStatus("音声データを正規化中...");
+                        PiperLogger.LogDebug("Normalizing audio data...");
+                        AudioNormalizer.NormalizeInPlace(audioData, 0.95f);
+                        processedAudio = audioData;
+                    }
+                    else
+                    {
+                        // 既に適切な範囲
+                        processedAudio = audioData;
+                        PiperLogger.LogDebug("Audio data is already in proper range");
+                    }
+
+                    // AudioClipを作成 (uses legacy float[] overload for demo diagnostics)
+                    SetStatus("AudioClipを作成中...");
+                    PiperLogger.LogDebug($"Building AudioClip (sample rate: {config.SampleRate})");
+#pragma warning disable CS0618 // Obsolete: demo uses float[] for LINQ diagnostics
+                    audioClip = _audioBuilder.BuildAudioClip(
+                        processedAudio,
+                        config.SampleRate,
+                        $"Generated_{DateTime.Now:HHmmss}"
+                    );
+#pragma warning restore CS0618
+                    PiperLogger.LogDebug($"AudioClip created: {audioClip.length:F2} seconds");
                 }
-                else
+                finally
                 {
-                    PiperLogger.LogDebug($"Calling GenerateAudioAsync (languageId={languageId})...");
-                    audioData = await _generator.GenerateAudioAsync(phonemeIds, languageId: languageId);
+                    if (nativeAudioData.IsCreated)
+                        nativeAudioData.Dispose();
                 }
-                timings["Synthesis"] = synthesisStopwatch.ElapsedMilliseconds;
-                PiperLogger.LogInfo($"Audio generated: {audioData.Length} samples");
-
-                // 音声データの最大値を確認
-                var maxVal = audioData.Max(x => Math.Abs(x));
-                PiperLogger.LogInfo($"Original audio max amplitude: {maxVal:F4}");
-
-                // 音声データが既に小さい値の場合は増幅、大きい値の場合は正規化
-                float[] processedAudio;
-
-                // 音声データの詳細な統計情報
-                PiperLogger.LogInfo($"Audio statistics before processing:");
-                PiperLogger.LogInfo($"  - Sample count: {audioData.Length}");
-                PiperLogger.LogInfo($"  - Duration: {audioData.Length / (float)config.SampleRate:F2} seconds");
-                PiperLogger.LogInfo($"  - Max absolute value: {maxVal:F6}");
-                PiperLogger.LogInfo($"  - Mean absolute value: {audioData.Select(x => Math.Abs(x)).Average():F6}");
-                PiperLogger.LogInfo($"  - First 10 samples: {string.Join(", ", audioData.Take(10).Select(x => x.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)))}");
-
-                if (maxVal < 0.01f)
-                {
-                    // 音声が小さすぎる場合は増幅
-                    SetStatus("音声データを増幅中...");
-                    PiperLogger.LogWarning($"Audio data is extremely quiet (max: {maxVal:F6}). This may indicate a model output issue.");
-                    var amplificationFactor = 0.3f / maxVal; // 最大値を0.3にする
-                    processedAudio = audioData.Select(x => x * amplificationFactor).ToArray();
-                    PiperLogger.LogInfo($"Amplified audio by factor {amplificationFactor:F2}");
-                }
-                else if (maxVal > 1.0f)
-                {
-                    // 音声データを正規化
-                    SetStatus("音声データを正規化中...");
-                    PiperLogger.LogDebug("Normalizing audio data...");
-                    _audioBuilder.NormalizeAudioInPlace(audioData, 0.95f);
-                    processedAudio = audioData;
-                }
-                else
-                {
-                    // 既に適切な範囲
-                    processedAudio = audioData;
-                    PiperLogger.LogDebug("Audio data is already in proper range");
-                }
-
-                // AudioClipを作成
-                SetStatus("AudioClipを作成中...");
-                PiperLogger.LogDebug($"Building AudioClip (sample rate: {config.SampleRate})");
-                var audioClip = _audioBuilder.BuildAudioClip(
-                    processedAudio,
-                    config.SampleRate,
-                    $"Generated_{DateTime.Now:HHmmss}"
-                );
-                PiperLogger.LogDebug($"AudioClip created: {audioClip.length:F2} seconds");
 
                 // 再生
                 if (_audioSource != null && audioClip != null)
@@ -983,7 +1000,7 @@ namespace uPiper.Demo
                 DisplayName = modelName,
                 Language = "ja",
                 SampleRate = 22050,
-                PhonemeIdMap = new Dictionary<string, int>()
+                PhonemeIdMap = new Dictionary<string, int[]>()
             };
 
             try
@@ -1043,7 +1060,7 @@ namespace uPiper.Demo
                     {
                         if (kvp.Value is JArray idArray && idArray.Count > 0)
                         {
-                            config.PhonemeIdMap[kvp.Key] = idArray[0].ToObject<int>();
+                            config.PhonemeIdMap[kvp.Key] = idArray.ToObject<int[]>();
                         }
                     }
 

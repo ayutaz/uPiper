@@ -1,24 +1,37 @@
 # uPiper Architecture Document
 
-[🇯🇵 日本語](ARCHITECTURE_ja.md) | [🇬🇧 **English**](ARCHITECTURE_en.md)
+[日本語](ARCHITECTURE_ja.md) | [**English**](ARCHITECTURE_en.md)
 
 ## Overview
 
-uPiper is a plugin for using Piper TTS in Unity environments. It employs neural network-based voice synthesis (VITS) to achieve high-quality multilingual speech synthesis.
+uPiper is a plugin for using Piper TTS in Unity environments. It employs neural network-based voice synthesis (VITS) to achieve high-quality multilingual speech synthesis. Uses C# 10.0 (`csc.rsp -langversion:10.0`).
 
 ## Architecture Overview
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   Text Input    │ --> │ Multilingual     │ --> │  VITS Model     │
-│  (7 Languages)  │     │ Phonemizer       │     │  (ONNX/Unity)   │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-                                 │                         │
-                                 ↓                         ↓
-                        ┌──────────────────┐     ┌─────────────────┐
-                        │ Phoneme Sequence │     │  Audio Output   │
-                        │ PUA-encoded      │     │    (Unity)      │
-                        └──────────────────┘     └─────────────────┘
+┌─────────────────┐     ┌──────────────────┐     ┌──────────────────────┐
+│   Text Input    │ --> │ CustomDictionary │ --> │ MultilingualPhonemizer│
+│  (7 Languages)  │     │ (Preprocessing)  │     │ (ILanguageG2PHandler) │
+└─────────────────┘     └──────────────────┘     └──────────────────────┘
+                                                           │
+                                                           ↓
+                        ┌──────────────────┐     ┌──────────────────────┐
+                        │ PuaTokenMapper   │ --> │ PhonemeEncoder       │
+                        │ (pua.json)       │     │ (ProsodyFlat stride=3)│
+                        └──────────────────┘     └──────────────────────┘
+                                                           │
+                                                           ↓
+                        ┌──────────────────────────────────────────────┐
+                        │ TTSSynthesisOrchestrator                     │
+                        │   → IInferenceAudioGenerator (NativeArray)  │
+                        │   → AudioNormalizer → AudioClipBuilder      │
+                        └──────────────────────────────────────────────┘
+                                                           │
+                                                           ↓
+                                                  ┌─────────────────┐
+                                                  │  AudioClip      │
+                                                  │  (22050Hz)      │
+                                                  └─────────────────┘
 ```
 
 ## Component Details
@@ -36,24 +49,59 @@ uPiper is a plugin for using Piper TTS in Unity environments. It employs neural 
 ### 2. Phonemization Layer
 
 #### MultilingualPhonemizer
-- **Role**: Segment text by Unicode script ranges and delegate to per-language DotNetG2P engines
-- **Language Detection**: `UnicodeLanguageDetector` identifies language by character ranges (CJK, Hangul, Latin, etc.)
-- **PUA Token Mapping**: `PuaTokenMapper` provides unified PUA-to-IPA bidirectional mapping across all 7 languages (96 fixed entries)
-- **Language Routing Implementation**: Language branching within `PhonemizeWithProsodyAsync` is extracted into a `switch` statement + 7 private methods (`ProcessJapanese`, `ProcessEnglish`, `ProcessSpanish`, `ProcessFrench`, `ProcessPortuguese`, `ProcessChinese`, `ProcessKorean`) + `ProcessFallbackAsync`. The external interface remains unchanged after this refactoring
+- **Location**: `Runtime/Core/Phonemizers/Multilingual/MultilingualPhonemizer.cs`
+- **Role**: Segment text via language detection, then delegate to per-language ILanguageG2PHandler Strategy implementations
+- **Constructor**: Receives `MultilingualPhonemizerOptions` (languages, defaultLatinLanguage, enableTrigramDetection, LanguageDetector, handlers)
+- **InitializeAsync**: Creates default handlers for unregistered languages -> initializes all handlers -> upgrades to HybridLanguageDetector when trigram detection is enabled
 
-#### Language-Specific DotNetG2P Engines
+##### Language Detection (ILanguageDetector)
 
-| Engine | Language | Package | Implementation |
-|--------|----------|---------|---------------|
-| `DotNetG2PPhonemizer` | Japanese | dot-net-g2p | MeCab dictionary (789,120 entries) |
-| `EnglishG2PEngine` | English | DotNetG2P.English | CMU dictionary + LTS + homograph resolution |
-| `SpanishG2PEngine` | Spanish | DotNetG2P.Spanish | Rule-based G2P |
-| `FrenchG2PEngine` | French | DotNetG2P.French | Rule-based G2P |
-| `PortugueseG2PEngine` | Portuguese | DotNetG2P.Portuguese | Rule-based G2P (Brazilian variant) |
-| `ChineseG2PEngine` | Chinese | DotNetG2P.Chinese | 44K character + 412K phrase dictionary |
-| `KoreanG2PEngine` | Korean | DotNetG2P.Korean | Hangul decomposition + phonological rules |
+| Implementation | Location | Role |
+|---------------|----------|------|
+| `ILanguageDetector` | `Multilingual/` | Language detection interface (public). `SegmentText()` -> `IReadOnlyList<(string language, string text)>` |
+| `UnicodeLanguageDetector` | `Multilingual/` | Unicode script range based detection (CJK, Hangul, Latin, etc.). Default |
+| `HybridLanguageDetector` | `Multilingual/` | Unicode + Trigram hybrid detection (internal sealed). Resolves Latin language ambiguity via trigram |
+| `TrigramLanguageDetector` | `Multilingual/` | Trigram frequency analysis based detection (internal sealed class). en/es/fr/pt disambiguation |
+| `LatinSegmentRefiner` | `Multilingual/` | Trigram-based refinement of Latin segments (internal) |
 
-MultilingualPhonemizer calls each engine's `ToPuaPhonemes()` for PUA phonemes and `ToIpaWithProsody()` for prosody information.
+##### ILanguageG2PHandler Strategy Pattern
+
+Per-language G2P processing is unified via the `ILanguageG2PHandler` interface:
+
+```csharp
+public interface ILanguageG2PHandler : IDisposable
+{
+    string LanguageCode { get; }
+    bool IsInitialized { get; }
+    Task InitializeAsync(CancellationToken cancellationToken = default);
+    (string[] Phonemes, int[] ProsodyFlat) Process(string text);
+}
+```
+
+- **ProsodyFlat**: stride=3 flat array `[a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, ...]`
+- **HandlerEntry**: `internal readonly struct` pairing a handler with an `IsOwned` ownership flag
+
+| Handler | Language | Delegates To |
+|---------|----------|-------------|
+| `JapaneseG2PHandler` | ja | DotNetG2PPhonemizer (MeCab dictionary, prosody-enabled) |
+| `EnglishG2PHandler` | en | EnglishG2PEngine (CMU dict + LTS + homograph resolution) |
+| `SpanishG2PHandler` | es | SpanishG2PEngine (rule-based G2P) |
+| `FrenchG2PHandler` | fr | FrenchG2PEngine (rule-based G2P) |
+| `PortugueseG2PHandler` | pt | PortugueseG2PEngine (rule-based G2P, Brazilian variant) |
+| `ChineseG2PHandler` | zh | ChineseG2PEngine (44K character + 412K phrase dictionary) |
+| `KoreanG2PHandler` | ko | KoreanG2PEngine (Hangul decomposition + phonological rules) |
+
+##### MultilingualPhonemizeResult
+
+```csharp
+public class MultilingualPhonemizeResult
+{
+    public string[] Phonemes { get; }
+    public int[] ProsodyFlat { get; }        // stride=3, Length = Phonemes.Length * 3
+    public string DetectedPrimaryLanguage { get; }
+    public bool HasProsody => ProsodyFlat != null;
+}
+```
 
 #### dot-net-g2p (Japanese)
 - **Role**: Convert Japanese text to phoneme sequences
@@ -61,13 +109,13 @@ MultilingualPhonemizer calls each engine's `ToPuaPhonemes()` for PUA phonemes an
 - **Dictionary**: Uses mecab-naist-jdic (789,120 entries)
 - **Processing Flow**:
   ```
-  Text → MeCab Analysis → G2P Conversion → Phoneme Sequence
+  Text -> MeCab Analysis -> G2P Conversion -> Phoneme Sequence
   ```
 
 #### Important Design Decision: Phoneme Timing
 ```csharp
 // All phonemes are assigned a fixed 50ms duration
-duration = 0.05f; // Default 50ms duration
+// VITS models automatically optimize timing via Duration Predictor
 ```
 
 **Rationale**:
@@ -78,192 +126,250 @@ duration = 0.05f; // Default 50ms duration
 
 ### 3. Phoneme Encoding Layer
 
-#### PUA (Private Use Area) Mapping
-Maps multi-character phonemes to single Unicode characters:
+#### PuaTokenMapper (Instance Class)
+
+Maps multi-character phonemes to single Unicode PUA characters:
 
 ```csharp
 // Example: Processing "kyou"
-"ky" + "o" + "u" → "\ue006" + "o" + "u"
+"ky" + "o" + "u" -> "\ue006" + "o" + "u"
 ```
 
-**PUA Mapping Table**:
-- `ky` → `\ue006` (kya, kyu, kyo)
-- `ch` → `\ue00e` (chi, cha, chu, cho)
-- `ts` → `\ue00f` (tsu)
-- `sh` → `\ue010` (shi, sha, shu, sho)
+- **Fixed mapping**: `FixedPuaMapping` (`IReadOnlyDictionary<string, int>`, 96 entries, 0xE000-0xE061)
+- **pua.json loading**: `InitializeAsync()` / `InitializeFromFile()` loads from `StreamingAssets/uPiper/pua.json`. Copy-on-write for atomic replacement
+- **Dynamic allocation**: `Register(token)` auto-assigns new PUA codepoints for unregistered multi-char tokens (0xE062-0xF8FF)
+- **Thread-safe**: `ConcurrentDictionary` + lock-based dynamic allocation
+
+#### PhonemeEncoder
+
+- **Location**: `Runtime/Core/AudioGeneration/PhonemeEncoder.cs`
+- **Constructor**: Receives `PiperVoiceConfig` + `PuaTokenMapper`
+- **ProsodyFlat stride=3 support**: `EncodeWithProsody(phonemes, prosodyFlat)` -> `ProsodyEncodingResult { PhonemeIds, ExpandedProsodyFlat }`
+- **BOS/EOS/PAD expansion**: Automatically expands ProsodyFlat to match BOS/EOS/PAD token insertion (inserts zero values at boundaries)
+- **`ProsodyStride = 3`**: Public constant used when constructing ProsodyFlat arrays
+- **Model type auto-detection**:
+  - IPA detection: `_useIpaMapping = !_isMultilingualModel && _phonemeToId.ContainsKey("ɕ")`
+  - Multilingual detection: `_isMultilingualModel` flags `phoneme_type: "multilingual"` models
+  - Multilingual models use PUA character passthrough (no IPA/PUA conversion)
 
 ### 3.5 Configuration Management Layer
 
+#### IPiperConfigReadOnly
+
+```csharp
+public interface IPiperConfigReadOnly
+{
+    LanguageSettings Language { get; }
+    PerformanceSettings Performance { get; }
+    InferenceSettings Inference { get; }
+    PiperAudioSettings Audio { get; }
+    SilenceSettings Silence { get; }
+    GeneralSettings General { get; }
+}
+```
+
 #### ValidatedPiperConfig
 - **Location**: `Runtime/Core/ValidatedPiperConfig.cs`
-- **Role**: An immutable configuration snapshot generated via `PiperConfig.ToValidated()`
+- **Role**: An immutable configuration snapshot generated via `PiperConfig.ToValidated()`. Implements `IPiperConfigReadOnly`
+- **6 nested readonly record structs**: `LanguageSettings`, `PerformanceSettings`, `InferenceSettings`, `PiperAudioSettings`, `SilenceSettings`, `GeneralSettings`
 - **How to obtain**: Call `PiperConfig.ToValidated()` to receive a validated `ValidatedPiperConfig`. Internally `PiperTTS` holds this as `_validatedConfig`
-- **All properties are read-only**: Provides post-validation values in an immutable form, guaranteeing configuration consistency
-- **GPUSettings immutability**: `GPUSettings` guarantees immutability via defensive copy (`new GPUInferenceSettings { MaxMemoryMB = source.GPUSettings.MaxMemoryMB }`). Subsequent changes to the original `PiperConfig` do not affect the `ValidatedPiperConfig`
-- **Note: `PiperConfig.Validate()` has side effects**: `Validate()` directly modifies fields (e.g., `WorkerThreads=0` is replaced with an auto-detected value, `DefaultLanguage` is lowercased, out-of-range values are clamped, etc.). Since `ToValidated()` calls `Validate()` internally, the original `PiperConfig` instance is also modified
+- **Pure function `ToValidated()`**: Does not modify any fields of `PiperConfig`. Clamping, normalization, and auto-detection are performed within the `ValidatedPiperConfig` constructor
+- **GPUSettings immutability**: Guaranteed via defensive copy
 - **Key properties**:
-  - `ParsedPhonemeSilence: IReadOnlyDictionary<string, float>` -- When `EnablePhonemeSilence=true`, provides a pre-parsed map from `PhonemeSilenceSpec`. Returns `null` when `false` (eliminates redundant per-call parsing in `PiperTTS`)
-  - Provides all language, performance, inference, audio, and silence settings in a single object
+  - `Silence.ParsedPhonemeSilence: IReadOnlyDictionary<string, float>` -- Pre-parsed map when `EnablePhonemeSilence=true`
+  - `Audio.NormalizeAudio`, `Audio.SampleRate` -- AudioNormalizer behavior control
+  - `Inference.Backend` -- Input to BackendSelector
 
 ### 4. Speech Synthesis Layer (VITS Model)
 
 #### Unity AI Inference Engine Integration
 - **Model Format**: ONNX
 - **Inference Engine**: Unity AI Inference Engine (formerly Sentis)
-- **Input**: Phoneme ID array
-- **Output**: Audio waveform (float array)
+- **Input**: Phoneme ID array + optional ProsodyFlat
+- **Output**: Audio waveform (`NativeArray<float>`)
 
 #### VITS Architecture
 ```
-Phoneme IDs → TextEncoder → Duration Predictor → Flow Decoder → Audio Waveform
-            ↓
-            Latent Representation → Stochastic Duration Predictor
-                                   (Automatic phoneme timing estimation)
+Phoneme IDs -> TextEncoder -> Duration Predictor -> Flow Decoder -> Audio Waveform
+             ↓
+             Latent Representation -> Stochastic Duration Predictor
+                                     (Automatic phoneme timing estimation)
 ```
+
+#### BackendSelector + PlatformInfo
+- **Location**: `Runtime/Core/AudioGeneration/BackendSelector.cs`
+- **BackendSelector**: Inference backend selection logic (`public static class`). `Determine(requested, platform, gpuMemoryThresholdMB)` -> `BackendType`
+- **PlatformInfo**: Platform-dependent info encapsulation (`public readonly struct`). `FromCurrentEnvironment()` factory confines preprocessor directives
+- **Preprocessor-free**: `Determine()` branches solely on `PlatformInfo` fields. Easily testable
+
+#### IInferenceAudioGenerator
+- **Location**: `Runtime/Core/AudioGeneration/IInferenceAudioGenerator.cs`
+- **Unified API**: `GenerateAudioAsync(phonemeIds, prosodyFlat, ...)` -> `NativeArray<float>`. `prosodyFlat=null` for non-prosody path
+- **NativeArray output**: Caller is responsible for Dispose
 
 #### InferenceAudioGenerator and InferenceContext
 - **Location**: `Runtime/Core/AudioGeneration/InferenceAudioGenerator.cs`
-- **Output tensor name caching**: At initialization, `_model.outputs[0].name` is cached in `_cachedOutputName`, eliminating per-inference name resolution. The catch-all fallback has been removed
-- **ArrayPool**: `ArrayPool<int>.Shared` is always used when building prosody tensors (threshold-based branching has been removed). `InferenceContext.Dispose()` returns the rented array
-- **Dead code removal**: `CreateProsodyTensor` (non-pooled version) has been removed. Only `CreateProsodyTensorPooled` remains
+- **Output tensor name caching**: At initialization, `_model.outputs[0].name` is cached in `_cachedOutputName`
+- **Prosody tensor construction**: Uses `new int[prosodySize]` for direct allocation (ArrayPool is not used because Tensor constructor requires exact array size)
 - **InferenceContext** (`private sealed class`, `IDisposable`):
-  - A private nested class that replaces the 7-element tuple previously returned by `PrepareInputs()`
-  - Using the `using var ctx = PrepareInputs(...)` pattern, all input tensors and `ArrayPool` rented arrays are released atomically in `Dispose()`
-  - Provides safe scope-based resource management to prevent resource leaks
+  - `using var ctx = PrepareInputs(...)` pattern atomically releases all input tensors in `Dispose()`
 
 #### TTSSynthesisOrchestrator
 - **Location**: `Runtime/Core/AudioGeneration/TTSSynthesisOrchestrator.cs` (`internal sealed`)
-- **Role**: Centrally manages the entire phoneme-string-array-to-`AudioClip` conversion pipeline, eliminating duplicated logic that previously existed across two methods in `PiperTTS.Inference.cs`
-- **Constructor**: Receives `ValidatedPiperConfig config` and `PiperVoiceConfig voiceConfig` via the constructor and holds them as fields. These do not need to be passed on each `SynthesizeAsync` call
-- **Pipeline**:
-  1. **PhonemeEncoder** -- Encodes phonemes to model IDs (auto-switches between prosody/non-prosody paths)
-  2. **IInferenceAudioGenerator** -- Generates float audio waveform via ONNX inference
-  3. **SplitInferenceOrchestrator** -- Executes phrase-split inference when `EnablePhonemeSilence=true`
-  4. **AudioClipBuilder** -- Normalizes (`NormalizeAudioInPlace`) then builds `AudioClip`. AudioClip names are uniquely generated as `TTS_{Guid.NewGuid():N}`
-- **SynthesisRequest** (`internal readonly struct`):
-  ```csharp
-  internal readonly struct SynthesisRequest
-  {
-      public readonly string[] Phonemes;
-      public readonly int[] ProsodyA1, ProsodyA2, ProsodyA3;
-      public readonly float LengthScale, NoiseScale, NoiseW;
-      public readonly int SpeakerId, LanguageId;
-      public bool HasProsody => ProsodyA1 != null || ProsodyA2 != null || ProsodyA3 != null;
-  }
-  ```
-  - Aggregates phonemes, prosody, and synthesis parameters into a single immutable data object
-  - `HasProsody` auto-switches between prosody/non-prosody paths when any of `ProsodyA1`, `ProsodyA2`, or `ProsodyA3` is non-null
-- **Key method**:
-  ```csharp
-  Task<AudioClip> SynthesizeAsync(
-      SynthesisRequest request,
-      CancellationToken cancellationToken = default)
-  ```
-  - When `request.HasProsody` is `false`, processes via the non-prosody path
-  - Automatically selects the phrase-split path based on the presence of `_config.ParsedPhonemeSilence`
+- **Role**: Centrally manages the entire phoneme-to-`AudioClip` conversion pipeline
+- **Constructor**: Receives `IInferenceAudioGenerator`, `SplitInferenceOrchestrator`, `PhonemeEncoder`, `AudioClipBuilder`, `IPiperConfigReadOnly` (nullable), `PiperVoiceConfig`
+- **NativeArray Pipeline**:
+  1. **PhonemeEncoder** -- Encodes phonemes to model IDs (`EncodeWithProsody` / `Encode`)
+  2. **IInferenceAudioGenerator** -- ONNX inference -> `NativeArray<float>`
+  3. **AudioNormalizer** -- `NativeArray<float>` in-place normalization (configurable via settings)
+  4. **AudioClipBuilder** -- `NativeArray<float>` -> `AudioClip` (no managed marshalling)
+  5. **NativeArray Dispose** -- `finally` block calls `audioData.Dispose()` (AudioClip.SetData has already copied the data)
+
+#### SynthesisRequest (public readonly struct)
+
+```csharp
+public readonly struct SynthesisRequest
+{
+    public string[] Phonemes { get; }
+    public int[] ProsodyFlat { get; }    // stride=3, nullable
+    public float LengthScale { get; }
+    public float NoiseScale { get; }
+    public float NoiseW { get; }
+    public int SpeakerId { get; }
+    public int LanguageId { get; }
+    public bool HasProsody => ProsodyFlat != null;
+}
+```
+
+- **Factory methods**:
+  - `FromPhonemes(phonemes, ...)` -- Without prosody (defensive copy)
+  - `FromPhonemesWithProsody(phonemes, prosodyFlat, ...)` -- With prosody (defensive copy)
+  - `CreateInternal(...)` -- Internal use (no defensive copy)
+
+#### PhonemizeResult (public sealed class)
+
+```csharp
+public sealed class PhonemizeResult
+{
+    public string[] Phonemes { get; }
+    public int[] ProsodyFlat { get; }
+    public string DetectedLanguage { get; }
+    public int ResolvedLanguageId { get; }
+    public bool HasProsody => ProsodyFlat != null;
+}
+```
 
 #### SplitInferenceOrchestrator
-- **Location**: `Runtime/Core/AudioGeneration/SplitInferenceOrchestrator.cs` (`internal class`, changed from public to internal)
+- **Location**: `Runtime/Core/AudioGeneration/SplitInferenceOrchestrator.cs` (`internal class`)
 - **Role**: Orchestrates silence-based phrase splitting. Splits the phoneme sequence at silence token positions, performs independent inference per phrase, and inserts zero-sample silence intervals between phrases before concatenation
-- **Parameter type**: Receives `phonemeSilence` as `IReadOnlyDictionary<string, float>` (removed `Dictionary` cast)
+- **Parameter type**: `phonemeSilence` is received as `IReadOnlyDictionary<string, float>` via the `GenerateWithSilenceSplitAsync()` method argument (not a constructor parameter)
+
+#### AudioNormalizer
+- **Location**: `Runtime/Core/AudioGeneration/AudioNormalizer.cs`
+- **`public static class`**: GC-allocation-free audio normalization
+- **API**:
+  - `NormalizeInPlace(NativeArray<float>, targetPeak)` -- Zero GC, modifies NativeArray directly
+  - `NormalizeInPlace(float[], targetPeak)` -- float[] in-place version
+  - `Normalize(float[], targetPeak)` -- Returns new array (non-destructive)
+
+#### AudioClipBuilder
+- **Location**: `Runtime/Core/AudioGeneration/AudioClipBuilder.cs`
+- **`public class`**: `NativeArray<float>` -> AudioClip (recommended), `float[]` -> AudioClip (`[Obsolete]`)
 
 ### 5. Audio Output Layer
 
-- **AudioClipBuilder**: Generates Unity AudioClip from float array
-- **Normalization**: Automatic volume level adjustment
+- **AudioClipBuilder**: Generates Unity AudioClip from `NativeArray<float>` (`float[]` version is `[Obsolete]`)
+- **AudioNormalizer**: `NativeArray<float>` in-place normalization (zero GC allocation)
 - **Sample Rate**: 22050Hz (standard)
+- **NativeArray Lifecycle**: Disposed in `TTSSynthesisOrchestrator.SynthesizeAsync`'s `finally` block
 
 ## Data Flow Example
 
-### Processing Japanese Text "こんにちは" (konnichiwa)
+### Processing Japanese Text "konnichiwa"
 
-1. **Input**: "こんにちは"
+1. **Input**: "konnichiwa"
 
-2. **dot-net-g2p Phonemization**:
+2. **ILanguageG2PHandler.Process()** (JapaneseG2PHandler -> DotNetG2PPhonemizer):
    ```
-   k o N n i ch i w a
-   ```
-
-3. **PUA Encoding**:
-   ```
-   k o N n i \ue00e i w a
+   Phonemes: [k, o, N_uvular, n, i, ch, i, w, a, $]
+   ProsodyFlat: [0,2,1, 1,2,1, 2,2,1, 3,2,1, 4,2,1, 5,2,1, 6,2,1, 7,2,1, 8,2,1, 0,0,0]
    ```
 
-4. **Phoneme ID Conversion**:
+3. **PhonemeEncoder.EncodeWithProsody()**:
    ```
-   [23, 30, 4, 28, 21, 10, 21, 36, 7]
+   PhonemeIds: [BOS, PAD, id_k, PAD, id_o, PAD, ..., EOS]
+   ExpandedProsodyFlat: [0,0,0, 0,0,0, 0,2,1, 0,0,0, 1,2,1, ...]  (zeros inserted at BOS/PAD)
    ```
 
-5. **VITS Processing**:
-   - Input shape: [1, 9] (batch_size, sequence_length)
-   - Output shape: [1, 35840] (batch_size, audio_samples)
+4. **IInferenceAudioGenerator.GenerateAudioAsync()**:
+   - Input: phoneme_ids + prosodyFlat -> separated into a1, a2, a3 tensors
+   - Output: `NativeArray<float>` (audio waveform)
 
-6. **AudioClip Generation**:
-   - Sample rate: 22050Hz
-   - Duration: 1.626 seconds
-   - Format: Mono, 32-bit float
+5. **AudioNormalizer -> AudioClipBuilder -> AudioClip**
 
 ## Prosody Support
 
 ### Overview
 
-Prosody-enabled models (such as multilingual-test-medium) can generate more natural intonation by utilizing accent information obtained from language-specific G2P backends.
+Prosody-enabled models (such as multilingual-test-medium) can generate more natural intonation by utilizing ProsodyFlat (stride=3) data obtained from ILanguageG2PHandler implementations.
 
 ### Data Flow (Prosody-Enabled)
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌──────────────────────────┐
 │   Text Input    │ --> │ CustomDictionary │ --> │ MultilingualPhonemizer   │
-│   "Dockerを..."  │     │ (Preprocessing)  │     │ (Language Detection &    │
-└─────────────────┘     └──────────────────┘     │  Routing)                │
+│   "Docker..."   │     │ (Preprocessing)  │     │ (ILanguageDetector +     │
+└─────────────────┘     └──────────────────┘     │  ILanguageG2PHandler)    │
                                                   └──────────────────────────┘
                                                              │
                                     ┌────────────────────────┼────────────────────────┐
                                     ↓                        ↓                        ↓
                             ┌──────────────┐  ┌────────────────────┐  ┌──────────────────┐
-                            │ ja: DotNet   │  │ en: DotNetG2P      │  │ es/fr/pt/zh/ko:  │
-                            │   G2P        │  │   .English         │  │ DotNetG2P.*      │
+                            │ ja: Japanese │  │ en: English        │  │ es/fr/pt/zh/ko:  │
+                            │  G2PHandler  │  │  G2PHandler        │  │ *G2PHandler      │
                             └──────┬───────┘  └────────┬───────────┘  └────────┬─────────┘
                                    │                   │                       │
-                                   │     ToPuaPhonemes() / ToIpaWithProsody()  │
+                                   │   Process() -> (Phonemes[], ProsodyFlat[])│
                                    └───────────────────┼───────────────────────┘
-                                 ┌───────────────────────┬──┘
-                                 │                       │
-                                 ↓                       ↓
-                        ┌──────────────────┐  ┌──────────────────┐
-                        │ PUA Phonemes     │  │ Prosody Data     │
-                        │ "d o q k a ..."  │  │ A1: [0,1,2,...]  │
-                        └──────────────────┘  │ A2: [2,2,2,...]  │
-                                 │            │ A3: [1,1,1,...]  │
-                                 │            └──────────────────┘
-                                 │                       │
-                                 ↓                       │
-                        ┌──────────────────┐             │
-                        │ PhonemeEncoder   │             │
-                        │ IPA/PUA Convert  │             │
-                        └──────────────────┘             │
-                                 │                       │
-                                 ↓                       ↓
+                                                       │
+                                                       ↓
+                                        ┌──────────────────────────┐
+                                        │ MultilingualPhonemize    │
+                                        │ Result                   │
+                                        │ .Phonemes[]              │
+                                        │ .ProsodyFlat[] (stride=3)│
+                                        └──────────────────────────┘
+                                                       │
+                                                       ↓
+                                        ┌──────────────────────────┐
+                                        │ PhonemeEncoder           │
+                                        │ .EncodeWithProsody()     │
+                                        │ -> PhonemeIds[]          │
+                                        │ -> ExpandedProsodyFlat[] │
+                                        └──────────────────────────┘
+                                                       │
+                                                       ↓
                         ┌─────────────────────────────────────────────────────────┐
                         │              VITS Model (ONNX)                          │
-                        │  Input: phoneme_ids, a1, a2, a3                        │
-                        │  Output: Audio waveform                                │
+                        │  Input: phoneme_ids, a1, a2, a3 (split from ProsodyFlat)│
+                        │  Output: NativeArray<float> audio waveform              │
                         └─────────────────────────────────────────────────────────┘
-                                                         │
-                                                         ↓
-                                                ┌─────────────────┐
-                                                │  Audio Output   │
-                                                │    (Unity)      │
-                                                └─────────────────┘
+                                                       │
+                                                       ↓
+                        ┌─────────────────────────────────────────────────────────┐
+                        │  AudioNormalizer.NormalizeInPlace(NativeArray<float>)   │
+                        │  -> AudioClipBuilder.BuildAudioClip(NativeArray<float>) │
+                        │  -> AudioClip (TTS_{Guid:N})                           │
+                        └─────────────────────────────────────────────────────────┘
 ```
 
-### Prosody Parameters
+### Prosody Data Format (ProsodyFlat stride=3)
 
-| Parameter | Description | Value Range |
-|-----------|-------------|-------------|
-| **A1** | Mora position within the accent phrase (0-based) | 0~ |
-| **A2** | Accent nucleus position within the accent phrase (accent type) | 0~ |
-| **A3** | Accent phrase position within the breath group (intonation phrase) | 1~ |
+In v2.0, prosody data is managed uniformly as flat arrays:
+```
+ProsodyFlat = [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, ...]
+Length = Phonemes.Length * PhonemeEncoder.ProsodyStride (=3)
+```
 
 ### Language-Specific Prosody Mapping
 
@@ -275,23 +381,25 @@ Prosody-enabled models (such as multilingual-test-medium) can generate more natu
 | ko | 0 | 0 | Syllable count |
 | es/fr/pt | 0 | Stress (0/2) | Phoneme count in word |
 
-### Usage Example
+### Usage Example (v2.0 API)
 
 ```csharp
-// Phonemization with prosody information
-var phonemizer = new DotNetG2PPhonemizer();
-var result = phonemizer.PhonemizeWithProsody("こんにちは");
+// PhonemizeAsync -> SynthesisRequest -> SynthesizeAsync pipeline
+var result = await piperTTS.PhonemizeAsync("konnichiwa");
 // result.Phonemes: phoneme array
-// result.ProsodyA1, ProsodyA2, ProsodyA3: prosody values for each phoneme
+// result.ProsodyFlat: stride=3 flat array
+// result.DetectedLanguage: "ja"
+// result.ResolvedLanguageId: 0
 
-// Prosody-enabled audio generation (unified API: GenerateAudioAsync)
-var generator = new InferenceAudioGenerator();
-await generator.InitializeAsync(modelAsset, voiceConfig);
-if (generator.SupportsProsody)
-{
-    var audio = await generator.GenerateAudioAsync(
-        phonemeIds, prosodyA1, prosodyA2, prosodyA3);
-}
+// Build request with prosody
+var request = SynthesisRequest.FromPhonemesWithProsody(
+    result.Phonemes, result.ProsodyFlat, lengthScale: 0.8f);
+var clip = await piperTTS.SynthesizeAsync(request);
+
+// Direct phoneme input (no prosody)
+var request2 = SynthesisRequest.FromPhonemes(
+    new[] { "k", "o", "N_uvular", "n", "i", "ch", "w", "a" });
+var clip2 = await piperTTS.SynthesizeAsync(request2);
 ```
 
 ## Custom Dictionary
@@ -505,24 +613,41 @@ When `GPUCompute` is explicitly specified, it is allowed on WebGPU environments,
 
 ## Extension Points
 
-### Custom Phonemizers
-Implement `IPhonemizerBackend` interface:
+### Custom Language Handlers (Recommended)
+Implement `ILanguageG2PHandler` and register via `MultilingualPhonemizerOptions.Handlers`:
 ```csharp
-public interface IPhonemizerBackend
+public interface ILanguageG2PHandler : IDisposable
 {
-    string Language { get; }
-    PhonemeResult Phonemize(string text);
+    string LanguageCode { get; }
+    bool IsInitialized { get; }
+    Task InitializeAsync(CancellationToken cancellationToken = default);
+    (string[] Phonemes, int[] ProsodyFlat) Process(string text);
 }
 ```
 
+### Custom Language Detection
+Implement `ILanguageDetector` and inject via `MultilingualPhonemizerOptions.LanguageDetector`:
+```csharp
+public interface ILanguageDetector
+{
+    IReadOnlyList<(string language, string text)> SegmentText(string text);
+    string DefaultLatinLanguage { get; }
+    IReadOnlyList<string> Languages { get; }
+}
+```
+
+### Legacy Backend (Test Stubs)
+`IPhonemizerBackend` interface (used only for test stubs)
+
 ### Voice Model Support
-- Place ONNX models in `StreamingAssets/uPiper/Models/`
+- Place ONNX models in `Resources/Models/` (Unity InferenceEngine)
 - Configure via `PiperVoiceConfig`
 
 ### Language Extensions
-1. Implement language-specific phonemizer
-2. Add phoneme-to-ID mapping
-3. Train or obtain compatible VITS model
+1. Implement `ILanguageG2PHandler` (return ProsodyFlat stride=3 from Process())
+2. Register via `MultilingualPhonemizerOptions.Handlers`
+3. Add phoneme mappings to PuaTokenMapper (via pua.json or Register())
+4. Train or obtain compatible VITS model
 
 ## Security Considerations
 

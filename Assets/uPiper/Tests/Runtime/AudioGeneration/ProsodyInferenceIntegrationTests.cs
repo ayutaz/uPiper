@@ -6,12 +6,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using Unity.Collections;
 using UnityEngine;
 using Unity.InferenceEngine;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Implementations;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Runtime.AudioGeneration
 {
@@ -26,6 +28,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         private InferenceAudioGenerator _generator;
         private DotNetG2PPhonemizer _phonemizer;
         private PhonemeEncoder _encoder;
+        private PuaTokenMapper _mapper;
         private ModelAsset _prosodyModelAsset;
         private PiperVoiceConfig _voiceConfig;
 
@@ -77,7 +80,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                     VoiceId = MODEL_NAME,
                     SampleRate = 22050,
                     Language = "ja",
-                    PhonemeIdMap = new Dictionary<string, int>()
+                    PhonemeIdMap = new Dictionary<string, int[]>()
                 };
                 Debug.LogWarning("Voice config JSON not found, using default config without phoneme map");
             }
@@ -87,7 +90,8 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         public void Setup()
         {
             _generator = new InferenceAudioGenerator();
-            _encoder = new PhonemeEncoder(_voiceConfig);
+            _mapper = new PuaTokenMapper();
+            _encoder = new PhonemeEncoder(_voiceConfig, _mapper);
 
             // Initialize OpenJTalk phonemizer
             try
@@ -108,7 +112,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 DisplayName = modelName,
                 Language = "ja",
                 SampleRate = 22050,
-                PhonemeIdMap = new Dictionary<string, int>()
+                PhonemeIdMap = new Dictionary<string, int[]>()
             };
 
             try
@@ -133,7 +137,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                     {
                         if (kvp.Value is JArray idArray && idArray.Count > 0)
                         {
-                            config.PhonemeIdMap[kvp.Key] = idArray[0].ToObject<int>();
+                            config.PhonemeIdMap[kvp.Key] = idArray.ToObject<int[]>();
                         }
                     }
                 }
@@ -205,39 +209,48 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(prosodyResult.Phonemes);
             Debug.Log($"Piper phonemes ({piperPhonemes.Length}): [{string.Join(", ", piperPhonemes)}]");
 
-            // Encode phonemes with prosody (this expands prosody arrays to match phoneme IDs length)
-            var encodingResult = _encoder.EncodeWithProsody(
-                piperPhonemes,
-                prosodyResult.ProsodyA1,
-                prosodyResult.ProsodyA2,
-                prosodyResult.ProsodyA3
-            );
+            // Flatten A1/A2/A3 from DotNetG2P into stride=3 flat array
+            var prosodyFlat = PhonemeEncoder.FlattenProsody(
+                prosodyResult.ProsodyA1, prosodyResult.ProsodyA2, prosodyResult.ProsodyA3,
+                piperPhonemes.Length);
+
+            // Encode phonemes with prosody (this expands prosody flat array to match phoneme IDs length)
+            var encodingResult = _encoder.EncodeWithProsody(piperPhonemes, prosodyFlat);
 
             Debug.Log($"PhonemeIds ({encodingResult.PhonemeIds.Length}): [{string.Join(", ", encodingResult.PhonemeIds)}]");
-            Debug.Log($"ExpandedA1 ({encodingResult.ExpandedProsodyA1.Length}): [{string.Join(", ", encodingResult.ExpandedProsodyA1)}]");
+            Debug.Log($"ExpandedA1 ({encodingResult.ExpandedProsodyFlat.Length}): [{string.Join(", ", encodingResult.ExpandedProsodyFlat)}]");
 
             // Generate audio with prosody
-            var audioData = await _generator.GenerateAudioAsync(
+            var nativeAudioData = await _generator.GenerateAudioAsync(
                 encodingResult.PhonemeIds,
-                encodingResult.ExpandedProsodyA1,
-                encodingResult.ExpandedProsodyA2,
-                encodingResult.ExpandedProsodyA3
+                encodingResult.ExpandedProsodyFlat
             );
 
-            // Validate audio
-            Assert.IsNotNull(audioData, "Audio data should not be null");
-            Assert.Greater(audioData.Length, 0, "Audio data should have samples");
+            try
+            {
+                // Convert to managed array for LINQ validation
+                var audioData = nativeAudioData.ToArray();
 
-            var min = audioData.Min();
-            var max = audioData.Max();
-            var absAvg = audioData.Select(Math.Abs).Average();
+                // Validate audio
+                Assert.IsNotNull(audioData, "Audio data should not be null");
+                Assert.Greater(audioData.Length, 0, "Audio data should have samples");
 
-            Debug.Log($"Generated {audioData.Length} samples ({audioData.Length / 22050.0f:F2} seconds)");
-            Debug.Log($"Audio stats - Min: {min:F4}, Max: {max:F4}, AbsAvg: {absAvg:F6}");
+                var min = audioData.Min();
+                var max = audioData.Max();
+                var absAvg = audioData.Select(Math.Abs).Average();
 
-            // Audio should have some variation (not silent)
-            Assert.Greater(absAvg, 0.0001f, "Audio should not be silent");
-            Assert.Greater(max - min, 0.01f, "Audio should have dynamic range");
+                Debug.Log($"Generated {audioData.Length} samples ({audioData.Length / 22050.0f:F2} seconds)");
+                Debug.Log($"Audio stats - Min: {min:F4}, Max: {max:F4}, AbsAvg: {absAvg:F6}");
+
+                // Audio should have some variation (not silent)
+                Assert.Greater(absAvg, 0.0001f, "Audio should not be silent");
+                Assert.Greater(max - min, 0.01f, "Audio should have dynamic range");
+            }
+            finally
+            {
+                if (nativeAudioData.IsCreated)
+                    nativeAudioData.Dispose();
+            }
         }
 
         [Test]
@@ -271,39 +284,47 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Convert and encode with prosody
             var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(prosodyResult.Phonemes);
-            var encodingResult = _encoder.EncodeWithProsody(
-                piperPhonemes,
-                prosodyResult.ProsodyA1,
-                prosodyResult.ProsodyA2,
-                prosodyResult.ProsodyA3
-            );
+            var prosodyFlat = PhonemeEncoder.FlattenProsody(
+                prosodyResult.ProsodyA1, prosodyResult.ProsodyA2, prosodyResult.ProsodyA3,
+                piperPhonemes.Length);
+            var encodingResult = _encoder.EncodeWithProsody(piperPhonemes, prosodyFlat);
 
             // Generate WITH prosody
-            var audioWithProsody = await _generator.GenerateAudioAsync(
+            var nativeAudioWithProsody = await _generator.GenerateAudioAsync(
                 encodingResult.PhonemeIds,
-                encodingResult.ExpandedProsodyA1,
-                encodingResult.ExpandedProsodyA2,
-                encodingResult.ExpandedProsodyA3
+                encodingResult.ExpandedProsodyFlat
             );
 
             // Generate with ZERO prosody (all zeros, same length as expanded arrays)
-            var zeroProsody = new int[encodingResult.ExpandedProsodyA1.Length];
-            var audioWithoutProsody = await _generator.GenerateAudioAsync(
+            var zeroProsody = new int[encodingResult.ExpandedProsodyFlat.Length];
+            var nativeAudioWithoutProsody = await _generator.GenerateAudioAsync(
                 encodingResult.PhonemeIds,
-                zeroProsody,
-                zeroProsody,
                 zeroProsody
             );
 
-            // Both should produce valid audio
-            Assert.Greater(audioWithProsody.Length, 0, "Audio with prosody should have samples");
-            Assert.Greater(audioWithoutProsody.Length, 0, "Audio without prosody should have samples");
+            try
+            {
+                // Both should produce valid audio
+                Assert.Greater(nativeAudioWithProsody.Length, 0,
+                    "Audio with prosody should have samples");
+                Assert.Greater(nativeAudioWithoutProsody.Length, 0,
+                    "Audio without prosody should have samples");
 
-            Debug.Log($"With prosody: {audioWithProsody.Length} samples ({audioWithProsody.Length / 22050.0f:F2}s)");
-            Debug.Log($"Without prosody: {audioWithoutProsody.Length} samples ({audioWithoutProsody.Length / 22050.0f:F2}s)");
+                Debug.Log($"With prosody: {nativeAudioWithProsody.Length} samples " +
+                    $"({nativeAudioWithProsody.Length / 22050.0f:F2}s)");
+                Debug.Log($"Without prosody: {nativeAudioWithoutProsody.Length} samples " +
+                    $"({nativeAudioWithoutProsody.Length / 22050.0f:F2}s)");
 
-            // Note: The audio may differ in length and content due to prosody features
-            // This test validates that both paths work correctly
+                // Note: The audio may differ in length and content due to prosody features
+                // This test validates that both paths work correctly
+            }
+            finally
+            {
+                if (nativeAudioWithProsody.IsCreated)
+                    nativeAudioWithProsody.Dispose();
+                if (nativeAudioWithoutProsody.IsCreated)
+                    nativeAudioWithoutProsody.Dispose();
+            }
         }
 
         /// <summary>
@@ -342,27 +363,70 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             var testText = "こんにちは";
             var prosodyResult = _phonemizer.PhonemizeWithProsody(testText);
             var piperPhonemes = OpenJTalkToPiperMapping.ConvertToPiperPhonemes(prosodyResult.Phonemes);
-            var encodingResult = _encoder.EncodeWithProsody(
-                piperPhonemes,
-                prosodyResult.ProsodyA1,
-                prosodyResult.ProsodyA2,
-                prosodyResult.ProsodyA3
-            );
+            var prosodyFlat = PhonemeEncoder.FlattenProsody(
+                prosodyResult.ProsodyA1, prosodyResult.ProsodyA2, prosodyResult.ProsodyA3,
+                piperPhonemes.Length);
+            var encodingResult = _encoder.EncodeWithProsody(piperPhonemes, prosodyFlat);
 
             Debug.Log($"[InputTypeTest] Testing with {encodingResult.PhonemeIds.Length} phoneme IDs");
 
             // この呼び出しが成功すれば、Float型が正しいことが証明される
-            var audioData = await _generator.GenerateAudioAsync(
+            var nativeAudioData = await _generator.GenerateAudioAsync(
                 encodingResult.PhonemeIds,
-                encodingResult.ExpandedProsodyA1,
-                encodingResult.ExpandedProsodyA2,
-                encodingResult.ExpandedProsodyA3
+                encodingResult.ExpandedProsodyFlat
             );
 
-            Assert.IsNotNull(audioData, "Audio generation should succeed with Float prosody tensor");
-            Assert.Greater(audioData.Length, 0, "Audio should have samples");
+            try
+            {
+                Assert.IsTrue(nativeAudioData.IsCreated,
+                    "Audio generation should succeed with Float prosody tensor");
+                Assert.Greater(nativeAudioData.Length, 0, "Audio should have samples");
 
-            Debug.Log($"[InputTypeTest] Successfully generated audio with Float prosody tensor: {audioData.Length} samples ({audioData.Length / 22050.0f:F2}s)");
+                Debug.Log($"[InputTypeTest] Successfully generated audio with Float prosody tensor: " +
+                    $"{nativeAudioData.Length} samples ({nativeAudioData.Length / 22050.0f:F2}s)");
+            }
+            finally
+            {
+                if (nativeAudioData.IsCreated)
+                    nativeAudioData.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// JSON "phoneme_id_map" の配列値が int[] として正しくデシリアライズされることを検証する。
+        /// 複数ID（例: "a": [10, 11, 12]）が情報損失なく保持されることを確認（P2-1）。
+        /// </summary>
+        [Test]
+        public void ParseConfig_MultiIdPhoneme_DeserializesArray()
+        {
+            // Arrange: JSON with multi-element arrays in phoneme_id_map
+            var json = @"{
+                ""audio"": { ""sample_rate"": 22050 },
+                ""phoneme_type"": ""openjtalk"",
+                ""phoneme_id_map"": {
+                    ""_"": [0],
+                    ""^"": [1],
+                    ""$"": [2],
+                    ""a"": [10, 11, 12],
+                    ""b"": [20, 21]
+                }
+            }";
+
+            // Act
+            var config = ParseConfig(json, "multi-id-test");
+
+            // Assert: arrays are preserved without information loss
+            Assert.IsNotNull(config.PhonemeIdMap);
+            Assert.AreEqual(5, config.PhonemeIdMap.Count);
+
+            // Single-element arrays
+            CollectionAssert.AreEqual(new[] { 0 }, config.PhonemeIdMap["_"]);
+            CollectionAssert.AreEqual(new[] { 1 }, config.PhonemeIdMap["^"]);
+            CollectionAssert.AreEqual(new[] { 2 }, config.PhonemeIdMap["$"]);
+
+            // Multi-element arrays (P2-1: no information loss)
+            CollectionAssert.AreEqual(new[] { 10, 11, 12 }, config.PhonemeIdMap["a"]);
+            CollectionAssert.AreEqual(new[] { 20, 21 }, config.PhonemeIdMap["b"]);
         }
     }
 }

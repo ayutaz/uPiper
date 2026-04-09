@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -129,7 +128,11 @@ namespace uPiper.Core.AudioGeneration
                         PiperLogger.LogDebug("[InferenceAudioGenerator] Model loaded, creating worker...");
 
                         // Select backend based on configuration
-                        _actualBackendType = DetermineBackendType(_piperConfig);
+                        var platformInfo = PlatformInfo.FromCurrentEnvironment();
+                        _actualBackendType = BackendSelector.Determine(
+                            _piperConfig.Backend,
+                            platformInfo,
+                            _piperConfig.GPUSettings.MaxMemoryMB);
 
                         try
                         {
@@ -228,11 +231,9 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <inheritdoc/>
-        public async Task<float[]> GenerateAudioAsync(
+        public async Task<NativeArray<float>> GenerateAudioAsync(
             int[] phonemeIds,
-            int[] prosodyA1 = null,
-            int[] prosodyA2 = null,
-            int[] prosodyA3 = null,
+            int[] prosodyFlat = null,
             float lengthScale = 1.0f,
             float noiseScale = 0.667f,
             float noiseW = 0.8f,
@@ -242,14 +243,11 @@ namespace uPiper.Core.AudioGeneration
         {
             ValidateGenerationPrerequisites(phonemeIds);
 
-            var hasProsody = prosodyA1 != null || prosodyA2 != null || prosodyA3 != null;
-            if (hasProsody && !_supportsProsody)
+            if (prosodyFlat != null && !_supportsProsody)
             {
                 PiperLogger.LogWarning(
                     "[InferenceAudioGenerator] Prosody data provided but model does not support prosody. Ignoring prosody.");
-                prosodyA1 = null;
-                prosodyA2 = null;
-                prosodyA3 = null;
+                prosodyFlat = null;
             }
 
             return await UnityMainThreadDispatcher.RunOnMainThreadAsync(() =>
@@ -261,7 +259,7 @@ namespace uPiper.Core.AudioGeneration
                 lock (_lockObject)
                 {
                     return ExecuteInference(
-                        phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                        phonemeIds, prosodyFlat,
                         lengthScale, noiseScale, noiseW,
                         speakerId, languageId);
                 }
@@ -302,15 +300,11 @@ namespace uPiper.Core.AudioGeneration
                 }
                 dummyPhonemeIds[WarmupPhonemeLength - 1] = WarmupEosToken;
 
-                // Build dummy prosody arrays if model supports prosody
-                int[] dummyProsodyA1 = null;
-                int[] dummyProsodyA2 = null;
-                int[] dummyProsodyA3 = null;
+                // Build dummy prosody flat array if model supports prosody
+                int[] dummyProsodyFlat = null;
                 if (_supportsProsody)
                 {
-                    dummyProsodyA1 = new int[WarmupPhonemeLength]; // zero-filled
-                    dummyProsodyA2 = new int[WarmupPhonemeLength];
-                    dummyProsodyA3 = new int[WarmupPhonemeLength];
+                    dummyProsodyFlat = new int[WarmupPhonemeLength * PhonemeEncoder.ProsodyStride]; // zero-filled
                 }
 
                 for (var i = 0; i < iterations; i++)
@@ -318,7 +312,7 @@ namespace uPiper.Core.AudioGeneration
                     PiperLogger.LogDebug($"[InferenceAudioGenerator] Warmup iteration {i + 1}/{iterations}");
 
                     using var ctx = PrepareInputs(
-                        dummyPhonemeIds, dummyProsodyA1, dummyProsodyA2, dummyProsodyA3,
+                        dummyPhonemeIds, dummyProsodyFlat,
                         WarmupLengthScale, WarmupNoiseScale, WarmupNoiseW,
                         speakerId: 0, languageId: 0);
 
@@ -337,13 +331,12 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// Execute inference with the given inputs (facade for 3-stage pipeline)
+        /// Execute inference with the given inputs (facade for 3-stage pipeline).
         /// </summary>
-        private float[] ExecuteInference(
+        /// <remarks>Caller owns and must Dispose the returned NativeArray.</remarks>
+        private NativeArray<float> ExecuteInference(
             int[] phonemeIds,
-            int[] prosodyA1,
-            int[] prosodyA2,
-            int[] prosodyA3,
+            int[] prosodyFlat,
             float lengthScale,
             float noiseScale,
             float noiseW,
@@ -351,9 +344,10 @@ namespace uPiper.Core.AudioGeneration
             int languageId = 0)
         {
             var sw = Stopwatch.StartNew();
-            using var ctx = PrepareInputs(phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+            using var ctx = PrepareInputs(phonemeIds, prosodyFlat,
                 lengthScale, noiseScale, noiseW, speakerId, languageId);
 
+            NativeArray<float> audioData = default;
             try
             {
                 var prepareMs = sw.Elapsed.TotalMilliseconds;
@@ -363,7 +357,7 @@ namespace uPiper.Core.AudioGeneration
                 var scheduleMs = sw.Elapsed.TotalMilliseconds;
 
                 sw.Restart();
-                var audioData = ExtractResults();
+                audioData = ExtractResults();
                 var extractMs = sw.Elapsed.TotalMilliseconds;
 
                 var totalMs = prepareMs + scheduleMs + extractMs;
@@ -375,6 +369,9 @@ namespace uPiper.Core.AudioGeneration
             }
             catch (Exception ex)
             {
+                // Dispose NativeArray on exception before ownership is transferred
+                if (audioData.IsCreated)
+                    audioData.Dispose();
                 PiperLogger.LogError($"[InferenceAudioGenerator] Failed to execute inference: {ex.Message}");
                 throw;
             }
@@ -386,7 +383,7 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         private InferenceContext PrepareInputs(
             int[] phonemeIds,
-            int[] prosodyA1, int[] prosodyA2, int[] prosodyA3,
+            int[] prosodyFlat,
             float lengthScale, float noiseScale, float noiseW,
             int speakerId, int languageId)
         {
@@ -394,7 +391,6 @@ namespace uPiper.Core.AudioGeneration
             var inputLengthsTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
             var scalesTensor = new Tensor<float>(new TensorShape(3), new[] { noiseScale, lengthScale, noiseW });
             Tensor<int> prosodyTensor = null;
-            int[] rentedProsody = null;
             Tensor<int> sidTensor = null;
             Tensor<int> lidTensor = null;
 
@@ -416,11 +412,11 @@ namespace uPiper.Core.AudioGeneration
 
             if (_supportsProsody)
             {
-                prosodyTensor = CreateProsodyTensorPooled(phonemeIds.Length, prosodyA1, prosodyA2, prosodyA3, out rentedProsody);
+                prosodyTensor = CreateProsodyTensor(phonemeIds.Length, prosodyFlat);
                 _worker.SetInput("prosody_features", prosodyTensor);
             }
 
-            return new InferenceContext(inputTensor, inputLengthsTensor, scalesTensor, prosodyTensor, rentedProsody, sidTensor, lidTensor);
+            return new InferenceContext(inputTensor, inputLengthsTensor, scalesTensor, prosodyTensor, sidTensor, lidTensor);
         }
 
         /// <summary>
@@ -432,23 +428,33 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// 推論結果を取得し、float配列として返す。
+        /// 推論結果を取得し、NativeArray&lt;float&gt;として返す。
         /// outputTensorはWorker所有のため呼び出し元がDisposeしてはならない。
         /// readableTensorはこのメソッド内でDisposeする。
         /// </summary>
-        private float[] ExtractResults()
+        /// <remarks>Caller owns and must Dispose the returned NativeArray.</remarks>
+        private NativeArray<float> ExtractResults()
         {
             var outputTensor = GetOutputTensor(); // Worker-owned; do not Dispose
             var readableTensor = outputTensor.ReadbackAndClone();
+            NativeArray<float> audioData = default;
             try
             {
                 var audioLength = readableTensor.shape.length;
-                var audioData = new float[audioLength];
-                for (var i = 0; i < audioLength; i++)
-                {
-                    audioData[i] = readableTensor[i];
-                }
+                audioData = new NativeArray<float>(audioLength, Allocator.Persistent);
+
+                // Bulk copy: DownloadToNativeArray() returns internal buffer (Allocator.None).
+                // NativeArray<float>.Copy performs memcpy-equivalent, replacing element-wise loop.
+                var src = readableTensor.DownloadToNativeArray();
+                NativeArray<float>.Copy(src, audioData, audioLength);
+
                 return audioData;
+            }
+            catch
+            {
+                if (audioData.IsCreated)
+                    audioData.Dispose();
+                throw;
             }
             finally
             {
@@ -457,30 +463,20 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// Create prosody tensor using ArrayPool for reduced GC pressure.
-        /// The rented array must be returned after the tensor is disposed.
+        /// Create prosody tensor with exact-size array (no ArrayPool; Tensor requires exact length).
         /// </summary>
-        private Tensor<int> CreateProsodyTensorPooled(
-            int sequenceLength, int[] prosodyA1, int[] prosodyA2, int[] prosodyA3,
-            out int[] rentedArray)
+        private static Tensor<int> CreateProsodyTensor(
+            int sequenceLength, int[] prosodyFlat)
         {
-            var prosodySize = sequenceLength * 3;
-            rentedArray = ArrayPool<int>.Shared.Rent(prosodySize);
-            Array.Clear(rentedArray, 0, prosodySize);
+            var prosodySize = sequenceLength * PhonemeEncoder.ProsodyStride;
+            var data = new int[prosodySize];
 
-            for (var i = 0; i < sequenceLength; i++)
+            if (prosodyFlat != null)
             {
-                rentedArray[i * 3 + 0] = prosodyA1 != null && i < prosodyA1.Length ? prosodyA1[i] : 0;
-                rentedArray[i * 3 + 1] = prosodyA2 != null && i < prosodyA2.Length ? prosodyA2[i] : 0;
-                rentedArray[i * 3 + 2] = prosodyA3 != null && i < prosodyA3.Length ? prosodyA3[i] : 0;
+                Array.Copy(prosodyFlat, data, Math.Min(prosodyFlat.Length, prosodySize));
             }
 
-            // ArrayPool.Rent returns arrays >= prosodySize; Tensor requires exact length.
-            // Copy to exact-size array for Tensor constructor, keep rented array for later return.
-            var exactData = new int[prosodySize];
-            Array.Copy(rentedArray, exactData, prosodySize);
-
-            return new Tensor<int>(new TensorShape(1, sequenceLength, 3), exactData);
+            return new Tensor<int>(new TensorShape(1, sequenceLength, PhonemeEncoder.ProsodyStride), data);
         }
 
         /// <summary>
@@ -499,7 +495,7 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// Holds all input tensors and rented arrays for a single inference call.
+        /// Holds all input tensors for a single inference call.
         /// Disposing this context releases all resources atomically.
         /// </summary>
         private sealed class InferenceContext : IDisposable
@@ -508,7 +504,6 @@ namespace uPiper.Core.AudioGeneration
             public Tensor<int> InputLengths { get; }
             public Tensor<float> Scales { get; }
             public Tensor<int> Prosody { get; }
-            public int[] RentedProsody { get; }
             public Tensor<int> Sid { get; }
             public Tensor<int> Lid { get; }
 
@@ -519,7 +514,6 @@ namespace uPiper.Core.AudioGeneration
                 Tensor<int> inputLengths,
                 Tensor<float> scales,
                 Tensor<int> prosody,
-                int[] rentedProsody,
                 Tensor<int> sid,
                 Tensor<int> lid)
             {
@@ -527,7 +521,6 @@ namespace uPiper.Core.AudioGeneration
                 InputLengths = inputLengths;
                 Scales = scales;
                 Prosody = prosody;
-                RentedProsody = rentedProsody;
                 Sid = sid;
                 Lid = lid;
             }
@@ -542,8 +535,6 @@ namespace uPiper.Core.AudioGeneration
                 Sid?.Dispose();
                 Lid?.Dispose();
                 Prosody?.Dispose();
-                if (RentedProsody != null)
-                    ArrayPool<int>.Shared.Return(RentedProsody);
             }
         }
 
@@ -563,6 +554,8 @@ namespace uPiper.Core.AudioGeneration
                     lock (_lockObject)
                     {
                         DisposeWorker();
+                        // Model does not implement IDisposable (Unity.InferenceEngine.Model is a plain class).
+                        // Setting to null releases the reference for GC.
                         _model = null;
                         _modelAsset = null;
                         _voiceConfig = null;
@@ -585,98 +578,5 @@ namespace uPiper.Core.AudioGeneration
             }
         }
 
-        /// <summary>
-        /// Determine the best backend type based on configuration and platform
-        /// </summary>
-        private BackendType DetermineBackendType(PiperConfig config)
-        {
-            // Check for Metal first - it has known issues with GPU backends
-            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Metal)
-            {
-                if (config.Backend == InferenceBackend.GPUCompute || config.Backend == InferenceBackend.GPUPixel)
-                {
-                    PiperLogger.LogWarning($"[InferenceAudioGenerator] {config.Backend} requested on Metal, but Metal has known issues with GPU inference. Using CPU backend instead.");
-                    PiperLogger.LogWarning("[InferenceAudioGenerator] This is a known issue with Unity.InferenceEngine on macOS. GPU inference may produce corrupted audio.");
-                    return BackendType.CPU;
-                }
-            }
-
-            // GPU Compute has known issues with VITS models producing silent/corrupted audio
-            // Force GPU Pixel or CPU for better compatibility (except WebGPU where GPUCompute works correctly)
-            if (config.Backend == InferenceBackend.GPUCompute)
-            {
-#if UNITY_WEBGL
-                if (Platform.PlatformHelper.IsWebGPU)
-                {
-                    PiperLogger.LogInfo("[InferenceAudioGenerator] GPUCompute backend on WebGPU - allowing (WebGPU compute shaders are supported).");
-                    return BackendType.GPUCompute;
-                }
-#endif
-                PiperLogger.LogWarning("[InferenceAudioGenerator] GPU Compute backend has known issues with VITS audio models.");
-                PiperLogger.LogWarning("[InferenceAudioGenerator] Switching to GPU Pixel backend for better compatibility.");
-                PiperLogger.LogWarning("[InferenceAudioGenerator] If issues persist, please use CPU backend explicitly.");
-                return BackendType.GPUPixel;
-            }
-
-            if (config.Backend == InferenceBackend.CPU)
-            {
-                return BackendType.CPU;
-            }
-
-            if (config.Backend == InferenceBackend.GPUPixel)
-            {
-                return BackendType.GPUPixel;
-            }
-
-            // Auto selection based on platform
-            if (config.Backend == InferenceBackend.Auto)
-            {
-#if UNITY_WEBGL
-                // WebGPU: GPUCompute for better performance via compute shaders
-                // WebGL2: GPUPixel as fallback
-                if (Platform.PlatformHelper.IsWebGPU)
-                {
-                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUCompute backend for WebGPU");
-                    return BackendType.GPUCompute;
-                }
-                PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUPixel backend for WebGL2");
-                return BackendType.GPUPixel;
-#elif UNITY_IOS || UNITY_ANDROID
-                // Mobile platforms often have GPU support but may have compatibility issues
-                if (SystemInfo.supportsComputeShaders)
-                {
-                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUCompute backend for mobile");
-                    return BackendType.GPUCompute;
-                }
-                else
-                {
-                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting CPU backend for mobile (no compute shader support)");
-                    return BackendType.CPU;
-                }
-#else
-                // Desktop platforms
-                if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Metal)
-                {
-                    // Metal currently has issues with shader compilation
-                    PiperLogger.LogWarning("[InferenceAudioGenerator] Metal detected - using CPU backend due to known shader compilation issues");
-                    return BackendType.CPU;
-                }
-                else if (SystemInfo.supportsComputeShaders && SystemInfo.graphicsMemorySize >= config.GPUSettings.MaxMemoryMB)
-                {
-                    // GPU Pixel is more stable than GPU Compute for VITS models
-                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting GPUPixel backend for desktop (better VITS compatibility)");
-                    return BackendType.GPUPixel;
-                }
-                else
-                {
-                    PiperLogger.LogInfo("[InferenceAudioGenerator] Auto-selecting CPU backend for desktop");
-                    return BackendType.CPU;
-                }
-#endif
-            }
-
-            // Default to CPU if unknown
-            return BackendType.CPU;
-        }
     }
 }

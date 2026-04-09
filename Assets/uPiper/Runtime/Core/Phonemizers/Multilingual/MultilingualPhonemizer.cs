@@ -1,18 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using DotNetG2P.Chinese;
-using DotNetG2P.English;
-using DotNetG2P.French;
-using DotNetG2P.Korean;
-using DotNetG2P.Portuguese;
-using DotNetG2P.Spanish;
-using UnityEngine;
 using uPiper.Core.Logging;
-using uPiper.Core.Phonemizers.Backend;
-using uPiper.Core.Phonemizers.Implementations;
+using uPiper.Core.Phonemizers.Multilingual.Handlers;
 
 namespace uPiper.Core.Phonemizers.Multilingual
 {
@@ -22,19 +13,19 @@ namespace uPiper.Core.Phonemizers.Multilingual
     public class MultilingualPhonemizeResult
     {
         /// <summary>Phoneme array (no BOS/EOS; PhonemeEncoder handles them).</summary>
-        public string[] Phonemes { get; set; }
+        public string[] Phonemes { get; internal set; }
 
-        /// <summary>Prosody A1 values per phoneme (0 for non-Japanese segments).</summary>
-        public int[] ProsodyA1 { get; set; }
-
-        /// <summary>Prosody A2 values per phoneme (0 for non-Japanese segments).</summary>
-        public int[] ProsodyA2 { get; set; }
-
-        /// <summary>Prosody A3 values per phoneme (0 for non-Japanese segments).</summary>
-        public int[] ProsodyA3 { get; set; }
+        /// <summary>
+        /// Flat prosody array (stride=3): [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, ...].
+        /// Length = Phonemes.Length * 3. Null when prosody is not available.
+        /// </summary>
+        public int[] ProsodyFlat { get; internal set; }
 
         /// <summary>Primary language detected for the text (e.g., "ja", "en").</summary>
-        public string DetectedPrimaryLanguage { get; set; }
+        public string DetectedPrimaryLanguage { get; internal set; }
+
+        /// <summary>Prosody data is available.</summary>
+        public bool HasProsody => ProsodyFlat != null;
     }
 
     /// <summary>
@@ -48,29 +39,13 @@ namespace uPiper.Core.Phonemizers.Multilingual
         private static readonly HashSet<string> EosLikeTokens =
             new() { "$", "?", "?!", "?.", "?~", "\ue016", "\ue017", "\ue018" };
 
-        // Tone number -> PUA character mapping (tone1=E046 ... tone5=E04A)
-        private static readonly char[] TonePuaChars = { '\0', '\ue046', '\ue047', '\ue048', '\ue049', '\ue04a' };
-
-        private readonly UnicodeLanguageDetector _detector;
+        private readonly Dictionary<string, HandlerEntry> _handlers = new();
+        private ILanguageDetector _detector;
+        private readonly SemaphoreSlim _initLock = new(1, 1);
         private readonly IReadOnlyList<string> _languages;
-        private readonly HashSet<string> _languageSet;
         private readonly string _defaultLatinLanguage;
-        private DotNetG2PPhonemizer _jaPhonemizer;
-        private EnglishG2PEngine _enEngine;              // English (DotNetG2P)
-        private IPhonemizerBackend _enPhonemizer;        // English legacy (for test stub injection)
-        private SpanishG2PEngine _esEngine;              // Spanish (DotNetG2P)
-        private FrenchG2PEngine _frEngine;               // French (DotNetG2P)
-        private PortugueseG2PEngine _ptEngine;           // Portuguese (DotNetG2P)
-        private ChineseG2PEngine _zhEngine;              // Chinese (DotNetG2P)
-        private IPhonemizerBackend _koPhonemizer;        // Korean (legacy backend, kept for backward compatibility)
-        private KoreanG2PEngine _koG2PEngine;            // Korean (DotNetG2P)
-        private bool _ownsJa;
-        private bool _ownsEn;
-        private bool _ownsEs;
-        private bool _ownsFr;
-        private bool _ownsPt;
-        private bool _ownsZh;
-        private bool _ownsKo;
+        private readonly bool _enableTrigramDetection;
+        private readonly ILanguageDetector _customDetector;
         private volatile bool _isInitialized;
         private bool _disposed;
 
@@ -92,201 +67,113 @@ namespace uPiper.Core.Phonemizers.Multilingual
             options.Validate();
 
             _languages = options.Languages;
-            _languageSet = new HashSet<string>(options.Languages);
             _defaultLatinLanguage = options.DefaultLatinLanguage ?? "en";
-            _detector = new UnicodeLanguageDetector(options.Languages, _defaultLatinLanguage);
-            _jaPhonemizer = options.JaPhonemizer;
-            _enEngine = options.EnEngine;
-#pragma warning disable CS0618
-            _enPhonemizer = options.EnPhonemizer;
-            _koPhonemizer = options.KoPhonemizer;
-#pragma warning restore CS0618
-            _esEngine = options.EsEngine;
-            _frEngine = options.FrEngine;
-            _ptEngine = options.PtEngine;
-            _zhEngine = options.ZhEngine;
-            _koG2PEngine = options.KoG2PEngine;
-        }
+            _enableTrigramDetection = options.EnableTrigramDetection;
+            _customDetector = options.LanguageDetector;
 
-        /// <summary>
-        /// Creates a MultilingualPhonemizer for the specified language list.
-        /// </summary>
-        [Obsolete("Use the constructor that takes MultilingualPhonemizerOptions instead. This constructor will be removed in v2.0.")]
-        public MultilingualPhonemizer(
-            IReadOnlyList<string> languages,
-            string defaultLatinLanguage = "en",
-            DotNetG2PPhonemizer jaPhonemizer = null,
-            IPhonemizerBackend enPhonemizer = null,
-            SpanishG2PEngine esEngine = null,
-            FrenchG2PEngine frEngine = null,
-            PortugueseG2PEngine ptEngine = null,
-            ChineseG2PEngine zhEngine = null,
-            IPhonemizerBackend koPhonemizer = null,
-            KoreanG2PEngine koG2PEngine = null)
-        {
-            if (languages == null || languages.Count == 0)
-                throw new ArgumentException("At least one language must be specified.", nameof(languages));
+            // Detector will be resolved in InitializeAsync().
+            // Use the custom detector if provided, otherwise default to UnicodeLanguageDetector.
+            _detector = _customDetector
+                ?? new UnicodeLanguageDetector(options.Languages, _defaultLatinLanguage);
 
-            _languages = languages;
-            _languageSet = new HashSet<string>(languages);
-            _defaultLatinLanguage = defaultLatinLanguage;
-            _detector = new UnicodeLanguageDetector(languages, defaultLatinLanguage);
-            _jaPhonemizer = jaPhonemizer;
-            _enPhonemizer = enPhonemizer;
-            _esEngine = esEngine;
-            _frEngine = frEngine;
-            _ptEngine = ptEngine;
-            _zhEngine = zhEngine;
-            _koPhonemizer = koPhonemizer;
-            _koG2PEngine = koG2PEngine;
+            // Load handlers from options (caller-provided, not owned)
+            if (options.Handlers != null)
+            {
+                foreach (var kvp in options.Handlers)
+                    _handlers[kvp.Key] = new HandlerEntry(kvp.Value, isOwned: false);
+            }
         }
 
         /// <summary>
         /// Asynchronously initializes phonemizer backends for all configured languages.
         /// </summary>
+        /// <exception cref="ObjectDisposedException">
+        /// Thrown if the phonemizer has already been disposed.
+        /// </exception>
         public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(MultilingualPhonemizer));
+
             if (_isInitialized)
                 return;
 
-            // Initialize Japanese phonemizer if needed
-            if (ContainsLanguage("ja") && _jaPhonemizer == null)
+            await _initLock.WaitAsync(cancellationToken);
+            try
             {
-#if UNITY_WEBGL && !UNITY_EDITOR
-                _jaPhonemizer = new DotNetG2PPhonemizer();
-                await _jaPhonemizer.InitializeAsync(cancellationToken);
-#else
-                _jaPhonemizer = new DotNetG2PPhonemizer();
-                // Non-WebGL: synchronous initialization in constructor
-                await Task.CompletedTask;
-#endif
-                _ownsJa = true;
-            }
+                if (_isInitialized)
+                    return; // double-check after lock
 
-            // Initialize English G2P engine if needed
-            // Use DotNetG2P.English (CMU dict + LTS + homograph resolution) for piper-plus compatible IPA output
-            if (ContainsLanguage("en") && _enEngine == null && _enPhonemizer == null)
-            {
-                try
+                // Create default handlers for languages that don't have one yet
+                foreach (var lang in _languages)
                 {
-                    var dictPath = Path.Combine(
-                        Application.streamingAssetsPath,
-                        "uPiper",
-                        "Phonemizers",
-                        "cmudict-0.7b.txt");
+                    if (_handlers.ContainsKey(lang))
+                        continue;
 
-                    if (File.Exists(dictPath))
-                    {
-                        _enEngine = new EnglishG2PEngine(dictPath);
-                        PiperLogger.LogInfo(
-                            "[MultilingualPhonemizer] English backend initialized: DotNetG2P.English (external CMU dict)");
-                    }
-                    else
-                    {
-                        // Fallback to embedded dictionary
-                        _enEngine = new EnglishG2PEngine();
-                        PiperLogger.LogInfo(
-                            "[MultilingualPhonemizer] English backend initialized: DotNetG2P.English (embedded CMU dict)");
-                    }
-
-                    _ownsEn = true;
+                    var handler = CreateDefaultHandler(lang);
+                    if (handler != null)
+                        _handlers[lang] = new HandlerEntry(handler, isOwned: true);
                 }
-                catch (Exception ex)
+
+                // Initialize all handlers
+                foreach (var entry in _handlers.Values)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await entry.Handler.InitializeAsync(cancellationToken);
+                }
+
+                if (_handlers.Count == 0)
                 {
                     PiperLogger.LogWarning(
-                        $"[MultilingualPhonemizer] Failed to initialize English backend: {ex.Message}");
+                        "[MultilingualPhonemizer] Warning: No backends were successfully initialized");
                 }
-            }
 
-            // Initialize Spanish G2P engine if needed
-            if (ContainsLanguage("es") && _esEngine == null)
-            {
-                _esEngine = new SpanishG2PEngine();
-                _ownsEs = true;
-                PiperLogger.LogInfo("[MultilingualPhonemizer] Spanish backend initialized: DotNetG2P.Spanish");
-                await Task.CompletedTask;
-            }
-
-            // Initialize French G2P engine if needed
-            if (ContainsLanguage("fr") && _frEngine == null)
-            {
-                _frEngine = new FrenchG2PEngine();
-                _ownsFr = true;
-                PiperLogger.LogInfo("[MultilingualPhonemizer] French backend initialized: DotNetG2P.French");
-                await Task.CompletedTask;
-            }
-
-            // Initialize Portuguese G2P engine if needed
-            if (ContainsLanguage("pt") && _ptEngine == null)
-            {
-                _ptEngine = new PortugueseG2PEngine();
-                _ownsPt = true;
-                PiperLogger.LogInfo("[MultilingualPhonemizer] Portuguese backend initialized: DotNetG2P.Portuguese");
-                await Task.CompletedTask;
-            }
-
-            // Initialize Chinese G2P engine if needed
-            if (ContainsLanguage("zh") && _zhEngine == null)
-            {
-                try
+                // Upgrade detector to HybridLanguageDetector when trigram detection is enabled,
+                // no custom detector was provided, and multiple Latin languages are configured.
+                if (_customDetector == null && _enableTrigramDetection)
                 {
-                    var charPath = Path.Combine(
-                        Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_char.txt");
-                    var phrasePath = Path.Combine(
-                        Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_phrase.txt");
-
-                    if (File.Exists(charPath))
-                    {
-                        _zhEngine = File.Exists(phrasePath)
-                            ? new ChineseG2PEngine(charPath, phrasePath)
-                            : new ChineseG2PEngine(charPath);
-                        _ownsZh = true;
-                        PiperLogger.LogInfo(
-                            "[MultilingualPhonemizer] Chinese backend initialized: DotNetG2P.Chinese");
-                    }
-                    else
-                    {
-                        PiperLogger.LogWarning(
-                            $"[MultilingualPhonemizer] Chinese dictionary not found at {charPath}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    PiperLogger.LogWarning(
-                        $"[MultilingualPhonemizer] Failed to initialize Chinese backend: {ex.Message}");
+                    await TryUpgradeToHybridDetectorAsync(cancellationToken);
                 }
 
-                await Task.CompletedTask;
+                _isInitialized = true;
+                PiperLogger.LogInfo($"[MultilingualPhonemizer] Initialized for languages: [{string.Join(", ", _languages)}]");
             }
-
-            // Initialize Korean G2P engine if needed (prefer DotNetG2P.Korean over legacy backend)
-            if (ContainsLanguage("ko") && _koG2PEngine == null)
+            finally
             {
-                _koG2PEngine = new KoreanG2PEngine();
-                _ownsKo = true;
-                PiperLogger.LogInfo("[MultilingualPhonemizer] Korean backend initialized: DotNetG2P.Korean");
-                await Task.CompletedTask;
+                _initLock.Release();
             }
+        }
 
-            if (_jaPhonemizer == null && _enEngine == null && _enPhonemizer == null &&
-                _esEngine == null && _frEngine == null && _ptEngine == null &&
-                _zhEngine == null && _koG2PEngine == null && _koPhonemizer == null)
+        private static ILanguageG2PHandler CreateDefaultHandler(string lang)
+        {
+            return lang switch
             {
-                PiperLogger.LogWarning(
-                    "[MultilingualPhonemizer] Warning: No backends were successfully initialized");
-            }
-
-            _isInitialized = true;
-            PiperLogger.LogInfo($"[MultilingualPhonemizer] Initialized for languages: [{string.Join(", ", _languages)}]");
+                "ja" => new JapaneseG2PHandler(),
+                "en" => new EnglishG2PHandler(),
+                "es" => new SpanishG2PHandler(),
+                "fr" => new FrenchG2PHandler(),
+                "pt" => new PortugueseG2PHandler(),
+                "zh" => new ChineseG2PHandler(),
+                "ko" => new KoreanG2PHandler(),
+                _ => null
+            };
         }
 
         /// <summary>
         /// Phonemizes mixed-language text and returns phonemes with optional prosody.
         /// </summary>
+        /// <exception cref="ObjectDisposedException">
+        /// Thrown if the phonemizer has already been disposed.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if <see cref="InitializeAsync"/> has not been called.
+        /// </exception>
         public async Task<MultilingualPhonemizeResult> PhonemizeWithProsodyAsync(
             string text,
             CancellationToken cancellationToken = default)
         {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(MultilingualPhonemizer));
             if (!_isInitialized)
                 throw new InvalidOperationException("Call InitializeAsync() before phonemizing.");
 
@@ -295,9 +182,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 return new MultilingualPhonemizeResult
                 {
                     Phonemes = Array.Empty<string>(),
-                    ProsodyA1 = Array.Empty<int>(),
-                    ProsodyA2 = Array.Empty<int>(),
-                    ProsodyA3 = Array.Empty<int>(),
+                    ProsodyFlat = Array.Empty<int>(),
                     DetectedPrimaryLanguage = _defaultLatinLanguage
                 };
             }
@@ -309,17 +194,13 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 return new MultilingualPhonemizeResult
                 {
                     Phonemes = Array.Empty<string>(),
-                    ProsodyA1 = Array.Empty<int>(),
-                    ProsodyA2 = Array.Empty<int>(),
-                    ProsodyA3 = Array.Empty<int>(),
+                    ProsodyFlat = Array.Empty<int>(),
                     DetectedPrimaryLanguage = _defaultLatinLanguage
                 };
             }
 
             var allPhonemes = new List<string>();
-            var allA1 = new List<int>();
-            var allA2 = new List<int>();
-            var allA3 = new List<int>();
+            var allProsodyFlat = new List<int>();
 
             string primaryLang = segments[0].language;
             // Count character-weighted primary language
@@ -342,39 +223,25 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
                 // Phonemize each segment
                 string[] segPhonemes = null;
-                int[] segA1 = null;
-                int[] segA2 = null;
-                int[] segA3 = null;
+                int[] segProsodyFlat = null;
 
-                switch (lang)
+                if (_handlers.TryGetValue(lang, out var entry))
                 {
-                    case "ja" when _jaPhonemizer != null:
-                        (segPhonemes, segA1, segA2, segA3) = ProcessJapanese(segText);
-                        break;
-                    case "en" when _enEngine != null:
-                        (segPhonemes, segA1, segA2, segA3) = ProcessEnglish(segText);
-                        break;
-                    case "es" when _esEngine != null:
-                        (segPhonemes, segA1, segA2, segA3) = ProcessSpanish(segText);
-                        break;
-                    case "fr" when _frEngine != null:
-                        (segPhonemes, segA1, segA2, segA3) = ProcessFrench(segText);
-                        break;
-                    case "pt" when _ptEngine != null:
-                        (segPhonemes, segA1, segA2, segA3) = ProcessPortuguese(segText);
-                        break;
-                    case "zh" when _zhEngine != null:
-                        (segPhonemes, segA1, segA2, segA3) = ProcessChinese(segText);
-                        break;
-                    case "ko" when _koG2PEngine != null:
-                        (segPhonemes, segA1, segA2, segA3) = ProcessKorean(segText);
-                        break;
-                    default:
-                        var fallbackResult = await ProcessFallbackAsync(lang, segText, cancellationToken);
-                        if (fallbackResult.phonemes == null)
-                            continue;
-                        (segPhonemes, segA1, segA2, segA3) = fallbackResult;
-                        break;
+                    if (entry.Handler == null)
+                    {
+                        PiperLogger.LogWarning(
+                            $"[MultilingualPhonemizer] Null handler for '{lang}', " +
+                            $"skipping segment.");
+                        continue;
+                    }
+                    (segPhonemes, segProsodyFlat) = entry.Handler.Process(segText);
+                    segProsodyFlat ??= Array.Empty<int>();
+                }
+                else
+                {
+                    PiperLogger.LogWarning(
+                        $"[MultilingualPhonemizer] Unsupported language '{lang}', skipping segment: \"{segText}\"");
+                    continue;
                 }
 
                 if (segPhonemes.Length == 0)
@@ -389,33 +256,34 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     {
                         // Remove the EOS-like marker from intermediate segments
                         segPhonemes = segPhonemes[..^1];
-                        segA1 = segA1.Length > 0 ? segA1[..^1] : segA1;
-                        segA2 = segA2.Length > 0 ? segA2[..^1] : segA2;
-                        segA3 = segA3.Length > 0 ? segA3[..^1] : segA3;
+                        if (segProsodyFlat.Length >= AudioGeneration.PhonemeEncoder.ProsodyStride)
+                            segProsodyFlat = segProsodyFlat[..^AudioGeneration.PhonemeEncoder.ProsodyStride];
                     }
                 }
 
                 allPhonemes.AddRange(segPhonemes);
-                allA1.AddRange(segA1);
-                allA2.AddRange(segA2);
-                allA3.AddRange(segA3);
+                allProsodyFlat.AddRange(segProsodyFlat);
             }
 
-            // Ensure arrays are aligned
-            var maxLen = allPhonemes.Count;
-            PadToLength(allA1, maxLen);
-            PadToLength(allA2, maxLen);
-            PadToLength(allA3, maxLen);
+            // Ensure prosody flat array is aligned (phonemeCount * ProsodyStride)
+            var targetFlatLen = allPhonemes.Count * AudioGeneration.PhonemeEncoder.ProsodyStride;
+            while (allProsodyFlat.Count < targetFlatLen)
+            {
+                allProsodyFlat.Add(0); // a1
+                allProsodyFlat.Add(0); // a2
+                allProsodyFlat.Add(0); // a3
+            }
 
             PiperLogger.LogDebug(
                 $"[MultilingualPhonemizer] '{text}' \u2192 {allPhonemes.Count} phonemes, primary lang: {primaryLang}");
 
+            // Maintain async contract for future extensibility (e.g., async dictionary reload)
+            await Task.CompletedTask;
+
             return new MultilingualPhonemizeResult
             {
                 Phonemes = allPhonemes.ToArray(),
-                ProsodyA1 = allA1.ToArray(),
-                ProsodyA2 = allA2.ToArray(),
-                ProsodyA3 = allA3.ToArray(),
+                ProsodyFlat = allProsodyFlat.ToArray(),
                 DetectedPrimaryLanguage = primaryLang
             };
         }
@@ -428,282 +296,74 @@ namespace uPiper.Core.Phonemizers.Multilingual
             if (_disposed)
                 return;
             _disposed = true;
-            if (_ownsJa) _jaPhonemizer?.Dispose();
-            if (_ownsEn)
+
+            // Dispose order matters: handlers first, then _initLock last.
+            // _initLock must outlive handler disposal because a concurrent InitializeAsync()
+            // call could still hold the semaphore while awaiting handler initialization.
+            // Disposing _initLock before handlers would cause ObjectDisposedException
+            // if another thread releases the semaphore after it has been disposed.
+            foreach (var entry in _handlers.Values)
             {
-                _enEngine?.Dispose();
-                _enPhonemizer?.Dispose();
+                if (entry.IsOwned)
+                    entry.Handler.Dispose();
             }
-            if (_ownsEs) _esEngine?.Dispose();
-            if (_ownsFr) _frEngine?.Dispose();
-            if (_ownsPt) _ptEngine?.Dispose();
-            if (_ownsZh) _zhEngine?.Dispose();
-            if (_ownsKo)
-            {
-                _koG2PEngine?.Dispose();
-                _koPhonemizer?.Dispose();
-            }
+            _handlers.Clear();
+            _initLock.Dispose();
         }
 
-        // ── Language-specific processing methods ──────────────────────────────
-
-        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessJapanese(string text)
-        {
-            var result = _jaPhonemizer.PhonemizeWithProsody(text);
-            var phonemes = result.Phonemes ?? Array.Empty<string>();
-            var a1 = result.ProsodyA1 ?? Array.Empty<int>();
-            var a2 = result.ProsodyA2 ?? Array.Empty<int>();
-            var a3 = result.ProsodyA3 ?? Array.Empty<int>();
-
-            // Strip leading PAD ("_") from Japanese segments (added from "sil" conversion)
-            if (phonemes.Length > 0 && phonemes[0] == "_")
-            {
-                phonemes = phonemes[1..];
-                a1 = a1.Length > 1 ? a1[1..] : a1;
-                a2 = a2.Length > 1 ? a2[1..] : a2;
-                a3 = a3.Length > 1 ? a3[1..] : a3;
-            }
-
-            return (phonemes, a1, a2, a3);
-        }
-
-        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessEnglish(string text)
-        {
-            var prosodyResult = _enEngine.ToIpaWithProsody(text);
-            var phonemes = _enEngine.ToPuaPhonemes(text);
-            var prosody = prosodyResult.Prosody;
-            var a1 = new int[phonemes.Length];
-            var a2 = new int[phonemes.Length];
-            var a3 = new int[phonemes.Length];
-            for (var i = 0; i < phonemes.Length && i < prosody.Length; i++)
-            {
-                a1[i] = prosody[i].A1;
-                a2[i] = prosody[i].A2;
-                a3[i] = prosody[i].A3;
-            }
-
-            return (phonemes, a1, a2, a3);
-        }
-
-        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessSpanish(string text)
-        {
-            var result = _esEngine.ToIpaWithProsody(text);
-            var phonemes = result.Phonemes ?? Array.Empty<string>();
-            var (a1, a2, a3) = ExtractProsodyArrays(
-                result.Prosody, p => (p.A1, p.A2, p.A3), phonemes.Length);
-            return (phonemes, a1, a2, a3);
-        }
-
-        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessFrench(string text)
-        {
-            var phonemes = _frEngine.ToPuaPhonemes(text);
-            var result = _frEngine.ToIpaWithProsody(text);
-            var (a1, a2, a3) = ExtractProsodyArrays(
-                result.Prosody, p => (p.A1, p.A2, p.A3), phonemes.Length);
-            return (phonemes, a1, a2, a3);
-        }
-
-        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessPortuguese(string text)
-        {
-            var phonemes = _ptEngine.ToPuaPhonemes(text);
-            var result = _ptEngine.ToIpaWithProsody(text);
-            var (a1, a2, a3) = ExtractProsodyArrays(
-                result.Prosody, p => (p.A1, p.A2, p.A3), phonemes.Length);
-            return (phonemes, a1, a2, a3);
-        }
-
-        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessChinese(string text)
-        {
-            // Use DotNetG2P.Chinese directly for Chinese text
-            var puaPhonemes = _zhEngine.ToPuaPhonemes(text);
-            var prosodyResult = _zhEngine.ToIpaWithProsody(text);
-
-            var phonemeList = new List<string>();
-            var prosodyA1List = new List<int>();
-            var prosodyA2List = new List<int>();
-            var prosodyA3List = new List<int>();
-
-            int totalSyllables = prosodyResult.Prosody.Count;
-            if (totalSyllables == 0)
-            {
-                // No syllables (all non-Chinese text)
-                foreach (var p in puaPhonemes)
-                    phonemeList.Add(p);
-            }
-            else
-            {
-                // Distribute PUA phonemes across syllables and insert tone markers
-                int phonemesPerSyllable = puaPhonemes.Length / totalSyllables;
-                int remainder = puaPhonemes.Length % totalSyllables;
-                int puaIdx = 0;
-
-                for (int syl = 0; syl < totalSyllables; syl++)
-                {
-                    int count = phonemesPerSyllable + (syl < remainder ? 1 : 0);
-                    int toneVal = syl < prosodyResult.Prosody.Count
-                        ? prosodyResult.Prosody[syl].A1 : 5;
-                    int sylPos = syl < prosodyResult.Prosody.Count
-                        ? prosodyResult.Prosody[syl].A2 : 1;
-                    int wordLen = syl < prosodyResult.Prosody.Count
-                        ? prosodyResult.Prosody[syl].A3 : 1;
-
-                    // Add initial + final phonemes for this syllable
-                    for (int j = 0; j < count && puaIdx < puaPhonemes.Length; j++, puaIdx++)
-                    {
-                        phonemeList.Add(puaPhonemes[puaIdx]);
-                        prosodyA1List.Add(toneVal);
-                        prosodyA2List.Add(sylPos);
-                        prosodyA3List.Add(wordLen);
-                    }
-
-                    // Append tone marker PUA (tone1=E046 ... tone5=E04A)
-                    if (toneVal >= 1 && toneVal <= 5)
-                    {
-                        phonemeList.Add(TonePuaChars[toneVal].ToString());
-                        prosodyA1List.Add(toneVal);
-                        prosodyA2List.Add(sylPos);
-                        prosodyA3List.Add(wordLen);
-                    }
-                }
-
-                // Add any remaining phonemes (non-Chinese tokens)
-                for (; puaIdx < puaPhonemes.Length; puaIdx++)
-                {
-                    phonemeList.Add(puaPhonemes[puaIdx]);
-                    prosodyA1List.Add(0);
-                    prosodyA2List.Add(0);
-                    prosodyA3List.Add(0);
-                }
-            }
-
-            var segPhonemes = phonemeList.ToArray();
-            var segA1 = prosodyA1List.ToArray();
-            var segA2 = prosodyA2List.ToArray();
-            var segA3 = prosodyA3List.ToArray();
-
-            // Ensure prosody arrays are aligned with phoneme count
-            if (segA1.Length < segPhonemes.Length)
-            {
-                Array.Resize(ref segA1, segPhonemes.Length);
-                Array.Resize(ref segA2, segPhonemes.Length);
-                Array.Resize(ref segA3, segPhonemes.Length);
-            }
-
-            return (segPhonemes, segA1, segA2, segA3);
-        }
-
-        private (string[] segPhonemes, int[] a1, int[] a2, int[] a3) ProcessKorean(string text)
-        {
-            // Use DotNetG2P.Korean directly for Korean text
-            var puaPhonemes = _koG2PEngine.ToPuaPhonemes(text);
-            var prosodyResult = _koG2PEngine.ToIpaWithProsody(text);
-
-            var phonemes = puaPhonemes ?? Array.Empty<string>();
-
-            int[] segA1, segA2, segA3;
-
-            // Map prosody from IPA-based result to PUA phonemes.
-            // PUA phonemes and IPA phonemes should have the same count
-            // (PuaMapper only replaces multi-char IPA with single PUA chars,
-            // preserving the 1:1 phoneme correspondence).
-            if (prosodyResult.Prosody.Length == phonemes.Length)
-            {
-                segA1 = new int[phonemes.Length];
-                segA2 = new int[phonemes.Length];
-                segA3 = new int[phonemes.Length];
-                for (var i = 0; i < prosodyResult.Prosody.Length; i++)
-                {
-                    segA1[i] = prosodyResult.Prosody[i].A1;
-                    segA2[i] = prosodyResult.Prosody[i].A2;
-                    segA3[i] = prosodyResult.Prosody[i].A3;
-                }
-            }
-            else
-            {
-                // Fallback: if lengths differ, use zeros for A1/A2 and
-                // derive A3 from prosody result when possible
-                segA1 = new int[phonemes.Length];
-                segA2 = new int[phonemes.Length];
-                segA3 = new int[phonemes.Length];
-                if (prosodyResult.Prosody.Length > 0)
-                {
-                    var defaultA3 = prosodyResult.Prosody[0].A3;
-                    for (var i = 0; i < phonemes.Length; i++)
-                    {
-                        segA3[i] = i < prosodyResult.Prosody.Length
-                            ? prosodyResult.Prosody[i].A3
-                            : defaultA3;
-                    }
-                }
-
-                PiperLogger.LogWarning(
-                    $"[MultilingualPhonemizer] Korean PUA/prosody length mismatch: " +
-                    $"PUA={phonemes.Length}, Prosody={prosodyResult.Prosody.Length}");
-            }
-
-            return (phonemes, segA1, segA2, segA3);
-        }
-
-        private async Task<(string[] phonemes, int[] a1, int[] a2, int[] a3)> ProcessFallbackAsync(
-            string lang, string text, CancellationToken cancellationToken)
-        {
-            var backend = GetBackendForLanguage(lang);
-            if (backend != null)
-            {
-                var result = await backend.PhonemizeAsync(text, lang, null, cancellationToken);
-                var phonemes = result?.Phonemes ?? Array.Empty<string>();
-                var a1 = result?.ProsodyA1 ?? new int[phonemes.Length];
-                var a2 = result?.ProsodyA2 ?? new int[phonemes.Length];
-                var a3 = result?.ProsodyA3 ?? new int[phonemes.Length];
-                return (phonemes, a1, a2, a3);
-            }
-
-            PiperLogger.LogWarning(
-                $"[MultilingualPhonemizer] No backend for '{lang}', skipping segment.");
-            return (null, null, null, null);
-        }
-
-        // ── Private helpers ───────────────────────────────────────────────────
-
-        private IPhonemizerBackend GetBackendForLanguage(string lang)
-        {
-            // Note: English normally goes through _enEngine path (DotNetG2P.English).
-            // _enPhonemizer is only used as legacy fallback when _enEngine is null (e.g., test stubs).
-            return lang switch
-            {
-                "en" => _enPhonemizer,
-                "ko" => _koPhonemizer,
-                _ => _enPhonemizer // fallback to English legacy backend
-            };
-        }
-
-        private bool ContainsLanguage(string lang) => _languageSet.Contains(lang);
+        // ── Private helpers ─────────────────────────────────────────────────
 
         /// <summary>
-        /// Extracts prosody A1/A2/A3 arrays from a prosody info array using the given accessor.
-        /// Used by ES/FR/PT branches to avoid duplicated extraction loops.
+        /// Attempts to upgrade the detector to a HybridLanguageDetector by loading trigram profiles.
+        /// Falls back to the existing UnicodeLanguageDetector if profiles are unavailable
+        /// or fewer than 2 Latin languages are configured.
         /// </summary>
-        private static (int[] a1, int[] a2, int[] a3) ExtractProsodyArrays<T>(
-            T[] prosody, Func<T, (int a1, int a2, int a3)> accessor, int phonemeCount)
+        private async Task TryUpgradeToHybridDetectorAsync(CancellationToken cancellationToken)
         {
-            var a1 = new int[phonemeCount];
-            var a2 = new int[phonemeCount];
-            var a3 = new int[phonemeCount];
-            for (var i = 0; i < Math.Min(phonemeCount, prosody.Length); i++)
+            // Count Latin languages in the configured language list
+            var latinCount = 0;
+            for (var i = 0; i < _languages.Count; i++)
             {
-                var (pa1, pa2, pa3) = accessor(prosody[i]);
-                a1[i] = pa1;
-                a2[i] = pa2;
-                a3[i] = pa3;
+                if (LanguageConstants.IsLatinLanguage(_languages[i]))
+                    latinCount++;
             }
 
-            return (a1, a2, a3);
-        }
+            if (latinCount < 2)
+            {
+                PiperLogger.LogDebug(
+                    "[MultilingualPhonemizer] Trigram detection skipped: " +
+                    $"only {latinCount} Latin language(s) configured.");
+                return;
+            }
 
-        private static void PadToLength(List<int> list, int targetLength)
-        {
-            while (list.Count < targetLength)
-                list.Add(0);
+            try
+            {
+                var profiles = await TrigramProfileLoader.LoadAsync(cancellationToken);
+                if (profiles == null || profiles.Count == 0)
+                {
+                    PiperLogger.LogWarning(
+                        "[MultilingualPhonemizer] Trigram profiles not found. " +
+                        "Falling back to Unicode-only detection.");
+                    return;
+                }
+
+                var trigramDetector = new TrigramLanguageDetector(profiles);
+                var unicodeDetector = _detector as UnicodeLanguageDetector
+                    ?? new UnicodeLanguageDetector(_languages, _defaultLatinLanguage);
+
+                _detector = new HybridLanguageDetector(
+                    unicodeDetector, trigramDetector, _languages, _defaultLatinLanguage);
+
+                PiperLogger.LogInfo(
+                    "[MultilingualPhonemizer] Upgraded to HybridLanguageDetector " +
+                    $"with {profiles.Count} language profile(s).");
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogWarning(
+                    "[MultilingualPhonemizer] Failed to load trigram profiles: " +
+                    $"{ex.Message}. Falling back to Unicode-only detection.");
+            }
         }
     }
 }

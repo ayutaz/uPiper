@@ -9,8 +9,8 @@ using DotNetG2P.Spanish;
 using NUnit.Framework;
 using uPiper.Core.Phonemizers.Implementations;
 using uPiper.Core.Phonemizers.Multilingual;
+using uPiper.Core.Phonemizers.Multilingual.Handlers;
 
-#pragma warning disable CS0618
 namespace uPiper.Tests.Editor.Phonemizers
 {
     /// <summary>
@@ -28,24 +28,28 @@ namespace uPiper.Tests.Editor.Phonemizers
         /// Creates a fully initialized MultilingualPhonemizer for the given languages.
         /// Backends are created and initialized internally by InitializeAsync.
         /// </summary>
-        private static MultilingualPhonemizer CreateInitialized(
+        private static async Task<MultilingualPhonemizer> CreateInitialized(
             string[] languages,
             string defaultLatin = "en")
         {
-            var phonemizer = new MultilingualPhonemizer(languages, defaultLatin);
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = languages,
+                    DefaultLatinLanguage = defaultLatin
+                });
+            await phonemizer.InitializeAsync();
             return phonemizer;
         }
 
         /// <summary>
-        /// Shorthand for calling PhonemizeWithProsodyAsync synchronously.
+        /// Shorthand for calling PhonemizeWithProsodyAsync.
         /// </summary>
-        private static MultilingualPhonemizeResult Phonemize(
+        private static async Task<MultilingualPhonemizeResult> Phonemize(
             MultilingualPhonemizer phonemizer,
             string text)
         {
-            return Task.Run(async () => await phonemizer.PhonemizeWithProsodyAsync(text))
-                .GetAwaiter().GetResult();
+            return await phonemizer.PhonemizeWithProsodyAsync(text);
         }
 
         // ══════════════════════════════════════════════════════════════════════
@@ -53,35 +57,35 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ══════════════════════════════════════════════════════════════════════
 
         [Test]
-        public void PhonemizeWithProsody_ThreeLanguages_JaEnEs()
+        public async Task PhonemizeWithProsody_ThreeLanguages_JaEnEs()
         {
             // Japanese + English + Spanish
-            var phonemizer = CreateInitialized(
+            var phonemizer = await CreateInitialized(
                 new[] { "ja", "en", "es" }, defaultLatin: "en");
 
             // "こんにちは" (ja) + "hello" (en/latin) + "hola" (es shares latin -> default en)
             // With defaultLatin="en", Latin text will route to English backend.
-            var result = Phonemize(phonemizer, "こんにちはhello hola");
+            var result = await Phonemize(phonemizer, "こんにちはhello hola");
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "Three-language mixed text should produce phonemes");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
-                "Prosody A1 must align with phoneme count");
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat must align with phoneme count (stride=3)");
 
             phonemizer.Dispose();
         }
 
         [Test]
-        public void PhonemizeWithProsody_ThreeLanguages_JaZhKo()
+        public async Task PhonemizeWithProsody_ThreeLanguages_JaZhKo()
         {
             // Japanese (Kana) + Chinese (CJK without Kana context issue - handled per segment)
             // + Korean (Hangul)
-            var phonemizer = CreateInitialized(new[] { "ja", "zh", "ko" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "zh", "ko" });
 
             // "こんにちは" has Kana -> ja; "你好" CJK with Kana context -> ja or zh;
             // "안녕" -> ko
-            var result = Phonemize(phonemizer, "こんにちは안녕");
+            var result = await Phonemize(phonemizer, "こんにちは안녕");
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
@@ -91,43 +95,43 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void PhonemizeWithProsody_FourLanguages_JaEnFrPt()
+        public async Task PhonemizeWithProsody_FourLanguages_JaEnFrPt()
         {
             // Four language backends configured; Latin text goes to default "en"
-            var phonemizer = CreateInitialized(
+            var phonemizer = await CreateInitialized(
                 new[] { "ja", "en", "fr", "pt" }, defaultLatin: "en");
 
-            // "今日は" = 3 ja chars, "hello bonjour bom dia" = 21 latin chars -> "en" is primary
-            var result = Phonemize(phonemizer, "今日はhello bonjour bom dia");
+            // Japanese + Latin text. With trigram detection enabled, "bonjour" and "bom dia"
+            // may be reclassified to fr/pt respectively. Verify phonemes are produced and
+            // prosody is aligned, regardless of primary language outcome.
+            var result = await Phonemize(phonemizer, "今日はhello bonjour bom dia");
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "Four-language configured text should produce phonemes");
-            // Latin text dominates by character count and routes to default "en"
-            Assert.AreEqual("en", result.DetectedPrimaryLanguage,
-                "Latin text dominates by character count, primary should be 'en'");
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat must align with phoneme count (stride=3)");
 
             phonemizer.Dispose();
         }
 
         [Test]
-        public void PhonemizeWithProsody_AllSevenLanguages()
+        public async Task PhonemizeWithProsody_AllSevenLanguages()
         {
             // All seven supported languages configured
-            var phonemizer = CreateInitialized(
+            var phonemizer = await CreateInitialized(
                 new[] { "ja", "en", "zh", "ko", "es", "fr", "pt" }, defaultLatin: "en");
 
             // Text has: Japanese Kana, Korean Hangul, Latin (routes to en by default)
             // CJK ideographs with Kana context -> ja
             var text = "こんにちは hello 안녕하세요 世界";
-            var result = Phonemize(phonemizer, text);
+            var result = await Phonemize(phonemizer, text);
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "All-seven-languages text should produce phonemes");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA2.Length);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA3.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat length must equal Phonemes.Length * 3");
 
             phonemizer.Dispose();
         }
@@ -137,69 +141,69 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ══════════════════════════════════════════════════════════════════════
 
         [Test]
-        public void ProsodyArrays_AlignedWithPhonemes_JaEnMixed()
+        public async Task ProsodyArrays_AlignedWithPhonemes_JaEnMixed()
         {
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
-            var result = Phonemize(phonemizer, "こんにちはhello world");
+            var result = await Phonemize(phonemizer, "こんにちはhello world");
 
             Assert.IsNotNull(result.Phonemes);
             Assert.IsTrue(result.Phonemes.Length > 0);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
-                "ProsodyA1 length must equal phoneme count");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA2.Length,
-                "ProsodyA2 length must equal phoneme count");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA3.Length,
-                "ProsodyA3 length must equal phoneme count");
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat length must equal Phonemes.Length * 3");
 
             phonemizer.Dispose();
         }
 
         [Test]
-        public void ProsodyArrays_JapaneseSegment_HasNonZeroProsody()
+        public async Task ProsodyArrays_JapaneseSegment_HasNonZeroProsody()
         {
             // Pure Japanese text should produce prosody values from DotNetG2PPhonemizer
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
-            var result = Phonemize(phonemizer, "東京タワーは高いです");
+            var result = await Phonemize(phonemizer, "東京タワーは高いです");
 
             Assert.IsTrue(result.Phonemes.Length > 0);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length);
 
             // At least some prosody values should be non-zero for Japanese
-            var hasNonZeroA1 = result.ProsodyA1.Any(v => v != 0);
-            var hasNonZeroA2 = result.ProsodyA2.Any(v => v != 0);
-            // A1 or A2 should have non-zero values for Japanese prosody
-            Assert.IsTrue(hasNonZeroA1 || hasNonZeroA2,
-                "Japanese segment should have at least some non-zero prosody values (A1 or A2)");
+            // At least some prosody values should be non-zero for Japanese
+            var hasNonZero = result.ProsodyFlat.Any(v => v != 0);
+            Assert.IsTrue(hasNonZero,
+                "Japanese segment should have at least some non-zero prosody values");
 
             phonemizer.Dispose();
         }
 
         [Test]
-        public void ProsodyArrays_NonJapaneseSegments_HaveZeroA1()
+        public async Task ProsodyArrays_NonJapaneseSegments_HaveZeroA1()
         {
             // Pure English text -> A1 should be zero (English backend sets A1=0)
             // A2 may be non-zero (English stress: 1=primary, 2=secondary)
             // A3 may be non-zero (English word phoneme count)
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
-            var result = Phonemize(phonemizer, "hello world");
+            var result = await Phonemize(phonemizer, "hello world");
 
             Assert.IsTrue(result.Phonemes.Length > 0);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length);
 
-            // English backend always sets A1=0 (no Japanese-style mora position)
-            Assert.IsTrue(result.ProsodyA1.All(v => v == 0),
+            // English backend sets A1=0 for all phonemes (no Japanese-style mora position).
+            // Check A1 values (stride=3, offset 0): flat[i*3+0] should be 0
+            var phonemeCount = result.Phonemes.Length;
+            var allA1Zero = true;
+            for (var i = 0; i < phonemeCount; i++)
+            {
+                if (result.ProsodyFlat[i * 3 + 0] != 0) { allA1Zero = false; break; }
+            }
+            Assert.IsTrue(allA1Zero,
                 "English-only text should have all-zero A1 prosody");
-            // A2 (stress) and A3 (word phoneme count) may be non-zero for English;
-            // this is correct behavior per the EnglishG2PEngine prosody spec
 
             phonemizer.Dispose();
         }
 
         [Test]
-        public void ProsodyArrays_ChineseSegment_Aligned()
+        public async Task ProsodyArrays_ChineseSegment_Aligned()
         {
             // Verify prosody arrays are aligned with phoneme array for Chinese segments
             var charPath = System.IO.Path.Combine(
@@ -218,17 +222,23 @@ namespace uPiper.Tests.Editor.Phonemizers
                 : new ChineseG2PEngine(charPath);
 
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "zh", "en" },
-                defaultLatinLanguage: "en",
-                zhEngine: zhEngine);
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "zh", "en" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["zh"] = new ChineseG2PHandler(zhEngine)
+                    }
+                });
+            await phonemizer.InitializeAsync();
 
-            var result = Phonemize(phonemizer, "你好世界");
+            var result = await Phonemize(phonemizer, "你好世界");
 
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "Chinese text should produce phonemes");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
-                "ProsodyA1 must be aligned even for Chinese segments");
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat must be aligned even for Chinese segments");
 
             phonemizer.Dispose();
         }
@@ -238,13 +248,13 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ══════════════════════════════════════════════════════════════════════
 
         [Test]
-        public void IntermediateEOS_Removed_MultiSegment()
+        public async Task IntermediateEOS_Removed_MultiSegment()
         {
             // When multiple segments exist, intermediate EOS-like tokens are stripped
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
             // Japanese sentence ending with "。" followed by English
-            var result = Phonemize(phonemizer, "おはよう。hello");
+            var result = await Phonemize(phonemizer, "おはよう。hello");
 
             Assert.IsTrue(result.Phonemes.Length > 0);
 
@@ -260,12 +270,12 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void FinalEOS_Preserved()
+        public async Task FinalEOS_Preserved()
         {
             // The final segment should keep its EOS marker
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
-            var result = Phonemize(phonemizer, "hello");
+            var result = await Phonemize(phonemizer, "hello");
 
             Assert.IsTrue(result.Phonemes.Length > 0);
 
@@ -281,14 +291,14 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void EosLikeTokens_AllVariants_HandledCorrectly()
+        public async Task EosLikeTokens_AllVariants_HandledCorrectly()
         {
             // Verify the set of EOS-like tokens is handled.
             // We test by examining that multi-segment results do not have
             // more than one EOS token per known variant.
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
-            var result = Phonemize(phonemizer, "東京タワー。hello world");
+            var result = await Phonemize(phonemizer, "東京タワー。hello world");
 
             var eosTokens = new HashSet<string> { "$", "?", "?!", "?.", "?~" };
             var eosInResult = result.Phonemes.Where(p => eosTokens.Contains(p)).ToList();
@@ -305,13 +315,13 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ══════════════════════════════════════════════════════════════════════
 
         [Test]
-        public void DetectedPrimaryLanguage_CharacterWeighted()
+        public async Task DetectedPrimaryLanguage_CharacterWeighted()
         {
             // The language with the most characters should be the primary
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
             // Long Japanese text with short English
-            var result = Phonemize(phonemizer,
+            var result = await Phonemize(phonemizer,
                 "今日はとても良い天気ですね。素晴らしい一日になりそうです。hi");
 
             Assert.AreEqual("ja", result.DetectedPrimaryLanguage,
@@ -321,11 +331,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void DetectedPrimaryLanguage_JapaneseWithShortEnglish_IsJa()
+        public async Task DetectedPrimaryLanguage_JapaneseWithShortEnglish_IsJa()
         {
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
-            var result = Phonemize(phonemizer, "東京タワーにgoしました");
+            var result = await Phonemize(phonemizer, "東京タワーにgoしました");
 
             Assert.AreEqual("ja", result.DetectedPrimaryLanguage,
                 "Japanese-dominant text with short English should be 'ja'");
@@ -334,11 +344,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void DetectedPrimaryLanguage_EnglishWithShortJapanese_IsEn()
+        public async Task DetectedPrimaryLanguage_EnglishWithShortJapanese_IsEn()
         {
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
-            var result = Phonemize(phonemizer,
+            var result = await Phonemize(phonemizer,
                 "The quick brown fox jumps over the lazy dog あ");
 
             Assert.AreEqual("en", result.DetectedPrimaryLanguage,
@@ -352,59 +362,59 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ══════════════════════════════════════════════════════════════════════
 
         [Test]
-        public void PhonemizeWithProsody_WhitespaceOnly_ReturnsEmpty()
+        public async Task PhonemizeWithProsody_WhitespaceOnly_ReturnsEmpty()
         {
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
-            var result = Phonemize(phonemizer, "   \t\n  ");
+            var result = await Phonemize(phonemizer, "   \t\n  ");
 
             Assert.IsNotNull(result);
             Assert.AreEqual(0, result.Phonemes.Length,
                 "Whitespace-only text should return empty phonemes");
-            Assert.AreEqual(0, result.ProsodyA1.Length);
-            Assert.AreEqual(0, result.ProsodyA2.Length);
-            Assert.AreEqual(0, result.ProsodyA3.Length);
+            Assert.AreEqual(0, result.ProsodyFlat.Length);
+            Assert.AreEqual(0, result.ProsodyFlat.Length);
+            Assert.AreEqual(0, result.ProsodyFlat.Length);
 
             phonemizer.Dispose();
         }
 
         [Test]
-        public void PhonemizeWithProsody_PunctuationOnly_ReturnsResult()
+        public async Task PhonemizeWithProsody_PunctuationOnly_ReturnsResult()
         {
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
             // Pure punctuation: detector returns null for each char -> falls back to default
-            var result = Phonemize(phonemizer, "...,,,!!!");
+            var result = await Phonemize(phonemizer, "...,,,!!!");
 
             Assert.IsNotNull(result);
             // Punctuation may or may not produce phonemes depending on the backend
             // but the call itself should not throw
             Assert.IsNotNull(result.Phonemes);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length);
 
             phonemizer.Dispose();
         }
 
         [Test]
-        public void PhonemizeWithProsody_DigitsOnly_FallsBackToDefault()
+        public async Task PhonemizeWithProsody_DigitsOnly_FallsBackToDefault()
         {
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
             // Digits are neutral characters; should be absorbed into default language
-            var result = Phonemize(phonemizer, "12345");
+            var result = await Phonemize(phonemizer, "12345");
 
             Assert.IsNotNull(result);
             Assert.IsNotNull(result.Phonemes);
             // The detector treats digits as neutral, so they get absorbed into default
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length);
 
             phonemizer.Dispose();
         }
 
         [Test]
-        public void PhonemizeWithProsody_VeryLongText_Succeeds()
+        public async Task PhonemizeWithProsody_VeryLongText_Succeeds()
         {
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
             // Build a 1000+ character mixed-language string
             var sb = new StringBuilder();
@@ -418,45 +428,45 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.IsTrue(longText.Length > 1000,
                 $"Test text should be >1000 chars, got {longText.Length}");
 
-            var result = Phonemize(phonemizer, longText);
+            var result = await Phonemize(phonemizer, longText);
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "Very long mixed text should produce phonemes");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
                 "Prosody arrays must stay aligned for long text");
 
             phonemizer.Dispose();
         }
 
         [Test]
-        public void PhonemizeWithProsody_RepeatedLanguageSwitching()
+        public async Task PhonemizeWithProsody_RepeatedLanguageSwitching()
         {
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
             // Rapid language switching: Kana -> Latin -> Kana -> Latin ...
-            var result = Phonemize(phonemizer, "aあaあaあ");
+            var result = await Phonemize(phonemizer, "aあaあaあ");
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "Rapid language switching should produce phonemes");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
                 "Prosody must align even with rapid switching");
 
             phonemizer.Dispose();
         }
 
         [Test]
-        public void PhonemizeWithProsody_UnicodeNormalization()
+        public async Task PhonemizeWithProsody_UnicodeNormalization()
         {
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
             // Pre-composed form (NFC) vs decomposed form (NFD) for 'が' (U+304C vs U+304B + U+3099)
             var nfcText = "\u304C";   // が (pre-composed)
             var nfdText = "\u304B\u3099"; // か + combining dakuten (decomposed)
 
-            var resultNfc = Phonemize(phonemizer, nfcText);
-            var resultNfd = Phonemize(phonemizer, nfdText);
+            var resultNfc = await Phonemize(phonemizer, nfcText);
+            var resultNfd = await Phonemize(phonemizer, nfdText);
 
             Assert.IsNotNull(resultNfc);
             Assert.IsNotNull(resultNfd);
@@ -473,15 +483,15 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ══════════════════════════════════════════════════════════════════════
 
         [Test]
-        public void PhonemizeWithProsody_UnsupportedLanguage_SkipsSegment()
+        public async Task PhonemizeWithProsody_UnsupportedLanguage_SkipsSegment()
         {
             // Configure only "ja" -- Korean Hangul has no backend, so it is skipped
-            var phonemizer = CreateInitialized(new[] { "ja" });
+            var phonemizer = await CreateInitialized(new[] { "ja" });
 
             // The detector won't assign "ko" if ko is not in the language list.
             // However, Hangul chars will be neutral (no matching language -> null).
             // This tests that the pipeline does not crash.
-            var result = Phonemize(phonemizer, "おはよう");
+            var result = await Phonemize(phonemizer, "おはよう");
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
@@ -491,20 +501,18 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void GetBackendForLanguage_UnknownLang_FallsBackToEnglish()
+        public async Task UnsupportedLanguage_SkipsSegmentWithWarning()
         {
-            // When an unknown language code appears, GetBackendForLanguage returns _enPhonemizer
-            // We verify this indirectly: configure "en" + "ja", feed text that would
-            // route to a language not explicitly handled (e.g., if detector somehow
-            // returned an unsupported code). The fallback is the English backend.
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            // When only "ja" is configured, Latin text routes to default "en"
+            // which has no handler. The segment should be skipped gracefully.
+            // Pure Japanese text should still produce phonemes.
+            var phonemizer = await CreateInitialized(new[] { "ja" });
 
-            // Basic Latin text routes to "en" (default), which exercises the English backend
-            var result = Phonemize(phonemizer, "test fallback");
-
+            // Japanese-only text works fine
+            var result = await Phonemize(phonemizer, "こんにちは");
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
-                "Fallback to English backend should produce phonemes");
+                "Japanese text should produce phonemes even without English handler");
 
             phonemizer.Dispose();
         }
@@ -514,12 +522,16 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ══════════════════════════════════════════════════════════════════════
 
         [Test]
-        public void InitializeAsync_SubsetOfLanguages_OnlyCreatesNeeded()
+        public async Task InitializeAsync_SubsetOfLanguages_OnlyCreatesNeeded()
         {
             // Initialize with only "ja" and "es" -- should not crash and should
             // only create backends for those two languages
-            var phonemizer = new MultilingualPhonemizer(new[] { "ja", "es" });
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "es" }
+                });
+            await phonemizer.InitializeAsync();
 
             Assert.IsTrue(phonemizer.IsInitialized);
             Assert.AreEqual(2, phonemizer.Languages.Count);
@@ -527,7 +539,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.IsTrue(phonemizer.Languages.Contains("es"));
 
             // Phonemize Japanese text -- should work
-            var jaResult = Phonemize(phonemizer, "おはよう");
+            var jaResult = await Phonemize(phonemizer, "おはよう");
             Assert.IsTrue(jaResult.Phonemes.Length > 0,
                 "Japanese should work with ja+es subset");
 
@@ -535,32 +547,40 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void InitializeAsync_CalledTwice_Idempotent()
+        public async Task InitializeAsync_CalledTwice_Idempotent()
         {
-            var phonemizer = new MultilingualPhonemizer(new[] { "ja", "en" });
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" }
+                });
 
             // First initialization
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+            await phonemizer.InitializeAsync();
             Assert.IsTrue(phonemizer.IsInitialized);
 
             // Second initialization should be a no-op (early return)
-            Assert.DoesNotThrow(() =>
+            Assert.DoesNotThrowAsync(async () =>
             {
-                Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+                await phonemizer.InitializeAsync();
             });
             Assert.IsTrue(phonemizer.IsInitialized);
 
             // Should still function correctly after double init
-            var result = Phonemize(phonemizer, "テスト");
+            var result = await Phonemize(phonemizer, "テスト");
             Assert.IsTrue(result.Phonemes.Length > 0);
 
             phonemizer.Dispose();
         }
 
         [Test]
-        public void InitializeAsync_CancellationToken_Respected()
+        public async Task InitializeAsync_CancellationToken_Respected()
         {
-            var phonemizer = new MultilingualPhonemizer(new[] { "ja", "en" });
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" }
+                });
 
             // Create an already-cancelled token
             using var cts = new CancellationTokenSource();
@@ -573,8 +593,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             // before checking cancellation. The key guarantee is no crash.
             try
             {
-                Task.Run(async () => await phonemizer.InitializeAsync(cts.Token))
-                    .GetAwaiter().GetResult();
+                await phonemizer.InitializeAsync(cts.Token);
                 // If it completes without throwing, that's also acceptable
                 // (synchronous path may not check token)
             }
@@ -582,11 +601,6 @@ namespace uPiper.Tests.Editor.Phonemizers
             {
                 // Expected: cancellation was respected
                 Assert.Pass("CancellationToken was respected");
-            }
-            catch (AggregateException ex) when (ex.InnerException is OperationCanceledException)
-            {
-                // Task.Run wraps in AggregateException
-                Assert.Pass("CancellationToken was respected (via AggregateException)");
             }
 
             phonemizer.Dispose();
@@ -597,7 +611,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ══════════════════════════════════════════════════════════════════════
 
         [Test]
-        public void Dispose_DisposesAllBackends()
+        public async Task Dispose_DisposesAllBackends()
         {
             // Create with pre-built backends and verify dispose does not throw
             var koEngine = new DotNetG2P.Korean.KoreanG2PEngine();
@@ -606,21 +620,26 @@ namespace uPiper.Tests.Editor.Phonemizers
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "ja", "en", "ko", "es" },
-                defaultLatinLanguage: "en",
-                jaPhonemizer: jaPhonemizer,
-                koG2PEngine: koEngine,
-                esEngine: esEngine);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en", "ko", "es" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["ja"] = new JapaneseG2PHandler(jaPhonemizer),
+                        ["ko"] = new KoreanG2PHandler(koEngine),
+                        ["es"] = new SpanishG2PHandler(esEngine)
+                    }
+                });
 
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+            await phonemizer.InitializeAsync();
 
             // Dispose should not throw and should dispose all sub-backends
             Assert.DoesNotThrow(() => phonemizer.Dispose());
 
             // When backends are passed to the constructor (not created internally),
-            // MultilingualPhonemizer does NOT own them (_ownsJa = false).
+            // HandlerEntry.IsOwned is false, so MultilingualPhonemizer skips disposal.
             // The caller is responsible for disposing externally-provided backends.
-            // Verify that the externally-provided jaPhonemizer is NOT disposed by MultilingualPhonemizer.
             Assert.DoesNotThrow(() => jaPhonemizer.PhonemizeWithProsody("テスト"),
                 "Externally-provided backend should NOT be disposed by MultilingualPhonemizer");
 
@@ -629,9 +648,9 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void Dispose_CalledTwice_NoError()
+        public async Task Dispose_CalledTwice_NoError()
         {
-            var phonemizer = CreateInitialized(new[] { "ja", "en", "ko", "es", "fr", "pt" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en", "ko", "es", "fr", "pt" });
 
             Assert.DoesNotThrow(() =>
             {
@@ -641,17 +660,17 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void PhonemizeAfterDispose_Throws()
+        public async Task PhonemizeAfterDispose_Throws()
         {
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
             phonemizer.Dispose();
 
             // After dispose, _isInitialized is still true but backends are disposed.
             // Calling PhonemizeWithProsodyAsync should throw when the disposed backend
             // is invoked (ObjectDisposedException from DotNetG2PPhonemizer).
-            Assert.Throws<ObjectDisposedException>(() =>
+            Assert.ThrowsAsync<ObjectDisposedException>(async () =>
             {
-                Phonemize(phonemizer, "テスト hello");
+                await Phonemize(phonemizer, "テスト hello");
             }, "Phonemizing after Dispose should throw ObjectDisposedException from disposed backends");
         }
 
@@ -660,21 +679,21 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ══════════════════════════════════════════════════════════════════════
 
         [Test]
-        public void ProsodyArrays_MixedJaEn_JaPortionHasProsody()
+        public async Task ProsodyArrays_MixedJaEn_JaPortionHasProsody()
         {
             // Verify that in a mixed ja+en result, the prosody arrays have
             // non-zero values in the portion corresponding to Japanese phonemes
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ja", "en" });
 
-            var result = Phonemize(phonemizer, "おはようございます good morning");
+            var result = await Phonemize(phonemizer, "おはようございます good morning");
 
             Assert.IsTrue(result.Phonemes.Length > 0);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length);
 
             // The Japanese portion should contribute some non-zero prosody
-            var anyNonZero = result.ProsodyA1.Any(v => v != 0)
-                          || result.ProsodyA2.Any(v => v != 0)
-                          || result.ProsodyA3.Any(v => v != 0);
+            var anyNonZero = result.ProsodyFlat.Any(v => v != 0)
+                          || result.ProsodyFlat.Any(v => v != 0)
+                          || result.ProsodyFlat.Any(v => v != 0);
             Assert.IsTrue(anyNonZero,
                 "Mixed ja+en result should have non-zero prosody from the Japanese portion");
 
@@ -682,11 +701,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void PhonemizeWithProsody_KoreanEnglishMixed_ProducesBothSegments()
+        public async Task PhonemizeWithProsody_KoreanEnglishMixed_ProducesBothSegments()
         {
-            var phonemizer = CreateInitialized(new[] { "ko", "en" });
+            var phonemizer = await CreateInitialized(new[] { "ko", "en" });
 
-            var result = Phonemize(phonemizer, "안녕하세요 hello");
+            var result = await Phonemize(phonemizer, "안녕하세요 hello");
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
@@ -698,18 +717,24 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void PhonemizeWithProsody_SpanishOnly_DetectsEsAsPrimary()
+        public async Task PhonemizeWithProsody_SpanishOnly_DetectsEsAsPrimary()
         {
             // When defaultLatinLanguage is "es", Latin text routes to Spanish engine
             var esEngine = new SpanishG2PEngine();
 
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "es" },
-                defaultLatinLanguage: "es",
-                esEngine: esEngine);
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "es" },
+                    DefaultLatinLanguage = "es",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["es"] = new SpanishG2PHandler(esEngine)
+                    }
+                });
+            await phonemizer.InitializeAsync();
 
-            var result = Phonemize(phonemizer, "buenos dias amigo");
+            var result = await Phonemize(phonemizer, "buenos dias amigo");
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0);

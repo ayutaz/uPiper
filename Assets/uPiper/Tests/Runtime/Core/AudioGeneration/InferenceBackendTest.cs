@@ -40,11 +40,11 @@ namespace uPiper.Tests.Runtime.Core.AudioGeneration
             var config = new PiperConfig();
             config.GPUSettings.MaxMemoryMB = 10;
 
-            // PiperConfig.Validate should also validate GPU settings
-            config.Validate();
+            // ToValidated() should clamp GPU settings without modifying original
+            var validated = config.ToValidated();
 
-            // GPUSettings should be validated
-            Assert.GreaterOrEqual(config.GPUSettings.MaxMemoryMB, 128);
+            Assert.AreEqual(10, config.GPUSettings.MaxMemoryMB);
+            Assert.GreaterOrEqual(validated.Inference.GPUSettings.MaxMemoryMB, 128);
         }
 
         [Test]

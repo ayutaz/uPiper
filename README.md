@@ -19,6 +19,7 @@
   - [トラブルシューティング](#トラブルシューティング)
 - [サポートプラットフォーム](#サポートプラットフォーム)
 - [GPU推論の使用](#gpu推論の使用)
+- [基本的な使い方](#基本的な使い方)
 - [詳細ドキュメント](#詳細ドキュメント)
 - [ライセンス](#ライセンス)
 
@@ -26,11 +27,12 @@
 
 - 高品質な音声合成（piper-plusベース）
 - 多言語対応（日本語、英語、中国語、スペイン語、フランス語、ポルトガル語、韓国語）
+- **ハイブリッド言語検出**: Unicode範囲 + N-gram Trigram統合（ラテン文字圏 en/es/fr/pt の高精度識別）
 
 | 言語 | G2Pバックエンド |
 |------|----------------|
 | 日本語 | DotNetG2P.Japanese (MeCab辞書) |
-| 英語 | DotNetG2P.English (Flite LTS) |
+| 英語 | DotNetG2P.English (CMU dict + LTS) |
 | 中国語 | DotNetG2P.Chinese (44K文字辞書) |
 | スペイン語 | DotNetG2P.Spanish |
 | フランス語 | DotNetG2P.French |
@@ -42,6 +44,8 @@
 - GPU推論サポート（GPUCompute/GPUPixel）
 - **Prosody（韻律）サポート**: より自然なイントネーションの音声合成
 - **カスタム辞書**: 技術用語・固有名詞の読み変換
+- **NativeArray パイプライン**: float[] から NativeArray&lt;float&gt; への統一によるGCアロケーション削減
+- **SynthesizeAsync public API**: SynthesisRequest による低レベル音声合成アクセス
 
 ### 対応モデル
 
@@ -51,7 +55,8 @@
 
 ## Requirements
 * Unity 6000.0.58f2
-* Unity AI Inference Engine (com.unity.ai.inference) 2.2.2
+* Unity AI Inference Engine (com.unity.ai.inference) 2.5.0
+* C# 10.0（csc.rsp で LangVersion 10.0 を指定）
 
 ## インストール
 
@@ -79,7 +84,7 @@ openupm add com.ayutaz.upiper
     }
   ],
   "dependencies": {
-    "com.ayutaz.upiper": "1.4.0"
+    "com.ayutaz.upiper": "1.5.0"
   }
 }
 ```
@@ -138,15 +143,15 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 ```jsonc
 // Packages/manifest.json の "dependencies" 内に以下を追加:
 "com.unity.ai.inference": "2.5.0",
-"com.unity.nuget.newtonsoft-json": "3.2.1",
-"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.8.2",
-"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.8.2",
-"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.8.2",
-"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.8.2",
-"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.8.2",
-"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.8.2",
-"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.8.2",
-"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.8.2"
+"com.unity.nuget.newtonsoft-json": "3.2.2",
+"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.5.0",
+"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.5.0",
+"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.5.0",
+"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.5.0",
+"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.5.0",
+"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.5.0",
+"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.5.0",
+"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.5.0"
 ```
 
 ### トラブルシューティング
@@ -189,13 +194,10 @@ var config = new PiperConfig
 {
     Backend = InferenceBackend.Auto,  // 自動選択
     AllowFallbackToCPU = true,        // GPU失敗時にCPUフォールバック
-    GPUSettings = new GPUInferenceSettings
-    {
-        MaxBatchSize = 4,
-        UseFloat16 = true,
-        MaxMemoryMB = 512
-    }
 };
+
+// v2.0: ToValidated() でバリデーション済み不変設定を取得
+var validated = config.ToValidated();
 ```
 
 ### InferenceBackend.Auto の選択ロジック
@@ -214,11 +216,26 @@ var config = new PiperConfig
 
 詳細は[GPU推論ガイド](docs/features/gpu/gpu-inference.md)を参照してください。
 
+## 基本的な使い方
+
+```csharp
+// 初期化
+var config = new PiperConfig { Backend = InferenceBackend.Auto };
+var tts = new PiperTTS(config);
+await tts.InitializeWithInferenceAsync(modelAsset, voiceConfig);
+
+// テキストから音声を生成（v2.0 推奨API）
+var result = await tts.PhonemizeAsync("こんにちは");
+var request = SynthesisRequest.FromPhonemesWithProsody(result.Phonemes, result.ProsodyFlat);
+var clip = await tts.SynthesizeAsync(request);
+AudioSource.PlayClipAtPoint(clip, Vector3.zero);
+```
+
 ## 詳細ドキュメント
 
+- [セットアップガイド](docs/setup-guide.md) - インストール手順と初期設定
 - [アーキテクチャ](docs/ARCHITECTURE_ja.md) - 設計と技術的な詳細
-- [開発ログ](docs/DEVELOPMENT_LOG.md) - 開発進捗と変更履歴
-- [ドキュメント一覧](docs/) - 技術ドキュメント、ガイド、仕様書
+- [GPU推論ガイド](docs/features/gpu/gpu-inference.md) - GPU推論の設定とトラブルシューティング
 
 ## ライセンス
 

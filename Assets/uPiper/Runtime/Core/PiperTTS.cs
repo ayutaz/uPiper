@@ -21,7 +21,7 @@ namespace uPiper.Core
         #region Fields
 
         private readonly PiperConfig _config;
-        private ValidatedPiperConfig _validatedConfig;
+        private IPiperConfigReadOnly _validatedConfig;
         private readonly Dictionary<string, PiperVoiceConfig> _voices;
         private string _currentVoiceId;
         private bool _isInitialized;
@@ -50,6 +50,7 @@ namespace uPiper.Core
 
         // Phonemizer
         private IPhonemizer _phonemizer;
+        private readonly Phonemizers.Multilingual.PuaTokenMapper _tokenMapper = new();
 
         #endregion
 
@@ -268,7 +269,7 @@ namespace uPiper.Core
             _validatedConfig = _config.ToValidated(); // Validate()を内部で呼ぶ
 
             PiperLogger.LogInfo("PiperTTS instance created with config: SampleRate={0}Hz, Language={1}",
-                _config.SampleRate, _config.DefaultLanguage);
+                _validatedConfig.Audio.SampleRate, _config.DefaultLanguage);
         }
 
         #endregion
@@ -299,13 +300,14 @@ namespace uPiper.Core
                 await InitializeInferenceEngineAsync(cancellationToken);
 
                 // Initialize worker thread pool if multi-threaded inference is enabled
-                if (_config.EnableMultiThreadedInference && _config.WorkerThreads > 1)
+                if (_validatedConfig.Performance.EnableMultiThreadedInference
+                    && _validatedConfig.Performance.WorkerThreads > 1)
                 {
                     await InitializeWorkerPoolAsync(cancellationToken);
                 }
 
                 // Initialize cache system if enabled
-                if (_config.EnablePhonemeCache)
+                if (_validatedConfig.Performance.EnablePhonemeCache)
                 {
                     InitializeCacheSystem();
                 }
@@ -376,7 +378,7 @@ namespace uPiper.Core
                 PiperLogger.LogInfo("Audio generator initialized for voice: {0}", voice.VoiceId);
 
                 // Initialize phoneme encoder
-                _phonemeEncoder = new PhonemeEncoder(voice);
+                _phonemeEncoder = new PhonemeEncoder(voice, _tokenMapper);
                 PiperLogger.LogInfo("Phoneme encoder initialized with {0} phonemes", voice.PhonemeIdMap?.Count ?? 0);
 
                 lock (_lockObject)
@@ -654,7 +656,7 @@ namespace uPiper.Core
                         PiperLogger.LogInfo("Using InferenceAudioGenerator for audio synthesis");
 
                         // Check if model supports prosody and we have a compatible phonemizer
-                        int[] prosodyA1 = null, prosodyA2 = null, prosodyA3 = null;
+                        int[] prosodyFlat = null;
                         var useProsody = _inferenceGenerator.SupportsProsody &&
                             _phonemizer is DotNetG2PPhonemizer;
 
@@ -666,30 +668,27 @@ namespace uPiper.Core
 
                             // Update phonemeResult with prosody data
                             phonemeResult.Phonemes = prosodyResult.Phonemes;
-                            phonemeResult.ProsodyA1 = prosodyResult.ProsodyA1;
-                            phonemeResult.ProsodyA2 = prosodyResult.ProsodyA2;
-                            phonemeResult.ProsodyA3 = prosodyResult.ProsodyA3;
+                            var a1 = prosodyResult.ProsodyA1 ?? Array.Empty<int>();
+                            var a2 = prosodyResult.ProsodyA2 ?? Array.Empty<int>();
+                            var a3 = prosodyResult.ProsodyA3 ?? Array.Empty<int>();
+                            prosodyFlat = AudioGeneration.PhonemeEncoder.FlattenProsody(
+                                a1, a2, a3, prosodyResult.Phonemes?.Length ?? 0);
+                            phonemeResult.ProsodyFlat = prosodyFlat;
 
-                            prosodyA1 = prosodyResult.ProsodyA1;
-                            prosodyA2 = prosodyResult.ProsodyA2;
-                            prosodyA3 = prosodyResult.ProsodyA3;
-
-                            PiperLogger.LogInfo($"Prosody extracted: {prosodyResult.PhonemeCount} phonemes with A1/A2/A3 values");
+                            PiperLogger.LogInfo($"Prosody extracted: {prosodyResult.PhonemeCount} phonemes with prosody values");
                         }
 
                         // Encode phonemes to IDs (with prosody expansion if needed)
                         int[] phonemeIds;
-                        int[] expandedA1 = null, expandedA2 = null, expandedA3 = null;
+                        int[] expandedProsodyFlat = null;
 
-                        if (useProsody && prosodyA1 != null)
+                        if (useProsody && prosodyFlat != null)
                         {
                             // Prosody対応: 音素IDとProsody配列を同時に展開
                             var encodingResult = _phonemeEncoder.EncodeWithProsody(
-                                phonemeResult.Phonemes, prosodyA1, prosodyA2, prosodyA3);
+                                phonemeResult.Phonemes, prosodyFlat);
                             phonemeIds = encodingResult.PhonemeIds;
-                            expandedA1 = encodingResult.ExpandedProsodyA1;
-                            expandedA2 = encodingResult.ExpandedProsodyA2;
-                            expandedA3 = encodingResult.ExpandedProsodyA3;
+                            expandedProsodyFlat = encodingResult.ExpandedProsodyFlat;
                             PiperLogger.LogInfo($"Encoded with prosody: {phonemeResult.Phonemes.Length} phonemes -> {phonemeIds.Length} IDs");
                         }
                         else
@@ -701,53 +700,54 @@ namespace uPiper.Core
                         _onProcessingProgress?.Invoke(0.6f);
 
                         // Generate audio using inference (with or without prosody)
-                        float[] audioData;
-                        if (useProsody && expandedA1 != null)
+                        Unity.Collections.NativeArray<float> audioData = default;
+                        try
                         {
-                            audioData = await _inferenceGenerator.GenerateAudioAsync(
-                                phonemeIds, expandedA1, expandedA2, expandedA3,
-                                cancellationToken: cancellationToken);
+                            if (useProsody && expandedProsodyFlat != null)
+                            {
+                                audioData = await _inferenceGenerator.GenerateAudioAsync(
+                                    phonemeIds, expandedProsodyFlat,
+                                    cancellationToken: cancellationToken);
+                            }
+                            else
+                            {
+                                audioData = await _inferenceGenerator.GenerateAudioAsync(
+                                    phonemeIds,
+                                    cancellationToken: cancellationToken);
+                            }
+                            PiperLogger.LogInfo($"Generated {audioData.Length} audio samples");
+
+                            _onProcessingProgress?.Invoke(0.7f);
+
+                            // Create AudioClip from generated data
+                            var audioBuilder = new AudioClipBuilder();
+                            audioClip = audioBuilder.BuildAudioClip(
+                                audioData,
+                                _inferenceGenerator.SampleRate,
+                                $"TTS_Output_{DateTime.Now:HHmmss}"
+                            );
+                            PiperLogger.LogInfo($"Created AudioClip: {audioClip.length:F2} seconds");
                         }
-                        else
+                        finally
                         {
-                            audioData = await _inferenceGenerator.GenerateAudioAsync(
-                                phonemeIds,
-                                cancellationToken: cancellationToken);
+                            if (audioData.IsCreated)
+                                audioData.Dispose();
                         }
-                        PiperLogger.LogInfo($"Generated {audioData.Length} audio samples");
-
-                        _onProcessingProgress?.Invoke(0.7f);
-
-                        // Create AudioClip from generated data
-                        var audioBuilder = new AudioClipBuilder();
-                        audioClip = audioBuilder.BuildAudioClip(
-                            audioData,
-                            _inferenceGenerator.SampleRate,
-                            $"TTS_Output_{DateTime.Now:HHmmss}"
-                        );
-                        PiperLogger.LogInfo($"Created AudioClip: {audioClip.length:F2} seconds");
                     }
                     catch (Exception ex)
                     {
                         PiperLogger.LogError($"Failed to generate audio with InferenceAudioGenerator: {ex.Message}");
-                        // Fall back to dummy audio
-#pragma warning disable CS0618 // Type or member is obsolete
-                        audioClip = CreateDummyAudioClip(text);
-#pragma warning restore CS0618 // Type or member is obsolete
                     }
                 }
                 else
                 {
-                    PiperLogger.LogWarning("InferenceAudioGenerator not available, using dummy audio");
-#pragma warning disable CS0618 // Type or member is obsolete
-                    audioClip = CreateDummyAudioClip(text);
-#pragma warning restore CS0618 // Type or member is obsolete
+                    PiperLogger.LogWarning("InferenceAudioGenerator not available");
                 }
 
                 _onProcessingProgress?.Invoke(0.8f);
 
                 // Cache the result if enabled
-                if (_config.EnablePhonemeCache && phonemeResult != null)
+                if (_validatedConfig.Performance.EnablePhonemeCache && phonemeResult != null)
                 {
                     var cacheKey = GenerateCacheKey(text, _currentVoiceId);
                     // Caching is handled by the phonemizer's built-in cache
@@ -810,7 +810,7 @@ namespace uPiper.Core
                     await Task.Delay(100, cancellationToken);
 
                     // Create a dummy audio chunk
-                    var audioData = new float[_config.SampleRate / 10]; // 0.1 second of audio
+                    var audioData = new float[_validatedConfig.Audio.SampleRate / 10]; // 0.1 second of audio
                     for (var i = 0; i < audioData.Length; i++)
                     {
                         audioData[i] = 0f; // Silence for now
@@ -818,7 +818,7 @@ namespace uPiper.Core
 
                     var chunk = new AudioChunk(
                         samples: audioData,
-                        sampleRate: _config.SampleRate,
+                        sampleRate: _validatedConfig.Audio.SampleRate,
                         channels: 1,
                         chunkIndex: processedSentences,
                         isFinal: (processedSentences == totalSentences - 1),
@@ -999,7 +999,7 @@ namespace uPiper.Core
             if (string.IsNullOrEmpty(_currentVoiceId))
                 throw new InvalidOperationException("No voice selected. Load a voice first.");
 
-            if (!_config.EnablePhonemeCache)
+            if (!_validatedConfig.Performance.EnablePhonemeCache)
             {
                 PiperLogger.LogWarning("Phoneme cache is disabled. PreloadTextAsync has no effect.");
                 return;
@@ -1052,7 +1052,7 @@ namespace uPiper.Core
                 HitCount = phonemeCacheStats.HitCount,
                 MissCount = phonemeCacheStats.MissCount,
                 EvictionCount = phonemeCacheStats.EvictionCount,
-                MaxSizeBytes = _config.MaxCacheSizeMB * 1024L * 1024L
+                MaxSizeBytes = _validatedConfig.Performance.MaxCacheSizeMB * 1024L * 1024L
             };
             return stats;
         }
@@ -1181,7 +1181,7 @@ namespace uPiper.Core
             PiperLogger.LogInfo("Initializing Inference Engine backend...");
 
             // Map PiperConfig backend to Unity Inference Engine backend
-            _inferenceBackend = _config.Backend switch
+            _inferenceBackend = _validatedConfig.Inference.Backend switch
             {
                 InferenceBackend.CPU => BackendType.CPU,
                 InferenceBackend.GPUCompute => BackendType.GPUCompute,
@@ -1244,7 +1244,7 @@ namespace uPiper.Core
         /// </summary>
         private async Task InitializeWorkerPoolAsync(CancellationToken cancellationToken)
         {
-            PiperLogger.LogInfo("Initializing worker pool with {0} threads", _config.WorkerThreads);
+            PiperLogger.LogInfo("Initializing worker pool with {0} threads", _validatedConfig.Performance.WorkerThreads);
 
             // Worker pool initialization will be implemented when we have actual models
             // For now, just log the intention
@@ -1295,7 +1295,7 @@ namespace uPiper.Core
         /// </summary>
         private void InitializeCacheSystem()
         {
-            PiperLogger.LogInfo("Initializing cache system with max size: {0}MB", _config.MaxCacheSizeMB);
+            PiperLogger.LogInfo("Initializing cache system with max size: {0}MB", _validatedConfig.Performance.MaxCacheSizeMB);
 
             // Clear any existing cache
             _phonemeCache.Clear();
@@ -1315,32 +1315,6 @@ namespace uPiper.Core
             // Simple hash-based cache key
             var combined = $"{text}|{voiceId}";
             return combined.GetHashCode().ToString();
-        }
-
-        /// <summary>
-        /// Create a dummy audio clip for testing
-        /// </summary>
-        [Obsolete("This is a fallback method. Use InferenceAudioGenerator for actual TTS.")]
-        private AudioClip CreateDummyAudioClip(string text)
-        {
-            // Calculate duration based on text length (rough estimate)
-            var estimatedDuration = Mathf.Max(1f, text.Length * 0.06f); // ~60ms per character
-            var sampleCount = (int)(estimatedDuration * _config.SampleRate);
-
-            // Create silent audio clip for now
-            var audioClip = AudioClip.Create(
-                "TTS_Output",
-                sampleCount,
-                1, // Mono
-                _config.SampleRate,
-                false
-            );
-
-            // Fill with silence
-            var data = new float[sampleCount];
-            audioClip.SetData(data, 0);
-
-            return audioClip;
         }
 
         /// <summary>

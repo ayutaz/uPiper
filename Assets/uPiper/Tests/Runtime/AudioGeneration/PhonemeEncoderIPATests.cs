@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Runtime.AudioGeneration
 {
@@ -14,35 +15,37 @@ namespace uPiper.Tests.Runtime.AudioGeneration
     {
         private PhonemeEncoder _encoder;
         private PiperVoiceConfig _config;
+        private PuaTokenMapper _mapper;
 
         [SetUp]
         public void Setup()
         {
+            _mapper = new PuaTokenMapper();
             // IPA対応モデルのphoneme_id_mapを再現
             _config = new PiperVoiceConfig
             {
                 VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",
                 SampleRate = 22050,
-                PhonemeIdMap = new Dictionary<string, int>
+                PhonemeIdMap = new Dictionary<string, int[]>
                 {
-                    { "_", 0 }, { "^", 1 }, { "$", 2 }, { "?", 3 }, { "#", 4 },
-                    { "[", 5 }, { "]", 6 },
-                    { "a", 7 }, { "i", 8 }, { "u", 9 }, { "e", 10 }, { "o", 11 },
-                    { "A", 12 }, { "I", 13 }, { "U", 14 }, { "E", 15 }, { "O", 16 },
-                    { "ç", 17 }, { "ɕ", 18 }, { "ɯ", 19 }, { "ɴ", 20 }, { "ɾ", 21 },
-                    { "N", 22 }, { "ʑ", 23 }, { "q", 24 }, { "k", 25 },
-                    { "kʲ", 26 }, { "ɡʲ", 27 }, { "g", 28 }, { "ɡ", 29 }, { "dʑ", 30 },
-                    { "t", 31 }, { "tɕ", 32 }, { "d", 33 }, { "dʲ", 34 },
-                    { "p", 35 }, { "pʲ", 36 }, { "b", 37 }, { "bʲ", 38 },
-                    { "cç", 39 }, { "çː", 40 }, { "s", 41 }, { "ʃ", 42 },
-                    { "z", 43 }, { "j", 44 }, { "ɲ", 45 },
-                    { "f", 46 }, { "h", 47 }, { "hʲ", 48 }, { "v", 49 },
-                    { "n", 50 }, { "nʲ", 51 }, { "m", 52 }, { "mʲ", 53 },
-                    { "r", 54 }, { "ɽ", 55 }, { "w", 56 }, { "y", 57 }
+                    { "_", new[] { 0 } }, { "^", new[] { 1 } }, { "$", new[] { 2 } }, { "?", new[] { 3 } }, { "#", new[] { 4 } },
+                    { "[", new[] { 5 } }, { "]", new[] { 6 } },
+                    { "a", new[] { 7 } }, { "i", new[] { 8 } }, { "u", new[] { 9 } }, { "e", new[] { 10 } }, { "o", new[] { 11 } },
+                    { "A", new[] { 12 } }, { "I", new[] { 13 } }, { "U", new[] { 14 } }, { "E", new[] { 15 } }, { "O", new[] { 16 } },
+                    { "ç", new[] { 17 } }, { "ɕ", new[] { 18 } }, { "ɯ", new[] { 19 } }, { "ɴ", new[] { 20 } }, { "ɾ", new[] { 21 } },
+                    { "N", new[] { 22 } }, { "ʑ", new[] { 23 } }, { "q", new[] { 24 } }, { "k", new[] { 25 } },
+                    { "kʲ", new[] { 26 } }, { "ɡʲ", new[] { 27 } }, { "g", new[] { 28 } }, { "ɡ", new[] { 29 } }, { "dʑ", new[] { 30 } },
+                    { "t", new[] { 31 } }, { "tɕ", new[] { 32 } }, { "d", new[] { 33 } }, { "dʲ", new[] { 34 } },
+                    { "p", new[] { 35 } }, { "pʲ", new[] { 36 } }, { "b", new[] { 37 } }, { "bʲ", new[] { 38 } },
+                    { "cç", new[] { 39 } }, { "çː", new[] { 40 } }, { "s", new[] { 41 } }, { "ʃ", new[] { 42 } },
+                    { "z", new[] { 43 } }, { "j", new[] { 44 } }, { "ɲ", new[] { 45 } },
+                    { "f", new[] { 46 } }, { "h", new[] { 47 } }, { "hʲ", new[] { 48 } }, { "v", new[] { 49 } },
+                    { "n", new[] { 50 } }, { "nʲ", new[] { 51 } }, { "m", new[] { 52 } }, { "mʲ", new[] { 53 } },
+                    { "r", new[] { 54 } }, { "ɽ", new[] { 55 } }, { "w", new[] { 56 } }, { "y", new[] { 57 } }
                 }
             };
-            _encoder = new PhonemeEncoder(_config);
+            _encoder = new PhonemeEncoder(_config, _mapper);
         }
 
         /// <summary>

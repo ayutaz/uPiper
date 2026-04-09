@@ -1,5 +1,10 @@
 # uPiper Setup Guide
 
+## Prerequisites
+
+- **Unity 6000.0 以上** (Unity 6)
+- Unity AI Inference Engine (com.unity.ai.inference) 2.5.0
+
 ## Installation Methods
 
 uPiper can be installed in two ways:
@@ -25,15 +30,15 @@ The `.unitypackage` does not include DotNetG2P packages or some required Unity p
 ```jsonc
 // Add the following to "dependencies" in Packages/manifest.json:
 "com.unity.ai.inference": "2.5.0",
-"com.unity.nuget.newtonsoft-json": "3.2.1",
-"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.8.2",
-"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.8.2",
-"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.8.2",
-"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.8.2",
-"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.8.2",
-"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.8.2",
-"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.8.2",
-"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.8.2"
+"com.unity.nuget.newtonsoft-json": "3.2.2",
+"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.5.0",
+"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.5.0",
+"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.5.0",
+"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.5.0",
+"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.5.0",
+"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.5.0",
+"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.5.0",
+"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.5.0"
 ```
 
 ## Required Data Setup
@@ -60,7 +65,7 @@ After installing uPiper:
    
    - **Voice Models (Optional)** (127MB)
      - High-quality ONNX voice models
-     - Includes Japanese and English voices
+     - 6言語対応（multilingual-test-medium: ja/en/zh/es/fr/pt）
      - Can be downloaded separately if needed
 
 ### Step 2: Install Imported Samples
@@ -86,8 +91,12 @@ If you prefer to manage data files manually:
 
 ### Dictionary Files
 Place dictionary files in `Assets/StreamingAssets/uPiper/`:
-- MeCab Dictionary: `MeCab/naist_jdic/`
+- MeCab Dictionary: `OpenJTalk/naist_jdic/open_jtalk_dic_utf_8-1.11/`
 - CMU Dictionary: `Phonemizers/cmudict-0.7b.txt`
+- Chinese Dictionary: `Chinese/pinyin_char.txt`, `Chinese/pinyin_phrase.txt`
+- Language Profiles: `LanguageProfiles/trigram_profiles.json`
+- PUA Token Map: `pua.json`
+- Custom Dictionaries: `Dictionaries/` (default_common_dict.json, default_tech_dict.json, additional_tech_dict.json, user_custom_dict.json)
 
 ### Voice Models
 Place ONNX models in `Assets/uPiper/Resources/Models/`:

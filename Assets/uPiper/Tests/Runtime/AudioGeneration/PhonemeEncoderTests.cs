@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Runtime.AudioGeneration
 {
@@ -10,29 +11,31 @@ namespace uPiper.Tests.Runtime.AudioGeneration
     {
         private PhonemeEncoder _encoder;
         private PiperVoiceConfig _config;
+        private PuaTokenMapper _mapper;
 
         [SetUp]
         public void Setup()
         {
+            _mapper = new PuaTokenMapper();
             _config = new PiperVoiceConfig
             {
                 VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",  // OpenJTalk方式（PADなし）
                 SampleRate = 22050,
-                PhonemeIdMap = new Dictionary<string, int>
+                PhonemeIdMap = new Dictionary<string, int[]>
                 {
-                    { "_", 0 },  // PAD
-                    { "^", 1 },  // BOS
-                    { "$", 2 },  // EOS
-                    { "a", 3 },
-                    { "b", 4 },
-                    { "c", 5 },
-                    { "d", 6 },
-                    { "e", 7 },
-                    { " ", 8 }
+                    { "_", new[] { 0 } },  // PAD
+                    { "^", new[] { 1 } },  // BOS
+                    { "$", new[] { 2 } },  // EOS
+                    { "a", new[] { 3 } },
+                    { "b", new[] { 4 } },
+                    { "c", new[] { 5 } },
+                    { "d", new[] { 6 } },
+                    { "e", new[] { 7 } },
+                    { " ", new[] { 8 } }
                 }
             };
-            _encoder = new PhonemeEncoder(_config);
+            _encoder = new PhonemeEncoder(_config, _mapper);
         }
 
         [Test]
@@ -134,17 +137,17 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",
                 SampleRate = 22050,
-                PhonemeIdMap = new Dictionary<string, int>
+                PhonemeIdMap = new Dictionary<string, int[]>
                 {
-                    { "_", 0 },  // PAD
-                    { "^", 1 },  // BOS
-                    { "$", 2 },  // EOS
-                    { "?", 3 },  // Question marker
-                    { "a", 4 },
-                    { "b", 5 }
+                    { "_", new[] { 0 } },  // PAD
+                    { "^", new[] { 1 } },  // BOS
+                    { "$", new[] { 2 } },  // EOS
+                    { "?", new[] { 3 } },  // Question marker
+                    { "a", new[] { 4 } },
+                    { "b", new[] { 5 } }
                 }
             };
-            var encoder = new PhonemeEncoder(configWithQuestion);
+            var encoder = new PhonemeEncoder(configWithQuestion, _mapper);
 
             // Arrange: phonemes ending with "?" (question marker from DotNetG2PPhonemizer)
             var phonemes = new[] { "a", "b", "?" };
@@ -173,20 +176,20 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 VoiceId = "multilingual-test-medium",
                 PhonemeType = "openjtalk",
                 SampleRate = 22050,
-                PhonemeIdMap = new Dictionary<string, int>
+                PhonemeIdMap = new Dictionary<string, int[]>
                 {
-                    { "_", 0 },       // PAD
-                    { "^", 1 },       // BOS
-                    { "$", 2 },       // EOS
-                    { "?", 3 },       // Normal question
-                    { "\ue016", 4 },  // ?! Emphatic question (PUA) (piper-plus #210)
-                    { "\ue017", 5 },  // ?. Declarative question (PUA) (piper-plus #210)
-                    { "\ue018", 6 },  // ?~ Confirmatory question (PUA) (piper-plus #210)
-                    { "a", 7 },
-                    { "b", 8 }
+                    { "_", new[] { 0 } },       // PAD
+                    { "^", new[] { 1 } },       // BOS
+                    { "$", new[] { 2 } },       // EOS
+                    { "?", new[] { 3 } },       // Normal question
+                    { "\ue016", new[] { 4 } },  // ?! Emphatic question (PUA) (piper-plus #210)
+                    { "\ue017", new[] { 5 } },  // ?. Declarative question (PUA) (piper-plus #210)
+                    { "\ue018", new[] { 6 } },  // ?~ Confirmatory question (PUA) (piper-plus #210)
+                    { "a", new[] { 7 } },
+                    { "b", new[] { 8 } }
                 }
             };
-            var encoder = new PhonemeEncoder(configWithExtendedQuestions);
+            var encoder = new PhonemeEncoder(configWithExtendedQuestions, _mapper);
 
             // Test each extended question marker
             // Note: The markers are converted to PUA, so we expect the PUA IDs
@@ -230,6 +233,42 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             Assert.AreEqual(4, ids[2]); // b
             Assert.AreEqual(5, ids[3]); // c
             Assert.AreEqual(2, ids[4]); // EOS ($) added
+        }
+
+        #endregion
+
+        #region Multi-ID PhonemeIdMap Tests (P2-1)
+
+        [Test]
+        public void PhonemeEncoder_MultiIdPhoneme_UsesFirstId()
+        {
+            // Arrange: PhonemeIdMap with multi-element int[] arrays.
+            // PhonemeEncoder should extract ids[0] for internal encoding.
+            var multiIdConfig = new PiperVoiceConfig
+            {
+                VoiceId = "multi-id-test",
+                PhonemeType = "openjtalk",
+                SampleRate = 22050,
+                PhonemeIdMap = new Dictionary<string, int[]>
+                {
+                    { "_", new[] { 0 } },
+                    { "^", new[] { 1 } },
+                    { "$", new[] { 2 } },
+                    { "a", new[] { 10, 11, 12 } },  // Multi-ID: should use 10
+                    { "b", new[] { 20, 21 } },       // Multi-ID: should use 20
+                }
+            };
+            var encoder = new PhonemeEncoder(multiIdConfig, _mapper);
+
+            // Act
+            var ids = encoder.Encode(new[] { "a", "b" });
+
+            // Assert: BOS(1) + a(10) + b(20) + EOS(2) = 4
+            Assert.AreEqual(4, ids.Length);
+            Assert.AreEqual(1, ids[0]);   // BOS
+            Assert.AreEqual(10, ids[1]);  // a -> ids[0] = 10 (not 11 or 12)
+            Assert.AreEqual(20, ids[2]);  // b -> ids[0] = 20 (not 21)
+            Assert.AreEqual(2, ids[3]);   // EOS
         }
 
         #endregion

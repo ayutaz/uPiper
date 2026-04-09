@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Runtime.AudioGeneration
 {
@@ -10,28 +11,30 @@ namespace uPiper.Tests.Runtime.AudioGeneration
     {
         private PhonemeEncoder _encoder;
         private PiperVoiceConfig _config;
+        private PuaTokenMapper _mapper;
 
         [SetUp]
         public void Setup()
         {
+            _mapper = new PuaTokenMapper();
             _config = new PiperVoiceConfig
             {
                 VoiceId = "multilingual-test-medium", // eSpeak形式のモデル
                 SampleRate = 22050,
-                PhonemeIdMap = new Dictionary<string, int>
+                PhonemeIdMap = new Dictionary<string, int[]>
                 {
-                    { "_", 0 },  // PAD
-                    { "^", 1 },  // BOS
-                    { "$", 2 },  // EOS
-                    { "a", 3 },
-                    { "b", 4 },
-                    { "c", 5 },
-                    { "d", 6 },
-                    { "e", 7 },
-                    { " ", 8 }
+                    { "_", new[] { 0 } },  // PAD
+                    { "^", new[] { 1 } },  // BOS
+                    { "$", new[] { 2 } },  // EOS
+                    { "a", new[] { 3 } },
+                    { "b", new[] { 4 } },
+                    { "c", new[] { 5 } },
+                    { "d", new[] { 6 } },
+                    { "e", new[] { 7 } },
+                    { " ", new[] { 8 } }
                 }
             };
-            _encoder = new PhonemeEncoder(_config);
+            _encoder = new PhonemeEncoder(_config, _mapper);
         }
 
         [Test]

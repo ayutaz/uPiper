@@ -9,6 +9,18 @@
     <!-- dot-net-g2p assembly preservation -->
     <assembly fullname="DotNetG2P.Core" preserve="all"/>
     <assembly fullname="DotNetG2P.MeCab" preserve="all"/>
+    <assembly fullname="DotNetG2P.English" preserve="all"/>
+    <assembly fullname="DotNetG2P.Spanish" preserve="all"/>
+    <assembly fullname="DotNetG2P.French" preserve="all"/>
+    <assembly fullname="DotNetG2P.Portuguese" preserve="all"/>
+    <assembly fullname="DotNetG2P.Chinese" preserve="all"/>
+    <assembly fullname="DotNetG2P.Korean" preserve="all"/>
+
+    <!-- ArrayPool (System.Buffers) -->
+    <assembly fullname="System.Buffers" preserve="all"/>
+
+    <!-- Regex (used by G2P engines and text processing) -->
+    <assembly fullname="System.Text.RegularExpressions" preserve="all"/>
 
     <!-- System types used by uPiper -->
     <assembly fullname="System.Core">
@@ -29,6 +41,14 @@
         <type fullname="System.Collections.Generic.List`1" preserve="all"/>
         <type fullname="System.Collections.Generic.Queue`1" preserve="all"/>
         <type fullname="System.Collections.Generic.LinkedList`1" preserve="all"/>
+    </assembly>
+    <assembly fullname="System.Collections.Concurrent" preserve="all"/>
+
+    <!-- Globalization (NumberStyles for hex parsing, CultureInfo for InvariantCulture) -->
+    <assembly fullname="System.Runtime">
+        <type fullname="System.Globalization.CultureInfo" preserve="all"/>
+        <type fullname="System.Globalization.NumberStyles" preserve="all"/>
+        <type fullname="System.Text.NormalizationForm" preserve="all"/>
     </assembly>
     
     <!-- P/Invoke support -->

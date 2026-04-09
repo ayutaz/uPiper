@@ -19,6 +19,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
   - [Troubleshooting](#troubleshooting)
 - [Supported Platforms](#supported-platforms)
 - [GPU Inference](#gpu-inference)
+- [Quick Start](#quick-start)
 - [Documentation](#documentation)
 - [License](#license)
 
@@ -26,11 +27,12 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 
 - High-quality speech synthesis (piper-plus based)
 - Multi-language support (Japanese, English, Chinese, Spanish, French, Portuguese, Korean)
+- **Hybrid Language Detection**: Unicode range + N-gram Trigram integration (high-precision identification of Latin-script languages en/es/fr/pt)
 
 | Language | G2P Backend |
 |----------|-------------|
 | Japanese | DotNetG2P.Japanese (MeCab dictionary) |
-| English | DotNetG2P.English (Flite LTS) |
+| English | DotNetG2P.English (CMU dict + LTS) |
 | Chinese | DotNetG2P.Chinese (44K character dictionary) |
 | Spanish | DotNetG2P.Spanish |
 | French | DotNetG2P.French |
@@ -42,6 +44,8 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 - GPU inference support (GPUCompute/GPUPixel)
 - **Prosody Support**: More natural intonation in speech synthesis
 - **Custom Dictionary**: Reading conversion for technical terms and proper nouns
+- **NativeArray Pipeline**: Reduced GC allocation by unifying float[] to NativeArray&lt;float&gt;
+- **SynthesizeAsync public API**: Low-level speech synthesis access via SynthesisRequest
 
 ### Supported Models
 
@@ -51,7 +55,8 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 
 ## Requirements
 * Unity 6000.0.58f2
-* Unity AI Inference Engine (com.unity.ai.inference) 2.2.2
+* Unity AI Inference Engine (com.unity.ai.inference) 2.5.0
+* C# 10.0 (LangVersion 10.0 specified in csc.rsp)
 
 ## Installation
 
@@ -79,7 +84,7 @@ Add the following scoped registry to `Packages/manifest.json`:
     }
   ],
   "dependencies": {
-    "com.ayutaz.upiper": "1.4.0"
+    "com.ayutaz.upiper": "1.5.0"
   }
 }
 ```
@@ -138,15 +143,15 @@ Download the latest version from the [Releases](https://github.com/ayutaz/uPiper
 ```jsonc
 // Add the following to "dependencies" in Packages/manifest.json:
 "com.unity.ai.inference": "2.5.0",
-"com.unity.nuget.newtonsoft-json": "3.2.1",
-"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.8.2",
-"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.8.2",
-"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.8.2",
-"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.8.2",
-"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.8.2",
-"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.8.2",
-"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.8.2",
-"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.8.2"
+"com.unity.nuget.newtonsoft-json": "3.2.2",
+"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.5.0",
+"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.5.0",
+"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.5.0",
+"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.5.0",
+"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.5.0",
+"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.5.0",
+"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.5.0",
+"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.5.0"
 ```
 
 ### Troubleshooting
@@ -161,6 +166,12 @@ Download the latest version from the [Releases](https://github.com/ayutaz/uPiper
 
 #### Japanese Text Garbled
 - Use the NotoSansJP-Regular SDF font included in Basic TTS Demo
+
+#### UI Buttons Not Clickable (When Using Input Manager)
+- Check "Active Input Handling" in project settings
+- Edit > Project Settings > Player > Active Input Handling
+- If set to "Input Manager", the EventSystemAutoSetup component handles this automatically
+- See `Samples~/BasicTTSDemo/BasicTTSDemo_README.md` for details
 
 ## Supported Platforms
 
@@ -183,13 +194,10 @@ var config = new PiperConfig
 {
     Backend = InferenceBackend.Auto,  // Auto selection
     AllowFallbackToCPU = true,        // CPU fallback on GPU failure
-    GPUSettings = new GPUInferenceSettings
-    {
-        MaxBatchSize = 4,
-        UseFloat16 = true,
-        MaxMemoryMB = 512
-    }
 };
+
+// v2.0: ToValidated() to get validated immutable config
+var validated = config.ToValidated();
 ```
 
 ### InferenceBackend.Auto Selection Logic
@@ -208,11 +216,26 @@ When `InferenceBackend.Auto` is specified, the optimal backend is automatically 
 
 See the [GPU Inference Guide](docs/features/gpu/gpu-inference.md) for details.
 
+## Quick Start
+
+```csharp
+// Initialize
+var config = new PiperConfig { Backend = InferenceBackend.Auto };
+var tts = new PiperTTS(config);
+await tts.InitializeWithInferenceAsync(modelAsset, voiceConfig);
+
+// Generate audio from text (v2.0 recommended API)
+var result = await tts.PhonemizeAsync("Hello, world!");
+var request = SynthesisRequest.FromPhonemesWithProsody(result.Phonemes, result.ProsodyFlat);
+var clip = await tts.SynthesizeAsync(request);
+AudioSource.PlayClipAtPoint(clip, Vector3.zero);
+```
+
 ## Documentation
 
+- [Setup Guide](docs/setup-guide.md) - Installation and initial configuration
 - [Architecture](docs/ARCHITECTURE_en.md) - Design and technical details
-- [Development Log](docs/DEVELOPMENT_LOG.md) - Development progress and change history
-- [Documentation Index](docs/) - Technical documentation, guides, and specifications
+- [GPU Inference Guide](docs/features/gpu/gpu-inference.md) - GPU inference configuration and troubleshooting
 
 ## License
 

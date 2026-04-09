@@ -1,11 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DotNetG2P.Chinese;
 using NUnit.Framework;
 using uPiper.Core.Phonemizers.Multilingual;
+using uPiper.Core.Phonemizers.Multilingual.Handlers;
 
-#pragma warning disable CS0618
 namespace uPiper.Tests.Editor.Phonemizers
 {
     [TestFixture]
@@ -40,9 +41,15 @@ namespace uPiper.Tests.Editor.Phonemizers
 
                 // Create MultilingualPhonemizer with pre-built engine for pipeline tests
                 _phonemizer = new MultilingualPhonemizer(
-                    new[] { "zh", "en" },
-                    defaultLatinLanguage: "en",
-                    zhEngine: _engine);
+                    new MultilingualPhonemizerOptions
+                    {
+                        Languages = new[] { "zh", "en" },
+                        DefaultLatinLanguage = "en",
+                        Handlers = new Dictionary<string, ILanguageG2PHandler>
+                        {
+                            ["zh"] = new ChineseG2PHandler(_engine)
+                        }
+                    });
                 Task.Run(async () => await _phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
                 _available = true;
@@ -274,17 +281,11 @@ namespace uPiper.Tests.Editor.Phonemizers
 
             var result = Phonemize("你好世界");
             Assert.IsNotNull(result.Phonemes);
-            Assert.IsNotNull(result.ProsodyA1);
-            Assert.IsNotNull(result.ProsodyA2);
-            Assert.IsNotNull(result.ProsodyA3);
+            Assert.IsNotNull(result.ProsodyFlat);
 
-            // Prosody arrays should be aligned with phoneme array
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
-                "ProsodyA1 length should match Phonemes length");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA2.Length,
-                "ProsodyA2 length should match Phonemes length");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA3.Length,
-                "ProsodyA3 length should match Phonemes length");
+            // ProsodyFlat (stride=3) should be aligned with phoneme array
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat length should be Phonemes.Length * 3");
         }
 
         [Test]
@@ -292,14 +293,20 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             EnsureAvailable();
 
-            // Chinese prosody: a1 = tone number (1-5)
+            // Chinese prosody: a1 = tone number (1-5), stored at flat[i*3+0]
             var result = Phonemize("你好");
-            Assert.IsNotNull(result.ProsodyA1);
+            Assert.IsNotNull(result.ProsodyFlat);
 
-            // At least some A1 values should be tone numbers (1-5)
-            var hasToneValues = result.ProsodyA1.Any(v => v >= 1 && v <= 5);
+            // At least some A1 values (stride offset 0) should be tone numbers (1-5)
+            var phonemeCount = result.Phonemes.Length;
+            var hasToneValues = false;
+            for (var i = 0; i < phonemeCount; i++)
+            {
+                var a1 = result.ProsodyFlat[i * 3 + 0];
+                if (a1 >= 1 && a1 <= 5) { hasToneValues = true; break; }
+            }
             Assert.IsTrue(hasToneValues,
-                "ProsodyA1 should contain tone values (1-5) for Chinese text");
+                "ProsodyFlat A1 (offset 0) should contain tone values (1-5) for Chinese text");
         }
 
         [Test]
@@ -307,14 +314,20 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             EnsureAvailable();
 
-            // Chinese prosody: a3 = word length in syllables
+            // Chinese prosody: a3 = word length in syllables, stored at flat[i*3+2]
             var result = Phonemize("中国人");
-            Assert.IsNotNull(result.ProsodyA3);
+            Assert.IsNotNull(result.ProsodyFlat);
 
-            // A3 values should be positive (word length >= 1)
-            var hasPositiveA3 = result.ProsodyA3.Any(v => v >= 1);
+            // A3 values (stride offset 2) should be positive (word length >= 1)
+            var phonemeCount = result.Phonemes.Length;
+            var hasPositiveA3 = false;
+            for (var i = 0; i < phonemeCount; i++)
+            {
+                var a3 = result.ProsodyFlat[i * 3 + 2];
+                if (a3 >= 1) { hasPositiveA3 = true; break; }
+            }
             Assert.IsTrue(hasPositiveA3,
-                "ProsodyA3 should contain positive word length values");
+                "ProsodyFlat A3 (offset 2) should contain positive word length values");
         }
 
         // ── Multi-sentence and mixed content ─────────────────────────────────

@@ -5,6 +5,7 @@ using NUnit.Framework;
 using UnityEngine;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Editor.AudioGeneration
 {
@@ -25,28 +26,28 @@ namespace uPiper.Tests.Editor.AudioGeneration
         /// PhonemeEncoder が動作する最小限の PhonemeIdMap を構築する。
         /// PAD=0, BOS=1, EOS=2 の特殊トークンに加え、基本音素を含む。
         /// </summary>
-        private static Dictionary<string, int> CreateMinimalPhonemeIdMap()
+        private static Dictionary<string, int[]> CreateMinimalPhonemeIdMap()
         {
-            return new Dictionary<string, int>
+            return new Dictionary<string, int[]>
             {
-                ["_"] = 0,  // PAD
-                ["^"] = 1,  // BOS
-                ["$"] = 2,  // EOS
-                ["a"] = 3,
-                ["i"] = 4,
-                ["u"] = 5,
-                ["e"] = 6,
-                ["o"] = 7,
-                ["k"] = 8,
-                ["s"] = 9,
-                ["t"] = 10,
-                ["n"] = 11,
-                ["h"] = 12,
-                ["m"] = 13,
-                ["r"] = 14,
-                ["w"] = 15,
-                ["N"] = 16,
-                [" "] = 17,
+                ["_"] = new[] { 0 },  // PAD
+                ["^"] = new[] { 1 },  // BOS
+                ["$"] = new[] { 2 },  // EOS
+                ["a"] = new[] { 3 },
+                ["i"] = new[] { 4 },
+                ["u"] = new[] { 5 },
+                ["e"] = new[] { 6 },
+                ["o"] = new[] { 7 },
+                ["k"] = new[] { 8 },
+                ["s"] = new[] { 9 },
+                ["t"] = new[] { 10 },
+                ["n"] = new[] { 11 },
+                ["h"] = new[] { 12 },
+                ["m"] = new[] { 13 },
+                ["r"] = new[] { 14 },
+                ["w"] = new[] { 15 },
+                ["N"] = new[] { 16 },
+                [" "] = new[] { 17 },
             };
         }
 
@@ -62,10 +63,11 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 VoiceId = "test-voice",
                 Language = "ja",
                 PhonemeIdMap = CreateMinimalPhonemeIdMap(),
-                // PhonemeType が null の場合、日本語モデル扱い（intersperse PAD なし）
+                // PhonemeType が null かつ VoiceId に "ja_JP" を含まない場合、
+                // intersperse PAD あり（NeedsInterspersePadding() = true）
                 PhonemeType = null,
             };
-            _phonemeEncoder = new PhonemeEncoder(_voiceConfig);
+            _phonemeEncoder = new PhonemeEncoder(_voiceConfig, new PuaTokenMapper());
         }
 
         // ── 通常パス（Prosodyなし）────────────────────────────────
@@ -80,7 +82,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 config, _voiceConfig);
             var request = new SynthesisRequest(
                 new[] { "k", "o", "N", "n", "i", "t", "i", "w", "a" },
-                null, null, null,
+                null,
                 1.0f, 0.667f, 0.8f,
                 0, 0);
 
@@ -91,7 +93,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             Assert.IsNotNull(clip, "AudioClip を返すこと");
             Assert.AreEqual(1, _stubGenerator.GenerateCallCount,
                 "GenerateAudioAsync が1回呼ばれること");
-            Assert.IsNull(_stubGenerator.LastProsodyA1,
+            Assert.IsNull(_stubGenerator.LastProsodyFlat,
                 "Prosodyなしの場合、prosodyA1 は null であること");
         }
 
@@ -106,11 +108,11 @@ namespace uPiper.Tests.Editor.AudioGeneration
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
+            // stride=3 flat: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, a1_2, a2_2, a3_2]
+            var prosodyFlat = new[] { 0, 1, 0, 1, 1, 0, 2, 1, 0 };
             var request = new SynthesisRequest(
                 new[] { "k", "o", "N" },
-                new[] { 0, 1, 2 },
-                new[] { 1, 1, 1 },
-                new[] { 0, 0, 0 },
+                prosodyFlat,
                 1.0f, 0.667f, 0.8f,
                 0, 0);
 
@@ -121,7 +123,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             Assert.IsNotNull(clip, "Prosody付きでも AudioClip を返すこと");
             Assert.AreEqual(1, _stubGenerator.GenerateCallCount,
                 "GenerateAudioAsync が1回呼ばれること");
-            Assert.IsNotNull(_stubGenerator.LastProsodyA1,
+            Assert.IsNotNull(_stubGenerator.LastProsodyFlat,
                 "Prosodyありの場合、prosodyA1 が渡されること");
         }
 
@@ -138,7 +140,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             // "_" を含む音素列（"_" がPAD/沈黙トークンとして句分割のトリガーになる）
             var request = new SynthesisRequest(
                 new[] { "a", "_", "k", "o" },
-                null, null, null,
+                null,
                 1.0f, 0.667f, 0.8f,
                 0, 0);
 
@@ -164,7 +166,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 config, _voiceConfig);
             var request = new SynthesisRequest(
                 null,
-                null, null, null,
+                null,
                 1.0f, 0.667f, 0.8f,
                 0, 0);
 
@@ -183,7 +185,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 config, _voiceConfig);
             var request = new SynthesisRequest(
                 Array.Empty<string>(),
-                null, null, null,
+                null,
                 1.0f, 0.667f, 0.8f,
                 0, 0);
 
@@ -238,7 +240,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 config, _voiceConfig);
             var request = new SynthesisRequest(
                 new[] { "a", "i" },
-                null, null, null,
+                null,
                 2.0f, 0.5f, 0.9f,  // non-default values
                 3, 1);
 
@@ -267,7 +269,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             // → expected: [1, 0, 3, 0, 4, 0, 2]
             var request = new SynthesisRequest(
                 new[] { "a", "i" },
-                null, null, null,
+                null,
                 1.0f, 0.667f, 0.8f,
                 0, 0);
 
@@ -296,7 +298,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 null, _voiceConfig);
             var request = new SynthesisRequest(
                 new[] { "a" },
-                null, null, null,
+                null,
                 1.0f, 0.667f, 0.8f,
                 0, 0);
 
@@ -311,11 +313,10 @@ namespace uPiper.Tests.Editor.AudioGeneration
         // ── ヘルパー ─────────────────────────────────────────────
 
         /// <summary>
-        /// テスト用 ValidatedPiperConfig を生成する。
-        /// PiperConfig.ToValidated() 内で Validate() が走り、
-        /// WorkerThreads=0 が自動検出されるため、手動で1以上を設定する。
+        /// テスト用 IPiperConfigReadOnly を生成する。
+        /// ToValidated() で WorkerThreads=0 が自動検出されるため、手動で1以上を設定する。
         /// </summary>
-        private static ValidatedPiperConfig CreateValidatedConfig(
+        private static IPiperConfigReadOnly CreateValidatedConfig(
             bool enableSilence, string silenceSpec = "_ 0.5")
         {
             var piperConfig = new PiperConfig
@@ -325,6 +326,50 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 WorkerThreads = 1,
             };
             return piperConfig.ToValidated();
+        }
+
+        // ── IPiperConfigReadOnly 型検証 ─────────────────────────────
+
+        [Test]
+        public void ValidatedPiperConfig_Implements_IPiperConfigReadOnly()
+        {
+            // Arrange & Act
+            var piperConfig = new PiperConfig { WorkerThreads = 1 };
+            var validated = piperConfig.ToValidated();
+
+            // Assert
+            Assert.IsInstanceOf<IPiperConfigReadOnly>(validated,
+                "ValidatedPiperConfig が IPiperConfigReadOnly を実装していること");
+        }
+
+        [Test]
+        public void IPiperConfigReadOnly_AllProperties_Accessible()
+        {
+            // Arrange
+            var piperConfig = new PiperConfig { WorkerThreads = 1 };
+            IPiperConfigReadOnly config = piperConfig.ToValidated();
+
+            // Act & Assert: 全6プロパティにインターフェース経由でアクセスできること
+            Assert.IsNotNull(config.Language.DefaultLanguage, "Language.DefaultLanguage にアクセスできること");
+            Assert.GreaterOrEqual(config.Performance.MaxCacheSizeMB, 0, "Performance.MaxCacheSizeMB にアクセスできること");
+            Assert.IsTrue(System.Enum.IsDefined(typeof(InferenceBackend), config.Inference.Backend),
+                "Inference.Backend にアクセスできること");
+            Assert.Greater(config.Audio.SampleRate, 0, "Audio.SampleRate にアクセスできること");
+            Assert.IsFalse(config.Silence.EnablePhonemeSilence, "Silence.EnablePhonemeSilence にアクセスできること");
+            Assert.GreaterOrEqual(config.General.TimeoutMs, 0, "General.TimeoutMs にアクセスできること");
+        }
+
+        [Test]
+        public void TTSSynthesisOrchestrator_AcceptsIPiperConfigReadOnly()
+        {
+            // Arrange
+            IPiperConfigReadOnly config = CreateValidatedConfig(enableSilence: false);
+
+            // Act & Assert: IPiperConfigReadOnly 型でコンストラクタに渡せること
+            Assert.DoesNotThrow(() =>
+                new TTSSynthesisOrchestrator(
+                    _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                    config, _voiceConfig));
         }
     }
 }

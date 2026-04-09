@@ -5,6 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - Unreleased
+
+### Added
+
+- ILanguageG2PHandler Strategy パターンによる7言語G2Pプラグイン化
+- ILanguageDetector インターフェース + HybridLanguageDetector (Unicode+Trigram統合)
+- N-gram言語検出（en/es/fr/pt のラテン文字言語識別、Trigramプロファイル300エントリ×4言語）
+- pua.json ランタイム読み込み（StreamingAssets配置、ハードコードフォールバック）
+- SynthesisRequest public API（FromPhonemes/FromPhonemesWithProsody ファクトリ）
+- PiperTTS.SynthesizeAsync(SynthesisRequest) 低レベルAPI
+- PiperTTS.PhonemizeAsync(string) public化 + PhonemizeResult型
+- IPiperConfigReadOnly インターフェース
+- ValidatedPiperConfig ネスト構造化（6 readonly record struct）
+- AudioNormalizer static class（AudioClipBuilderから分離）
+- BackendSelector + PlatformInfo（プリプロセッサ封じ込め、テスタビリティ向上）
+- NativeArray&lt;float&gt; パイプライン統一（GCアロケーション削減）
+- AudioClipBuilder NativeArray オーバーロード
+- AudioNormalizer NativeArray オーバーロード
+- Android StreamingAssets対応（WebGLStreamingAssetsLoader UNITY_ANDROID分岐）
+
+### Changed
+
+- PhonemeIdMap: Dictionary&lt;string, int&gt; → Dictionary&lt;string, int[]&gt;（piper-plus完全互換）
+- Prosody: A1/A2/A3 3本配列 → stride=3 フラット配列（ProsodyFlat）
+- PuaTokenMapper: static class → sealed instance class
+- MultilingualPhonemizer: switch文 → Dictionary&lt;string, HandlerEntry&gt; ディスパッチ
+- HandlerEntry: 所有権管理一元化（IsOwned フラグ）
+- ValidatedPiperConfig: 22フラットプロパティ → 6ネスト record struct
+- PiperConfig.Validate(): 副作用排除、ToValidated()が唯一エントリポイント
+- IInferenceAudioGenerator.GenerateAudioAsync: Task&lt;float[]&gt; → Task&lt;NativeArray&lt;float&gt;&gt;
+- PhonemeEncoder.ProsodyStride: internal → public
+- C# LangVersion: 9.0 → 10.0 (csc.rsp明示)
+
+### Deprecated
+
+- PiperConfig.Validate() — Use ToValidated() instead (v3.0削除予定)
+- GPUInferenceSettings.Validate() — Clamp moved to ValidatedPiperConfig
+- AudioClipBuilder.BuildAudioClip(float[]) — Use NativeArray overload
+- GenerateAudioWithInferenceAsync — Use SynthesizeAsync(SynthesisRequest)
+- GenerateAudioWithMultilingualAsync — Use SynthesizeAsync(SynthesisRequest)
+
+### Removed
+
+- IPhonemizerBackend インターフェース + PhonemizerBackendOptions
+- MultilingualPhonemizer 14引数 Obsolete コンストラクタ
+- MultilingualPhonemizerOptions 個別エンジンプロパティ (JaPhonemizer, EnEngine等)
+- PiperTTS.CreateDummyAudioClip
+- InferenceAudioGenerator.DetermineBackendType (→ BackendSelector.Determine)
+- AudioClipBuilder.NormalizeAudio/NormalizeAudioInPlace (→ AudioNormalizer)
+- #pragma warning disable CS0618 (Runtime/Demo/InferenceEngineDemo.csの1件を除き全除去)
+
+### Fixed
+
+- Android APK内StreamingAssets対応（WebGLStreamingAssetsLoader Android分岐）
+- NormalizeAudio設定フラグが無視される問題
+- GenerateAudioWithInferenceAsyncでProsody情報が喪失する問題
+- EosLikeTokens PUA文字のPhonemeEncoder/MultilingualPhonemizer間不一致
+- LoadFromJson スレッドセーフティ（copy-on-write方式）
+- PhonemeSilence 二重パース
+
 ## [1.4.0] - 2026/03/21
 
 ### Added
@@ -368,6 +428,7 @@ Apache License 2.0 - See [LICENSE](LICENSE) file for details
 - [Documentation](https://github.com/ayutaz/uPiper/tree/main/docs)
 - [Issues](https://github.com/ayutaz/uPiper/issues)
 
+[1.5.0]: https://github.com/ayutaz/uPiper/compare/v1.4.0...HEAD
 [1.4.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.4.0
 [1.3.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.3.0
 [1.2.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.2.0

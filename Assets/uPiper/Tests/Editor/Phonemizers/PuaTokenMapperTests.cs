@@ -9,6 +9,14 @@ namespace uPiper.Tests.Editor.Phonemizers
     [TestFixture]
     public class PuaTokenMapperTests
     {
+        private PuaTokenMapper _mapper;
+
+        [SetUp]
+        public void Setup()
+        {
+            _mapper = new PuaTokenMapper();
+        }
+
         // ── Fixed PUA Mapping Verification ─────────────────────────────────
 
         [Test]
@@ -169,9 +177,9 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             foreach (var kvp in PuaTokenMapper.FixedPuaMapping)
             {
-                Assert.IsTrue(PuaTokenMapper.Token2Char.ContainsKey(kvp.Key),
+                Assert.IsTrue(_mapper.Token2Char.ContainsKey(kvp.Key),
                     $"Token2Char should contain fixed token '{kvp.Key}'");
-                Assert.AreEqual((char)kvp.Value, PuaTokenMapper.Token2Char[kvp.Key],
+                Assert.AreEqual((char)kvp.Value, _mapper.Token2Char[kvp.Key],
                     $"Token2Char['{kvp.Key}'] should map to 0x{kvp.Value:X4}");
             }
         }
@@ -182,9 +190,9 @@ namespace uPiper.Tests.Editor.Phonemizers
             foreach (var kvp in PuaTokenMapper.FixedPuaMapping)
             {
                 var ch = (char)kvp.Value;
-                Assert.IsTrue(PuaTokenMapper.Char2Token.ContainsKey(ch),
+                Assert.IsTrue(_mapper.Char2Token.ContainsKey(ch),
                     $"Char2Token should contain PUA char 0x{kvp.Value:X4}");
-                Assert.AreEqual(kvp.Key, PuaTokenMapper.Char2Token[ch],
+                Assert.AreEqual(kvp.Key, _mapper.Char2Token[ch],
                     $"Char2Token[0x{kvp.Value:X4}] should map to '{kvp.Key}'");
             }
         }
@@ -192,16 +200,16 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void Token2Char_And_Char2Token_AreConsistent()
         {
-            foreach (var kvp in PuaTokenMapper.Token2Char)
+            foreach (var kvp in _mapper.Token2Char)
             {
                 var token = kvp.Key;
                 var ch = kvp.Value;
 
-                Assert.IsTrue(PuaTokenMapper.Char2Token.ContainsKey(ch),
+                Assert.IsTrue(_mapper.Char2Token.ContainsKey(ch),
                     $"Char2Token should contain char mapped from token '{token}'");
-                Assert.AreEqual(token, PuaTokenMapper.Char2Token[ch],
+                Assert.AreEqual(token, _mapper.Char2Token[ch],
                     $"Roundtrip failed: Token2Char['{token}'] = 0x{(int)ch:X4}, " +
-                    $"but Char2Token[0x{(int)ch:X4}] = '{PuaTokenMapper.Char2Token[ch]}'");
+                    $"but Char2Token[0x{(int)ch:X4}] = '{_mapper.Char2Token[ch]}'");
             }
         }
 
@@ -215,7 +223,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         [TestCase("tone1", '\uE046')]
         public void MapToken_FixedToken_ReturnsCorrectChar(string token, char expected)
         {
-            var result = PuaTokenMapper.MapToken(token);
+            var result = _mapper.MapToken(token);
             Assert.AreEqual(expected, result,
                 $"MapToken('{token}') should return 0x{(int)expected:X4} but got 0x{(int)result:X4}");
         }
@@ -226,7 +234,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         [TestCase("n")]
         public void MapToken_SingleCharToken_ReturnsSelf(string token)
         {
-            var result = PuaTokenMapper.MapToken(token);
+            var result = _mapper.MapToken(token);
             Assert.AreEqual(token[0], result,
                 $"Single-char token '{token}' should map to itself");
         }
@@ -234,25 +242,25 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void MapToken_UnknownMultiCharToken_RegistersDynamically()
         {
-            var token = "_test_dynamic_maptoken_unique_001";
-            var result = PuaTokenMapper.MapToken(token);
+            var token = "test_dynamic";
+            var result = _mapper.MapToken(token);
 
             // Should be in the dynamic PUA range (>= 0xE062)
             Assert.GreaterOrEqual((int)result, 0xE062,
                 "Dynamically registered token should be in the dynamic PUA range");
 
             // Should be retrievable via Token2Char
-            Assert.IsTrue(PuaTokenMapper.Token2Char.ContainsKey(token),
+            Assert.IsTrue(_mapper.Token2Char.ContainsKey(token),
                 "Dynamically registered token should appear in Token2Char");
-            Assert.AreEqual(result, PuaTokenMapper.Token2Char[token]);
+            Assert.AreEqual(result, _mapper.Token2Char[token]);
         }
 
         [Test]
         public void MapToken_SameTokenTwice_ReturnsSameChar()
         {
-            var token = "_test_idempotent_unique_002";
-            var first = PuaTokenMapper.MapToken(token);
-            var second = PuaTokenMapper.MapToken(token);
+            var token = "test_idempotent";
+            var first = _mapper.MapToken(token);
+            var second = _mapper.MapToken(token);
 
             Assert.AreEqual(first, second,
                 "Calling MapToken twice with the same token should return the same char");
@@ -263,7 +271,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void MapSequence_EmptyList_ReturnsEmpty()
         {
-            var result = PuaTokenMapper.MapSequence(new List<string>());
+            var result = _mapper.MapSequence(new List<string>());
 
             Assert.IsNotNull(result);
             Assert.AreEqual(0, result.Count, "MapSequence on empty list should return empty list");
@@ -273,7 +281,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void MapSequence_SingleTokens_ReturnsSelf()
         {
             var tokens = new List<string> { "a", "b", "c" };
-            var result = PuaTokenMapper.MapSequence(tokens);
+            var result = _mapper.MapSequence(tokens);
 
             Assert.AreEqual(3, result.Count);
             Assert.AreEqual('a', result[0]);
@@ -285,7 +293,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void MapSequence_MultiCharTokens_ReturnsPuaChars()
         {
             var tokens = new List<string> { "ch", "ts", "sh" };
-            var result = PuaTokenMapper.MapSequence(tokens);
+            var result = _mapper.MapSequence(tokens);
 
             Assert.AreEqual(3, result.Count);
             Assert.AreEqual('\uE00E', result[0], "ch should map to 0xE00E");
@@ -297,7 +305,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void MapSequence_MixedTokens_CorrectMapping()
         {
             var tokens = new List<string> { "k", "a:", "ch", "i" };
-            var result = PuaTokenMapper.MapSequence(tokens);
+            var result = _mapper.MapSequence(tokens);
 
             Assert.AreEqual(4, result.Count);
             Assert.AreEqual('k', result[0], "Single char 'k' should map to itself");
@@ -315,7 +323,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         [TestCase('\uE058', "\u0254\u0303")]
         public void UnmapChar_FixedPuaChar_ReturnsToken(char ch, string expectedToken)
         {
-            var result = PuaTokenMapper.UnmapChar(ch);
+            var result = _mapper.UnmapChar(ch);
 
             Assert.IsNotNull(result, $"UnmapChar(0x{(int)ch:X4}) should not return null");
             Assert.AreEqual(expectedToken, result,
@@ -326,7 +334,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void UnmapChar_NonPuaChar_ReturnsNull()
         {
             // Characters unlikely to be registered
-            var result = PuaTokenMapper.UnmapChar('\u0001');
+            var result = _mapper.UnmapChar('\u0001');
 
             Assert.IsNull(result,
                 "UnmapChar for an unregistered character should return null");
@@ -335,9 +343,9 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void UnmapChar_DynamicallyRegistered_ReturnsToken()
         {
-            var token = "_test_unmap_dynamic_unique_003";
-            var ch = PuaTokenMapper.Register(token);
-            var result = PuaTokenMapper.UnmapChar(ch);
+            var token = "test_unmap_dynamic";
+            var ch = _mapper.Register(token);
+            var result = _mapper.UnmapChar(ch);
 
             Assert.IsNotNull(result, "UnmapChar should find dynamically registered char");
             Assert.AreEqual(token, result,
@@ -403,7 +411,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                     for (var i = 0; i < tokensPerThread; i++)
                     {
                         var token = $"_concurrent_{threadIndex}_{i}";
-                        var ch = PuaTokenMapper.Register(token);
+                        var ch = _mapper.Register(token);
                         allChars[threadIndex].Add(ch);
                     }
                 });
@@ -428,10 +436,10 @@ namespace uPiper.Tests.Editor.Phonemizers
                     var token = $"_concurrent_{t}_{i}";
                     var ch = allChars[t][i];
 
-                    Assert.IsTrue(PuaTokenMapper.Token2Char.ContainsKey(token),
+                    Assert.IsTrue(_mapper.Token2Char.ContainsKey(token),
                         $"Token2Char should contain concurrently registered token '{token}'");
-                    Assert.AreEqual(ch, PuaTokenMapper.Token2Char[token]);
-                    Assert.AreEqual(token, PuaTokenMapper.Char2Token[ch]);
+                    Assert.AreEqual(ch, _mapper.Token2Char[token]);
+                    Assert.AreEqual(token, _mapper.Char2Token[ch]);
                 }
             }
         }
@@ -536,6 +544,28 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.AreEqual(0xE05F, PuaTokenMapper.FixedPuaMapping["o\u02D0"], "oː -> 0xE05F");
             Assert.AreEqual(0xE060, PuaTokenMapper.FixedPuaMapping["u\u02D0"], "uː -> 0xE060");
             Assert.AreEqual(0xE061, PuaTokenMapper.FixedPuaMapping["\u0289\u02D0"], "ʉː -> 0xE061");
+        }
+
+        // ── Instance Isolation ────────────────────────────────────────────
+
+        [Test]
+        public void NewInstance_HasCleanDynamicState()
+        {
+            var mapper1 = new PuaTokenMapper();
+            var mapper2 = new PuaTokenMapper();
+            var ch1 = mapper1.Register("newtoken_a");
+            var ch2 = mapper2.Register("newtoken_a");
+            Assert.AreEqual(ch1, ch2, "Same token should get same PUA char on fresh instances");
+        }
+
+        [Test]
+        public void TwoInstances_DynamicAllocationsAreIndependent()
+        {
+            var mapper1 = new PuaTokenMapper();
+            var mapper2 = new PuaTokenMapper();
+            mapper1.Register("unique_token_1");
+            // mapper2 should not have this registration
+            Assert.IsFalse(mapper2.Token2Char.ContainsKey("unique_token_1"));
         }
     }
 }

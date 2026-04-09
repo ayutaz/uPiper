@@ -30,9 +30,9 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 **目的**: Unity Test Runnerの実行
 
 **特徴**:
-- Linux/macOS: Dockerベース（game-ci/unity-test-runner）
-- Windows: 現在無効化（Docker制限のため）
-- PlayModeとEditModeテスト
+- ubuntu-latest単一ジョブ（game-ci/unity-test-runner@v4）
+- PlayModeとEditModeテスト（testMode: all）
+- コードカバレッジレポート生成
 
 ### 4. dotnet-format.yml
 **目的**: C#コードフォーマットチェック
@@ -45,7 +45,7 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 **目的**: WebGLビルドとGitHub Pagesへのデプロイ
 
 **特徴**:
-- feature/webgl-supportブランチへのpush時に自動実行
+- `feature/webgl-support`ブランチへのpush時に自動実行（将来的にdevelop/mainへ統合予定）
 - workflow_dispatch（手動実行）対応
 - dot-net-g2pサブリポジトリの自動checkout
 - game-ci/unity-builder@v4によるWebGLビルド
@@ -53,6 +53,23 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 - split-file-loader.js / github-pages-adapter.jsの自動注入
 - GitHub Pagesへの自動デプロイ
 - デプロイ後のHTTPステータス確認
+
+### 6. unity-il2cpp-build.yml
+**目的**: IL2CPP互換性チェックとビルド検証
+
+**特徴**:
+- main/developへのpush・PR時に自動実行（Assets/Packages/ProjectSettings変更時）
+- workflow_dispatch（手動実行）対応
+- IL2CPP設定ファイル（link.xml等）の存在確認
+- ubuntu-latest単一ジョブ
+
+### 7. pr-target-check.yml
+**目的**: PRのソースブランチ検証
+
+**特徴**:
+- mainブランチへのPR作成・編集時に自動実行
+- developブランチ以外からmainへのPRを拒否
+- 不正なPRには自動コメントで理由を通知
 
 ## ブランチ保護ルールの設定
 
@@ -166,7 +183,7 @@ developブランチにも同様のルールを設定：
    → free-disk-spaceアクションを使用してクリーンアップ
 
 3. **IL2CPPビルドエラー**
-   - IL2CPP特有の問題については[IL2CPP CI/CDソリューション](il2cpp-solutions.md)を参照
+   - IL2CPP特有の問題については `link.xml` の設定やIL2CPPビルド設定を確認してください
 
 ### テスト失敗
 - ロケール依存のテストは環境設定を確認
@@ -174,5 +191,4 @@ developブランチにも同様のルールを設定：
 
 ## 関連ドキュメント
 
-- [IL2CPP CI/CDソリューション](il2cpp-solutions.md) - IL2CPP固有のCI/CD設定
-- [技術ドキュメント](../technical/) - 詳細な技術仕様
+- [アーキテクチャ](../ARCHITECTURE_ja.md) - 設計と技術的な詳細

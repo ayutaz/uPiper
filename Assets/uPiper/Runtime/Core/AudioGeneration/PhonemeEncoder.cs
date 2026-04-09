@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using uPiper.Core.Logging;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Core.AudioGeneration
 {
@@ -16,19 +17,11 @@ namespace uPiper.Core.AudioGeneration
         public int[] PhonemeIds { get; set; }
 
         /// <summary>
-        /// PhonemeIdsに対応する展開済みProsody A1配列
+        /// PhonemeIdsに対応する展開済みProsodyフラット配列 (stride=3).
+        /// Layout: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, ...].
+        /// Length = PhonemeIds.Length * 3.
         /// </summary>
-        public int[] ExpandedProsodyA1 { get; set; }
-
-        /// <summary>
-        /// PhonemeIdsに対応する展開済みProsody A2配列
-        /// </summary>
-        public int[] ExpandedProsodyA2 { get; set; }
-
-        /// <summary>
-        /// PhonemeIdsに対応する展開済みProsody A3配列
-        /// </summary>
-        public int[] ExpandedProsodyA3 { get; set; }
+        public int[] ExpandedProsodyFlat { get; set; }
     }
 
     /// <summary>
@@ -38,6 +31,7 @@ namespace uPiper.Core.AudioGeneration
     {
         private readonly Dictionary<string, int> _phonemeToId;
         private readonly PiperVoiceConfig _config;
+        private readonly PuaTokenMapper _tokenMapper;
 
         // 特殊トークン
         private const string PAD_TOKEN = "_";
@@ -47,17 +41,26 @@ namespace uPiper.Core.AudioGeneration
         private const int DEFAULT_BOS_ID = 1;
         private const int DEFAULT_EOS_ID = 2;
 
+        /// <summary>
+        /// Prosody flat array stride. Each phoneme has 3 prosody values (A1, A2, A3).
+        /// Use this constant when constructing ProsodyFlat arrays for SynthesisRequest.
+        /// </summary>
+        public const int ProsodyStride = 3;
+
         // EOS-like tokens: These tokens act as sentence terminators (piper-plus #210)
         // When the last phoneme is one of these, we don't add a separate EOS token
-        private static readonly HashSet<string> EosLikeTokens = new() { "$", "?", "?!", "?.", "?~" };
+        private static readonly HashSet<string> EosLikeTokens =
+            new() { "$", "?", "?!", "?.", "?~", "\ue016", "\ue017", "\ue018" };
 
         /// <summary>
         /// 音素エンコーダーを初期化する
         /// </summary>
         /// <param name="config">音声設定</param>
-        public PhonemeEncoder(PiperVoiceConfig config)
+        /// <param name="tokenMapper">PUA token mapper instance</param>
+        public PhonemeEncoder(PiperVoiceConfig config, PuaTokenMapper tokenMapper)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _tokenMapper = tokenMapper ?? throw new ArgumentNullException(nameof(tokenMapper));
             _phonemeToId = new Dictionary<string, int>();
 
             // Detect multilingual model before initializing phoneme mapping
@@ -149,19 +152,17 @@ namespace uPiper.Core.AudioGeneration
         /// <returns>ID配列</returns>
         public int[] Encode(string[] phonemes)
         {
-            var result = EncodeWithProsody(phonemes, null, null, null);
+            var result = EncodeWithProsody(phonemes, null);
             return result.PhonemeIds;
         }
 
         /// <summary>
-        /// 音素配列をID配列にエンコードし、Prosody配列も同時に展開する
+        /// 音素配列をID配列にエンコードし、Prosodyフラット配列も同時に展開する
         /// </summary>
         /// <param name="phonemes">音素配列</param>
-        /// <param name="prosodyA1">元のProsody A1配列（音素ごと）</param>
-        /// <param name="prosodyA2">元のProsody A2配列（音素ごと）</param>
-        /// <param name="prosodyA3">元のProsody A3配列（音素ごと）</param>
-        /// <returns>エンコード結果（音素IDと展開済みProsody配列）</returns>
-        public ProsodyEncodingResult EncodeWithProsody(string[] phonemes, int[] prosodyA1, int[] prosodyA2, int[] prosodyA3)
+        /// <param name="prosodyFlat">Prosodyフラット配列 (stride=3), or null</param>
+        /// <returns>エンコード結果（音素IDと展開済みProsodyフラット配列）</returns>
+        public ProsodyEncodingResult EncodeWithProsody(string[] phonemes, int[] prosodyFlat)
         {
             if (phonemes == null || phonemes.Length == 0)
             {
@@ -169,27 +170,23 @@ namespace uPiper.Core.AudioGeneration
                 return new ProsodyEncodingResult
                 {
                     PhonemeIds = Array.Empty<int>(),
-                    ExpandedProsodyA1 = Array.Empty<int>(),
-                    ExpandedProsodyA2 = Array.Empty<int>(),
-                    ExpandedProsodyA3 = Array.Empty<int>()
+                    ExpandedProsodyFlat = Array.Empty<int>()
                 };
             }
 
             var ids = new List<int>();
-            var expandedA1 = new List<int>();
-            var expandedA2 = new List<int>();
-            var expandedA3 = new List<int>();
+            var expandedProsody = new List<int>((phonemes.Length * 2 + 2) * ProsodyStride);
 
             var needsInterspersePad = NeedsInterspersePadding();
-            var hasProsody = prosodyA1 != null || prosodyA2 != null || prosodyA3 != null;
+            var hasProsody = prosodyFlat != null;
 
             // BOSトークン(^)を常に追加
-            AddToken("^", ids, expandedA1, expandedA2, expandedA3, 0, 0, 0, "BOS");
+            AddToken("^", ids, expandedProsody, 0, 0, 0, "BOS");
 
             // PAD after BOS (required by multilingual/espeak models, matches piper-plus post_process_ids)
             if (needsInterspersePad)
             {
-                AddPadToken(ids, expandedA1, expandedA2, expandedA3);
+                AddPadToken(ids, expandedProsody);
             }
 
             // 各音素をIDに変換
@@ -197,26 +194,30 @@ namespace uPiper.Core.AudioGeneration
             foreach (var phoneme in phonemes)
             {
                 if (string.IsNullOrEmpty(phoneme))
+                {
+                    phonemeIndex++;
                     continue;
+                }
 
                 var phonemeToLookup = MapPhoneme(phoneme);
 
                 // 現在の音素のProsody値を取得
-                var a1 = prosodyA1 != null && phonemeIndex < prosodyA1.Length ? prosodyA1[phonemeIndex] : 0;
-                var a2 = prosodyA2 != null && phonemeIndex < prosodyA2.Length ? prosodyA2[phonemeIndex] : 0;
-                var a3 = prosodyA3 != null && phonemeIndex < prosodyA3.Length ? prosodyA3[phonemeIndex] : 0;
+                var baseIdx = phonemeIndex * ProsodyStride;
+                var a1 = prosodyFlat != null && baseIdx < prosodyFlat.Length ? prosodyFlat[baseIdx + 0] : 0;
+                var a2 = prosodyFlat != null && baseIdx + 1 < prosodyFlat.Length ? prosodyFlat[baseIdx + 1] : 0;
+                var a3 = prosodyFlat != null && baseIdx + 2 < prosodyFlat.Length ? prosodyFlat[baseIdx + 2] : 0;
 
                 // "ts"の特殊処理
                 if (phonemeToLookup == "ts" && !_phonemeToId.ContainsKey("ts"))
                 {
-                    EncodePhonemeTs(ids, expandedA1, expandedA2, expandedA3, a1, a2, a3, needsInterspersePad, hasProsody);
+                    EncodePhonemeTs(ids, expandedProsody, a1, a2, a3, needsInterspersePad, hasProsody);
                 }
                 else if (_phonemeToId.TryGetValue(phonemeToLookup, out var phonemeId))
                 {
                     ids.Add(phonemeId);
-                    expandedA1.Add(a1);
-                    expandedA2.Add(a2);
-                    expandedA3.Add(a3);
+                    expandedProsody.Add(a1);
+                    expandedProsody.Add(a2);
+                    expandedProsody.Add(a3);
 
                     if (hasProsody)
                     {
@@ -231,7 +232,7 @@ namespace uPiper.Core.AudioGeneration
                     // Skip if the phoneme itself is already PAD (ID 0) to prevent triple-zero sequences
                     if (needsInterspersePad && phonemeId != _padId)
                     {
-                        AddPadToken(ids, expandedA1, expandedA2, expandedA3);
+                        AddPadToken(ids, expandedProsody);
                     }
                 }
                 else
@@ -250,7 +251,7 @@ namespace uPiper.Core.AudioGeneration
             if (!lastPhonemeIsEosLike)
             {
                 // EOSトークン($)を追加（最後の音素がEOS-likeでない場合のみ）
-                AddToken("$", ids, expandedA1, expandedA2, expandedA3, 0, 0, 0, "EOS");
+                AddToken("$", ids, expandedProsody, 0, 0, 0, "EOS");
             }
             else
             {
@@ -261,9 +262,9 @@ namespace uPiper.Core.AudioGeneration
             if (ids.Count == 0)
             {
                 ids.Add(GetPadId());
-                expandedA1.Add(0);
-                expandedA2.Add(0);
-                expandedA3.Add(0);
+                expandedProsody.Add(0);
+                expandedProsody.Add(0);
+                expandedProsody.Add(0);
             }
 
             var modelType = !needsInterspersePad ? "Japanese/OpenJTalk" : (_isMultilingualModel ? "Multilingual" : "eSpeak");
@@ -279,9 +280,7 @@ namespace uPiper.Core.AudioGeneration
             return new ProsodyEncodingResult
             {
                 PhonemeIds = ids.ToArray(),
-                ExpandedProsodyA1 = expandedA1.ToArray(),
-                ExpandedProsodyA2 = expandedA2.ToArray(),
-                ExpandedProsodyA3 = expandedA3.ToArray()
+                ExpandedProsodyFlat = expandedProsody.ToArray()
             };
         }
 
@@ -309,7 +308,7 @@ namespace uPiper.Core.AudioGeneration
             if (_isMultilingualModel)
             {
                 if (phoneme.Length > 1 &&
-                    Phonemizers.Multilingual.PuaTokenMapper.Token2Char.TryGetValue(phoneme, out var puaChar))
+                    _tokenMapper.Token2Char.TryGetValue(phoneme, out var puaChar))
                 {
                     return puaChar.ToString();
                 }
@@ -327,7 +326,7 @@ namespace uPiper.Core.AudioGeneration
                 // compatibility with single-language IPA models (piper-plus Issue #207/#210).
                 var phonemeToConvert = phoneme;
                 if (phoneme.Length == 1 &&
-                    Phonemizers.Multilingual.PuaTokenMapper.Char2Token.TryGetValue(phoneme[0], out var originalToken))
+                    _tokenMapper.Char2Token.TryGetValue(phoneme[0], out var originalToken))
                 {
                     phonemeToConvert = originalToken switch
                     {
@@ -348,7 +347,7 @@ namespace uPiper.Core.AudioGeneration
                     return phonemeToConvert;
                 }
             }
-            else if (Phonemizers.Multilingual.PuaTokenMapper.Token2Char.TryGetValue(phoneme, out var puaCh))
+            else if (_tokenMapper.Token2Char.TryGetValue(phoneme, out var puaCh))
             {
                 PiperLogger.LogDebug($"Mapped multi-char phoneme '{phoneme}' to PUA U+{(int)puaCh:X4}");
                 return puaCh.ToString();
@@ -360,15 +359,15 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// 特殊トークン（BOS/EOS）を追加
         /// </summary>
-        private void AddToken(string token, List<int> ids, List<int> a1, List<int> a2, List<int> a3,
+        private void AddToken(string token, List<int> ids, List<int> prosody,
             int prosodyA1, int prosodyA2, int prosodyA3, string tokenName)
         {
             if (_phonemeToId.TryGetValue(token, out var tokenId))
             {
                 ids.Add(tokenId);
-                a1.Add(prosodyA1);
-                a2.Add(prosodyA2);
-                a3.Add(prosodyA3);
+                prosody.Add(prosodyA1);
+                prosody.Add(prosodyA2);
+                prosody.Add(prosodyA3);
                 PiperLogger.LogDebug($"Added {tokenName} token '{token}' with ID {tokenId}");
             }
             else
@@ -380,29 +379,29 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// PADトークンを追加
         /// </summary>
-        private void AddPadToken(List<int> ids, List<int> a1, List<int> a2, List<int> a3)
+        private void AddPadToken(List<int> ids, List<int> prosody)
         {
             if (_phonemeToId.TryGetValue("_", out var padId))
             {
                 ids.Add(padId);
-                a1.Add(0);
-                a2.Add(0);
-                a3.Add(0);
+                prosody.Add(0);
+                prosody.Add(0);
+                prosody.Add(0);
             }
         }
 
         /// <summary>
-        /// "ts"音素を"t"+"s"に分割してエンコード
+        /// "ts"音素を"t"+"s"に分割���てエンコード
         /// </summary>
-        private void EncodePhonemeTs(List<int> ids, List<int> a1, List<int> a2, List<int> a3,
+        private void EncodePhonemeTs(List<int> ids, List<int> prosody,
             int prosodyA1, int prosodyA2, int prosodyA3, bool needsInterspersePad, bool hasProsody)
         {
             if (_phonemeToId.TryGetValue("t", out var tId) && _phonemeToId.TryGetValue("s", out var sId))
             {
                 ids.Add(tId);
-                a1.Add(prosodyA1);
-                a2.Add(prosodyA2);
-                a3.Add(prosodyA3);
+                prosody.Add(prosodyA1);
+                prosody.Add(prosodyA2);
+                prosody.Add(prosodyA3);
 
                 if (hasProsody)
                 {
@@ -415,13 +414,13 @@ namespace uPiper.Core.AudioGeneration
 
                 if (needsInterspersePad)
                 {
-                    AddPadToken(ids, a1, a2, a3);
+                    AddPadToken(ids, prosody);
                 }
 
                 ids.Add(sId);
-                a1.Add(prosodyA1);
-                a2.Add(prosodyA2);
-                a3.Add(prosodyA3);
+                prosody.Add(prosodyA1);
+                prosody.Add(prosodyA2);
+                prosody.Add(prosodyA3);
 
                 if (hasProsody)
                 {
@@ -434,7 +433,7 @@ namespace uPiper.Core.AudioGeneration
 
                 if (needsInterspersePad)
                 {
-                    AddPadToken(ids, a1, a2, a3);
+                    AddPadToken(ids, prosody);
                 }
             }
             else
@@ -458,6 +457,23 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
+        /// Flatten separate A1/A2/A3 arrays into a single stride=3 array.
+        /// Used at the boundary where dot-net-g2p output (3 separate arrays)
+        /// meets the flat-array internal representation.
+        /// </summary>
+        internal static int[] FlattenProsody(int[] a1, int[] a2, int[] a3, int phonemeCount)
+        {
+            var flat = new int[phonemeCount * ProsodyStride];
+            for (var i = 0; i < phonemeCount; i++)
+            {
+                flat[i * ProsodyStride + 0] = i < a1.Length ? a1[i] : 0;
+                flat[i * ProsodyStride + 1] = i < a2.Length ? a2[i] : 0;
+                flat[i * ProsodyStride + 2] = i < a3.Length ? a3[i] : 0;
+            }
+            return flat;
+        }
+
+        /// <summary>
         /// 登録されている音素の数を取得
         /// </summary>
         public int PhonemeCount => _phonemeToId.Count;
@@ -469,17 +485,19 @@ namespace uPiper.Core.AudioGeneration
             _phonemeToId[BOS_TOKEN] = DEFAULT_BOS_ID;
             _phonemeToId[EOS_TOKEN] = DEFAULT_EOS_ID;
 
-            // 設定から音素マッピングを読み込む
+            // 設定から音素マッピングを読み込む（ids[0]を抽出）
+            // PhonemeIdMap は Dictionary<string, int[]> だが、内部の _phonemeToId は
+            // Dictionary<string, int> のまま維持。複数ID展開は将来タスク（P2-1b）。
             if (_config.PhonemeIdMap != null)
             {
                 foreach (var kvp in _config.PhonemeIdMap)
                 {
                     var phoneme = kvp.Key;
-                    var id = kvp.Value;
+                    var ids = kvp.Value;
 
-                    if (!_phonemeToId.ContainsKey(phoneme))
+                    if (ids != null && ids.Length > 0 && !_phonemeToId.ContainsKey(phoneme))
                     {
-                        _phonemeToId[phoneme] = id;
+                        _phonemeToId[phoneme] = ids[0];
                     }
                 }
 

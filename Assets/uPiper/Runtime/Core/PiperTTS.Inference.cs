@@ -49,10 +49,13 @@ namespace uPiper.Core
                 // 既存のリソースをクリーンアップ
                 DisposeInferenceResources();
 
+                // Load pua.json if available (before PhonemeEncoder uses _tokenMapper)
+                await _tokenMapper.InitializeAsync(cancellationToken);
+
                 // Inferenceコンポーネントを初期化
                 _inferenceGenerator = new InferenceAudioGenerator();
                 _splitOrchestrator = new SplitInferenceOrchestrator(_inferenceGenerator);
-                _phonemeEncoder = new PhonemeEncoder(voiceConfig);
+                _phonemeEncoder = new PhonemeEncoder(voiceConfig, _tokenMapper);
                 _audioClipBuilder = new AudioClipBuilder();
                 _orchestrator = new TTSSynthesisOrchestrator(
                     _inferenceGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
@@ -78,11 +81,15 @@ namespace uPiper.Core
                 {
                     DisposeMultilingualPhonemizer();
                     var supportedLanguages = _config.SupportedLanguages ?? new System.Collections.Generic.List<string> { "ja", "en" };
+                    var handlers = new System.Collections.Generic.Dictionary<string, Phonemizers.Multilingual.Handlers.ILanguageG2PHandler>();
+                    if (_phonemizer is Phonemizers.Implementations.DotNetG2PPhonemizer jaPhonemizer)
+                        handlers["ja"] = new Phonemizers.Multilingual.Handlers.JapaneseG2PHandler(jaPhonemizer);
+
                     var phonemizerOptions = new Phonemizers.Multilingual.MultilingualPhonemizerOptions
                     {
                         Languages = supportedLanguages,
                         DefaultLatinLanguage = _config.DefaultLanguage ?? "en",
-                        JaPhonemizer = _phonemizer as Phonemizers.Implementations.DotNetG2PPhonemizer
+                        Handlers = handlers,
                     };
                     _multilingualPhonemizer = new Phonemizers.Multilingual.MultilingualPhonemizer(phonemizerOptions);
                     await _multilingualPhonemizer.InitializeAsync(cancellationToken);
@@ -108,6 +115,7 @@ namespace uPiper.Core
         /// <param name="text">生成するテキスト</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
         /// <returns>生成されたAudioClip</returns>
+        [Obsolete("Use PhonemizeAsync() + SynthesizeAsync(SynthesisRequest) instead. Will be removed in v3.0.")]
         public async Task<AudioClip> GenerateAudioWithInferenceAsync(
             string text,
             CancellationToken cancellationToken = default)
@@ -123,6 +131,7 @@ namespace uPiper.Core
         /// <summary>
         /// Unity.InferenceEngineを使用してテキストから音声を生成する（詳細パラメータ付き）
         /// </summary>
+        [Obsolete("Use PhonemizeAsync() + SynthesizeAsync(SynthesisRequest) instead. Will be removed in v3.0.")]
         public async Task<AudioClip> GenerateAudioWithInferenceAsync(
             string text,
             float lengthScale = 1.0f,
@@ -156,9 +165,9 @@ namespace uPiper.Core
                 _onProcessingProgress?.Invoke(0.5f);
 
                 // エンコード〜AudioClip生成を一括
-                var request = new AudioGeneration.SynthesisRequest(
+                var request = AudioGeneration.SynthesisRequest.CreateInternal(
                     phonemeResult.Phonemes,
-                    null, null, null,
+                    phonemeResult.ProsodyFlat,
                     lengthScale, noiseScale, noiseW,
                     0, 0);
                 var audioClip = await _orchestrator.SynthesizeAsync(request, cancellationToken);
@@ -185,6 +194,7 @@ namespace uPiper.Core
         /// <param name="noiseScale">ノイズスケール</param>
         /// <param name="noiseW">ノイズ幅</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
+        [Obsolete("Use PhonemizeAsync() + SynthesizeAsync(SynthesisRequest) instead. Will be removed in v3.0.")]
         public async Task<AudioClip> GenerateAudioWithMultilingualAsync(
             string text,
             int languageId = -1,
@@ -208,9 +218,7 @@ namespace uPiper.Core
                 _onProcessingProgress?.Invoke(0.1f);
 
                 string[] phonemes;
-                int[] prosodyA1 = null;
-                int[] prosodyA2 = null;
-                int[] prosodyA3 = null;
+                int[] prosodyFlat = null;
                 int resolvedLanguageId = languageId >= 0 ? languageId : 0;
 
                 // 多言語PhonemizerまたはデフォルトPhonemizerで音素化
@@ -219,9 +227,7 @@ namespace uPiper.Core
                     PiperLogger.LogDebug($"[MultilingualTTS] Phonemizing with MultilingualPhonemizer: {text}");
                     var multiResult = await _multilingualPhonemizer.PhonemizeWithProsodyAsync(text, cancellationToken);
                     phonemes = multiResult.Phonemes;
-                    prosodyA1 = multiResult.ProsodyA1;
-                    prosodyA2 = multiResult.ProsodyA2;
-                    prosodyA3 = multiResult.ProsodyA3;
+                    prosodyFlat = multiResult.ProsodyFlat;
 
                     // 言語IDを自動解決
                     if (languageId < 0 && _inferenceGenerator.SupportsLanguageId)
@@ -254,9 +260,9 @@ namespace uPiper.Core
                 _onProcessingProgress?.Invoke(0.5f);
 
                 // エンコード〜AudioClip生成を一括
-                var request = new AudioGeneration.SynthesisRequest(
+                var request = AudioGeneration.SynthesisRequest.CreateInternal(
                     phonemes,
-                    prosodyA1, prosodyA2, prosodyA3,
+                    prosodyFlat,
                     lengthScale, noiseScale, noiseW,
                     speakerId, resolvedLanguageId);
                 var audioClip = await _orchestrator.SynthesizeAsync(request, cancellationToken);
@@ -271,6 +277,87 @@ namespace uPiper.Core
                 _onError?.Invoke(piperEx);
                 throw piperEx;
             }
+        }
+
+        /// <summary>
+        /// SynthesisRequestを直接指定して音声を生成する（低レベルAPI）。
+        /// 音素列は事前に <see cref="PhonemizeAsync"/> または外部G2Pで取得・構築済みであること。
+        /// </summary>
+        /// <param name="request">音声合成リクエスト（音素・Prosody・合成パラメータを集約）。</param>
+        /// <param name="cancellationToken">キャンセルトークン。</param>
+        /// <returns>生成されたAudioClip。</returns>
+        /// <exception cref="ObjectDisposedException">インスタンスがDispose済みの場合。</exception>
+        /// <exception cref="InvalidOperationException">Inferenceが初期化されていない場合。</exception>
+        public async Task<AudioClip> SynthesizeAsync(
+            SynthesisRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(PiperTTS));
+
+            if (!_isInitialized || _orchestrator == null)
+                throw new InvalidOperationException(
+                    "Inference is not initialized. Call InitializeWithInferenceAsync first.");
+
+            return await _orchestrator.SynthesizeAsync(request, cancellationToken);
+        }
+
+        /// <summary>
+        /// テキストを音素化し、Prosody情報付きの結果を返す。
+        /// 多言語Phonemizerが利用可能な場合はそちらを優先する。
+        /// 結果は <see cref="SynthesisRequest.FromPhonemesWithProsody"/> でリクエスト構築に使用できる。
+        /// </summary>
+        /// <param name="text">音素化するテキスト。</param>
+        /// <param name="cancellationToken">キャンセルトークン。</param>
+        /// <returns>音素化結果（Phonemes, ProsodyFlat等）。</returns>
+        /// <exception cref="ObjectDisposedException">インスタンスがDispose済みの場合。</exception>
+        /// <exception cref="InvalidOperationException">Inferenceが初期化されていない場合。</exception>
+        /// <exception cref="ArgumentException">テキストがnullまたは空の場合。</exception>
+        public async Task<PhonemizeResult> PhonemizeAsync(
+            string text,
+            CancellationToken cancellationToken = default)
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(PiperTTS));
+
+            if (!_isInitialized)
+                throw new InvalidOperationException(
+                    "Inference is not initialized. Call InitializeWithInferenceAsync first.");
+
+            if (string.IsNullOrWhiteSpace(text))
+                throw new ArgumentException("Text cannot be null or empty.", nameof(text));
+
+            // 多言語Phonemizerが利用可能な場合はそちらを優先
+            if (_multilingualPhonemizer != null && _multilingualPhonemizer.IsInitialized)
+            {
+                var multiResult = await _multilingualPhonemizer.PhonemizeWithProsodyAsync(
+                    text, cancellationToken);
+
+                int resolvedLanguageId = 0;
+                if (_inferenceGenerator != null && _inferenceGenerator.SupportsLanguageId)
+                {
+                    var detectedLang = multiResult.DetectedPrimaryLanguage;
+                    if (_currentVoiceConfig?.LanguageIdMap != null &&
+                        _currentVoiceConfig.LanguageIdMap.TryGetValue(detectedLang, out var detectedId))
+                    {
+                        resolvedLanguageId = detectedId;
+                    }
+                }
+
+                return new PhonemizeResult(
+                    multiResult.Phonemes,
+                    multiResult.ProsodyFlat,
+                    multiResult.DetectedPrimaryLanguage ?? "ja",
+                    resolvedLanguageId);
+            }
+
+            // フォールバック: 通常の音素化
+            var phonemeResult = await GetPhonemesAsync(text, cancellationToken);
+            return new PhonemizeResult(
+                phonemeResult?.Phonemes,
+                phonemeResult?.ProsodyFlat,
+                phonemeResult?.Language ?? "ja",
+                0);
         }
 
         /// <summary>

@@ -1,11 +1,40 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("uPiper.Tests.Editor")]
+using System.Globalization;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using UnityEngine;
+using uPiper.Core.Logging;
+using uPiper.Core.Platform;
 
 namespace uPiper.Core.Phonemizers.Multilingual
 {
+    // ── DTO classes for pua.json deserialization ─────────────────────────────
+
+    /// <summary>
+    /// Root structure of pua.json. Compatible with <see cref="JsonUtility"/>.
+    /// </summary>
+    [Serializable]
+    internal class PuaJsonData
+    {
+        public int version;
+        public string description;
+        public PuaJsonEntry[] entries;
+    }
+
+    /// <summary>
+    /// Single entry in the pua.json entries array.
+    /// </summary>
+    [Serializable]
+    internal class PuaJsonEntry
+    {
+        public string token;
+        public string codepoint; // "0xE000" hex string
+        public string language;
+        public string description;
+    }
     /// <summary>
     /// Maps multi-character phoneme tokens to single Unicode Private Use Area (PUA) codepoints.
     /// Ported from piper-plus Python implementation (token_mapper.py).
@@ -18,7 +47,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
     /// Do NOT change assigned codepoints -- they are baked into trained models.
     /// </para>
     /// </summary>
-    public static class PuaTokenMapper
+    public sealed class PuaTokenMapper
     {
         // ── Fixed PUA mapping table ─────────────────────────────────────────────
         // Ensures consistency between Python, C++, and C# implementations.
@@ -194,35 +223,54 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// <summary>
         /// Token string to PUA char mapping. Includes both fixed and dynamically registered entries.
         /// Thread-safe for concurrent reads and writes.
+        /// Non-readonly to support atomic copy-on-write replacement in <see cref="LoadFromJson"/>.
         /// </summary>
-        public static readonly ConcurrentDictionary<string, char> Token2Char = new();
+        private volatile ConcurrentDictionary<string, char> _token2Char;
 
         /// <summary>
         /// PUA char to token string mapping. Includes both fixed and dynamically registered entries.
         /// Thread-safe for concurrent reads and writes.
+        /// Non-readonly to support atomic copy-on-write replacement in <see cref="LoadFromJson"/>.
         /// </summary>
-        public static readonly ConcurrentDictionary<char, string> Char2Token = new();
+        private volatile ConcurrentDictionary<char, string> _char2Token;
 
         /// <summary>
         /// Next available codepoint for dynamic allocation. Access protected by <see cref="_dynamicLock"/>.
         /// </summary>
-        private static int _nextDynamic = DynamicPuaStart;
+        private int _nextDynamic;
 
         /// <summary>
         /// Lock for dynamic codepoint allocation to ensure thread-safe sequential assignment.
         /// </summary>
-        private static readonly object _dynamicLock = new();
+        private readonly object _dynamicLock = new();
 
-        // ── Static constructor ──────────────────────────────────────────────────
+        /// <summary>
+        /// Read-only view of the token-to-char mapping.
+        /// </summary>
+        public IReadOnlyDictionary<string, char> Token2Char => _token2Char;
 
-        static PuaTokenMapper()
+        /// <summary>
+        /// Read-only view of the char-to-token mapping.
+        /// </summary>
+        public IReadOnlyDictionary<char, string> Char2Token => _char2Token;
+
+        // ── Constructor ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Creates a new instance with the fixed PUA mapping table pre-loaded.
+        /// </summary>
+        public PuaTokenMapper()
         {
+            _token2Char = new ConcurrentDictionary<string, char>();
+            _char2Token = new ConcurrentDictionary<char, string>();
+            _nextDynamic = DynamicPuaStart;
+
             // Initialize bidirectional mappings from the fixed table
             foreach (var kvp in FixedPuaMapping)
             {
                 var ch = (char)kvp.Value;
-                Token2Char[kvp.Key] = ch;
-                Char2Token[ch] = kvp.Key;
+                _token2Char[kvp.Key] = ch;
+                _char2Token[ch] = kvp.Key;
             }
         }
 
@@ -237,17 +285,20 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// </summary>
         /// <param name="token">The phoneme token string to register.</param>
         /// <returns>The single PUA character representing this token.</returns>
-        public static char Register(string token)
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the PUA codepoint space (U+E000..U+F8FF) is exhausted.
+        /// </exception>
+        public char Register(string token)
         {
             // Fast path: already registered
-            if (Token2Char.TryGetValue(token, out var existing))
+            if (_token2Char.TryGetValue(token, out var existing))
                 return existing;
 
             // Single-character tokens map to themselves
             if (token.Length == 1)
             {
-                Token2Char[token] = token[0];
-                Char2Token[token[0]] = token;
+                _token2Char[token] = token[0];
+                _char2Token[token[0]] = token;
                 return token[0];
             }
 
@@ -255,7 +306,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             lock (_dynamicLock)
             {
                 // Double-check after acquiring lock
-                if (Token2Char.TryGetValue(token, out existing))
+                if (_token2Char.TryGetValue(token, out existing))
                     return existing;
 
                 if (_nextDynamic > 0xF8FF)
@@ -264,8 +315,8 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 var ch = (char)_nextDynamic;
                 _nextDynamic++;
 
-                Token2Char[token] = ch;
-                Char2Token[ch] = token;
+                _token2Char[token] = ch;
+                _char2Token[ch] = token;
                 return ch;
             }
         }
@@ -278,7 +329,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// </summary>
         /// <param name="tokens">List of phoneme token strings.</param>
         /// <returns>List of single characters (one per token).</returns>
-        public static List<char> MapSequence(IList<string> tokens)
+        public List<char> MapSequence(IList<string> tokens)
         {
             var result = new List<char>(tokens.Count);
             for (var i = 0; i < tokens.Count; i++)
@@ -294,7 +345,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// </summary>
         /// <param name="token">The phoneme token string.</param>
         /// <returns>The single PUA character representing this token.</returns>
-        public static char MapToken(string token)
+        public char MapToken(string token)
         {
             return Register(token);
         }
@@ -304,9 +355,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// </summary>
         /// <param name="ch">The PUA character to look up.</param>
         /// <returns>The original token string, or <c>null</c> if not found.</returns>
-        public static string UnmapChar(char ch)
+        public string UnmapChar(char ch)
         {
-            return Char2Token.TryGetValue(ch, out var token) ? token : null;
+            return _char2Token.TryGetValue(ch, out var token) ? token : null;
         }
 
         /// <summary>
@@ -319,47 +370,248 @@ namespace uPiper.Core.Phonemizers.Multilingual
             return ch >= '\uE000' && ch <= (char)LastFixedCodepoint;
         }
 
+        // ── pua.json runtime loading ────────────────────────────────────────
+
         /// <summary>
-        /// Resets dynamic PUA state for testing purposes.
-        /// Clears all entries and re-initializes from fixed mappings.
+        /// Maximum number of entries allowed in pua.json as a safety limit.
         /// </summary>
-        internal static void ResetForTesting()
-        {
-            lock (_dynamicLock)
-            {
-                Token2Char.Clear();
-                Char2Token.Clear();
+        internal const int MaxEntries = 500;
 
-                foreach (var kvp in FixedPuaMapping)
+        /// <summary>
+        /// Relative path to pua.json within StreamingAssets.
+        /// </summary>
+        private const string PuaJsonRelativePath = "uPiper/pua.json";
+
+        /// <summary>
+        /// Whether this mapper has been initialized from a pua.json file.
+        /// </summary>
+        public bool IsLoadedFromJson { get; private set; }
+
+        /// <summary>
+        /// Parses pua.json content and populates the mapper.
+        /// On success, clears existing mappings and replaces them with the JSON entries.
+        /// On failure, keeps existing hardcoded mapping intact and returns false.
+        /// </summary>
+        /// <param name="json">Raw JSON string from pua.json.</param>
+        /// <returns><c>true</c> if parsing succeeded; <c>false</c> otherwise.</returns>
+        public bool LoadFromJson(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                PiperLogger.LogError("[PuaTokenMapper] LoadFromJson: JSON string is null or empty");
+                return false;
+            }
+
+            PuaJsonData data;
+            try
+            {
+                data = JsonUtility.FromJson<PuaJsonData>(json);
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogError(
+                    $"[PuaTokenMapper] LoadFromJson: Failed to parse JSON: {ex.Message}");
+                return false;
+            }
+
+            if (data == null)
+            {
+                PiperLogger.LogError("[PuaTokenMapper] LoadFromJson: Deserialized data is null");
+                return false;
+            }
+
+            // Validate version (forward compatible: accept >= 1)
+            if (data.version < 1)
+            {
+                PiperLogger.LogError(
+                    $"[PuaTokenMapper] LoadFromJson: Invalid version {data.version} (expected >= 1)");
+                return false;
+            }
+
+            // null entries is treated as empty (valid but no overrides)
+            if (data.entries == null || data.entries.Length == 0)
+            {
+                PiperLogger.LogDebug("[PuaTokenMapper] LoadFromJson: Empty entries array");
+                IsLoadedFromJson = true;
+                return true;
+            }
+
+            // Safety limit
+            if (data.entries.Length > MaxEntries)
+            {
+                PiperLogger.LogError(
+                    $"[PuaTokenMapper] LoadFromJson: Too many entries ({data.entries.Length} > {MaxEntries})");
+                return false;
+            }
+
+            // Parse entries into temporary collections before modifying state
+            var newToken2Char = new Dictionary<string, char>();
+            var newChar2Token = new Dictionary<char, string>();
+            var maxCodepoint = LastFixedCodepoint;
+
+            for (var i = 0; i < data.entries.Length; i++)
+            {
+                var entry = data.entries[i];
+
+                // Validate token
+                if (string.IsNullOrEmpty(entry.token))
                 {
-                    var ch = (char)kvp.Value;
-                    Token2Char[kvp.Key] = ch;
-                    Char2Token[ch] = kvp.Key;
+                    PiperLogger.LogWarning(
+                        $"[PuaTokenMapper] LoadFromJson: Skipping entry[{i}] with empty token");
+                    continue;
                 }
 
-                _nextDynamic = DynamicPuaStart;
-            }
-        }
-
-#if UNITY_EDITOR
-        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetOnDomainReload()
-        {
-            lock (_dynamicLock)
-            {
-                Token2Char.Clear();
-                Char2Token.Clear();
-
-                foreach (var kvp in FixedPuaMapping)
+                // Parse codepoint hex string
+                if (!TryParseHexCodepoint(entry.codepoint, out var codepoint))
                 {
-                    var ch = (char)kvp.Value;
-                    Token2Char[kvp.Key] = ch;
-                    Char2Token[ch] = kvp.Key;
+                    PiperLogger.LogWarning(
+                        $"[PuaTokenMapper] LoadFromJson: Skipping entry[{i}] " +
+                        $"token=\"{entry.token}\": invalid codepoint \"{entry.codepoint}\"");
+                    continue;
                 }
 
-                _nextDynamic = DynamicPuaStart;
+                // Validate PUA range
+                if (codepoint < 0xE000 || codepoint > 0xF8FF)
+                {
+                    PiperLogger.LogWarning(
+                        $"[PuaTokenMapper] LoadFromJson: Skipping entry[{i}] " +
+                        $"token=\"{entry.token}\": codepoint 0x{codepoint:X4} " +
+                        $"outside PUA range (0xE000-0xF8FF)");
+                    continue;
+                }
+
+                var ch = (char)codepoint;
+
+                // Detect duplicate tokens (last wins)
+                if (newToken2Char.ContainsKey(entry.token))
+                {
+                    PiperLogger.LogWarning(
+                        $"[PuaTokenMapper] LoadFromJson: Duplicate token \"{entry.token}\" " +
+                        $"at entry[{i}], overwriting previous mapping");
+                    // Remove old char mapping for this token
+                    var oldChar = newToken2Char[entry.token];
+                    newChar2Token.Remove(oldChar);
+                }
+
+                // Detect duplicate codepoints (last wins)
+                if (newChar2Token.ContainsKey(ch))
+                {
+                    var oldToken = newChar2Token[ch];
+                    PiperLogger.LogWarning(
+                        $"[PuaTokenMapper] LoadFromJson: Duplicate codepoint 0x{codepoint:X4} " +
+                        $"at entry[{i}] (token=\"{entry.token}\"), " +
+                        $"overwriting previous token \"{oldToken}\"");
+                    newToken2Char.Remove(oldToken);
+                }
+
+                newToken2Char[entry.token] = ch;
+                newChar2Token[ch] = entry.token;
+
+                if (codepoint > maxCodepoint)
+                    maxCodepoint = codepoint;
             }
+
+            // Copy-on-write: build new ConcurrentDictionary instances, then atomically swap.
+            // This avoids a thread-unsafe window between Clear() and re-population.
+            var newConcurrentToken2Char = new ConcurrentDictionary<string, char>(newToken2Char);
+            var newConcurrentChar2Token = new ConcurrentDictionary<char, string>(newChar2Token);
+
+            // Atomically replace both dictionaries and update dynamic allocation under lock
+            lock (_dynamicLock)
+            {
+                _token2Char = newConcurrentToken2Char;
+                _char2Token = newConcurrentChar2Token;
+                _nextDynamic = maxCodepoint + 1;
+            }
+
+            IsLoadedFromJson = true;
+            PiperLogger.LogInfo(
+                $"[PuaTokenMapper] Loaded {newToken2Char.Count} entries from pua.json (v{data.version})");
+            return true;
         }
+
+        /// <summary>
+        /// Synchronously loads pua.json from StreamingAssets.
+        /// Not available on WebGL (use <see cref="InitializeAsync"/> instead).
+        /// </summary>
+        /// <returns><c>true</c> if the file was found and loaded successfully; <c>false</c> otherwise.</returns>
+        public bool InitializeFromFile()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            PiperLogger.LogWarning(
+                "[PuaTokenMapper] InitializeFromFile: Not supported on WebGL. Use InitializeAsync().");
+            return false;
+#else
+            var path = Path.Combine(Application.streamingAssetsPath, PuaJsonRelativePath);
+            if (!File.Exists(path))
+            {
+                PiperLogger.LogDebug(
+                    $"[PuaTokenMapper] InitializeFromFile: pua.json not found at {path}");
+                return false;
+            }
+
+            try
+            {
+                var json = File.ReadAllText(path);
+                return LoadFromJson(json);
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogError(
+                    $"[PuaTokenMapper] InitializeFromFile: Failed to read file: {ex.Message}");
+                return false;
+            }
 #endif
+        }
+
+        /// <summary>
+        /// Asynchronously loads pua.json from StreamingAssets.
+        /// Works on all platforms including WebGL via <see cref="WebGLStreamingAssetsLoader"/>.
+        /// Falls back to hardcoded mapping on failure.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns><c>true</c> if the file was found and loaded successfully; <c>false</c> otherwise.</returns>
+        public async Task<bool> InitializeAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var json = await WebGLStreamingAssetsLoader.LoadTextAsync(
+                    PuaJsonRelativePath, cancellationToken);
+                return LoadFromJson(json);
+            }
+            catch (FileNotFoundException)
+            {
+                PiperLogger.LogDebug(
+                    "[PuaTokenMapper] InitializeAsync: pua.json not found in StreamingAssets");
+                return false;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogError(
+                    $"[PuaTokenMapper] InitializeAsync: Failed to load pua.json: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Tries to parse a hex string like "0xE000" or "0xe000" to an integer.
+        /// </summary>
+        private static bool TryParseHexCodepoint(string hexString, out int codepoint)
+        {
+            codepoint = 0;
+            if (string.IsNullOrEmpty(hexString))
+                return false;
+
+            // Strip "0x" or "0X" prefix
+            var toParse = hexString;
+            if (toParse.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                toParse = toParse.Substring(2);
+
+            return int.TryParse(toParse, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out codepoint);
+        }
     }
 }

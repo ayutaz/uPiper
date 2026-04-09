@@ -129,14 +129,13 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         {
             // Arrange
             var phonemeIds = new[] { 1, 3, 4, 5, 2 };
-            var prosodyA1 = new[] { 0, 1, 2, 3, 0 };
-            var prosodyA2 = new[] { 2, 2, 2, 2, 0 };
-            var prosodyA3 = new[] { 1, 1, 1, 1, 0 };
+            // stride=3 flat array: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, ...]
+            var prosodyFlat = new[] { 0, 2, 1, 1, 2, 1, 2, 2, 1, 3, 2, 1, 0, 0, 0 };
 
             // Act & Assert
             Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await _generator.GenerateAudioAsync(
-                    phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                    phonemeIds, prosodyFlat,
                     languageId: 0));
         }
 
@@ -150,7 +149,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // Act & Assert
             Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await _generator.GenerateAudioAsync(
-                    phonemeIds, null, null, null,
+                    phonemeIds, prosodyFlat: null,
                     languageId: 0));
         }
 
@@ -161,14 +160,13 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // CreateProsodyTensor safely handles short arrays by zero-filling, but
             // the not-initialized guard fires first.
             var phonemeIds = new[] { 1, 2, 3, 4, 5 };
-            var prosodyA1 = new[] { 0, 1 }; // shorter than phonemeIds
-            var prosodyA2 = new[] { 2, 2, 2, 2, 2, 2, 2 }; // longer than phonemeIds
-            var prosodyA3 = new[] { 1, 1, 1 }; // different length
+            // stride=3 flat array with mismatched length (shorter than phonemeIds * 3)
+            var prosodyMismatch = new[] { 0, 1, 2 };
 
             // Act & Assert
             Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await _generator.GenerateAudioAsync(
-                    phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                    phonemeIds, prosodyMismatch,
                     languageId: 0));
         }
 
@@ -275,12 +273,13 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // Arrange
             _generator.Dispose();
             var phonemeIds = new[] { 1, 2, 3 };
-            var prosody = new[] { 0, 0, 0 };
+            // stride=3 flat array: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, a1_2, a2_2, a3_2]
+            var prosodyFlat = new[] { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
             // Act & Assert
             Assert.ThrowsAsync<ObjectDisposedException>(async () =>
                 await _generator.GenerateAudioAsync(
-                    phonemeIds, prosody, prosody, prosody,
+                    phonemeIds, prosodyFlat,
                     languageId: 2));
         }
 

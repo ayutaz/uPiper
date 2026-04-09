@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using uPiper.Core.Phonemizers.Multilingual;
+using uPiper.Core.Phonemizers.Multilingual.Handlers;
+using uPiper.Tests.Editor.Phonemizers.Handlers;
 
-#pragma warning disable CS0618
 namespace uPiper.Tests.Editor
 {
     [TestFixture]
@@ -78,8 +80,11 @@ namespace uPiper.Tests.Editor
         public void Constructor_ValidLanguages_CreatesInstance()
         {
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "ja", "en" },
-                defaultLatinLanguage: "en");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" },
+                    DefaultLatinLanguage = "en"
+                });
 
             Assert.IsNotNull(phonemizer);
             Assert.IsFalse(phonemizer.IsInitialized);
@@ -90,11 +95,14 @@ namespace uPiper.Tests.Editor
         public void Constructor_EmptyLanguages_ThrowsArgumentException()
         {
             Assert.Throws<System.ArgumentException>(() =>
-                new MultilingualPhonemizer(new List<string>()));
+                new MultilingualPhonemizer(new MultilingualPhonemizerOptions
+                {
+                    Languages = new List<string>()
+                }));
         }
 
         [Test]
-        public void Constructor_NullLanguages_ThrowsArgumentException()
+        public void Constructor_NullOptions_ThrowsArgumentNullException()
         {
             Assert.Throws<System.ArgumentNullException>(() =>
                 new MultilingualPhonemizer(null));
@@ -105,25 +113,29 @@ namespace uPiper.Tests.Editor
         [Test]
         public void IsInitialized_BeforeInitialize_ReturnsFalse()
         {
-            var phonemizer = new MultilingualPhonemizer(new[] { "ja", "en" });
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" }
+                });
             Assert.IsFalse(phonemizer.IsInitialized);
         }
 
         [Test]
-        public void InitializeAsync_JaEnLanguages_SetsIsInitialized()
+        public async Task InitializeAsync_JaEnLanguages_SetsIsInitialized()
         {
             // Note: InitializeAsync creates DotNetG2PPhonemizer which needs dictionary.
             // Use a phonemizer with only English to avoid dictionary dependency.
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "en" },
-                defaultLatinLanguage: "en");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "en" },
+                    DefaultLatinLanguage = "en"
+                });
 
-            System.Threading.Tasks.Task.Run(async () =>
-            {
-                await phonemizer.InitializeAsync();
-                Assert.IsTrue(phonemizer.IsInitialized);
-                phonemizer.Dispose();
-            }).GetAwaiter().GetResult();
+            await phonemizer.InitializeAsync();
+            Assert.IsTrue(phonemizer.IsInitialized);
+            phonemizer.Dispose();
         }
 
         // ── MultilingualPhonemizeResult structure ──────────────────────────────
@@ -134,10 +146,61 @@ namespace uPiper.Tests.Editor
             var result = new MultilingualPhonemizeResult();
 
             Assert.IsNull(result.Phonemes);
-            Assert.IsNull(result.ProsodyA1);
-            Assert.IsNull(result.ProsodyA2);
-            Assert.IsNull(result.ProsodyA3);
+            Assert.IsNull(result.ProsodyFlat);
             Assert.IsNull(result.DetectedPrimaryLanguage);
+        }
+
+        // ── Options edge cases ─────────────────────────────────────────────────
+
+        [Test]
+        public void Constructor_HandlersNull_AcceptsDefault()
+        {
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" },
+                    Handlers = null  // explicitly null
+                });
+
+            Assert.IsNotNull(phonemizer);
+            Assert.IsFalse(phonemizer.IsInitialized);
+            phonemizer.Dispose();
+        }
+
+        // ── Options.Validate edge cases ──────────────────────────────────────
+
+        [Test]
+        public void Options_Validate_HandlerKeyNotInLanguages_LogsWarning()
+        {
+            // Handlers に Languages にない言語キーを渡した場合にWarningログ
+            // (例外はスローされないが、ログが出力される)
+            var stub = new StubG2PHandler("ko", new[] { "h", "a" });
+            var options = new MultilingualPhonemizerOptions
+            {
+                Languages = new[] { "ja", "en" },
+                Handlers = new Dictionary<string, ILanguageG2PHandler>
+                {
+                    { "ko", stub }  // "ko" is not in Languages
+                }
+            };
+
+            // Validate should not throw, but should log a warning
+            Assert.DoesNotThrow(() => options.Validate());
+            stub.Dispose();
+        }
+
+        [Test]
+        public void Options_Validate_DefaultLatinLanguageNotInLanguages_LogsWarning()
+        {
+            // DefaultLatinLanguage が Languages にない場合
+            var options = new MultilingualPhonemizerOptions
+            {
+                Languages = new[] { "ja", "zh" },
+                DefaultLatinLanguage = "en"  // "en" is not in Languages
+            };
+
+            // Validate should not throw, but should log a warning
+            Assert.DoesNotThrow(() => options.Validate());
         }
 
         // ── Dispose ────────────────────────────────────────────────────────────
@@ -145,7 +208,11 @@ namespace uPiper.Tests.Editor
         [Test]
         public void Dispose_CalledTwice_DoesNotThrow()
         {
-            var phonemizer = new MultilingualPhonemizer(new[] { "ja", "en" });
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" }
+                });
             Assert.DoesNotThrow(() =>
             {
                 phonemizer.Dispose();

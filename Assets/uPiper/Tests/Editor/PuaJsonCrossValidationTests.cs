@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
+using UnityEngine;
 using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Editor
@@ -220,6 +222,70 @@ namespace uPiper.Tests.Editor
             Assert.AreEqual(1, PuaJsonVersion,
                 "Embedded pua.json version does not match expected version. " +
                 "Regenerate PuaJsonEntries from the latest pua.json.");
+        }
+
+        // =================================================================
+        // File-based cross-validation (pua.json from StreamingAssets)
+        // =================================================================
+
+        [Test]
+        public void PuaJson_FileBasedLoading_AllEntriesMatchFixedMapping()
+        {
+            var path = Path.Combine(Application.streamingAssetsPath, "uPiper/pua.json");
+            if (!File.Exists(path))
+            {
+                Assert.Ignore($"pua.json not found at {path} (file-based test skipped)");
+                return;
+            }
+
+            var json = File.ReadAllText(path);
+            var mapper = new PuaTokenMapper();
+            var loaded = mapper.LoadFromJson(json);
+            Assert.IsTrue(loaded, "LoadFromJson should succeed for pua.json");
+            Assert.IsTrue(mapper.IsLoadedFromJson, "IsLoadedFromJson should be true after loading");
+
+            // Verify all entries from FixedPuaMapping exist in the loaded mapper
+            var mismatches = new List<string>();
+            foreach (var kvp in PuaTokenMapper.FixedPuaMapping)
+            {
+                if (!mapper.Token2Char.TryGetValue(kvp.Key, out var actualChar))
+                {
+                    mismatches.Add(
+                        $"  MISSING: token=\"{EscapeForDisplay(kvp.Key)}\" " +
+                        $"(U+{kvp.Value:X4}) not found in loaded mapper");
+                    continue;
+                }
+
+                if ((int)actualChar != kvp.Value)
+                {
+                    mismatches.Add(
+                        $"  MISMATCH: token=\"{EscapeForDisplay(kvp.Key)}\" " +
+                        $"FixedPuaMapping=U+{kvp.Value:X4} vs loaded=U+{(int)actualChar:X4}");
+                }
+            }
+
+            Assert.IsEmpty(mismatches,
+                $"File-based pua.json validation found {mismatches.Count} issue(s):\n" +
+                string.Join("\n", mismatches));
+        }
+
+        [Test]
+        public void PuaJson_FileBasedLoading_EntryCountMatchesSnapshot()
+        {
+            var path = Path.Combine(Application.streamingAssetsPath, "uPiper/pua.json");
+            if (!File.Exists(path))
+            {
+                Assert.Ignore($"pua.json not found at {path} (file-based test skipped)");
+                return;
+            }
+
+            var json = File.ReadAllText(path);
+            var mapper = new PuaTokenMapper();
+            mapper.LoadFromJson(json);
+
+            Assert.AreEqual(PuaJsonEntries.Length, mapper.Token2Char.Count,
+                $"Loaded mapper should have {PuaJsonEntries.Length} entries " +
+                $"(matching snapshot), but has {mapper.Token2Char.Count}");
         }
 
         // =================================================================

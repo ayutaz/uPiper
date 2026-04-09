@@ -4,7 +4,6 @@ using NUnit.Framework;
 using uPiper.Core;
 using uPiper.Core.Phonemizers.Multilingual;
 
-#pragma warning disable CS0618
 namespace uPiper.Tests.Editor.Phonemizers
 {
     /// <summary>
@@ -382,8 +381,11 @@ namespace uPiper.Tests.Editor.Phonemizers
             };
 
             var phonemizer = new MultilingualPhonemizer(
-                config.SupportedLanguages,
-                config.DefaultLanguage ?? "en");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = config.SupportedLanguages,
+                    DefaultLatinLanguage = config.DefaultLanguage ?? "en"
+                });
 
             Assert.AreEqual(3, phonemizer.Languages.Count);
             Assert.IsTrue(phonemizer.Languages.Contains("ja"));
@@ -410,8 +412,11 @@ namespace uPiper.Tests.Editor.Phonemizers
                 "When DefaultLanguage is null, fallback should be 'en'");
 
             var phonemizer = new MultilingualPhonemizer(
-                config.SupportedLanguages,
-                defaultLang);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = config.SupportedLanguages,
+                    DefaultLatinLanguage = defaultLang
+                });
 
             Assert.IsNotNull(phonemizer);
             phonemizer.Dispose();
@@ -433,7 +438,12 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.AreEqual("ja", languages[0]);
             Assert.AreEqual("en", languages[1]);
 
-            var phonemizer = new MultilingualPhonemizer(languages, config.DefaultLanguage ?? "en");
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = languages,
+                    DefaultLatinLanguage = config.DefaultLanguage ?? "en"
+                });
             Assert.AreEqual(2, phonemizer.Languages.Count);
 
             phonemizer.Dispose();
