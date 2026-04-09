@@ -4,8 +4,8 @@ namespace uPiper.Core.Phonemizers.Multilingual
 {
     /// <summary>
     /// Represents a language's trigram frequency profile for language detection.
-    /// Trigrams are ranked by frequency (index 0 = most frequent).
-    /// Similarity is computed using the Out-of-Place distance method (Cavnar &amp; Trenkle 1994).
+    /// Trigrams are stored as a set of known trigrams for the language.
+    /// Similarity is computed using frequency-weighted overlap between input trigrams and the profile.
     /// </summary>
     internal sealed class TrigramProfile
     {
@@ -38,9 +38,10 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
         /// <summary>
         /// Computes similarity between this profile and an input trigram frequency distribution.
-        /// Uses the Out-of-Place distance method: for each input trigram, the absolute difference
-        /// between its rank in the input and its rank in this profile is summed.
-        /// The result is normalized to a 0.0-1.0 similarity score (1.0 = identical).
+        /// Uses frequency-weighted overlap: for each input trigram occurrence, checks whether
+        /// it exists in the profile. High-frequency trigrams contribute proportionally more,
+        /// giving robust scores even for short texts.
+        /// The result is a 0.0-1.0 similarity score (1.0 = all input trigrams found in profile).
         /// </summary>
         /// <param name="inputTrigrams">
         /// Dictionary mapping trigrams to their frequency counts in the input text.
@@ -51,33 +52,22 @@ namespace uPiper.Core.Phonemizers.Multilingual
             if (inputTrigrams == null || inputTrigrams.Count == 0 || _trigramRanks.Count == 0)
                 return 0f;
 
-            // Build ranked list from input frequencies (sorted descending by count)
-            var inputRanked = new List<KeyValuePair<string, int>>(inputTrigrams);
-            inputRanked.Sort((a, b) => b.Value.CompareTo(a.Value));
+            long matchedWeight = 0;
+            long totalWeight = 0;
 
-            var maxDistance = _trigramRanks.Count;
-            long totalDistance = 0;
-
-            for (var inputRank = 0; inputRank < inputRanked.Count; inputRank++)
+            foreach (var kvp in inputTrigrams)
             {
-                var trigram = inputRanked[inputRank].Key;
-                if (_trigramRanks.TryGetValue(trigram, out var profileRank))
+                totalWeight += kvp.Value;
+                if (_trigramRanks.ContainsKey(kvp.Key))
                 {
-                    totalDistance += System.Math.Abs(inputRank - profileRank);
-                }
-                else
-                {
-                    // Trigram not in profile: use maximum distance penalty
-                    totalDistance += maxDistance;
+                    matchedWeight += kvp.Value;
                 }
             }
 
-            // Normalize: worst case is inputCount * maxDistance
-            var worstCase = (long)inputRanked.Count * maxDistance;
-            if (worstCase == 0)
+            if (totalWeight == 0)
                 return 0f;
 
-            return 1f - (float)totalDistance / worstCase;
+            return (float)matchedWeight / totalWeight;
         }
 
         /// <summary>

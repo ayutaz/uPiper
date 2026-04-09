@@ -124,7 +124,7 @@ namespace uPiper.Tests.Editor
                 "with the children playing in the park throughout the afternoon");
             Assert.IsTrue(result.IsConfident, "Should be confident detection");
             Assert.AreEqual("en", result.Language);
-            Assert.GreaterOrEqual(result.Score, 0.65f);
+            Assert.GreaterOrEqual(result.Score, TrigramLanguageDetector.DefaultConfidenceThreshold);
         }
 
         [Test]

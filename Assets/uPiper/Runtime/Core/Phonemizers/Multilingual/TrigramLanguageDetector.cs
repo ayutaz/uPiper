@@ -33,8 +33,8 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
     /// <summary>
     /// Trigram frequency-based language detector for Latin-script languages.
-    /// Uses the Out-of-Place distance method (Cavnar &amp; Trenkle 1994) to compare
-    /// input text trigram distributions against precomputed language profiles.
+    /// Uses frequency-weighted overlap to compare input text trigram distributions
+    /// against precomputed language profiles.
     /// </summary>
     internal sealed class TrigramLanguageDetector
     {
@@ -42,12 +42,12 @@ namespace uPiper.Core.Phonemizers.Multilingual
         public const int MinCharsForDetection = 10;
 
         /// <summary>Default confidence threshold for detection.</summary>
-        public const float DefaultConfidenceThreshold = 0.65f;
+        public const float DefaultConfidenceThreshold = 0.30f;
 
         /// <summary>
         /// Higher confidence threshold for short texts (between MinCharsForDetection and 15 chars).
         /// </summary>
-        public const float ShortTextConfidenceThreshold = 0.75f;
+        public const float ShortTextConfidenceThreshold = 0.40f;
 
         /// <summary>Short text length boundary (texts below this use higher threshold).</summary>
         public const int ShortTextBoundary = 15;
