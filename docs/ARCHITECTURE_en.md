@@ -100,7 +100,7 @@ Maps multi-character phonemes to single Unicode characters:
 - **How to obtain**: Call `PiperConfig.ToValidated()` to receive a validated `ValidatedPiperConfig`. Internally `PiperTTS` holds this as `_validatedConfig`
 - **All properties are read-only**: Provides post-validation values in an immutable form, guaranteeing configuration consistency
 - **GPUSettings immutability**: `GPUSettings` guarantees immutability via defensive copy (`new GPUInferenceSettings { MaxMemoryMB = source.GPUSettings.MaxMemoryMB }`). Subsequent changes to the original `PiperConfig` do not affect the `ValidatedPiperConfig`
-- **Note: `PiperConfig.Validate()` has side effects**: `Validate()` directly modifies fields (e.g., `WorkerThreads=0` is replaced with an auto-detected value, `DefaultLanguage` is lowercased, out-of-range values are clamped, etc.). Since `ToValidated()` calls `Validate()` internally, the original `PiperConfig` instance is also modified
+- **Pure function `ToValidated()`**: `ToValidated()` does not modify any fields of `PiperConfig` (pure function). Clamping, normalization, and auto-detection are performed within the `ValidatedPiperConfig` constructor, and results are returned as an immutable snapshot. `Validate()` is `[Obsolete]` and will be removed in v3.0
 - **Key properties**:
   - `ParsedPhonemeSilence: IReadOnlyDictionary<string, float>` -- When `EnablePhonemeSilence=true`, provides a pre-parsed map from `PhonemeSilenceSpec`. Returns `null` when `false` (eliminates redundant per-call parsing in `PiperTTS`)
   - Provides all language, performance, inference, audio, and silence settings in a single object

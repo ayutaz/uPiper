@@ -112,7 +112,8 @@ AudioClip出力 (22050Hz, float32)
 | `PuaTokenMapper` | `Runtime/Core/Phonemizers/Multilingual/` | PUA↔IPA双方向マッピング（96固定エントリ） |
 | `LanguageConstants` | `Runtime/Core/Phonemizers/Multilingual/` | 言語ID/コード定数 |
 | `InferenceEngineDemo` | `Runtime/Demo/` | テスト用デモUI（6言語ドロップダウン） |
-| `ValidatedPiperConfig` | `Runtime/Core/` | PiperConfig バリデーション後の不変スナップショット（ParsedPhonemeSilence含む） |
+| `IPiperConfigReadOnly` | `Runtime/Core/` | バリデーション済み設定の読み取り専用インターフェース（6ネスト record struct プロパティ） |
+| `ValidatedPiperConfig` | `Runtime/Core/` | PiperConfig バリデーション後の不変スナップショット（IPiperConfigReadOnly実装、ParsedPhonemeSilence含む） |
 | `TTSSynthesisOrchestrator` | `Runtime/Core/AudioGeneration/` | 音素列→AudioClip変換パイプライン（エンコード+推論+句分割+AudioClip構築）を一元管理。config/voiceConfigをコンストラクタ注入、SynthesisRequest経由のAPI |
 | `SynthesisRequest` | `Runtime/Core/AudioGeneration/` | 音声合成リクエスト（internal readonly struct）。音素・Prosody・合成パラメータを集約 |
 | `SplitInferenceOrchestrator` | `Runtime/Core/AudioGeneration/` | 沈黙句分割→反復推論→結合オーケストレーション（internal class、v1.4.0レビューでpublic→internalに変更） |

@@ -98,7 +98,7 @@ MultilingualPhonemizerは各エンジンの`ToPuaPhonemes()`でPUA音素を、`T
 - **取得方法**: `PiperConfig.ToValidated()` を呼び出すと検証済みの `ValidatedPiperConfig` が返る。`PiperTTS` 内部では `_validatedConfig` として保持される
 - **全プロパティがread-only**: バリデーション後の値を変更不可の形で提供し、設定の一貫性を保証
 - **GPUSettings の不変性**: `GPUSettings` は防御的コピーにより不変性を保証（`new GPUInferenceSettings { MaxMemoryMB = source.GPUSettings.MaxMemoryMB }`）。元の `PiperConfig` 側の値を後から変更しても `ValidatedPiperConfig` には影響しない
-- **注意: `PiperConfig.Validate()` は副作用あり**: `Validate()` はフィールドを直接変更する（例: `WorkerThreads=0` → 自動検出値、`DefaultLanguage` → 小文字正規化、範囲外の値のクランプ等）。`ToValidated()` 内部で `Validate()` を呼ぶため、元の `PiperConfig` インスタンスも変更される
+- **純粋関数 `ToValidated()`**: `ToValidated()` は `PiperConfig` のフィールドを一切変更しない純粋関数。クランプ・正規化・自動検出は `ValidatedPiperConfig` コンストラクタ内で実行され、結果は不変スナップショットとして返される。`Validate()` は `[Obsolete]` であり、v3.0 で削除予定
 - **主要プロパティ**:
   - `ParsedPhonemeSilence: IReadOnlyDictionary<string, float>` — `EnablePhonemeSilence=true` のとき `PhonemeSilenceSpec` をパース済みのマップとして提供。`false` のときは `null`（`PiperTTS` 側で都度パースする冗長処理を排除）
   - 言語・パフォーマンス・推論・音声・サイレンス設定の全フィールドを一括提供

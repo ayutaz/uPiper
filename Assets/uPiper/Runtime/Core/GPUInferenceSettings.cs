@@ -17,11 +17,14 @@ namespace uPiper.Core
         public int MaxMemoryMB = 512;
 
         /// <summary>
-        /// Validate GPU settings
+        /// Validate GPU settings.
+        /// GPU settings are now validated within ValidatedPiperConfig constructor.
         /// </summary>
+        [Obsolete("GPU settings are now validated within ValidatedPiperConfig. Will be removed in v3.0.")]
         public void Validate()
         {
-            MaxMemoryMB = Mathf.Clamp(MaxMemoryMB, 128, 2048);
+            // クランプロジックは ValidatedPiperConfig コンストラクタに移動済み。
+            // 後方互換のためメソッドは残すが、フィールドは変更しない。
         }
     }
 }

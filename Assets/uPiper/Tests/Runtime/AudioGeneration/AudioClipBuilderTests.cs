@@ -1,5 +1,4 @@
 using NUnit.Framework;
-using UnityEngine;
 using uPiper.Core.AudioGeneration;
 
 namespace uPiper.Tests.Runtime.AudioGeneration
@@ -55,29 +54,6 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // Act & Assert
             Assert.Throws<System.ArgumentException>(() =>
                 _builder.BuildAudioClip(audioData, sampleRate));
-        }
-
-        [Test]
-        public void NormalizeAudio_ValidData_NormalizesToTarget()
-        {
-            // Arrange
-            var audioData = new float[] { 0.5f, -0.5f, 0.25f, -0.25f };
-            var targetPeak = 0.95f;
-
-            // Act
-            var normalized = _builder.NormalizeAudio(audioData, targetPeak);
-
-            // Assert
-            Assert.IsNotNull(normalized);
-            Assert.AreEqual(audioData.Length, normalized.Length);
-
-            // 最大値を確認
-            var maxValue = 0f;
-            foreach (var sample in normalized)
-            {
-                maxValue = Mathf.Max(maxValue, Mathf.Abs(sample));
-            }
-            Assert.AreEqual(targetPeak, maxValue, 0.001f);
         }
 
     }

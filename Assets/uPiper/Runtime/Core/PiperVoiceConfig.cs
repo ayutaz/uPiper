@@ -112,10 +112,13 @@ namespace uPiper.Core
         public int NumLanguages = 1;
 
         /// <summary>
-        /// Phoneme to ID mapping dictionary
+        /// Phoneme to ID mapping dictionary.
+        /// Each phoneme maps to an array of integer IDs (piper-plus compatible).
+        /// PhonemeEncoder extracts ids[0] for internal encoding;
+        /// PhonemeSilenceProcessor uses ids[^1] as the silence trigger (piper-plus convention).
         /// </summary>
         [HideInInspector]
-        public Dictionary<string, int> PhonemeIdMap;
+        public Dictionary<string, int[]> PhonemeIdMap;
 
         /// <summary>
         /// Language code to ID mapping (e.g., {"ja": 0, "en": 1})

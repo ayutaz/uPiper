@@ -22,20 +22,20 @@ namespace uPiper.Tests.Runtime
             var config = new PiperVoiceConfig
             {
                 VoiceId = "multilingual-test-medium",
-                PhonemeIdMap = new Dictionary<string, int>
+                PhonemeIdMap = new Dictionary<string, int[]>
                 {
-                    ["_"] = 0,  // PAD
-                    ["^"] = 1,  // BOS
-                    ["$"] = 2,  // EOS
-                    [" "] = 3,  // Space
-                    ["h"] = 20,
-                    ["ɛ"] = 61,
-                    ["l"] = 24,
-                    ["o"] = 27,
-                    ["w"] = 35,
-                    ["ɚ"] = 60,
-                    ["ɹ"] = 88,
-                    ["d"] = 17
+                    ["_"] = new[] { 0 },  // PAD
+                    ["^"] = new[] { 1 },  // BOS
+                    ["$"] = new[] { 2 },  // EOS
+                    [" "] = new[] { 3 },  // Space
+                    ["h"] = new[] { 20 },
+                    ["ɛ"] = new[] { 61 },
+                    ["l"] = new[] { 24 },
+                    ["o"] = new[] { 27 },
+                    ["w"] = new[] { 35 },
+                    ["ɚ"] = new[] { 60 },
+                    ["ɹ"] = new[] { 88 },
+                    ["d"] = new[] { 17 }
                 }
             };
 
@@ -68,8 +68,9 @@ namespace uPiper.Tests.Runtime
             var idIndex = 2; // Skip BOS + PAD
             foreach (var phoneme in testPhonemes)
             {
-                if (config.PhonemeIdMap.TryGetValue(phoneme, out var expectedId))
+                if (config.PhonemeIdMap.TryGetValue(phoneme, out var expectedIds))
                 {
+                    var expectedId = expectedIds[0];
                     Assert.AreEqual(expectedId, ids[idIndex], $"Phoneme '{phoneme}' should map to ID {expectedId}");
                     Assert.AreEqual(0, ids[idIndex + 1], $"Phoneme '{phoneme}' should be followed by PAD (0)");
                     idIndex += 2;

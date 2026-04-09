@@ -17,18 +17,23 @@ namespace uPiper.Tests.Runtime.Core
         }
 
         [Test]
-        public void Validate_ClampsMaxMemoryMB()
+        public void ToValidated_ClampsMaxMemoryMB()
         {
-            var settings = new GPUInferenceSettings
-            {
-                MaxMemoryMB = 10000
-            };
-            settings.Validate();
-            Assert.AreEqual(2048, settings.MaxMemoryMB);
+            // High value
+            var settings = new GPUInferenceSettings { MaxMemoryMB = 10000 };
+            var config = new PiperConfig { GPUSettings = settings };
+            var validated = config.ToValidated();
 
-            settings.MaxMemoryMB = 50;
-            settings.Validate();
-            Assert.AreEqual(128, settings.MaxMemoryMB);
+            Assert.AreEqual(10000, settings.MaxMemoryMB);
+            Assert.AreEqual(2048, validated.Inference.GPUSettings.MaxMemoryMB);
+
+            // Low value
+            var settingsLow = new GPUInferenceSettings { MaxMemoryMB = 50 };
+            var configLow = new PiperConfig { GPUSettings = settingsLow };
+            var validatedLow = configLow.ToValidated();
+
+            Assert.AreEqual(50, settingsLow.MaxMemoryMB);
+            Assert.AreEqual(128, validatedLow.Inference.GPUSettings.MaxMemoryMB);
         }
 
         [Test]
