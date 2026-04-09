@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace uPiper.Core.AudioGeneration
 {
     /// <summary>
@@ -29,6 +31,10 @@ namespace uPiper.Core.AudioGeneration
             int speakerId,
             int languageId)
         {
+            Debug.Assert(
+                prosodyFlat == null || prosodyFlat.Length == phonemes.Length * PhonemeEncoder.ProsodyStride,
+                "ProsodyFlat length must be Phonemes.Length * ProsodyStride");
+
             Phonemes = phonemes;
             ProsodyFlat = prosodyFlat;
             LengthScale = lengthScale;

@@ -254,8 +254,15 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// Build a lookup from individual phoneme IDs to the silence duration
         /// in seconds that should follow them.
-        /// Uses ids[^1] (last element) as the trigger ID, matching piper-plus convention
-        /// where the last ID in the array is used for silence detection.
+        /// <para>
+        /// Uses <c>ids[^1]</c> (last element) as the trigger ID. This is intentionally
+        /// different from <see cref="PhonemeEncoder"/> which uses <c>ids[0]</c> (first element)
+        /// for encoding. The distinction follows piper-plus convention: encoding uses the
+        /// first ID to represent the phoneme in the model input, while silence detection
+        /// uses the last ID as the trigger to split phrases. For single-ID phonemes the
+        /// two are equivalent; for multi-ID phonemes the last element marks the phoneme
+        /// boundary where silence should be inserted.
+        /// </para>
         /// </summary>
         private static Dictionary<int, float> BuildSilenceIdMap(
             IReadOnlyDictionary<string, float> phonemeSilence,
@@ -267,6 +274,7 @@ namespace uPiper.Core.AudioGeneration
             {
                 if (phonemeIdMap.TryGetValue(phoneme, out var ids) && ids.Length > 0)
                 {
+                    // ids[^1]: last element — see summary for why this differs from PhonemeEncoder's ids[0]
                     map[ids[^1]] = seconds;
                 }
             }

@@ -1,5 +1,4 @@
 using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -387,7 +386,6 @@ namespace uPiper.Core.AudioGeneration
             var inputLengthsTensor = new Tensor<int>(new TensorShape(1), new[] { phonemeIds.Length });
             var scalesTensor = new Tensor<float>(new TensorShape(3), new[] { noiseScale, lengthScale, noiseW });
             Tensor<int> prosodyTensor = null;
-            int[] rentedProsody = null;
             Tensor<int> sidTensor = null;
             Tensor<int> lidTensor = null;
 
@@ -409,11 +407,11 @@ namespace uPiper.Core.AudioGeneration
 
             if (_supportsProsody)
             {
-                prosodyTensor = CreateProsodyTensorPooled(phonemeIds.Length, prosodyFlat, out rentedProsody);
+                prosodyTensor = CreateProsodyTensor(phonemeIds.Length, prosodyFlat);
                 _worker.SetInput("prosody_features", prosodyTensor);
             }
 
-            return new InferenceContext(inputTensor, inputLengthsTensor, scalesTensor, prosodyTensor, rentedProsody, sidTensor, lidTensor);
+            return new InferenceContext(inputTensor, inputLengthsTensor, scalesTensor, prosodyTensor, sidTensor, lidTensor);
         }
 
         /// <summary>
@@ -450,34 +448,20 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// Create prosody tensor using ArrayPool for reduced GC pressure.
-        /// The rented array must be returned after the tensor is disposed.
+        /// Create prosody tensor with exact-size array (no ArrayPool; Tensor requires exact length).
         /// </summary>
-        private Tensor<int> CreateProsodyTensorPooled(
-            int sequenceLength, int[] prosodyFlat, out int[] rentedArray)
+        private static Tensor<int> CreateProsodyTensor(
+            int sequenceLength, int[] prosodyFlat)
         {
             var prosodySize = sequenceLength * PhonemeEncoder.ProsodyStride;
-            rentedArray = ArrayPool<int>.Shared.Rent(prosodySize);
+            var data = new int[prosodySize];
 
-            if (prosodyFlat != null && prosodyFlat.Length >= prosodySize)
+            if (prosodyFlat != null)
             {
-                Array.Copy(prosodyFlat, rentedArray, prosodySize);
-            }
-            else
-            {
-                Array.Clear(rentedArray, 0, prosodySize);
-                if (prosodyFlat != null)
-                {
-                    Array.Copy(prosodyFlat, rentedArray, Math.Min(prosodyFlat.Length, prosodySize));
-                }
+                Array.Copy(prosodyFlat, data, Math.Min(prosodyFlat.Length, prosodySize));
             }
 
-            // ArrayPool.Rent returns arrays >= prosodySize; Tensor requires exact length.
-            // Copy to exact-size array for Tensor constructor, keep rented array for later return.
-            var exactData = new int[prosodySize];
-            Array.Copy(rentedArray, exactData, prosodySize);
-
-            return new Tensor<int>(new TensorShape(1, sequenceLength, PhonemeEncoder.ProsodyStride), exactData);
+            return new Tensor<int>(new TensorShape(1, sequenceLength, PhonemeEncoder.ProsodyStride), data);
         }
 
         /// <summary>
@@ -496,7 +480,7 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// Holds all input tensors and rented arrays for a single inference call.
+        /// Holds all input tensors for a single inference call.
         /// Disposing this context releases all resources atomically.
         /// </summary>
         private sealed class InferenceContext : IDisposable
@@ -505,7 +489,6 @@ namespace uPiper.Core.AudioGeneration
             public Tensor<int> InputLengths { get; }
             public Tensor<float> Scales { get; }
             public Tensor<int> Prosody { get; }
-            public int[] RentedProsody { get; }
             public Tensor<int> Sid { get; }
             public Tensor<int> Lid { get; }
 
@@ -516,7 +499,6 @@ namespace uPiper.Core.AudioGeneration
                 Tensor<int> inputLengths,
                 Tensor<float> scales,
                 Tensor<int> prosody,
-                int[] rentedProsody,
                 Tensor<int> sid,
                 Tensor<int> lid)
             {
@@ -524,7 +506,6 @@ namespace uPiper.Core.AudioGeneration
                 InputLengths = inputLengths;
                 Scales = scales;
                 Prosody = prosody;
-                RentedProsody = rentedProsody;
                 Sid = sid;
                 Lid = lid;
             }
@@ -539,8 +520,6 @@ namespace uPiper.Core.AudioGeneration
                 Sid?.Dispose();
                 Lid?.Dispose();
                 Prosody?.Dispose();
-                if (RentedProsody != null)
-                    ArrayPool<int>.Shared.Return(RentedProsody);
             }
         }
 

@@ -165,7 +165,7 @@ namespace uPiper.Core
                 // エンコード〜AudioClip生成を一括
                 var request = new AudioGeneration.SynthesisRequest(
                     phonemeResult.Phonemes,
-                    null,
+                    phonemeResult.ProsodyFlat,
                     lengthScale, noiseScale, noiseW,
                     0, 0);
                 var audioClip = await _orchestrator.SynthesizeAsync(request, cancellationToken);

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using uPiper.Core.Logging;
 
@@ -50,7 +51,9 @@ namespace uPiper.Core.AudioGeneration
         /// <returns>正規化された音声データ</returns>
         public static float[] Normalize(float[] audioData, float targetPeak = 0.95f)
         {
-            if (audioData == null || audioData.Length == 0)
+            if (audioData == null)
+                return Array.Empty<float>();
+            if (audioData.Length == 0)
                 return audioData;
 
             targetPeak = Mathf.Clamp01(targetPeak);

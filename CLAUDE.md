@@ -103,6 +103,8 @@ AudioClip出力 (22050Hz, float32)
 | `PiperConfig` | `Runtime/Core/` | 設定管理（GPU, キャッシュ, バックエンド選択） |
 | `AudioChunkBuilder` | `Runtime/Core/AudioGeneration/` | 音声波形→AudioClip変換 |
 | `InferenceAudioGenerator` | `Runtime/Core/AudioGeneration/` | ONNX直接推論（Prosody対応） |
+| `AudioNormalizer` | `Runtime/Core/AudioGeneration/` | 音声正規化（AudioClipBuilderから切り出し） |
+| `BackendSelector` | `Runtime/Core/AudioGeneration/` | 推論バックエンド選択（PlatformInfo封じ込め） |
 | `EnglishG2PEngine` | DotNetG2P.English パッケージ | 英語G2P（CMU dict + LTS + 同音異義語解決） |
 | `SpanishG2PEngine` | DotNetG2P.Spanish パッケージ | スペイン語G2P |
 | `FrenchG2PEngine` | DotNetG2P.French パッケージ | フランス語G2P |

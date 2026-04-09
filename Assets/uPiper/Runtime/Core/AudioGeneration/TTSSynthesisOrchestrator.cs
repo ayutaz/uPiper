@@ -94,8 +94,11 @@ namespace uPiper.Core.AudioGeneration
                     cancellationToken);
             }
 
-            // 3. 正規化してAudioClipを構築
-            AudioNormalizer.NormalizeInPlace(audioData, 0.95f);
+            // 3. 正規化してAudioClipを構築（設定で無効化可能、後方互換のためnull時は正規化）
+            if (_config == null || _config.Audio.NormalizeAudio)
+            {
+                AudioNormalizer.NormalizeInPlace(audioData, 0.95f);
+            }
             var clip = _audioClipBuilder.BuildAudioClip(
                 audioData,
                 _generator.SampleRate,

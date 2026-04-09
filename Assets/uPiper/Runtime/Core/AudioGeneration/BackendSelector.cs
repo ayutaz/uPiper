@@ -187,14 +187,14 @@ namespace uPiper.Core.AudioGeneration
                 return BackendType.GPUPixel;
             }
 
-            // Mobile: ComputeShader対応 → GPUCompute, 非対応 → CPU
+            // Mobile: GPUPixel (better VITS compatibility) or CPU fallback
             if (platform.IsMobile)
             {
                 if (platform.SupportsComputeShaders)
                 {
                     PiperLogger.LogInfo(
-                        "[BackendSelector] Auto-selecting GPUCompute backend for mobile");
-                    return BackendType.GPUCompute;
+                        "[BackendSelector] Auto-selecting GPUPixel backend for mobile");
+                    return BackendType.GPUPixel;
                 }
 
                 PiperLogger.LogInfo(

@@ -170,7 +170,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         }
 
         [Test]
-        public void Determine_Auto_Mobile_ComputeShader_ReturnsGPUCompute()
+        public void Determine_Auto_Mobile_ComputeShader_ReturnsGPUPixel()
         {
             var platform = new PlatformInfo(
                 graphicsDeviceType: GraphicsDeviceType.Vulkan,
@@ -182,7 +182,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             var result = BackendSelector.Determine(InferenceBackend.Auto, platform);
 
-            Assert.AreEqual(BackendType.GPUCompute, result);
+            Assert.AreEqual(BackendType.GPUPixel, result);
         }
 
         [Test]

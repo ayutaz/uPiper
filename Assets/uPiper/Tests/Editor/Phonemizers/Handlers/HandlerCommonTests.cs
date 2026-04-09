@@ -203,37 +203,33 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
         [Test]
         public async Task SpanishHandler_InitializeAsync_SetsIsInitialized()
         {
-            var handler = new SpanishG2PHandler();
+            using var handler = new SpanishG2PHandler();
             await handler.InitializeAsync();
             Assert.IsTrue(handler.IsInitialized);
-            handler.Dispose();
         }
 
         [Test]
         public async Task FrenchHandler_InitializeAsync_SetsIsInitialized()
         {
-            var handler = new FrenchG2PHandler();
+            using var handler = new FrenchG2PHandler();
             await handler.InitializeAsync();
             Assert.IsTrue(handler.IsInitialized);
-            handler.Dispose();
         }
 
         [Test]
         public async Task PortugueseHandler_InitializeAsync_SetsIsInitialized()
         {
-            var handler = new PortugueseG2PHandler();
+            using var handler = new PortugueseG2PHandler();
             await handler.InitializeAsync();
             Assert.IsTrue(handler.IsInitialized);
-            handler.Dispose();
         }
 
         [Test]
         public async Task KoreanHandler_InitializeAsync_SetsIsInitialized()
         {
-            var handler = new KoreanG2PHandler();
+            using var handler = new KoreanG2PHandler();
             await handler.InitializeAsync();
             Assert.IsTrue(handler.IsInitialized);
-            handler.Dispose();
         }
 
         // ── Process on empty text returns empty or aligned arrays ────────────
@@ -241,7 +237,7 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
         [Test]
         public async Task SpanishHandler_ProcessEmptyText_ReturnsEmptyArrays()
         {
-            var handler = new SpanishG2PHandler();
+            using var handler = new SpanishG2PHandler();
             await handler.InitializeAsync();
 
             var (phonemes, prosodyFlat) = handler.Process("");
@@ -249,14 +245,12 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             Assert.IsNotNull(phonemes);
             Assert.IsNotNull(prosodyFlat);
             Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
-
-            handler.Dispose();
         }
 
         [Test]
         public async Task FrenchHandler_ProcessEmptyText_ReturnsEmptyArrays()
         {
-            var handler = new FrenchG2PHandler();
+            using var handler = new FrenchG2PHandler();
             await handler.InitializeAsync();
 
             var (phonemes, prosodyFlat) = handler.Process("");
@@ -264,14 +258,12 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             Assert.IsNotNull(phonemes);
             Assert.IsNotNull(prosodyFlat);
             Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
-
-            handler.Dispose();
         }
 
         [Test]
         public async Task PortugueseHandler_ProcessEmptyText_ReturnsEmptyArrays()
         {
-            var handler = new PortugueseG2PHandler();
+            using var handler = new PortugueseG2PHandler();
             await handler.InitializeAsync();
 
             var (phonemes, prosodyFlat) = handler.Process("");
@@ -279,14 +271,12 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             Assert.IsNotNull(phonemes);
             Assert.IsNotNull(prosodyFlat);
             Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
-
-            handler.Dispose();
         }
 
         [Test]
         public async Task KoreanHandler_ProcessEmptyText_ReturnsEmptyArrays()
         {
-            var handler = new KoreanG2PHandler();
+            using var handler = new KoreanG2PHandler();
             await handler.InitializeAsync();
 
             var (phonemes, prosodyFlat) = handler.Process("");
@@ -294,8 +284,6 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             Assert.IsNotNull(phonemes);
             Assert.IsNotNull(prosodyFlat);
             Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
-
-            handler.Dispose();
         }
 
         // ── Arrays returned by Process are aligned (same length) ────────────
@@ -303,7 +291,7 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
         [Test]
         public async Task SpanishHandler_ProcessRealText_ArraysAligned()
         {
-            var handler = new SpanishG2PHandler();
+            using var handler = new SpanishG2PHandler();
             await handler.InitializeAsync();
 
             var (phonemes, prosodyFlat) = handler.Process("hola mundo");
@@ -311,14 +299,12 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             Assert.IsTrue(phonemes.Length > 0,
                 "Spanish 'hola mundo' should produce phonemes");
             Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
-
-            handler.Dispose();
         }
 
         [Test]
         public async Task FrenchHandler_ProcessRealText_ArraysAligned()
         {
-            var handler = new FrenchG2PHandler();
+            using var handler = new FrenchG2PHandler();
             await handler.InitializeAsync();
 
             var (phonemes, prosodyFlat) = handler.Process("bonjour");
@@ -326,14 +312,12 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             Assert.IsTrue(phonemes.Length > 0,
                 "French 'bonjour' should produce phonemes");
             Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
-
-            handler.Dispose();
         }
 
         [Test]
         public async Task PortugueseHandler_ProcessRealText_ArraysAligned()
         {
-            var handler = new PortugueseG2PHandler();
+            using var handler = new PortugueseG2PHandler();
             await handler.InitializeAsync();
 
             var (phonemes, prosodyFlat) = handler.Process("bom dia");
@@ -341,14 +325,12 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             Assert.IsTrue(phonemes.Length > 0,
                 "Portuguese 'bom dia' should produce phonemes");
             Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
-
-            handler.Dispose();
         }
 
         [Test]
         public async Task KoreanHandler_ProcessRealText_ArraysAligned()
         {
-            var handler = new KoreanG2PHandler();
+            using var handler = new KoreanG2PHandler();
             await handler.InitializeAsync();
 
             var (phonemes, prosodyFlat) = handler.Process("\uc548\ub155");
@@ -356,8 +338,6 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             Assert.IsTrue(phonemes.Length > 0,
                 "Korean text should produce phonemes");
             Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
-
-            handler.Dispose();
         }
 
         // ── Injection constructor: IsInitialized is true immediately ────────
@@ -537,21 +517,19 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
         [Test]
         public async Task SpanishHandler_InitializeTwice_DoesNotThrow()
         {
-            var handler = new SpanishG2PHandler();
+            using var handler = new SpanishG2PHandler();
             await handler.InitializeAsync();
             Assert.DoesNotThrowAsync(async () => await handler.InitializeAsync());
             Assert.IsTrue(handler.IsInitialized);
-            handler.Dispose();
         }
 
         [Test]
         public async Task KoreanHandler_InitializeTwice_DoesNotThrow()
         {
-            var handler = new KoreanG2PHandler();
+            using var handler = new KoreanG2PHandler();
             await handler.InitializeAsync();
             Assert.DoesNotThrowAsync(async () => await handler.InitializeAsync());
             Assert.IsTrue(handler.IsInitialized);
-            handler.Dispose();
         }
     }
 }

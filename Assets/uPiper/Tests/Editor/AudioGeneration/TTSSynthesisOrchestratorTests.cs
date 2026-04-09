@@ -62,7 +62,8 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 VoiceId = "test-voice",
                 Language = "ja",
                 PhonemeIdMap = CreateMinimalPhonemeIdMap(),
-                // PhonemeType が null の場合、日本語モデル扱い（intersperse PAD なし）
+                // PhonemeType が null かつ VoiceId に "ja_JP" を含まない場合、
+                // intersperse PAD あり（NeedsInterspersePadding() = true）
                 PhonemeType = null,
             };
             _phonemeEncoder = new PhonemeEncoder(_voiceConfig);

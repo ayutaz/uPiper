@@ -224,6 +224,19 @@ namespace uPiper.Core
                 return false;
             }
 
+            if (PhonemeIdMap != null)
+            {
+                foreach (var kvp in PhonemeIdMap)
+                {
+                    if (kvp.Value == null || kvp.Value.Length == 0)
+                    {
+                        PiperLogger.LogWarning(
+                            $"PhonemeIdMap entry '{kvp.Key}' has empty ID array. " +
+                            "It will be skipped during encoding.");
+                    }
+                }
+            }
+
             return true;
         }
 

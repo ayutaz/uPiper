@@ -192,7 +192,10 @@ namespace uPiper.Core.AudioGeneration
             foreach (var phoneme in phonemes)
             {
                 if (string.IsNullOrEmpty(phoneme))
+                {
+                    phonemeIndex++;
                     continue;
+                }
 
                 var phonemeToLookup = MapPhoneme(phoneme);
 

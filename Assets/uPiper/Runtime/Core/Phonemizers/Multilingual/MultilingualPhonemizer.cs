@@ -220,6 +220,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                         continue;
                     }
                     (segPhonemes, segProsodyFlat) = entry.Handler.Process(segText);
+                    segProsodyFlat ??= Array.Empty<int>();
                 }
                 else
                 {

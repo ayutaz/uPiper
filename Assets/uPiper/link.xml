@@ -16,6 +16,9 @@
     <assembly fullname="DotNetG2P.Chinese" preserve="all"/>
     <assembly fullname="DotNetG2P.Korean" preserve="all"/>
 
+    <!-- ArrayPool (System.Buffers) -->
+    <assembly fullname="System.Buffers" preserve="all"/>
+
     <!-- System types used by uPiper -->
     <assembly fullname="System.Core">
         <type fullname="System.Linq.Enumerable" preserve="all"/>
@@ -42,6 +45,7 @@
     <assembly fullname="System.Runtime">
         <type fullname="System.Globalization.CultureInfo" preserve="all"/>
         <type fullname="System.Globalization.NumberStyles" preserve="all"/>
+        <type fullname="System.Text.NormalizationForm" preserve="all"/>
     </assembly>
     
     <!-- P/Invoke support -->

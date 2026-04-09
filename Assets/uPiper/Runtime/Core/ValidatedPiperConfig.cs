@@ -143,11 +143,13 @@ namespace uPiper.Core
             if (source.TimeoutMs < 0)
                 throw new PiperException($"Invalid TimeoutMs: {source.TimeoutMs}. Must be >= 0");
 
+            IReadOnlyDictionary<string, float> parsedPhonemeSilence = null;
             if (source.EnablePhonemeSilence)
             {
                 try
                 {
-                    AudioGeneration.PhonemeSilenceProcessor.Parse(source.PhonemeSilenceSpec);
+                    parsedPhonemeSilence =
+                        AudioGeneration.PhonemeSilenceProcessor.Parse(source.PhonemeSilenceSpec);
                 }
                 catch (ArgumentException ex)
                 {
@@ -170,7 +172,7 @@ namespace uPiper.Core
                 EnablePhonemeCache: source.EnablePhonemeCache,
                 WorkerThreads: source.WorkerThreads == 0
                     ? Mathf.Max(1, SystemInfo.processorCount - 1)
-                    : source.WorkerThreads,
+                    : Mathf.Clamp(source.WorkerThreads, 1, MaxWorkerThreads),
                 EnableMultiThreadedInference: source.EnableMultiThreadedInference,
                 InferenceBatchSize: Mathf.Clamp(source.InferenceBatchSize, MinBatchSize, MaxBatchSize));
 
@@ -198,9 +200,7 @@ namespace uPiper.Core
             Silence = new SilenceSettings(
                 EnablePhonemeSilence: source.EnablePhonemeSilence,
                 PhonemeSilenceSpec: source.PhonemeSilenceSpec,
-                ParsedPhonemeSilence: source.EnablePhonemeSilence
-                    ? AudioGeneration.PhonemeSilenceProcessor.Parse(source.PhonemeSilenceSpec)
-                    : null);
+                ParsedPhonemeSilence: parsedPhonemeSilence);
 
             General = new GeneralSettings(
                 EnableDebugLogging: source.EnableDebugLogging,
