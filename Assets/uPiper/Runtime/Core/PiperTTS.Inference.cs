@@ -54,11 +54,12 @@ namespace uPiper.Core
 
                 // Inferenceコンポーネントを初期化
                 _inferenceGenerator = new InferenceAudioGenerator();
-                _splitOrchestrator = new SplitInferenceOrchestrator(_inferenceGenerator);
+                var mitigatingGenerator = new ShortTextMitigatingGenerator(_inferenceGenerator);
+                _splitOrchestrator = new SplitInferenceOrchestrator(mitigatingGenerator);
                 _phonemeEncoder = new PhonemeEncoder(voiceConfig, _tokenMapper);
                 _audioClipBuilder = new AudioClipBuilder();
                 _orchestrator = new TTSSynthesisOrchestrator(
-                    _inferenceGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                    mitigatingGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                     _validatedConfig, voiceConfig);
                 _currentModelAsset = modelAsset;
 

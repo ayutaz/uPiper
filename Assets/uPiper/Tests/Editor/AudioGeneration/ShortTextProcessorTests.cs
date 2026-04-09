@@ -1,6 +1,7 @@
 using System;
 using NUnit.Framework;
 using Unity.Collections;
+using UnityEngine;
 using uPiper.Core.AudioGeneration;
 
 namespace uPiper.Tests.Editor.AudioGeneration;
@@ -20,7 +21,7 @@ public class ShortTextProcessorTests
     private const float TrimThresholdRms = 0.01f;
     private const int TrimMinSamples = 2205;
     private const int TrimWindowSize = 256;
-    private const int PauseId = 0;
+    private const int PadId = 0;
     private const int ProsodyStride = 3; // PhonemeEncoder.ProsodyStride
 
     // ================================================================
@@ -155,7 +156,7 @@ public class ShortTextProcessorTests
     }
 
     [Test]
-    public void PadPhonemeIds_InsertsOnlyPauseIds()
+    public void PadPhonemeIds_InsertsOnlyPadIds()
     {
         // Arrange
         var ids = new[] { 1, 10, 11, 12, 2 };
@@ -164,13 +165,13 @@ public class ShortTextProcessorTests
         // Act
         var result = ShortTextProcessor.PadPhonemeIds(ids, null);
 
-        // Assert: every element not in the original set must be PauseId (0)
+        // Assert: every element not in the original set must be PadId (0)
         for (var i = 0; i < result.PaddedIds.Length; i++)
         {
             if (!originalSet.Contains(result.PaddedIds[i]))
             {
-                Assert.AreEqual(PauseId, result.PaddedIds[i],
-                    $"Element at index {i} should be PauseId (0) but was {result.PaddedIds[i]}");
+                Assert.AreEqual(PadId, result.PaddedIds[i],
+                    $"Element at index {i} should be PadId (0) but was {result.PaddedIds[i]}");
             }
         }
     }
@@ -264,10 +265,10 @@ public class ShortTextProcessorTests
         var result = ShortTextProcessor.PadPhonemeIds(ids, prosody);
 
         // Assert: padding positions in the prosody array should be zero
-        // Padding IDs are PauseId (0). Check that prosody at those positions is all zeros.
+        // Padding IDs are PadId (0). Check that prosody at those positions is all zeros.
         for (var i = 0; i < result.PaddedIds.Length; i++)
         {
-            if (result.PaddedIds[i] == PauseId)
+            if (result.PaddedIds[i] == PadId)
             {
                 var baseIdx = i * ProsodyStride;
                 Assert.AreEqual(0, result.PaddedProsody[baseIdx + 0],
@@ -305,25 +306,25 @@ public class ShortTextProcessorTests
         var result = ShortTextProcessor.PadPhonemeIds(ids, null);
         var paddedIds = result.PaddedIds;
 
-        // Assert: count PauseId (0) before and after body
+        // Assert: count PadId (0) before and after body
         // Structure: [BOS, padding(afterBos), body..., padding(beforeEos), EOS]
-        // BOS is at index 0, then afterBos PauseIds, then body, then beforeEos PauseIds, then EOS
+        // BOS is at index 0, then afterBos PadIds, then body, then beforeEos PadIds, then EOS
 
-        // Count consecutive PauseIds after BOS
+        // Count consecutive PadIds after BOS
         var afterBos = 0;
         for (var i = 1; i < paddedIds.Length; i++)
         {
-            if (paddedIds[i] == PauseId)
+            if (paddedIds[i] == PadId)
                 afterBos++;
             else
                 break;
         }
 
-        // Count consecutive PauseIds before EOS (scanning backwards from end-1)
+        // Count consecutive PadIds before EOS (scanning backwards from end-1)
         var beforeEos = 0;
         for (var i = paddedIds.Length - 2; i >= 0; i--)
         {
-            if (paddedIds[i] == PauseId)
+            if (paddedIds[i] == PadId)
                 beforeEos++;
             else
                 break;
@@ -606,5 +607,120 @@ public class ShortTextProcessorTests
             "noiseScale with count=0 should use floor ratio 0.5");
         Assert.AreEqual(0.8f * 0.4f, adjustedNoiseW, 1e-5f,
             "noiseW with count=0 should use floor ratio 0.4");
+    }
+
+    // ================================================================
+    // Null and edge case inputs
+    // ================================================================
+
+    [Test]
+    public void NeedsPadding_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => ShortTextProcessor.NeedsPadding(null));
+    }
+
+    [Test]
+    public void PadPhonemeIds_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => ShortTextProcessor.PadPhonemeIds(null, null));
+    }
+
+    [Test]
+    public void PadPhonemeIds_SingleElement_ReturnsOriginal()
+    {
+        // BOS+EOS未満（Length < 2）は安全にスキップ
+        var ids = new[] { 1 };
+        var (padded, _) = ShortTextProcessor.PadPhonemeIds(ids, null);
+        Assert.AreSame(ids, padded, "Length < 2 should return original array");
+    }
+
+    [Test]
+    public void TrimSilence_UncreatedNativeArray_ReturnsDefault()
+    {
+        var audio = default(NativeArray<float>);
+        var result = ShortTextProcessor.TrimSilence(audio);
+        Assert.IsFalse(result.IsCreated, "Uncreated NativeArray should be returned as-is");
+    }
+
+    // ================================================================
+    // AdjustScales edge cases
+    // ================================================================
+
+    [Test]
+    public void AdjustScales_NegativeNoiseScale_ReturnsNegativeScaled()
+    {
+        // 負のnoiseScaleが渡された場合、ratioに基づいて縮小される（ガードはしない）
+        var (ns, nw) = ShortTextProcessor.AdjustScales(10, -1.0f, 0.8f);
+        Assert.Less(ns, 0f, "Negative noiseScale should remain negative after scaling");
+    }
+
+    [Test]
+    public void AdjustScales_ZeroNoiseScale_ReturnsZero()
+    {
+        var (ns, nw) = ShortTextProcessor.AdjustScales(10, 0f, 0f);
+        Assert.AreEqual(0f, ns, "Zero noiseScale should remain zero");
+        Assert.AreEqual(0f, nw, "Zero noiseW should remain zero");
+    }
+
+    // ================================================================
+    // Pipeline integration test
+    // ================================================================
+
+    [Test]
+    public void PadAndTrim_ShortSequence_OutputReasonableLength()
+    {
+        // PadPhonemeIds → 擬似オーディオ生成 → TrimSilence のパイプライン
+        var ids = new[] { 1, 10, 11, 12, 2 };
+        var (padded, _) = ShortTextProcessor.PadPhonemeIds(ids, null);
+        Assert.GreaterOrEqual(padded.Length, ShortTextProcessor.MinPhonemeIds);
+
+        // パディング分の無音 + 有声部分のオーディオを模擬
+        var sampleRate = 22050;
+        var totalSamples = sampleRate * 2; // 2秒
+        var audio = new NativeArray<float>(totalSamples, Allocator.Persistent);
+        try
+        {
+            // 先頭0.5秒無音 + 1秒sin波 + 0.5秒無音
+            var silenceStart = (int)(sampleRate * 0.5f);
+            var signalEnd = (int)(sampleRate * 1.5f);
+            for (var i = silenceStart; i < signalEnd; i++)
+                audio[i] = Mathf.Sin(2f * Mathf.PI * 440f * i / sampleRate) * 0.5f;
+
+            var trimmed = ShortTextProcessor.TrimSilence(audio);
+            try
+            {
+                Assert.Greater(trimmed.Length, ShortTextProcessor.TrimMinSamples,
+                    "Trimmed audio should be longer than minimum");
+                Assert.Less(trimmed.Length, totalSamples,
+                    "Trimmed audio should be shorter than original");
+            }
+            finally
+            {
+                if (trimmed.IsCreated && !audio.Equals(trimmed))
+                    trimmed.Dispose();
+            }
+        }
+        finally
+        {
+            if (audio.IsCreated)
+                audio.Dispose();
+        }
+    }
+
+    // ================================================================
+    // Contract constants verification
+    // ================================================================
+
+    [Test]
+    public void Constants_MatchPiperPlusContract()
+    {
+        // piper-plus short-text-contract.toml の値との一致を検証
+        Assert.AreEqual(40, ShortTextProcessor.MinPhonemeIds, "min_phoneme_ids");
+        Assert.AreEqual(0.01f, ShortTextProcessor.TrimThresholdRms, "threshold_rms");
+        Assert.AreEqual(2205, ShortTextProcessor.TrimMinSamples, "min_samples");
+        Assert.AreEqual(256, ShortTextProcessor.TrimWindowSize, "window_size");
+        Assert.AreEqual(0, ShortTextProcessor.PadId, "pause_token_id");
+        Assert.AreEqual(0.5f, ShortTextProcessor.NoiseScaleMinRatio, "noise_scale_min_ratio");
+        Assert.AreEqual(0.4f, ShortTextProcessor.NoiseWMinRatio, "noise_w_min_ratio");
     }
 }

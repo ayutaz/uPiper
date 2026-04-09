@@ -161,6 +161,7 @@ AudioClip出力 (22050Hz, float32)
 | `BackendSelector` | `Runtime/Core/AudioGeneration/` | 推論バックエンド選択ロジック（public static class）。プリプロセッサフリー |
 | `PlatformInfo` | `Runtime/Core/AudioGeneration/` | プラットフォーム依存情報カプセル化（public readonly struct）。FromCurrentEnvironment()ファクトリ |
 | `ShortTextProcessor` | `Runtime/Core/AudioGeneration/` | 短テキスト合成品質緩和（internal static class）。Strategy A: 音素IDパディング+無音トリム、Strategy B: noise scale動的低減 |
+| `ShortTextMitigatingGenerator` | `Runtime/Core/AudioGeneration/` | IInferenceAudioGeneratorデコレータ。短テキスト緩和（Strategy A/B）をGenerateAudioAsyncに透過適用 |
 
 #### DotNetG2Pパッケージ（外部）
 
@@ -342,8 +343,9 @@ VITSベースTTSの構造的制限により、音素IDが40未満の短テキス
 - length_scale は調整しない
 
 ### 適用箇所
-- `TTSSynthesisOrchestrator.SynthesizeAsync` の非句分割パス
-- `SplitInferenceOrchestrator.GenerateWithSilenceSplitAsync` の各フレーズ
+- `ShortTextMitigatingGenerator` が `IInferenceAudioGenerator` をデコレータでラップ
+- TTSSynthesisOrchestrator / SplitInferenceOrchestrator は短テキスト処理を意識しない
+- PiperTTS.Inference.cs で InferenceAudioGenerator を ShortTextMitigatingGenerator でラップして注入
 
 ## カスタム辞書機能
 

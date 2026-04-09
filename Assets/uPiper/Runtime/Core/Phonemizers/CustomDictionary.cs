@@ -140,19 +140,21 @@ namespace uPiper.Core.Phonemizers
         /// </summary>
         public void LoadDictionaryFromPath(string filePath)
         {
-            // パストラバーサル警告
+            // パストラバーサル拒否
             if (filePath.Contains(".."))
             {
-                PiperLogger.LogWarning($"[CustomDictionary] Path contains traversal pattern: {filePath}");
+                throw new ArgumentException(
+                    $"Dictionary file path contains path traversal pattern: {filePath}",
+                    nameof(filePath));
             }
 
-            if (!File.Exists(filePath))
+            // ファイル存在・サイズチェック（FileInfo で統一）
+            var fileInfo = new FileInfo(filePath);
+            if (!fileInfo.Exists)
             {
                 throw new FileNotFoundException($"Dictionary file not found: {filePath}");
             }
 
-            // ファイルサイズチェック
-            var fileInfo = new FileInfo(filePath);
             if (fileInfo.Length > MaxDictFileSize)
             {
                 throw new ArgumentException(

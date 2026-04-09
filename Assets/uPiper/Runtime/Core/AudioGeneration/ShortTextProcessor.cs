@@ -24,16 +24,16 @@ namespace uPiper.Core.AudioGeneration
     /// piper-plus ShortTextProcessor (short-text-contract.toml) のC# Unity移植。
     /// int[] 音素ID / NativeArray&lt;float&gt; オーディオに対応。
     /// </remarks>
-    public static class ShortTextProcessor
+    internal static class ShortTextProcessor
     {
         // ------------------------------------------------------------------
-        // Constants
+        // Constants — piper-plus short-text-contract.toml 準拠
         // ------------------------------------------------------------------
 
         /// <summary>
         /// パディングが適用される音素ID数の下限。
         /// </summary>
-        public const int MinPhonemeIds = 40;
+        internal const int MinPhonemeIds = 40;
 
         /// <summary>
         /// 無音判定のRMS閾値（Strategy A トリム）。
@@ -51,9 +51,15 @@ namespace uPiper.Core.AudioGeneration
         internal const int TrimWindowSize = 256;
 
         /// <summary>
-        /// パディングに使用するPAD音素ID（'_' トークン）。
+        /// パディングに使用するPADトークンID。PhonemeEncoder の '_' トークンに対応。
         /// </summary>
-        internal const int PauseId = 0;
+        internal const int PadId = 0;
+
+        /// <summary>noiseScaleの最小縮小比率。piper-plus short-text-contract.toml: noise_scale_min_ratio</summary>
+        internal const float NoiseScaleMinRatio = 0.5f;
+
+        /// <summary>noiseWの最小縮小比率。piper-plus short-text-contract.toml: noise_w_min_ratio</summary>
+        internal const float NoiseWMinRatio = 0.4f;
 
         // ------------------------------------------------------------------
         // Strategy A: Silence Padding
@@ -62,8 +68,11 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// 音素ID列がパディングを必要とするほど短いかを判定する。
         /// </summary>
-        public static bool NeedsPadding(int[] phonemeIds)
-            => phonemeIds.Length < MinPhonemeIds;
+        internal static bool NeedsPadding(int[] phonemeIds)
+        {
+            if (phonemeIds == null) throw new ArgumentNullException(nameof(phonemeIds));
+            return phonemeIds.Length < MinPhonemeIds;
+        }
 
         /// <summary>
         /// 短い音素ID列をPAD (ID=0) で充填する。
@@ -76,9 +85,12 @@ namespace uPiper.Core.AudioGeneration
         /// フラットProsody配列（長さ = phonemeIds.Length * 3）。nullの場合はProsodyなし。
         /// </param>
         /// <returns>パディングされた音素IDと（オプションで）パディングされたProsody配列。</returns>
-        public static (int[] PaddedIds, int[] PaddedProsody) PadPhonemeIds(
+        internal static (int[] PaddedIds, int[] PaddedProsody) PadPhonemeIds(
             int[] phonemeIds, int[] prosodyFlat)
         {
+            if (phonemeIds == null) throw new ArgumentNullException(nameof(phonemeIds));
+            if (phonemeIds.Length < 2)
+                return (phonemeIds, prosodyFlat); // BOS+EOS未満は安全にスキップ
             if (phonemeIds.Length >= MinPhonemeIds)
                 return (phonemeIds, prosodyFlat);
 
@@ -94,7 +106,7 @@ namespace uPiper.Core.AudioGeneration
 
             // BOS 直後にPADを挿入
             for (var i = 1; i <= afterBos; i++)
-                padded[i] = PauseId;
+                padded[i] = PadId;
 
             // Body（BOS〜EOS間）
             var bodyStart = 1;
@@ -105,7 +117,7 @@ namespace uPiper.Core.AudioGeneration
             // EOS 直前にPADを挿入
             var eosInsertStart = 1 + afterBos + bodyLength;
             for (var i = 0; i < beforeEos; i++)
-                padded[eosInsertStart + i] = PauseId;
+                padded[eosInsertStart + i] = PadId;
 
             // EOS
             padded[newLength - 1] = phonemeIds[phonemeIds.Length - 1];
@@ -148,8 +160,9 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         /// <param name="audio">生の float32 オーディオサンプル。</param>
         /// <returns>トリムされたオーディオ。呼び出し元がDisposeを管理する。</returns>
-        public static NativeArray<float> TrimSilence(NativeArray<float> audio)
+        internal static NativeArray<float> TrimSilence(NativeArray<float> audio)
         {
+            if (!audio.IsCreated) return audio;
             if (audio.Length <= TrimMinSamples)
                 return audio;
 
@@ -220,12 +233,17 @@ namespace uPiper.Core.AudioGeneration
             // トリムされた新しい NativeArray を作成
             var resultLength = lastNonSilentEnd - firstNonSilent;
             var trimmed = new NativeArray<float>(resultLength, Allocator.Persistent);
-            NativeArray<float>.Copy(audio, firstNonSilent, trimmed, 0, resultLength);
-
-            // 元の NativeArray を解放
-            audio.Dispose();
-
-            return trimmed;
+            try
+            {
+                NativeArray<float>.Copy(audio, firstNonSilent, trimmed, 0, resultLength);
+                audio.Dispose();
+                return trimmed;
+            }
+            catch
+            {
+                trimmed.Dispose();
+                throw;
+            }
         }
 
         /// <summary>
@@ -257,15 +275,15 @@ namespace uPiper.Core.AudioGeneration
         /// <param name="noiseScale">元のnoiseScale。</param>
         /// <param name="noiseW">元のnoiseW。</param>
         /// <returns>調整された (noiseScale, noiseW) タプル。</returns>
-        public static (float NoiseScale, float NoiseW) AdjustScales(
+        internal static (float NoiseScale, float NoiseW) AdjustScales(
             int phonemeIdCount, float noiseScale, float noiseW)
         {
             if (phonemeIdCount >= MinPhonemeIds)
                 return (noiseScale, noiseW);
 
             var ratio = Mathf.Clamp01((float)phonemeIdCount / MinPhonemeIds);
-            var adjustedNoiseScale = noiseScale * Mathf.Max(0.5f, ratio);
-            var adjustedNoiseW = noiseW * Mathf.Max(0.4f, ratio);
+            var adjustedNoiseScale = noiseScale * Mathf.Max(NoiseScaleMinRatio, ratio);
+            var adjustedNoiseW = noiseW * Mathf.Max(NoiseWMinRatio, ratio);
 
             return (adjustedNoiseScale, adjustedNoiseW);
         }

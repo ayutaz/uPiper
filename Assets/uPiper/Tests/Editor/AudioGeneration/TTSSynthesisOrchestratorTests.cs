@@ -378,9 +378,12 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public async Task SynthesizeAsync_ShortPhonemes_PadsPhonemeIds()
         {
             // Arrange: 5音素 → エンコード後もMinPhonemeIds(40)未満 → パディングが適用される
+            // ShortTextMitigatingGenerator デコレータ経由で短テキスト緩和が適用される
             var config = CreateValidatedConfig(enableSilence: false);
+            var mitigating = new ShortTextMitigatingGenerator(_stubGenerator);
+            var splitOrchestrator = new SplitInferenceOrchestrator(mitigating);
             var orchestrator = new TTSSynthesisOrchestrator(
-                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                mitigating, splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
             var request = new SynthesisRequest(
                 new[] { "a", "i", "u", "e", "o" },
@@ -404,9 +407,12 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public async Task SynthesizeAsync_LongPhonemes_NoShortTextMitigation()
         {
             // Arrange: 50音素 → エンコード後にMinPhonemeIds(40)以上 → パディングなし
+            // ShortTextMitigatingGenerator でラップしても、長い音素列にはパディングが適用されない
             var config = CreateValidatedConfig(enableSilence: false);
+            var mitigating = new ShortTextMitigatingGenerator(_stubGenerator);
+            var splitOrchestrator = new SplitInferenceOrchestrator(mitigating);
             var orchestrator = new TTSSynthesisOrchestrator(
-                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                mitigating, splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
             // 50個の既知の音素を用意（PhonemeIdMap に存在する音素を使用）
             var phonemes = new string[50];

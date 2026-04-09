@@ -233,8 +233,12 @@ namespace uPiper.Tests.Editor.AudioGeneration
             var phonemeSilence = new Dictionary<string, float>(); // 空 → 分割なし
             var phonemeIdMap = CreateMinimalPhonemeIdMap();
 
+            // StubをShortTextMitigatingGeneratorでラップ
+            var wrappedGenerator = new ShortTextMitigatingGenerator(_stubGenerator);
+            var orchestrator = new SplitInferenceOrchestrator(wrappedGenerator);
+
             // Act
-            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+            var result = await orchestrator.GenerateWithSilenceSplitAsync(
                 phonemeIds,
                 prosodyFlat: null,
                 phonemeSilence, phonemeIdMap,

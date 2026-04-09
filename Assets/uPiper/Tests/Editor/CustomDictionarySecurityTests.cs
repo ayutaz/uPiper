@@ -55,17 +55,13 @@ public class CustomDictionarySecurityTests
     }
 
     [Test]
-    public void LoadFromJson_PathTraversal_LogsWarning()
+    public void LoadFromJson_PathTraversal_ThrowsArgumentException()
     {
         var dict = new CustomDictionary(loadDefaults: false);
 
-        // "../" を含むパスはファイルが存在しないため FileNotFoundException がスローされるが、
-        // その前にパストラバーサル警告がログ出力される
-        // ここではパストラバーサルパスで例外が発生することを確認し、
-        // 辞書の状態が変わらないことを検証する
-        var traversalPath = Path.Combine(Path.GetTempPath(), "..", "nonexistent_dict.json");
-
-        Assert.Throws<FileNotFoundException>(() => dict.LoadDictionaryFromPath(traversalPath));
+        var ex = Assert.Throws<ArgumentException>(
+            () => dict.LoadDictionaryFromPath("../../../etc/passwd"));
+        StringAssert.Contains("traversal", ex.Message);
         Assert.AreEqual(0, dict.GetStats().TotalEntries);
     }
 }
