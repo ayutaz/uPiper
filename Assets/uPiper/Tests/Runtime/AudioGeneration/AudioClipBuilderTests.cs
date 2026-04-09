@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using Unity.Collections;
+using UnityEngine;
 using uPiper.Core.AudioGeneration;
 
 namespace uPiper.Tests.Runtime.AudioGeneration

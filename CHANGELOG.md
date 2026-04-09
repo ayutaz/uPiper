@@ -428,7 +428,7 @@ Apache License 2.0 - See [LICENSE](LICENSE) file for details
 - [Documentation](https://github.com/ayutaz/uPiper/tree/main/docs)
 - [Issues](https://github.com/ayutaz/uPiper/issues)
 
-[1.5.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.5.0
+[1.5.0]: https://github.com/ayutaz/uPiper/compare/v1.4.0...HEAD
 [1.4.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.4.0
 [1.3.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.3.0
 [1.2.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.2.0

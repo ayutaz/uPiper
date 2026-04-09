@@ -33,7 +33,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
             string json;
             try
             {
-                json = await WebGLStreamingAssetsLoader.LoadTextAsync(RelativePath, cancellationToken);
+                json = await WebGLStreamingAssetsLoader.LoadTextAsync(
+                    RelativePath,
+                    cancellationToken: cancellationToken);
             }
             catch (FileNotFoundException)
             {

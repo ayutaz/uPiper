@@ -64,8 +64,8 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 }
                 else
                 {
-                    // Keep default language
-                    result.Add((lang, text));
+                    // Fallback to default Latin language when trigram detection is not confident
+                    result.Add((defaultLatinLanguage, text));
                 }
             }
 

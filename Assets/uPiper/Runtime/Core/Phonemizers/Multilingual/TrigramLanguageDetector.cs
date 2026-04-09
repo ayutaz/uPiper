@@ -195,6 +195,8 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
             for (var i = 0; i <= normalizedText.Length - 3; i++)
             {
+                // Performance note: Substring allocates per trigram.
+                // Consider uint-packed (char,char,char) for hot paths if profiling shows GC pressure.
                 var trigram = normalizedText.Substring(i, 3);
                 if (trigrams.TryGetValue(trigram, out var count))
                     trigrams[trigram] = count + 1;
