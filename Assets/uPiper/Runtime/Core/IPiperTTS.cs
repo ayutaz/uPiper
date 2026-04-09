@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
+using uPiper.Core.AudioGeneration;
 
 namespace uPiper.Core
 {
@@ -134,5 +135,15 @@ namespace uPiper.Core
         /// The string argument is the detected language code.
         /// </summary>
         public event Action<string> OnLanguageDetected;
+
+        /// <summary>SynthesisRequestを直接指定して音声を生成する（低レベルAPI）。</summary>
+        Task<AudioClip> SynthesizeAsync(
+            SynthesisRequest request,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>テキストから音素情報を取得する。</summary>
+        Task<PhonemizeResult> PhonemizeAsync(
+            string text,
+            CancellationToken cancellationToken = default);
     }
 }

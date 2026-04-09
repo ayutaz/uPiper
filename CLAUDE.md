@@ -117,8 +117,11 @@ AudioClip出力 (22050Hz, float32)
 | `IPiperConfigReadOnly` | `Runtime/Core/` | バリデーション済み設定の読み取り専用インターフェース（6ネスト record struct プロパティ） |
 | `ValidatedPiperConfig` | `Runtime/Core/` | PiperConfig バリデーション後の不変スナップショット（IPiperConfigReadOnly実装、ParsedPhonemeSilence含む） |
 | `TTSSynthesisOrchestrator` | `Runtime/Core/AudioGeneration/` | 音素列→AudioClip変換パイプライン（エンコード+推論+句分割+AudioClip構築）を一元管理。config/voiceConfigをコンストラクタ注入、SynthesisRequest経由のAPI |
-| `SynthesisRequest` | `Runtime/Core/AudioGeneration/` | 音声合成リクエスト（internal readonly struct）。音素・Prosody・合成パラメータを集約 |
+| `SynthesisRequest` | `Runtime/Core/AudioGeneration/` | 音声合成リクエスト（public readonly struct）。音素・Prosody・合成パラメータを集約 |
+| `PhonemizeResult` | `Runtime/Core/AudioGeneration/` | PhonemizeAsync戻り値。音素配列・Prosody・検出言語を保持（public sealed class） |
 | `SplitInferenceOrchestrator` | `Runtime/Core/AudioGeneration/` | 沈黙句分割→反復推論→結合オーケストレーション（internal class、v1.4.0レビューでpublic→internalに変更） |
+| `ILanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | 言語検出インターフェース（public）。MultilingualPhonemizerOptionsで注入 |
+| `HybridLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Unicode+Trigram複合言語検出（internal sealed class）。ILanguageDetectorとして注入 |
 
 ### ディレクトリ構造
 ```

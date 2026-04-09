@@ -97,8 +97,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
         /// <summary>
         /// Parses the trigram profiles JSON string into a dictionary of TrigramProfile objects.
+        /// Returns null if the JSON is invalid, missing the 'version' field (0), or has no profiles.
         /// </summary>
-        private static Dictionary<string, TrigramProfile> ParseJson(string json)
+        internal static Dictionary<string, TrigramProfile> ParseJson(string json)
         {
             if (string.IsNullOrWhiteSpace(json))
                 return null;
@@ -106,7 +107,14 @@ namespace uPiper.Core.Phonemizers.Multilingual
             try
             {
                 var wrapper = JsonUtility.FromJson<TrigramProfilesJson>(json);
-                if (wrapper?.profiles == null)
+                if (wrapper == null || wrapper.version == 0)
+                {
+                    PiperLogger.LogWarning(
+                        "[TrigramProfileLoader] Invalid JSON structure: 'version' field missing or zero.");
+                    return null;
+                }
+
+                if (wrapper.profiles == null)
                 {
                     PiperLogger.LogWarning(
                         "[TrigramProfileLoader] Invalid JSON structure: 'profiles' field missing.");

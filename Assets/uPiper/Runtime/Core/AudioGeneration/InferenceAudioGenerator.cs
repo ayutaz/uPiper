@@ -443,13 +443,10 @@ namespace uPiper.Core.AudioGeneration
                 var audioLength = readableTensor.shape.length;
                 audioData = new NativeArray<float>(audioLength, Allocator.Persistent);
 
-                // Bulk copy from Sentis ReadOnlyNativeArray to NativeArray.
-                // ToReadOnlyNativeArray() returns a view over the tensor's CPU data.
-                var src = readableTensor.ToReadOnlyNativeArray();
-                for (var i = 0; i < audioLength; i++)
-                {
-                    audioData[i] = src[i];
-                }
+                // Bulk copy: DownloadToNativeArray() returns internal buffer (Allocator.None).
+                // NativeArray<float>.Copy performs memcpy-equivalent, replacing element-wise loop.
+                var src = readableTensor.DownloadToNativeArray();
+                NativeArray<float>.Copy(src, audioData, audioLength);
 
                 return audioData;
             }
@@ -557,6 +554,8 @@ namespace uPiper.Core.AudioGeneration
                     lock (_lockObject)
                     {
                         DisposeWorker();
+                        // Model does not implement IDisposable (Unity.InferenceEngine.Model is a plain class).
+                        // Setting to null releases the reference for GC.
                         _model = null;
                         _modelAsset = null;
                         _voiceConfig = null;

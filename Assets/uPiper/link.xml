@@ -19,6 +19,9 @@
     <!-- ArrayPool (System.Buffers) -->
     <assembly fullname="System.Buffers" preserve="all"/>
 
+    <!-- Regex (used by G2P engines and text processing) -->
+    <assembly fullname="System.Text.RegularExpressions" preserve="all"/>
+
     <!-- System types used by uPiper -->
     <assembly fullname="System.Core">
         <type fullname="System.Linq.Enumerable" preserve="all"/>

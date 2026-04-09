@@ -79,6 +79,37 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
+        /// 内部呼び出し用ファクトリ。防御的コピーなし、ただしバリデーションは実施。
+        /// </summary>
+        /// <param name="phonemes">音素配列（所有権は呼び出し元が保証）。</param>
+        /// <param name="prosodyFlat">Prosodyフラット配列、またはnull。</param>
+        /// <param name="lengthScale">話速スケール。</param>
+        /// <param name="noiseScale">ノイズスケール。</param>
+        /// <param name="noiseW">ノイズ幅。</param>
+        /// <param name="speakerId">スピーカーID。</param>
+        /// <param name="languageId">言語ID。</param>
+        /// <returns>構築された <see cref="SynthesisRequest"/>。</returns>
+        /// <exception cref="ArgumentException">引数が不正な場合。</exception>
+        internal static SynthesisRequest CreateInternal(
+            string[] phonemes,
+            int[] prosodyFlat,
+            float lengthScale,
+            float noiseScale,
+            float noiseW,
+            int speakerId,
+            int languageId)
+        {
+            if (phonemes == null || phonemes.Length == 0)
+                throw new ArgumentException("Phonemes cannot be null or empty.", nameof(phonemes));
+            if (prosodyFlat != null && prosodyFlat.Length != phonemes.Length * PhonemeEncoder.ProsodyStride)
+                throw new ArgumentException(
+                    $"ProsodyFlat length ({prosodyFlat.Length}) must be " +
+                    $"Phonemes.Length * {PhonemeEncoder.ProsodyStride} ({phonemes.Length * PhonemeEncoder.ProsodyStride}).",
+                    nameof(prosodyFlat));
+            return new SynthesisRequest(phonemes, prosodyFlat, lengthScale, noiseScale, noiseW, speakerId, languageId);
+        }
+
+        /// <summary>
         /// テキストなし・音素直接入力のリクエストを作成する（Prosodyなし）。
         /// </summary>
         /// <param name="phonemes">音素配列（PUA文字またはIPA文字）。</param>
@@ -86,7 +117,10 @@ namespace uPiper.Core.AudioGeneration
         /// <param name="noiseScale">ノイズスケール（デフォルト: 0.667）。</param>
         /// <param name="noiseW">ノイズ幅（デフォルト: 0.8）。</param>
         /// <param name="speakerId">スピーカーID（デフォルト: 0）。</param>
-        /// <param name="languageId">言語ID（デフォルト: 0）。</param>
+        /// <param name="languageId">Language ID for multilingual models (0=ja, 1=en, etc.).
+        /// WARNING: Default value 0 corresponds to Japanese. For non-Japanese phonemes,
+        /// you must explicitly specify the correct language ID from
+        /// PiperVoiceConfig.LanguageIdMap.</param>
         /// <returns>構築された <see cref="SynthesisRequest"/>。</returns>
         /// <exception cref="ArgumentException"><paramref name="phonemes"/> が null または空の場合。</exception>
         /// <example>
@@ -124,7 +158,10 @@ namespace uPiper.Core.AudioGeneration
         /// <param name="noiseScale">ノイズスケール（デフォルト: 0.667）。</param>
         /// <param name="noiseW">ノイズ幅（デフォルト: 0.8）。</param>
         /// <param name="speakerId">スピーカーID（デフォルト: 0）。</param>
-        /// <param name="languageId">言語ID（デフォルト: 0）。</param>
+        /// <param name="languageId">Language ID for multilingual models (0=ja, 1=en, etc.).
+        /// WARNING: Default value 0 corresponds to Japanese. For non-Japanese phonemes,
+        /// you must explicitly specify the correct language ID from
+        /// PiperVoiceConfig.LanguageIdMap.</param>
         /// <returns>構築された <see cref="SynthesisRequest"/>。</returns>
         /// <exception cref="ArgumentException">
         /// <paramref name="phonemes"/> が null または空の場合、

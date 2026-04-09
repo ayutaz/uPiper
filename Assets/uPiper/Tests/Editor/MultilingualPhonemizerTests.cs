@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using uPiper.Core.Phonemizers.Multilingual;
+using uPiper.Core.Phonemizers.Multilingual.Handlers;
+using uPiper.Tests.Editor.Phonemizers.Handlers;
 
 namespace uPiper.Tests.Editor
 {
@@ -163,6 +165,42 @@ namespace uPiper.Tests.Editor
             Assert.IsNotNull(phonemizer);
             Assert.IsFalse(phonemizer.IsInitialized);
             phonemizer.Dispose();
+        }
+
+        // ── Options.Validate edge cases ──────────────────────────────────────
+
+        [Test]
+        public void Options_Validate_HandlerKeyNotInLanguages_LogsWarning()
+        {
+            // Handlers に Languages にない言語キーを渡した場合にWarningログ
+            // (例外はスローされないが、ログが出力される)
+            var stub = new StubG2PHandler("ko", new[] { "h", "a" });
+            var options = new MultilingualPhonemizerOptions
+            {
+                Languages = new[] { "ja", "en" },
+                Handlers = new Dictionary<string, ILanguageG2PHandler>
+                {
+                    { "ko", stub }  // "ko" is not in Languages
+                }
+            };
+
+            // Validate should not throw, but should log a warning
+            Assert.DoesNotThrow(() => options.Validate());
+            stub.Dispose();
+        }
+
+        [Test]
+        public void Options_Validate_DefaultLatinLanguageNotInLanguages_LogsWarning()
+        {
+            // DefaultLatinLanguage が Languages にない場合
+            var options = new MultilingualPhonemizerOptions
+            {
+                Languages = new[] { "ja", "zh" },
+                DefaultLatinLanguage = "en"  // "en" is not in Languages
+            };
+
+            // Validate should not throw, but should log a warning
+            Assert.DoesNotThrow(() => options.Validate());
         }
 
         // ── Dispose ────────────────────────────────────────────────────────────

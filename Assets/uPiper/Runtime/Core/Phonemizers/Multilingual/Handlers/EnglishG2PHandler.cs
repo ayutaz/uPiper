@@ -112,6 +112,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
 
             // Known limitation: ToPuaPhonemes and ToIpaWithProsody run G2P independently.
             // A unified DotNetG2P API (ToPuaWithProsody) would eliminate this double processing.
+            // TODO: Track at https://github.com/ayutaz/dot-net-g2p/issues/XXX
             // Prosody array length may differ from phonemes; loop uses Math.Min guard.
             var prosodyResult = _engine.ToIpaWithProsody(text);
             var phonemes = _engine.ToPuaPhonemes(text);

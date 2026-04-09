@@ -115,6 +115,7 @@ namespace uPiper.Core
         /// <param name="text">生成するテキスト</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
         /// <returns>生成されたAudioClip</returns>
+        [Obsolete("Use PhonemizeAsync() + SynthesizeAsync(SynthesisRequest) instead. Will be removed in v3.0.")]
         public async Task<AudioClip> GenerateAudioWithInferenceAsync(
             string text,
             CancellationToken cancellationToken = default)
@@ -130,6 +131,7 @@ namespace uPiper.Core
         /// <summary>
         /// Unity.InferenceEngineを使用してテキストから音声を生成する（詳細パラメータ付き）
         /// </summary>
+        [Obsolete("Use PhonemizeAsync() + SynthesizeAsync(SynthesisRequest) instead. Will be removed in v3.0.")]
         public async Task<AudioClip> GenerateAudioWithInferenceAsync(
             string text,
             float lengthScale = 1.0f,
@@ -163,7 +165,7 @@ namespace uPiper.Core
                 _onProcessingProgress?.Invoke(0.5f);
 
                 // エンコード〜AudioClip生成を一括
-                var request = new AudioGeneration.SynthesisRequest(
+                var request = AudioGeneration.SynthesisRequest.CreateInternal(
                     phonemeResult.Phonemes,
                     phonemeResult.ProsodyFlat,
                     lengthScale, noiseScale, noiseW,
@@ -192,6 +194,7 @@ namespace uPiper.Core
         /// <param name="noiseScale">ノイズスケール</param>
         /// <param name="noiseW">ノイズ幅</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
+        [Obsolete("Use PhonemizeAsync() + SynthesizeAsync(SynthesisRequest) instead. Will be removed in v3.0.")]
         public async Task<AudioClip> GenerateAudioWithMultilingualAsync(
             string text,
             int languageId = -1,
@@ -257,7 +260,7 @@ namespace uPiper.Core
                 _onProcessingProgress?.Invoke(0.5f);
 
                 // エンコード〜AudioClip生成を一括
-                var request = new AudioGeneration.SynthesisRequest(
+                var request = AudioGeneration.SynthesisRequest.CreateInternal(
                     phonemes,
                     prosodyFlat,
                     lengthScale, noiseScale, noiseW,

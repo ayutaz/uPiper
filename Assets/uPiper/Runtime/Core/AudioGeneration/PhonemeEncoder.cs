@@ -42,13 +42,15 @@ namespace uPiper.Core.AudioGeneration
         private const int DEFAULT_EOS_ID = 2;
 
         /// <summary>
-        /// Prosody flat array stride (A1, A2, A3 per phoneme).
+        /// Prosody flat array stride. Each phoneme has 3 prosody values (A1, A2, A3).
+        /// Use this constant when constructing ProsodyFlat arrays for SynthesisRequest.
         /// </summary>
-        internal const int ProsodyStride = 3;
+        public const int ProsodyStride = 3;
 
         // EOS-like tokens: These tokens act as sentence terminators (piper-plus #210)
         // When the last phoneme is one of these, we don't add a separate EOS token
-        private static readonly HashSet<string> EosLikeTokens = new() { "$", "?", "?!", "?.", "?~" };
+        private static readonly HashSet<string> EosLikeTokens =
+            new() { "$", "?", "?!", "?.", "?~", "\ue016", "\ue017", "\ue018" };
 
         /// <summary>
         /// 音素エンコーダーを初期化する

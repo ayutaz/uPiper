@@ -9,6 +9,10 @@ namespace uPiper.Core
     /// <summary>
     /// 言語関連の設定をグループ化した不変構造体。
     /// </summary>
+    /// <remarks>
+    /// Do not use default constructor. Always create via ValidatedPiperConfig constructor
+    /// which ensures proper validation and clamping.
+    /// </remarks>
     public readonly record struct LanguageSettings(
         string DefaultLanguage,
         bool AutoDetectLanguage,
@@ -19,6 +23,10 @@ namespace uPiper.Core
     /// <summary>
     /// パフォーマンス関連の設定をグループ化した不変構造体。
     /// </summary>
+    /// <remarks>
+    /// Do not use default constructor. Always create via ValidatedPiperConfig constructor
+    /// which ensures proper validation and clamping.
+    /// </remarks>
     public readonly record struct PerformanceSettings(
         int MaxCacheSizeMB,
         bool EnablePhonemeCache,
@@ -30,6 +38,10 @@ namespace uPiper.Core
     /// <summary>
     /// 推論バックエンド関連の設定をグループ化した不変構造体。
     /// </summary>
+    /// <remarks>
+    /// Do not use default constructor. Always create via ValidatedPiperConfig constructor
+    /// which ensures proper validation and clamping.
+    /// </remarks>
     public readonly record struct InferenceSettings(
         InferenceBackend Backend,
         bool EnableWarmup,
@@ -41,6 +53,10 @@ namespace uPiper.Core
     /// <summary>
     /// 音声出力関連の設定をグループ化した不変構造体。
     /// </summary>
+    /// <remarks>
+    /// Do not use default constructor. Always create via ValidatedPiperConfig constructor
+    /// which ensures proper validation and clamping.
+    /// </remarks>
     public readonly record struct PiperAudioSettings(
         int SampleRate,
         bool NormalizeAudio,
@@ -50,6 +66,10 @@ namespace uPiper.Core
     /// <summary>
     /// 沈黙句分割関連の設定をグループ化した不変構造体。
     /// </summary>
+    /// <remarks>
+    /// Do not use default constructor. Always create via ValidatedPiperConfig constructor
+    /// which ensures proper validation and clamping.
+    /// </remarks>
     public readonly record struct SilenceSettings(
         bool EnablePhonemeSilence,
         string PhonemeSilenceSpec,
@@ -59,6 +79,10 @@ namespace uPiper.Core
     /// <summary>
     /// 汎用設定をグループ化した不変構造体。
     /// </summary>
+    /// <remarks>
+    /// Do not use default constructor. Always create via ValidatedPiperConfig constructor
+    /// which ensures proper validation and clamping.
+    /// </remarks>
     public readonly record struct GeneralSettings(
         bool EnableDebugLogging,
         int TimeoutMs);

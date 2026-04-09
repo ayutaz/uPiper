@@ -1,3 +1,5 @@
+using System;
+
 namespace uPiper.Core.AudioGeneration
 {
     /// <summary>
@@ -30,8 +32,8 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         internal PhonemizeResult(string[] phonemes, int[] prosodyFlat, string detectedLanguage, int resolvedLanguageId)
         {
-            Phonemes = phonemes;
-            ProsodyFlat = prosodyFlat;
+            Phonemes = phonemes != null ? (string[])phonemes.Clone() : Array.Empty<string>();
+            ProsodyFlat = prosodyFlat != null ? (int[])prosodyFlat.Clone() : null;
             DetectedLanguage = detectedLanguage;
             ResolvedLanguageId = resolvedLanguageId;
         }

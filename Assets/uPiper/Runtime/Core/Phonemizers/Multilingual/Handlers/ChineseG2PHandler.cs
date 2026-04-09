@@ -65,16 +65,14 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
             try
             {
 #if UNITY_WEBGL && !UNITY_EDITOR
-                PiperLogger.LogWarning(
-                    "[ChineseG2PHandler] WebGL: external dictionary not available. Chinese G2P requires async loading.");
-                // Chinese G2P disabled on WebGL unless engine is pre-injected
+                PiperLogger.LogError(
+                    "[ChineseG2PHandler] Chinese G2P requires file-based dictionary which is not available " +
+                    "on this platform. Use the injection constructor with a pre-initialized ChineseG2PEngine.");
                 return Task.CompletedTask;
 #elif UNITY_ANDROID && !UNITY_EDITOR
-                // Android APK内のStreamingAssetsはFile APIで読めない。
-                // ChineseG2PEngineはembedded辞書をサポートしないため、エンジン事前注入が必要。
-                PiperLogger.LogWarning(
-                    "[ChineseG2PHandler] Android: File API unavailable for StreamingAssets. " +
-                    "Chinese G2P requires pre-injected engine via constructor.");
+                PiperLogger.LogError(
+                    "[ChineseG2PHandler] Chinese G2P requires file-based dictionary which is not available " +
+                    "on this platform. Use the injection constructor with a pre-initialized ChineseG2PEngine.");
                 return Task.CompletedTask;
 #else
                 var charPath = Path.Combine(

@@ -22,6 +22,18 @@ namespace uPiper.Core.AudioGeneration
         private readonly IPiperConfigReadOnly _config;
         private readonly PiperVoiceConfig _voiceConfig;
 
+        /// <summary>
+        /// Initializes the orchestrator with the specified dependencies.
+        /// </summary>
+        /// <param name="generator">ONNX inference audio generator (required).</param>
+        /// <param name="splitOrchestrator">Silence-based split inference orchestrator (required).</param>
+        /// <param name="phonemeEncoder">Phoneme-to-ID encoder (required).</param>
+        /// <param name="audioClipBuilder">Audio clip builder (required).</param>
+        /// <param name="config">Optional validated config. When null, defaults to:
+        /// audio normalization ON (0.95 peak), silence-based splitting OFF.
+        /// This allows SynthesizeAsync to work without a PiperConfig when only basic
+        /// synthesis is needed.</param>
+        /// <param name="voiceConfig">Voice config with phoneme ID map (optional, required for silence split).</param>
         public TTSSynthesisOrchestrator(
             IInferenceAudioGenerator generator,
             SplitInferenceOrchestrator splitOrchestrator,
@@ -34,7 +46,7 @@ namespace uPiper.Core.AudioGeneration
             _splitOrchestrator = splitOrchestrator ?? throw new ArgumentNullException(nameof(splitOrchestrator));
             _phonemeEncoder = phonemeEncoder ?? throw new ArgumentNullException(nameof(phonemeEncoder));
             _audioClipBuilder = audioClipBuilder ?? throw new ArgumentNullException(nameof(audioClipBuilder));
-            _config = config;
+            _config = config; // nullable: defaults to normalization ON, silence split OFF
             _voiceConfig = voiceConfig;
         }
 

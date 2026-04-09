@@ -16,6 +16,9 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
     /// To create a custom handler, implement this interface and register it via
     /// <see cref="MultilingualPhonemizerOptions.Handlers"/>. See existing implementations
     /// (e.g., <see cref="JapaneseG2PHandler"/>, <see cref="EnglishG2PHandler"/>) for reference.
+    ///
+    /// Future consideration: If additional return data is needed (confidence, syllable boundaries),
+    /// consider migrating from ValueTuple to a dedicated PhonemeProcessResult type.
     /// </remarks>
     public interface ILanguageG2PHandler : IDisposable
     {

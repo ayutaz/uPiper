@@ -9,7 +9,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
     /// Latin-script segments are refined by trigram frequency analysis for en/es/fr/pt disambiguation.
     /// When trigram detection is unavailable, falls back to Unicode-only detection.
     /// </summary>
-    public sealed class HybridLanguageDetector : ILanguageDetector
+    internal sealed class HybridLanguageDetector : ILanguageDetector
     {
         private readonly UnicodeLanguageDetector _unicodeDetector;
         private readonly LatinSegmentRefiner _refiner;
