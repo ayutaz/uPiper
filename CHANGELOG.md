@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - Unreleased
+## [1.5.0] - Unreleased
 
 ### Added
 
@@ -428,7 +428,7 @@ Apache License 2.0 - See [LICENSE](LICENSE) file for details
 - [Documentation](https://github.com/ayutaz/uPiper/tree/main/docs)
 - [Issues](https://github.com/ayutaz/uPiper/issues)
 
-[2.0.0]: https://github.com/ayutaz/uPiper/releases/tag/v2.0.0
+[1.5.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.5.0
 [1.4.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.4.0
 [1.3.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.3.0
 [1.2.0]: https://github.com/ayutaz/uPiper/releases/tag/v1.2.0

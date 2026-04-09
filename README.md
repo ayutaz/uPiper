@@ -84,7 +84,7 @@ openupm add com.ayutaz.upiper
     }
   ],
   "dependencies": {
-    "com.ayutaz.upiper": "2.0.0"
+    "com.ayutaz.upiper": "1.5.0"
   }
 }
 ```
@@ -144,14 +144,14 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 // Packages/manifest.json の "dependencies" 内に以下を追加:
 "com.unity.ai.inference": "2.5.0",
 "com.unity.nuget.newtonsoft-json": "3.2.2",
-"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v2.0.0",
-"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v2.0.0",
-"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v2.0.0",
-"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v2.0.0",
-"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v2.0.0",
-"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v2.0.0",
-"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v2.0.0",
-"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v2.0.0"
+"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.5.0",
+"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.5.0",
+"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.5.0",
+"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.5.0",
+"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.5.0",
+"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.5.0",
+"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.5.0",
+"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.5.0"
 ```
 
 ### トラブルシューティング

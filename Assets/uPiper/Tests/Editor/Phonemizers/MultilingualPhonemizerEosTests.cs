@@ -65,7 +65,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             await mp.InitializeAsync();
 
             // English intermediate, Japanese final
-            var result = await Phonemize(mp,"hey あ");
+            var result = await Phonemize(mp, "hey あ");
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0);
 
@@ -106,7 +106,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             await mp.InitializeAsync();
 
             // English intermediate, Japanese final
-            var result = await Phonemize(mp,"world こん");
+            var result = await Phonemize(mp, "world こん");
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0);
 
@@ -143,7 +143,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                 });
             await mp.InitializeAsync();
 
-            var result = await Phonemize(mp,"hello");
+            var result = await Phonemize(mp, "hello");
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0);
             Assert.AreEqual("\ue017", result.Phonemes[^1],
@@ -180,7 +180,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             await mp.InitializeAsync();
 
             // English intermediate, Japanese final
-            var result = await Phonemize(mp,"hello あ");
+            var result = await Phonemize(mp, "hello あ");
             Assert.IsNotNull(result);
 
             // The intermediate EN segment's "$" should be stripped.
@@ -226,7 +226,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                 });
             await mp.InitializeAsync();
 
-            var result = await Phonemize(mp,"こんにちは");
+            var result = await Phonemize(mp, "こんにちは");
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0);
             Assert.AreNotEqual("_", result.Phonemes[0],
@@ -265,7 +265,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                 });
             await mp.InitializeAsync();
 
-            var result = await Phonemize(mp,"あ");
+            var result = await Phonemize(mp, "あ");
             Assert.IsNotNull(result);
 
             // The raw output starts with "_", multilingual strips it.
@@ -309,7 +309,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                 });
             await mp.InitializeAsync();
 
-            var result = await Phonemize(mp,"hello");
+            var result = await Phonemize(mp, "hello");
             Assert.IsNotNull(result);
             Assert.AreEqual("_", result.Phonemes[0],
                 "Leading '_' in an English segment must NOT be stripped");
@@ -347,7 +347,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                 });
             await mp.InitializeAsync();
 
-            var result = await Phonemize(mp,"こんにちは");
+            var result = await Phonemize(mp, "こんにちは");
             Assert.IsNotNull(result);
 
             // ProsodyFlat must be aligned (phonemeCount * 3)
@@ -417,7 +417,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             await mp.InitializeAsync();
 
             // EN intermediate + JA final
-            var result = await Phonemize(mp,"hey あ");
+            var result = await Phonemize(mp, "hey あ");
             Assert.IsNotNull(result);
 
             // The first 3 phonemes are from EN (EOS stripped), so they must not
@@ -456,7 +456,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                 });
             await mp.InitializeAsync();
 
-            var result = await Phonemize(mp,"hello あ");
+            var result = await Phonemize(mp, "hello あ");
             Assert.IsNotNull(result);
 
             // First 4 phonemes should be the EN phonemes, preserved intact
@@ -498,7 +498,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                 });
             await mp.InitializeAsync();
 
-            var result = await Phonemize(mp,"ha あ");
+            var result = await Phonemize(mp, "ha あ");
             Assert.IsNotNull(result);
 
             // ProsodyFlat must be aligned (phonemeCount * 3)
