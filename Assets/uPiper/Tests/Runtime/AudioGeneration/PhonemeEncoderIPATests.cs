@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Runtime.AudioGeneration
 {
@@ -14,10 +15,12 @@ namespace uPiper.Tests.Runtime.AudioGeneration
     {
         private PhonemeEncoder _encoder;
         private PiperVoiceConfig _config;
+        private PuaTokenMapper _mapper;
 
         [SetUp]
         public void Setup()
         {
+            _mapper = new PuaTokenMapper();
             // IPA対応モデルのphoneme_id_mapを再現
             _config = new PiperVoiceConfig
             {
@@ -42,7 +45,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                     { "r", 54 }, { "ɽ", 55 }, { "w", 56 }, { "y", 57 }
                 }
             };
-            _encoder = new PhonemeEncoder(_config);
+            _encoder = new PhonemeEncoder(_config, _mapper);
         }
 
         /// <summary>

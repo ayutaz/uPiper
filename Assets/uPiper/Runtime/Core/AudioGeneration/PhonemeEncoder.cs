@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using uPiper.Core.Logging;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Core.AudioGeneration
 {
@@ -38,6 +39,7 @@ namespace uPiper.Core.AudioGeneration
     {
         private readonly Dictionary<string, int> _phonemeToId;
         private readonly PiperVoiceConfig _config;
+        private readonly PuaTokenMapper _tokenMapper;
 
         // 特殊トークン
         private const string PAD_TOKEN = "_";
@@ -55,9 +57,11 @@ namespace uPiper.Core.AudioGeneration
         /// 音素エンコーダーを初期化する
         /// </summary>
         /// <param name="config">音声設定</param>
-        public PhonemeEncoder(PiperVoiceConfig config)
+        /// <param name="tokenMapper">PUA token mapper instance</param>
+        public PhonemeEncoder(PiperVoiceConfig config, PuaTokenMapper tokenMapper)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _tokenMapper = tokenMapper ?? throw new ArgumentNullException(nameof(tokenMapper));
             _phonemeToId = new Dictionary<string, int>();
 
             // Detect multilingual model before initializing phoneme mapping
@@ -309,7 +313,7 @@ namespace uPiper.Core.AudioGeneration
             if (_isMultilingualModel)
             {
                 if (phoneme.Length > 1 &&
-                    Phonemizers.Multilingual.PuaTokenMapper.Token2Char.TryGetValue(phoneme, out var puaChar))
+                    _tokenMapper.Token2Char.TryGetValue(phoneme, out var puaChar))
                 {
                     return puaChar.ToString();
                 }

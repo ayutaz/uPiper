@@ -50,6 +50,7 @@ namespace uPiper.Core
 
         // Phonemizer
         private IPhonemizer _phonemizer;
+        private readonly Phonemizers.Multilingual.PuaTokenMapper _tokenMapper = new();
 
         #endregion
 
@@ -376,7 +377,7 @@ namespace uPiper.Core
                 PiperLogger.LogInfo("Audio generator initialized for voice: {0}", voice.VoiceId);
 
                 // Initialize phoneme encoder
-                _phonemeEncoder = new PhonemeEncoder(voice);
+                _phonemeEncoder = new PhonemeEncoder(voice, _tokenMapper);
                 PiperLogger.LogInfo("Phoneme encoder initialized with {0} phonemes", voice.PhonemeIdMap?.Count ?? 0);
 
                 lock (_lockObject)

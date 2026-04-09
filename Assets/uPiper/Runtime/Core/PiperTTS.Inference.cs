@@ -52,7 +52,7 @@ namespace uPiper.Core
                 // Inferenceコンポーネントを初期化
                 _inferenceGenerator = new InferenceAudioGenerator();
                 _splitOrchestrator = new SplitInferenceOrchestrator(_inferenceGenerator);
-                _phonemeEncoder = new PhonemeEncoder(voiceConfig);
+                _phonemeEncoder = new PhonemeEncoder(voiceConfig, _tokenMapper);
                 _audioClipBuilder = new AudioClipBuilder();
                 _orchestrator = new TTSSynthesisOrchestrator(
                     _inferenceGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
@@ -78,11 +78,15 @@ namespace uPiper.Core
                 {
                     DisposeMultilingualPhonemizer();
                     var supportedLanguages = _config.SupportedLanguages ?? new System.Collections.Generic.List<string> { "ja", "en" };
+                    var handlers = new System.Collections.Generic.Dictionary<string, Phonemizers.Multilingual.Handlers.ILanguageG2PHandler>();
+                    if (_phonemizer is Phonemizers.Implementations.DotNetG2PPhonemizer jaPhonemizer)
+                        handlers["ja"] = new Phonemizers.Multilingual.Handlers.JapaneseG2PHandler(jaPhonemizer);
+
                     var phonemizerOptions = new Phonemizers.Multilingual.MultilingualPhonemizerOptions
                     {
                         Languages = supportedLanguages,
                         DefaultLatinLanguage = _config.DefaultLanguage ?? "en",
-                        JaPhonemizer = _phonemizer as Phonemizers.Implementations.DotNetG2PPhonemizer
+                        Handlers = handlers,
                     };
                     _multilingualPhonemizer = new Phonemizers.Multilingual.MultilingualPhonemizer(phonemizerOptions);
                     await _multilingualPhonemizer.InitializeAsync(cancellationToken);

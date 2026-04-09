@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Runtime.AudioGeneration
 {
@@ -26,6 +27,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
         private PhonemeEncoder _tsukuyomiEncoder;
         private PiperVoiceConfig _tsukuyomiConfig;
+        private PuaTokenMapper _mapper;
 
         /// <summary>
         /// Build a mock multilingual phoneme_id_map derived from
@@ -253,6 +255,8 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         [SetUp]
         public void Setup()
         {
+            _mapper = new PuaTokenMapper();
+
             // Multilingual model encoder
             _multilingualConfig = new PiperVoiceConfig
             {
@@ -261,7 +265,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 SampleRate = 22050,
                 PhonemeIdMap = BuildMultilingualModelMap()
             };
-            _multilingualEncoder = new PhonemeEncoder(_multilingualConfig);
+            _multilingualEncoder = new PhonemeEncoder(_multilingualConfig, _mapper);
 
             // Japanese (OpenJTalk) model encoder
             _jaConfig = new PiperVoiceConfig
@@ -271,7 +275,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 SampleRate = 22050,
                 PhonemeIdMap = BuildJapaneseModelMap()
             };
-            _jaEncoder = new PhonemeEncoder(_jaConfig);
+            _jaEncoder = new PhonemeEncoder(_jaConfig, _mapper);
 
             // eSpeak English model encoder
             _espeakConfig = new PiperVoiceConfig
@@ -281,7 +285,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 SampleRate = 22050,
                 PhonemeIdMap = BuildESpeakModelMap()
             };
-            _espeakEncoder = new PhonemeEncoder(_espeakConfig);
+            _espeakEncoder = new PhonemeEncoder(_espeakConfig, _mapper);
 
             // IPA-based Japanese model encoder
             _tsukuyomiConfig = new PiperVoiceConfig
@@ -291,7 +295,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 SampleRate = 22050,
                 PhonemeIdMap = BuildTsukuyomiModelMap()
             };
-            _tsukuyomiEncoder = new PhonemeEncoder(_tsukuyomiConfig);
+            _tsukuyomiEncoder = new PhonemeEncoder(_tsukuyomiConfig, _mapper);
         }
 
         #region NeedsInterspersePadding

@@ -12,6 +12,7 @@ using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Implementations;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Runtime.AudioGeneration
 {
@@ -26,6 +27,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         private InferenceAudioGenerator _generator;
         private DotNetG2PPhonemizer _phonemizer;
         private PhonemeEncoder _encoder;
+        private PuaTokenMapper _mapper;
         private ModelAsset _prosodyModelAsset;
         private PiperVoiceConfig _voiceConfig;
 
@@ -87,7 +89,8 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         public void Setup()
         {
             _generator = new InferenceAudioGenerator();
-            _encoder = new PhonemeEncoder(_voiceConfig);
+            _mapper = new PuaTokenMapper();
+            _encoder = new PhonemeEncoder(_voiceConfig, _mapper);
 
             // Initialize OpenJTalk phonemizer
             try

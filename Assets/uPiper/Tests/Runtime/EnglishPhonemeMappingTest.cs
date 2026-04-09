@@ -6,6 +6,7 @@ using UnityEngine.TestTools;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Runtime
 {
@@ -38,7 +39,7 @@ namespace uPiper.Tests.Runtime
                 }
             };
 
-            var encoder = new PhonemeEncoder(config);
+            var encoder = new PhonemeEncoder(config, new PuaTokenMapper());
 
             // Test phonemes for "hello world"
             // Expected Arpabet: HH EH L OW _ W ER L D

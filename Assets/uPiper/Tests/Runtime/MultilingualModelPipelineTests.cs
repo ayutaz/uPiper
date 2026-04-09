@@ -23,6 +23,7 @@ namespace uPiper.Tests.Runtime
         private MultilingualPhonemizer _phonemizer;
         private PhonemeEncoder _multilingualEncoder;
         private PhonemeEncoder _japaneseEncoder;
+        private PuaTokenMapper _mapper;
 
         /// <summary>
         /// Build a mock multilingual phoneme_id_map based on the actual
@@ -259,6 +260,8 @@ namespace uPiper.Tests.Runtime
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
+            _mapper = new PuaTokenMapper();
+
             // Initialize MultilingualPhonemizer with the 6 model languages + ko
             _phonemizer = new MultilingualPhonemizer(
                 LanguageConstants.AllLanguages,
@@ -277,7 +280,7 @@ namespace uPiper.Tests.Runtime
                 NumLanguages = 6,
                 PhonemeIdMap = BuildMultilingualModelPhonemeIdMap()
             };
-            _multilingualEncoder = new PhonemeEncoder(multilingualConfig);
+            _multilingualEncoder = new PhonemeEncoder(multilingualConfig, _mapper);
             Assert.IsNotNull(_multilingualEncoder);
 
             // Build a non-multilingual Japanese encoder for backward-compat tests
@@ -288,7 +291,7 @@ namespace uPiper.Tests.Runtime
                 SampleRate = 22050,
                 PhonemeIdMap = BuildJapaneseOnlyPhonemeIdMap()
             };
-            _japaneseEncoder = new PhonemeEncoder(japaneseConfig);
+            _japaneseEncoder = new PhonemeEncoder(japaneseConfig, _mapper);
             Assert.IsNotNull(_japaneseEncoder);
         }
 

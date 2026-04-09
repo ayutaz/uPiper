@@ -697,7 +697,7 @@ namespace uPiper.Demo
                 PiperLogger.LogDebug($"Config loaded, parsing JSON ({jsonAsset.text.Length} chars)");
 
                 var config = ParseConfig(jsonAsset.text, modelName);
-                _encoder = new PhonemeEncoder(config);
+                _encoder = new PhonemeEncoder(config, new PuaTokenMapper());
                 PiperLogger.LogDebug($"PhonemeEncoder created with {config.PhonemeIdMap.Count} phonemes");
 
                 // デバッグ用：日本語音素に関連するマッピングを表示

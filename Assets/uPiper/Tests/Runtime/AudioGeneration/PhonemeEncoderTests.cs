@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Runtime.AudioGeneration
 {
@@ -10,10 +11,12 @@ namespace uPiper.Tests.Runtime.AudioGeneration
     {
         private PhonemeEncoder _encoder;
         private PiperVoiceConfig _config;
+        private PuaTokenMapper _mapper;
 
         [SetUp]
         public void Setup()
         {
+            _mapper = new PuaTokenMapper();
             _config = new PiperVoiceConfig
             {
                 VoiceId = "multilingual-test-medium",
@@ -32,7 +35,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                     { " ", 8 }
                 }
             };
-            _encoder = new PhonemeEncoder(_config);
+            _encoder = new PhonemeEncoder(_config, _mapper);
         }
 
         [Test]
@@ -144,7 +147,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                     { "b", 5 }
                 }
             };
-            var encoder = new PhonemeEncoder(configWithQuestion);
+            var encoder = new PhonemeEncoder(configWithQuestion, _mapper);
 
             // Arrange: phonemes ending with "?" (question marker from DotNetG2PPhonemizer)
             var phonemes = new[] { "a", "b", "?" };
@@ -186,7 +189,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                     { "b", 8 }
                 }
             };
-            var encoder = new PhonemeEncoder(configWithExtendedQuestions);
+            var encoder = new PhonemeEncoder(configWithExtendedQuestions, _mapper);
 
             // Test each extended question marker
             // Note: The markers are converted to PUA, so we expect the PUA IDs

@@ -3,6 +3,7 @@ using System.Linq;
 using NUnit.Framework;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Runtime.AudioGeneration
 {
@@ -19,6 +20,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
         private PhonemeEncoder _puaEncoder;
         private PiperVoiceConfig _puaConfig;
+        private PuaTokenMapper _mapper;
 
         /// <summary>
         /// Build a mock multilingual IPA phoneme_id_map (173 entries representative).
@@ -202,6 +204,8 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         [SetUp]
         public void Setup()
         {
+            _mapper = new PuaTokenMapper();
+
             // IPA-based multilingual encoder
             _ipaConfig = new PiperVoiceConfig
             {
@@ -210,7 +214,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 SampleRate = 22050,
                 PhonemeIdMap = BuildMultilingualIpaMap()
             };
-            _ipaEncoder = new PhonemeEncoder(_ipaConfig);
+            _ipaEncoder = new PhonemeEncoder(_ipaConfig, _mapper);
 
             // PUA-based multilingual encoder
             _puaConfig = new PiperVoiceConfig
@@ -220,7 +224,7 @@ namespace uPiper.Tests.Runtime.AudioGeneration
                 SampleRate = 22050,
                 PhonemeIdMap = BuildMultilingualPuaMap()
             };
-            _puaEncoder = new PhonemeEncoder(_puaConfig);
+            _puaEncoder = new PhonemeEncoder(_puaConfig, _mapper);
         }
 
         #region Multilingual PhonemeIdMap Initialization

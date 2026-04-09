@@ -21,6 +21,7 @@ namespace uPiper.Tests.Runtime
     {
         private MultilingualPhonemizer _phonemizer;
         private PhonemeEncoder _encoder;
+        private PuaTokenMapper _mapper;
 
         /// <summary>
         /// A multilingual phoneme ID map covering the basic IPA phonemes shared across languages.
@@ -163,6 +164,8 @@ namespace uPiper.Tests.Runtime
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
+            _mapper = new PuaTokenMapper();
+
             // Initialize MultilingualPhonemizer with all 7 languages
             _phonemizer = new MultilingualPhonemizer(
                 LanguageConstants.AllLanguages,
@@ -180,7 +183,7 @@ namespace uPiper.Tests.Runtime
                 SampleRate = 22050,
                 PhonemeIdMap = BuildMultilingualPhonemeIdMap()
             };
-            _encoder = new PhonemeEncoder(config);
+            _encoder = new PhonemeEncoder(config, _mapper);
             Assert.IsNotNull(_encoder);
         }
 

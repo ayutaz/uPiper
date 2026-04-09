@@ -1,0 +1,100 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using uPiper.Core.Logging;
+using uPiper.Core.Phonemizers.Implementations;
+
+namespace uPiper.Core.Phonemizers.Multilingual.Handlers
+{
+    /// <summary>
+    /// Japanese G2P handler using DotNetG2PPhonemizer (dot-net-g2p / MeCab dictionary).
+    /// Provides prosody-aware phonemization with A1/A2/A3 extraction.
+    /// </summary>
+    public sealed class JapaneseG2PHandler : ILanguageG2PHandler
+    {
+        private DotNetG2PPhonemizer _phonemizer;
+        private bool _ownsEngine;
+        private bool _isInitialized;
+        private bool _disposed;
+
+        /// <inheritdoc/>
+        public string LanguageCode => "ja";
+
+        /// <inheritdoc/>
+        public bool IsInitialized => _isInitialized;
+
+        /// <summary>
+        /// Creates a handler with an externally provided phonemizer (caller retains ownership).
+        /// </summary>
+        /// <param name="phonemizer">Pre-built Japanese phonemizer instance.</param>
+        public JapaneseG2PHandler(DotNetG2PPhonemizer phonemizer)
+        {
+            _phonemizer = phonemizer ?? throw new ArgumentNullException(nameof(phonemizer));
+            _ownsEngine = false;
+            _isInitialized = true;
+        }
+
+        /// <summary>
+        /// Creates a handler that will create its own phonemizer on initialization.
+        /// </summary>
+        public JapaneseG2PHandler()
+        {
+            _ownsEngine = false;
+            _isInitialized = false;
+        }
+
+        /// <inheritdoc/>
+        public async Task InitializeAsync(CancellationToken cancellationToken = default)
+        {
+            if (_isInitialized)
+                return;
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+            _phonemizer = new DotNetG2PPhonemizer();
+            await _phonemizer.InitializeAsync(cancellationToken);
+#else
+            _phonemizer = new DotNetG2PPhonemizer();
+            await Task.CompletedTask;
+#endif
+            _ownsEngine = true;
+            _isInitialized = true;
+            PiperLogger.LogInfo("[JapaneseG2PHandler] Initialized");
+        }
+
+        /// <inheritdoc/>
+        public (string[] Phonemes, int[] A1, int[] A2, int[] A3) Process(string text)
+        {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(JapaneseG2PHandler));
+            if (!_isInitialized)
+                throw new InvalidOperationException("Call InitializeAsync() before processing.");
+
+            var result = _phonemizer.PhonemizeWithProsody(text);
+            var phonemes = result.Phonemes ?? Array.Empty<string>();
+            var a1 = result.ProsodyA1 ?? Array.Empty<int>();
+            var a2 = result.ProsodyA2 ?? Array.Empty<int>();
+            var a3 = result.ProsodyA3 ?? Array.Empty<int>();
+
+            // Strip leading PAD ("_") from Japanese segments (added from "sil" conversion)
+            if (phonemes.Length > 0 && phonemes[0] == "_")
+            {
+                phonemes = phonemes[1..];
+                a1 = a1.Length > 1 ? a1[1..] : a1;
+                a2 = a2.Length > 1 ? a2[1..] : a2;
+                a3 = a3.Length > 1 ? a3[1..] : a3;
+            }
+
+            return (phonemes, a1, a2, a3);
+        }
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+            _disposed = true;
+            if (_ownsEngine)
+                _phonemizer?.Dispose();
+        }
+    }
+}

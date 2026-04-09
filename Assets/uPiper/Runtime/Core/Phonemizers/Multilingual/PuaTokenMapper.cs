@@ -18,7 +18,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
     /// Do NOT change assigned codepoints -- they are baked into trained models.
     /// </para>
     /// </summary>
-    public static class PuaTokenMapper
+    public sealed class PuaTokenMapper
     {
         // ── Fixed PUA mapping table ─────────────────────────────────────────────
         // Ensures consistency between Python, C++, and C# implementations.
@@ -195,34 +195,51 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// Token string to PUA char mapping. Includes both fixed and dynamically registered entries.
         /// Thread-safe for concurrent reads and writes.
         /// </summary>
-        public static readonly ConcurrentDictionary<string, char> Token2Char = new();
+        private readonly ConcurrentDictionary<string, char> _token2Char;
 
         /// <summary>
         /// PUA char to token string mapping. Includes both fixed and dynamically registered entries.
         /// Thread-safe for concurrent reads and writes.
         /// </summary>
-        public static readonly ConcurrentDictionary<char, string> Char2Token = new();
+        private readonly ConcurrentDictionary<char, string> _char2Token;
 
         /// <summary>
         /// Next available codepoint for dynamic allocation. Access protected by <see cref="_dynamicLock"/>.
         /// </summary>
-        private static int _nextDynamic = DynamicPuaStart;
+        private int _nextDynamic;
 
         /// <summary>
         /// Lock for dynamic codepoint allocation to ensure thread-safe sequential assignment.
         /// </summary>
-        private static readonly object _dynamicLock = new();
+        private readonly object _dynamicLock = new();
 
-        // ── Static constructor ──────────────────────────────────────────────────
+        /// <summary>
+        /// Read-only view of the token-to-char mapping.
+        /// </summary>
+        public IReadOnlyDictionary<string, char> Token2Char => _token2Char;
 
-        static PuaTokenMapper()
+        /// <summary>
+        /// Read-only view of the char-to-token mapping.
+        /// </summary>
+        public IReadOnlyDictionary<char, string> Char2Token => _char2Token;
+
+        // ── Constructor ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Creates a new instance with the fixed PUA mapping table pre-loaded.
+        /// </summary>
+        public PuaTokenMapper()
         {
+            _token2Char = new ConcurrentDictionary<string, char>();
+            _char2Token = new ConcurrentDictionary<char, string>();
+            _nextDynamic = DynamicPuaStart;
+
             // Initialize bidirectional mappings from the fixed table
             foreach (var kvp in FixedPuaMapping)
             {
                 var ch = (char)kvp.Value;
-                Token2Char[kvp.Key] = ch;
-                Char2Token[ch] = kvp.Key;
+                _token2Char[kvp.Key] = ch;
+                _char2Token[ch] = kvp.Key;
             }
         }
 
@@ -237,17 +254,17 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// </summary>
         /// <param name="token">The phoneme token string to register.</param>
         /// <returns>The single PUA character representing this token.</returns>
-        public static char Register(string token)
+        public char Register(string token)
         {
             // Fast path: already registered
-            if (Token2Char.TryGetValue(token, out var existing))
+            if (_token2Char.TryGetValue(token, out var existing))
                 return existing;
 
             // Single-character tokens map to themselves
             if (token.Length == 1)
             {
-                Token2Char[token] = token[0];
-                Char2Token[token[0]] = token;
+                _token2Char[token] = token[0];
+                _char2Token[token[0]] = token;
                 return token[0];
             }
 
@@ -255,7 +272,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             lock (_dynamicLock)
             {
                 // Double-check after acquiring lock
-                if (Token2Char.TryGetValue(token, out existing))
+                if (_token2Char.TryGetValue(token, out existing))
                     return existing;
 
                 if (_nextDynamic > 0xF8FF)
@@ -264,8 +281,8 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 var ch = (char)_nextDynamic;
                 _nextDynamic++;
 
-                Token2Char[token] = ch;
-                Char2Token[ch] = token;
+                _token2Char[token] = ch;
+                _char2Token[ch] = token;
                 return ch;
             }
         }
@@ -278,7 +295,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// </summary>
         /// <param name="tokens">List of phoneme token strings.</param>
         /// <returns>List of single characters (one per token).</returns>
-        public static List<char> MapSequence(IList<string> tokens)
+        public List<char> MapSequence(IList<string> tokens)
         {
             var result = new List<char>(tokens.Count);
             for (var i = 0; i < tokens.Count; i++)
@@ -294,7 +311,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// </summary>
         /// <param name="token">The phoneme token string.</param>
         /// <returns>The single PUA character representing this token.</returns>
-        public static char MapToken(string token)
+        public char MapToken(string token)
         {
             return Register(token);
         }
@@ -304,9 +321,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// </summary>
         /// <param name="ch">The PUA character to look up.</param>
         /// <returns>The original token string, or <c>null</c> if not found.</returns>
-        public static string UnmapChar(char ch)
+        public string UnmapChar(char ch)
         {
-            return Char2Token.TryGetValue(ch, out var token) ? token : null;
+            return _char2Token.TryGetValue(ch, out var token) ? token : null;
         }
 
         /// <summary>
