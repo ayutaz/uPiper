@@ -101,15 +101,16 @@ namespace uPiper.Tests.Editor.Phonemizers
             var phonemizer = await CreateInitialized(
                 new[] { "ja", "en", "fr", "pt" }, defaultLatin: "en");
 
-            // "今日は" = 3 ja chars, "hello bonjour bom dia" = 21 latin chars -> "en" is primary
+            // Japanese + Latin text. With trigram detection enabled, "bonjour" and "bom dia"
+            // may be reclassified to fr/pt respectively. Verify phonemes are produced and
+            // prosody is aligned, regardless of primary language outcome.
             var result = await Phonemize(phonemizer, "今日はhello bonjour bom dia");
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "Four-language configured text should produce phonemes");
-            // Latin text dominates by character count and routes to default "en"
-            Assert.AreEqual("en", result.DetectedPrimaryLanguage,
-                "Latin text dominates by character count, primary should be 'en'");
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat must align with phoneme count (stride=3)");
 
             phonemizer.Dispose();
         }

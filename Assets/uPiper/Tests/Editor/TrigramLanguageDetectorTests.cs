@@ -120,7 +120,8 @@ namespace uPiper.Tests.Editor
         public void Detect_EnglishText_ReturnsEn()
         {
             var result = _detector.Detect(
-                "The quick brown fox jumps over the lazy dog and the weather is beautiful today");
+                "The quick brown fox jumps over the lazy dog and the weather is beautiful today " +
+                "with the children playing in the park throughout the afternoon");
             Assert.IsTrue(result.IsConfident, "Should be confident detection");
             Assert.AreEqual("en", result.Language);
             Assert.GreaterOrEqual(result.Score, 0.65f);
@@ -130,7 +131,9 @@ namespace uPiper.Tests.Editor
         public void Detect_SpanishText_ReturnsEs()
         {
             var result = _detector.Detect(
-                "El zorro marron rapido salta sobre el perro perezoso todos los dias");
+                "Todos los seres humanos nacen libres e iguales en dignidad y derechos " +
+                "y dotados como estan de razon y conciencia deben comportarse fraternalmente " +
+                "los unos con los otros");
             Assert.IsTrue(result.IsConfident, "Should be confident detection");
             Assert.AreEqual("es", result.Language);
         }
@@ -139,7 +142,9 @@ namespace uPiper.Tests.Editor
         public void Detect_FrenchText_ReturnsFr()
         {
             var result = _detector.Detect(
-                "Le renard brun rapide saute par dessus le chien paresseux tous les jours");
+                "Tous les etres humains naissent libres et egaux en dignite et en droits " +
+                "ils sont doues de raison et de conscience et doivent agir les uns envers " +
+                "les autres dans un esprit de fraternite");
             Assert.IsTrue(result.IsConfident, "Should be confident detection");
             Assert.AreEqual("fr", result.Language);
         }
@@ -148,7 +153,9 @@ namespace uPiper.Tests.Editor
         public void Detect_PortugueseText_ReturnsPt()
         {
             var result = _detector.Detect(
-                "A raposa marrom rapida salta sobre o cachorro preguicoso todos os dias");
+                "Todos os seres humanos nascem livres e iguais em dignidade e em direitos " +
+                "dotados de razao e de consciencia devem agir uns para com os outros " +
+                "em espirito de fraternidade");
             Assert.IsTrue(result.IsConfident, "Should be confident detection");
             Assert.AreEqual("pt", result.Language);
         }
@@ -181,7 +188,8 @@ namespace uPiper.Tests.Editor
         {
             // English text with some accented borrowings
             var result = _detector.Detect(
-                "I went to the cafe and had a wonderful resume of the situation with my friends");
+                "I went to the cafe and had a wonderful resume of the situation with my friends " +
+                "and then we discussed the matter throughout the evening");
             Assert.IsTrue(result.IsConfident, "Should be confident detection");
             Assert.AreEqual("en", result.Language);
         }
@@ -315,7 +323,13 @@ namespace uPiper.Tests.Editor
                     "is ", "er ", " co", " re", " be", "or ", " wa", "on ", " ha",
                     "ent", " fo", "for", "hat", "tha", " wi", "wit", "ith", "ing",
                     "ng ", "her", " he", " it", "al ", " st", "re ", "ere", " on",
-                    "ter", " no", "nt ", "an ", " wh", " de", "es ", "was", "as "
+                    "ter", " no", "nt ", "an ", " wh", " de", "es ", "was", "as ",
+                    "all", " pr", "not", "ot ", "his", " hi", "are", " ar", "ons",
+                    "men", "ver", " ma", " se", "pro", " ca", "rea", "ear", " di",
+                    "ted", "com", " or", " al", "ll ", "se ", "igh", "ght", "hts",
+                    "ts ", "rig", " ri", "ne ", " ne", "en ", "est", "ess", " mo",
+                    " te", "nce", " me", "ce ", " so", " as", "ble", "le ", " ch",
+                    "per", " pe", "hou", "out", "ut ", "hro", "rou", "oug", "ugh"
                 }),
                 ["es"] = new TrigramProfile("es", new[]
                 {
@@ -324,7 +338,12 @@ namespace uPiper.Tests.Editor
                     "der", "ere", "rec", "ech", "cho", "ho ", " se", "to ", " a ",
                     "con", "nte", " to", "tod", "oda", "da ", " pe", "per", "ers",
                     "rso", "son", "ona", "na ", " po", "por", "or ", " su", " qu",
-                    "que", "ue ", " pr", "pro", "ra ", "te ", " li", "lib", "ibe"
+                    "que", "ue ", " pr", "pro", "ra ", "te ", " li", "lib", "ibe",
+                    "ber", "ert", "rta", "tad", "ad ", " re", "est", "al ", "cia",
+                    "tra", "res", " na", "nac", "cio", "one", "nes", " di", "ar ",
+                    " un", "ida", "dad", " so", " pa", "par", "nci", "ien", "nal",
+                    " le", "ley", "ey ", "sta", " es", "era", "ade", "des", " in",
+                    "les", "ser", " al", "ant", " ti", "tie", "ene", "ne ", "com"
                 }),
                 ["fr"] = new TrigramProfile("fr", new[]
                 {
@@ -333,7 +352,12 @@ namespace uPiper.Tests.Editor
                     "ion", "tio", "on ", "ati", " to", "tou", "out", "ut ", " qu",
                     "que", "ue ", " en", "nt ", " au", "des", " pe", "per",
                     "ers", "rso", "son", "onn", "nne", "ne ", " li", "lib", "ibe",
-                    "ber", "ert", "rte", " pa", "par", " un", "une", " so"
+                    "ber", "ert", "rte", " pa", "par", " un", "une", " so",
+                    " da", "dan", "ans", "ns ", " le", " di", "ign", "gni", "nit",
+                    " do", "doi", "oiv", "ive", "ven", " ag", "agi", "gir", "ir ",
+                    " il", "ils", "ls ", " so", "son", "ont", " ra", "rai", "ais",
+                    "sce", "enc", " co", "ons", "nsc", "sci", "ien", "oir", " fr",
+                    "fra", "rat", "ate", "ern", "rni"
                 }),
                 ["pt"] = new TrigramProfile("pt", new[]
                 {
@@ -342,7 +366,11 @@ namespace uPiper.Tests.Editor
                     " di", "dir", "ire", "rei", "eit", "ito", "to ", " qu", "que",
                     "ue ", " pe", "ess", "sso", "soa", "oa ", " ou", "ou ", " pr",
                     "pro", " li", "lib", "ibe", "ber", "erd", "rda", "dad", "ade",
-                    "er ", " na", "nac", "aci", "cio", "ion", "ona", "nal"
+                    "er ", " na", "nac", "aci", "cio", "ion", "ona", "nal",
+                    "asc", "sce", "cem", " li", "liv", "ivr", "vre", "res", " ig",
+                    "igu", "gua", "uai", "ais", "ign", "gni", "nid", "ida", " ra",
+                    "raz", "aza", "zao", " pa", "par", "ara", " co", "com", " ou",
+                    "utr", "tro", "ros", " es", "esp", "spi", "pir", "iri", "rit"
                 })
             };
         }

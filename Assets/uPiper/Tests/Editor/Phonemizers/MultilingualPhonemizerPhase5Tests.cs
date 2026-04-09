@@ -522,13 +522,10 @@ namespace uPiper.Tests.Editor.Phonemizers
 
             Assert.IsNotNull(result);
             Assert.IsNotNull(result.ProsodyFlat);
-            Assert.IsNotNull(result.ProsodyFlat);
-            Assert.IsNotNull(result.ProsodyFlat);
 
-            // Prosody arrays should be aligned
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyFlat.Length);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyFlat.Length);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyFlat.Length);
+            // Prosody flat array should be aligned (stride=3)
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat length should be phoneme count * 3 (stride=3)");
 
             phonemizer.Dispose();
         }

@@ -843,8 +843,16 @@ namespace uPiper.Tests.Runtime.AudioGeneration
 
             // Verify phoneme prosody values are preserved at correct positions
             // IDs: BOS(1) + PAD(0) + a(10) + PAD(0) + k(32) + PAD(0) + EOS(2)
-            Assert.AreEqual(1, result.ExpandedProsodyFlat[2], "Prosody A1 for 'a' should be 1");
-            Assert.AreEqual(4, result.ExpandedProsodyFlat[4], "Prosody A2 for 'k' should be 4");
+            // ExpandedProsodyFlat layout (stride=3):
+            //   idx 0-2:  BOS  (0,0,0)
+            //   idx 3-5:  PAD  (0,0,0)
+            //   idx 6-8:  a    (1,3,5)
+            //   idx 9-11: PAD  (0,0,0)
+            //   idx 12-14: k   (2,4,6)
+            //   idx 15-17: PAD (0,0,0)
+            //   idx 18-20: EOS (0,0,0)
+            Assert.AreEqual(1, result.ExpandedProsodyFlat[2 * 3 + 0], "Prosody A1 for 'a' should be 1");
+            Assert.AreEqual(4, result.ExpandedProsodyFlat[4 * 3 + 1], "Prosody A2 for 'k' should be 4");
         }
 
         #endregion

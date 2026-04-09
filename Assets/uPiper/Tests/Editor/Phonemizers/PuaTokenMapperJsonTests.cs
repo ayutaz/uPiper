@@ -1,6 +1,8 @@
 using System.IO;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Editor.Phonemizers
@@ -78,6 +80,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             var countBefore = _mapper.Token2Char.Count;
             Assert.IsTrue(countBefore > 0, "Precondition: hardcoded mapping should exist");
 
+            LogAssert.Expect(LogType.Error, new Regex("Invalid version"));
             var result = _mapper.LoadFromJson(json);
 
             Assert.IsFalse(result, "Should return false for version 0");
@@ -91,6 +94,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             var json = @"{""version"": -1, ""entries"": []}";
 
+            LogAssert.Expect(LogType.Error, new Regex("Invalid version"));
             var result = _mapper.LoadFromJson(json);
 
             Assert.IsFalse(result, "Should return false for negative version");
@@ -232,7 +236,10 @@ namespace uPiper.Tests.Editor.Phonemizers
             var json = "{ this is not valid json }}}";
             var countBefore = _mapper.Token2Char.Count;
 
+            // JsonUtility.FromJson may emit its own error log before our code catches the exception
+            LogAssert.ignoreFailingMessages = true;
             var result = _mapper.LoadFromJson(json);
+            LogAssert.ignoreFailingMessages = false;
 
             Assert.IsFalse(result, "Should return false for malformed JSON");
             Assert.AreEqual(countBefore, _mapper.Token2Char.Count,
@@ -242,6 +249,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void LoadFromJson_NullString_ReturnsFalse()
         {
+            LogAssert.Expect(LogType.Error, new Regex("null or empty"));
             var result = _mapper.LoadFromJson(null);
             Assert.IsFalse(result);
         }
@@ -249,6 +257,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void LoadFromJson_EmptyString_ReturnsFalse()
         {
+            LogAssert.Expect(LogType.Error, new Regex("null or empty"));
             var result = _mapper.LoadFromJson("");
             Assert.IsFalse(result);
         }
@@ -256,6 +265,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void LoadFromJson_WhitespaceOnly_ReturnsFalse()
         {
+            LogAssert.Expect(LogType.Error, new Regex("null or empty"));
             var result = _mapper.LoadFromJson("   ");
             Assert.IsFalse(result);
         }
@@ -506,6 +516,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             }
             var json = $"{{\"version\":1,\"entries\":[{entries}]}}";
 
+            LogAssert.Expect(LogType.Error, new Regex("Too many entries"));
             var result = _mapper.LoadFromJson(json);
 
             Assert.IsFalse(result, "Should return false when entries exceed MaxEntries");

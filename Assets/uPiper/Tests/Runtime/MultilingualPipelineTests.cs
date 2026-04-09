@@ -462,11 +462,17 @@ namespace uPiper.Tests.Runtime
 
             // Korean does not use Japanese-style A1 prosody (accent phrase mora position)
             // Korean backend sets A1=0 and A2=0 with A3=syllable count
-            var allA1Zero = result.ProsodyFlat.All(v => v == 0);
+            // Check only A1 values (stride=3, offset 0): flat[i*3+0] should be 0
+            var phonemeCount = result.Phonemes.Length;
+            var allA1Zero = true;
+            for (var i = 0; i < phonemeCount; i++)
+            {
+                if (result.ProsodyFlat[i * 3 + 0] != 0) { allA1Zero = false; break; }
+            }
             Assert.IsTrue(allA1Zero,
                 "Non-Japanese text (Korean) should have all-zero ProsodyA1 values");
             Debug.Log($"[Pipeline_Prosody_NonJa] Korean A1 all zero: {allA1Zero}, " +
-                      $"phoneme count: {result.Phonemes.Length}");
+                      $"phoneme count: {phonemeCount}");
         }
 
         // ── Error handling ───────────────────────────────────────────────────────
@@ -537,9 +543,8 @@ namespace uPiper.Tests.Runtime
 
             // Prosody should still be available
             Assert.IsNotNull(result.ProsodyFlat);
-            Assert.IsNotNull(result.ProsodyFlat);
-            Assert.IsNotNull(result.ProsodyFlat);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyFlat.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat length should be phoneme count * 3 (stride=3)");
 
             var ids = PhonemesToIds(result.Phonemes);
             Assert.IsNotNull(ids);
