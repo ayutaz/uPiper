@@ -66,8 +66,7 @@ namespace uPiper.Core.AudioGeneration
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var phraseAudio = await _generator.GenerateAudioAsync(
-                        phrase.PhonemeIds,
-                        phrase.ProsodyFlat,
+                        phrase.PhonemeIds, phrase.ProsodyFlat,
                         lengthScale, noiseScale, noiseW,
                         speakerId, languageId,
                         cancellationToken);

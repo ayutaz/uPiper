@@ -19,6 +19,11 @@ namespace uPiper.Core.Phonemizers
     public class CustomDictionary
     {
         /// <summary>
+        /// 辞書ファイルの最大サイズ（10MB）
+        /// </summary>
+        internal const int MaxDictFileSize = 10 * 1024 * 1024; // 10 MB
+
+        /// <summary>
         /// 辞書エントリ
         /// </summary>
         public class DictionaryEntry
@@ -135,9 +140,27 @@ namespace uPiper.Core.Phonemizers
         /// </summary>
         public void LoadDictionaryFromPath(string filePath)
         {
-            if (!File.Exists(filePath))
+            // パストラバーサル拒否（セグメント単位で ".." を検出、ファイル名に ".." を含む正当なパスを誤検知しない）
+            var separators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+            var segments = filePath.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+            if (Array.Exists(segments, s => s == ".."))
+            {
+                throw new ArgumentException(
+                    $"Dictionary file path contains path traversal pattern: {filePath}",
+                    nameof(filePath));
+            }
+
+            // ファイル存在・サイズチェック（FileInfo で統一）
+            var fileInfo = new FileInfo(filePath);
+            if (!fileInfo.Exists)
             {
                 throw new FileNotFoundException($"Dictionary file not found: {filePath}");
+            }
+
+            if (fileInfo.Length > MaxDictFileSize)
+            {
+                throw new ArgumentException(
+                    $"Dictionary file too large: {fileInfo.Length} bytes exceeds {MaxDictFileSize} byte limit");
             }
 
             var json = File.ReadAllText(filePath);
@@ -149,12 +172,20 @@ namespace uPiper.Core.Phonemizers
         /// </summary>
         public void LoadFromJson(string json)
         {
-            var data = JsonUtility.FromJson<DictionaryJsonWrapper>(json);
-            if (data == null)
+            try
             {
-                // JsonUtilityが失敗した場合、手動パース
-                ParseJsonManually(json);
-                return;
+                var data = JsonUtility.FromJson<DictionaryJsonWrapper>(json);
+                if (data == null)
+                {
+                    // JsonUtilityが失敗した場合、手動パース
+                    ParseJsonManually(json);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogWarning(
+                    $"[CustomDictionary] JsonUtility parse failed, falling back to manual parse: {ex.Message}");
             }
 
             // JsonUtilityはDictionary非対応のため手動パース
@@ -166,42 +197,49 @@ namespace uPiper.Core.Phonemizers
         /// </summary>
         private void ParseJsonManually(string json)
         {
-            // "entries" セクションを抽出（括弧のバランスを考慮）
-            var entriesContent = ExtractEntriesSection(json);
-            if (string.IsNullOrEmpty(entriesContent)) return;
-
-            // 各エントリを解析
-            // "key": { "pronunciation": "value", "priority": 9 } または "key": "value"
-            var entryPattern = new Regex(
-                @"""([^""]+)""\s*:\s*(?:\{\s*""pronunciation""\s*:\s*""([^""]+)""(?:\s*,\s*""priority""\s*:\s*(\d+))?\s*\}|""([^""]+)"")",
-                RegexOptions.Singleline);
-
-            foreach (Match match in entryPattern.Matches(entriesContent))
+            try
             {
-                var word = match.Groups[1].Value;
+                // "entries" セクションを抽出（括弧のバランスを考慮）
+                var entriesContent = ExtractEntriesSection(json);
+                if (string.IsNullOrEmpty(entriesContent)) return;
 
-                // コメント行をスキップ
-                if (word.StartsWith("//")) continue;
+                // 各エントリを解析
+                // "key": { "pronunciation": "value", "priority": 9 } または "key": "value"
+                var entryPattern = new Regex(
+                    @"""([^""]+)""\s*:\s*(?:\{\s*""pronunciation""\s*:\s*""([^""]+)""(?:\s*,\s*""priority""\s*:\s*(\d+))?\s*\}|""([^""]+)"")",
+                    RegexOptions.Singleline);
 
-                string pronunciation;
-                var priority = 5;
-
-                if (!string.IsNullOrEmpty(match.Groups[2].Value))
+                foreach (Match match in entryPattern.Matches(entriesContent))
                 {
-                    // 詳細形式: { "pronunciation": "...", "priority": N }
-                    pronunciation = match.Groups[2].Value;
-                    if (!string.IsNullOrEmpty(match.Groups[3].Value))
+                    var word = match.Groups[1].Value;
+
+                    // コメント行をスキップ
+                    if (word.StartsWith("//")) continue;
+
+                    string pronunciation;
+                    var priority = 5;
+
+                    if (!string.IsNullOrEmpty(match.Groups[2].Value))
                     {
-                        int.TryParse(match.Groups[3].Value, out priority);
+                        // 詳細形式: { "pronunciation": "...", "priority": N }
+                        pronunciation = match.Groups[2].Value;
+                        if (!string.IsNullOrEmpty(match.Groups[3].Value))
+                        {
+                            int.TryParse(match.Groups[3].Value, out priority);
+                        }
                     }
-                }
-                else
-                {
-                    // 簡易形式: "value"
-                    pronunciation = match.Groups[4].Value;
-                }
+                    else
+                    {
+                        // 簡易形式: "value"
+                        pronunciation = match.Groups[4].Value;
+                    }
 
-                AddEntry(word, new DictionaryEntry { Pronunciation = pronunciation, Priority = priority });
+                    AddEntry(word, new DictionaryEntry { Pronunciation = pronunciation, Priority = priority });
+                }
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogWarning($"[CustomDictionary] Failed to parse JSON: {ex.Message}");
             }
         }
 

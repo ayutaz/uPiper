@@ -371,5 +371,72 @@ namespace uPiper.Tests.Editor.AudioGeneration
                     _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                     config, _voiceConfig));
         }
+
+        // ── Short text mitigation ──────────────────────────────────
+
+        [Test]
+        public async Task SynthesizeAsync_ShortPhonemes_PadsPhonemeIds()
+        {
+            // Arrange: 5音素 → エンコード後もMinPhonemeIds(40)未満 → パディングが適用される
+            // ShortTextMitigatingGenerator デコレータ経由で短テキスト緩和が適用される
+            var config = CreateValidatedConfig(enableSilence: false);
+            var mitigating = new ShortTextMitigatingGenerator(_stubGenerator);
+            var splitOrchestrator = new SplitInferenceOrchestrator(mitigating);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                mitigating, splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            var request = new SynthesisRequest(
+                new[] { "a", "i", "u", "e", "o" },
+                null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
+
+            // Act
+            await orchestrator.SynthesizeAsync(request);
+
+            // Assert
+            var ids = _stubGenerator.LastPhonemeIds;
+            Assert.IsNotNull(ids, "PhonemeIds が記録されていること");
+            Assert.GreaterOrEqual(ids.Length, 40,
+                "短い音素列はMinPhonemeIds(40)以上にパディングされること");
+            Assert.AreEqual(1, ids[0], "先頭が BOS(1) であること");
+            Assert.AreEqual(2, ids[^1], "末尾が EOS(2) であること");
+        }
+
+        [Test]
+        public async Task SynthesizeAsync_LongPhonemes_NoShortTextMitigation()
+        {
+            // Arrange: 50音素 → エンコード後にMinPhonemeIds(40)以上 → パディングなし
+            // ShortTextMitigatingGenerator でラップしても、長い音素列にはパディングが適用されない
+            var config = CreateValidatedConfig(enableSilence: false);
+            var mitigating = new ShortTextMitigatingGenerator(_stubGenerator);
+            var splitOrchestrator = new SplitInferenceOrchestrator(mitigating);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                mitigating, splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            // 50個の既知の音素を用意（PhonemeIdMap に存在する音素を使用）
+            var phonemes = new string[50];
+            var vowels = new[] { "a", "i", "u", "e", "o" };
+            for (var i = 0; i < 50; i++)
+                phonemes[i] = vowels[i % vowels.Length];
+
+            var request = new SynthesisRequest(
+                phonemes,
+                null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
+
+            // Act
+            await orchestrator.SynthesizeAsync(request);
+
+            // Assert: intersperse PAD あり → BOS(1) + PAD(0) + 50*(phoneme+PAD) + EOS(2) = 103
+            var ids = _stubGenerator.LastPhonemeIds;
+            Assert.IsNotNull(ids, "PhonemeIds が記録されていること");
+            var expectedLength = 1 + 1 + 50 * 2 + 1; // BOS + PAD_after_BOS + 50*(phoneme+PAD) + EOS = 103
+            Assert.AreEqual(expectedLength, ids.Length,
+                "長い音素列はパディングなしでエンコードされること（BOS + PAD + 50*(phoneme+PAD) + EOS）");
+            Assert.AreEqual(1, ids[0], "先頭が BOS(1) であること");
+            Assert.AreEqual(2, ids[^1], "末尾が EOS(2) であること");
+        }
     }
 }
