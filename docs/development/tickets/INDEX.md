@@ -14,4 +14,7 @@ v2.0 計画チケットは [v2.0/INDEX.md](v2.0/INDEX.md) を参照。
 
 ## 完了済み
 
-v1.4.0 チケット（7件）および piper-plus v1.10.0 対応チケット（4件）は全て実装完了。詳細は [architecture-improvement-roadmap.md](../architecture-improvement-roadmap.md) を参照。
+- **v2.0** チケット（16件）: 全て実装完了（2026-04-09）。詳細は [v2.0/INDEX.md](v2.0/INDEX.md) を参照。
+- **v1.4.0** チケット（7件）および **piper-plus v1.10.0** 対応チケット（4件）: 全て実装完了。
+
+詳細は [architecture-improvement-roadmap.md](../architecture-improvement-roadmap.md) を参照。

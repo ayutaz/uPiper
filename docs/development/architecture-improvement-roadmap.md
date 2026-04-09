@@ -77,9 +77,19 @@
 
 ---
 
-## v2.0 計画
+## v2.0 実装完了（2026-04-09）
 
 公開APIの破壊的変更を伴う改善を集約。piper-plus完全互換・DI対応・ゼロコピーパイプラインが主目標。
+全16チケット・5マイルストーンの実装が完了した。
+
+### 実装サマリー
+
+| Phase | 内容 | チケット数 | ステータス |
+|-------|------|-----------|-----------|
+| Phase 1: 基盤リファクタリング | PuaTokenMapper インスタンス化、ILanguageG2PHandler 全面移行、pua.json ランタイム読み込み、IPhonemizerBackend 廃止、Obsolete 削除 | 6 | 完了 |
+| Phase 2: データモデル互換性 | PhonemeIdMap int[] 型変更、Prosody フラット配列化、NativeArray 統一 | 3 | 完了 |
+| Phase 3: 設定・API 整理 | ValidatedPiperConfig ネスト構造化、IPiperConfigReadOnly、Validate() 純粋関数化、BackendSelector/AudioNormalizer 切り出し、SynthesisRequest public 昇格 | 6 | 完了 |
+| Phase 4: 言語検出高度化 | N-gram 言語検出（HybridLanguageDetector） | 1 | 完了 |
 
 詳細は [v2.0-plan.md](v2.0-plan.md) と [v2.0チケット](tickets/v2.0/INDEX.md) を参照。
 

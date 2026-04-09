@@ -26,6 +26,7 @@
 
 - 高品質な音声合成（piper-plusベース）
 - 多言語対応（日本語、英語、中国語、スペイン語、フランス語、ポルトガル語、韓国語）
+- **ハイブリッド言語検出**: Unicode範囲 + N-gram Trigram統合（ラテン文字圏 en/es/fr/pt の高精度識別）
 
 | 言語 | G2Pバックエンド |
 |------|----------------|
@@ -42,6 +43,8 @@
 - GPU推論サポート（GPUCompute/GPUPixel）
 - **Prosody（韻律）サポート**: より自然なイントネーションの音声合成
 - **カスタム辞書**: 技術用語・固有名詞の読み変換
+- **NativeArray パイプライン**: float[] から NativeArray&lt;float&gt; への統一によるGCアロケーション削減
+- **SynthesizeAsync public API**: SynthesisRequest による低レベル音声合成アクセス
 
 ### 対応モデル
 
@@ -51,7 +54,8 @@
 
 ## Requirements
 * Unity 6000.0.58f2
-* Unity AI Inference Engine (com.unity.ai.inference) 2.2.2
+* Unity AI Inference Engine (com.unity.ai.inference) 2.5.0
+* C# 10.0（csc.rsp で LangVersion 10.0 を指定）
 
 ## インストール
 
@@ -79,7 +83,7 @@ openupm add com.ayutaz.upiper
     }
   ],
   "dependencies": {
-    "com.ayutaz.upiper": "1.4.0"
+    "com.ayutaz.upiper": "2.0.0"
   }
 }
 ```
@@ -139,14 +143,14 @@ Package Managerからインストール後、**必ず以下の手順でデータ
 // Packages/manifest.json の "dependencies" 内に以下を追加:
 "com.unity.ai.inference": "2.5.0",
 "com.unity.nuget.newtonsoft-json": "3.2.2",
-"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v1.8.2",
-"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v1.8.2",
-"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v1.8.2",
-"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v1.8.2",
-"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v1.8.2",
-"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v1.8.2",
-"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v1.8.2",
-"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v1.8.2"
+"com.dotnetg2p.core": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Core#v2.0.0",
+"com.dotnetg2p.mecab": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.MeCab#v2.0.0",
+"com.dotnetg2p.english": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.English#v2.0.0",
+"com.dotnetg2p.chinese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Chinese#v2.0.0",
+"com.dotnetg2p.korean": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Korean#v2.0.0",
+"com.dotnetg2p.spanish": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Spanish#v2.0.0",
+"com.dotnetg2p.french": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.French#v2.0.0",
+"com.dotnetg2p.portuguese": "https://github.com/ayutaz/dot-net-g2p.git?path=src/DotNetG2P.Portuguese#v2.0.0"
 ```
 
 ### トラブルシューティング
@@ -189,13 +193,10 @@ var config = new PiperConfig
 {
     Backend = InferenceBackend.Auto,  // 自動選択
     AllowFallbackToCPU = true,        // GPU失敗時にCPUフォールバック
-    GPUSettings = new GPUInferenceSettings
-    {
-        MaxBatchSize = 4,
-        UseFloat16 = true,
-        MaxMemoryMB = 512
-    }
 };
+
+// v2.0: ToValidated() でバリデーション済み不変設定を取得
+var validated = config.ToValidated();
 ```
 
 ### InferenceBackend.Auto の選択ロジック
