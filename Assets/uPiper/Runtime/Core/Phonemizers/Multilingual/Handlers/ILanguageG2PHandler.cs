@@ -15,6 +15,9 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
     /// Do NOT use Task.Run inside Process() — WebGL prohibits background threads.
     /// Note: P2-2 (Prosody flat array) will change the return type to
     /// (string[] Phonemes, int[] ProsodyFlat) with stride=3.
+    /// To create a custom handler, implement this interface and register it via
+    /// <see cref="MultilingualPhonemizerOptions.Handlers"/>. See existing implementations
+    /// (e.g., <see cref="JapaneseG2PHandler"/>, <see cref="EnglishG2PHandler"/>) for reference.
     /// </remarks>
     public interface ILanguageG2PHandler : IDisposable
     {

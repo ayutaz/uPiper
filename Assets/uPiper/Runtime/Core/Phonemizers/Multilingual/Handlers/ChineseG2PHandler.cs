@@ -33,6 +33,13 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         /// Creates a handler with an externally provided engine.
         /// Ownership is managed by <see cref="HandlerEntry"/>.
         /// </summary>
+        /// <remarks>
+        /// The handler does NOT take ownership of the engine. When registered via
+        /// <c>MultilingualPhonemizerOptions.Handlers</c>, the <c>HandlerEntry.IsOwned</c>
+        /// flag is set to <c>false</c>, so <c>MultilingualPhonemizer.Dispose()</c>
+        /// will NOT call this handler's Dispose. The caller retains responsibility
+        /// for disposing the engine.
+        /// </remarks>
         /// <param name="engine">Pre-built Chinese G2P engine instance.</param>
         public ChineseG2PHandler(ChineseG2PEngine engine)
         {
@@ -60,6 +67,13 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
                 PiperLogger.LogWarning(
                     "[ChineseG2PHandler] WebGL: external dictionary not available. Chinese G2P requires async loading.");
                 // Chinese G2P disabled on WebGL unless engine is pre-injected
+                return Task.CompletedTask;
+#elif UNITY_ANDROID && !UNITY_EDITOR
+                // Android APK内のStreamingAssetsはFile APIで読めない。
+                // ChineseG2PEngineはembedded辞書をサポートしないため、エンジン事前注入が必要。
+                PiperLogger.LogWarning(
+                    "[ChineseG2PHandler] Android: File API unavailable for StreamingAssets. " +
+                    "Chinese G2P requires pre-injected engine via constructor.");
                 return Task.CompletedTask;
 #else
                 var charPath = Path.Combine(

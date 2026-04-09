@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers.Multilingual.Handlers;
 
 namespace uPiper.Core.Phonemizers.Multilingual
@@ -27,6 +28,39 @@ namespace uPiper.Core.Phonemizers.Multilingual
             if (Languages == null || Languages.Count == 0)
                 throw new ArgumentException(
                     "At least one language must be specified.", nameof(Languages));
+
+            // Handlers のキーが Languages に含まれることを検証
+            if (Handlers != null && Languages != null)
+            {
+                foreach (var key in Handlers.Keys)
+                {
+                    if (!ListContains(Languages, key))
+                    {
+                        PiperLogger.LogWarning(
+                            $"[MultilingualPhonemizerOptions] Handler for '{key}' registered " +
+                            $"but '{key}' is not in Languages list. This handler will be unused.");
+                    }
+                }
+            }
+
+            if (DefaultLatinLanguage != null && Languages != null
+                && !ListContains(Languages, DefaultLatinLanguage))
+            {
+                PiperLogger.LogWarning(
+                    $"[MultilingualPhonemizerOptions] DefaultLatinLanguage " +
+                    $"'{DefaultLatinLanguage}' " +
+                    $"is not in Languages list. It may not be detected correctly.");
+            }
+        }
+
+        private static bool ListContains(IReadOnlyList<string> list, string value)
+        {
+            for (var i = 0; i < list.Count; i++)
+            {
+                if (list[i] == value)
+                    return true;
+            }
+            return false;
         }
     }
 }

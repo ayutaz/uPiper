@@ -164,7 +164,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ── Spanish segment processing ───────────────────────────────────────
 
         [Test]
-        public void TestSpanishSegmentProcessing()
+        public async Task TestSpanishSegmentProcessing()
         {
             // Pre-build Spanish G2P engine and pass to MultilingualPhonemizer
             var esEngine = new SpanishG2PEngine();
@@ -180,11 +180,9 @@ namespace uPiper.Tests.Editor.Phonemizers
                     }
                 });
 
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+            await phonemizer.InitializeAsync();
 
-            var result = Task.Run(async () =>
-                await phonemizer.PhonemizeWithProsodyAsync("hola mundo"))
-                .GetAwaiter().GetResult();
+            var result = await phonemizer.PhonemizeWithProsodyAsync("hola mundo");
 
             Assert.IsNotNull(result);
             Assert.IsNotNull(result.Phonemes);
@@ -197,7 +195,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ── Chinese segment processing ───────────────────────────────────────
 
         [Test]
-        public void TestChineseSegmentProcessing()
+        public async Task TestChineseSegmentProcessing()
         {
             var charPath = System.IO.Path.Combine(
                 UnityEngine.Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_char.txt");
@@ -225,11 +223,9 @@ namespace uPiper.Tests.Editor.Phonemizers
                     }
                 });
 
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+            await phonemizer.InitializeAsync();
 
-            var result = Task.Run(async () =>
-                await phonemizer.PhonemizeWithProsodyAsync("你好世界"))
-                .GetAwaiter().GetResult();
+            var result = await phonemizer.PhonemizeWithProsodyAsync("你好世界");
 
             Assert.IsNotNull(result);
             Assert.IsNotNull(result.Phonemes);
@@ -244,7 +240,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ── Korean segment processing ────────────────────────────────────────
 
         [Test]
-        public void TestKoreanSegmentProcessing()
+        public async Task TestKoreanSegmentProcessing()
         {
             var koEngine = new DotNetG2P.Korean.KoreanG2PEngine();
 
@@ -259,11 +255,9 @@ namespace uPiper.Tests.Editor.Phonemizers
                     }
                 });
 
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+            await phonemizer.InitializeAsync();
 
-            var result = Task.Run(async () =>
-                await phonemizer.PhonemizeWithProsodyAsync("안녕하세요"))
-                .GetAwaiter().GetResult();
+            var result = await phonemizer.PhonemizeWithProsodyAsync("안녕하세요");
 
             Assert.IsNotNull(result);
             Assert.IsNotNull(result.Phonemes);
@@ -278,7 +272,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ── French segment processing ────────────────────────────────────────
 
         [Test]
-        public void TestFrenchSegmentProcessing()
+        public async Task TestFrenchSegmentProcessing()
         {
             // French backend auto-created by MultilingualPhonemizer.InitializeAsync
             var phonemizer = new MultilingualPhonemizer(
@@ -288,12 +282,10 @@ namespace uPiper.Tests.Editor.Phonemizers
                     DefaultLatinLanguage = "fr"
                 });
 
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+            await phonemizer.InitializeAsync();
             Assert.IsTrue(phonemizer.IsInitialized);
 
-            var result = Task.Run(async () =>
-                await phonemizer.PhonemizeWithProsodyAsync("bonjour"))
-                .GetAwaiter().GetResult();
+            var result = await phonemizer.PhonemizeWithProsodyAsync("bonjour");
 
             Assert.IsNotNull(result);
             Assert.IsNotNull(result.Phonemes);
@@ -306,7 +298,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ── Portuguese segment processing ────────────────────────────────────
 
         [Test]
-        public void TestPortugueseSegmentProcessing()
+        public async Task TestPortugueseSegmentProcessing()
         {
             var phonemizer = new MultilingualPhonemizer(
                 new MultilingualPhonemizerOptions
@@ -315,12 +307,10 @@ namespace uPiper.Tests.Editor.Phonemizers
                     DefaultLatinLanguage = "pt"
                 });
 
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+            await phonemizer.InitializeAsync();
             Assert.IsTrue(phonemizer.IsInitialized);
 
-            var result = Task.Run(async () =>
-                await phonemizer.PhonemizeWithProsodyAsync("bom dia"))
-                .GetAwaiter().GetResult();
+            var result = await phonemizer.PhonemizeWithProsodyAsync("bom dia");
 
             Assert.IsNotNull(result);
             Assert.IsNotNull(result.Phonemes);
@@ -448,7 +438,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ── All languages initialization ─────────────────────────────────────
 
         [Test]
-        public void TestAllLanguagesInitialized_EnOnly()
+        public async Task TestAllLanguagesInitialized_EnOnly()
         {
             // Minimal test: English-only should always work
             var phonemizer = new MultilingualPhonemizer(
@@ -458,7 +448,7 @@ namespace uPiper.Tests.Editor.Phonemizers
                     DefaultLatinLanguage = "en"
                 });
 
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+            await phonemizer.InitializeAsync();
             Assert.IsTrue(phonemizer.IsInitialized);
             phonemizer.Dispose();
         }
@@ -511,7 +501,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         // ── Prosody propagation through multilingual pipeline ────────────────
 
         [Test]
-        public void TestProsodyPropagation_KoreanThroughPipeline()
+        public async Task TestProsodyPropagation_KoreanThroughPipeline()
         {
             var koEngine = new DotNetG2P.Korean.KoreanG2PEngine();
 
@@ -526,11 +516,9 @@ namespace uPiper.Tests.Editor.Phonemizers
                     }
                 });
 
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+            await phonemizer.InitializeAsync();
 
-            var result = Task.Run(async () =>
-                await phonemizer.PhonemizeWithProsodyAsync("한국어"))
-                .GetAwaiter().GetResult();
+            var result = await phonemizer.PhonemizeWithProsodyAsync("한국어");
 
             Assert.IsNotNull(result);
             Assert.IsNotNull(result.ProsodyA1);
@@ -546,7 +534,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void TestProsodyPropagation_EmptyTextReturnsEmptyArrays()
+        public async Task TestProsodyPropagation_EmptyTextReturnsEmptyArrays()
         {
             var phonemizer = new MultilingualPhonemizer(
                 new MultilingualPhonemizerOptions
@@ -555,11 +543,9 @@ namespace uPiper.Tests.Editor.Phonemizers
                     DefaultLatinLanguage = "en"
                 });
 
-            Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
+            await phonemizer.InitializeAsync();
 
-            var result = Task.Run(async () =>
-                await phonemizer.PhonemizeWithProsodyAsync(""))
-                .GetAwaiter().GetResult();
+            var result = await phonemizer.PhonemizeWithProsodyAsync("");
 
             Assert.IsNotNull(result);
             Assert.AreEqual(0, result.Phonemes.Length);

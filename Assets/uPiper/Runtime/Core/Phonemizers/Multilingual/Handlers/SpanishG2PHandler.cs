@@ -26,6 +26,13 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         /// Creates a handler with an externally provided engine.
         /// Ownership is managed by <see cref="HandlerEntry"/>.
         /// </summary>
+        /// <remarks>
+        /// The handler does NOT take ownership of the engine. When registered via
+        /// <c>MultilingualPhonemizerOptions.Handlers</c>, the <c>HandlerEntry.IsOwned</c>
+        /// flag is set to <c>false</c>, so <c>MultilingualPhonemizer.Dispose()</c>
+        /// will NOT call this handler's Dispose. The caller retains responsibility
+        /// for disposing the engine.
+        /// </remarks>
         /// <param name="engine">Pre-built Spanish G2P engine instance.</param>
         public SpanishG2PHandler(SpanishG2PEngine engine)
         {
@@ -61,8 +68,18 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
             if (!_isInitialized || _engine == null)
                 throw new InvalidOperationException("Call InitializeAsync() before processing.");
 
+            // Known limitation: ToPuaPhonemes and ToIpaWithProsody run G2P independently.
+            // A unified DotNetG2P API (ToPuaWithProsody) would eliminate this double processing.
+            // Prosody array length may differ from phonemes; loop uses Math.Min guard.
             var phonemes = _engine.ToPuaPhonemes(text);
             var result = _engine.ToIpaWithProsody(text);
+            if (phonemes.Length != result.Prosody.Length)
+            {
+                PiperLogger.LogWarning(
+                    $"[SpanishG2PHandler] Prosody length ({result.Prosody.Length}) differs from " +
+                    $"phonemes length ({phonemes.Length}). Using min length.");
+            }
+
             var (a1, a2, a3) = G2PHandlerUtils.ExtractProsodyArrays(
                 result.Prosody, p => (p.A1, p.A2, p.A3), phonemes.Length);
             return (phonemes, a1, a2, a3);

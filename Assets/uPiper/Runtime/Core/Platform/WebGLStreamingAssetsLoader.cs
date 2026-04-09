@@ -52,6 +52,21 @@ namespace uPiper.Core.Platform
 
             progress?.Report(1f);
             return request.downloadHandler.data;
+#elif UNITY_ANDROID && !UNITY_EDITOR
+            // Android APK内のStreamingAssetsはjar:file://プロトコルのためFile APIで読めない。
+            // UnityWebRequest経由で読み込む。
+            var url = Application.streamingAssetsPath + "/" + relativePath.Replace('\\', '/');
+            using var request = UnityWebRequest.Get(url);
+            await SendWebRequestAsync(request, progress, cancellationToken);
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                throw new InvalidOperationException(
+                    $"Failed to load StreamingAssets file '{relativePath}': {request.error}");
+            }
+
+            progress?.Report(1f);
+            return request.downloadHandler.data;
 #else
             var fullPath = Path.Combine(Application.streamingAssetsPath, relativePath);
             if (!File.Exists(fullPath))
@@ -105,6 +120,21 @@ namespace uPiper.Core.Platform
 
             progress?.Report(1f);
             return request.downloadHandler.text;
+#elif UNITY_ANDROID && !UNITY_EDITOR
+            // Android APK内のStreamingAssetsはjar:file://プロトコルのためFile APIで読めない。
+            // UnityWebRequest経由で読み込む。
+            var url = Application.streamingAssetsPath + "/" + relativePath.Replace('\\', '/');
+            using var request = UnityWebRequest.Get(url);
+            await SendWebRequestAsync(request, progress, cancellationToken);
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                throw new InvalidOperationException(
+                    $"Failed to load StreamingAssets file '{relativePath}': {request.error}");
+            }
+
+            progress?.Report(1f);
+            return request.downloadHandler.text;
 #else
             var fullPath = Path.Combine(Application.streamingAssetsPath, relativePath);
             if (!File.Exists(fullPath))
@@ -122,9 +152,27 @@ namespace uPiper.Core.Platform
 
 #if UNITY_WEBGL && !UNITY_EDITOR
         /// <summary>
-        /// Sends a UnityWebRequest with periodic progress reporting.
+        /// Sends a UnityWebRequest with periodic progress reporting (WebGL).
         /// </summary>
         private static async Task SendWebRequestWithProgressAsync(
+            UnityWebRequest request,
+            IProgress<float> progress,
+            CancellationToken cancellationToken)
+        {
+            var operation = request.SendWebRequest();
+            while (!operation.isDone)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                progress?.Report(operation.progress);
+                await Task.Yield();
+            }
+        }
+#elif UNITY_ANDROID && !UNITY_EDITOR
+        /// <summary>
+        /// Sends a UnityWebRequest with progress reporting (Android).
+        /// Android StreamingAssets are inside the APK (jar:file://) and require UnityWebRequest.
+        /// </summary>
+        private static async Task SendWebRequestAsync(
             UnityWebRequest request,
             IProgress<float> progress,
             CancellationToken cancellationToken)

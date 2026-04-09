@@ -13,19 +13,19 @@ namespace uPiper.Core.Phonemizers.Multilingual
     public class MultilingualPhonemizeResult
     {
         /// <summary>Phoneme array (no BOS/EOS; PhonemeEncoder handles them).</summary>
-        public string[] Phonemes { get; set; }
+        public string[] Phonemes { get; internal set; }
 
         /// <summary>Prosody A1 values per phoneme (0 for non-Japanese segments).</summary>
-        public int[] ProsodyA1 { get; set; }
+        public int[] ProsodyA1 { get; internal set; }
 
         /// <summary>Prosody A2 values per phoneme (0 for non-Japanese segments).</summary>
-        public int[] ProsodyA2 { get; set; }
+        public int[] ProsodyA2 { get; internal set; }
 
         /// <summary>Prosody A3 values per phoneme (0 for non-Japanese segments).</summary>
-        public int[] ProsodyA3 { get; set; }
+        public int[] ProsodyA3 { get; internal set; }
 
         /// <summary>Primary language detected for the text (e.g., "ja", "en").</summary>
-        public string DetectedPrimaryLanguage { get; set; }
+        public string DetectedPrimaryLanguage { get; internal set; }
     }
 
     /// <summary>
@@ -79,8 +79,14 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// <summary>
         /// Asynchronously initializes phonemizer backends for all configured languages.
         /// </summary>
+        /// <exception cref="ObjectDisposedException">
+        /// Thrown if the phonemizer has already been disposed.
+        /// </exception>
         public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
+            if (_disposed)
+                throw new ObjectDisposedException(nameof(MultilingualPhonemizer));
+
             if (_isInitialized)
                 return;
 
@@ -141,11 +147,15 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// <summary>
         /// Phonemizes mixed-language text and returns phonemes with optional prosody.
         /// </summary>
-#pragma warning disable CS1998 // Async method lacks 'await' — kept async for API stability
+        /// <exception cref="ObjectDisposedException">
+        /// Thrown if the phonemizer has already been disposed.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if <see cref="InitializeAsync"/> has not been called.
+        /// </exception>
         public async Task<MultilingualPhonemizeResult> PhonemizeWithProsodyAsync(
             string text,
             CancellationToken cancellationToken = default)
-#pragma warning restore CS1998
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(MultilingualPhonemizer));
@@ -210,6 +220,13 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
                 if (_handlers.TryGetValue(lang, out var entry))
                 {
+                    if (entry.Handler == null)
+                    {
+                        PiperLogger.LogWarning(
+                            $"[MultilingualPhonemizer] Null handler for '{lang}', " +
+                            $"skipping segment.");
+                        continue;
+                    }
                     (segPhonemes, segA1, segA2, segA3) = entry.Handler.Process(segText);
                 }
                 else
@@ -252,6 +269,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
             PiperLogger.LogDebug(
                 $"[MultilingualPhonemizer] '{text}' \u2192 {allPhonemes.Count} phonemes, primary lang: {primaryLang}");
 
+            // Maintain async contract for future extensibility (e.g., async dictionary reload)
+            await Task.CompletedTask;
+
             return new MultilingualPhonemizeResult
             {
                 Phonemes = allPhonemes.ToArray(),
@@ -271,6 +291,11 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 return;
             _disposed = true;
 
+            // Dispose order matters: handlers first, then _initLock last.
+            // _initLock must outlive handler disposal because a concurrent InitializeAsync()
+            // call could still hold the semaphore while awaiting handler initialization.
+            // Disposing _initLock before handlers would cause ObjectDisposedException
+            // if another thread releases the semaphore after it has been disposed.
             foreach (var entry in _handlers.Values)
             {
                 if (entry.IsOwned)

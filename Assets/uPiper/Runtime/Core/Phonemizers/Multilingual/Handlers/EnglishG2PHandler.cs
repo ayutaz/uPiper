@@ -28,6 +28,13 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         /// Creates a handler with an externally provided engine.
         /// Ownership is managed by <see cref="HandlerEntry"/>.
         /// </summary>
+        /// <remarks>
+        /// The handler does NOT take ownership of the engine. When registered via
+        /// <c>MultilingualPhonemizerOptions.Handlers</c>, the <c>HandlerEntry.IsOwned</c>
+        /// flag is set to <c>false</c>, so <c>MultilingualPhonemizer.Dispose()</c>
+        /// will NOT call this handler's Dispose. The caller retains responsibility
+        /// for disposing the engine.
+        /// </remarks>
         /// <param name="engine">Pre-built English G2P engine instance.</param>
         public EnglishG2PHandler(EnglishG2PEngine engine)
         {
@@ -56,6 +63,11 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
                 _engine = new EnglishG2PEngine();
                 PiperLogger.LogInfo(
                     "[EnglishG2PHandler] Initialized: DotNetG2P.English (embedded, WebGL)");
+#elif UNITY_ANDROID && !UNITY_EDITOR
+                // Android APK内のStreamingAssetsはFile APIで読めないため、embedded辞書にフォールバック
+                _engine = new EnglishG2PEngine();
+                PiperLogger.LogInfo(
+                    "[EnglishG2PHandler] Initialized: DotNetG2P.English (embedded, Android)");
 #else
                 var dictPath = Path.Combine(
                     Application.streamingAssetsPath,
@@ -97,9 +109,19 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
             if (!_isInitialized || _engine == null)
                 throw new InvalidOperationException("Call InitializeAsync() before processing.");
 
+            // Known limitation: ToPuaPhonemes and ToIpaWithProsody run G2P independently.
+            // A unified DotNetG2P API (ToPuaWithProsody) would eliminate this double processing.
+            // Prosody array length may differ from phonemes; loop uses Math.Min guard.
             var prosodyResult = _engine.ToIpaWithProsody(text);
             var phonemes = _engine.ToPuaPhonemes(text);
             var prosody = prosodyResult.Prosody;
+            if (phonemes.Length != prosody.Length)
+            {
+                PiperLogger.LogWarning(
+                    $"[EnglishG2PHandler] Prosody length ({prosody.Length}) differs from " +
+                    $"phonemes length ({phonemes.Length}). Using min length.");
+            }
+
             var a1 = new int[phonemes.Length];
             var a2 = new int[phonemes.Length];
             var a3 = new int[phonemes.Length];

@@ -470,5 +470,47 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.IsTrue(result);
             Assert.AreEqual('\uE000', _mapper.Token2Char["test"]);
         }
+
+        // ── E2E fallback: no JSON load ───────────────────────────────────
+
+        [Test]
+        public void PuaTokenMapper_WithoutJsonLoad_UsesHardcodedMapping()
+        {
+            // PuaTokenMapper をJSON読み込みなしで使用
+            var mapper = new PuaTokenMapper();
+            // ハードコードマッピングが機能することを確認
+            Assert.AreEqual('\uE000', mapper.MapToken("a:"));
+            Assert.AreEqual('\uE00E', mapper.MapToken("ch"));
+            Assert.AreEqual("a:", mapper.UnmapChar('\uE000'));
+            Assert.AreEqual("ch", mapper.UnmapChar('\uE00E'));
+            // 動的割り当ても機能
+            var dynamicChar = mapper.Register("test_dynamic");
+            Assert.AreNotEqual('\0', dynamicChar);
+            Assert.AreEqual("test_dynamic", mapper.UnmapChar(dynamicChar));
+        }
+
+        // ── MaxEntries exceeded ──────────────────────────────────────────
+
+        [Test]
+        public void LoadFromJson_TooManyEntries_ReturnsFalseAndKeepsHardcoded()
+        {
+            // MaxEntries (500) を超えるエントリを生成
+            var entries = new System.Text.StringBuilder();
+            for (int i = 0; i < 501; i++)
+            {
+                if (i > 0) entries.Append(",");
+                var codepoint = 0xE000 + i;
+                if (codepoint > 0xF8FF) codepoint = 0xE000 + (i % 0x18FF);
+                entries.Append($"{{\"token\":\"tok{i}\",\"codepoint\":\"0x{codepoint:X4}\"," +
+                    $"\"language\":\"test\",\"description\":\"test\"}}");
+            }
+            var json = $"{{\"version\":1,\"entries\":[{entries}]}}";
+
+            var result = _mapper.LoadFromJson(json);
+
+            Assert.IsFalse(result, "Should return false when entries exceed MaxEntries");
+            // ハードコードマッピングが保持されていることを確認
+            Assert.AreEqual('\uE000', _mapper.MapToken("a:"));
+        }
     }
 }

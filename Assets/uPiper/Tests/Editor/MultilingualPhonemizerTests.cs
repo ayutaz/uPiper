@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using uPiper.Core.Phonemizers.Multilingual;
 
@@ -119,7 +120,7 @@ namespace uPiper.Tests.Editor
         }
 
         [Test]
-        public void InitializeAsync_JaEnLanguages_SetsIsInitialized()
+        public async Task InitializeAsync_JaEnLanguages_SetsIsInitialized()
         {
             // Note: InitializeAsync creates DotNetG2PPhonemizer which needs dictionary.
             // Use a phonemizer with only English to avoid dictionary dependency.
@@ -130,12 +131,9 @@ namespace uPiper.Tests.Editor
                     DefaultLatinLanguage = "en"
                 });
 
-            System.Threading.Tasks.Task.Run(async () =>
-            {
-                await phonemizer.InitializeAsync();
-                Assert.IsTrue(phonemizer.IsInitialized);
-                phonemizer.Dispose();
-            }).GetAwaiter().GetResult();
+            await phonemizer.InitializeAsync();
+            Assert.IsTrue(phonemizer.IsInitialized);
+            phonemizer.Dispose();
         }
 
         // ── MultilingualPhonemizeResult structure ──────────────────────────────
@@ -150,6 +148,23 @@ namespace uPiper.Tests.Editor
             Assert.IsNull(result.ProsodyA2);
             Assert.IsNull(result.ProsodyA3);
             Assert.IsNull(result.DetectedPrimaryLanguage);
+        }
+
+        // ── Options edge cases ─────────────────────────────────────────────────
+
+        [Test]
+        public void Constructor_HandlersNull_AcceptsDefault()
+        {
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" },
+                    Handlers = null  // explicitly null
+                });
+
+            Assert.IsNotNull(phonemizer);
+            Assert.IsFalse(phonemizer.IsInitialized);
+            phonemizer.Dispose();
         }
 
         // ── Dispose ────────────────────────────────────────────────────────────

@@ -223,14 +223,16 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// <summary>
         /// Token string to PUA char mapping. Includes both fixed and dynamically registered entries.
         /// Thread-safe for concurrent reads and writes.
+        /// Non-readonly to support atomic copy-on-write replacement in <see cref="LoadFromJson"/>.
         /// </summary>
-        private readonly ConcurrentDictionary<string, char> _token2Char;
+        private volatile ConcurrentDictionary<string, char> _token2Char;
 
         /// <summary>
         /// PUA char to token string mapping. Includes both fixed and dynamically registered entries.
         /// Thread-safe for concurrent reads and writes.
+        /// Non-readonly to support atomic copy-on-write replacement in <see cref="LoadFromJson"/>.
         /// </summary>
-        private readonly ConcurrentDictionary<char, string> _char2Token;
+        private volatile ConcurrentDictionary<char, string> _char2Token;
 
         /// <summary>
         /// Next available codepoint for dynamic allocation. Access protected by <see cref="_dynamicLock"/>.
@@ -283,6 +285,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// </summary>
         /// <param name="token">The phoneme token string to register.</param>
         /// <returns>The single PUA character representing this token.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the PUA codepoint space (U+E000..U+F8FF) is exhausted.
+        /// </exception>
         public char Register(string token)
         {
             // Fast path: already registered
@@ -506,23 +511,16 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     maxCodepoint = codepoint;
             }
 
-            // Apply the parsed mappings to the instance
-            _token2Char.Clear();
-            _char2Token.Clear();
+            // Copy-on-write: build new ConcurrentDictionary instances, then atomically swap.
+            // This avoids a thread-unsafe window between Clear() and re-population.
+            var newConcurrentToken2Char = new ConcurrentDictionary<string, char>(newToken2Char);
+            var newConcurrentChar2Token = new ConcurrentDictionary<char, string>(newChar2Token);
 
-            foreach (var kvp in newToken2Char)
-            {
-                _token2Char[kvp.Key] = kvp.Value;
-            }
-
-            foreach (var kvp in newChar2Token)
-            {
-                _char2Token[kvp.Key] = kvp.Value;
-            }
-
-            // Update dynamic allocation start to be after the highest loaded codepoint
+            // Atomically replace both dictionaries and update dynamic allocation under lock
             lock (_dynamicLock)
             {
+                _token2Char = newConcurrentToken2Char;
+                _char2Token = newConcurrentChar2Token;
                 _nextDynamic = maxCodepoint + 1;
             }
 

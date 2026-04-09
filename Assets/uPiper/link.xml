@@ -36,6 +36,13 @@
         <type fullname="System.Collections.Generic.Queue`1" preserve="all"/>
         <type fullname="System.Collections.Generic.LinkedList`1" preserve="all"/>
     </assembly>
+    <assembly fullname="System.Collections.Concurrent" preserve="all"/>
+
+    <!-- Globalization (NumberStyles for hex parsing, CultureInfo for InvariantCulture) -->
+    <assembly fullname="System.Runtime">
+        <type fullname="System.Globalization.CultureInfo" preserve="all"/>
+        <type fullname="System.Globalization.NumberStyles" preserve="all"/>
+    </assembly>
     
     <!-- P/Invoke support -->
     <assembly fullname="mscorlib">

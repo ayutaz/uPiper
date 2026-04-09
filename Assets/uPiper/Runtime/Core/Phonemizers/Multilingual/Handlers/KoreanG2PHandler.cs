@@ -26,6 +26,13 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         /// Creates a handler with an externally provided engine.
         /// Ownership is managed by <see cref="HandlerEntry"/>.
         /// </summary>
+        /// <remarks>
+        /// The handler does NOT take ownership of the engine. When registered via
+        /// <c>MultilingualPhonemizerOptions.Handlers</c>, the <c>HandlerEntry.IsOwned</c>
+        /// flag is set to <c>false</c>, so <c>MultilingualPhonemizer.Dispose()</c>
+        /// will NOT call this handler's Dispose. The caller retains responsibility
+        /// for disposing the engine.
+        /// </remarks>
         /// <param name="engine">Pre-built Korean G2P engine instance.</param>
         public KoreanG2PHandler(KoreanG2PEngine engine)
         {
