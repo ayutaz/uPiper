@@ -60,6 +60,9 @@ namespace uPiper.Core.AudioGeneration
             int languageId = 0,
             CancellationToken cancellationToken = default)
         {
+            if (phonemeIds == null || phonemeIds.Length == 0)
+                throw new ArgumentException("phonemeIds must not be null or empty.", nameof(phonemeIds));
+
             var originalCount = phonemeIds.Length;
             var wasPadded = ShortTextProcessor.NeedsPadding(phonemeIds);
 

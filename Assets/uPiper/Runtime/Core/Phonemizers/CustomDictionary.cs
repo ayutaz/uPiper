@@ -140,8 +140,10 @@ namespace uPiper.Core.Phonemizers
         /// </summary>
         public void LoadDictionaryFromPath(string filePath)
         {
-            // パストラバーサル拒否
-            if (filePath.Contains(".."))
+            // パストラバーサル拒否（セグメント単位で ".." を検出、ファイル名に ".." を含む正当なパスを誤検知しない）
+            var separators = new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
+            var segments = filePath.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+            if (Array.Exists(segments, s => s == ".."))
             {
                 throw new ArgumentException(
                     $"Dictionary file path contains path traversal pattern: {filePath}",
@@ -170,12 +172,20 @@ namespace uPiper.Core.Phonemizers
         /// </summary>
         public void LoadFromJson(string json)
         {
-            var data = JsonUtility.FromJson<DictionaryJsonWrapper>(json);
-            if (data == null)
+            try
             {
-                // JsonUtilityが失敗した場合、手動パース
-                ParseJsonManually(json);
-                return;
+                var data = JsonUtility.FromJson<DictionaryJsonWrapper>(json);
+                if (data == null)
+                {
+                    // JsonUtilityが失敗した場合、手動パース
+                    ParseJsonManually(json);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogWarning(
+                    $"[CustomDictionary] JsonUtility parse failed, falling back to manual parse: {ex.Message}");
             }
 
             // JsonUtilityはDictionary非対応のため手動パース

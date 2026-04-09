@@ -329,7 +329,7 @@ var clip2 = await piperTTS.SynthesizeAsync(request2);
 ## 短テキスト緩和 (Short Text Mitigation)
 
 ### 概要
-VITSベースTTSの構造的制限により、音素IDが40未満の短テキストでは音声品質が劣化する。`ShortTextProcessor`がTTSSynthesisOrchestrator/SplitInferenceOrchestratorから自動的に呼び出され、以下の緩和策を適用する。
+VITSベースTTSの構造的制限により、音素IDが40未満の短テキストでは音声品質が劣化する。`ShortTextMitigatingGenerator`デコレータが`IInferenceAudioGenerator`をラップし、`GenerateAudioAsync`の前後に以下の緩和策を透過的に適用する。
 
 ### Strategy A: 音素IDパディング + 無音トリム
 - `phonemeIds.Length < 40` の場合、BOS後/EOS前にPADトークン(ID=0)を均等挿入して40要素に拡張
@@ -386,8 +386,8 @@ var result = phonemizer.PhonemizeWithProsody("DockerとGitHubを使った開発"
 
 ### セキュリティ
 - ファイルサイズ上限: 10MB (`MaxDictFileSize`)
-- パストラバーサル警告: ファイルパスに `..` が含まれる場合にログ警告
-- JSONパースエラー: 不正なJSONファイルは警告ログで処理
+- パストラバーサル拒否: ファイルパスに `..` セグメントが含まれる場合に `ArgumentException` で拒否
+- JSONパースエラー: `JsonUtility.FromJson` 失敗時は警告ログ + 手動パースにフォールバック。手動パースも失敗時は警告ログで処理
 
 ### 動的追加
 ```csharp
