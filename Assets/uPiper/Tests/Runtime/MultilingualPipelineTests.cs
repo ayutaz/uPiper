@@ -26,137 +26,137 @@ namespace uPiper.Tests.Runtime
         /// A multilingual phoneme ID map covering the basic IPA phonemes shared across languages.
         /// This mirrors a realistic multilingual model's phoneme_id_map with IPA-based entries.
         /// </summary>
-        private static Dictionary<string, int> BuildMultilingualPhonemeIdMap()
+        private static Dictionary<string, int[]> BuildMultilingualPhonemeIdMap()
         {
-            return new Dictionary<string, int>
+            return new Dictionary<string, int[]>
             {
                 // Special tokens
-                { "_", 0 }, { "^", 1 }, { "$", 2 }, { "?", 3 },
+                { "_", new[] { 0 } }, { "^", new[] { 1 } }, { "$", new[] { 2 } }, { "?", new[] { 3 } },
 
                 // Basic vowels
-                { "a", 4 }, { "e", 5 }, { "i", 6 }, { "o", 7 }, { "u", 8 },
+                { "a", new[] { 4 } }, { "e", new[] { 5 } }, { "i", new[] { 6 } }, { "o", new[] { 7 } }, { "u", new[] { 8 } },
 
                 // Japanese extended vowels
-                { "A", 9 }, { "I", 10 }, { "U", 11 }, { "E", 12 }, { "O", 13 },
+                { "A", new[] { 9 } }, { "I", new[] { 10 } }, { "U", new[] { 11 } }, { "E", new[] { 12 } }, { "O", new[] { 13 } },
 
                 // IPA vowels (multilingual)
-                { "\u0259", 14 },  // schwa
-                { "\u025B", 15 },  // open-mid front unrounded (French/Portuguese)
-                { "\u0254", 16 },  // open-mid back rounded (French)
-                { "\u0251", 17 },  // open back unrounded (French)
-                { "\u026A", 18 },  // near-close near-front unrounded
-                { "\u028A", 19 },  // near-close near-back rounded
-                { "\u0268", 20 },  // close central unrounded
-                { "\u00F8", 21 },  // close-mid front rounded (French eu)
+                { "\u0259", new[] { 14 } },  // schwa
+                { "\u025B", new[] { 15 } },  // open-mid front unrounded (French/Portuguese)
+                { "\u0254", new[] { 16 } },  // open-mid back rounded (French)
+                { "\u0251", new[] { 17 } },  // open back unrounded (French)
+                { "\u026A", new[] { 18 } },  // near-close near-front unrounded
+                { "\u028A", new[] { 19 } },  // near-close near-back rounded
+                { "\u0268", new[] { 20 } },  // close central unrounded
+                { "\u00F8", new[] { 21 } },  // close-mid front rounded (French eu)
 
                 // Japanese-specific IPA
-                { "\u026F", 22 },  // close back unrounded (Japanese u)
-                { "\u0274", 23 },  // small capital N (Japanese moraic nasal)
-                { "N", 24 },       // ASCII N (Japanese moraic nasal alternate)
-                { "\u0255", 25 },  // alveolo-palatal fricative (Japanese shi)
-                { "\u0291", 26 },  // voiced alveolo-palatal fricative (Japanese ji)
-                { "q", 27 },       // glottal stop (Japanese sokuon)
+                { "\u026F", new[] { 22 } },  // close back unrounded (Japanese u)
+                { "\u0274", new[] { 23 } },  // small capital N (Japanese moraic nasal)
+                { "N", new[] { 24 } },       // ASCII N (Japanese moraic nasal alternate)
+                { "\u0255", new[] { 25 } },  // alveolo-palatal fricative (Japanese shi)
+                { "\u0291", new[] { 26 } },  // voiced alveolo-palatal fricative (Japanese ji)
+                { "q", new[] { 27 } },       // glottal stop (Japanese sokuon)
 
                 // Basic consonants
-                { "b", 28 }, { "d", 29 }, { "f", 30 }, { "g", 31 },
-                { "h", 32 }, { "j", 33 }, { "k", 34 }, { "l", 35 },
-                { "m", 36 }, { "n", 37 }, { "p", 38 }, { "r", 39 },
-                { "s", 40 }, { "t", 41 }, { "v", 42 }, { "w", 43 },
-                { "z", 44 }, { "y", 45 },
+                { "b", new[] { 28 } }, { "d", new[] { 29 } }, { "f", new[] { 30 } }, { "g", new[] { 31 } },
+                { "h", new[] { 32 } }, { "j", new[] { 33 } }, { "k", new[] { 34 } }, { "l", new[] { 35 } },
+                { "m", new[] { 36 } }, { "n", new[] { 37 } }, { "p", new[] { 38 } }, { "r", new[] { 39 } },
+                { "s", new[] { 40 } }, { "t", new[] { 41 } }, { "v", new[] { 42 } }, { "w", new[] { 43 } },
+                { "z", new[] { 44 } }, { "y", new[] { 45 } },
 
                 // IPA consonants (multilingual)
-                { "\u0283", 46 },  // voiceless postalveolar fricative (sh)
-                { "\u0292", 47 },  // voiced postalveolar fricative (zh)
-                { "\u014B", 48 },  // velar nasal (ng)
-                { "\u0272", 49 },  // palatal nasal (Spanish n-tilde, French gn)
-                { "\u0279", 50 },  // alveolar approximant (English r)
-                { "\u027E", 51 },  // alveolar flap/tap (Spanish r, Portuguese r)
-                { "\u0281", 52 },  // uvular fricative (French r)
-                { "\u027D", 53 },  // retroflex flap (Japanese ry)
-                { "\u0278", 54 },  // voiceless bilabial fricative (Japanese f)
-                { "\u00E7", 55 },  // voiceless palatal fricative (Japanese h before i)
+                { "\u0283", new[] { 46 } },  // voiceless postalveolar fricative (sh)
+                { "\u0292", new[] { 47 } },  // voiced postalveolar fricative (zh)
+                { "\u014B", new[] { 48 } },  // velar nasal (ng)
+                { "\u0272", new[] { 49 } },  // palatal nasal (Spanish n-tilde, French gn)
+                { "\u0279", new[] { 50 } },  // alveolar approximant (English r)
+                { "\u027E", new[] { 51 } },  // alveolar flap/tap (Spanish r, Portuguese r)
+                { "\u0281", new[] { 52 } },  // uvular fricative (French r)
+                { "\u027D", new[] { 53 } },  // retroflex flap (Japanese ry)
+                { "\u0278", new[] { 54 } },  // voiceless bilabial fricative (Japanese f)
+                { "\u00E7", new[] { 55 } },  // voiceless palatal fricative (Japanese h before i)
 
                 // IPA affricates / palatalized (multilingual)
-                { "t\u0255", 56 },     // voiceless alveolo-palatal affricate (ja ch, zh j)
-                { "t\u0283", 57 },     // voiceless postalveolar affricate (es/pt ch)
-                { "d\u0292", 58 },     // voiced postalveolar affricate (es/pt)
-                { "t\u0282", 59 },     // retroflex affricate (zh zh)
-                { "ts", 60 },          // alveolar affricate (ja tsu)
+                { "t\u0255", new[] { 56 } },     // voiceless alveolo-palatal affricate (ja ch, zh j)
+                { "t\u0283", new[] { 57 } },     // voiceless postalveolar affricate (es/pt ch)
+                { "d\u0292", new[] { 58 } },     // voiced postalveolar affricate (es/pt)
+                { "t\u0282", new[] { 59 } },     // retroflex affricate (zh zh)
+                { "ts", new[] { 60 } },          // alveolar affricate (ja tsu)
 
                 // IPA palatalized consonants
-                { "k\u02B2", 61 },     // palatalized k (Japanese ky)
-                { "\u0261\u02B2", 62 }, // palatalized g (Japanese gy)
-                { "d\u02B2", 63 },     // palatalized d (Japanese dy)
-                { "p\u02B2", 64 },     // palatalized p (Japanese py)
-                { "b\u02B2", 65 },     // palatalized b (Japanese by)
-                { "h\u02B2", 66 },     // palatalized h (Japanese hy)
-                { "m\u02B2", 67 },     // palatalized m (Japanese my)
+                { "k\u02B2", new[] { 61 } },     // palatalized k (Japanese ky)
+                { "\u0261\u02B2", new[] { 62 } }, // palatalized g (Japanese gy)
+                { "d\u02B2", new[] { 63 } },     // palatalized d (Japanese dy)
+                { "p\u02B2", new[] { 64 } },     // palatalized p (Japanese py)
+                { "b\u02B2", new[] { 65 } },     // palatalized b (Japanese by)
+                { "h\u02B2", new[] { 66 } },     // palatalized h (Japanese hy)
+                { "m\u02B2", new[] { 67 } },     // palatalized m (Japanese my)
 
                 // Aspiration (Chinese/Korean)
-                { "p\u02B0", 68 },     // aspirated p
-                { "t\u02B0", 69 },     // aspirated t
-                { "k\u02B0", 70 },     // aspirated k
-                { "t\u0255\u02B0", 71 }, // aspirated alveolo-palatal affricate (zh q)
-                { "t\u0282\u02B0", 72 }, // aspirated retroflex affricate (zh ch)
-                { "ts\u02B0", 73 },    // aspirated alveolar affricate (zh c)
+                { "p\u02B0", new[] { 68 } },     // aspirated p
+                { "t\u02B0", new[] { 69 } },     // aspirated t
+                { "k\u02B0", new[] { 70 } },     // aspirated k
+                { "t\u0255\u02B0", new[] { 71 } }, // aspirated alveolo-palatal affricate (zh q)
+                { "t\u0282\u02B0", new[] { 72 } }, // aspirated retroflex affricate (zh ch)
+                { "ts\u02B0", new[] { 73 } },    // aspirated alveolar affricate (zh c)
 
                 // Chinese tone markers
-                { "tone1", 74 }, { "tone2", 75 }, { "tone3", 76 },
-                { "tone4", 77 }, { "tone5", 78 },
+                { "tone1", new[] { 74 } }, { "tone2", new[] { 75 } }, { "tone3", new[] { 76 } },
+                { "tone4", new[] { 77 } }, { "tone5", new[] { 78 } },
 
                 // French nasal vowels
-                { "\u025B\u0303", 79 },  // nasal epsilon (vin)
-                { "\u0251\u0303", 80 },  // nasal alpha (France)
-                { "\u0254\u0303", 81 },  // nasal open-o (bon)
+                { "\u025B\u0303", new[] { 79 } },  // nasal epsilon (vin)
+                { "\u0251\u0303", new[] { 80 } },  // nasal alpha (France)
+                { "\u0254\u0303", new[] { 81 } },  // nasal open-o (bon)
 
                 // Korean tense consonants
-                { "p\u0348", 82 },         // tense bilabial
-                { "t\u0348", 83 },         // tense alveolar
-                { "k\u0348", 84 },         // tense velar
-                { "s\u0348", 85 },         // tense sibilant
-                { "t\u0348\u0255", 86 },   // tense alveolo-palatal affricate
+                { "p\u0348", new[] { 82 } },         // tense bilabial
+                { "t\u0348", new[] { 83 } },         // tense alveolar
+                { "k\u0348", new[] { 84 } },         // tense velar
+                { "s\u0348", new[] { 85 } },         // tense sibilant
+                { "t\u0348\u0255", new[] { 86 } },   // tense alveolo-palatal affricate
 
                 // Korean unreleased finals
-                { "k\u031A", 87 },  // unreleased velar
-                { "t\u031A", 88 },  // unreleased alveolar
-                { "p\u031A", 89 },  // unreleased bilabial
+                { "k\u031A", new[] { 87 } },  // unreleased velar
+                { "t\u031A", new[] { 88 } },  // unreleased alveolar
+                { "p\u031A", new[] { 89 } },  // unreleased bilabial
 
                 // Punctuation / silence
-                { " ", 90 },
-                { ".", 91 }, { ",", 92 }, { "!", 93 },
-                { "-", 94 }, { "'", 95 },
+                { " ", new[] { 90 } },
+                { ".", new[] { 91 } }, { ",", new[] { 92 } }, { "!", new[] { 93 } },
+                { "-", new[] { 94 } }, { "'", new[] { 95 } },
 
                 // Spanish trill
-                { "rr", 96 },
+                { "rr", new[] { 96 } },
 
                 // Shared multilingual
-                { "y_vowel", 97 },  // French u, Chinese u-umlaut
+                { "y_vowel", new[] { 97 } },  // French u, Chinese u-umlaut
 
                 // Extended question markers (PUA-encoded)
-                { "\uE016", 98 }, { "\uE017", 99 }, { "\uE018", 100 },
+                { "\uE016", new[] { 98 } }, { "\uE017", new[] { 99 } }, { "\uE018", new[] { 100 } },
 
                 // Chinese diphthongs / compound finals (PUA)
-                { "a\u026A", 101 },  // ai
-                { "e\u026A", 102 },  // ei
-                { "a\u028A", 103 },  // ao
-                { "o\u028A", 104 },  // ou
-                { "an", 105 },       // an
-                { "\u0259n", 106 },  // en
-                { "a\u014B", 107 },  // ang
-                { "\u0259\u014B", 108 }, // eng
+                { "a\u026A", new[] { 101 } },  // ai
+                { "e\u026A", new[] { 102 } },  // ei
+                { "a\u028A", new[] { 103 } },  // ao
+                { "o\u028A", new[] { 104 } },  // ou
+                { "an", new[] { 105 } },       // an
+                { "\u0259n", new[] { 106 } },  // en
+                { "a\u014B", new[] { 107 } },  // ang
+                { "\u0259\u014B", new[] { 108 } }, // eng
 
                 // Additional Japanese PUA characters for long vowels
-                { "\uE000", 109 },  // a:
-                { "\uE001", 110 },  // i:
-                { "\uE002", 111 },  // u:
-                { "\uE003", 112 },  // e:
-                { "\uE004", 113 },  // o:
-                { "\uE005", 114 },  // cl
-                { "\uE006", 115 },  // ky
-                { "\uE00E", 116 },  // ch
-                { "\uE00F", 117 },  // ts
-                { "\uE010", 118 },  // sh
-                { "\uE013", 119 },  // ny
+                { "\uE000", new[] { 109 } },  // a:
+                { "\uE001", new[] { 110 } },  // i:
+                { "\uE002", new[] { 111 } },  // u:
+                { "\uE003", new[] { 112 } },  // e:
+                { "\uE004", new[] { 113 } },  // o:
+                { "\uE005", new[] { 114 } },  // cl
+                { "\uE006", new[] { 115 } },  // ky
+                { "\uE00E", new[] { 116 } },  // ch
+                { "\uE00F", new[] { 117 } },  // ts
+                { "\uE010", new[] { 118 } },  // sh
+                { "\uE013", new[] { 119 } },  // ny
             };
         }
 
@@ -431,28 +431,20 @@ namespace uPiper.Tests.Runtime
             var result = Phonemize("こんにちは");
 
             Assert.IsNotNull(result);
-            Assert.IsNotNull(result.ProsodyA1);
-            Assert.IsNotNull(result.ProsodyA2);
-            Assert.IsNotNull(result.ProsodyA3);
+            Assert.IsNotNull(result.ProsodyFlat);
+            Assert.IsNotNull(result.ProsodyFlat);
 
-            // Prosody arrays must be aligned with phoneme array
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
-                "ProsodyA1 length should match phoneme count");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA2.Length,
-                "ProsodyA2 length should match phoneme count");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA3.Length,
-                "ProsodyA3 length should match phoneme count");
+            // ProsodyFlat (stride=3) must be aligned with phoneme array
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat length should be phoneme count * 3");
 
             // For Japanese text, at least some prosody values should be non-zero
-            var hasNonZeroA1 = result.ProsodyA1.Any(v => v != 0);
-            var hasNonZeroA2 = result.ProsodyA2.Any(v => v != 0);
-            var hasNonZeroA3 = result.ProsodyA3.Any(v => v != 0);
+            var hasNonZero = result.ProsodyFlat.Any(v => v != 0);
 
             // At least one of A1/A2/A3 should have non-zero values for Japanese
-            Assert.IsTrue(hasNonZeroA1 || hasNonZeroA2 || hasNonZeroA3,
+            Assert.IsTrue(hasNonZero,
                 "Japanese text should produce non-zero prosody values in at least one of A1/A2/A3");
-            Debug.Log($"[Pipeline_Prosody_Ja] A1 has non-zero: {hasNonZeroA1}, " +
-                      $"A2 has non-zero: {hasNonZeroA2}, A3 has non-zero: {hasNonZeroA3}");
+            Debug.Log($"[Pipeline_Prosody_Ja] ProsodyFlat has non-zero: {hasNonZero}");
         }
 
         [Test]
@@ -462,15 +454,15 @@ namespace uPiper.Tests.Runtime
             var result = Phonemize("안녕하세요");
 
             Assert.IsNotNull(result);
-            Assert.IsNotNull(result.ProsodyA1);
+            Assert.IsNotNull(result.ProsodyFlat);
 
             // Prosody arrays must be aligned
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
                 "ProsodyA1 length should match phoneme count for Korean");
 
             // Korean does not use Japanese-style A1 prosody (accent phrase mora position)
             // Korean backend sets A1=0 and A2=0 with A3=syllable count
-            var allA1Zero = result.ProsodyA1.All(v => v == 0);
+            var allA1Zero = result.ProsodyFlat.All(v => v == 0);
             Assert.IsTrue(allA1Zero,
                 "Non-Japanese text (Korean) should have all-zero ProsodyA1 values");
             Debug.Log($"[Pipeline_Prosody_NonJa] Korean A1 all zero: {allA1Zero}, " +
@@ -488,12 +480,8 @@ namespace uPiper.Tests.Runtime
             Assert.IsNotNull(result.Phonemes);
             Assert.AreEqual(0, result.Phonemes.Length,
                 "Empty text should produce zero phonemes");
-            Assert.AreEqual(0, result.ProsodyA1.Length,
-                "Empty text should produce zero ProsodyA1");
-            Assert.AreEqual(0, result.ProsodyA2.Length,
-                "Empty text should produce zero ProsodyA2");
-            Assert.AreEqual(0, result.ProsodyA3.Length,
-                "Empty text should produce zero ProsodyA3");
+            Assert.AreEqual(0, result.ProsodyFlat.Length,
+                "Empty text should produce zero ProsodyFlat");
         }
 
         [Test]
@@ -548,10 +536,10 @@ namespace uPiper.Tests.Runtime
                 "Primary language for pure Japanese should be 'ja'");
 
             // Prosody should still be available
-            Assert.IsNotNull(result.ProsodyA1);
-            Assert.IsNotNull(result.ProsodyA2);
-            Assert.IsNotNull(result.ProsodyA3);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
+            Assert.IsNotNull(result.ProsodyFlat);
+            Assert.IsNotNull(result.ProsodyFlat);
+            Assert.IsNotNull(result.ProsodyFlat);
+            Assert.AreEqual(result.Phonemes.Length, result.ProsodyFlat.Length);
 
             var ids = PhonemesToIds(result.Phonemes);
             Assert.IsNotNull(ids);
@@ -688,11 +676,11 @@ namespace uPiper.Tests.Runtime
 
                 Assert.IsNotNull(result, $"Result should not be null for {lang}: '{text}'");
 
-                Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
+                Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
                     $"ProsodyA1 should align with phonemes for {lang}");
-                Assert.AreEqual(result.Phonemes.Length, result.ProsodyA2.Length,
+                Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
                     $"ProsodyA2 should align with phonemes for {lang}");
-                Assert.AreEqual(result.Phonemes.Length, result.ProsodyA3.Length,
+                Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
                     $"ProsodyA3 should align with phonemes for {lang}");
             }
         }

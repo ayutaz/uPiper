@@ -22,17 +22,17 @@ namespace uPiper.Tests.Editor
         /// Minimal phoneme_id_map used by split tests.
         /// Mirrors a typical config.json mapping (single int per phoneme).
         /// </summary>
-        private static readonly Dictionary<string, int> TestPhonemeIdMap = new()
+        private static readonly Dictionary<string, int[]> TestPhonemeIdMap = new()
         {
-            { "_", 0 },   // PAD/silence
-            { "^", 1 },   // BOS
-            { "$", 2 },   // EOS
-            { "#", 3 },   // sentence boundary
-            { "a", 5 },
-            { "b", 6 },
-            { "c", 7 },
-            { "d", 8 },
-            { "e", 9 },
+            { "_", new[] { 0 } },   // PAD/silence
+            { "^", new[] { 1 } },   // BOS
+            { "$", new[] { 2 } },   // EOS
+            { "#", new[] { 3 } },   // sentence boundary
+            { "a", new[] { 5 } },
+            { "b", new[] { 6 } },
+            { "c", new[] { 7 } },
+            { "d", new[] { 8 } },
+            { "e", new[] { 9 } },
         };
 
         private const int TestSampleRate = 22050;
@@ -155,14 +155,14 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(1, phrases.Count);
             CollectionAssert.AreEqual(new[] { 1, 5, 6, 2 }, phrases[0].PhonemeIds);
             Assert.AreEqual(0, phrases[0].SilenceSamples);
-            Assert.IsNull(phrases[0].ProsodyA1);
-            Assert.IsNull(phrases[0].ProsodyA2);
-            Assert.IsNull(phrases[0].ProsodyA3);
+            Assert.IsNull(phrases[0].ProsodyFlat);
+            Assert.IsNull(phrases[0].ProsodyFlat);
+            Assert.IsNull(phrases[0].ProsodyFlat);
         }
 
         [Test]
@@ -174,7 +174,7 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(2, phrases.Count);
 
@@ -200,7 +200,7 @@ namespace uPiper.Tests.Editor
             };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(3, phrases.Count);
 
@@ -226,7 +226,7 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(2, phrases.Count);
 
@@ -245,7 +245,7 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(1, phrases.Count);
             Assert.AreEqual(0, phrases[0].PhonemeIds.Length);
@@ -259,7 +259,7 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(1, phrases.Count);
             CollectionAssert.AreEqual(new[] { 5 }, phrases[0].PhonemeIds);
@@ -273,7 +273,7 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(2, phrases.Count);
             CollectionAssert.AreEqual(new[] { 0 }, phrases[0].PhonemeIds);
@@ -289,7 +289,7 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             // Each "_" closes a phrase, plus a trailing empty phrase.
             Assert.AreEqual(4, phrases.Count);
@@ -311,33 +311,26 @@ namespace uPiper.Tests.Editor
         {
             // Sequence: a _ b (IDs: 5, 0, 6)
             var ids = new[] { 5, 0, 6 };
-            var a1 = new[] { 10, 20, 30 };
-            var a2 = new[] { 11, 21, 31 };
-            var a3 = new[] { 12, 22, 32 };
+            // stride=3 flat: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, a1_2, a2_2, a3_2]
+            var prosodyFlat = new[] { 10, 11, 12, 20, 21, 22, 30, 31, 32 };
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, a1, a2, a3, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, prosodyFlat, silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(2, phrases.Count);
 
             // Phrase 0: phonemes [a, _], prosody for indices 0 and 1.
             CollectionAssert.AreEqual(new[] { 5, 0 }, phrases[0].PhonemeIds);
-            Assert.IsNotNull(phrases[0].ProsodyA1);
-            Assert.IsNotNull(phrases[0].ProsodyA2);
-            Assert.IsNotNull(phrases[0].ProsodyA3);
-            CollectionAssert.AreEqual(new[] { 10, 20 }, phrases[0].ProsodyA1);
-            CollectionAssert.AreEqual(new[] { 11, 21 }, phrases[0].ProsodyA2);
-            CollectionAssert.AreEqual(new[] { 12, 22 }, phrases[0].ProsodyA3);
+            Assert.IsNotNull(phrases[0].ProsodyFlat);
+            // stride=3 flat for 2 phonemes: [10, 11, 12, 20, 21, 22]
+            CollectionAssert.AreEqual(new[] { 10, 11, 12, 20, 21, 22 }, phrases[0].ProsodyFlat);
 
             // Phrase 1: phoneme [b], prosody for index 2.
             CollectionAssert.AreEqual(new[] { 6 }, phrases[1].PhonemeIds);
-            Assert.IsNotNull(phrases[1].ProsodyA1);
-            Assert.IsNotNull(phrases[1].ProsodyA2);
-            Assert.IsNotNull(phrases[1].ProsodyA3);
-            CollectionAssert.AreEqual(new[] { 30 }, phrases[1].ProsodyA1);
-            CollectionAssert.AreEqual(new[] { 31 }, phrases[1].ProsodyA2);
-            CollectionAssert.AreEqual(new[] { 32 }, phrases[1].ProsodyA3);
+            Assert.IsNotNull(phrases[1].ProsodyFlat);
+            // stride=3 flat for 1 phoneme: [30, 31, 32]
+            CollectionAssert.AreEqual(new[] { 30, 31, 32 }, phrases[1].ProsodyFlat);
         }
 
         [Test]
@@ -347,13 +340,11 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             foreach (var phrase in phrases)
             {
-                Assert.IsNull(phrase.ProsodyA1);
-                Assert.IsNull(phrase.ProsodyA2);
-                Assert.IsNull(phrase.ProsodyA3);
+                Assert.IsNull(phrase.ProsodyFlat);
             }
         }
 
@@ -361,21 +352,17 @@ namespace uPiper.Tests.Editor
         public void Split_WrongLengthProsody_TreatedAsNull()
         {
             var ids = new[] { 5, 0, 6 };
-            // Wrong length: should be 3 but is 2.
-            var a1 = new[] { 10, 20 };
-            var a2 = new[] { 11, 21 };
-            var a3 = new[] { 12, 22 };
+            // Wrong length: should be 3*3=9 but is 6.
+            var wrongFlat = new[] { 10, 11, 12, 20, 21, 22 };
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, a1, a2, a3, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, wrongFlat, silence, TestPhonemeIdMap, TestSampleRate);
 
             // Prosody length mismatch -> treated as no prosody.
             foreach (var phrase in phrases)
             {
-                Assert.IsNull(phrase.ProsodyA1);
-                Assert.IsNull(phrase.ProsodyA2);
-                Assert.IsNull(phrase.ProsodyA3);
+                Assert.IsNull(phrase.ProsodyFlat);
             }
         }
 
@@ -384,30 +371,27 @@ namespace uPiper.Tests.Editor
         {
             // Phoneme sequence ending with silence token -> trailing empty phrase
             var phonemeIds = new[] { 5, 0 }; // a, _ (silence)
-            var prosodyA1 = new[] { 1, 0 };
-            var prosodyA2 = new[] { 2, 0 };
-            var prosodyA3 = new[] { 3, 0 };
+            // stride=3 flat: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1]
+            var prosodyFlat = new[] { 1, 2, 3, 0, 0, 0 };
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                phonemeIds, prosodyFlat,
                 silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(2, phrases.Count);
 
-            // First phrase: has data
+            // First phrase: has data (2 phonemes * 3 stride = 6 prosody elements)
             Assert.AreEqual(2, phrases[0].PhonemeIds.Length);
-            Assert.IsNotNull(phrases[0].ProsodyA1);
-            Assert.AreEqual(2, phrases[0].ProsodyA1.Length);
+            Assert.IsNotNull(phrases[0].ProsodyFlat);
+            Assert.AreEqual(6, phrases[0].ProsodyFlat.Length);
 
-            // Trailing empty phrase: prosody should be empty arrays (not null)
+            // Trailing empty phrase: prosody should be empty array (not null)
             Assert.AreEqual(0, phrases[1].PhonemeIds.Length);
-            Assert.IsNotNull(phrases[1].ProsodyA1, "Trailing empty phrase ProsodyA1 should not be null when prosody is active");
-            Assert.IsNotNull(phrases[1].ProsodyA2, "Trailing empty phrase ProsodyA2 should not be null when prosody is active");
-            Assert.IsNotNull(phrases[1].ProsodyA3, "Trailing empty phrase ProsodyA3 should not be null when prosody is active");
-            Assert.AreEqual(0, phrases[1].ProsodyA1.Length, "Trailing empty phrase ProsodyA1 should be empty");
-            Assert.AreEqual(0, phrases[1].ProsodyA2.Length, "Trailing empty phrase ProsodyA2 should be empty");
-            Assert.AreEqual(0, phrases[1].ProsodyA3.Length, "Trailing empty phrase ProsodyA3 should be empty");
+            Assert.IsNotNull(phrases[1].ProsodyFlat,
+                "Trailing empty phrase ProsodyFlat should not be null when prosody is active");
+            Assert.AreEqual(0, phrases[1].ProsodyFlat.Length,
+                "Trailing empty phrase ProsodyFlat should be empty");
         }
 
         // ================================================================
@@ -480,7 +464,7 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "z", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             // No split -- "z" is not in the map so it cannot match any ID.
             Assert.AreEqual(1, phrases.Count);
@@ -494,7 +478,7 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float>();
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(1, phrases.Count);
             CollectionAssert.AreEqual(new[] { 1, 5, 0, 6, 2 }, phrases[0].PhonemeIds);
@@ -506,7 +490,7 @@ namespace uPiper.Tests.Editor
         {
             var ids = new[] { 1, 5, 0, 6, 2 };
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
-            var emptyMap = new Dictionary<string, int>();
+            var emptyMap = new Dictionary<string, int[]>();
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
                 ids, null, null, null, silence, emptyMap, TestSampleRate);
@@ -567,7 +551,7 @@ namespace uPiper.Tests.Editor
             };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(3, phrases.Count);
 
@@ -593,7 +577,7 @@ namespace uPiper.Tests.Editor
             var ids = new[] { 1, 5, 0, 6, 3, 7, 2 };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, TestSampleRate);
+                ids, null, silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(3, phrases.Count);
             Assert.AreEqual((int)(0.5f * 22050), phrases[0].SilenceSamples);
@@ -626,6 +610,47 @@ namespace uPiper.Tests.Editor
             var d = new PhonemeSilenceProcessor.Phrase(
                 sharedIds, null, null, null, 100);
             Assert.AreEqual(c, d);
+        }
+
+        // ================================================================
+        // Multi-ID PhonemeIdMap tests (P2-1)
+        // ================================================================
+
+        [Test]
+        public void PhonemeSilenceProcessor_MultiIdPhoneme_SplitsOnLastId()
+        {
+            // Arrange: PhonemeIdMap where "," maps to multiple IDs [5, 6, 7].
+            // BuildSilenceIdMap should use ids[^1] = 7 as the trigger (piper-plus convention).
+            var multiIdMap = new Dictionary<string, int[]>
+            {
+                { "_", new[] { 0 } },
+                { "^", new[] { 1 } },
+                { "$", new[] { 2 } },
+                { ",", new[] { 5, 6, 7 } },  // Multi-ID: last ID (7) is the trigger
+                { "a", new[] { 10 } },
+                { "b", new[] { 11 } },
+            };
+            var silence = new Dictionary<string, float> { { ",", 0.5f } };
+
+            // phonemeIds contains ID=7 (the last ID in ","'s array) as a silence trigger
+            var phonemeIds = new[] { 1, 10, 7, 11, 2 };  // ^, a, ,(trigger=7), b, $
+
+            // Act
+            var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
+                phonemeIds, null, null, null, silence, multiIdMap, TestSampleRate);
+
+            // Assert: should split at ID=7 into two phrases
+            Assert.AreEqual(2, phrases.Count,
+                "Should split into 2 phrases at the silence trigger (last ID=7)");
+
+            // First phrase: [^, a, ,] with silence
+            CollectionAssert.AreEqual(new[] { 1, 10, 7 }, phrases[0].PhonemeIds);
+            Assert.AreEqual((int)(0.5f * TestSampleRate), phrases[0].SilenceSamples,
+                "First phrase should have 0.5s of silence");
+
+            // Second phrase: [b, $] without silence
+            CollectionAssert.AreEqual(new[] { 11, 2 }, phrases[1].PhonemeIds);
+            Assert.AreEqual(0, phrases[1].SilenceSamples);
         }
     }
 }

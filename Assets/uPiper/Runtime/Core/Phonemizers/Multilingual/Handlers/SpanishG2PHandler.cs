@@ -61,7 +61,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         }
 
         /// <inheritdoc/>
-        public (string[] Phonemes, int[] A1, int[] A2, int[] A3) Process(string text)
+        public (string[] Phonemes, int[] ProsodyFlat) Process(string text)
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(SpanishG2PHandler));
@@ -80,9 +80,9 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
                     $"phonemes length ({phonemes.Length}). Using min length.");
             }
 
-            var (a1, a2, a3) = G2PHandlerUtils.ExtractProsodyArrays(
+            var flat = G2PHandlerUtils.ExtractProsodyFlat(
                 result.Prosody, p => (p.A1, p.A2, p.A3), phonemes.Length);
-            return (phonemes, a1, a2, a3);
+            return (phonemes, flat);
         }
 
         /// <inheritdoc/>

@@ -29,22 +29,11 @@ namespace uPiper.Core.AudioGeneration
             public readonly int[] PhonemeIds;
 
             /// <summary>
-            /// Prosody A1 values for this phrase (length = <c>PhonemeIds.Length</c>),
+            /// Prosody flat array (stride=3) for this phrase,
             /// or <c>null</c> when no prosody data is available.
+            /// Length = <c>PhonemeIds.Length * 3</c>.
             /// </summary>
-            public readonly int[] ProsodyA1;
-
-            /// <summary>
-            /// Prosody A2 values for this phrase (length = <c>PhonemeIds.Length</c>),
-            /// or <c>null</c> when no prosody data is available.
-            /// </summary>
-            public readonly int[] ProsodyA2;
-
-            /// <summary>
-            /// Prosody A3 values for this phrase (length = <c>PhonemeIds.Length</c>),
-            /// or <c>null</c> when no prosody data is available.
-            /// </summary>
-            public readonly int[] ProsodyA3;
+            public readonly int[] ProsodyFlat;
 
             /// <summary>
             /// Number of zero-valued PCM samples to insert after this phrase.
@@ -56,17 +45,12 @@ namespace uPiper.Core.AudioGeneration
             /// Initializes a new <see cref="Phrase"/>.
             /// </summary>
             /// <param name="phonemeIds">Phoneme IDs for this phrase.</param>
-            /// <param name="prosodyA1">Prosody A1 values, or <c>null</c>.</param>
-            /// <param name="prosodyA2">Prosody A2 values, or <c>null</c>.</param>
-            /// <param name="prosodyA3">Prosody A3 values, or <c>null</c>.</param>
+            /// <param name="prosodyFlat">Prosody flat array (stride=3), or <c>null</c>.</param>
             /// <param name="silenceSamples">Number of silence samples to append.</param>
-            public Phrase(int[] phonemeIds, int[] prosodyA1, int[] prosodyA2, int[] prosodyA3,
-                int silenceSamples)
+            public Phrase(int[] phonemeIds, int[] prosodyFlat, int silenceSamples)
             {
                 PhonemeIds = phonemeIds;
-                ProsodyA1 = prosodyA1;
-                ProsodyA2 = prosodyA2;
-                ProsodyA3 = prosodyA3;
+                ProsodyFlat = prosodyFlat;
                 SilenceSamples = silenceSamples;
             }
         }
@@ -166,33 +150,13 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// Split a phoneme-ID sequence into phrases at every position where one
         /// of the designated silence phonemes occurs.
-        /// <para>
-        /// Processing mirrors the C++ implementation:
-        /// <list type="number">
-        ///   <item>Build a reverse map from individual phoneme IDs to their
-        ///         phoneme strings.</item>
-        ///   <item>Walk the phoneme-ID array.  When a silence-phoneme ID is
-        ///         encountered the current phrase is closed (the phoneme is
-        ///         included in it) and a new phrase is started.</item>
-        ///   <item>The silence duration in samples is recorded for the closed
-        ///         phrase; the trailing phrase gets 0 silence samples.</item>
-        /// </list>
-        /// </para>
         /// </summary>
         /// <param name="phonemeIds">
         /// Complete phoneme-ID sequence (may include BOS/EOS/padding).
         /// </param>
-        /// <param name="prosodyA1">
-        /// Prosody A1 values of length <c>phonemeIds.Length</c>, or
-        /// <c>null</c> when prosody is not used.
-        /// </param>
-        /// <param name="prosodyA2">
-        /// Prosody A2 values of length <c>phonemeIds.Length</c>, or
-        /// <c>null</c> when prosody is not used.
-        /// </param>
-        /// <param name="prosodyA3">
-        /// Prosody A3 values of length <c>phonemeIds.Length</c>, or
-        /// <c>null</c> when prosody is not used.
+        /// <param name="prosodyFlat">
+        /// Prosody flat array (stride=3) of length <c>phonemeIds.Length * 3</c>,
+        /// or <c>null</c> when prosody is not used.
         /// </param>
         /// <param name="phonemeSilence">
         /// Mapping from phoneme strings to silence duration in seconds, as
@@ -210,11 +174,9 @@ namespace uPiper.Core.AudioGeneration
         /// </returns>
         public static List<Phrase> SplitAtPhonemeSilence(
             int[] phonemeIds,
-            int[] prosodyA1,
-            int[] prosodyA2,
-            int[] prosodyA3,
+            int[] prosodyFlat,
             IReadOnlyDictionary<string, float> phonemeSilence,
-            IReadOnlyDictionary<string, int> phonemeIdMap,
+            IReadOnlyDictionary<string, int[]> phonemeIdMap,
             int sampleRate)
         {
             if (phonemeIds == null)
@@ -232,23 +194,17 @@ namespace uPiper.Core.AudioGeneration
                 throw new ArgumentNullException(nameof(phonemeIdMap));
             }
 
-            // Build reverse map: phoneme-ID → (phoneme string, silence seconds).
+            // Build reverse map: phoneme-ID -> (phoneme string, silence seconds).
             var silenceById = BuildSilenceIdMap(phonemeSilence, phonemeIdMap);
 
-            bool hasProsody = prosodyA1 != null
-                && prosodyA1.Length == phonemeIds.Length
-                && prosodyA2 != null
-                && prosodyA2.Length == phonemeIds.Length
-                && prosodyA3 != null
-                && prosodyA3.Length == phonemeIds.Length;
+            bool hasProsody = prosodyFlat != null
+                && prosodyFlat.Length == phonemeIds.Length * PhonemeEncoder.ProsodyStride;
 
             int initialCapacity = Math.Max(10, phonemeIds.Length / 4);
 
             var phrases = new List<Phrase>(8);
             var currentIds = new List<int>(initialCapacity);
-            List<int> currentA1 = hasProsody ? new List<int>(initialCapacity) : null;
-            List<int> currentA2 = hasProsody ? new List<int>(initialCapacity) : null;
-            List<int> currentA3 = hasProsody ? new List<int>(initialCapacity) : null;
+            List<int> currentProsody = hasProsody ? new List<int>(initialCapacity * PhonemeEncoder.ProsodyStride) : null;
 
             for (int i = 0; i < phonemeIds.Length; i++)
             {
@@ -257,9 +213,10 @@ namespace uPiper.Core.AudioGeneration
 
                 if (hasProsody)
                 {
-                    currentA1.Add(prosodyA1[i]);
-                    currentA2.Add(prosodyA2[i]);
-                    currentA3.Add(prosodyA3[i]);
+                    var baseIdx = i * PhonemeEncoder.ProsodyStride;
+                    currentProsody.Add(prosodyFlat[baseIdx + 0]);
+                    currentProsody.Add(prosodyFlat[baseIdx + 1]);
+                    currentProsody.Add(prosodyFlat[baseIdx + 2]);
                 }
 
                 if (silenceById.TryGetValue(id, out var seconds))
@@ -269,16 +226,14 @@ namespace uPiper.Core.AudioGeneration
 
                     phrases.Add(new Phrase(
                         currentIds.ToArray(),
-                        currentA1?.ToArray(),
-                        currentA2?.ToArray(),
-                        currentA3?.ToArray(),
+                        currentProsody?.ToArray(),
                         silenceSamples));
 
                     // Start a new phrase.
                     currentIds = new List<int>(initialCapacity);
-                    currentA1 = hasProsody ? new List<int>(initialCapacity) : null;
-                    currentA2 = hasProsody ? new List<int>(initialCapacity) : null;
-                    currentA3 = hasProsody ? new List<int>(initialCapacity) : null;
+                    currentProsody = hasProsody
+                        ? new List<int>(initialCapacity * PhonemeEncoder.ProsodyStride)
+                        : null;
                 }
             }
 
@@ -286,9 +241,7 @@ namespace uPiper.Core.AudioGeneration
             // no split occurred).  Silence samples = 0.
             phrases.Add(new Phrase(
                 currentIds.ToArray(),
-                currentA1?.ToArray(),
-                currentA2?.ToArray(),
-                currentA3?.ToArray(),
+                currentProsody?.ToArray(),
                 0));
 
             return phrases;
@@ -301,18 +254,20 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// Build a lookup from individual phoneme IDs to the silence duration
         /// in seconds that should follow them.
+        /// Uses ids[^1] (last element) as the trigger ID, matching piper-plus convention
+        /// where the last ID in the array is used for silence detection.
         /// </summary>
         private static Dictionary<int, float> BuildSilenceIdMap(
             IReadOnlyDictionary<string, float> phonemeSilence,
-            IReadOnlyDictionary<string, int> phonemeIdMap)
+            IReadOnlyDictionary<string, int[]> phonemeIdMap)
         {
             var map = new Dictionary<int, float>();
 
             foreach (var (phoneme, seconds) in phonemeSilence)
             {
-                if (phonemeIdMap.TryGetValue(phoneme, out var id))
+                if (phonemeIdMap.TryGetValue(phoneme, out var ids) && ids.Length > 0)
                 {
-                    map[id] = seconds;
+                    map[ids[^1]] = seconds;
                 }
             }
 

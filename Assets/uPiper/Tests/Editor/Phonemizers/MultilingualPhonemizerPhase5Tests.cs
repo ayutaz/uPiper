@@ -521,14 +521,14 @@ namespace uPiper.Tests.Editor.Phonemizers
             var result = await phonemizer.PhonemizeWithProsodyAsync("한국어");
 
             Assert.IsNotNull(result);
-            Assert.IsNotNull(result.ProsodyA1);
-            Assert.IsNotNull(result.ProsodyA2);
-            Assert.IsNotNull(result.ProsodyA3);
+            Assert.IsNotNull(result.ProsodyFlat);
+            Assert.IsNotNull(result.ProsodyFlat);
+            Assert.IsNotNull(result.ProsodyFlat);
 
             // Prosody arrays should be aligned
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA2.Length);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA3.Length);
+            Assert.AreEqual(result.Phonemes.Length, result.ProsodyFlat.Length);
+            Assert.AreEqual(result.Phonemes.Length, result.ProsodyFlat.Length);
+            Assert.AreEqual(result.Phonemes.Length, result.ProsodyFlat.Length);
 
             phonemizer.Dispose();
         }
@@ -549,9 +549,9 @@ namespace uPiper.Tests.Editor.Phonemizers
 
             Assert.IsNotNull(result);
             Assert.AreEqual(0, result.Phonemes.Length);
-            Assert.AreEqual(0, result.ProsodyA1.Length);
-            Assert.AreEqual(0, result.ProsodyA2.Length);
-            Assert.AreEqual(0, result.ProsodyA3.Length);
+            Assert.AreEqual(0, result.ProsodyFlat.Length);
+            Assert.AreEqual(0, result.ProsodyFlat.Length);
+            Assert.AreEqual(0, result.ProsodyFlat.Length);
 
             phonemizer.Dispose();
         }

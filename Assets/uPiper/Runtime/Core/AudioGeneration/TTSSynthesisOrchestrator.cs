@@ -18,7 +18,7 @@ namespace uPiper.Core.AudioGeneration
         private readonly SplitInferenceOrchestrator _splitOrchestrator;
         private readonly PhonemeEncoder _phonemeEncoder;
         private readonly AudioClipBuilder _audioClipBuilder;
-        private readonly ValidatedPiperConfig _config;
+        private readonly IPiperConfigReadOnly _config;
         private readonly PiperVoiceConfig _voiceConfig;
 
         public TTSSynthesisOrchestrator(
@@ -26,7 +26,7 @@ namespace uPiper.Core.AudioGeneration
             SplitInferenceOrchestrator splitOrchestrator,
             PhonemeEncoder phonemeEncoder,
             AudioClipBuilder audioClipBuilder,
-            ValidatedPiperConfig config,
+            IPiperConfigReadOnly config,
             PiperVoiceConfig voiceConfig)
         {
             _generator = generator ?? throw new ArgumentNullException(nameof(generator));
@@ -52,16 +52,14 @@ namespace uPiper.Core.AudioGeneration
 
             // 1. 音素をIDにエンコード（Prosodyあり/なし）
             int[] phonemeIds;
-            int[] expandedA1 = null, expandedA2 = null, expandedA3 = null;
+            int[] expandedProsodyFlat = null;
 
             if (request.HasProsody)
             {
                 var encResult = _phonemeEncoder.EncodeWithProsody(
-                    request.Phonemes, request.ProsodyA1, request.ProsodyA2, request.ProsodyA3);
+                    request.Phonemes, request.ProsodyFlat);
                 phonemeIds = encResult.PhonemeIds;
-                expandedA1 = encResult.ExpandedProsodyA1;
-                expandedA2 = encResult.ExpandedProsodyA2;
-                expandedA3 = encResult.ExpandedProsodyA3;
+                expandedProsodyFlat = encResult.ExpandedProsodyFlat;
             }
             else
             {
@@ -69,8 +67,9 @@ namespace uPiper.Core.AudioGeneration
             }
 
             // 2. 音声を生成（句分割あり/なし）
-            var silenceParsed = _config?.ParsedPhonemeSilence;
-            var useSilenceSplit = _config is { EnablePhonemeSilence: true }
+            var silenceParsed = _config?.Silence.ParsedPhonemeSilence;
+            var useSilenceSplit = _config != null
+                && _config.Silence.EnablePhonemeSilence
                 && silenceParsed?.Count > 0
                 && _voiceConfig?.PhonemeIdMap != null;
 
@@ -78,7 +77,7 @@ namespace uPiper.Core.AudioGeneration
             if (useSilenceSplit)
             {
                 audioData = await _splitOrchestrator.GenerateWithSilenceSplitAsync(
-                    phonemeIds, expandedA1, expandedA2, expandedA3,
+                    phonemeIds, expandedProsodyFlat,
                     silenceParsed,
                     _voiceConfig.PhonemeIdMap,
                     _generator.SampleRate,
@@ -89,14 +88,14 @@ namespace uPiper.Core.AudioGeneration
             else
             {
                 audioData = await _generator.GenerateAudioAsync(
-                    phonemeIds, expandedA1, expandedA2, expandedA3,
+                    phonemeIds, expandedProsodyFlat,
                     request.LengthScale, request.NoiseScale, request.NoiseW,
                     request.SpeakerId, request.LanguageId,
                     cancellationToken);
             }
 
             // 3. 正規化してAudioClipを構築
-            _audioClipBuilder.NormalizeAudioInPlace(audioData, 0.95f);
+            AudioNormalizer.NormalizeInPlace(audioData, 0.95f);
             var clip = _audioClipBuilder.BuildAudioClip(
                 audioData,
                 _generator.SampleRate,

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNetG2P.Chinese;
 using UnityEngine;
+using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
 
 namespace uPiper.Core.Phonemizers.Multilingual.Handlers
@@ -107,7 +108,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         }
 
         /// <inheritdoc/>
-        public (string[] Phonemes, int[] A1, int[] A2, int[] A3) Process(string text)
+        public (string[] Phonemes, int[] ProsodyFlat) Process(string text)
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(ChineseG2PHandler));
@@ -193,7 +194,10 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
                 Array.Resize(ref segA3, segPhonemes.Length);
             }
 
-            return (segPhonemes, segA1, segA2, segA3);
+            // Flatten A1/A2/A3 -> stride=3 flat array
+            var flat = PhonemeEncoder.FlattenProsody(
+                segA1, segA2, segA3, segPhonemes.Length);
+            return (segPhonemes, flat);
         }
 
         /// <inheritdoc/>

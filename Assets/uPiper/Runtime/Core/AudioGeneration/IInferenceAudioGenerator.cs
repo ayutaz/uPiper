@@ -32,13 +32,19 @@ namespace uPiper.Core.AudioGeneration
 
         /// <summary>
         /// 音素から音声を生成する（Prosody対応統合版）。
-        /// prosodyA1/A2/A3がnullの場合はProsodyなしで推論する。
+        /// prosodyFlatがnullの場合はProsodyなしで推論する。
         /// </summary>
+        /// <param name="phonemeIds">音素ID配列</param>
+        /// <param name="prosodyFlat">Prosodyフラット配列 (stride=3, length = phonemeIds.Length * 3), or null</param>
+        /// <param name="lengthScale">話速スケール</param>
+        /// <param name="noiseScale">ノイズスケール</param>
+        /// <param name="noiseW">ノイズ幅</param>
+        /// <param name="speakerId">スピーカーID</param>
+        /// <param name="languageId">言語ID</param>
+        /// <param name="cancellationToken">キャンセルトークン</param>
         public Task<float[]> GenerateAudioAsync(
             int[] phonemeIds,
-            int[] prosodyA1 = null,
-            int[] prosodyA2 = null,
-            int[] prosodyA3 = null,
+            int[] prosodyFlat = null,
             float lengthScale = 1.0f,
             float noiseScale = 0.667f,
             float noiseW = 0.8f,

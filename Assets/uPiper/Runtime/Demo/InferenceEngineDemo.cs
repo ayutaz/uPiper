@@ -710,9 +710,9 @@ namespace uPiper.Demo
                 string[] importantPhonemes = { "ch", "ts", "sh", "k", "o", "n", "i", "h", "a", "w", "N", "_", "^", "$" };
                 foreach (var phoneme in importantPhonemes)
                 {
-                    if (config.PhonemeIdMap.TryGetValue(phoneme, out var id))
+                    if (config.PhonemeIdMap.TryGetValue(phoneme, out var ids))
                     {
-                        PiperLogger.LogDebug($"  Important phoneme '{phoneme}' -> ID {id}");
+                        PiperLogger.LogDebug($"  Important phoneme '{phoneme}' -> IDs [{string.Join(", ", ids)}]");
                     }
                     else
                     {
@@ -760,22 +760,20 @@ namespace uPiper.Demo
                 timings["G2P"] = g2pStopwatch.ElapsedMilliseconds;
 
                 var phonemes = multiResult.Phonemes;
-                var prosodyA1 = multiResult.ProsodyA1;
-                var prosodyA2 = multiResult.ProsodyA2;
-                var prosodyA3 = multiResult.ProsodyA3;
-                var useProsody = _generator.SupportsProsody && prosodyA1 != null && prosodyA1.Length > 0;
+                var prosodyFlat = multiResult.ProsodyFlat;
+                var useProsody = _generator.SupportsProsody && prosodyFlat != null && prosodyFlat.Length > 0;
 
                 PiperLogger.LogInfo($"[G2P] Detected language: {multiResult.DetectedPrimaryLanguage}, Phonemes ({phonemes.Length}): {string.Join(" ", phonemes)}");
                 if (useProsody)
                 {
-                    PiperLogger.LogInfo($"[G2P] Prosody A1: [{string.Join(",", prosodyA1.Take(Math.Min(10, prosodyA1.Length)))}...]");
+                    PiperLogger.LogInfo($"[G2P] ProsodyFlat length: {prosodyFlat.Length} (stride=3, {prosodyFlat.Length / 3} phonemes)");
                 }
 
                 // Show phoneme details in UI
                 if (_phonemeDetailsText != null)
                 {
                     var langInfo = $"Lang: {language} (detected: {multiResult.DetectedPrimaryLanguage})";
-                    var prosodyInfo = useProsody ? $"\nProsody: A1=[{string.Join(",", prosodyA1.Take(5))}...], A2=[{string.Join(",", prosodyA2.Take(5))}...], A3=[{string.Join(",", prosodyA3.Take(5))}...]" : "";
+                    var prosodyInfo = useProsody ? $"\nProsody: flat[{prosodyFlat.Length}] (stride=3)" : "";
                     _phonemeDetailsText.text = $"{langInfo}\nPhonemes: {string.Join(" ", phonemes)}{prosodyInfo}";
                 }
 
@@ -784,15 +782,13 @@ namespace uPiper.Demo
                 // 音素をIDに変換（Prosody対応時は展開済みProsody配列も取得）
                 var encodeStopwatch = Stopwatch.StartNew();
                 int[] phonemeIds;
-                int[] expandedA1 = null, expandedA2 = null, expandedA3 = null;
+                int[] expandedProsodyFlat = null;
 
                 if (useProsody)
                 {
-                    var encodingResult = _encoder.EncodeWithProsody(phonemes, prosodyA1, prosodyA2, prosodyA3);
+                    var encodingResult = _encoder.EncodeWithProsody(phonemes, prosodyFlat);
                     phonemeIds = encodingResult.PhonemeIds;
-                    expandedA1 = encodingResult.ExpandedProsodyA1;
-                    expandedA2 = encodingResult.ExpandedProsodyA2;
-                    expandedA3 = encodingResult.ExpandedProsodyA3;
+                    expandedProsodyFlat = encodingResult.ExpandedProsodyFlat;
                     PiperLogger.LogInfo($"Encoded with prosody: {phonemes.Length} phonemes -> {phonemeIds.Length} IDs");
                 }
                 else
@@ -808,11 +804,11 @@ namespace uPiper.Demo
                 var synthesisStopwatch = Stopwatch.StartNew();
 
                 float[] audioData;
-                if (useProsody && expandedA1 != null)
+                if (useProsody && expandedProsodyFlat != null)
                 {
                     PiperLogger.LogDebug($"Calling GenerateAudioAsync with prosody (languageId={languageId})...");
                     audioData = await _generator.GenerateAudioAsync(
-                        phonemeIds, expandedA1, expandedA2, expandedA3,
+                        phonemeIds, expandedProsodyFlat,
                         languageId: languageId);
                 }
                 else
@@ -852,7 +848,7 @@ namespace uPiper.Demo
                     // 音声データを正規化
                     SetStatus("音声データを正規化中...");
                     PiperLogger.LogDebug("Normalizing audio data...");
-                    _audioBuilder.NormalizeAudioInPlace(audioData, 0.95f);
+                    AudioNormalizer.NormalizeInPlace(audioData, 0.95f);
                     processedAudio = audioData;
                 }
                 else
@@ -989,7 +985,7 @@ namespace uPiper.Demo
                 DisplayName = modelName,
                 Language = "ja",
                 SampleRate = 22050,
-                PhonemeIdMap = new Dictionary<string, int>()
+                PhonemeIdMap = new Dictionary<string, int[]>()
             };
 
             try
@@ -1049,7 +1045,7 @@ namespace uPiper.Demo
                     {
                         if (kvp.Value is JArray idArray && idArray.Count > 0)
                         {
-                            config.PhonemeIdMap[kvp.Key] = idArray[0].ToObject<int>();
+                            config.PhonemeIdMap[kvp.Key] = idArray.ToObject<int[]>();
                         }
                     }
 

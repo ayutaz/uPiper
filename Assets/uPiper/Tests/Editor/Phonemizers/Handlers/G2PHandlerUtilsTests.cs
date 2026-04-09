@@ -27,15 +27,15 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var engine = new SpanishG2PEngine();
             var handler = new SpanishG2PHandler(engine);
 
-            var (phonemes, a1, a2, a3) = handler.Process("hola");
+            var (phonemes, prosodyFlat) = handler.Process("hola");
 
             Assert.IsNotNull(phonemes);
             Assert.IsTrue(phonemes.Length > 0, "Spanish 'hola' should produce phonemes");
-            Assert.AreEqual(phonemes.Length, a1.Length,
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length,
                 "A1 length should equal phoneme count");
-            Assert.AreEqual(phonemes.Length, a2.Length,
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length,
                 "A2 length should equal phoneme count");
-            Assert.AreEqual(phonemes.Length, a3.Length,
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length,
                 "A3 length should equal phoneme count");
 
             handler.Dispose();
@@ -58,16 +58,16 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var handler = new FrenchG2PHandler(engine);
 
             // Process a French sentence to exercise the extraction
-            var (phonemes, a1, a2, a3) = handler.Process("bonjour le monde");
+            var (phonemes, prosodyFlat) = handler.Process("bonjour le monde");
 
             Assert.IsNotNull(phonemes);
             Assert.IsTrue(phonemes.Length > 0, "French text should produce phonemes");
             // The critical invariant: arrays are aligned regardless of internal mismatch
-            Assert.AreEqual(phonemes.Length, a1.Length,
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length,
                 "A1 must be aligned with phonemes even if prosody was shorter");
-            Assert.AreEqual(phonemes.Length, a2.Length,
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length,
                 "A2 must be aligned with phonemes even if prosody was shorter");
-            Assert.AreEqual(phonemes.Length, a3.Length,
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length,
                 "A3 must be aligned with phonemes even if prosody was shorter");
 
             handler.Dispose();
@@ -84,17 +84,15 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var handler = new PortugueseG2PHandler(engine);
 
             // Empty string or whitespace should produce empty arrays
-            var (phonemes, a1, a2, a3) = handler.Process("");
+            var (phonemes, prosodyFlat) = handler.Process("");
 
             Assert.IsNotNull(phonemes);
-            Assert.IsNotNull(a1);
-            Assert.IsNotNull(a2);
-            Assert.IsNotNull(a3);
-            Assert.AreEqual(a1.Length, phonemes.Length,
+            Assert.IsNotNull(prosodyFlat);
+            Assert.AreEqual(prosodyFlat.Length, phonemes.Length * 3,
                 "A1 length must match phoneme count for empty input");
-            Assert.AreEqual(a2.Length, phonemes.Length,
+            Assert.AreEqual(prosodyFlat.Length, phonemes.Length * 3,
                 "A2 length must match phoneme count for empty input");
-            Assert.AreEqual(a3.Length, phonemes.Length,
+            Assert.AreEqual(prosodyFlat.Length, phonemes.Length * 3,
                 "A3 length must match phoneme count for empty input");
 
             handler.Dispose();
@@ -115,14 +113,14 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             };
 
             // Use a simple word that each language can handle
-            var (phonemes, a1, a2, a3) = handler.Process("test");
+            var (phonemes, prosodyFlat) = handler.Process("test");
 
             Assert.IsNotNull(phonemes, $"{lang}: phonemes should not be null");
-            Assert.AreEqual(phonemes.Length, a1.Length,
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length,
                 $"{lang}: A1 length mismatch");
-            Assert.AreEqual(phonemes.Length, a2.Length,
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length,
                 $"{lang}: A2 length mismatch");
-            Assert.AreEqual(phonemes.Length, a3.Length,
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length,
                 $"{lang}: A3 length mismatch");
 
             handler.Dispose();

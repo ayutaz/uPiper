@@ -7,9 +7,13 @@ namespace uPiper.Core.AudioGeneration
     internal readonly struct SynthesisRequest
     {
         public readonly string[] Phonemes;
-        public readonly int[] ProsodyA1;
-        public readonly int[] ProsodyA2;
-        public readonly int[] ProsodyA3;
+
+        /// <summary>
+        /// Prosody flat array (stride=3): [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, ...].
+        /// Length = Phonemes.Length * 3. Null when prosody is not available.
+        /// </summary>
+        public readonly int[] ProsodyFlat;
+
         public readonly float LengthScale;
         public readonly float NoiseScale;
         public readonly float NoiseW;
@@ -18,9 +22,7 @@ namespace uPiper.Core.AudioGeneration
 
         public SynthesisRequest(
             string[] phonemes,
-            int[] prosodyA1,
-            int[] prosodyA2,
-            int[] prosodyA3,
+            int[] prosodyFlat,
             float lengthScale,
             float noiseScale,
             float noiseW,
@@ -28,9 +30,7 @@ namespace uPiper.Core.AudioGeneration
             int languageId)
         {
             Phonemes = phonemes;
-            ProsodyA1 = prosodyA1;
-            ProsodyA2 = prosodyA2;
-            ProsodyA3 = prosodyA3;
+            ProsodyFlat = prosodyFlat;
             LengthScale = lengthScale;
             NoiseScale = noiseScale;
             NoiseW = noiseW;
@@ -38,6 +38,6 @@ namespace uPiper.Core.AudioGeneration
             LanguageId = languageId;
         }
 
-        public bool HasProsody => ProsodyA1 != null || ProsodyA2 != null || ProsodyA3 != null;
+        public bool HasProsody => ProsodyFlat != null;
     }
 }

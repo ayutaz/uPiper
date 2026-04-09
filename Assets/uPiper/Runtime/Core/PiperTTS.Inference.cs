@@ -165,7 +165,7 @@ namespace uPiper.Core
                 // エンコード〜AudioClip生成を一括
                 var request = new AudioGeneration.SynthesisRequest(
                     phonemeResult.Phonemes,
-                    null, null, null,
+                    null,
                     lengthScale, noiseScale, noiseW,
                     0, 0);
                 var audioClip = await _orchestrator.SynthesizeAsync(request, cancellationToken);
@@ -215,9 +215,7 @@ namespace uPiper.Core
                 _onProcessingProgress?.Invoke(0.1f);
 
                 string[] phonemes;
-                int[] prosodyA1 = null;
-                int[] prosodyA2 = null;
-                int[] prosodyA3 = null;
+                int[] prosodyFlat = null;
                 int resolvedLanguageId = languageId >= 0 ? languageId : 0;
 
                 // 多言語PhonemizerまたはデフォルトPhonemizerで音素化
@@ -226,9 +224,7 @@ namespace uPiper.Core
                     PiperLogger.LogDebug($"[MultilingualTTS] Phonemizing with MultilingualPhonemizer: {text}");
                     var multiResult = await _multilingualPhonemizer.PhonemizeWithProsodyAsync(text, cancellationToken);
                     phonemes = multiResult.Phonemes;
-                    prosodyA1 = multiResult.ProsodyA1;
-                    prosodyA2 = multiResult.ProsodyA2;
-                    prosodyA3 = multiResult.ProsodyA3;
+                    prosodyFlat = multiResult.ProsodyFlat;
 
                     // 言語IDを自動解決
                     if (languageId < 0 && _inferenceGenerator.SupportsLanguageId)
@@ -263,7 +259,7 @@ namespace uPiper.Core
                 // エンコード〜AudioClip生成を一括
                 var request = new AudioGeneration.SynthesisRequest(
                     phonemes,
-                    prosodyA1, prosodyA2, prosodyA3,
+                    prosodyFlat,
                     lengthScale, noiseScale, noiseW,
                     speakerId, resolvedLanguageId);
                 var audioClip = await _orchestrator.SynthesizeAsync(request, cancellationToken);

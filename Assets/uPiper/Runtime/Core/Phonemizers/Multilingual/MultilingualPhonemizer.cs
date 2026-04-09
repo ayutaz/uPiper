@@ -15,17 +15,17 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// <summary>Phoneme array (no BOS/EOS; PhonemeEncoder handles them).</summary>
         public string[] Phonemes { get; internal set; }
 
-        /// <summary>Prosody A1 values per phoneme (0 for non-Japanese segments).</summary>
-        public int[] ProsodyA1 { get; internal set; }
-
-        /// <summary>Prosody A2 values per phoneme (0 for non-Japanese segments).</summary>
-        public int[] ProsodyA2 { get; internal set; }
-
-        /// <summary>Prosody A3 values per phoneme (0 for non-Japanese segments).</summary>
-        public int[] ProsodyA3 { get; internal set; }
+        /// <summary>
+        /// Flat prosody array (stride=3): [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, ...].
+        /// Length = Phonemes.Length * 3. Null when prosody is not available.
+        /// </summary>
+        public int[] ProsodyFlat { get; internal set; }
 
         /// <summary>Primary language detected for the text (e.g., "ja", "en").</summary>
         public string DetectedPrimaryLanguage { get; internal set; }
+
+        /// <summary>Prosody data is available.</summary>
+        public bool HasProsody => ProsodyFlat != null;
     }
 
     /// <summary>
@@ -167,9 +167,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 return new MultilingualPhonemizeResult
                 {
                     Phonemes = Array.Empty<string>(),
-                    ProsodyA1 = Array.Empty<int>(),
-                    ProsodyA2 = Array.Empty<int>(),
-                    ProsodyA3 = Array.Empty<int>(),
+                    ProsodyFlat = Array.Empty<int>(),
                     DetectedPrimaryLanguage = _defaultLatinLanguage
                 };
             }
@@ -181,17 +179,13 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 return new MultilingualPhonemizeResult
                 {
                     Phonemes = Array.Empty<string>(),
-                    ProsodyA1 = Array.Empty<int>(),
-                    ProsodyA2 = Array.Empty<int>(),
-                    ProsodyA3 = Array.Empty<int>(),
+                    ProsodyFlat = Array.Empty<int>(),
                     DetectedPrimaryLanguage = _defaultLatinLanguage
                 };
             }
 
             var allPhonemes = new List<string>();
-            var allA1 = new List<int>();
-            var allA2 = new List<int>();
-            var allA3 = new List<int>();
+            var allProsodyFlat = new List<int>();
 
             string primaryLang = segments[0].language;
             // Count character-weighted primary language
@@ -214,9 +208,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
                 // Phonemize each segment
                 string[] segPhonemes = null;
-                int[] segA1 = null;
-                int[] segA2 = null;
-                int[] segA3 = null;
+                int[] segProsodyFlat = null;
 
                 if (_handlers.TryGetValue(lang, out var entry))
                 {
@@ -227,7 +219,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                             $"skipping segment.");
                         continue;
                     }
-                    (segPhonemes, segA1, segA2, segA3) = entry.Handler.Process(segText);
+                    (segPhonemes, segProsodyFlat) = entry.Handler.Process(segText);
                 }
                 else
                 {
@@ -248,23 +240,23 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     {
                         // Remove the EOS-like marker from intermediate segments
                         segPhonemes = segPhonemes[..^1];
-                        segA1 = segA1.Length > 0 ? segA1[..^1] : segA1;
-                        segA2 = segA2.Length > 0 ? segA2[..^1] : segA2;
-                        segA3 = segA3.Length > 0 ? segA3[..^1] : segA3;
+                        if (segProsodyFlat.Length >= AudioGeneration.PhonemeEncoder.ProsodyStride)
+                            segProsodyFlat = segProsodyFlat[..^AudioGeneration.PhonemeEncoder.ProsodyStride];
                     }
                 }
 
                 allPhonemes.AddRange(segPhonemes);
-                allA1.AddRange(segA1);
-                allA2.AddRange(segA2);
-                allA3.AddRange(segA3);
+                allProsodyFlat.AddRange(segProsodyFlat);
             }
 
-            // Ensure arrays are aligned
-            var maxLen = allPhonemes.Count;
-            PadToLength(allA1, maxLen);
-            PadToLength(allA2, maxLen);
-            PadToLength(allA3, maxLen);
+            // Ensure prosody flat array is aligned (phonemeCount * ProsodyStride)
+            var targetFlatLen = allPhonemes.Count * AudioGeneration.PhonemeEncoder.ProsodyStride;
+            while (allProsodyFlat.Count < targetFlatLen)
+            {
+                allProsodyFlat.Add(0); // a1
+                allProsodyFlat.Add(0); // a2
+                allProsodyFlat.Add(0); // a3
+            }
 
             PiperLogger.LogDebug(
                 $"[MultilingualPhonemizer] '{text}' \u2192 {allPhonemes.Count} phonemes, primary lang: {primaryLang}");
@@ -275,9 +267,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             return new MultilingualPhonemizeResult
             {
                 Phonemes = allPhonemes.ToArray(),
-                ProsodyA1 = allA1.ToArray(),
-                ProsodyA2 = allA2.ToArray(),
-                ProsodyA3 = allA3.ToArray(),
+                ProsodyFlat = allProsodyFlat.ToArray(),
                 DetectedPrimaryLanguage = primaryLang
             };
         }
@@ -305,12 +295,6 @@ namespace uPiper.Core.Phonemizers.Multilingual
             _initLock.Dispose();
         }
 
-        // ── Private helpers ───────────────────────────────────────────────────
-
-        private static void PadToLength(List<int> list, int targetLength)
-        {
-            while (list.Count < targetLength)
-                list.Add(0);
-        }
+        // ── Private helpers ─────────────────────────────────────────��─────────
     }
 }

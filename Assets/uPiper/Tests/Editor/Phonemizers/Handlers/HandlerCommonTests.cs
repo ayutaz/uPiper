@@ -244,15 +244,11 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var handler = new SpanishG2PHandler();
             await handler.InitializeAsync();
 
-            var (phonemes, a1, a2, a3) = handler.Process("");
+            var (phonemes, prosodyFlat) = handler.Process("");
 
             Assert.IsNotNull(phonemes);
-            Assert.IsNotNull(a1);
-            Assert.IsNotNull(a2);
-            Assert.IsNotNull(a3);
-            Assert.AreEqual(phonemes.Length, a1.Length);
-            Assert.AreEqual(phonemes.Length, a2.Length);
-            Assert.AreEqual(phonemes.Length, a3.Length);
+            Assert.IsNotNull(prosodyFlat);
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
 
             handler.Dispose();
         }
@@ -263,15 +259,11 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var handler = new FrenchG2PHandler();
             await handler.InitializeAsync();
 
-            var (phonemes, a1, a2, a3) = handler.Process("");
+            var (phonemes, prosodyFlat) = handler.Process("");
 
             Assert.IsNotNull(phonemes);
-            Assert.IsNotNull(a1);
-            Assert.IsNotNull(a2);
-            Assert.IsNotNull(a3);
-            Assert.AreEqual(phonemes.Length, a1.Length);
-            Assert.AreEqual(phonemes.Length, a2.Length);
-            Assert.AreEqual(phonemes.Length, a3.Length);
+            Assert.IsNotNull(prosodyFlat);
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
 
             handler.Dispose();
         }
@@ -282,15 +274,11 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var handler = new PortugueseG2PHandler();
             await handler.InitializeAsync();
 
-            var (phonemes, a1, a2, a3) = handler.Process("");
+            var (phonemes, prosodyFlat) = handler.Process("");
 
             Assert.IsNotNull(phonemes);
-            Assert.IsNotNull(a1);
-            Assert.IsNotNull(a2);
-            Assert.IsNotNull(a3);
-            Assert.AreEqual(phonemes.Length, a1.Length);
-            Assert.AreEqual(phonemes.Length, a2.Length);
-            Assert.AreEqual(phonemes.Length, a3.Length);
+            Assert.IsNotNull(prosodyFlat);
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
 
             handler.Dispose();
         }
@@ -301,15 +289,11 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var handler = new KoreanG2PHandler();
             await handler.InitializeAsync();
 
-            var (phonemes, a1, a2, a3) = handler.Process("");
+            var (phonemes, prosodyFlat) = handler.Process("");
 
             Assert.IsNotNull(phonemes);
-            Assert.IsNotNull(a1);
-            Assert.IsNotNull(a2);
-            Assert.IsNotNull(a3);
-            Assert.AreEqual(phonemes.Length, a1.Length);
-            Assert.AreEqual(phonemes.Length, a2.Length);
-            Assert.AreEqual(phonemes.Length, a3.Length);
+            Assert.IsNotNull(prosodyFlat);
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
 
             handler.Dispose();
         }
@@ -322,13 +306,11 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var handler = new SpanishG2PHandler();
             await handler.InitializeAsync();
 
-            var (phonemes, a1, a2, a3) = handler.Process("hola mundo");
+            var (phonemes, prosodyFlat) = handler.Process("hola mundo");
 
             Assert.IsTrue(phonemes.Length > 0,
                 "Spanish 'hola mundo' should produce phonemes");
-            Assert.AreEqual(phonemes.Length, a1.Length);
-            Assert.AreEqual(phonemes.Length, a2.Length);
-            Assert.AreEqual(phonemes.Length, a3.Length);
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
 
             handler.Dispose();
         }
@@ -339,13 +321,11 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var handler = new FrenchG2PHandler();
             await handler.InitializeAsync();
 
-            var (phonemes, a1, a2, a3) = handler.Process("bonjour");
+            var (phonemes, prosodyFlat) = handler.Process("bonjour");
 
             Assert.IsTrue(phonemes.Length > 0,
                 "French 'bonjour' should produce phonemes");
-            Assert.AreEqual(phonemes.Length, a1.Length);
-            Assert.AreEqual(phonemes.Length, a2.Length);
-            Assert.AreEqual(phonemes.Length, a3.Length);
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
 
             handler.Dispose();
         }
@@ -356,13 +336,11 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var handler = new PortugueseG2PHandler();
             await handler.InitializeAsync();
 
-            var (phonemes, a1, a2, a3) = handler.Process("bom dia");
+            var (phonemes, prosodyFlat) = handler.Process("bom dia");
 
             Assert.IsTrue(phonemes.Length > 0,
                 "Portuguese 'bom dia' should produce phonemes");
-            Assert.AreEqual(phonemes.Length, a1.Length);
-            Assert.AreEqual(phonemes.Length, a2.Length);
-            Assert.AreEqual(phonemes.Length, a3.Length);
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
 
             handler.Dispose();
         }
@@ -373,13 +351,11 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var handler = new KoreanG2PHandler();
             await handler.InitializeAsync();
 
-            var (phonemes, a1, a2, a3) = handler.Process("\uc548\ub155");
+            var (phonemes, prosodyFlat) = handler.Process("\uc548\ub155");
 
             Assert.IsTrue(phonemes.Length > 0,
                 "Korean text should produce phonemes");
-            Assert.AreEqual(phonemes.Length, a1.Length);
-            Assert.AreEqual(phonemes.Length, a2.Length);
-            Assert.AreEqual(phonemes.Length, a3.Length);
+            Assert.AreEqual(phonemes.Length * 3, prosodyFlat.Length);
 
             handler.Dispose();
         }

@@ -25,11 +25,9 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         public async Task<float[]> GenerateWithSilenceSplitAsync(
             int[] phonemeIds,
-            int[] prosodyA1,
-            int[] prosodyA2,
-            int[] prosodyA3,
+            int[] prosodyFlat,
             IReadOnlyDictionary<string, float> phonemeSilence,
-            IReadOnlyDictionary<string, int> phonemeIdMap,
+            IReadOnlyDictionary<string, int[]> phonemeIdMap,
             int sampleRate,
             float lengthScale = 1.0f,
             float noiseScale = 0.667f,
@@ -39,7 +37,7 @@ namespace uPiper.Core.AudioGeneration
             CancellationToken cancellationToken = default)
         {
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                phonemeIds, prosodyFlat,
                 phonemeSilence, phonemeIdMap, sampleRate);
 
             PiperLogger.LogInfo(
@@ -64,7 +62,7 @@ namespace uPiper.Core.AudioGeneration
 
                 var phraseAudio = await _generator.GenerateAudioAsync(
                     phrase.PhonemeIds,
-                    phrase.ProsodyA1, phrase.ProsodyA2, phrase.ProsodyA3,
+                    phrase.ProsodyFlat,
                     lengthScale, noiseScale, noiseW,
                     speakerId, languageId,
                     cancellationToken);

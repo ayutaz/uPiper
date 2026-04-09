@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using DotNetG2P.Korean;
+using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
 
 namespace uPiper.Core.Phonemizers.Multilingual.Handlers
@@ -61,7 +62,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         }
 
         /// <inheritdoc/>
-        public (string[] Phonemes, int[] A1, int[] A2, int[] A3) Process(string text)
+        public (string[] Phonemes, int[] ProsodyFlat) Process(string text)
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(KoreanG2PHandler));
@@ -115,7 +116,9 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
                     $"PUA={phonemes.Length}, Prosody={prosodyResult.Prosody.Length}");
             }
 
-            return (phonemes, segA1, segA2, segA3);
+            // Flatten A1/A2/A3 -> stride=3 flat array
+            var flat = PhonemeEncoder.FlattenProsody(segA1, segA2, segA3, phonemes.Length);
+            return (phonemes, flat);
         }
 
         /// <inheritdoc/>

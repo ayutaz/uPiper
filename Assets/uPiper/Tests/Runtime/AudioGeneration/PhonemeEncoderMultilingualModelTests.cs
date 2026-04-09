@@ -33,222 +33,222 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         /// Build a mock multilingual phoneme_id_map derived from
         /// multilingual-test-medium.onnx.json (subset of 173 entries).
         /// </summary>
-        private static Dictionary<string, int> BuildMultilingualModelMap()
+        private static Dictionary<string, int[]> BuildMultilingualModelMap()
         {
-            return new Dictionary<string, int>
+            return new Dictionary<string, int[]>
             {
                 // ── Special tokens ──
-                { "_", 0 },   // PAD
-                { "^", 1 },   // BOS
-                { "$", 2 },   // EOS
-                { "?", 3 },   // Question
+                { "_", new[] { 0 } },   // PAD
+                { "^", new[] { 1 } },   // BOS
+                { "$", new[] { 2 } },   // EOS
+                { "?", new[] { 3 } },   // Question
 
                 // ── Extended question markers ──
-                { "\ue016", 4 },  // ?!
-                { "\ue017", 5 },  // ?.
-                { "\ue018", 6 },  // ?~
+                { "\ue016", new[] { 4 } },  // ?!
+                { "\ue017", new[] { 5 } },  // ?.
+                { "\ue018", new[] { 6 } },  // ?~
 
                 // ── Prosody boundary tokens ──
-                { "#", 7 },   // Word boundary
-                { "[", 8 },   // Accent phrase start
-                { "]", 9 },   // Accent phrase end
+                { "#", new[] { 7 } },   // Word boundary
+                { "[", new[] { 8 } },   // Accent phrase start
+                { "]", new[] { 9 } },   // Accent phrase end
 
                 // ── Japanese vowels (lowercase = normal, uppercase = devoiced) ──
-                { "a", 10 }, { "i", 11 }, { "u", 12 }, { "e", 13 }, { "o", 14 },
-                { "A", 15 }, { "I", 16 }, { "U", 17 }, { "E", 18 }, { "O", 19 },
+                { "a", new[] { 10 } }, { "i", new[] { 11 } }, { "u", new[] { 12 } }, { "e", new[] { 13 } }, { "o", new[] { 14 } },
+                { "A", new[] { 15 } }, { "I", new[] { 16 } }, { "U", new[] { 17 } }, { "E", new[] { 18 } }, { "O", new[] { 19 } },
 
                 // ── Long vowels (PUA) ──
-                { "\ue000", 20 }, // a:
-                { "\ue001", 21 }, // i:
-                { "\ue002", 22 }, // u:
-                { "\ue003", 23 }, // e:
-                { "\ue004", 24 }, // o:
+                { "\ue000", new[] { 20 } }, // a:
+                { "\ue001", new[] { 21 } }, // i:
+                { "\ue002", new[] { 22 } }, // u:
+                { "\ue003", new[] { 23 } }, // e:
+                { "\ue004", new[] { 24 } }, // o:
 
                 // ── N and N variants ──
-                { "N", 25 },
-                { "\ue019", 26 }, // N_m  (bilabial assimilation)
-                { "\ue01a", 27 }, // N_n  (alveolar assimilation)
-                { "\ue01b", 28 }, // N_ng (velar assimilation)
-                { "\ue01c", 29 }, // N_uvular
+                { "N", new[] { 25 } },
+                { "\ue019", new[] { 26 } }, // N_m  (bilabial assimilation)
+                { "\ue01a", new[] { 27 } }, // N_n  (alveolar assimilation)
+                { "\ue01b", new[] { 28 } }, // N_ng (velar assimilation)
+                { "\ue01c", new[] { 29 } }, // N_uvular
 
                 // ── Japanese consonants and palatalized consonants (PUA) ──
-                { "\ue005", 30 }, // cl (sokuon)
-                { "q", 31 },     // glottal stop
-                { "k", 32 },
-                { "\ue006", 33 }, // ky
-                { "\ue007", 34 }, // kw
-                { "g", 35 },
-                { "\ue008", 36 }, // gy
-                { "\ue009", 37 }, // gw
-                { "t", 38 },
-                { "\ue00a", 39 }, // ty
-                { "d", 40 },
-                { "\ue00b", 41 }, // dy
-                { "p", 42 },
-                { "\ue00c", 43 }, // py
-                { "b", 44 },
-                { "\ue00d", 45 }, // by
-                { "\ue00e", 46 }, // ch
-                { "\ue00f", 47 }, // ts
-                { "s", 48 },
-                { "\ue010", 49 }, // sh
-                { "z", 50 },
-                { "j", 51 },
-                { "\ue011", 52 }, // zy
-                { "f", 53 },
-                { "h", 54 },
-                { "\ue012", 55 }, // hy
-                { "v", 56 },
-                { "n", 57 },
-                { "\ue013", 58 }, // ny
-                { "m", 59 },
-                { "\ue014", 60 }, // my
-                { "r", 61 },
-                { "\ue015", 62 }, // ry
-                { "w", 63 },
-                { "y", 64 },
+                { "\ue005", new[] { 30 } }, // cl (sokuon)
+                { "q", new[] { 31 } },     // glottal stop
+                { "k", new[] { 32 } },
+                { "\ue006", new[] { 33 } }, // ky
+                { "\ue007", new[] { 34 } }, // kw
+                { "g", new[] { 35 } },
+                { "\ue008", new[] { 36 } }, // gy
+                { "\ue009", new[] { 37 } }, // gw
+                { "t", new[] { 38 } },
+                { "\ue00a", new[] { 39 } }, // ty
+                { "d", new[] { 40 } },
+                { "\ue00b", new[] { 41 } }, // dy
+                { "p", new[] { 42 } },
+                { "\ue00c", new[] { 43 } }, // py
+                { "b", new[] { 44 } },
+                { "\ue00d", new[] { 45 } }, // by
+                { "\ue00e", new[] { 46 } }, // ch
+                { "\ue00f", new[] { 47 } }, // ts
+                { "s", new[] { 48 } },
+                { "\ue010", new[] { 49 } }, // sh
+                { "z", new[] { 50 } },
+                { "j", new[] { 51 } },
+                { "\ue011", new[] { 52 } }, // zy
+                { "f", new[] { 53 } },
+                { "h", new[] { 54 } },
+                { "\ue012", new[] { 55 } }, // hy
+                { "v", new[] { 56 } },
+                { "n", new[] { 57 } },
+                { "\ue013", new[] { 58 } }, // ny
+                { "m", new[] { 59 } },
+                { "\ue014", new[] { 60 } }, // my
+                { "r", new[] { 61 } },
+                { "\ue015", new[] { 62 } }, // ry
+                { "w", new[] { 63 } },
+                { "y", new[] { 64 } },
 
                 // ── English vowels (IPA) ──
-                { "\u0251", 65 }, // ɑ
-                { "\u00e6", 66 }, // æ
-                { "\u028c", 67 }, // ʌ
-                { "\u0259", 68 }, // ə
-                { "\u0254", 69 }, // ɔ
-                { "\u025b", 70 }, // ɛ
-                { "\u025a", 71 }, // ɚ
-                { "\u025c", 72 }, // ɜ
-                { "\u026a", 73 }, // ɪ
-                { "\u028a", 74 }, // ʊ
-                { "\u02d0", 75 }, // ː (length mark)
+                { "\u0251", new[] { 65 } }, // ɑ
+                { "\u00e6", new[] { 66 } }, // æ
+                { "\u028c", new[] { 67 } }, // ʌ
+                { "\u0259", new[] { 68 } }, // ə
+                { "\u0254", new[] { 69 } }, // ɔ
+                { "\u025b", new[] { 70 } }, // ɛ
+                { "\u025a", new[] { 71 } }, // ɚ
+                { "\u025c", new[] { 72 } }, // ɜ
+                { "\u026a", new[] { 73 } }, // ɪ
+                { "\u028a", new[] { 74 } }, // ʊ
+                { "\u02d0", new[] { 75 } }, // ː (length mark)
 
                 // ── English consonants ──
-                { "\ue053", 76 }, // PUA (English-specific)
-                { "l", 77 },
-                { "\u0261", 78 }, // ɡ
-                { "\u014b", 79 }, // ŋ
-                { "\u0279", 80 }, // ɹ
-                { "\u0283", 81 }, // ʃ
-                { "\u0292", 82 }, // ʒ
-                { "\u03b8", 83 }, // θ
-                { "\u00f0", 84 }, // ð
+                { "\ue053", new[] { 76 } }, // PUA (English-specific)
+                { "l", new[] { 77 } },
+                { "\u0261", new[] { 78 } }, // ɡ
+                { "\u014b", new[] { 79 } }, // ŋ
+                { "\u0279", new[] { 80 } }, // ɹ
+                { "\u0283", new[] { 81 } }, // ʃ
+                { "\u0292", new[] { 82 } }, // ʒ
+                { "\u03b8", new[] { 83 } }, // θ
+                { "\u00f0", new[] { 84 } }, // ð
 
                 // ── English affricates (PUA) ──
-                { "\ue054", 85 }, // tʃ
-                { "\ue055", 86 }, // dʒ
+                { "\ue054", new[] { 85 } }, // tʃ
+                { "\ue055", new[] { 86 } }, // dʒ
 
                 // ── English stress markers ──
-                { "\u02c8", 87 }, // ˈ primary stress
-                { "\u02cc", 88 }, // ˌ secondary stress
+                { "\u02c8", new[] { 87 } }, // ˈ primary stress
+                { "\u02cc", new[] { 88 } }, // ˌ secondary stress
 
                 // ── Punctuation ──
-                { " ", 89 },
-                { ",", 90 },
-                { ".", 91 },
-                { ";", 92 },
-                { ":", 93 },
-                { "!", 94 },
-                { "-", 95 },
-                { "'", 96 },
+                { " ", new[] { 89 } },
+                { ",", new[] { 90 } },
+                { ".", new[] { 91 } },
+                { ";", new[] { 92 } },
+                { ":", new[] { 93 } },
+                { "!", new[] { 94 } },
+                { "-", new[] { 95 } },
+                { "'", new[] { 96 } },
 
                 // ── Chinese phonemes (PUA) ──
-                { "\ue020", 97 },  // pʰ
-                { "\ue021", 98 },  // tʰ
-                { "\ue022", 99 },  // kʰ
-                { "\ue023", 100 }, // tɕ (ZH j)
-                { "\ue024", 101 }, // tɕʰ (ZH q)
-                { "\u0255", 102 }, // ɕ (ZH x)
-                { "\ue025", 103 }, // PUA ZH
-                { "\ue026", 104 }, // PUA ZH
-                { "\u0282", 105 }, // ʂ (retroflex)
-                { "\u027b", 106 }, // ɻ
-                { "\ue027", 107 }, // PUA ZH
+                { "\ue020", new[] { 97 } },  // pʰ
+                { "\ue021", new[] { 98 } },  // tʰ
+                { "\ue022", new[] { 99 } },  // kʰ
+                { "\ue023", new[] { 100 } }, // tɕ (ZH j)
+                { "\ue024", new[] { 101 } }, // tɕʰ (ZH q)
+                { "\u0255", new[] { 102 } }, // ɕ (ZH x)
+                { "\ue025", new[] { 103 } }, // PUA ZH
+                { "\ue026", new[] { 104 } }, // PUA ZH
+                { "\u0282", new[] { 105 } }, // ʂ (retroflex)
+                { "\u027b", new[] { 106 } }, // ɻ
+                { "\ue027", new[] { 107 } }, // PUA ZH
 
                 // ── Chinese vowels/diphthongs (PUA) ──
-                { "\ue028", 111 }, // aɪ
-                { "\ue029", 112 }, // eɪ
+                { "\ue028", new[] { 111 } }, // aɪ
+                { "\ue029", new[] { 112 } }, // eɪ
 
                 // ── Chinese tone markers (PUA) ──
-                { "\ue046", 142 }, // tone1
-                { "\ue047", 143 }, // tone2
-                { "\ue048", 144 }, // tone3
-                { "\ue049", 145 }, // tone4
-                { "\ue04a", 146 }, // tone5
+                { "\ue046", new[] { 142 } }, // tone1
+                { "\ue047", new[] { 143 } }, // tone2
+                { "\ue048", new[] { 144 } }, // tone3
+                { "\ue049", new[] { 145 } }, // tone4
+                { "\ue04a", new[] { 146 } }, // tone5
 
                 // ── Spanish / shared phonemes ──
-                { "\u0272", 147 }, // ɲ
-                { "\u027e", 148 }, // ɾ
-                { "\ue01d", 149 }, // rr (trill)
+                { "\u0272", new[] { 147 } }, // ɲ
+                { "\u027e", new[] { 148 } }, // ɾ
+                { "\ue01d", new[] { 149 } }, // rr (trill)
 
                 // ── French nasal vowels (PUA) ──
-                { "\ue056", 155 }, // ɛ̃
-                { "\ue057", 156 }, // ɑ̃
-                { "\ue058", 157 }, // ɔ̃
+                { "\ue056", new[] { 155 } }, // ɛ̃
+                { "\ue057", new[] { 156 } }, // ɑ̃
+                { "\ue058", new[] { 157 } }, // ɔ̃
             };
         }
 
         /// <summary>
         /// Build a standard Japanese (OpenJTalk) phoneme_id_map for backward compatibility tests.
         /// </summary>
-        private static Dictionary<string, int> BuildJapaneseModelMap()
+        private static Dictionary<string, int[]> BuildJapaneseModelMap()
         {
-            return new Dictionary<string, int>
+            return new Dictionary<string, int[]>
             {
-                { "_", 0 }, { "^", 1 }, { "$", 2 },
-                { "a", 3 }, { "i", 4 }, { "u", 5 }, { "e", 6 }, { "o", 7 },
-                { "k", 8 }, { "g", 9 }, { "s", 10 }, { "z", 11 },
-                { "t", 12 }, { "d", 13 }, { "n", 14 }, { "h", 15 },
-                { "b", 16 }, { "p", 17 }, { "m", 18 }, { "y", 19 },
-                { "r", 20 }, { "w", 21 }, { "N", 22 },
-                { "\ue005", 23 }, // cl
-                { "\ue006", 26 }, // ky
-                { "\ue008", 27 }, // gy
-                { "\ue00e", 39 }, // ch
-                { "\ue00f", 40 }, // ts
-                { "\ue010", 42 }, // sh
-                { "\ue013", 43 }, // ny
-                { " ", 44 }, { ".", 45 }, { "?", 46 },
+                { "_", new[] { 0 } }, { "^", new[] { 1 } }, { "$", new[] { 2 } },
+                { "a", new[] { 3 } }, { "i", new[] { 4 } }, { "u", new[] { 5 } }, { "e", new[] { 6 } }, { "o", new[] { 7 } },
+                { "k", new[] { 8 } }, { "g", new[] { 9 } }, { "s", new[] { 10 } }, { "z", new[] { 11 } },
+                { "t", new[] { 12 } }, { "d", new[] { 13 } }, { "n", new[] { 14 } }, { "h", new[] { 15 } },
+                { "b", new[] { 16 } }, { "p", new[] { 17 } }, { "m", new[] { 18 } }, { "y", new[] { 19 } },
+                { "r", new[] { 20 } }, { "w", new[] { 21 } }, { "N", new[] { 22 } },
+                { "\ue005", new[] { 23 } }, // cl
+                { "\ue006", new[] { 26 } }, // ky
+                { "\ue008", new[] { 27 } }, // gy
+                { "\ue00e", new[] { 39 } }, // ch
+                { "\ue00f", new[] { 40 } }, // ts
+                { "\ue010", new[] { 42 } }, // sh
+                { "\ue013", new[] { 43 } }, // ny
+                { " ", new[] { 44 } }, { ".", new[] { 45 } }, { "?", new[] { 46 } },
             };
         }
 
         /// <summary>
         /// Build a mock eSpeak English phoneme_id_map for comparison.
         /// </summary>
-        private static Dictionary<string, int> BuildESpeakModelMap()
+        private static Dictionary<string, int[]> BuildESpeakModelMap()
         {
-            return new Dictionary<string, int>
+            return new Dictionary<string, int[]>
             {
-                { "_", 0 }, { "^", 1 }, { "$", 2 },
-                { "a", 3 }, { "b", 4 }, { "d", 5 }, { "e", 6 },
-                { "f", 7 }, { "k", 8 }, { "l", 9 }, { "m", 10 },
-                { "n", 11 }, { "p", 12 }, { "s", 13 }, { "t", 14 },
-                { " ", 15 },
+                { "_", new[] { 0 } }, { "^", new[] { 1 } }, { "$", new[] { 2 } },
+                { "a", new[] { 3 } }, { "b", new[] { 4 } }, { "d", new[] { 5 } }, { "e", new[] { 6 } },
+                { "f", new[] { 7 } }, { "k", new[] { 8 } }, { "l", new[] { 9 } }, { "m", new[] { 10 } },
+                { "n", new[] { 11 } }, { "p", new[] { 12 } }, { "s", new[] { 13 } }, { "t", new[] { 14 } },
+                { " ", new[] { 15 } },
             };
         }
 
         /// <summary>
         /// Build a mock IPA-based Japanese phoneme_id_map for backward compatibility.
         /// </summary>
-        private static Dictionary<string, int> BuildTsukuyomiModelMap()
+        private static Dictionary<string, int[]> BuildTsukuyomiModelMap()
         {
-            return new Dictionary<string, int>
+            return new Dictionary<string, int[]>
             {
-                { "_", 0 }, { "^", 1 }, { "$", 2 }, { "?", 3 },
-                { "a", 7 }, { "i", 8 }, { "u", 9 }, { "e", 10 }, { "o", 11 },
-                { "k", 25 }, { "g", 28 }, { "t", 31 }, { "d", 33 },
-                { "p", 35 }, { "b", 37 }, { "s", 41 }, { "z", 43 },
-                { "n", 50 }, { "m", 52 }, { "r", 54 }, { "w", 56 }, { "y", 57 },
-                { "N", 22 }, { "q", 24 }, { "f", 46 }, { "h", 47 }, { "j", 44 },
+                { "_", new[] { 0 } }, { "^", new[] { 1 } }, { "$", new[] { 2 } }, { "?", new[] { 3 } },
+                { "a", new[] { 7 } }, { "i", new[] { 8 } }, { "u", new[] { 9 } }, { "e", new[] { 10 } }, { "o", new[] { 11 } },
+                { "k", new[] { 25 } }, { "g", new[] { 28 } }, { "t", new[] { 31 } }, { "d", new[] { 33 } },
+                { "p", new[] { 35 } }, { "b", new[] { 37 } }, { "s", new[] { 41 } }, { "z", new[] { 43 } },
+                { "n", new[] { 50 } }, { "m", new[] { 52 } }, { "r", new[] { 54 } }, { "w", new[] { 56 } }, { "y", new[] { 57 } },
+                { "N", new[] { 22 } }, { "q", new[] { 24 } }, { "f", new[] { 46 } }, { "h", new[] { 47 } }, { "j", new[] { 44 } },
                 // IPA characters (presence of "ɕ" triggers IPA mode)
-                { "\u0255", 18 }, // ɕ
-                { "t\u0255", 32 }, // tɕ
-                { "k\u02B2", 26 }, // kʲ
-                { "\u0272", 45 }, // ɲ
-                { "\u0283", 42 }, // ʃ
-                { "\u0274", 20 }, // ɴ
-                { "\u026F", 19 }, // ɯ
-                { "\u027E", 21 }, // ɾ
-                { "\u027D", 55 }, // ɽ
-                { " ", 58 },
+                { "\u0255", new[] { 18 } }, // ɕ
+                { "t\u0255", new[] { 32 } }, // tɕ
+                { "k\u02B2", new[] { 26 } }, // kʲ
+                { "\u0272", new[] { 45 } }, // ɲ
+                { "\u0283", new[] { 42 } }, // ʃ
+                { "\u0274", new[] { 20 } }, // ɴ
+                { "\u026F", new[] { 19 } }, // ɯ
+                { "\u027E", new[] { 21 } }, // ɾ
+                { "\u027D", new[] { 55 } }, // ɽ
+                { " ", new[] { 58 } },
             };
         }
 
@@ -822,34 +822,29 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         {
             // Arrange
             var phonemes = new[] { "a", "k" };
-            var prosodyA1 = new[] { 1, 2 };
-            var prosodyA2 = new[] { 3, 4 };
-            var prosodyA3 = new[] { 5, 6 };
+            // stride=3 flat: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1]
+            var prosodyFlat = new[] { 1, 3, 5, 2, 4, 6 };
 
             // Act
-            var result = _multilingualEncoder.EncodeWithProsody(phonemes, prosodyA1, prosodyA2, prosodyA3);
+            var result = _multilingualEncoder.EncodeWithProsody(phonemes, prosodyFlat);
 
             // Assert
             Assert.IsNotNull(result);
 
-            // All arrays should have the same length
-            Assert.AreEqual(result.PhonemeIds.Length, result.ExpandedProsodyA1.Length,
-                "ProsodyA1 length should match PhonemeIds length");
-            Assert.AreEqual(result.PhonemeIds.Length, result.ExpandedProsodyA2.Length,
-                "ProsodyA2 length should match PhonemeIds length");
-            Assert.AreEqual(result.PhonemeIds.Length, result.ExpandedProsodyA3.Length,
-                "ProsodyA3 length should match PhonemeIds length");
+            // ExpandedProsodyFlat.Length = PhonemeIds.Length * 3
+            Assert.AreEqual(result.PhonemeIds.Length * 3, result.ExpandedProsodyFlat.Length,
+                "ExpandedProsodyFlat length should be PhonemeIds.Length * 3");
 
-            // BOS prosody should be 0
-            Assert.AreEqual(0, result.ExpandedProsodyA1[0], "BOS prosody A1 should be 0");
+            // BOS prosody should be 0 (all components)
+            Assert.AreEqual(0, result.ExpandedProsodyFlat[0 * 3 + 0], "BOS prosody A1 should be 0");
 
             // PAD prosody should be 0
-            Assert.AreEqual(0, result.ExpandedProsodyA1[1], "PAD after BOS prosody A1 should be 0");
+            Assert.AreEqual(0, result.ExpandedProsodyFlat[1 * 3 + 0], "PAD after BOS prosody A1 should be 0");
 
             // Verify phoneme prosody values are preserved at correct positions
             // IDs: BOS(1) + PAD(0) + a(10) + PAD(0) + k(32) + PAD(0) + EOS(2)
-            Assert.AreEqual(1, result.ExpandedProsodyA1[2], "Prosody A1 for 'a' should be 1");
-            Assert.AreEqual(4, result.ExpandedProsodyA2[4], "Prosody A2 for 'k' should be 4");
+            Assert.AreEqual(1, result.ExpandedProsodyFlat[2], "Prosody A1 for 'a' should be 1");
+            Assert.AreEqual(4, result.ExpandedProsodyFlat[4], "Prosody A2 for 'k' should be 4");
         }
 
         #endregion

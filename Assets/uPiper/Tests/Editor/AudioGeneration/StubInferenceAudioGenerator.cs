@@ -31,8 +31,8 @@ namespace uPiper.Tests.Editor.AudioGeneration
         /// <summary>最後の GenerateAudioAsync 呼び出し時の phonemeIds</summary>
         public int[] LastPhonemeIds { get; private set; }
 
-        /// <summary>最後の GenerateAudioAsync 呼び出し時の prosodyA1</summary>
-        public int[] LastProsodyA1 { get; private set; }
+        /// <summary>最後の GenerateAudioAsync 呼び出し時の prosodyFlat</summary>
+        public int[] LastProsodyFlat { get; private set; }
 
         /// <summary>最後の GenerateAudioAsync 呼び出し時の lengthScale</summary>
         public float LastLengthScale { get; private set; }
@@ -65,14 +65,14 @@ namespace uPiper.Tests.Editor.AudioGeneration
 
         public Task<float[]> GenerateAudioAsync(
             int[] phonemeIds,
-            int[] prosodyA1 = null, int[] prosodyA2 = null, int[] prosodyA3 = null,
+            int[] prosodyFlat = null,
             float lengthScale = 1.0f, float noiseScale = 0.667f, float noiseW = 0.8f,
             int speakerId = 0, int languageId = 0,
             CancellationToken cancellationToken = default)
         {
             GenerateCallCount++;
             LastPhonemeIds = phonemeIds;
-            LastProsodyA1 = prosodyA1;
+            LastProsodyFlat = prosodyFlat;
             LastLengthScale = lengthScale;
             LastNoiseScale = noiseScale;
             LastNoiseW = noiseW;

@@ -129,14 +129,14 @@ namespace uPiper.Tests.Runtime.AudioGeneration
         {
             // Arrange
             var phonemeIds = new[] { 1, 3, 4, 5, 2 };
-            var prosodyA1 = new[] { 0, 1, 2, 3, 0 };
-            var prosodyA2 = new[] { 2, 2, 2, 2, 0 };
-            var prosodyA3 = new[] { 1, 1, 1, 1, 0 };
+            var prosodyFlat = new[] { 0, 1, 2, 3, 0 };
+            var prosodyFlat = new[] { 2, 2, 2, 2, 0 };
+            var prosodyFlat = new[] { 1, 1, 1, 1, 0 };
 
             // Act & Assert
             Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await _generator.GenerateAudioAsync(
-                    phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                    phonemeIds, prosodyFlat, prosodyFlat, prosodyFlat,
                     languageId: 0));
         }
 
@@ -161,14 +161,14 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             // CreateProsodyTensor safely handles short arrays by zero-filling, but
             // the not-initialized guard fires first.
             var phonemeIds = new[] { 1, 2, 3, 4, 5 };
-            var prosodyA1 = new[] { 0, 1 }; // shorter than phonemeIds
-            var prosodyA2 = new[] { 2, 2, 2, 2, 2, 2, 2 }; // longer than phonemeIds
-            var prosodyA3 = new[] { 1, 1, 1 }; // different length
+            var prosodyFlat = new[] { 0, 1 }; // shorter than phonemeIds
+            var prosodyFlat = new[] { 2, 2, 2, 2, 2, 2, 2 }; // longer than phonemeIds
+            var prosodyFlat = new[] { 1, 1, 1 }; // different length
 
             // Act & Assert
             Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await _generator.GenerateAudioAsync(
-                    phonemeIds, prosodyA1, prosodyA2, prosodyA3,
+                    phonemeIds, prosodyFlat, prosodyFlat, prosodyFlat,
                     languageId: 0));
         }
 

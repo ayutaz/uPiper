@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers.Implementations;
 
@@ -66,7 +67,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         }
 
         /// <inheritdoc/>
-        public (string[] Phonemes, int[] A1, int[] A2, int[] A3) Process(string text)
+        public (string[] Phonemes, int[] ProsodyFlat) Process(string text)
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(JapaneseG2PHandler));
@@ -88,7 +89,9 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
                 a3 = a3.Length > 1 ? a3[1..] : a3;
             }
 
-            return (phonemes, a1, a2, a3);
+            // Flatten A1/A2/A3 -> stride=3 flat array
+            var flat = PhonemeEncoder.FlattenProsody(a1, a2, a3, phonemes.Length);
+            return (phonemes, flat);
         }
 
         /// <inheritdoc/>

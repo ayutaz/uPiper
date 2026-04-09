@@ -46,9 +46,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             var enStub = new StubG2PHandler(
                 "en",
                 new[] { "h", "a", "y", puaToken },
-                new[] { 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0 });
+                new int[4 * 3]);
 
             // Real JA phonemizer for the final segment
             var jaPhonemizer = new DotNetG2PPhonemizer();
@@ -90,9 +88,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             var enStub = new StubG2PHandler(
                 "en",
                 new[] { "w", "er", "l", "d", "\ue016" },
-                new[] { 0, 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0, 0 });
+                new int[5 * 3]);
 
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
@@ -133,9 +129,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             var enStub = new StubG2PHandler(
                 "en",
                 new[] { "h", "e", "l", "o", "\ue017" },
-                new[] { 0, 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0, 0 });
+                new int[5 * 3]);
 
             var mp = new MultilingualPhonemizer(
                 new MultilingualPhonemizerOptions
@@ -168,9 +162,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             var enStub = new StubG2PHandler(
                 "en",
                 new[] { "h", "e", "l", "o", "$" },
-                new[] { 0, 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0, 0 });
+                new int[5 * 3]);
 
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
@@ -303,9 +295,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             var enStub = new StubG2PHandler(
                 "en",
                 new[] { "_", "h", "e", "l", "o" },
-                new[] { 0, 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0, 0 });
+                new int[5 * 3]);
 
             var mp = new MultilingualPhonemizer(
                 new MultilingualPhonemizerOptions
@@ -360,26 +350,23 @@ namespace uPiper.Tests.Editor.Phonemizers
             var result = await Phonemize(mp,"こんにちは");
             Assert.IsNotNull(result);
 
-            // All prosody arrays must be same length as phonemes
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
-                "ProsodyA1 length must match phonemes after PAD strip");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA2.Length,
-                "ProsodyA2 length must match phonemes after PAD strip");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA3.Length,
-                "ProsodyA3 length must match phonemes after PAD strip");
+            // ProsodyFlat must be aligned (phonemeCount * 3)
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat length must match phonemes * 3 after PAD strip");
 
             // The stripped result should be 1 shorter than raw (the leading "_" was removed)
             Assert.AreEqual(rawResult.Phonemes.Length - 1, result.Phonemes.Length,
                 "Exactly one element should be stripped (the leading PAD)");
 
             // Prosody values at index 0 of the stripped result should correspond
-            // to index 1 of the raw result (i.e., the first real phoneme's prosody)
-            Assert.AreEqual(rawResult.ProsodyA1[1], result.ProsodyA1[0],
-                "ProsodyA1[0] should correspond to the first real phoneme (index 1 in raw)");
-            Assert.AreEqual(rawResult.ProsodyA2[1], result.ProsodyA2[0],
-                "ProsodyA2[0] should correspond to the first real phoneme (index 1 in raw)");
-            Assert.AreEqual(rawResult.ProsodyA3[1], result.ProsodyA3[0],
-                "ProsodyA3[0] should correspond to the first real phoneme (index 1 in raw)");
+            // to index 1 of the raw result (i.e., the first real phoneme's prosody).
+            // Raw uses separate A1/A2/A3; our result uses flat stride=3.
+            Assert.AreEqual(rawResult.ProsodyA1[1], result.ProsodyFlat[0 * 3 + 0],
+                "ProsodyFlat A1[0] should correspond to the first real phoneme (index 1 in raw)");
+            Assert.AreEqual(rawResult.ProsodyA2[1], result.ProsodyFlat[0 * 3 + 1],
+                "ProsodyFlat A2[0] should correspond to the first real phoneme (index 1 in raw)");
+            Assert.AreEqual(rawResult.ProsodyA3[1], result.ProsodyFlat[0 * 3 + 2],
+                "ProsodyFlat A3[0] should correspond to the first real phoneme (index 1 in raw)");
 
             mp.Dispose();
         }
@@ -452,9 +439,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             var enStub = new StubG2PHandler(
                 "en",
                 new[] { "h", "e", "l", "o" },
-                new[] { 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0 });
+                new int[4 * 3]);
 
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
@@ -492,12 +477,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         public async Task ProsodyArrays_AlignedAfterEosStrip()
         {
             // EN intermediate with prosody values and trailing "$"
+            // stride=3 flat: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, a1_2, a2_2, a3_2]
             var enStub = new StubG2PHandler(
                 "en",
                 new[] { "h", "a", "$" },
-                new[] { 10, 20, 30 },
-                new[] { 11, 21, 31 },
-                new[] { 12, 22, 32 });
+                new[] { 10, 11, 12, 20, 21, 22, 30, 31, 32 });
 
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
@@ -517,20 +501,17 @@ namespace uPiper.Tests.Editor.Phonemizers
             var result = await Phonemize(mp,"ha あ");
             Assert.IsNotNull(result);
 
-            // All arrays must be aligned
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
-                "ProsodyA1 must stay aligned with phonemes after EOS strip");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA2.Length,
-                "ProsodyA2 must stay aligned with phonemes after EOS strip");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA3.Length,
-                "ProsodyA3 must stay aligned with phonemes after EOS strip");
+            // ProsodyFlat must be aligned (phonemeCount * 3)
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat must stay aligned with phonemes after EOS strip");
 
             // The EN portion's prosody (after EOS strip) should have the
-            // sentinel values 10/11/12 and 20/21/22, but NOT 30/31/32.
-            Assert.AreEqual(10, result.ProsodyA1[0],
-                "EN prosody value at index 0 should survive EOS strip");
-            Assert.AreEqual(20, result.ProsodyA1[1],
-                "EN prosody value at index 1 should survive EOS strip");
+            // sentinel values. In stride=3: flat[0]=10 (A1 of phoneme 0),
+            // flat[3]=20 (A1 of phoneme 1). The "$" prosody (30,31,32) should be gone.
+            Assert.AreEqual(10, result.ProsodyFlat[0 * 3 + 0],
+                "EN prosody A1 at phoneme 0 should survive EOS strip");
+            Assert.AreEqual(20, result.ProsodyFlat[1 * 3 + 0],
+                "EN prosody A1 at phoneme 1 should survive EOS strip");
 
             mp.Dispose();
         }

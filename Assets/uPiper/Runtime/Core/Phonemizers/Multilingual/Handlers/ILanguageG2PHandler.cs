@@ -13,8 +13,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
     /// All Process() implementations MUST be synchronous.
     /// InitializeAsync() is needed only for languages requiring dictionary loading (ja, en, zh).
     /// Do NOT use Task.Run inside Process() — WebGL prohibits background threads.
-    /// Note: P2-2 (Prosody flat array) will change the return type to
-    /// (string[] Phonemes, int[] ProsodyFlat) with stride=3.
     /// To create a custom handler, implement this interface and register it via
     /// <see cref="MultilingualPhonemizerOptions.Handlers"/>. See existing implementations
     /// (e.g., <see cref="JapaneseG2PHandler"/>, <see cref="EnglishG2PHandler"/>) for reference.
@@ -34,11 +32,12 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         Task InitializeAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Processes text and returns phonemes with prosody arrays.
-        /// All arrays must have the same length.
+        /// Processes text and returns phonemes with a prosody flat array (stride=3).
+        /// ProsodyFlat layout: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, ...].
+        /// ProsodyFlat.Length must equal Phonemes.Length * 3.
         /// </summary>
         /// <param name="text">Input text in the handler's language.</param>
-        /// <returns>Tuple of (Phonemes, ProsodyA1, ProsodyA2, ProsodyA3).</returns>
-        (string[] Phonemes, int[] A1, int[] A2, int[] A3) Process(string text);
+        /// <returns>Tuple of (Phonemes, ProsodyFlat).</returns>
+        (string[] Phonemes, int[] ProsodyFlat) Process(string text);
     }
 }

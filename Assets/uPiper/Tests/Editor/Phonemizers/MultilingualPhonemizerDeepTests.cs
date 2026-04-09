@@ -70,8 +70,8 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "Three-language mixed text should produce phonemes");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
-                "Prosody A1 must align with phoneme count");
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat must align with phoneme count (stride=3)");
 
             phonemizer.Dispose();
         }
@@ -129,9 +129,8 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "All-seven-languages text should produce phonemes");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA2.Length);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA3.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat length must equal Phonemes.Length * 3");
 
             phonemizer.Dispose();
         }
@@ -149,12 +148,8 @@ namespace uPiper.Tests.Editor.Phonemizers
 
             Assert.IsNotNull(result.Phonemes);
             Assert.IsTrue(result.Phonemes.Length > 0);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
-                "ProsodyA1 length must equal phoneme count");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA2.Length,
-                "ProsodyA2 length must equal phoneme count");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA3.Length,
-                "ProsodyA3 length must equal phoneme count");
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat length must equal Phonemes.Length * 3");
 
             phonemizer.Dispose();
         }
@@ -168,14 +163,13 @@ namespace uPiper.Tests.Editor.Phonemizers
             var result = await Phonemize(phonemizer, "東京タワーは高いです");
 
             Assert.IsTrue(result.Phonemes.Length > 0);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length);
 
             // At least some prosody values should be non-zero for Japanese
-            var hasNonZeroA1 = result.ProsodyA1.Any(v => v != 0);
-            var hasNonZeroA2 = result.ProsodyA2.Any(v => v != 0);
-            // A1 or A2 should have non-zero values for Japanese prosody
-            Assert.IsTrue(hasNonZeroA1 || hasNonZeroA2,
-                "Japanese segment should have at least some non-zero prosody values (A1 or A2)");
+            // At least some prosody values should be non-zero for Japanese
+            var hasNonZero = result.ProsodyFlat.Any(v => v != 0);
+            Assert.IsTrue(hasNonZero,
+                "Japanese segment should have at least some non-zero prosody values");
 
             phonemizer.Dispose();
         }
@@ -191,13 +185,18 @@ namespace uPiper.Tests.Editor.Phonemizers
             var result = await Phonemize(phonemizer, "hello world");
 
             Assert.IsTrue(result.Phonemes.Length > 0);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length);
 
-            // English backend always sets A1=0 (no Japanese-style mora position)
-            Assert.IsTrue(result.ProsodyA1.All(v => v == 0),
+            // English backend sets A1=0 for all phonemes (no Japanese-style mora position).
+            // Check A1 values (stride=3, offset 0): flat[i*3+0] should be 0
+            var phonemeCount = result.Phonemes.Length;
+            var allA1Zero = true;
+            for (var i = 0; i < phonemeCount; i++)
+            {
+                if (result.ProsodyFlat[i * 3 + 0] != 0) { allA1Zero = false; break; }
+            }
+            Assert.IsTrue(allA1Zero,
                 "English-only text should have all-zero A1 prosody");
-            // A2 (stress) and A3 (word phoneme count) may be non-zero for English;
-            // this is correct behavior per the EnglishG2PEngine prosody spec
 
             phonemizer.Dispose();
         }
@@ -237,8 +236,8 @@ namespace uPiper.Tests.Editor.Phonemizers
 
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "Chinese text should produce phonemes");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
-                "ProsodyA1 must be aligned even for Chinese segments");
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat must be aligned even for Chinese segments");
 
             phonemizer.Dispose();
         }
@@ -371,9 +370,9 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.IsNotNull(result);
             Assert.AreEqual(0, result.Phonemes.Length,
                 "Whitespace-only text should return empty phonemes");
-            Assert.AreEqual(0, result.ProsodyA1.Length);
-            Assert.AreEqual(0, result.ProsodyA2.Length);
-            Assert.AreEqual(0, result.ProsodyA3.Length);
+            Assert.AreEqual(0, result.ProsodyFlat.Length);
+            Assert.AreEqual(0, result.ProsodyFlat.Length);
+            Assert.AreEqual(0, result.ProsodyFlat.Length);
 
             phonemizer.Dispose();
         }
@@ -390,7 +389,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             // Punctuation may or may not produce phonemes depending on the backend
             // but the call itself should not throw
             Assert.IsNotNull(result.Phonemes);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length);
 
             phonemizer.Dispose();
         }
@@ -406,7 +405,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.IsNotNull(result);
             Assert.IsNotNull(result.Phonemes);
             // The detector treats digits as neutral, so they get absorbed into default
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length);
 
             phonemizer.Dispose();
         }
@@ -433,7 +432,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "Very long mixed text should produce phonemes");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
                 "Prosody arrays must stay aligned for long text");
 
             phonemizer.Dispose();
@@ -450,7 +449,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
                 "Rapid language switching should produce phonemes");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
                 "Prosody must align even with rapid switching");
 
             phonemizer.Dispose();
@@ -688,12 +687,12 @@ namespace uPiper.Tests.Editor.Phonemizers
             var result = await Phonemize(phonemizer, "おはようございます good morning");
 
             Assert.IsTrue(result.Phonemes.Length > 0);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length);
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length);
 
             // The Japanese portion should contribute some non-zero prosody
-            var anyNonZero = result.ProsodyA1.Any(v => v != 0)
-                          || result.ProsodyA2.Any(v => v != 0)
-                          || result.ProsodyA3.Any(v => v != 0);
+            var anyNonZero = result.ProsodyFlat.Any(v => v != 0)
+                          || result.ProsodyFlat.Any(v => v != 0)
+                          || result.ProsodyFlat.Any(v => v != 0);
             Assert.IsTrue(anyNonZero,
                 "Mixed ja+en result should have non-zero prosody from the Japanese portion");
 

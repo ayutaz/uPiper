@@ -35,12 +35,8 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             Assert.AreEqual(1, stub.ProcessCallCount,
                 "StubHandler.Process should be called exactly once");
             Assert.IsNotNull(result.Phonemes);
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA1.Length,
-                "Phonemes and ProsodyA1 must be aligned");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA2.Length,
-                "Phonemes and ProsodyA2 must be aligned");
-            Assert.AreEqual(result.Phonemes.Length, result.ProsodyA3.Length,
-                "Phonemes and ProsodyA3 must be aligned");
+            Assert.AreEqual(result.Phonemes.Length * 3, result.ProsodyFlat.Length,
+                "ProsodyFlat length must equal Phonemes.Length * 3");
 
             mp.Dispose();
         }
@@ -75,11 +71,10 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
         public async Task PhonemizeWithProsodyAsync_WithStubProsody_ValuesPreserved()
         {
             var phonemes = new[] { "a", "b", "c" };
-            var a1 = new[] { 1, 2, 3 };
-            var a2 = new[] { 4, 5, 6 };
-            var a3 = new[] { 7, 8, 9 };
+            // stride=3 flat: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, a1_2, a2_2, a3_2]
+            var prosodyFlat = new[] { 1, 4, 7, 2, 5, 8, 3, 6, 9 };
             var stub = new StubG2PHandler("en",
-                phonemes: phonemes, a1: a1, a2: a2, a3: a3);
+                phonemes: phonemes, prosodyFlat: prosodyFlat);
             var options = new MultilingualPhonemizerOptions
             {
                 Languages = new List<string> { "en" },
@@ -92,9 +87,7 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var result = await mp.PhonemizeWithProsodyAsync("abc");
 
             Assert.AreEqual(phonemes, result.Phonemes);
-            Assert.AreEqual(a1, result.ProsodyA1);
-            Assert.AreEqual(a2, result.ProsodyA2);
-            Assert.AreEqual(a3, result.ProsodyA3);
+            Assert.AreEqual(prosodyFlat, result.ProsodyFlat);
 
             mp.Dispose();
         }
@@ -302,9 +295,7 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var result = await mp.PhonemizeWithProsodyAsync("");
 
             Assert.AreEqual(0, result.Phonemes.Length);
-            Assert.AreEqual(0, result.ProsodyA1.Length);
-            Assert.AreEqual(0, result.ProsodyA2.Length);
-            Assert.AreEqual(0, result.ProsodyA3.Length);
+            Assert.AreEqual(0, result.ProsodyFlat.Length);
             // Handler should NOT be called for empty text
             Assert.AreEqual(0, stub.ProcessCallCount,
                 "Handler should not be called for empty text");
@@ -400,10 +391,9 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
                 return Task.CompletedTask;
             }
 
-            public (string[] Phonemes, int[] A1, int[] A2, int[] A3) Process(string text)
+            public (string[] Phonemes, int[] ProsodyFlat) Process(string text)
             {
-                return (Array.Empty<string>(), Array.Empty<int>(),
-                    Array.Empty<int>(), Array.Empty<int>());
+                return (Array.Empty<string>(), Array.Empty<int>());
             }
 
             public void Dispose()

@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DotNetG2P.English;
 using UnityEngine;
+using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
 
 namespace uPiper.Core.Phonemizers.Multilingual.Handlers
@@ -102,7 +103,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         }
 
         /// <inheritdoc/>
-        public (string[] Phonemes, int[] A1, int[] A2, int[] A3) Process(string text)
+        public (string[] Phonemes, int[] ProsodyFlat) Process(string text)
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(EnglishG2PHandler));
@@ -132,7 +133,8 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
                 a3[i] = prosody[i].A3;
             }
 
-            return (phonemes, a1, a2, a3);
+            var flat = PhonemeEncoder.FlattenProsody(a1, a2, a3, phonemes.Length);
+            return (phonemes, flat);
         }
 
         /// <inheritdoc/>

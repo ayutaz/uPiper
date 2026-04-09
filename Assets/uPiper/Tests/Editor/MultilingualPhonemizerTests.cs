@@ -144,9 +144,7 @@ namespace uPiper.Tests.Editor
             var result = new MultilingualPhonemizeResult();
 
             Assert.IsNull(result.Phonemes);
-            Assert.IsNull(result.ProsodyA1);
-            Assert.IsNull(result.ProsodyA2);
-            Assert.IsNull(result.ProsodyA3);
+            Assert.IsNull(result.ProsodyFlat);
             Assert.IsNull(result.DetectedPrimaryLanguage);
         }
 
