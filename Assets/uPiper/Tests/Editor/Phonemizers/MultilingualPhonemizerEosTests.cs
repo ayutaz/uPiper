@@ -397,9 +397,7 @@ namespace uPiper.Tests.Editor.Phonemizers
             var enStub = new StubG2PHandler(
                 "en",
                 new[] { "h", "a", "y", eosToken },
-                new[] { 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0 },
-                new[] { 0, 0, 0, 0 });
+                new int[4 * 3]);
 
             var jaPhonemizer = new DotNetG2PPhonemizer();
 

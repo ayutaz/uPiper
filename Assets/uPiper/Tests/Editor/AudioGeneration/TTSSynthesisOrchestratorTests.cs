@@ -5,6 +5,7 @@ using NUnit.Framework;
 using UnityEngine;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
+using uPiper.Core.Phonemizers.Multilingual;
 
 namespace uPiper.Tests.Editor.AudioGeneration
 {
@@ -66,7 +67,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 // intersperse PAD あり（NeedsInterspersePadding() = true）
                 PhonemeType = null,
             };
-            _phonemeEncoder = new PhonemeEncoder(_voiceConfig);
+            _phonemeEncoder = new PhonemeEncoder(_voiceConfig, new PuaTokenMapper());
         }
 
         // ── 通常パス（Prosodyなし）────────────────────────────────

@@ -405,7 +405,7 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, 22050);
+                ids, null, silence, TestPhonemeIdMap, 22050);
 
             // 0.5s * 22050 = 11025 samples
             Assert.AreEqual(11025, phrases[0].SilenceSamples);
@@ -418,7 +418,7 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, 44100);
+                ids, null, silence, TestPhonemeIdMap, 44100);
 
             // 0.5s * 44100 = 22050 samples
             Assert.AreEqual(22050, phrases[0].SilenceSamples);
@@ -431,7 +431,7 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "_", 0.5f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, TestPhonemeIdMap, 16000);
+                ids, null, silence, TestPhonemeIdMap, 16000);
 
             // 0.5s * 16000 = 8000 samples
             Assert.AreEqual(8000, phrases[0].SilenceSamples);
@@ -444,7 +444,7 @@ namespace uPiper.Tests.Editor
             var silence = new Dictionary<string, float> { { "_", 0.0f } };
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                phonemeIds, null, null, null,
+                phonemeIds, null,
                 silence, TestPhonemeIdMap, TestSampleRate);
 
             Assert.AreEqual(2, phrases.Count);
@@ -493,7 +493,7 @@ namespace uPiper.Tests.Editor
             var emptyMap = new Dictionary<string, int[]>();
 
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                ids, null, null, null, silence, emptyMap, TestSampleRate);
+                ids, null, silence, emptyMap, TestSampleRate);
 
             // No phoneme can be resolved, so no splits.
             Assert.AreEqual(1, phrases.Count);
@@ -511,7 +511,7 @@ namespace uPiper.Tests.Editor
 
             Assert.Throws<ArgumentNullException>(
                 () => PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                    null, null, null, null, silence, TestPhonemeIdMap, TestSampleRate));
+                    null, null, silence, TestPhonemeIdMap, TestSampleRate));
         }
 
         [Test]
@@ -521,7 +521,7 @@ namespace uPiper.Tests.Editor
 
             Assert.Throws<ArgumentNullException>(
                 () => PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                    ids, null, null, null, null, TestPhonemeIdMap, TestSampleRate));
+                    ids, null, null, TestPhonemeIdMap, TestSampleRate));
         }
 
         [Test]
@@ -532,7 +532,7 @@ namespace uPiper.Tests.Editor
 
             Assert.Throws<ArgumentNullException>(
                 () => PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                    ids, null, null, null, silence, null, TestSampleRate));
+                    ids, null, silence, null, TestSampleRate));
         }
 
         // ================================================================
@@ -594,9 +594,9 @@ namespace uPiper.Tests.Editor
         {
             // readonly struct with array fields: same content, different instances.
             var a = new PhonemeSilenceProcessor.Phrase(
-                new[] { 1, 2, 3 }, null, null, null, 100);
+                new[] { 1, 2, 3 }, null, 100);
             var b = new PhonemeSilenceProcessor.Phrase(
-                new[] { 1, 2, 3 }, null, null, null, 100);
+                new[] { 1, 2, 3 }, null, 100);
 
             // Value type equality for struct compares fields.
             // With array fields (reference types), different array instances
@@ -606,9 +606,9 @@ namespace uPiper.Tests.Editor
             // Same array reference should yield equality.
             var sharedIds = new[] { 1, 2, 3 };
             var c = new PhonemeSilenceProcessor.Phrase(
-                sharedIds, null, null, null, 100);
+                sharedIds, null, 100);
             var d = new PhonemeSilenceProcessor.Phrase(
-                sharedIds, null, null, null, 100);
+                sharedIds, null, 100);
             Assert.AreEqual(c, d);
         }
 
@@ -637,7 +637,7 @@ namespace uPiper.Tests.Editor
 
             // Act
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
-                phonemeIds, null, null, null, silence, multiIdMap, TestSampleRate);
+                phonemeIds, null, silence, multiIdMap, TestSampleRate);
 
             // Assert: should split at ID=7 into two phrases
             Assert.AreEqual(2, phrases.Count,
