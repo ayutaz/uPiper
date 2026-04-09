@@ -669,24 +669,23 @@ public class ShortTextProcessorTests
     [Test]
     public void PadAndTrim_ShortSequence_OutputReasonableLength()
     {
-        // PadPhonemeIds → 擬似オーディオ生成 → TrimSilence のパイプライン
         var ids = new[] { 1, 10, 11, 12, 2 };
         var (padded, _) = ShortTextProcessor.PadPhonemeIds(ids, null);
         Assert.GreaterOrEqual(padded.Length, ShortTextProcessor.MinPhonemeIds);
 
-        // パディング分の無音 + 有声部分のオーディオを模擬
         var sampleRate = 22050;
-        var totalSamples = sampleRate * 2; // 2秒
+        var totalSamples = sampleRate * 2;
         var audio = new NativeArray<float>(totalSamples, Allocator.Persistent);
         try
         {
-            // 先頭0.5秒無音 + 1秒sin波 + 0.5秒無音
             var silenceStart = (int)(sampleRate * 0.5f);
             var signalEnd = (int)(sampleRate * 1.5f);
             for (var i = silenceStart; i < signalEnd; i++)
                 audio[i] = Mathf.Sin(2f * Mathf.PI * 440f * i / sampleRate) * 0.5f;
 
             var trimmed = ShortTextProcessor.TrimSilence(audio);
+            // TrimSilence は、トリムが発生した場合に元の audio を Dispose し、
+            // 新しい NativeArray を返す。トリムが不要なら元の audio をそのまま返す。
             try
             {
                 Assert.Greater(trimmed.Length, ShortTextProcessor.TrimMinSamples,
@@ -696,14 +695,19 @@ public class ShortTextProcessorTests
             }
             finally
             {
-                if (trimmed.IsCreated && !audio.Equals(trimmed))
+                // trimmed は audio と同一(トリムなし)か、新しい配列(トリムあり)かのいずれか。
+                // TrimSilence がトリム時に audio を既に Dispose しているので、
+                // trimmed だけを Dispose すればよい。
+                if (trimmed.IsCreated)
                     trimmed.Dispose();
             }
         }
-        finally
+        catch
         {
+            // TrimSilence 呼び出し前に例外が発生した場合のみ audio を Dispose
             if (audio.IsCreated)
                 audio.Dispose();
+            throw;
         }
     }
 
