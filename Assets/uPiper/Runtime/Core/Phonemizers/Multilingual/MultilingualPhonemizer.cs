@@ -43,6 +43,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
         private readonly Dictionary<string, ILanguageG2PHandler> _handlers = new();
         private readonly UnicodeLanguageDetector _detector;
+        private readonly SemaphoreSlim _initLock = new(1, 1);
         private readonly IReadOnlyList<string> _languages;
         private readonly string _defaultLatinLanguage;
         private IPhonemizerBackend _enPhonemizer;        // English legacy (for test stub injection, kept for P1-5)
@@ -147,38 +148,49 @@ namespace uPiper.Core.Phonemizers.Multilingual
             if (_isInitialized)
                 return;
 
-            // Create default handlers for languages that don't have one yet
-            foreach (var lang in _languages)
+            await _initLock.WaitAsync(cancellationToken);
+            try
             {
-                if (_handlers.ContainsKey(lang))
-                    continue;
+                if (_isInitialized)
+                    return; // double-check after lock
 
-                // Skip languages that have legacy backend fallback (en/ko via _enPhonemizer/_koPhonemizer)
-                if (lang == "en" && _enPhonemizer != null)
-                    continue;
-                if (lang == "ko" && _koPhonemizer != null)
-                    continue;
+                // Create default handlers for languages that don't have one yet
+                foreach (var lang in _languages)
+                {
+                    if (_handlers.ContainsKey(lang))
+                        continue;
 
-                var handler = CreateDefaultHandler(lang);
-                if (handler != null)
-                    _handlers[lang] = handler;
+                    // Skip languages that have legacy backend fallback (en/ko via _enPhonemizer/_koPhonemizer)
+                    if (lang == "en" && _enPhonemizer != null)
+                        continue;
+                    if (lang == "ko" && _koPhonemizer != null)
+                        continue;
+
+                    var handler = CreateDefaultHandler(lang);
+                    if (handler != null)
+                        _handlers[lang] = handler;
+                }
+
+                // Initialize all handlers
+                foreach (var handler in _handlers.Values)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await handler.InitializeAsync(cancellationToken);
+                }
+
+                if (_handlers.Count == 0 && _enPhonemizer == null && _koPhonemizer == null)
+                {
+                    PiperLogger.LogWarning(
+                        "[MultilingualPhonemizer] Warning: No backends were successfully initialized");
+                }
+
+                _isInitialized = true;
+                PiperLogger.LogInfo($"[MultilingualPhonemizer] Initialized for languages: [{string.Join(", ", _languages)}]");
             }
-
-            // Initialize all handlers
-            foreach (var handler in _handlers.Values)
+            finally
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                await handler.InitializeAsync(cancellationToken);
+                _initLock.Release();
             }
-
-            if (_handlers.Count == 0 && _enPhonemizer == null && _koPhonemizer == null)
-            {
-                PiperLogger.LogWarning(
-                    "[MultilingualPhonemizer] Warning: No backends were successfully initialized");
-            }
-
-            _isInitialized = true;
-            PiperLogger.LogInfo($"[MultilingualPhonemizer] Initialized for languages: [{string.Join(", ", _languages)}]");
         }
 
         private static ILanguageG2PHandler CreateDefaultHandler(string lang)
@@ -335,6 +347,8 @@ namespace uPiper.Core.Phonemizers.Multilingual
             // Legacy backends (kept for P1-5)
             _enPhonemizer?.Dispose();
             _koPhonemizer?.Dispose();
+
+            _initLock.Dispose();
         }
 
         private async Task<(string[] phonemes, int[] a1, int[] a2, int[] a3)> ProcessFallbackAsync(
@@ -366,7 +380,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             {
                 "en" => _enPhonemizer,
                 "ko" => _koPhonemizer,
-                _ => _enPhonemizer // fallback to English legacy backend
+                _ => null
             };
         }
 

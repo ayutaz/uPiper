@@ -58,6 +58,12 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
 
             try
             {
+#if UNITY_WEBGL && !UNITY_EDITOR
+                PiperLogger.LogWarning(
+                    "[ChineseG2PHandler] WebGL: external dictionary not available. Chinese G2P requires async loading.");
+                // Chinese G2P disabled on WebGL unless engine is pre-injected
+                return Task.CompletedTask;
+#else
                 var charPath = Path.Combine(
                     Application.streamingAssetsPath, "uPiper", "Chinese", "pinyin_char.txt");
                 var phrasePath = Path.Combine(
@@ -78,6 +84,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
                     PiperLogger.LogWarning(
                         $"[ChineseG2PHandler] Chinese dictionary not found at {charPath}");
                 }
+#endif
             }
             catch (Exception ex)
             {
@@ -96,7 +103,8 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
             if (!_isInitialized || _engine == null)
                 throw new InvalidOperationException("Call InitializeAsync() before processing.");
 
-            // Use DotNetG2P.Chinese directly for Chinese text
+            // NOTE: Calls ToPuaPhonemes and ToIpaWithProsody separately. A unified API would be more
+            // efficient but requires DotNetG2P.Chinese changes (separate repository).
             var puaPhonemes = _engine.ToPuaPhonemes(text);
             var prosodyResult = _engine.ToIpaWithProsody(text);
 
@@ -115,6 +123,9 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
             else
             {
                 // Distribute PUA phonemes across syllables and insert tone markers
+                // NOTE: Assumes approximately equal phonemes per syllable. Chinese syllables may have
+                // variable phoneme counts (e.g., "a" vs "zhuang"). This distribution is an approximation
+                // inherited from the original MultilingualPhonemizer.ProcessChinese implementation.
                 int phonemesPerSyllable = puaPhonemes.Length / totalSyllables;
                 int remainder = puaPhonemes.Length % totalSyllables;
                 int puaIdx = 0;

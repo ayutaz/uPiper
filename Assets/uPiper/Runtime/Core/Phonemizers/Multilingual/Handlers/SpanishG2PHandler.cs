@@ -8,7 +8,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
 {
     /// <summary>
     /// Spanish G2P handler using DotNetG2P.Spanish.
-    /// Provides PUA phonemes with prosody A1/A2/A3 extraction.
+    /// Uses ToPuaPhonemes for phonemes and ToIpaWithProsody for prosody only.
     /// </summary>
     public sealed class SpanishG2PHandler : ILanguageG2PHandler
     {
@@ -64,8 +64,8 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
             if (!_isInitialized || _engine == null)
                 throw new InvalidOperationException("Call InitializeAsync() before processing.");
 
+            var phonemes = _engine.ToPuaPhonemes(text);
             var result = _engine.ToIpaWithProsody(text);
-            var phonemes = result.Phonemes ?? Array.Empty<string>();
             var (a1, a2, a3) = G2PHandlerUtils.ExtractProsodyArrays(
                 result.Prosody, p => (p.A1, p.A2, p.A3), phonemes.Length);
             return (phonemes, a1, a2, a3);

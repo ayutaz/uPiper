@@ -9,6 +9,12 @@
     <!-- dot-net-g2p assembly preservation -->
     <assembly fullname="DotNetG2P.Core" preserve="all"/>
     <assembly fullname="DotNetG2P.MeCab" preserve="all"/>
+    <assembly fullname="DotNetG2P.English" preserve="all"/>
+    <assembly fullname="DotNetG2P.Spanish" preserve="all"/>
+    <assembly fullname="DotNetG2P.French" preserve="all"/>
+    <assembly fullname="DotNetG2P.Portuguese" preserve="all"/>
+    <assembly fullname="DotNetG2P.Chinese" preserve="all"/>
+    <assembly fullname="DotNetG2P.Korean" preserve="all"/>
 
     <!-- System types used by uPiper -->
     <assembly fullname="System.Core">

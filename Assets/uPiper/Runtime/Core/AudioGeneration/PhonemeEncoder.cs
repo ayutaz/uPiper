@@ -331,7 +331,7 @@ namespace uPiper.Core.AudioGeneration
                 // compatibility with single-language IPA models (piper-plus Issue #207/#210).
                 var phonemeToConvert = phoneme;
                 if (phoneme.Length == 1 &&
-                    Phonemizers.Multilingual.PuaTokenMapper.Char2Token.TryGetValue(phoneme[0], out var originalToken))
+                    _tokenMapper.Char2Token.TryGetValue(phoneme[0], out var originalToken))
                 {
                     phonemeToConvert = originalToken switch
                     {
@@ -352,7 +352,7 @@ namespace uPiper.Core.AudioGeneration
                     return phonemeToConvert;
                 }
             }
-            else if (Phonemizers.Multilingual.PuaTokenMapper.Token2Char.TryGetValue(phoneme, out var puaCh))
+            else if (_tokenMapper.Token2Char.TryGetValue(phoneme, out var puaCh))
             {
                 PiperLogger.LogDebug($"Mapped multi-char phoneme '{phoneme}' to PUA U+{(int)puaCh:X4}");
                 return puaCh.ToString();

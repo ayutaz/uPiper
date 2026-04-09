@@ -13,6 +13,8 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
     /// All Process() implementations MUST be synchronous.
     /// InitializeAsync() is needed only for languages requiring dictionary loading (ja, en, zh).
     /// Do NOT use Task.Run inside Process() — WebGL prohibits background threads.
+    /// Note: P2-2 (Prosody flat array) will change the return type to
+    /// (string[] Phonemes, int[] ProsodyFlat) with stride=3.
     /// </remarks>
     public interface ILanguageG2PHandler : IDisposable
     {

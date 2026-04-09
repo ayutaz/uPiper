@@ -53,6 +53,12 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
 
             try
             {
+#if UNITY_WEBGL && !UNITY_EDITOR
+                // WebGL: File I/O unavailable, use embedded dictionary
+                _engine = new EnglishG2PEngine();
+                PiperLogger.LogInfo(
+                    "[EnglishG2PHandler] Initialized: DotNetG2P.English (embedded, WebGL)");
+#else
                 var dictPath = Path.Combine(
                     Application.streamingAssetsPath,
                     "uPiper",
@@ -72,6 +78,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
                     PiperLogger.LogInfo(
                         "[EnglishG2PHandler] Initialized: DotNetG2P.English (embedded CMU dict)");
                 }
+#endif
 
                 _ownsEngine = true;
                 _isInitialized = true;
