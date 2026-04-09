@@ -13,7 +13,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
     public sealed class KoreanG2PHandler : ILanguageG2PHandler
     {
         private KoreanG2PEngine _engine;
-        private bool _ownsEngine;
         private bool _isInitialized;
         private bool _disposed;
 
@@ -24,13 +23,13 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         public bool IsInitialized => _isInitialized;
 
         /// <summary>
-        /// Creates a handler with an externally provided engine (caller retains ownership).
+        /// Creates a handler with an externally provided engine.
+        /// Ownership is managed by <see cref="HandlerEntry"/>.
         /// </summary>
         /// <param name="engine">Pre-built Korean G2P engine instance.</param>
         public KoreanG2PHandler(KoreanG2PEngine engine)
         {
             _engine = engine ?? throw new ArgumentNullException(nameof(engine));
-            _ownsEngine = false;
             _isInitialized = true;
         }
 
@@ -39,7 +38,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         /// </summary>
         public KoreanG2PHandler()
         {
-            _ownsEngine = false;
             _isInitialized = false;
         }
 
@@ -50,7 +48,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
                 return Task.CompletedTask;
 
             _engine = new KoreanG2PEngine();
-            _ownsEngine = true;
             _isInitialized = true;
             PiperLogger.LogInfo("[KoreanG2PHandler] Initialized: DotNetG2P.Korean");
             return Task.CompletedTask;
@@ -120,8 +117,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
             if (_disposed)
                 return;
             _disposed = true;
-            if (_ownsEngine)
-                _engine?.Dispose();
+            _engine?.Dispose();
         }
     }
 }

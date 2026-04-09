@@ -49,6 +49,9 @@ namespace uPiper.Core
                 // 既存のリソースをクリーンアップ
                 DisposeInferenceResources();
 
+                // Load pua.json if available (before PhonemeEncoder uses _tokenMapper)
+                await _tokenMapper.InitializeAsync(cancellationToken);
+
                 // Inferenceコンポーネントを初期化
                 _inferenceGenerator = new InferenceAudioGenerator();
                 _splitOrchestrator = new SplitInferenceOrchestrator(_inferenceGenerator);

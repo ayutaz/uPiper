@@ -13,7 +13,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
     public sealed class JapaneseG2PHandler : ILanguageG2PHandler
     {
         private DotNetG2PPhonemizer _phonemizer;
-        private bool _ownsEngine;
         private bool _isInitialized;
         private bool _disposed;
 
@@ -24,13 +23,13 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         public bool IsInitialized => _isInitialized;
 
         /// <summary>
-        /// Creates a handler with an externally provided phonemizer (caller retains ownership).
+        /// Creates a handler with an externally provided phonemizer.
+        /// Ownership is managed by <see cref="HandlerEntry"/>.
         /// </summary>
         /// <param name="phonemizer">Pre-built Japanese phonemizer instance.</param>
         public JapaneseG2PHandler(DotNetG2PPhonemizer phonemizer)
         {
             _phonemizer = phonemizer ?? throw new ArgumentNullException(nameof(phonemizer));
-            _ownsEngine = false;
             _isInitialized = true;
         }
 
@@ -39,7 +38,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         /// </summary>
         public JapaneseG2PHandler()
         {
-            _ownsEngine = false;
             _isInitialized = false;
         }
 
@@ -56,7 +54,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
             _phonemizer = new DotNetG2PPhonemizer();
             await Task.CompletedTask;
 #endif
-            _ownsEngine = true;
             _isInitialized = true;
             PiperLogger.LogInfo("[JapaneseG2PHandler] Initialized");
         }
@@ -93,8 +90,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
             if (_disposed)
                 return;
             _disposed = true;
-            if (_ownsEngine)
-                _phonemizer?.Dispose();
+            _phonemizer?.Dispose();
         }
     }
 }

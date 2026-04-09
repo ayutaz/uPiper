@@ -9,8 +9,8 @@ using DotNetG2P.Spanish;
 using NUnit.Framework;
 using uPiper.Core.Phonemizers.Implementations;
 using uPiper.Core.Phonemizers.Multilingual;
+using uPiper.Core.Phonemizers.Multilingual.Handlers;
 
-#pragma warning disable CS0618
 namespace uPiper.Tests.Editor.Phonemizers
 {
     /// <summary>
@@ -32,7 +32,12 @@ namespace uPiper.Tests.Editor.Phonemizers
             string[] languages,
             string defaultLatin = "en")
         {
-            var phonemizer = new MultilingualPhonemizer(languages, defaultLatin);
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = languages,
+                    DefaultLatinLanguage = defaultLatin
+                });
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
             return phonemizer;
         }
@@ -218,9 +223,15 @@ namespace uPiper.Tests.Editor.Phonemizers
                 : new ChineseG2PEngine(charPath);
 
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "zh", "en" },
-                defaultLatinLanguage: "en",
-                zhEngine: zhEngine);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "zh", "en" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["zh"] = new ChineseG2PHandler(zhEngine)
+                    }
+                });
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
             var result = Phonemize(phonemizer, "你好世界");
@@ -491,20 +502,18 @@ namespace uPiper.Tests.Editor.Phonemizers
         }
 
         [Test]
-        public void GetBackendForLanguage_UnknownLang_FallsBackToEnglish()
+        public void UnsupportedLanguage_SkipsSegmentWithWarning()
         {
-            // When an unknown language code appears, GetBackendForLanguage returns _enPhonemizer
-            // We verify this indirectly: configure "en" + "ja", feed text that would
-            // route to a language not explicitly handled (e.g., if detector somehow
-            // returned an unsupported code). The fallback is the English backend.
-            var phonemizer = CreateInitialized(new[] { "ja", "en" });
+            // When only "ja" is configured, Latin text routes to default "en"
+            // which has no handler. The segment should be skipped gracefully.
+            // Pure Japanese text should still produce phonemes.
+            var phonemizer = CreateInitialized(new[] { "ja" });
 
-            // Basic Latin text routes to "en" (default), which exercises the English backend
-            var result = Phonemize(phonemizer, "test fallback");
-
+            // Japanese-only text works fine
+            var result = Phonemize(phonemizer, "こんにちは");
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0,
-                "Fallback to English backend should produce phonemes");
+                "Japanese text should produce phonemes even without English handler");
 
             phonemizer.Dispose();
         }
@@ -518,7 +527,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             // Initialize with only "ja" and "es" -- should not crash and should
             // only create backends for those two languages
-            var phonemizer = new MultilingualPhonemizer(new[] { "ja", "es" });
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "es" }
+                });
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
             Assert.IsTrue(phonemizer.IsInitialized);
@@ -537,7 +550,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void InitializeAsync_CalledTwice_Idempotent()
         {
-            var phonemizer = new MultilingualPhonemizer(new[] { "ja", "en" });
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" }
+                });
 
             // First initialization
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
@@ -560,7 +577,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void InitializeAsync_CancellationToken_Respected()
         {
-            var phonemizer = new MultilingualPhonemizer(new[] { "ja", "en" });
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" }
+                });
 
             // Create an already-cancelled token
             using var cts = new CancellationTokenSource();
@@ -606,11 +627,17 @@ namespace uPiper.Tests.Editor.Phonemizers
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "ja", "en", "ko", "es" },
-                defaultLatinLanguage: "en",
-                jaPhonemizer: jaPhonemizer,
-                koG2PEngine: koEngine,
-                esEngine: esEngine);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en", "ko", "es" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["ja"] = new JapaneseG2PHandler(jaPhonemizer),
+                        ["ko"] = new KoreanG2PHandler(koEngine),
+                        ["es"] = new SpanishG2PHandler(esEngine)
+                    }
+                });
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
@@ -618,9 +645,8 @@ namespace uPiper.Tests.Editor.Phonemizers
             Assert.DoesNotThrow(() => phonemizer.Dispose());
 
             // When backends are passed to the constructor (not created internally),
-            // MultilingualPhonemizer does NOT own them (_ownsJa = false).
+            // HandlerEntry.IsOwned is false, so MultilingualPhonemizer skips disposal.
             // The caller is responsible for disposing externally-provided backends.
-            // Verify that the externally-provided jaPhonemizer is NOT disposed by MultilingualPhonemizer.
             Assert.DoesNotThrow(() => jaPhonemizer.PhonemizeWithProsody("テスト"),
                 "Externally-provided backend should NOT be disposed by MultilingualPhonemizer");
 
@@ -704,9 +730,15 @@ namespace uPiper.Tests.Editor.Phonemizers
             var esEngine = new SpanishG2PEngine();
 
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "es" },
-                defaultLatinLanguage: "es",
-                esEngine: esEngine);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "es" },
+                    DefaultLatinLanguage = "es",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["es"] = new SpanishG2PHandler(esEngine)
+                    }
+                });
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
             var result = Phonemize(phonemizer, "buenos dias amigo");

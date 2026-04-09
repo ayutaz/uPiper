@@ -15,7 +15,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
     public sealed class EnglishG2PHandler : ILanguageG2PHandler
     {
         private EnglishG2PEngine _engine;
-        private bool _ownsEngine;
         private bool _isInitialized;
         private bool _disposed;
 
@@ -26,13 +25,13 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         public bool IsInitialized => _isInitialized;
 
         /// <summary>
-        /// Creates a handler with an externally provided engine (caller retains ownership).
+        /// Creates a handler with an externally provided engine.
+        /// Ownership is managed by <see cref="HandlerEntry"/>.
         /// </summary>
         /// <param name="engine">Pre-built English G2P engine instance.</param>
         public EnglishG2PHandler(EnglishG2PEngine engine)
         {
             _engine = engine ?? throw new ArgumentNullException(nameof(engine));
-            _ownsEngine = false;
             _isInitialized = true;
         }
 
@@ -41,7 +40,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         /// </summary>
         public EnglishG2PHandler()
         {
-            _ownsEngine = false;
             _isInitialized = false;
         }
 
@@ -80,7 +78,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
                 }
 #endif
 
-                _ownsEngine = true;
                 _isInitialized = true;
             }
             catch (Exception ex)
@@ -122,8 +119,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
             if (_disposed)
                 return;
             _disposed = true;
-            if (_ownsEngine)
-                _engine?.Dispose();
+            _engine?.Dispose();
         }
     }
 }

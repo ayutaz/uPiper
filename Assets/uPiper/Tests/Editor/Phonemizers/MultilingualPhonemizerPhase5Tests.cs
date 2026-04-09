@@ -6,8 +6,8 @@ using DotNetG2P.Chinese;
 using DotNetG2P.Spanish;
 using NUnit.Framework;
 using uPiper.Core.Phonemizers.Multilingual;
+using uPiper.Core.Phonemizers.Multilingual.Handlers;
 
-#pragma warning disable CS0618
 namespace uPiper.Tests.Editor.Phonemizers
 {
     /// <summary>
@@ -24,8 +24,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void Constructor_WithChineseLanguage_CreatesInstance()
         {
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "zh", "en" },
-                defaultLatinLanguage: "en");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "zh", "en" },
+                    DefaultLatinLanguage = "en"
+                });
 
             Assert.IsNotNull(phonemizer);
             Assert.IsFalse(phonemizer.IsInitialized);
@@ -38,8 +41,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void Constructor_WithKoreanLanguage_CreatesInstance()
         {
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "ko", "en" },
-                defaultLatinLanguage: "en");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ko", "en" },
+                    DefaultLatinLanguage = "en"
+                });
 
             Assert.IsNotNull(phonemizer);
             Assert.AreEqual(2, phonemizer.Languages.Count);
@@ -51,8 +57,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void Constructor_AllSevenLanguages_CreatesInstance()
         {
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "ja", "en", "zh", "ko", "es", "fr", "pt" },
-                defaultLatinLanguage: "en");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en", "zh", "ko", "es", "fr", "pt" },
+                    DefaultLatinLanguage = "en"
+                });
 
             Assert.IsNotNull(phonemizer);
             Assert.AreEqual(7, phonemizer.Languages.Count);
@@ -81,9 +90,15 @@ namespace uPiper.Tests.Editor.Phonemizers
             }
 
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "zh", "en" },
-                defaultLatinLanguage: "en",
-                zhEngine: zhEngine);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "zh", "en" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["zh"] = new ChineseG2PHandler(zhEngine)
+                    }
+                });
 
             Assert.IsNotNull(phonemizer);
             Assert.AreEqual(2, phonemizer.Languages.Count);
@@ -95,9 +110,15 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             var koEngine = new DotNetG2P.Korean.KoreanG2PEngine();
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "ko", "en" },
-                defaultLatinLanguage: "en",
-                koG2PEngine: koEngine);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ko", "en" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["ko"] = new KoreanG2PHandler(koEngine)
+                    }
+                });
 
             Assert.IsNotNull(phonemizer);
             Assert.AreEqual(2, phonemizer.Languages.Count);
@@ -111,7 +132,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             // Verify that all Phase 5 language codes are accepted by the constructor
             var allLangs = new[] { "ja", "en", "zh", "ko", "es", "fr", "pt" };
-            var phonemizer = new MultilingualPhonemizer(allLangs);
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = allLangs
+                });
 
             Assert.AreEqual(7, phonemizer.Languages.Count);
             foreach (var lang in allLangs)
@@ -127,7 +152,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void TestLanguageConstants_SubsetSupported()
         {
             // A subset of languages should also work
-            var phonemizer = new MultilingualPhonemizer(new[] { "zh", "ko" });
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "zh", "ko" }
+                });
             Assert.AreEqual(2, phonemizer.Languages.Count);
             phonemizer.Dispose();
         }
@@ -141,9 +170,15 @@ namespace uPiper.Tests.Editor.Phonemizers
             var esEngine = new SpanishG2PEngine();
 
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "es", "en" },
-                defaultLatinLanguage: "es",
-                esEngine: esEngine);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "es", "en" },
+                    DefaultLatinLanguage = "es",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["es"] = new SpanishG2PHandler(esEngine)
+                    }
+                });
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
@@ -180,9 +215,15 @@ namespace uPiper.Tests.Editor.Phonemizers
                 : new ChineseG2PEngine(charPath);
 
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "zh", "en" },
-                defaultLatinLanguage: "en",
-                zhEngine: zhEngine);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "zh", "en" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["zh"] = new ChineseG2PHandler(zhEngine)
+                    }
+                });
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
@@ -208,9 +249,15 @@ namespace uPiper.Tests.Editor.Phonemizers
             var koEngine = new DotNetG2P.Korean.KoreanG2PEngine();
 
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "ko", "en" },
-                defaultLatinLanguage: "en",
-                koG2PEngine: koEngine);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ko", "en" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["ko"] = new KoreanG2PHandler(koEngine)
+                    }
+                });
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
@@ -235,8 +282,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             // French backend auto-created by MultilingualPhonemizer.InitializeAsync
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "fr", "en" },
-                defaultLatinLanguage: "fr");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "fr", "en" },
+                    DefaultLatinLanguage = "fr"
+                });
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
             Assert.IsTrue(phonemizer.IsInitialized);
@@ -259,8 +309,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void TestPortugueseSegmentProcessing()
         {
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "pt", "en" },
-                defaultLatinLanguage: "pt");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "pt", "en" },
+                    DefaultLatinLanguage = "pt"
+                });
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
             Assert.IsTrue(phonemizer.IsInitialized);
@@ -399,8 +452,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         {
             // Minimal test: English-only should always work
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "en" },
-                defaultLatinLanguage: "en");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "en" },
+                    DefaultLatinLanguage = "en"
+                });
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
             Assert.IsTrue(phonemizer.IsInitialized);
@@ -460,9 +516,15 @@ namespace uPiper.Tests.Editor.Phonemizers
             var koEngine = new DotNetG2P.Korean.KoreanG2PEngine();
 
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "ko", "en" },
-                defaultLatinLanguage: "en",
-                koG2PEngine: koEngine);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ko", "en" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["ko"] = new KoreanG2PHandler(koEngine)
+                    }
+                });
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
@@ -487,8 +549,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void TestProsodyPropagation_EmptyTextReturnsEmptyArrays()
         {
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "ko", "en" },
-                defaultLatinLanguage: "en");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ko", "en" },
+                    DefaultLatinLanguage = "en"
+                });
 
             Task.Run(async () => await phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
@@ -514,10 +579,16 @@ namespace uPiper.Tests.Editor.Phonemizers
             var esEngine = new SpanishG2PEngine();
 
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "ko", "es", "en" },
-                defaultLatinLanguage: "en",
-                koG2PEngine: koEngine,
-                esEngine: esEngine);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ko", "es", "en" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["ko"] = new KoreanG2PHandler(koEngine),
+                        ["es"] = new SpanishG2PHandler(esEngine)
+                    }
+                });
 
             Assert.DoesNotThrow(() => phonemizer.Dispose());
         }
@@ -526,7 +597,10 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void Dispose_CalledTwice_DoesNotThrow()
         {
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "ko", "zh", "en" });
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ko", "zh", "en" }
+                });
 
             Assert.DoesNotThrow(() =>
             {
@@ -540,7 +614,11 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void PhonemizeBeforeInitialize_ThrowsInvalidOperationException()
         {
-            var phonemizer = new MultilingualPhonemizer(new[] { "ko", "en" });
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ko", "en" }
+                });
 
             Assert.ThrowsAsync<InvalidOperationException>(async () =>
                 await phonemizer.PhonemizeWithProsodyAsync("안녕"));

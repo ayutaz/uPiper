@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using uPiper.Core.Logging;
-using uPiper.Core.Phonemizers.Backend;
-using uPiper.Core.Phonemizers.Implementations;
 using uPiper.Core.Phonemizers.Multilingual.Handlers;
 
 namespace uPiper.Core.Phonemizers.Multilingual
@@ -41,13 +39,11 @@ namespace uPiper.Core.Phonemizers.Multilingual
         private static readonly HashSet<string> EosLikeTokens =
             new() { "$", "?", "?!", "?.", "?~", "\ue016", "\ue017", "\ue018" };
 
-        private readonly Dictionary<string, ILanguageG2PHandler> _handlers = new();
+        private readonly Dictionary<string, HandlerEntry> _handlers = new();
         private readonly UnicodeLanguageDetector _detector;
         private readonly SemaphoreSlim _initLock = new(1, 1);
         private readonly IReadOnlyList<string> _languages;
         private readonly string _defaultLatinLanguage;
-        private IPhonemizerBackend _enPhonemizer;        // English legacy (for test stub injection, kept for P1-5)
-        private IPhonemizerBackend _koPhonemizer;        // Korean (legacy backend, kept for P1-5)
         private volatile bool _isInitialized;
         private bool _disposed;
 
@@ -72,72 +68,12 @@ namespace uPiper.Core.Phonemizers.Multilingual
             _defaultLatinLanguage = options.DefaultLatinLanguage ?? "en";
             _detector = new UnicodeLanguageDetector(options.Languages, _defaultLatinLanguage);
 
-            // Load handlers from options
+            // Load handlers from options (caller-provided, not owned)
             if (options.Handlers != null)
             {
                 foreach (var kvp in options.Handlers)
-                    _handlers[kvp.Key] = kvp.Value;
+                    _handlers[kvp.Key] = new HandlerEntry(kvp.Value, isOwned: false);
             }
-
-            // Backward compatibility: wrap individual engine properties into handlers
-#pragma warning disable CS0618
-            if (options.JaPhonemizer != null && !_handlers.ContainsKey("ja"))
-                _handlers["ja"] = new JapaneseG2PHandler(options.JaPhonemizer);
-            if (options.EnEngine != null && !_handlers.ContainsKey("en"))
-                _handlers["en"] = new EnglishG2PHandler(options.EnEngine);
-            _enPhonemizer = options.EnPhonemizer;
-            if (options.EsEngine != null && !_handlers.ContainsKey("es"))
-                _handlers["es"] = new SpanishG2PHandler(options.EsEngine);
-            if (options.FrEngine != null && !_handlers.ContainsKey("fr"))
-                _handlers["fr"] = new FrenchG2PHandler(options.FrEngine);
-            if (options.PtEngine != null && !_handlers.ContainsKey("pt"))
-                _handlers["pt"] = new PortugueseG2PHandler(options.PtEngine);
-            if (options.ZhEngine != null && !_handlers.ContainsKey("zh"))
-                _handlers["zh"] = new ChineseG2PHandler(options.ZhEngine);
-            _koPhonemizer = options.KoPhonemizer;
-            if (options.KoG2PEngine != null && !_handlers.ContainsKey("ko"))
-                _handlers["ko"] = new KoreanG2PHandler(options.KoG2PEngine);
-#pragma warning restore CS0618
-        }
-
-        /// <summary>
-        /// Creates a MultilingualPhonemizer for the specified language list.
-        /// </summary>
-        [Obsolete("Use the constructor that takes MultilingualPhonemizerOptions instead. This constructor will be removed in v2.0.")]
-        public MultilingualPhonemizer(
-            IReadOnlyList<string> languages,
-            string defaultLatinLanguage = "en",
-            DotNetG2PPhonemizer jaPhonemizer = null,
-            IPhonemizerBackend enPhonemizer = null,
-            DotNetG2P.Spanish.SpanishG2PEngine esEngine = null,
-            DotNetG2P.French.FrenchG2PEngine frEngine = null,
-            DotNetG2P.Portuguese.PortugueseG2PEngine ptEngine = null,
-            DotNetG2P.Chinese.ChineseG2PEngine zhEngine = null,
-            IPhonemizerBackend koPhonemizer = null,
-            DotNetG2P.Korean.KoreanG2PEngine koG2PEngine = null)
-        {
-            if (languages == null || languages.Count == 0)
-                throw new ArgumentException("At least one language must be specified.", nameof(languages));
-
-            _languages = languages;
-            _defaultLatinLanguage = defaultLatinLanguage;
-            _detector = new UnicodeLanguageDetector(languages, defaultLatinLanguage);
-
-            // Wrap individual engines into handlers for backward compatibility
-            if (jaPhonemizer != null)
-                _handlers["ja"] = new JapaneseG2PHandler(jaPhonemizer);
-            _enPhonemizer = enPhonemizer;
-            if (esEngine != null)
-                _handlers["es"] = new SpanishG2PHandler(esEngine);
-            if (frEngine != null)
-                _handlers["fr"] = new FrenchG2PHandler(frEngine);
-            if (ptEngine != null)
-                _handlers["pt"] = new PortugueseG2PHandler(ptEngine);
-            if (zhEngine != null)
-                _handlers["zh"] = new ChineseG2PHandler(zhEngine);
-            _koPhonemizer = koPhonemizer;
-            if (koG2PEngine != null)
-                _handlers["ko"] = new KoreanG2PHandler(koG2PEngine);
         }
 
         /// <summary>
@@ -160,25 +96,19 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     if (_handlers.ContainsKey(lang))
                         continue;
 
-                    // Skip languages that have legacy backend fallback (en/ko via _enPhonemizer/_koPhonemizer)
-                    if (lang == "en" && _enPhonemizer != null)
-                        continue;
-                    if (lang == "ko" && _koPhonemizer != null)
-                        continue;
-
                     var handler = CreateDefaultHandler(lang);
                     if (handler != null)
-                        _handlers[lang] = handler;
+                        _handlers[lang] = new HandlerEntry(handler, isOwned: true);
                 }
 
                 // Initialize all handlers
-                foreach (var handler in _handlers.Values)
+                foreach (var entry in _handlers.Values)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    await handler.InitializeAsync(cancellationToken);
+                    await entry.Handler.InitializeAsync(cancellationToken);
                 }
 
-                if (_handlers.Count == 0 && _enPhonemizer == null && _koPhonemizer == null)
+                if (_handlers.Count == 0)
                 {
                     PiperLogger.LogWarning(
                         "[MultilingualPhonemizer] Warning: No backends were successfully initialized");
@@ -211,9 +141,11 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// <summary>
         /// Phonemizes mixed-language text and returns phonemes with optional prosody.
         /// </summary>
+#pragma warning disable CS1998 // Async method lacks 'await' — kept async for API stability
         public async Task<MultilingualPhonemizeResult> PhonemizeWithProsodyAsync(
             string text,
             CancellationToken cancellationToken = default)
+#pragma warning restore CS1998
         {
             if (_disposed)
                 throw new ObjectDisposedException(nameof(MultilingualPhonemizer));
@@ -276,16 +208,15 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 int[] segA2 = null;
                 int[] segA3 = null;
 
-                if (_handlers.TryGetValue(lang, out var handler))
+                if (_handlers.TryGetValue(lang, out var entry))
                 {
-                    (segPhonemes, segA1, segA2, segA3) = handler.Process(segText);
+                    (segPhonemes, segA1, segA2, segA3) = entry.Handler.Process(segText);
                 }
                 else
                 {
-                    var fallbackResult = await ProcessFallbackAsync(lang, segText, cancellationToken);
-                    if (fallbackResult.phonemes == null)
-                        continue;
-                    (segPhonemes, segA1, segA2, segA3) = fallbackResult;
+                    PiperLogger.LogWarning(
+                        $"[MultilingualPhonemizer] Unsupported language '{lang}', skipping segment: \"{segText}\"");
+                    continue;
                 }
 
                 if (segPhonemes.Length == 0)
@@ -340,49 +271,16 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 return;
             _disposed = true;
 
-            foreach (var handler in _handlers.Values)
-                handler.Dispose();
+            foreach (var entry in _handlers.Values)
+            {
+                if (entry.IsOwned)
+                    entry.Handler.Dispose();
+            }
             _handlers.Clear();
-
-            // Legacy backends (kept for P1-5)
-            _enPhonemizer?.Dispose();
-            _koPhonemizer?.Dispose();
-
             _initLock.Dispose();
         }
 
-        private async Task<(string[] phonemes, int[] a1, int[] a2, int[] a3)> ProcessFallbackAsync(
-            string lang, string text, CancellationToken cancellationToken)
-        {
-            var backend = GetBackendForLanguage(lang);
-            if (backend != null)
-            {
-                var result = await backend.PhonemizeAsync(text, lang, null, cancellationToken);
-                var phonemes = result?.Phonemes ?? Array.Empty<string>();
-                var a1 = result?.ProsodyA1 ?? new int[phonemes.Length];
-                var a2 = result?.ProsodyA2 ?? new int[phonemes.Length];
-                var a3 = result?.ProsodyA3 ?? new int[phonemes.Length];
-                return (phonemes, a1, a2, a3);
-            }
-
-            PiperLogger.LogWarning(
-                $"[MultilingualPhonemizer] No backend for '{lang}', skipping segment.");
-            return (null, null, null, null);
-        }
-
         // ── Private helpers ───────────────────────────────────────────────────
-
-        private IPhonemizerBackend GetBackendForLanguage(string lang)
-        {
-            // Note: English normally goes through _enEngine path (DotNetG2P.English).
-            // _enPhonemizer is only used as legacy fallback when _enEngine is null (e.g., test stubs).
-            return lang switch
-            {
-                "en" => _enPhonemizer,
-                "ko" => _koPhonemizer,
-                _ => null
-            };
-        }
 
         private static void PadToLength(List<int> list, int targetLength)
         {

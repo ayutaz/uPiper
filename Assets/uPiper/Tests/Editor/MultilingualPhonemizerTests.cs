@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using uPiper.Core.Phonemizers.Multilingual;
 
-#pragma warning disable CS0618
 namespace uPiper.Tests.Editor
 {
     [TestFixture]
@@ -78,8 +77,11 @@ namespace uPiper.Tests.Editor
         public void Constructor_ValidLanguages_CreatesInstance()
         {
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "ja", "en" },
-                defaultLatinLanguage: "en");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" },
+                    DefaultLatinLanguage = "en"
+                });
 
             Assert.IsNotNull(phonemizer);
             Assert.IsFalse(phonemizer.IsInitialized);
@@ -90,11 +92,14 @@ namespace uPiper.Tests.Editor
         public void Constructor_EmptyLanguages_ThrowsArgumentException()
         {
             Assert.Throws<System.ArgumentException>(() =>
-                new MultilingualPhonemizer(new List<string>()));
+                new MultilingualPhonemizer(new MultilingualPhonemizerOptions
+                {
+                    Languages = new List<string>()
+                }));
         }
 
         [Test]
-        public void Constructor_NullLanguages_ThrowsArgumentException()
+        public void Constructor_NullOptions_ThrowsArgumentNullException()
         {
             Assert.Throws<System.ArgumentNullException>(() =>
                 new MultilingualPhonemizer(null));
@@ -105,7 +110,11 @@ namespace uPiper.Tests.Editor
         [Test]
         public void IsInitialized_BeforeInitialize_ReturnsFalse()
         {
-            var phonemizer = new MultilingualPhonemizer(new[] { "ja", "en" });
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" }
+                });
             Assert.IsFalse(phonemizer.IsInitialized);
         }
 
@@ -115,8 +124,11 @@ namespace uPiper.Tests.Editor
             // Note: InitializeAsync creates DotNetG2PPhonemizer which needs dictionary.
             // Use a phonemizer with only English to avoid dictionary dependency.
             var phonemizer = new MultilingualPhonemizer(
-                new[] { "en" },
-                defaultLatinLanguage: "en");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "en" },
+                    DefaultLatinLanguage = "en"
+                });
 
             System.Threading.Tasks.Task.Run(async () =>
             {
@@ -145,7 +157,11 @@ namespace uPiper.Tests.Editor
         [Test]
         public void Dispose_CalledTwice_DoesNotThrow()
         {
-            var phonemizer = new MultilingualPhonemizer(new[] { "ja", "en" });
+            var phonemizer = new MultilingualPhonemizer(
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" }
+                });
             Assert.DoesNotThrow(() =>
             {
                 phonemizer.Dispose();

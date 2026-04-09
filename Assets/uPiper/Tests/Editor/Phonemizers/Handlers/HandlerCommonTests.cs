@@ -392,7 +392,7 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var engine = new SpanishG2PEngine();
             using var handler = new SpanishG2PHandler(engine);
             Assert.IsTrue(handler.IsInitialized);
-            engine.Dispose();
+            // Engine is disposed by handler.Dispose() (via 'using var')
         }
 
         [Test]
@@ -401,7 +401,7 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var engine = new FrenchG2PEngine();
             using var handler = new FrenchG2PHandler(engine);
             Assert.IsTrue(handler.IsInitialized);
-            engine.Dispose();
+            // Engine is disposed by handler.Dispose() (via 'using var')
         }
 
         [Test]
@@ -410,7 +410,7 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var engine = new PortugueseG2PEngine();
             using var handler = new PortugueseG2PHandler(engine);
             Assert.IsTrue(handler.IsInitialized);
-            engine.Dispose();
+            // Engine is disposed by handler.Dispose() (via 'using var')
         }
 
         [Test]
@@ -419,7 +419,7 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             var engine = new KoreanG2PEngine();
             using var handler = new KoreanG2PHandler(engine);
             Assert.IsTrue(handler.IsInitialized);
-            engine.Dispose();
+            // Engine is disposed by handler.Dispose() (via 'using var')
         }
 
         // ── Injection constructor: null engine throws ArgumentNullException ──

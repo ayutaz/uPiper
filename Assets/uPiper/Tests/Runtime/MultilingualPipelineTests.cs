@@ -7,7 +7,6 @@ using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers.Multilingual;
 
-#pragma warning disable CS0618
 namespace uPiper.Tests.Runtime
 {
     /// <summary>
@@ -168,8 +167,11 @@ namespace uPiper.Tests.Runtime
 
             // Initialize MultilingualPhonemizer with all 7 languages
             _phonemizer = new MultilingualPhonemizer(
-                LanguageConstants.AllLanguages,
-                defaultLatinLanguage: "en");
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = LanguageConstants.AllLanguages,
+                    DefaultLatinLanguage = "en"
+                });
 
             Task.Run(async () => await _phonemizer.InitializeAsync()).GetAwaiter().GetResult();
             Assert.IsTrue(_phonemizer.IsInitialized,

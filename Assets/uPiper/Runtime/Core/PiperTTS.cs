@@ -731,18 +731,11 @@ namespace uPiper.Core
                     catch (Exception ex)
                     {
                         PiperLogger.LogError($"Failed to generate audio with InferenceAudioGenerator: {ex.Message}");
-                        // Fall back to dummy audio
-#pragma warning disable CS0618 // Type or member is obsolete
-                        audioClip = CreateDummyAudioClip(text);
-#pragma warning restore CS0618 // Type or member is obsolete
                     }
                 }
                 else
                 {
-                    PiperLogger.LogWarning("InferenceAudioGenerator not available, using dummy audio");
-#pragma warning disable CS0618 // Type or member is obsolete
-                    audioClip = CreateDummyAudioClip(text);
-#pragma warning restore CS0618 // Type or member is obsolete
+                    PiperLogger.LogWarning("InferenceAudioGenerator not available");
                 }
 
                 _onProcessingProgress?.Invoke(0.8f);
@@ -1316,32 +1309,6 @@ namespace uPiper.Core
             // Simple hash-based cache key
             var combined = $"{text}|{voiceId}";
             return combined.GetHashCode().ToString();
-        }
-
-        /// <summary>
-        /// Create a dummy audio clip for testing
-        /// </summary>
-        [Obsolete("This is a fallback method. Use InferenceAudioGenerator for actual TTS.")]
-        private AudioClip CreateDummyAudioClip(string text)
-        {
-            // Calculate duration based on text length (rough estimate)
-            var estimatedDuration = Mathf.Max(1f, text.Length * 0.06f); // ~60ms per character
-            var sampleCount = (int)(estimatedDuration * _config.SampleRate);
-
-            // Create silent audio clip for now
-            var audioClip = AudioClip.Create(
-                "TTS_Output",
-                sampleCount,
-                1, // Mono
-                _config.SampleRate,
-                false
-            );
-
-            // Fill with silence
-            var data = new float[sampleCount];
-            audioClip.SetData(data, 0);
-
-            return audioClip;
         }
 
         /// <summary>

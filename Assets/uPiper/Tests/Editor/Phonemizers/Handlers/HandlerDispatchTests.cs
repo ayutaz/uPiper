@@ -230,10 +230,10 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
             mp.Dispose();
         }
 
-        // ── Dispose disposes all handlers ───────────────────────────────────
+        // ── Dispose does NOT dispose externally-provided handlers ────────────
 
         [Test]
-        public void Dispose_DisposesAllHandlers()
+        public void Dispose_DoesNotDisposeExternalHandlers()
         {
             var stub1 = new TrackingDisposableStub("ja");
             var stub2 = new TrackingDisposableStub("en");
@@ -253,10 +253,12 @@ namespace uPiper.Tests.Editor.Phonemizers.Handlers
 
             mp.Dispose();
 
-            Assert.IsTrue(stub1.IsDisposed,
-                "Japanese handler should be disposed");
-            Assert.IsTrue(stub2.IsDisposed,
-                "English handler should be disposed");
+            // Handlers provided via options.Handlers are NOT owned (isOwned: false),
+            // so MultilingualPhonemizer must not dispose them.
+            Assert.IsFalse(stub1.IsDisposed,
+                "Externally-provided Japanese handler should NOT be disposed");
+            Assert.IsFalse(stub2.IsDisposed,
+                "Externally-provided English handler should NOT be disposed");
         }
 
         // ── Dispose called twice on MultilingualPhonemizer does not throw ───

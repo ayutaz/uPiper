@@ -1,12 +1,12 @@
+using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using NUnit.Framework;
-using uPiper.Core.Phonemizers.Backend;
 using uPiper.Core.Phonemizers.Implementations;
 using uPiper.Core.Phonemizers.Multilingual;
+using uPiper.Core.Phonemizers.Multilingual.Handlers;
+using uPiper.Tests.Editor.Phonemizers.Handlers;
 
-#pragma warning disable CS0618
 namespace uPiper.Tests.Editor.Phonemizers
 {
     /// <summary>
@@ -16,36 +16,6 @@ namespace uPiper.Tests.Editor.Phonemizers
     [TestFixture]
     public class MultilingualPhonemizerEosTests
     {
-        // ── Stub backend ────────────────────────────────────────────────────
-
-        /// <summary>
-        /// Minimal <see cref="IPhonemizerBackend"/> stub whose PhonemizeAsync
-        /// return value is fully controllable from the test.
-        /// </summary>
-        private sealed class StubPhonemizerBackend : IPhonemizerBackend
-        {
-            private readonly PhonemeResult _result;
-
-            public StubPhonemizerBackend(PhonemeResult result)
-            {
-                _result = result;
-            }
-
-            public Task<bool> InitializeAsync(
-                PhonemizerBackendOptions options = null,
-                CancellationToken cancellationToken = default)
-                => Task.FromResult(true);
-
-            public Task<PhonemeResult> PhonemizeAsync(
-                string text,
-                string language,
-                PhonemeOptions options = null,
-                CancellationToken cancellationToken = default)
-                => Task.FromResult(_result);
-
-            public void Dispose() { }
-        }
-
         // ── Helpers ─────────────────────────────────────────────────────────
 
         private static MultilingualPhonemizeResult Phonemize(
@@ -65,7 +35,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         /// \ue018) are included in the EOS-like token set by confirming they
         /// get stripped from intermediate segments.  For each PUA token we
         /// build a two-segment scenario (EN intermediate + JA final) where
-        /// the EN backend's output ends with the PUA token.
+        /// the EN handler's output ends with the PUA token.
         /// </summary>
         [Test]
         [TestCase("\ue016", Description = "PUA ?! (emphatic question)")]
@@ -74,25 +44,27 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void EosLikeTokens_ContainsPuaQuestionMarkers(string puaToken)
         {
             // EN intermediate segment ending with the PUA token
-            var enResult = new PhonemeResult
-            {
-                Phonemes = new[] { "h", "a", "y", puaToken },
-                ProsodyA1 = new[] { 0, 0, 0, 0 },
-                ProsodyA2 = new[] { 0, 0, 0, 0 },
-                ProsodyA3 = new[] { 0, 0, 0, 0 },
-                Success = true
-            };
-
-            var enStub = new StubPhonemizerBackend(enResult);
+            var enStub = new StubG2PHandler(
+                "en",
+                new[] { "h", "a", "y", puaToken },
+                new[] { 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0 });
 
             // Real JA phonemizer for the final segment
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
             var mp = new MultilingualPhonemizer(
-                new[] { "ja", "en" },
-                defaultLatinLanguage: "en",
-                jaPhonemizer: jaPhonemizer,
-                enPhonemizer: enStub);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["en"] = enStub,
+                        ["ja"] = new JapaneseG2PHandler(jaPhonemizer)
+                    }
+                });
             Task.Run(async () => await mp.InitializeAsync()).GetAwaiter().GetResult();
 
             // English intermediate, Japanese final
@@ -116,23 +88,26 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void IntermediateSegment_PuaEos_Stripped()
         {
             // EN intermediate segment ending with \ue016
-            var enResult = new PhonemeResult
-            {
-                Phonemes = new[] { "w", "er", "l", "d", "\ue016" },
-                ProsodyA1 = new[] { 0, 0, 0, 0, 0 },
-                ProsodyA2 = new[] { 0, 0, 0, 0, 0 },
-                ProsodyA3 = new[] { 0, 0, 0, 0, 0 },
-                Success = true
-            };
+            var enStub = new StubG2PHandler(
+                "en",
+                new[] { "w", "er", "l", "d", "\ue016" },
+                new[] { 0, 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0, 0 });
 
-            var enStub = new StubPhonemizerBackend(enResult);
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
             var mp = new MultilingualPhonemizer(
-                new[] { "ja", "en" },
-                defaultLatinLanguage: "en",
-                jaPhonemizer: jaPhonemizer,
-                enPhonemizer: enStub);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja", "en" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["en"] = enStub,
+                        ["ja"] = new JapaneseG2PHandler(jaPhonemizer)
+                    }
+                });
             Task.Run(async () => await mp.InitializeAsync()).GetAwaiter().GetResult();
 
             // English intermediate, Japanese final
@@ -156,20 +131,23 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void FinalSegment_PuaEos_Preserved()
         {
             // Single EN segment ending with \ue017 — it is the only (=last) segment.
-            var enResult = new PhonemeResult
-            {
-                Phonemes = new[] { "h", "e", "l", "o", "\ue017" },
-                ProsodyA1 = new[] { 0, 0, 0, 0, 0 },
-                ProsodyA2 = new[] { 0, 0, 0, 0, 0 },
-                ProsodyA3 = new[] { 0, 0, 0, 0, 0 },
-                Success = true
-            };
+            var enStub = new StubG2PHandler(
+                "en",
+                new[] { "h", "e", "l", "o", "\ue017" },
+                new[] { 0, 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0, 0 });
 
-            var enStub = new StubPhonemizerBackend(enResult);
             var mp = new MultilingualPhonemizer(
-                new[] { "en" },
-                defaultLatinLanguage: "en",
-                enPhonemizer: enStub);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "en" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["en"] = enStub
+                    }
+                });
             Task.Run(async () => await mp.InitializeAsync()).GetAwaiter().GetResult();
 
             var result = Phonemize(mp, "hello");
@@ -188,23 +166,26 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void IntermediateSegment_StandardEos_Stripped()
         {
-            var enResult = new PhonemeResult
-            {
-                Phonemes = new[] { "h", "e", "l", "o", "$" },
-                ProsodyA1 = new[] { 0, 0, 0, 0, 0 },
-                ProsodyA2 = new[] { 0, 0, 0, 0, 0 },
-                ProsodyA3 = new[] { 0, 0, 0, 0, 0 },
-                Success = true
-            };
+            var enStub = new StubG2PHandler(
+                "en",
+                new[] { "h", "e", "l", "o", "$" },
+                new[] { 0, 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0, 0 });
 
-            var enStub = new StubPhonemizerBackend(enResult);
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
             var mp = new MultilingualPhonemizer(
-                new[] { "en", "ja" },
-                defaultLatinLanguage: "en",
-                enPhonemizer: enStub,
-                jaPhonemizer: jaPhonemizer);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "en", "ja" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["en"] = enStub,
+                        ["ja"] = new JapaneseG2PHandler(jaPhonemizer)
+                    }
+                });
             Task.Run(async () => await mp.InitializeAsync()).GetAwaiter().GetResult();
 
             // English intermediate, Japanese final
@@ -228,7 +209,7 @@ namespace uPiper.Tests.Editor.Phonemizers
         /// <summary>
         /// A Japanese segment whose phoneme array starts with "_" (PAD from
         /// "sil" conversion in OpenJTalkToPiperMapping) should have that
-        /// leading token removed by MultilingualPhonemizer.
+        /// leading token removed by JapaneseG2PHandler.
         /// Uses the real DotNetG2PPhonemizer which produces leading "_".
         /// </summary>
         [Test]
@@ -244,15 +225,21 @@ namespace uPiper.Tests.Editor.Phonemizers
 
             // Now run through MultilingualPhonemizer — the leading "_" should be stripped
             var mp = new MultilingualPhonemizer(
-                new[] { "ja" },
-                jaPhonemizer: jaPhonemizer);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja" },
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["ja"] = new JapaneseG2PHandler(jaPhonemizer)
+                    }
+                });
             Task.Run(async () => await mp.InitializeAsync()).GetAwaiter().GetResult();
 
             var result = Phonemize(mp, "こんにちは");
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Phonemes.Length > 0);
             Assert.AreNotEqual("_", result.Phonemes[0],
-                "Leading PAD '_' should be stripped from Japanese segment by MultilingualPhonemizer");
+                "Leading PAD '_' should be stripped from Japanese segment by JapaneseG2PHandler");
 
             mp.Dispose();
         }
@@ -277,8 +264,14 @@ namespace uPiper.Tests.Editor.Phonemizers
             // After stripping leading "_", the remaining phonemes should be present
             // in the MultilingualPhonemizer output (single segment = final, so EOS kept).
             var mp = new MultilingualPhonemizer(
-                new[] { "ja" },
-                jaPhonemizer: jaPhonemizer);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja" },
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["ja"] = new JapaneseG2PHandler(jaPhonemizer)
+                    }
+                });
             Task.Run(async () => await mp.InitializeAsync()).GetAwaiter().GetResult();
 
             var result = Phonemize(mp, "あ");
@@ -303,25 +296,28 @@ namespace uPiper.Tests.Editor.Phonemizers
         /// <summary>
         /// Non-Japanese segments (e.g., English) should never have their
         /// first phoneme stripped even if it happens to be "_".
-        /// The PAD stripping code path is guarded by `lang == "ja"`.
+        /// The PAD stripping code path is guarded by the JapaneseG2PHandler only.
         /// </summary>
         [Test]
         public void NonJapaneseSegment_NoPadStripping()
         {
-            var enResult = new PhonemeResult
-            {
-                Phonemes = new[] { "_", "h", "e", "l", "o" },
-                ProsodyA1 = new[] { 0, 0, 0, 0, 0 },
-                ProsodyA2 = new[] { 0, 0, 0, 0, 0 },
-                ProsodyA3 = new[] { 0, 0, 0, 0, 0 },
-                Success = true
-            };
+            var enStub = new StubG2PHandler(
+                "en",
+                new[] { "_", "h", "e", "l", "o" },
+                new[] { 0, 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0, 0 });
 
-            var enStub = new StubPhonemizerBackend(enResult);
             var mp = new MultilingualPhonemizer(
-                new[] { "en" },
-                defaultLatinLanguage: "en",
-                enPhonemizer: enStub);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "en" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["en"] = enStub
+                    }
+                });
             Task.Run(async () => await mp.InitializeAsync()).GetAwaiter().GetResult();
 
             var result = Phonemize(mp, "hello");
@@ -352,8 +348,14 @@ namespace uPiper.Tests.Editor.Phonemizers
                 "Precondition: raw output starts with '_'");
 
             var mp = new MultilingualPhonemizer(
-                new[] { "ja" },
-                jaPhonemizer: jaPhonemizer);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "ja" },
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["ja"] = new JapaneseG2PHandler(jaPhonemizer)
+                    }
+                });
             Task.Run(async () => await mp.InitializeAsync()).GetAwaiter().GetResult();
 
             var result = Phonemize(mp, "こんにちは");
@@ -406,23 +408,26 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void AllEosTokens_StrippedFromIntermediateSegment(string eosToken)
         {
             // EN intermediate segment ending with the EOS token
-            var enResult = new PhonemeResult
-            {
-                Phonemes = new[] { "h", "a", "y", eosToken },
-                ProsodyA1 = new[] { 0, 0, 0, 0 },
-                ProsodyA2 = new[] { 0, 0, 0, 0 },
-                ProsodyA3 = new[] { 0, 0, 0, 0 },
-                Success = true
-            };
+            var enStub = new StubG2PHandler(
+                "en",
+                new[] { "h", "a", "y", eosToken },
+                new[] { 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0 });
 
-            var enStub = new StubPhonemizerBackend(enResult);
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
             var mp = new MultilingualPhonemizer(
-                new[] { "en", "ja" },
-                defaultLatinLanguage: "en",
-                enPhonemizer: enStub,
-                jaPhonemizer: jaPhonemizer);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "en", "ja" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["en"] = enStub,
+                        ["ja"] = new JapaneseG2PHandler(jaPhonemizer)
+                    }
+                });
             Task.Run(async () => await mp.InitializeAsync()).GetAwaiter().GetResult();
 
             // EN intermediate + JA final
@@ -445,23 +450,26 @@ namespace uPiper.Tests.Editor.Phonemizers
         [Test]
         public void IntermediateSegment_NoEos_PassesThrough()
         {
-            var enResult = new PhonemeResult
-            {
-                Phonemes = new[] { "h", "e", "l", "o" },
-                ProsodyA1 = new[] { 0, 0, 0, 0 },
-                ProsodyA2 = new[] { 0, 0, 0, 0 },
-                ProsodyA3 = new[] { 0, 0, 0, 0 },
-                Success = true
-            };
+            var enStub = new StubG2PHandler(
+                "en",
+                new[] { "h", "e", "l", "o" },
+                new[] { 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0 },
+                new[] { 0, 0, 0, 0 });
 
-            var enStub = new StubPhonemizerBackend(enResult);
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
             var mp = new MultilingualPhonemizer(
-                new[] { "en", "ja" },
-                defaultLatinLanguage: "en",
-                enPhonemizer: enStub,
-                jaPhonemizer: jaPhonemizer);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "en", "ja" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["en"] = enStub,
+                        ["ja"] = new JapaneseG2PHandler(jaPhonemizer)
+                    }
+                });
             Task.Run(async () => await mp.InitializeAsync()).GetAwaiter().GetResult();
 
             var result = Phonemize(mp, "hello あ");
@@ -485,23 +493,26 @@ namespace uPiper.Tests.Editor.Phonemizers
         public void ProsodyArrays_AlignedAfterEosStrip()
         {
             // EN intermediate with prosody values and trailing "$"
-            var enResult = new PhonemeResult
-            {
-                Phonemes = new[] { "h", "a", "$" },
-                ProsodyA1 = new[] { 10, 20, 30 },
-                ProsodyA2 = new[] { 11, 21, 31 },
-                ProsodyA3 = new[] { 12, 22, 32 },
-                Success = true
-            };
+            var enStub = new StubG2PHandler(
+                "en",
+                new[] { "h", "a", "$" },
+                new[] { 10, 20, 30 },
+                new[] { 11, 21, 31 },
+                new[] { 12, 22, 32 });
 
-            var enStub = new StubPhonemizerBackend(enResult);
             var jaPhonemizer = new DotNetG2PPhonemizer();
 
             var mp = new MultilingualPhonemizer(
-                new[] { "en", "ja" },
-                defaultLatinLanguage: "en",
-                enPhonemizer: enStub,
-                jaPhonemizer: jaPhonemizer);
+                new MultilingualPhonemizerOptions
+                {
+                    Languages = new[] { "en", "ja" },
+                    DefaultLatinLanguage = "en",
+                    Handlers = new Dictionary<string, ILanguageG2PHandler>
+                    {
+                        ["en"] = enStub,
+                        ["ja"] = new JapaneseG2PHandler(jaPhonemizer)
+                    }
+                });
             Task.Run(async () => await mp.InitializeAsync()).GetAwaiter().GetResult();
 
             var result = Phonemize(mp, "ha あ");

@@ -1,15 +1,14 @@
 # Phonemizer Backend Directory
 
-This directory contains the phonemizer backend interface and shared types for uPiper. All G2P backends have been migrated to standalone DotNetG2P packages and are called directly from `MultilingualPhonemizer`.
+This directory contains shared types for uPiper phonemizer backends. All G2P backends have been migrated to standalone DotNetG2P packages and are called via `ILanguageG2PHandler` implementations in `../Multilingual/Handlers/`.
 
 ## Current Files
 
-- **IPhonemizerBackend.cs** - Interface for phonemizer backends (used by test stubs)
-- **PhonemeOptions.cs** - Shared phoneme option/result types
+- **PhonemeOptions.cs** - Shared phoneme option/result types (`PhonemeResult`, `PhonemeOptions`)
 
 ## Architecture
 
-G2P processing for each language is handled by the corresponding DotNetG2P package, called directly from `MultilingualPhonemizer` (in `../Multilingual/`):
+G2P processing for each language is handled by the corresponding DotNetG2P package, called via per-language `ILanguageG2PHandler` implementations from `MultilingualPhonemizer` (in `../Multilingual/`):
 
 | Language | DotNetG2P Package |
 |----------|-------------------|

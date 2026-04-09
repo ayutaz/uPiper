@@ -20,7 +20,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
             { '\0', '\ue046', '\ue047', '\ue048', '\ue049', '\ue04a' };
 
         private ChineseG2PEngine _engine;
-        private bool _ownsEngine;
         private bool _isInitialized;
         private bool _disposed;
 
@@ -31,13 +30,13 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         public bool IsInitialized => _isInitialized;
 
         /// <summary>
-        /// Creates a handler with an externally provided engine (caller retains ownership).
+        /// Creates a handler with an externally provided engine.
+        /// Ownership is managed by <see cref="HandlerEntry"/>.
         /// </summary>
         /// <param name="engine">Pre-built Chinese G2P engine instance.</param>
         public ChineseG2PHandler(ChineseG2PEngine engine)
         {
             _engine = engine ?? throw new ArgumentNullException(nameof(engine));
-            _ownsEngine = false;
             _isInitialized = true;
         }
 
@@ -46,7 +45,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
         /// </summary>
         public ChineseG2PHandler()
         {
-            _ownsEngine = false;
             _isInitialized = false;
         }
 
@@ -74,7 +72,6 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
                     _engine = File.Exists(phrasePath)
                         ? new ChineseG2PEngine(charPath, phrasePath)
                         : new ChineseG2PEngine(charPath);
-                    _ownsEngine = true;
                     _isInitialized = true;
                     PiperLogger.LogInfo(
                         "[ChineseG2PHandler] Initialized: DotNetG2P.Chinese");
@@ -191,8 +188,7 @@ namespace uPiper.Core.Phonemizers.Multilingual.Handlers
             if (_disposed)
                 return;
             _disposed = true;
-            if (_ownsEngine)
-                _engine?.Dispose();
+            _engine?.Dispose();
         }
     }
 }

@@ -1,11 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DotNetG2P.Chinese;
 using NUnit.Framework;
 using uPiper.Core.Phonemizers.Multilingual;
+using uPiper.Core.Phonemizers.Multilingual.Handlers;
 
-#pragma warning disable CS0618
 namespace uPiper.Tests.Editor.Phonemizers
 {
     [TestFixture]
@@ -40,9 +41,15 @@ namespace uPiper.Tests.Editor.Phonemizers
 
                 // Create MultilingualPhonemizer with pre-built engine for pipeline tests
                 _phonemizer = new MultilingualPhonemizer(
-                    new[] { "zh", "en" },
-                    defaultLatinLanguage: "en",
-                    zhEngine: _engine);
+                    new MultilingualPhonemizerOptions
+                    {
+                        Languages = new[] { "zh", "en" },
+                        DefaultLatinLanguage = "en",
+                        Handlers = new Dictionary<string, ILanguageG2PHandler>
+                        {
+                            ["zh"] = new ChineseG2PHandler(_engine)
+                        }
+                    });
                 Task.Run(async () => await _phonemizer.InitializeAsync()).GetAwaiter().GetResult();
 
                 _available = true;

@@ -14,8 +14,8 @@ using uPiper.Core.Logging;
 using uPiper.Core.Phonemizers;
 using uPiper.Core.Phonemizers.Implementations;
 using uPiper.Core.Phonemizers.Multilingual;
+using uPiper.Core.Phonemizers.Multilingual.Handlers;
 
-#pragma warning disable CS0618
 namespace uPiper.Demo
 {
     /// <summary>
@@ -224,10 +224,16 @@ namespace uPiper.Demo
             try
             {
                 _multilingualPhonemizer?.Dispose();
+                var handlers = new Dictionary<string, ILanguageG2PHandler>();
+                if (_japanesePhonemizer != null)
+                    handlers["ja"] = new JapaneseG2PHandler(_japanesePhonemizer);
                 _multilingualPhonemizer = new MultilingualPhonemizer(
-                    SupportedLanguages,
-                    defaultLatinLanguage: defaultLatinLanguage,
-                    jaPhonemizer: _japanesePhonemizer);
+                    new MultilingualPhonemizerOptions
+                    {
+                        Languages = SupportedLanguages,
+                        DefaultLatinLanguage = defaultLatinLanguage,
+                        Handlers = handlers
+                    });
                 await _multilingualPhonemizer.InitializeAsync();
                 _currentLatinDefault = defaultLatinLanguage;
                 PiperLogger.LogInfo($"[InferenceEngineDemo] MultilingualPhonemizer initialized (defaultLatin={defaultLatinLanguage})");

@@ -1,9 +1,40 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using UnityEngine;
+using uPiper.Core.Logging;
+using uPiper.Core.Platform;
 
 namespace uPiper.Core.Phonemizers.Multilingual
 {
+    // ── DTO classes for pua.json deserialization ─────────────────────────────
+
+    /// <summary>
+    /// Root structure of pua.json. Compatible with <see cref="JsonUtility"/>.
+    /// </summary>
+    [Serializable]
+    internal class PuaJsonData
+    {
+        public int version;
+        public string description;
+        public PuaJsonEntry[] entries;
+    }
+
+    /// <summary>
+    /// Single entry in the pua.json entries array.
+    /// </summary>
+    [Serializable]
+    internal class PuaJsonEntry
+    {
+        public string token;
+        public string codepoint; // "0xE000" hex string
+        public string language;
+        public string description;
+    }
     /// <summary>
     /// Maps multi-character phoneme tokens to single Unicode Private Use Area (PUA) codepoints.
     /// Ported from piper-plus Python implementation (token_mapper.py).
@@ -334,5 +365,255 @@ namespace uPiper.Core.Phonemizers.Multilingual
             return ch >= '\uE000' && ch <= (char)LastFixedCodepoint;
         }
 
+        // ── pua.json runtime loading ────────────────────────────────────────
+
+        /// <summary>
+        /// Maximum number of entries allowed in pua.json as a safety limit.
+        /// </summary>
+        internal const int MaxEntries = 500;
+
+        /// <summary>
+        /// Relative path to pua.json within StreamingAssets.
+        /// </summary>
+        private const string PuaJsonRelativePath = "uPiper/pua.json";
+
+        /// <summary>
+        /// Whether this mapper has been initialized from a pua.json file.
+        /// </summary>
+        public bool IsLoadedFromJson { get; private set; }
+
+        /// <summary>
+        /// Parses pua.json content and populates the mapper.
+        /// On success, clears existing mappings and replaces them with the JSON entries.
+        /// On failure, keeps existing hardcoded mapping intact and returns false.
+        /// </summary>
+        /// <param name="json">Raw JSON string from pua.json.</param>
+        /// <returns><c>true</c> if parsing succeeded; <c>false</c> otherwise.</returns>
+        public bool LoadFromJson(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                PiperLogger.LogError("[PuaTokenMapper] LoadFromJson: JSON string is null or empty");
+                return false;
+            }
+
+            PuaJsonData data;
+            try
+            {
+                data = JsonUtility.FromJson<PuaJsonData>(json);
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogError(
+                    $"[PuaTokenMapper] LoadFromJson: Failed to parse JSON: {ex.Message}");
+                return false;
+            }
+
+            if (data == null)
+            {
+                PiperLogger.LogError("[PuaTokenMapper] LoadFromJson: Deserialized data is null");
+                return false;
+            }
+
+            // Validate version (forward compatible: accept >= 1)
+            if (data.version < 1)
+            {
+                PiperLogger.LogError(
+                    $"[PuaTokenMapper] LoadFromJson: Invalid version {data.version} (expected >= 1)");
+                return false;
+            }
+
+            // null entries is treated as empty (valid but no overrides)
+            if (data.entries == null || data.entries.Length == 0)
+            {
+                PiperLogger.LogDebug("[PuaTokenMapper] LoadFromJson: Empty entries array");
+                IsLoadedFromJson = true;
+                return true;
+            }
+
+            // Safety limit
+            if (data.entries.Length > MaxEntries)
+            {
+                PiperLogger.LogError(
+                    $"[PuaTokenMapper] LoadFromJson: Too many entries ({data.entries.Length} > {MaxEntries})");
+                return false;
+            }
+
+            // Parse entries into temporary collections before modifying state
+            var newToken2Char = new Dictionary<string, char>();
+            var newChar2Token = new Dictionary<char, string>();
+            var maxCodepoint = LastFixedCodepoint;
+
+            for (var i = 0; i < data.entries.Length; i++)
+            {
+                var entry = data.entries[i];
+
+                // Validate token
+                if (string.IsNullOrEmpty(entry.token))
+                {
+                    PiperLogger.LogWarning(
+                        $"[PuaTokenMapper] LoadFromJson: Skipping entry[{i}] with empty token");
+                    continue;
+                }
+
+                // Parse codepoint hex string
+                if (!TryParseHexCodepoint(entry.codepoint, out var codepoint))
+                {
+                    PiperLogger.LogWarning(
+                        $"[PuaTokenMapper] LoadFromJson: Skipping entry[{i}] " +
+                        $"token=\"{entry.token}\": invalid codepoint \"{entry.codepoint}\"");
+                    continue;
+                }
+
+                // Validate PUA range
+                if (codepoint < 0xE000 || codepoint > 0xF8FF)
+                {
+                    PiperLogger.LogWarning(
+                        $"[PuaTokenMapper] LoadFromJson: Skipping entry[{i}] " +
+                        $"token=\"{entry.token}\": codepoint 0x{codepoint:X4} " +
+                        $"outside PUA range (0xE000-0xF8FF)");
+                    continue;
+                }
+
+                var ch = (char)codepoint;
+
+                // Detect duplicate tokens (last wins)
+                if (newToken2Char.ContainsKey(entry.token))
+                {
+                    PiperLogger.LogWarning(
+                        $"[PuaTokenMapper] LoadFromJson: Duplicate token \"{entry.token}\" " +
+                        $"at entry[{i}], overwriting previous mapping");
+                    // Remove old char mapping for this token
+                    var oldChar = newToken2Char[entry.token];
+                    newChar2Token.Remove(oldChar);
+                }
+
+                // Detect duplicate codepoints (last wins)
+                if (newChar2Token.ContainsKey(ch))
+                {
+                    var oldToken = newChar2Token[ch];
+                    PiperLogger.LogWarning(
+                        $"[PuaTokenMapper] LoadFromJson: Duplicate codepoint 0x{codepoint:X4} " +
+                        $"at entry[{i}] (token=\"{entry.token}\"), " +
+                        $"overwriting previous token \"{oldToken}\"");
+                    newToken2Char.Remove(oldToken);
+                }
+
+                newToken2Char[entry.token] = ch;
+                newChar2Token[ch] = entry.token;
+
+                if (codepoint > maxCodepoint)
+                    maxCodepoint = codepoint;
+            }
+
+            // Apply the parsed mappings to the instance
+            _token2Char.Clear();
+            _char2Token.Clear();
+
+            foreach (var kvp in newToken2Char)
+            {
+                _token2Char[kvp.Key] = kvp.Value;
+            }
+
+            foreach (var kvp in newChar2Token)
+            {
+                _char2Token[kvp.Key] = kvp.Value;
+            }
+
+            // Update dynamic allocation start to be after the highest loaded codepoint
+            lock (_dynamicLock)
+            {
+                _nextDynamic = maxCodepoint + 1;
+            }
+
+            IsLoadedFromJson = true;
+            PiperLogger.LogInfo(
+                $"[PuaTokenMapper] Loaded {newToken2Char.Count} entries from pua.json (v{data.version})");
+            return true;
+        }
+
+        /// <summary>
+        /// Synchronously loads pua.json from StreamingAssets.
+        /// Not available on WebGL (use <see cref="InitializeAsync"/> instead).
+        /// </summary>
+        /// <returns><c>true</c> if the file was found and loaded successfully; <c>false</c> otherwise.</returns>
+        public bool InitializeFromFile()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            PiperLogger.LogWarning(
+                "[PuaTokenMapper] InitializeFromFile: Not supported on WebGL. Use InitializeAsync().");
+            return false;
+#else
+            var path = Path.Combine(Application.streamingAssetsPath, PuaJsonRelativePath);
+            if (!File.Exists(path))
+            {
+                PiperLogger.LogDebug(
+                    $"[PuaTokenMapper] InitializeFromFile: pua.json not found at {path}");
+                return false;
+            }
+
+            try
+            {
+                var json = File.ReadAllText(path);
+                return LoadFromJson(json);
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogError(
+                    $"[PuaTokenMapper] InitializeFromFile: Failed to read file: {ex.Message}");
+                return false;
+            }
+#endif
+        }
+
+        /// <summary>
+        /// Asynchronously loads pua.json from StreamingAssets.
+        /// Works on all platforms including WebGL via <see cref="WebGLStreamingAssetsLoader"/>.
+        /// Falls back to hardcoded mapping on failure.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns><c>true</c> if the file was found and loaded successfully; <c>false</c> otherwise.</returns>
+        public async Task<bool> InitializeAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var json = await WebGLStreamingAssetsLoader.LoadTextAsync(
+                    PuaJsonRelativePath, cancellationToken);
+                return LoadFromJson(json);
+            }
+            catch (FileNotFoundException)
+            {
+                PiperLogger.LogDebug(
+                    "[PuaTokenMapper] InitializeAsync: pua.json not found in StreamingAssets");
+                return false;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogError(
+                    $"[PuaTokenMapper] InitializeAsync: Failed to load pua.json: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Tries to parse a hex string like "0xE000" or "0xe000" to an integer.
+        /// </summary>
+        private static bool TryParseHexCodepoint(string hexString, out int codepoint)
+        {
+            codepoint = 0;
+            if (string.IsNullOrEmpty(hexString))
+                return false;
+
+            // Strip "0x" or "0X" prefix
+            var toParse = hexString;
+            if (toParse.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                toParse = toParse.Substring(2);
+
+            return int.TryParse(toParse, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out codepoint);
+        }
     }
 }
