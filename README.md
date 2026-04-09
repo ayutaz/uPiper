@@ -218,8 +218,7 @@ var validated = config.ToValidated();
 ## 詳細ドキュメント
 
 - [アーキテクチャ](docs/ARCHITECTURE_ja.md) - 設計と技術的な詳細
-- [開発ログ](docs/DEVELOPMENT_LOG.md) - 開発進捗と変更履歴
-- [ドキュメント一覧](docs/) - 技術ドキュメント、ガイド、仕様書
+- [GPU推論ガイド](docs/features/gpu/gpu-inference.md) - GPU推論の設定とトラブルシューティング
 
 ## ライセンス
 

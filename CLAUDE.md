@@ -124,7 +124,7 @@ AudioClip出力 (22050Hz, float32)
 | `G2PHandlerUtils` | `Runtime/Core/Phonemizers/Multilingual/Handlers/` | ハンドラ共通ユーティリティ（Prosody配列構築等） |
 | `DotNetG2PPhonemizer` | `Runtime/Core/Phonemizers/Implementations/` | 日本語G2P実装（dot-net-g2p, Prosody対応） |
 | `CustomDictionary` | `Runtime/Core/Phonemizers/` | カスタム辞書（技術用語・固有名詞の読み変換） |
-| `IPhonemizerBackend` | `Runtime/Core/Phonemizers/Backend/` | 音素化バックエンド抽象（テストスタブのみ使用） |
+| `PhonemeOptions` | `Runtime/Core/Phonemizers/Backend/` | 音素化リクエストオプション（共有型） |
 
 #### 言語検出
 
@@ -181,12 +181,11 @@ Assets/uPiper/
 │   ├── Core/               # ランタイムコア
 │   │   ├── AudioGeneration/    # AudioClip生成、ONNX推論、AudioNormalizer、BackendSelector
 │   │   ├── Phonemizers/        # 音素化システム
-│   │   │   ├── Backend/        # バックエンドインターフェース・共有型（IPhonemizerBackend, PhonemeOptions）
+│   │   │   ├── Backend/        # 共有型（PhonemeOptions）
 │   │   │   ├── Implementations/# Prosody対応実装（DotNetG2PPhonemizer）
 │   │   │   ├── Multilingual/   # 多言語共通(PuaTokenMapper, LanguageConstants, ILanguageDetector)
 │   │   │   │   └── Handlers/   # ILanguageG2PHandler実装（7言語ハンドラ + G2PHandlerUtils）
-│   │   │   ├── Native/         # P/Invoke定義
-│   │   │   └── Threading/      # マルチスレッド処理
+│   │   │   └── (Backend/, Implementations/, Multilingual/ のみ)
 │   │   ├── IL2CPP/             # IL2CPP互換レイヤー
 │   │   └── Platform/           # プラットフォーム固有コード
 │   │       ├── WebGLStreamingAssetsLoader.cs  # WebGL非同期ファイルローダー

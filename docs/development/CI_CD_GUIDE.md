@@ -166,7 +166,7 @@ developブランチにも同様のルールを設定：
    → free-disk-spaceアクションを使用してクリーンアップ
 
 3. **IL2CPPビルドエラー**
-   - IL2CPP特有の問題については[IL2CPP CI/CDソリューション](il2cpp-solutions.md)を参照
+   - IL2CPP特有の問題については `link.xml` の設定やIL2CPPビルド設定を確認してください
 
 ### テスト失敗
 - ロケール依存のテストは環境設定を確認
@@ -174,5 +174,4 @@ developブランチにも同様のルールを設定：
 
 ## 関連ドキュメント
 
-- [IL2CPP CI/CDソリューション](il2cpp-solutions.md) - IL2CPP固有のCI/CD設定
-- [技術ドキュメント](../technical/) - 詳細な技術仕様
+- [アーキテクチャ](../ARCHITECTURE_ja.md) - 設計と技術的な詳細
