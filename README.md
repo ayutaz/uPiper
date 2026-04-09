@@ -19,6 +19,7 @@
   - [トラブルシューティング](#トラブルシューティング)
 - [サポートプラットフォーム](#サポートプラットフォーム)
 - [GPU推論の使用](#gpu推論の使用)
+- [基本的な使い方](#基本的な使い方)
 - [詳細ドキュメント](#詳細ドキュメント)
 - [ライセンス](#ライセンス)
 
@@ -215,8 +216,24 @@ var validated = config.ToValidated();
 
 詳細は[GPU推論ガイド](docs/features/gpu/gpu-inference.md)を参照してください。
 
+## 基本的な使い方
+
+```csharp
+// 初期化
+var config = new PiperConfig { Backend = InferenceBackend.Auto };
+var tts = new PiperTTS(config);
+await tts.InitializeWithInferenceAsync(modelAsset, voiceConfig);
+
+// テキストから音声を生成（v2.0 推奨API）
+var result = await tts.PhonemizeAsync("こんにちは");
+var request = SynthesisRequest.FromPhonemesWithProsody(result.Phonemes, result.ProsodyFlat);
+var clip = await tts.SynthesizeAsync(request);
+AudioSource.PlayClipAtPoint(clip, Vector3.zero);
+```
+
 ## 詳細ドキュメント
 
+- [セットアップガイド](docs/setup-guide.md) - インストール手順と初期設定
 - [アーキテクチャ](docs/ARCHITECTURE_ja.md) - 設計と技術的な詳細
 - [GPU推論ガイド](docs/features/gpu/gpu-inference.md) - GPU推論の設定とトラブルシューティング
 

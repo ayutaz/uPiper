@@ -49,17 +49,17 @@ uPiperは、Unity環境でPiper TTSを使用するためのプラグインです
 #### MultilingualPhonemizer
 - **場所**: `Runtime/Core/Phonemizers/Multilingual/MultilingualPhonemizer.cs`
 - **役割**: テキストを言語検出で分割し、ILanguageG2PHandler Strategyで各言語のG2Pエンジンに委譲
-- **コンストラクタ**: `MultilingualPhonemizerOptions` を受け取り、languages/defaultLatinLanguage/enableTrigramDetection/customDetector/handlersを設定
+- **コンストラクタ**: `MultilingualPhonemizerOptions` を受け取り、languages/defaultLatinLanguage/enableTrigramDetection/LanguageDetector/handlersを設定
 - **InitializeAsync**: 未登録言語のデフォルトハンドラ生成 → 全ハンドラ初期化 → Trigram検出有効時にHybridLanguageDetectorへアップグレード
 
 ##### 言語検出（ILanguageDetector）
 
 | 実装 | 場所 | 役割 |
 |------|------|------|
-| `ILanguageDetector` | `Multilingual/` | 言語検出インターフェース（public）。`SegmentText()` → `(language, text)[]` |
+| `ILanguageDetector` | `Multilingual/` | 言語検出インターフェース（public）。`SegmentText()` → `IReadOnlyList<(string language, string text)>` |
 | `UnicodeLanguageDetector` | `Multilingual/` | Unicode文字範囲ベース言語検出（CJK, Hangul, Latin等）。デフォルト |
 | `HybridLanguageDetector` | `Multilingual/` | Unicode + Trigram複合言語検出（internal sealed）。Latin言語の曖昧さをTrigramで解消 |
-| `TrigramLanguageDetector` | `Multilingual/` | Trigram頻度分析による言語検出（internal）。en/es/fr/pt区別 |
+| `TrigramLanguageDetector` | `Multilingual/` | Trigram頻度分析による言語検出（internal sealed class）。en/es/fr/pt区別 |
 | `LatinSegmentRefiner` | `Multilingual/` | Latin文字セグメントのTrigram精緻化（internal） |
 
 ##### ILanguageG2PHandler Strategy パターン
@@ -133,7 +133,7 @@ public class MultilingualPhonemizeResult
 "ky" + "o" + "u" → "\ue006" + "o" + "u"
 ```
 
-- **固定マッピング**: `FixedPuaMapping`（96+エントリ、0xE000〜0xE061）
+- **固定マッピング**: `FixedPuaMapping`（`IReadOnlyDictionary<string, int>`、96固定エントリ、0xE000〜0xE061）
 - **pua.json読み込み**: `InitializeAsync()` / `InitializeFromFile()` で `StreamingAssets/uPiper/pua.json` から動的ロード。copy-on-writeでアトミックに置換
 - **動的割当**: `Register(token)` で未登録トークンに新PUAコードポイントを自動割当（0xE062〜0xF8FF）
 - **スレッドセーフ**: `ConcurrentDictionary` + ロックベース動的割当
@@ -208,9 +208,9 @@ public interface IPiperConfigReadOnly
 #### InferenceAudioGenerator と InferenceContext
 - **場所**: `Runtime/Core/AudioGeneration/InferenceAudioGenerator.cs`
 - **出力テンソル名キャッシュ**: 初期化時に `_model.outputs[0].name` を `_cachedOutputName` にキャッシュ
-- **ArrayPool**: Prosodyテンソル構築時に `ArrayPool<int>.Shared` を常に使用。`InferenceContext.Dispose()` でレンタル配列を返却
+- **Prosodyテンソル構築**: `new int[prosodySize]` で直接アロケーション（Tensorコンストラクタが正確な配列サイズを要求するためArrayPoolは未使用）
 - **InferenceContext** (`private sealed class`、`IDisposable`):
-  - `using var ctx = PrepareInputs(...)` パターンにより全入力テンソルおよび `ArrayPool` レンタル配列を一括解放
+  - `using var ctx = PrepareInputs(...)` パターンにより全入力テンソルを一括解放
 
 #### TTSSynthesisOrchestrator
 - **場所**: `Runtime/Core/AudioGeneration/TTSSynthesisOrchestrator.cs`（`internal sealed`）
@@ -260,7 +260,7 @@ public sealed class PhonemizeResult
 #### SplitInferenceOrchestrator
 - **場所**: `Runtime/Core/AudioGeneration/SplitInferenceOrchestrator.cs`（`internal class`）
 - **役割**: 沈黙句分割のオーケストレーション。音素列を沈黙トークンの位置で分割し、句ごとに独立推論を行い、句間にゼロサンプルの無音区間を挿入して結合する
-- **パラメータ**: `phonemeSilence` を `IReadOnlyDictionary<string, float>` で受け取る
+- **パラメータ**: `phonemeSilence` は `GenerateWithSilenceSplitAsync()` メソッドの引数として `IReadOnlyDictionary<string, float>` で受け取る（コンストラクタ引数ではない）
 
 #### AudioNormalizer
 - **場所**: `Runtime/Core/AudioGeneration/AudioNormalizer.cs`

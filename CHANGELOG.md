@@ -54,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PiperTTS.CreateDummyAudioClip
 - InferenceAudioGenerator.DetermineBackendType (→ BackendSelector.Determine)
 - AudioClipBuilder.NormalizeAudio/NormalizeAudioInPlace (→ AudioNormalizer)
-- #pragma warning disable CS0618 (全除去)
+- #pragma warning disable CS0618 (Runtime/Demo/InferenceEngineDemo.csの1件を除き全除去)
 
 ### Fixed
 

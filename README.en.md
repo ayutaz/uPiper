@@ -19,6 +19,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
   - [Troubleshooting](#troubleshooting)
 - [Supported Platforms](#supported-platforms)
 - [GPU Inference](#gpu-inference)
+- [Quick Start](#quick-start)
 - [Documentation](#documentation)
 - [License](#license)
 
@@ -26,6 +27,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 
 - High-quality speech synthesis (piper-plus based)
 - Multi-language support (Japanese, English, Chinese, Spanish, French, Portuguese, Korean)
+- **Hybrid Language Detection**: Unicode range + N-gram Trigram integration (high-precision identification of Latin-script languages en/es/fr/pt)
 
 | Language | G2P Backend |
 |----------|-------------|
@@ -42,7 +44,6 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 - GPU inference support (GPUCompute/GPUPixel)
 - **Prosody Support**: More natural intonation in speech synthesis
 - **Custom Dictionary**: Reading conversion for technical terms and proper nouns
-- **Hybrid Language Detection**: Unicode range + N-gram Trigram integration (high-precision identification of Latin-script languages en/es/fr/pt)
 - **NativeArray Pipeline**: Reduced GC allocation by unifying float[] to NativeArray&lt;float&gt;
 - **SynthesizeAsync public API**: Low-level speech synthesis access via SynthesisRequest
 
@@ -166,6 +167,12 @@ Download the latest version from the [Releases](https://github.com/ayutaz/uPiper
 #### Japanese Text Garbled
 - Use the NotoSansJP-Regular SDF font included in Basic TTS Demo
 
+#### UI Buttons Not Clickable (When Using Input Manager)
+- Check "Active Input Handling" in project settings
+- Edit > Project Settings > Player > Active Input Handling
+- If set to "Input Manager", the EventSystemAutoSetup component handles this automatically
+- See `Samples~/BasicTTSDemo/BasicTTSDemo_README.md` for details
+
 ## Supported Platforms
 
 - ✅ Windows (x64)
@@ -209,8 +216,24 @@ When `InferenceBackend.Auto` is specified, the optimal backend is automatically 
 
 See the [GPU Inference Guide](docs/features/gpu/gpu-inference.md) for details.
 
+## Quick Start
+
+```csharp
+// Initialize
+var config = new PiperConfig { Backend = InferenceBackend.Auto };
+var tts = new PiperTTS(config);
+await tts.InitializeWithInferenceAsync(modelAsset, voiceConfig);
+
+// Generate audio from text (v2.0 recommended API)
+var result = await tts.PhonemizeAsync("Hello, world!");
+var request = SynthesisRequest.FromPhonemesWithProsody(result.Phonemes, result.ProsodyFlat);
+var clip = await tts.SynthesizeAsync(request);
+AudioSource.PlayClipAtPoint(clip, Vector3.zero);
+```
+
 ## Documentation
 
+- [Setup Guide](docs/setup-guide.md) - Installation and initial configuration
 - [Architecture](docs/ARCHITECTURE_en.md) - Design and technical details
 - [GPU Inference Guide](docs/features/gpu/gpu-inference.md) - GPU inference configuration and troubleshooting
 

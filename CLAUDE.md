@@ -130,18 +130,22 @@ AudioClip出力 (22050Hz, float32)
 
 | コンポーネント | 場所 | 役割 |
 |--------------|------|------|
-| `ILanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | 言語検出インターフェース（public）。SegmentText() → (language, text)[] |
+| `ILanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | 言語検出インターフェース（public）。SegmentText() → `IReadOnlyList<(string language, string text)>` |
 | `HybridLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Unicode+Trigram複合言語検出（internal sealed）。Latin言語の曖昧さをTrigramで解消 |
 | `UnicodeLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Unicode文字範囲ベース言語検出（CJK, Hangul, Latin等） |
-| `TrigramLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Trigram頻度分析による言語検出（internal）。en/es/fr/pt区別 |
+| `TrigramLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Trigram頻度分析による言語検出（internal sealed class）。en/es/fr/pt区別 |
 | `LatinSegmentRefiner` | `Runtime/Core/Phonemizers/Multilingual/` | Latin文字セグメントのTrigram精緻化（internal） |
 | `LanguageConstants` | `Runtime/Core/Phonemizers/Multilingual/` | 言語ID/コード定数、IsLatinLanguage判定 |
+
+#### Trigram言語検出
+
+ラテン文字言語（en/es/fr/pt）の自動判別にTrigram頻度分析を使用する。プロファイルは `StreamingAssets/uPiper/LanguageProfiles/trigram_profiles.json` に配置（300エントリ x 4言語）。`MultilingualPhonemizerOptions.EnableTrigramDetection`（デフォルト: `true`）で有効/無効を制御。`HybridLanguageDetector` が Unicode範囲検出で「Latin」と判定したセグメントに対して `TrigramLanguageDetector` を適用し、具体的な言語を特定する。
 
 #### 音素エンコーディング・PUAマッピング
 
 | コンポーネント | 場所 | 役割 |
 |--------------|------|------|
-| `PuaTokenMapper` | `Runtime/Core/Phonemizers/Multilingual/` | PUA↔IPA双方向マッピング（インスタンスクラス）。FixedPuaMapping(96+固定エントリ) + pua.jsonランタイム読み込み対応。動的PUA割当機能あり |
+| `PuaTokenMapper` | `Runtime/Core/Phonemizers/Multilingual/` | PUA↔IPA双方向マッピング（インスタンスクラス）。FixedPuaMapping(`IReadOnlyDictionary<string, int>`、96固定エントリ) + pua.jsonランタイム読み込み対応。動的PUA割当機能あり |
 | `PhonemeEncoder` | `Runtime/Core/AudioGeneration/` | 音素→モデルID変換（ProsodyFlat stride=3対応）。EncodeWithProsody / Encode / ProsodyStride=3定数 |
 
 #### 音声生成パイプライン
@@ -161,7 +165,7 @@ AudioClip出力 (22050Hz, float32)
 
 | コンポーネント | パッケージ | 役割 |
 |--------------|-----------|------|
-| `EnglishG2PEngine` | DotNetG2P.English | 英語G2P（CMU dict + LTS + 同音異義語解決） |
+| `EnglishG2PEngine` | DotNetG2P.English | 英語G2P（CMU dict + LTS + 同形異義語解決） |
 | `SpanishG2PEngine` | DotNetG2P.Spanish | スペイン語G2P |
 | `FrenchG2PEngine` | DotNetG2P.French | フランス語G2P |
 | `PortugueseG2PEngine` | DotNetG2P.Portuguese | ポルトガル語G2P |
@@ -244,7 +248,7 @@ StreamingAssets/uPiper/     # 実行時データ（辞書）
 
 | プラットフォーム | InferenceBackend.Auto |
 |-----------------|----------------------|
-| Windows/Linux | GPUPixel |
+| Windows/Linux | GPUPixel（VRAM 512MB以上+ComputeShader対応時、それ以外はCPU） |
 | macOS | CPU（Metal非対応） |
 | iOS/Android | GPUPixel |
 | WebGL | GPUPixel / GPUCompute（Phase 1-4完了。WebGPU時はGPUCompute自動選択、WebGL2時はGPUPixel） |
@@ -252,7 +256,7 @@ StreamingAssets/uPiper/     # 実行時データ（辞書）
 ## 定義シンボル
 
 - `UPIPER_DEVELOPMENT` - セットアップウィザード無効化、開発メニュー有効化
-- `ENABLE_IL2CPP_COMPATIBILITY` - IL2CPP固有コードパス
+- `ENABLE_IL2CPP` - IL2CPP固有コードパス（Unity標準シンボル）
 - `UNITY_WEBGL` - WebGLプラットフォーム判定（Task.Run除去、ファイルI/O代替）
 
 ## バージョン管理
@@ -354,6 +358,7 @@ var phonemizer = new DotNetG2PPhonemizer();
 
 // "DockerとGitHubを使った開発" → "ドッカーとギットハブを使った開発" に変換後、音素化
 var result = phonemizer.PhonemizeWithProsody("DockerとGitHubを使った開発");
+// result: ProsodyResult { Phonemes[], ProsodyA1[], ProsodyA2[], ProsodyA3[], PhonemeCount }
 ```
 
 ### 動的追加
@@ -370,8 +375,8 @@ Piperモデルには2種類の音素表現がある：
 
 | モデルタイプ | 音素表現 | 例 |
 |------------|---------|-----|
-| **PUA (Private Use Area)** | Unicode私用領域文字 | `ch` → `\ue00e` (ID 39) |
-| **IPA (International Phonetic Alphabet)** | 国際音声記号 | `ch` → `tɕ` (ID 32) |
+| **PUA (Private Use Area)** | Unicode私用領域文字 | `ch` → `\ue00e` |
+| **IPA (International Phonetic Alphabet)** | 国際音声記号 | `ch` → `tɕ` |
 
 ### PhonemeEncoder の動作
 
@@ -403,7 +408,7 @@ _useIpaMapping = !_isMultilingualModel && _phonemeToId.ContainsKey("ɕ");
 
 `PuaTokenMapper`はインスタンスクラスとして全7言語の音素に対する統一的なPUA↔IPAの双方向マッピングを提供する。
 
-- **固定マッピング**: `FixedPuaMapping`（`IReadOnlyDictionary<string, int>`）に96+エントリをハードコード（0xE000〜0xE061）
+- **固定マッピング**: `FixedPuaMapping`（`IReadOnlyDictionary<string, int>`）に96エントリをハードコード（0xE000〜0xE061）
 - **pua.json ランタイム読み込み**: `InitializeAsync()` / `InitializeFromFile()` で `StreamingAssets/uPiper/pua.json` から動的ロード可能。copy-on-write で既存マッピングをアトミックに置換
 - **動的PUA割当**: `Register(token)` で未登録の多文字トークンに新しいPUAコードポイントを自動割当（0xE062〜0xF8FF）
 - **API**: `MapToken(token)`, `MapSequence(tokens)`, `UnmapChar(ch)`, `IsFixedPua(ch)`
@@ -413,14 +418,16 @@ _useIpaMapping = !_isMultilingualModel && _phonemeToId.ContainsKey("ɕ");
 
 ### 主要な音素マッピング
 
-| G2P出力 | PUA文字 | PUA ID | IPA音素 | IPA ID |
-|--------------|---------|--------|---------|--------|
-| `ch` (ち) | `\ue00e` | 39 | `tɕ` | 32 |
-| `ts` (つ) | `\ue00f` | 40 | `ts` | 33 |
-| `sh` (し) | `\ue010` | 42 | `ɕ` | 18 |
-| `cl` (っ) | `\ue005` | 23 | `q` | 24 |
-| `ky` (きゃ) | `\ue006` | 26 | `kʲ` | - |
-| `N` (ん) | `N` | 22 | `ɴ` | 22 |
+注: IDはモデルの`phoneme_id_map`に依存するため、具体的な数値はモデルごとに異なる。
+
+| G2P出力 | PUA文字 | IPA音素 |
+|--------------|---------|---------|
+| `ch` (ち) | `\ue00e` | `tɕ` |
+| `ts` (つ) | `\ue00f` | `ts` |
+| `sh` (し) | `\ue010` | `ʃ` |
+| `cl` (っ) | `\ue005` | `q` |
+| `ky` (きゃ) | `\ue006` | `kʲ` |
+| `N` (ん) | `N` | `ɴ` |
 
 ### 多言語モデルエンコーディング（phoneme_type: "multilingual"）
 

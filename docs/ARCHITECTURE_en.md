@@ -51,17 +51,17 @@ uPiper is a plugin for using Piper TTS in Unity environments. It employs neural 
 #### MultilingualPhonemizer
 - **Location**: `Runtime/Core/Phonemizers/Multilingual/MultilingualPhonemizer.cs`
 - **Role**: Segment text via language detection, then delegate to per-language ILanguageG2PHandler Strategy implementations
-- **Constructor**: Receives `MultilingualPhonemizerOptions` (languages, defaultLatinLanguage, enableTrigramDetection, customDetector, handlers)
+- **Constructor**: Receives `MultilingualPhonemizerOptions` (languages, defaultLatinLanguage, enableTrigramDetection, LanguageDetector, handlers)
 - **InitializeAsync**: Creates default handlers for unregistered languages -> initializes all handlers -> upgrades to HybridLanguageDetector when trigram detection is enabled
 
 ##### Language Detection (ILanguageDetector)
 
 | Implementation | Location | Role |
 |---------------|----------|------|
-| `ILanguageDetector` | `Multilingual/` | Language detection interface (public). `SegmentText()` -> `(language, text)[]` |
+| `ILanguageDetector` | `Multilingual/` | Language detection interface (public). `SegmentText()` -> `IReadOnlyList<(string language, string text)>` |
 | `UnicodeLanguageDetector` | `Multilingual/` | Unicode script range based detection (CJK, Hangul, Latin, etc.). Default |
 | `HybridLanguageDetector` | `Multilingual/` | Unicode + Trigram hybrid detection (internal sealed). Resolves Latin language ambiguity via trigram |
-| `TrigramLanguageDetector` | `Multilingual/` | Trigram frequency analysis based detection (internal). en/es/fr/pt disambiguation |
+| `TrigramLanguageDetector` | `Multilingual/` | Trigram frequency analysis based detection (internal sealed class). en/es/fr/pt disambiguation |
 | `LatinSegmentRefiner` | `Multilingual/` | Trigram-based refinement of Latin segments (internal) |
 
 ##### ILanguageG2PHandler Strategy Pattern
@@ -135,7 +135,7 @@ Maps multi-character phonemes to single Unicode PUA characters:
 "ky" + "o" + "u" -> "\ue006" + "o" + "u"
 ```
 
-- **Fixed mapping**: `FixedPuaMapping` (`IReadOnlyDictionary<string, int>`, 96+ entries, 0xE000-0xE061)
+- **Fixed mapping**: `FixedPuaMapping` (`IReadOnlyDictionary<string, int>`, 96 entries, 0xE000-0xE061)
 - **pua.json loading**: `InitializeAsync()` / `InitializeFromFile()` loads from `StreamingAssets/uPiper/pua.json`. Copy-on-write for atomic replacement
 - **Dynamic allocation**: `Register(token)` auto-assigns new PUA codepoints for unregistered multi-char tokens (0xE062-0xF8FF)
 - **Thread-safe**: `ConcurrentDictionary` + lock-based dynamic allocation
@@ -148,7 +148,7 @@ Maps multi-character phonemes to single Unicode PUA characters:
 - **BOS/EOS/PAD expansion**: Automatically expands ProsodyFlat to match BOS/EOS/PAD token insertion (inserts zero values at boundaries)
 - **`ProsodyStride = 3`**: Public constant used when constructing ProsodyFlat arrays
 - **Model type auto-detection**:
-  - IPA detection: `_useIpaMapping = !_isMultilingualModel && _phonemeToId.ContainsKey("ipa_char")`
+  - IPA detection: `_useIpaMapping = !_isMultilingualModel && _phonemeToId.ContainsKey("ɕ")`
   - Multilingual detection: `_isMultilingualModel` flags `phoneme_type: "multilingual"` models
   - Multilingual models use PUA character passthrough (no IPA/PUA conversion)
 
@@ -210,9 +210,9 @@ Phoneme IDs -> TextEncoder -> Duration Predictor -> Flow Decoder -> Audio Wavefo
 #### InferenceAudioGenerator and InferenceContext
 - **Location**: `Runtime/Core/AudioGeneration/InferenceAudioGenerator.cs`
 - **Output tensor name caching**: At initialization, `_model.outputs[0].name` is cached in `_cachedOutputName`
-- **ArrayPool**: `ArrayPool<int>.Shared` is always used for prosody tensors. `InferenceContext.Dispose()` returns rented arrays
+- **Prosody tensor construction**: Uses `new int[prosodySize]` for direct allocation (ArrayPool is not used because Tensor constructor requires exact array size)
 - **InferenceContext** (`private sealed class`, `IDisposable`):
-  - `using var ctx = PrepareInputs(...)` pattern atomically releases all input tensors and `ArrayPool` rented arrays in `Dispose()`
+  - `using var ctx = PrepareInputs(...)` pattern atomically releases all input tensors in `Dispose()`
 
 #### TTSSynthesisOrchestrator
 - **Location**: `Runtime/Core/AudioGeneration/TTSSynthesisOrchestrator.cs` (`internal sealed`)
@@ -262,7 +262,7 @@ public sealed class PhonemizeResult
 #### SplitInferenceOrchestrator
 - **Location**: `Runtime/Core/AudioGeneration/SplitInferenceOrchestrator.cs` (`internal class`)
 - **Role**: Orchestrates silence-based phrase splitting. Splits the phoneme sequence at silence token positions, performs independent inference per phrase, and inserts zero-sample silence intervals between phrases before concatenation
-- **Parameter type**: Receives `phonemeSilence` as `IReadOnlyDictionary<string, float>`
+- **Parameter type**: `phonemeSilence` is received as `IReadOnlyDictionary<string, float>` via the `GenerateWithSilenceSplitAsync()` method argument (not a constructor parameter)
 
 #### AudioNormalizer
 - **Location**: `Runtime/Core/AudioGeneration/AudioNormalizer.cs`
