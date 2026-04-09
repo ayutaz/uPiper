@@ -1,4 +1,5 @@
 using System;
+using Unity.Collections;
 using UnityEngine;
 using uPiper.Core.Logging;
 
@@ -41,6 +42,42 @@ namespace uPiper.Core.AudioGeneration
             }
 
             PiperLogger.LogDebug($"Normalized audio in-place: max amplitude {maxAmplitude:F3} -> {targetPeak:F3}");
+        }
+
+        /// <summary>
+        /// NativeArray&lt;float&gt;音声データをin-placeで正規化する。元のデータが直接変更される。
+        /// GCアロケーションなし。
+        /// </summary>
+        /// <param name="audioData">音声データ（変更される）</param>
+        /// <param name="targetPeak">目標ピーク値（0-1）</param>
+        public static void NormalizeInPlace(NativeArray<float> audioData, float targetPeak = 0.95f)
+        {
+            if (!audioData.IsCreated || audioData.Length == 0)
+                return;
+
+            targetPeak = Mathf.Clamp01(targetPeak);
+
+            // 最大振幅を見つける
+            var maxAmplitude = 0f;
+            for (var i = 0; i < audioData.Length; i++)
+            {
+                var absValue = Mathf.Abs(audioData[i]);
+                if (absValue > maxAmplitude)
+                    maxAmplitude = absValue;
+            }
+
+            // 既に正規化されている場合はスキップ
+            if (maxAmplitude <= 0f || Mathf.Approximately(maxAmplitude, targetPeak))
+                return;
+
+            var scale = targetPeak / maxAmplitude;
+            for (var i = 0; i < audioData.Length; i++)
+            {
+                audioData[i] *= scale;
+            }
+
+            PiperLogger.LogDebug(
+                $"Normalized audio (NativeArray) in-place: max amplitude {maxAmplitude:F3} -> {targetPeak:F3}");
         }
 
         /// <summary>

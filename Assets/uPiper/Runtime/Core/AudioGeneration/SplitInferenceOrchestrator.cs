@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Collections;
 using uPiper.Core.Logging;
 
 namespace uPiper.Core.AudioGeneration
@@ -23,7 +24,8 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// 沈黙句分割付きで音声を生成する。
         /// </summary>
-        public async Task<float[]> GenerateWithSilenceSplitAsync(
+        /// <remarks>Caller owns and must Dispose the returned NativeArray.</remarks>
+        public async Task<NativeArray<float>> GenerateWithSilenceSplitAsync(
             int[] phonemeIds,
             int[] prosodyFlat,
             IReadOnlyDictionary<string, float> phonemeSilence,
@@ -46,48 +48,69 @@ namespace uPiper.Core.AudioGeneration
             if (phrases.Count == 0)
             {
                 PiperLogger.LogWarning("[SplitInferenceOrchestrator] No phrases after silence split");
-                return Array.Empty<float>();
+                return new NativeArray<float>(0, Allocator.Persistent);
             }
 
-            var segments = new List<(float[] Audio, int SilenceSamples)>();
-            var totalLength = 0;
-
-            for (var p = 0; p < phrases.Count; p++)
+            var segments = new List<(NativeArray<float> Audio, int SilenceSamples)>();
+            NativeArray<float> combined = default;
+            try
             {
-                var phrase = phrases[p];
-                if (phrase.PhonemeIds == null || phrase.PhonemeIds.Length == 0)
-                    continue;
+                var totalLength = 0;
 
-                cancellationToken.ThrowIfCancellationRequested();
+                for (var p = 0; p < phrases.Count; p++)
+                {
+                    var phrase = phrases[p];
+                    if (phrase.PhonemeIds == null || phrase.PhonemeIds.Length == 0)
+                        continue;
 
-                var phraseAudio = await _generator.GenerateAudioAsync(
-                    phrase.PhonemeIds,
-                    phrase.ProsodyFlat,
-                    lengthScale, noiseScale, noiseW,
-                    speakerId, languageId,
-                    cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                segments.Add((phraseAudio, phrase.SilenceSamples));
-                totalLength += phraseAudio.Length + phrase.SilenceSamples;
+                    var phraseAudio = await _generator.GenerateAudioAsync(
+                        phrase.PhonemeIds,
+                        phrase.ProsodyFlat,
+                        lengthScale, noiseScale, noiseW,
+                        speakerId, languageId,
+                        cancellationToken);
 
-                PiperLogger.LogDebug(
-                    $"[SplitInferenceOrchestrator] Phrase {p + 1}/{phrases.Count}: " +
-                    $"{phraseAudio.Length} samples + {phrase.SilenceSamples} silence");
+                    segments.Add((phraseAudio, phrase.SilenceSamples));
+                    totalLength += phraseAudio.Length + phrase.SilenceSamples;
+
+                    PiperLogger.LogDebug(
+                        $"[SplitInferenceOrchestrator] Phrase {p + 1}/{phrases.Count}: " +
+                        $"{phraseAudio.Length} samples + {phrase.SilenceSamples} silence");
+                }
+
+                // ClearMemory ensures silence gaps are zero-initialized
+                combined = new NativeArray<float>(
+                    totalLength, Allocator.Persistent, NativeArrayOptions.ClearMemory);
+                var offset = 0;
+                foreach (var (audio, silenceSamples) in segments)
+                {
+                    NativeArray<float>.Copy(audio, 0, combined, offset, audio.Length);
+                    offset += audio.Length;
+                    offset += silenceSamples; // Zero-initialized (silence)
+                }
+
+                PiperLogger.LogInfo(
+                    $"[SplitInferenceOrchestrator] Silence split complete: " +
+                    $"{totalLength} total samples ({segments.Count} phrases)");
+                return combined;
             }
-
-            var result = new float[totalLength];
-            var offset = 0;
-            foreach (var (audio, silenceSamples) in segments)
+            catch
             {
-                Array.Copy(audio, 0, result, offset, audio.Length);
-                offset += audio.Length;
-                offset += silenceSamples; // Zero-initialized (silence)
+                if (combined.IsCreated)
+                    combined.Dispose();
+                throw;
             }
-
-            PiperLogger.LogInfo(
-                $"[SplitInferenceOrchestrator] Silence split complete: " +
-                $"{totalLength} total samples ({segments.Count} phrases)");
-            return result;
+            finally
+            {
+                // Dispose per-phrase NativeArrays (ownership transferred to combined)
+                foreach (var (audio, _) in segments)
+                {
+                    if (audio.IsCreated)
+                        audio.Dispose();
+                }
+            }
         }
     }
 }

@@ -277,6 +277,87 @@ namespace uPiper.Core
         }
 
         /// <summary>
+        /// SynthesisRequestを直接指定して音声を生成する（低レベルAPI）。
+        /// 音素列は事前に <see cref="PhonemizeAsync"/> または外部G2Pで取得・構築済みであること。
+        /// </summary>
+        /// <param name="request">音声合成リクエスト（音素・Prosody・合成パラメータを集約）。</param>
+        /// <param name="cancellationToken">キャンセルトークン。</param>
+        /// <returns>生成されたAudioClip。</returns>
+        /// <exception cref="ObjectDisposedException">インスタンスがDispose済みの場合。</exception>
+        /// <exception cref="InvalidOperationException">Inferenceが初期化されていない場合。</exception>
+        public async Task<AudioClip> SynthesizeAsync(
+            SynthesisRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(PiperTTS));
+
+            if (!_isInitialized || _orchestrator == null)
+                throw new InvalidOperationException(
+                    "Inference is not initialized. Call InitializeWithInferenceAsync first.");
+
+            return await _orchestrator.SynthesizeAsync(request, cancellationToken);
+        }
+
+        /// <summary>
+        /// テキストを音素化し、Prosody情報付きの結果を返す。
+        /// 多言語Phonemizerが利用可能な場合はそちらを優先する。
+        /// 結果は <see cref="SynthesisRequest.FromPhonemesWithProsody"/> でリクエスト構築に使用できる。
+        /// </summary>
+        /// <param name="text">音素化するテキスト。</param>
+        /// <param name="cancellationToken">キャンセルトークン。</param>
+        /// <returns>音素化結果（Phonemes, ProsodyFlat等）。</returns>
+        /// <exception cref="ObjectDisposedException">インスタンスがDispose済みの場合。</exception>
+        /// <exception cref="InvalidOperationException">Inferenceが初期化されていない場合。</exception>
+        /// <exception cref="ArgumentException">テキストがnullまたは空の場合。</exception>
+        public async Task<PhonemizeResult> PhonemizeAsync(
+            string text,
+            CancellationToken cancellationToken = default)
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(PiperTTS));
+
+            if (!_isInitialized)
+                throw new InvalidOperationException(
+                    "Inference is not initialized. Call InitializeWithInferenceAsync first.");
+
+            if (string.IsNullOrWhiteSpace(text))
+                throw new ArgumentException("Text cannot be null or empty.", nameof(text));
+
+            // 多言語Phonemizerが利用可能な場合はそちらを優先
+            if (_multilingualPhonemizer != null && _multilingualPhonemizer.IsInitialized)
+            {
+                var multiResult = await _multilingualPhonemizer.PhonemizeWithProsodyAsync(
+                    text, cancellationToken);
+
+                int resolvedLanguageId = 0;
+                if (_inferenceGenerator != null && _inferenceGenerator.SupportsLanguageId)
+                {
+                    var detectedLang = multiResult.DetectedPrimaryLanguage;
+                    if (_currentVoiceConfig?.LanguageIdMap != null &&
+                        _currentVoiceConfig.LanguageIdMap.TryGetValue(detectedLang, out var detectedId))
+                    {
+                        resolvedLanguageId = detectedId;
+                    }
+                }
+
+                return new PhonemizeResult(
+                    multiResult.Phonemes,
+                    multiResult.ProsodyFlat,
+                    multiResult.DetectedPrimaryLanguage ?? "ja",
+                    resolvedLanguageId);
+            }
+
+            // フォールバック: 通常の音素化
+            var phonemeResult = await GetPhonemesAsync(text, cancellationToken);
+            return new PhonemizeResult(
+                phonemeResult?.Phonemes,
+                phonemeResult?.ProsodyFlat,
+                phonemeResult?.Language ?? "ja",
+                0);
+        }
+
+        /// <summary>
         /// 現在のInferenceモデルアセットを取得
         /// </summary>
         public ModelAsset CurrentModelAsset => _currentModelAsset;

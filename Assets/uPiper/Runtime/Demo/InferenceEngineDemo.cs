@@ -803,70 +803,85 @@ namespace uPiper.Demo
                 SetStatus("音声を生成中...");
                 var synthesisStopwatch = Stopwatch.StartNew();
 
-                float[] audioData;
-                if (useProsody && expandedProsodyFlat != null)
+                UnityEngine.AudioClip audioClip = null;
+                Unity.Collections.NativeArray<float> nativeAudioData = default;
+                try
                 {
-                    PiperLogger.LogDebug($"Calling GenerateAudioAsync with prosody (languageId={languageId})...");
-                    audioData = await _generator.GenerateAudioAsync(
-                        phonemeIds, expandedProsodyFlat,
-                        languageId: languageId);
+                    if (useProsody && expandedProsodyFlat != null)
+                    {
+                        PiperLogger.LogDebug($"Calling GenerateAudioAsync with prosody (languageId={languageId})...");
+                        nativeAudioData = await _generator.GenerateAudioAsync(
+                            phonemeIds, expandedProsodyFlat,
+                            languageId: languageId);
+                    }
+                    else
+                    {
+                        PiperLogger.LogDebug($"Calling GenerateAudioAsync (languageId={languageId})...");
+                        nativeAudioData = await _generator.GenerateAudioAsync(
+                            phonemeIds, languageId: languageId);
+                    }
+                    timings["Synthesis"] = synthesisStopwatch.ElapsedMilliseconds;
+                    PiperLogger.LogInfo($"Audio generated: {nativeAudioData.Length} samples");
+
+                    // Convert to managed array for diagnostic LINQ operations
+                    var audioData = nativeAudioData.ToArray();
+
+                    // 音声データの最大値を確認
+                    var maxVal = audioData.Max(x => Math.Abs(x));
+                    PiperLogger.LogInfo($"Original audio max amplitude: {maxVal:F4}");
+
+                    // 音声データが既に小さい値の場合は増幅、大きい値の場合は正規化
+                    float[] processedAudio;
+
+                    // 音声データの詳細な統計情報
+                    PiperLogger.LogInfo($"Audio statistics before processing:");
+                    PiperLogger.LogInfo($"  - Sample count: {audioData.Length}");
+                    PiperLogger.LogInfo($"  - Duration: {audioData.Length / (float)config.SampleRate:F2} seconds");
+                    PiperLogger.LogInfo($"  - Max absolute value: {maxVal:F6}");
+                    PiperLogger.LogInfo($"  - Mean absolute value: {audioData.Select(x => Math.Abs(x)).Average():F6}");
+                    PiperLogger.LogInfo($"  - First 10 samples: {string.Join(", ", audioData.Take(10).Select(x => x.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)))}");
+
+                    if (maxVal < 0.01f)
+                    {
+                        // 音声が小さすぎる場合は増幅
+                        SetStatus("音声データを増幅中...");
+                        PiperLogger.LogWarning($"Audio data is extremely quiet (max: {maxVal:F6}). This may indicate a model output issue.");
+                        var amplificationFactor = 0.3f / maxVal; // 最大値を0.3にする
+                        processedAudio = audioData.Select(x => x * amplificationFactor).ToArray();
+                        PiperLogger.LogInfo($"Amplified audio by factor {amplificationFactor:F2}");
+                    }
+                    else if (maxVal > 1.0f)
+                    {
+                        // 音声データを正規化
+                        SetStatus("音声データを正規化中...");
+                        PiperLogger.LogDebug("Normalizing audio data...");
+                        AudioNormalizer.NormalizeInPlace(audioData, 0.95f);
+                        processedAudio = audioData;
+                    }
+                    else
+                    {
+                        // 既に適切な範囲
+                        processedAudio = audioData;
+                        PiperLogger.LogDebug("Audio data is already in proper range");
+                    }
+
+                    // AudioClipを作成 (uses legacy float[] overload for demo diagnostics)
+                    SetStatus("AudioClipを作成中...");
+                    PiperLogger.LogDebug($"Building AudioClip (sample rate: {config.SampleRate})");
+#pragma warning disable CS0618 // Obsolete: demo uses float[] for LINQ diagnostics
+                    audioClip = _audioBuilder.BuildAudioClip(
+                        processedAudio,
+                        config.SampleRate,
+                        $"Generated_{DateTime.Now:HHmmss}"
+                    );
+#pragma warning restore CS0618
+                    PiperLogger.LogDebug($"AudioClip created: {audioClip.length:F2} seconds");
                 }
-                else
+                finally
                 {
-                    PiperLogger.LogDebug($"Calling GenerateAudioAsync (languageId={languageId})...");
-                    audioData = await _generator.GenerateAudioAsync(phonemeIds, languageId: languageId);
+                    if (nativeAudioData.IsCreated)
+                        nativeAudioData.Dispose();
                 }
-                timings["Synthesis"] = synthesisStopwatch.ElapsedMilliseconds;
-                PiperLogger.LogInfo($"Audio generated: {audioData.Length} samples");
-
-                // 音声データの最大値を確認
-                var maxVal = audioData.Max(x => Math.Abs(x));
-                PiperLogger.LogInfo($"Original audio max amplitude: {maxVal:F4}");
-
-                // 音声データが既に小さい値の場合は増幅、大きい値の場合は正規化
-                float[] processedAudio;
-
-                // 音声データの詳細な統計情報
-                PiperLogger.LogInfo($"Audio statistics before processing:");
-                PiperLogger.LogInfo($"  - Sample count: {audioData.Length}");
-                PiperLogger.LogInfo($"  - Duration: {audioData.Length / (float)config.SampleRate:F2} seconds");
-                PiperLogger.LogInfo($"  - Max absolute value: {maxVal:F6}");
-                PiperLogger.LogInfo($"  - Mean absolute value: {audioData.Select(x => Math.Abs(x)).Average():F6}");
-                PiperLogger.LogInfo($"  - First 10 samples: {string.Join(", ", audioData.Take(10).Select(x => x.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)))}");
-
-                if (maxVal < 0.01f)
-                {
-                    // 音声が小さすぎる場合は増幅
-                    SetStatus("音声データを増幅中...");
-                    PiperLogger.LogWarning($"Audio data is extremely quiet (max: {maxVal:F6}). This may indicate a model output issue.");
-                    var amplificationFactor = 0.3f / maxVal; // 最大値を0.3にする
-                    processedAudio = audioData.Select(x => x * amplificationFactor).ToArray();
-                    PiperLogger.LogInfo($"Amplified audio by factor {amplificationFactor:F2}");
-                }
-                else if (maxVal > 1.0f)
-                {
-                    // 音声データを正規化
-                    SetStatus("音声データを正規化中...");
-                    PiperLogger.LogDebug("Normalizing audio data...");
-                    AudioNormalizer.NormalizeInPlace(audioData, 0.95f);
-                    processedAudio = audioData;
-                }
-                else
-                {
-                    // 既に適切な範囲
-                    processedAudio = audioData;
-                    PiperLogger.LogDebug("Audio data is already in proper range");
-                }
-
-                // AudioClipを作成
-                SetStatus("AudioClipを作成中...");
-                PiperLogger.LogDebug($"Building AudioClip (sample rate: {config.SampleRate})");
-                var audioClip = _audioBuilder.BuildAudioClip(
-                    processedAudio,
-                    config.SampleRate,
-                    $"Generated_{DateTime.Now:HHmmss}"
-                );
-                PiperLogger.LogDebug($"AudioClip created: {audioClip.length:F2} seconds");
 
                 // 再生
                 if (_audioSource != null && audioClip != null)

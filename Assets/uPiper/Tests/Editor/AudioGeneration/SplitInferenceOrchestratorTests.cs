@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using NUnit.Framework;
+using Unity.Collections;
 using uPiper.Core.AudioGeneration;
 
 namespace uPiper.Tests.Editor.AudioGeneration
@@ -66,13 +67,21 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 phonemeSilence, phonemeIdMap,
                 sampleRate: 22050);
 
-            // Assert
-            Assert.IsNotNull(result, "結果が null でないこと");
-            Assert.AreEqual(1, _stubGenerator.GenerateCallCount,
-                "分割なしの場合、推論は1回のみ呼ばれること");
-            // 単一句なので、返却データはスタブの固定データと同じ長さ
-            Assert.AreEqual(50, result.Length,
-                "単一句のオーディオデータ長が一致すること");
+            try
+            {
+                // Assert
+                Assert.IsTrue(result.IsCreated, "結果が作成済みであること");
+                Assert.AreEqual(1, _stubGenerator.GenerateCallCount,
+                    "分割なしの場合、推論は1回のみ呼ばれること");
+                // 単一句なので、返却データはスタブの固定データと同じ長さ
+                Assert.AreEqual(50, result.Length,
+                    "単一句のオーディオデータ長が一致すること");
+            }
+            finally
+            {
+                if (result.IsCreated)
+                    result.Dispose();
+            }
         }
 
         // ── 複数句（沈黙トークンで分割）──────────────────────────
@@ -97,22 +106,30 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 phonemeSilence, phonemeIdMap,
                 sampleRate: 22050);
 
-            // Assert
-            Assert.IsNotNull(result, "結果が null でないこと");
-            Assert.AreEqual(2, _stubGenerator.GenerateCallCount,
-                "2句に分割されるため、推論が2回呼ばれること");
-
-            // 合計長 = 句1のオーディオ(50) + 無音(11025) + 句2のオーディオ(50)
-            var expectedTotalLength = 50 + expectedSilenceSamples + 50;
-            Assert.AreEqual(expectedTotalLength, result.Length,
-                "合計サンプル数が句のオーディオ+無音の合計と一致すること");
-
-            // 無音区間が0.0fで埋められていることを確認
-            // 句1のオーディオ(50サンプル)の後から無音区間が始まる
-            for (var i = 50; i < 50 + expectedSilenceSamples; i++)
+            try
             {
-                Assert.AreEqual(0.0f, result[i],
-                    $"無音区間のサンプル[{i}]が 0.0f であること");
+                // Assert
+                Assert.IsTrue(result.IsCreated, "結果が作成済みであること");
+                Assert.AreEqual(2, _stubGenerator.GenerateCallCount,
+                    "2句に分割されるため、推論が2回呼ばれること");
+
+                // 合計長 = 句1のオーディオ(50) + 無音(11025) + 句2のオーディオ(50)
+                var expectedTotalLength = 50 + expectedSilenceSamples + 50;
+                Assert.AreEqual(expectedTotalLength, result.Length,
+                    "合計サンプル数が句のオーディオ+無音の合計と一致すること");
+
+                // 無音区間が0.0fで埋められていることを確認
+                // 句1のオーディオ(50サンプル)の後から無音区間が始まる
+                for (var i = 50; i < 50 + expectedSilenceSamples; i++)
+                {
+                    Assert.AreEqual(0.0f, result[i],
+                        $"無音区間のサンプル[{i}]が 0.0f であること");
+                }
+            }
+            finally
+            {
+                if (result.IsCreated)
+                    result.Dispose();
             }
         }
 
@@ -135,14 +152,22 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 phonemeSilence, phonemeIdMap,
                 sampleRate: 22050);
 
-            // Assert
-            Assert.IsNotNull(result, "結果が null でないこと");
-            // 空の Phrase のみが生成され、PhonemeIds が空のためスキップされる
-            // → totalLength は 0 になるが、結果配列自体は空（長さ0）
-            Assert.AreEqual(0, _stubGenerator.GenerateCallCount,
-                "空入力に対して推論が呼ばれないこと");
-            Assert.AreEqual(0, result.Length,
-                "空入力に対して空のオーディオデータが返ること");
+            try
+            {
+                // Assert
+                Assert.IsTrue(result.IsCreated, "結果が作成済みであること");
+                // 空の Phrase のみが生成され、PhonemeIds が空のためスキップされる
+                // → totalLength は 0 になるが、結果配列自体は空（長さ0）
+                Assert.AreEqual(0, _stubGenerator.GenerateCallCount,
+                    "空入力に対して推論が呼ばれないこと");
+                Assert.AreEqual(0, result.Length,
+                    "空入力に対して空のオーディオデータが返ること");
+            }
+            finally
+            {
+                if (result.IsCreated)
+                    result.Dispose();
+            }
         }
 
         // ── Prosody付き句分割 ─────────────────────────────────────
@@ -172,13 +197,21 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 phonemeSilence, phonemeIdMap,
                 sampleRate: 22050);
 
-            // Assert
-            Assert.IsNotNull(result);
-            Assert.AreEqual(2, _stubGenerator.GenerateCallCount,
-                "Prosody付きでも2句に分割されること");
-            // 最後の呼び出しの prosodyFlat が non-null であることを確認
-            Assert.IsNotNull(_stubGenerator.LastProsodyFlat,
-                "Prosody配列が下流に伝播されること");
+            try
+            {
+                // Assert
+                Assert.IsTrue(result.IsCreated);
+                Assert.AreEqual(2, _stubGenerator.GenerateCallCount,
+                    "Prosody付きでも2句に分割されること");
+                // 最後の呼び出しの prosodyFlat が non-null であることを確認
+                Assert.IsNotNull(_stubGenerator.LastProsodyFlat,
+                    "Prosody配列が下流に伝播されること");
+            }
+            finally
+            {
+                if (result.IsCreated)
+                    result.Dispose();
+            }
         }
 
         // ── コンストラクタ null チェック ──────────────────────────

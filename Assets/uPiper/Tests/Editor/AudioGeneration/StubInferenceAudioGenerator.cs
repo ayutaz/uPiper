@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Collections;
 using Unity.InferenceEngine;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
@@ -20,8 +21,9 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public bool SupportsLanguageId { get; set; } = false;
 
         /// <summary>
-        /// GenerateAudioAsync が返す固定データ。
+        /// GenerateAudioAsync が返す固定データ（managed配列）。
         /// null の場合はデフォルト（0.1f x 100 サンプル）。
+        /// 呼び出しごとに新しい NativeArray にコピーして返す。
         /// </summary>
         public float[] AudioDataToReturn { get; set; }
 
@@ -63,7 +65,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             return Task.CompletedTask;
         }
 
-        public Task<float[]> GenerateAudioAsync(
+        public Task<NativeArray<float>> GenerateAudioAsync(
             int[] phonemeIds,
             int[] prosodyFlat = null,
             float lengthScale = 1.0f, float noiseScale = 0.667f, float noiseW = 0.8f,
@@ -79,8 +81,10 @@ namespace uPiper.Tests.Editor.AudioGeneration
             LastSpeakerId = speakerId;
             LastLanguageId = languageId;
 
-            var data = AudioDataToReturn ?? CreateDefaultAudioData();
-            return Task.FromResult(data);
+            var source = AudioDataToReturn ?? CreateDefaultAudioData();
+            var nativeArray = new NativeArray<float>(source.Length, Allocator.Persistent);
+            nativeArray.CopyFrom(source);
+            return Task.FromResult(nativeArray);
         }
 
         private static float[] CreateDefaultAudioData()

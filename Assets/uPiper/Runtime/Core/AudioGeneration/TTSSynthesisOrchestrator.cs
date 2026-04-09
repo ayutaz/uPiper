@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Collections;
 using UnityEngine;
 using uPiper.Core.Logging;
 
@@ -40,9 +41,11 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// 音素列からAudioClipを生成する。
         /// request.HasProsodyがfalseの場合はProsodyなしでエンコードする。
+        /// NativeArrayの最終Dispose地点。AudioClip.SetData完了後にDisposeする。
         /// </summary>
         /// <param name="request">音声合成リクエスト（音素・Prosody・合成パラメータを集約）</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
+        /// <remarks>Must be called from the main thread.</remarks>
         public async Task<AudioClip> SynthesizeAsync(
             SynthesisRequest request,
             CancellationToken cancellationToken = default)
@@ -73,42 +76,52 @@ namespace uPiper.Core.AudioGeneration
                 && silenceParsed?.Count > 0
                 && _voiceConfig?.PhonemeIdMap != null;
 
-            float[] audioData;
-            if (useSilenceSplit)
+            NativeArray<float> audioData = default;
+            try
             {
-                audioData = await _splitOrchestrator.GenerateWithSilenceSplitAsync(
-                    phonemeIds, expandedProsodyFlat,
-                    silenceParsed,
-                    _voiceConfig.PhonemeIdMap,
+                if (useSilenceSplit)
+                {
+                    audioData = await _splitOrchestrator.GenerateWithSilenceSplitAsync(
+                        phonemeIds, expandedProsodyFlat,
+                        silenceParsed,
+                        _voiceConfig.PhonemeIdMap,
+                        _generator.SampleRate,
+                        request.LengthScale, request.NoiseScale, request.NoiseW,
+                        request.SpeakerId, request.LanguageId,
+                        cancellationToken);
+                }
+                else
+                {
+                    audioData = await _generator.GenerateAudioAsync(
+                        phonemeIds, expandedProsodyFlat,
+                        request.LengthScale, request.NoiseScale, request.NoiseW,
+                        request.SpeakerId, request.LanguageId,
+                        cancellationToken);
+                }
+
+                // 3. 正規化してAudioClipを構築（設定で無効化可能、後方互換のためnull時は正規化）
+                if (_config == null || _config.Audio.NormalizeAudio)
+                {
+                    AudioNormalizer.NormalizeInPlace(audioData, 0.95f);
+                }
+                var clip = _audioClipBuilder.BuildAudioClip(
+                    audioData,
                     _generator.SampleRate,
-                    request.LengthScale, request.NoiseScale, request.NoiseW,
-                    request.SpeakerId, request.LanguageId,
-                    cancellationToken);
+                    $"TTS_{Guid.NewGuid():N}");
+
+                PiperLogger.LogInfo(
+                    $"[TTSSynthesisOrchestrator] Synthesized {audioData.Length} samples " +
+                    $"from {request.Phonemes.Length} phonemes");
+
+                return clip;
             }
-            else
+            finally
             {
-                audioData = await _generator.GenerateAudioAsync(
-                    phonemeIds, expandedProsodyFlat,
-                    request.LengthScale, request.NoiseScale, request.NoiseW,
-                    request.SpeakerId, request.LanguageId,
-                    cancellationToken);
+                // NativeArray の最終 Dispose 地点。
+                // AudioClip.SetData は NativeArray 内容をコピー済みのため、Dispose しても安全。
+                if (audioData.IsCreated)
+                    audioData.Dispose();
             }
-
-            // 3. 正規化してAudioClipを構築（設定で無効化可能、後方互換のためnull時は正規化）
-            if (_config == null || _config.Audio.NormalizeAudio)
-            {
-                AudioNormalizer.NormalizeInPlace(audioData, 0.95f);
-            }
-            var clip = _audioClipBuilder.BuildAudioClip(
-                audioData,
-                _generator.SampleRate,
-                $"TTS_{System.Guid.NewGuid():N}");
-
-            PiperLogger.LogInfo(
-                $"[TTSSynthesisOrchestrator] Synthesized {audioData.Length} samples " +
-                $"from {request.Phonemes.Length} phonemes");
-
-            return clip;
         }
     }
 }

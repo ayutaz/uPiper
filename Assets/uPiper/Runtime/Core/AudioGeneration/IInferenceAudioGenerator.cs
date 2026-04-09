@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.Collections;
 using Unity.InferenceEngine;
 using UnityEngine;
 
@@ -42,7 +43,8 @@ namespace uPiper.Core.AudioGeneration
         /// <param name="speakerId">スピーカーID</param>
         /// <param name="languageId">言語ID</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
-        public Task<float[]> GenerateAudioAsync(
+        /// <remarks>Caller owns and must Dispose the returned NativeArray.</remarks>
+        public Task<NativeArray<float>> GenerateAudioAsync(
             int[] phonemeIds,
             int[] prosodyFlat = null,
             float lengthScale = 1.0f,

@@ -124,6 +124,9 @@ namespace uPiper.Editor
                     _testResult += $"✓ Inference successful in {inferenceTime:F1}ms\n";
                     _testResult += $"  Generated {audio.Length} audio samples\n";
 
+                    if (audio.IsCreated)
+                        audio.Dispose();
+
                     generator.Dispose();
                 }
                 catch (Exception ex)

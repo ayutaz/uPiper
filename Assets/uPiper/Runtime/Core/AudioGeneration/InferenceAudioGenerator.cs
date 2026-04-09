@@ -231,7 +231,7 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <inheritdoc/>
-        public async Task<float[]> GenerateAudioAsync(
+        public async Task<NativeArray<float>> GenerateAudioAsync(
             int[] phonemeIds,
             int[] prosodyFlat = null,
             float lengthScale = 1.0f,
@@ -331,9 +331,10 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// Execute inference with the given inputs (facade for 3-stage pipeline)
+        /// Execute inference with the given inputs (facade for 3-stage pipeline).
         /// </summary>
-        private float[] ExecuteInference(
+        /// <remarks>Caller owns and must Dispose the returned NativeArray.</remarks>
+        private NativeArray<float> ExecuteInference(
             int[] phonemeIds,
             int[] prosodyFlat,
             float lengthScale,
@@ -346,6 +347,7 @@ namespace uPiper.Core.AudioGeneration
             using var ctx = PrepareInputs(phonemeIds, prosodyFlat,
                 lengthScale, noiseScale, noiseW, speakerId, languageId);
 
+            NativeArray<float> audioData = default;
             try
             {
                 var prepareMs = sw.Elapsed.TotalMilliseconds;
@@ -355,7 +357,7 @@ namespace uPiper.Core.AudioGeneration
                 var scheduleMs = sw.Elapsed.TotalMilliseconds;
 
                 sw.Restart();
-                var audioData = ExtractResults();
+                audioData = ExtractResults();
                 var extractMs = sw.Elapsed.TotalMilliseconds;
 
                 var totalMs = prepareMs + scheduleMs + extractMs;
@@ -367,6 +369,9 @@ namespace uPiper.Core.AudioGeneration
             }
             catch (Exception ex)
             {
+                // Dispose NativeArray on exception before ownership is transferred
+                if (audioData.IsCreated)
+                    audioData.Dispose();
                 PiperLogger.LogError($"[InferenceAudioGenerator] Failed to execute inference: {ex.Message}");
                 throw;
             }
@@ -423,23 +428,36 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// 推論結果を取得し、float配列として返す。
+        /// 推論結果を取得し、NativeArray&lt;float&gt;として返す。
         /// outputTensorはWorker所有のため呼び出し元がDisposeしてはならない。
         /// readableTensorはこのメソッド内でDisposeする。
         /// </summary>
-        private float[] ExtractResults()
+        /// <remarks>Caller owns and must Dispose the returned NativeArray.</remarks>
+        private NativeArray<float> ExtractResults()
         {
             var outputTensor = GetOutputTensor(); // Worker-owned; do not Dispose
             var readableTensor = outputTensor.ReadbackAndClone();
+            NativeArray<float> audioData = default;
             try
             {
                 var audioLength = readableTensor.shape.length;
-                var audioData = new float[audioLength];
+                audioData = new NativeArray<float>(audioLength, Allocator.Persistent);
+
+                // Bulk copy from Sentis ReadOnlyNativeArray to NativeArray.
+                // ToReadOnlyNativeArray() returns a view over the tensor's CPU data.
+                var src = readableTensor.ToReadOnlyNativeArray();
                 for (var i = 0; i < audioLength; i++)
                 {
-                    audioData[i] = readableTensor[i];
+                    audioData[i] = src[i];
                 }
+
                 return audioData;
+            }
+            catch
+            {
+                if (audioData.IsCreated)
+                    audioData.Dispose();
+                throw;
             }
             finally
             {

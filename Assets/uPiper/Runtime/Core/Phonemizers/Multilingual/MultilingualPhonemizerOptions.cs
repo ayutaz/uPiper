@@ -20,6 +20,20 @@ namespace uPiper.Core.Phonemizers.Multilingual
         public Dictionary<string, ILanguageG2PHandler> Handlers { get; set; }
 
         /// <summary>
+        /// Optional custom language detector. When set, this detector is used instead of
+        /// the default Unicode-based detector or the hybrid trigram detector.
+        /// </summary>
+        public ILanguageDetector LanguageDetector { get; set; }
+
+        /// <summary>
+        /// Whether to enable trigram-based language detection for Latin-script languages.
+        /// When true and multiple Latin languages are configured, a
+        /// <see cref="HybridLanguageDetector"/> is created automatically.
+        /// Default: true.
+        /// </summary>
+        public bool EnableTrigramDetection { get; set; } = true;
+
+        /// <summary>
         /// Validates the options, throwing if required properties are missing or invalid.
         /// </summary>
         /// <exception cref="ArgumentException">Thrown when Languages is null or empty.</exception>

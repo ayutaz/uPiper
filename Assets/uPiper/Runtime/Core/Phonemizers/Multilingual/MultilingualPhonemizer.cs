@@ -40,10 +40,12 @@ namespace uPiper.Core.Phonemizers.Multilingual
             new() { "$", "?", "?!", "?.", "?~", "\ue016", "\ue017", "\ue018" };
 
         private readonly Dictionary<string, HandlerEntry> _handlers = new();
-        private readonly UnicodeLanguageDetector _detector;
+        private ILanguageDetector _detector;
         private readonly SemaphoreSlim _initLock = new(1, 1);
         private readonly IReadOnlyList<string> _languages;
         private readonly string _defaultLatinLanguage;
+        private readonly bool _enableTrigramDetection;
+        private readonly ILanguageDetector _customDetector;
         private volatile bool _isInitialized;
         private bool _disposed;
 
@@ -66,7 +68,13 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
             _languages = options.Languages;
             _defaultLatinLanguage = options.DefaultLatinLanguage ?? "en";
-            _detector = new UnicodeLanguageDetector(options.Languages, _defaultLatinLanguage);
+            _enableTrigramDetection = options.EnableTrigramDetection;
+            _customDetector = options.LanguageDetector;
+
+            // Detector will be resolved in InitializeAsync().
+            // Use the custom detector if provided, otherwise default to UnicodeLanguageDetector.
+            _detector = _customDetector
+                ?? new UnicodeLanguageDetector(options.Languages, _defaultLatinLanguage);
 
             // Load handlers from options (caller-provided, not owned)
             if (options.Handlers != null)
@@ -118,6 +126,13 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 {
                     PiperLogger.LogWarning(
                         "[MultilingualPhonemizer] Warning: No backends were successfully initialized");
+                }
+
+                // Upgrade detector to HybridLanguageDetector when trigram detection is enabled,
+                // no custom detector was provided, and multiple Latin languages are configured.
+                if (_customDetector == null && _enableTrigramDetection)
+                {
+                    await TryUpgradeToHybridDetectorAsync(cancellationToken);
                 }
 
                 _isInitialized = true;
@@ -296,6 +311,59 @@ namespace uPiper.Core.Phonemizers.Multilingual
             _initLock.Dispose();
         }
 
-        // ── Private helpers ─────────────────────────────────────────��─────────
+        // ── Private helpers ─────────────────────────────────────────────────
+
+        /// <summary>
+        /// Attempts to upgrade the detector to a HybridLanguageDetector by loading trigram profiles.
+        /// Falls back to the existing UnicodeLanguageDetector if profiles are unavailable
+        /// or fewer than 2 Latin languages are configured.
+        /// </summary>
+        private async Task TryUpgradeToHybridDetectorAsync(CancellationToken cancellationToken)
+        {
+            // Count Latin languages in the configured language list
+            var latinCount = 0;
+            for (var i = 0; i < _languages.Count; i++)
+            {
+                if (LanguageConstants.IsLatinLanguage(_languages[i]))
+                    latinCount++;
+            }
+
+            if (latinCount < 2)
+            {
+                PiperLogger.LogDebug(
+                    "[MultilingualPhonemizer] Trigram detection skipped: " +
+                    $"only {latinCount} Latin language(s) configured.");
+                return;
+            }
+
+            try
+            {
+                var profiles = await TrigramProfileLoader.LoadAsync(cancellationToken);
+                if (profiles == null || profiles.Count == 0)
+                {
+                    PiperLogger.LogWarning(
+                        "[MultilingualPhonemizer] Trigram profiles not found. " +
+                        "Falling back to Unicode-only detection.");
+                    return;
+                }
+
+                var trigramDetector = new TrigramLanguageDetector(profiles);
+                var unicodeDetector = _detector as UnicodeLanguageDetector
+                    ?? new UnicodeLanguageDetector(_languages, _defaultLatinLanguage);
+
+                _detector = new HybridLanguageDetector(
+                    unicodeDetector, trigramDetector, _languages, _defaultLatinLanguage);
+
+                PiperLogger.LogInfo(
+                    "[MultilingualPhonemizer] Upgraded to HybridLanguageDetector " +
+                    $"with {profiles.Count} language profile(s).");
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogWarning(
+                    "[MultilingualPhonemizer] Failed to load trigram profiles: " +
+                    $"{ex.Message}. Falling back to Unicode-only detection.");
+            }
+        }
     }
 }

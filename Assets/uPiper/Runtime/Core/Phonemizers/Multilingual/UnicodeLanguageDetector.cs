@@ -10,7 +10,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
     /// Ported from piper-plus Python implementation (UnicodeLanguageDetector).
     /// Uses character range checks (no regex) for zero-allocation, high-speed detection.
     /// </summary>
-    public class UnicodeLanguageDetector
+    public class UnicodeLanguageDetector : ILanguageDetector
     {
         private readonly IReadOnlyList<string> _languages;
         private readonly string _defaultLatinLanguage;
@@ -205,6 +205,10 @@ namespace uPiper.Core.Phonemizers.Multilingual
             // Neutral: whitespace, digits, other punctuation
             return null;
         }
+
+        /// <inheritdoc/>
+        IReadOnlyList<(string language, string text)> ILanguageDetector.SegmentText(string text)
+            => SegmentText(text);
 
         /// <summary>
         /// Segments text into language-specific chunks.

@@ -700,31 +700,39 @@ namespace uPiper.Core
                         _onProcessingProgress?.Invoke(0.6f);
 
                         // Generate audio using inference (with or without prosody)
-                        float[] audioData;
-                        if (useProsody && expandedProsodyFlat != null)
+                        Unity.Collections.NativeArray<float> audioData = default;
+                        try
                         {
-                            audioData = await _inferenceGenerator.GenerateAudioAsync(
-                                phonemeIds, expandedProsodyFlat,
-                                cancellationToken: cancellationToken);
+                            if (useProsody && expandedProsodyFlat != null)
+                            {
+                                audioData = await _inferenceGenerator.GenerateAudioAsync(
+                                    phonemeIds, expandedProsodyFlat,
+                                    cancellationToken: cancellationToken);
+                            }
+                            else
+                            {
+                                audioData = await _inferenceGenerator.GenerateAudioAsync(
+                                    phonemeIds,
+                                    cancellationToken: cancellationToken);
+                            }
+                            PiperLogger.LogInfo($"Generated {audioData.Length} audio samples");
+
+                            _onProcessingProgress?.Invoke(0.7f);
+
+                            // Create AudioClip from generated data
+                            var audioBuilder = new AudioClipBuilder();
+                            audioClip = audioBuilder.BuildAudioClip(
+                                audioData,
+                                _inferenceGenerator.SampleRate,
+                                $"TTS_Output_{DateTime.Now:HHmmss}"
+                            );
+                            PiperLogger.LogInfo($"Created AudioClip: {audioClip.length:F2} seconds");
                         }
-                        else
+                        finally
                         {
-                            audioData = await _inferenceGenerator.GenerateAudioAsync(
-                                phonemeIds,
-                                cancellationToken: cancellationToken);
+                            if (audioData.IsCreated)
+                                audioData.Dispose();
                         }
-                        PiperLogger.LogInfo($"Generated {audioData.Length} audio samples");
-
-                        _onProcessingProgress?.Invoke(0.7f);
-
-                        // Create AudioClip from generated data
-                        var audioBuilder = new AudioClipBuilder();
-                        audioClip = audioBuilder.BuildAudioClip(
-                            audioData,
-                            _inferenceGenerator.SampleRate,
-                            $"TTS_Output_{DateTime.Now:HHmmss}"
-                        );
-                        PiperLogger.LogInfo($"Created AudioClip: {audioClip.length:F2} seconds");
                     }
                     catch (Exception ex)
                     {

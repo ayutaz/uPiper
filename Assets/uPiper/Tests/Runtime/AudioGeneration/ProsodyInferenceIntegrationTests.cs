@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using Unity.Collections;
 using UnityEngine;
 using Unity.InferenceEngine;
 using uPiper.Core;
@@ -220,25 +221,36 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             Debug.Log($"ExpandedA1 ({encodingResult.ExpandedProsodyFlat.Length}): [{string.Join(", ", encodingResult.ExpandedProsodyFlat)}]");
 
             // Generate audio with prosody
-            var audioData = await _generator.GenerateAudioAsync(
+            var nativeAudioData = await _generator.GenerateAudioAsync(
                 encodingResult.PhonemeIds,
                 encodingResult.ExpandedProsodyFlat
             );
 
-            // Validate audio
-            Assert.IsNotNull(audioData, "Audio data should not be null");
-            Assert.Greater(audioData.Length, 0, "Audio data should have samples");
+            try
+            {
+                // Convert to managed array for LINQ validation
+                var audioData = nativeAudioData.ToArray();
 
-            var min = audioData.Min();
-            var max = audioData.Max();
-            var absAvg = audioData.Select(Math.Abs).Average();
+                // Validate audio
+                Assert.IsNotNull(audioData, "Audio data should not be null");
+                Assert.Greater(audioData.Length, 0, "Audio data should have samples");
 
-            Debug.Log($"Generated {audioData.Length} samples ({audioData.Length / 22050.0f:F2} seconds)");
-            Debug.Log($"Audio stats - Min: {min:F4}, Max: {max:F4}, AbsAvg: {absAvg:F6}");
+                var min = audioData.Min();
+                var max = audioData.Max();
+                var absAvg = audioData.Select(Math.Abs).Average();
 
-            // Audio should have some variation (not silent)
-            Assert.Greater(absAvg, 0.0001f, "Audio should not be silent");
-            Assert.Greater(max - min, 0.01f, "Audio should have dynamic range");
+                Debug.Log($"Generated {audioData.Length} samples ({audioData.Length / 22050.0f:F2} seconds)");
+                Debug.Log($"Audio stats - Min: {min:F4}, Max: {max:F4}, AbsAvg: {absAvg:F6}");
+
+                // Audio should have some variation (not silent)
+                Assert.Greater(absAvg, 0.0001f, "Audio should not be silent");
+                Assert.Greater(max - min, 0.01f, "Audio should have dynamic range");
+            }
+            finally
+            {
+                if (nativeAudioData.IsCreated)
+                    nativeAudioData.Dispose();
+            }
         }
 
         [Test]
@@ -278,29 +290,41 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             var encodingResult = _encoder.EncodeWithProsody(piperPhonemes, prosodyFlat);
 
             // Generate WITH prosody
-            var audioWithProsody = await _generator.GenerateAudioAsync(
+            var nativeAudioWithProsody = await _generator.GenerateAudioAsync(
                 encodingResult.PhonemeIds,
                 encodingResult.ExpandedProsodyFlat
             );
 
             // Generate with ZERO prosody (all zeros, same length as expanded arrays)
             var zeroProsody = new int[encodingResult.ExpandedProsodyFlat.Length];
-            var audioWithoutProsody = await _generator.GenerateAudioAsync(
+            var nativeAudioWithoutProsody = await _generator.GenerateAudioAsync(
                 encodingResult.PhonemeIds,
-                zeroProsody,
-                zeroProsody,
                 zeroProsody
             );
 
-            // Both should produce valid audio
-            Assert.Greater(audioWithProsody.Length, 0, "Audio with prosody should have samples");
-            Assert.Greater(audioWithoutProsody.Length, 0, "Audio without prosody should have samples");
+            try
+            {
+                // Both should produce valid audio
+                Assert.Greater(nativeAudioWithProsody.Length, 0,
+                    "Audio with prosody should have samples");
+                Assert.Greater(nativeAudioWithoutProsody.Length, 0,
+                    "Audio without prosody should have samples");
 
-            Debug.Log($"With prosody: {audioWithProsody.Length} samples ({audioWithProsody.Length / 22050.0f:F2}s)");
-            Debug.Log($"Without prosody: {audioWithoutProsody.Length} samples ({audioWithoutProsody.Length / 22050.0f:F2}s)");
+                Debug.Log($"With prosody: {nativeAudioWithProsody.Length} samples " +
+                    $"({nativeAudioWithProsody.Length / 22050.0f:F2}s)");
+                Debug.Log($"Without prosody: {nativeAudioWithoutProsody.Length} samples " +
+                    $"({nativeAudioWithoutProsody.Length / 22050.0f:F2}s)");
 
-            // Note: The audio may differ in length and content due to prosody features
-            // This test validates that both paths work correctly
+                // Note: The audio may differ in length and content due to prosody features
+                // This test validates that both paths work correctly
+            }
+            finally
+            {
+                if (nativeAudioWithProsody.IsCreated)
+                    nativeAudioWithProsody.Dispose();
+                if (nativeAudioWithoutProsody.IsCreated)
+                    nativeAudioWithoutProsody.Dispose();
+            }
         }
 
         /// <summary>
@@ -347,15 +371,25 @@ namespace uPiper.Tests.Runtime.AudioGeneration
             Debug.Log($"[InputTypeTest] Testing with {encodingResult.PhonemeIds.Length} phoneme IDs");
 
             // この呼び出しが成功すれば、Float型が正しいことが証明される
-            var audioData = await _generator.GenerateAudioAsync(
+            var nativeAudioData = await _generator.GenerateAudioAsync(
                 encodingResult.PhonemeIds,
                 encodingResult.ExpandedProsodyFlat
             );
 
-            Assert.IsNotNull(audioData, "Audio generation should succeed with Float prosody tensor");
-            Assert.Greater(audioData.Length, 0, "Audio should have samples");
+            try
+            {
+                Assert.IsTrue(nativeAudioData.IsCreated,
+                    "Audio generation should succeed with Float prosody tensor");
+                Assert.Greater(nativeAudioData.Length, 0, "Audio should have samples");
 
-            Debug.Log($"[InputTypeTest] Successfully generated audio with Float prosody tensor: {audioData.Length} samples ({audioData.Length / 22050.0f:F2}s)");
+                Debug.Log($"[InputTypeTest] Successfully generated audio with Float prosody tensor: " +
+                    $"{nativeAudioData.Length} samples ({nativeAudioData.Length / 22050.0f:F2}s)");
+            }
+            finally
+            {
+                if (nativeAudioData.IsCreated)
+                    nativeAudioData.Dispose();
+            }
         }
 
         /// <summary>
