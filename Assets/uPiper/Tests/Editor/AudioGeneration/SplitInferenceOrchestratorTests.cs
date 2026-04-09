@@ -223,6 +223,41 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 new SplitInferenceOrchestrator(null));
         }
 
+        // ── Short text mitigation ────────────────────────────────
+
+        [Test]
+        public async Task GenerateWithSilenceSplit_ShortPhrase_AppliesShortTextMitigation()
+        {
+            // Arrange: 短い phonemeIds（5要素 < MinPhonemeIds=40）
+            var phonemeIds = new[] { 1, 5, 6, 7, 2 }; // ^, u, ?, ?, $
+            var phonemeSilence = new Dictionary<string, float>(); // 空 → 分割なし
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+
+            // Act
+            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds,
+                prosodyFlat: null,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050);
+
+            try
+            {
+                // Assert
+                Assert.IsTrue(result.IsCreated, "結果が作成済みであること");
+                Assert.AreEqual(1, _stubGenerator.GenerateCallCount,
+                    "分割なしの場合、推論は1回のみ呼ばれること");
+                // ShortTextProcessor が適用され、phonemeIds が MinPhonemeIds 以上にパディングされていること
+                Assert.GreaterOrEqual(_stubGenerator.LastPhonemeIds.Length,
+                    ShortTextProcessor.MinPhonemeIds,
+                    "短いフレーズにパディングが適用され、phonemeIds が MinPhonemeIds 以上であること");
+            }
+            finally
+            {
+                if (result.IsCreated)
+                    result.Dispose();
+            }
+        }
+
         // ── ヘルパー ─────────────────────────────────────────────
 
         /// <summary>

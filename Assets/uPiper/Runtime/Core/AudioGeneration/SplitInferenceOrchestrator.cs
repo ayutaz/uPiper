@@ -65,12 +65,36 @@ namespace uPiper.Core.AudioGeneration
 
                     cancellationToken.ThrowIfCancellationRequested();
 
+                    // ── Short text mitigation (per phrase) ──
+                    var phrasePhonemeIds = phrase.PhonemeIds;
+                    var phraseProsodyFlat = phrase.ProsodyFlat;
+                    var phraseNoiseScale = noiseScale;
+                    var phraseNoiseW = noiseW;
+                    var originalCount = phrasePhonemeIds.Length;
+                    var wasPadded = ShortTextProcessor.NeedsPadding(phrasePhonemeIds);
+
+                    if (wasPadded)
+                    {
+                        (phrasePhonemeIds, phraseProsodyFlat) = ShortTextProcessor.PadPhonemeIds(
+                            phrasePhonemeIds, phraseProsodyFlat);
+                    }
+
+                    if (originalCount < ShortTextProcessor.MinPhonemeIds)
+                    {
+                        (phraseNoiseScale, phraseNoiseW) = ShortTextProcessor.AdjustScales(
+                            originalCount, phraseNoiseScale, phraseNoiseW);
+                    }
+
                     var phraseAudio = await _generator.GenerateAudioAsync(
-                        phrase.PhonemeIds,
-                        phrase.ProsodyFlat,
-                        lengthScale, noiseScale, noiseW,
+                        phrasePhonemeIds, phraseProsodyFlat,
+                        lengthScale, phraseNoiseScale, phraseNoiseW,
                         speakerId, languageId,
                         cancellationToken);
+
+                    if (wasPadded)
+                    {
+                        phraseAudio = ShortTextProcessor.TrimSilence(phraseAudio);
+                    }
 
                     segments.Add((phraseAudio, phrase.SilenceSamples));
                     totalLength += phraseAudio.Length + phrase.SilenceSamples;

@@ -104,11 +104,33 @@ namespace uPiper.Core.AudioGeneration
                 }
                 else
                 {
+                    // ── Short text mitigation ──
+                    var originalCount = phonemeIds.Length;
+                    var wasPadded = ShortTextProcessor.NeedsPadding(phonemeIds);
+                    if (wasPadded)
+                    {
+                        (phonemeIds, expandedProsodyFlat) = ShortTextProcessor.PadPhonemeIds(
+                            phonemeIds, expandedProsodyFlat);
+                    }
+
+                    var noiseScale = request.NoiseScale;
+                    var noiseW = request.NoiseW;
+                    if (originalCount < ShortTextProcessor.MinPhonemeIds)
+                    {
+                        (noiseScale, noiseW) = ShortTextProcessor.AdjustScales(
+                            originalCount, noiseScale, noiseW);
+                    }
+
                     audioData = await _generator.GenerateAudioAsync(
                         phonemeIds, expandedProsodyFlat,
-                        request.LengthScale, request.NoiseScale, request.NoiseW,
+                        request.LengthScale, noiseScale, noiseW,
                         request.SpeakerId, request.LanguageId,
                         cancellationToken);
+
+                    if (wasPadded)
+                    {
+                        audioData = ShortTextProcessor.TrimSilence(audioData);
+                    }
                 }
 
                 // 3. 正規化してAudioClipを構築（設定で無効化可能、後方互換のためnull時は正規化）

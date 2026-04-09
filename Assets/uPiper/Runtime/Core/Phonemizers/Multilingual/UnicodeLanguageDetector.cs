@@ -49,13 +49,15 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
         /// <summary>
         /// Returns true if the character is Hiragana (U+3040-309F),
-        /// Katakana (U+30A0-30FF), or Katakana Phonetic Extensions (U+31F0-31FF).
+        /// Katakana (U+30A0-30FF), Katakana Phonetic Extensions (U+31F0-31FF),
+        /// or Halfwidth Katakana (U+FF65-FF9F).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsKana(char ch)
             => (ch >= '\u3040' && ch <= '\u309F') ||
                (ch >= '\u30A0' && ch <= '\u30FF') ||
-               (ch >= '\u31F0' && ch <= '\u31FF');
+               (ch >= '\u31F0' && ch <= '\u31FF') ||
+               (ch >= '\uFF65' && ch <= '\uFF9F');
 
         /// <summary>
         /// Returns true if the character is a CJK Unified Ideograph
@@ -70,13 +72,15 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
         /// <summary>
         /// Returns true if the character is Hangul:
-        /// Syllables (U+AC00-D7AF), Jamo (U+1100-11FF), or Compat Jamo (U+3130-318F).
+        /// Syllables (U+AC00-D7AF), Jamo (U+1100-11FF), Compat Jamo (U+3130-318F),
+        /// or Halfwidth Hangul (U+FFA0-FFDC).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsHangul(char ch)
             => (ch >= '\uAC00' && ch <= '\uD7AF') ||
                (ch >= '\u1100' && ch <= '\u11FF') ||
-               (ch >= '\u3130' && ch <= '\u318F');
+               (ch >= '\u3130' && ch <= '\u318F') ||
+               (ch >= '\uFFA0' && ch <= '\uFFDC');
 
         /// <summary>
         /// Returns true if the character is a Fullwidth Latin letter
@@ -119,14 +123,18 @@ namespace uPiper.Core.Phonemizers.Multilingual
         /// <summary>
         /// Returns true if the character is a CJK punctuation or fullwidth form character.
         /// CJK Symbols and Punctuation (U+3000-303F),
-        /// or Fullwidth Forms (U+FF00-FF20, U+FF3B-FF40, U+FF5B-FFEF).
+        /// Fullwidth Forms (U+FF00-FF20, U+FF3B-FF40, U+FF5B-FF64),
+        /// or Fullwidth Symbol Variants (U+FFE0-FFEF).
+        /// Excludes Halfwidth Katakana (U+FF65-FF9F) and Halfwidth Hangul (U+FFA0-FFDC)
+        /// which are handled by IsKana and IsHangul respectively.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsCjkPunct(char ch)
             => (ch >= '\u3000' && ch <= '\u303F') ||
                (ch >= '\uFF00' && ch <= '\uFF20') ||
                (ch >= '\uFF3B' && ch <= '\uFF40') ||
-               (ch >= '\uFF5B' && ch <= '\uFFEF');
+               (ch >= '\uFF5B' && ch <= '\uFF64') ||
+               (ch >= '\uFFE0' && ch <= '\uFFEF');
 
         // ── Instance methods ──────────────────────────────────────────────────
 

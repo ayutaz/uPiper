@@ -160,6 +160,7 @@ AudioClip出力 (22050Hz, float32)
 | `AudioClipBuilder` | `Runtime/Core/AudioGeneration/` | NativeArray&lt;float&gt;→AudioClip変換。float[]版は[Obsolete] |
 | `BackendSelector` | `Runtime/Core/AudioGeneration/` | 推論バックエンド選択ロジック（public static class）。プリプロセッサフリー |
 | `PlatformInfo` | `Runtime/Core/AudioGeneration/` | プラットフォーム依存情報カプセル化（public readonly struct）。FromCurrentEnvironment()ファクトリ |
+| `ShortTextProcessor` | `Runtime/Core/AudioGeneration/` | 短テキスト合成品質緩和（internal static class）。Strategy A: 音素IDパディング+無音トリム、Strategy B: noise scale動的低減 |
 
 #### DotNetG2Pパッケージ（外部）
 
@@ -324,6 +325,26 @@ var clip2 = await piperTTS.SynthesizeAsync(request2);
 - Prosody対応モデルは `a1`, `a2`, `a3` 入力テンソルを持つ
 - 統合API `GenerateAudioAsync(phonemeIds, prosodyFlat, ...)` でProsodyあり/なしを自動切替（prosodyFlat=nullでProsodyなし）
 
+## 短テキスト緩和 (Short Text Mitigation)
+
+### 概要
+VITSベースTTSの構造的制限により、音素IDが40未満の短テキストでは音声品質が劣化する。`ShortTextProcessor`がTTSSynthesisOrchestrator/SplitInferenceOrchestratorから自動的に呼び出され、以下の緩和策を適用する。
+
+### Strategy A: 音素IDパディング + 無音トリム
+- `phonemeIds.Length < 40` の場合、BOS後/EOS前にPADトークン(ID=0)を均等挿入して40要素に拡張
+- ProsodyFlat (stride=3) も対応位置にゼロ値でパディング
+- 推論後、RMSベースの無音検出（閾値=0.01, ウィンドウ=256サンプル）で先頭/末尾の無音をトリム
+- トリム後の最小サンプル数: 2205 (22050Hz × 0.1秒)
+
+### Strategy B: noise_scale / noise_w 動的低減
+- `ratio = phonemeIdCount / 40`（パディング前の元の長さ）
+- `noiseScale *= max(0.5, ratio)`, `noiseW *= max(0.4, ratio)`
+- length_scale は調整しない
+
+### 適用箇所
+- `TTSSynthesisOrchestrator.SynthesizeAsync` の非句分割パス
+- `SplitInferenceOrchestrator.GenerateWithSilenceSplitAsync` の各フレーズ
+
 ## カスタム辞書機能
 
 ### 概要
@@ -360,6 +381,11 @@ var phonemizer = new DotNetG2PPhonemizer();
 var result = phonemizer.PhonemizeWithProsody("DockerとGitHubを使った開発");
 // result: ProsodyResult { Phonemes[], ProsodyA1[], ProsodyA2[], ProsodyA3[], PhonemeCount }
 ```
+
+### セキュリティ
+- ファイルサイズ上限: 10MB (`MaxDictFileSize`)
+- パストラバーサル警告: ファイルパスに `..` が含まれる場合にログ警告
+- JSONパースエラー: 不正なJSONファイルは警告ログで処理
 
 ### 動的追加
 ```csharp

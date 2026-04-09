@@ -587,5 +587,25 @@ namespace uPiper.Tests.Editor
             Assert.AreEqual("ja", result[1].language);
             Assert.AreEqual("\u3068\u30A2\u30D7\u30EA", result[1].text);
         }
+
+        // ── Halfwidth character detection ───────────────────────────────────
+
+        [Test]
+        public void HalfwidthKatakana_DetectedAsJapanese()
+        {
+            var detector = new UnicodeLanguageDetector(new[] { "ja", "en" });
+            var segments = detector.SegmentText("ｱｲｳｴｵ");
+            Assert.AreEqual(1, segments.Count);
+            Assert.AreEqual("ja", segments[0].language);
+        }
+
+        [Test]
+        public void HalfwidthHangul_DetectedAsKorean()
+        {
+            var detector = new UnicodeLanguageDetector(new[] { "ko", "en" });
+            var segments = detector.SegmentText("ﾠﾡﾢ");
+            Assert.AreEqual(1, segments.Count);
+            Assert.AreEqual("ko", segments[0].language);
+        }
     }
 }
