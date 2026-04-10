@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 using Unity.InferenceEngine;
 using UnityEngine;
 using uPiper.Core.AudioGeneration;
@@ -88,15 +89,15 @@ namespace uPiper.Core
         }
 
         /// <summary>
-        /// Available voice IDs
+        /// Available voice configurations.
         /// </summary>
-        public IReadOnlyCollection<string> AvailableVoices
+        public IReadOnlyList<PiperVoiceConfig> AvailableVoices
         {
             get
             {
                 lock (_lockObject)
                 {
-                    return new List<string>(_voices.Keys);
+                    return new List<PiperVoiceConfig>(_voices.Values);
                 }
             }
         }
@@ -274,6 +275,77 @@ namespace uPiper.Core
 
         #endregion
 
+        #region Static Factory Methods
+
+        /// <summary>
+        /// デフォルト設定でPiperTTSを作成・初期化し、利用可能なモデルを自動ロードする。
+        /// </summary>
+        public static async Task<PiperTTS> CreateAsync(CancellationToken cancellationToken = default)
+        {
+            return await CreateAsync(PiperConfig.CreateDefault(), cancellationToken);
+        }
+
+        /// <summary>
+        /// 指定した設定でPiperTTSを作成・初期化し、利用可能なモデルを自動ロードする。
+        /// </summary>
+        public static async Task<PiperTTS> CreateAsync(
+            PiperConfig config,
+            CancellationToken cancellationToken = default)
+        {
+            if (config == null)
+                throw new ArgumentNullException(nameof(config));
+
+            var tts = new PiperTTS(config);
+            var success = false;
+            try
+            {
+                await tts.InitializeAsync(cancellationToken);
+                await tts.LoadDefaultVoiceAsync(cancellationToken);
+                success = true;
+                return tts;
+            }
+            finally
+            {
+                if (!success)
+                {
+                    tts.Dispose();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 指定したボイス設定でPiperTTSを作成・初期化する。
+        /// </summary>
+        public static async Task<PiperTTS> CreateAsync(
+            PiperConfig config,
+            PiperVoiceConfig voiceConfig,
+            CancellationToken cancellationToken = default)
+        {
+            if (config == null)
+                throw new ArgumentNullException(nameof(config));
+            if (voiceConfig == null)
+                throw new ArgumentNullException(nameof(voiceConfig));
+
+            var tts = new PiperTTS(config);
+            var success = false;
+            try
+            {
+                await tts.InitializeAsync(cancellationToken);
+                await tts.LoadVoiceAsync(voiceConfig, cancellationToken);
+                success = true;
+                return tts;
+            }
+            finally
+            {
+                if (!success)
+                {
+                    tts.Dispose();
+                }
+            }
+        }
+
+        #endregion
+
         #region Public Methods - Initialization
 
         /// <summary>
@@ -349,8 +421,12 @@ namespace uPiper.Core
         #region Public Methods - Voice Management
 
         /// <summary>
-        /// Load a voice configuration
+        /// Load a voice configuration.
         /// </summary>
+        /// <remarks>
+        /// カレントボイスが未設定の場合、最初にロードされたボイスが
+        /// 自動的にカレントボイスとして選択される。
+        /// </remarks>
         public async Task LoadVoiceAsync(PiperVoiceConfig voice, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -408,6 +484,148 @@ namespace uPiper.Core
                 _onError?.Invoke(piperEx);
                 throw piperEx;
             }
+        }
+
+        /// <summary>
+        /// Resources/Models/ から利用可能なモデルを自動検出してロードする内部メソッド。
+        /// </summary>
+        private async Task LoadDefaultVoiceAsync(CancellationToken cancellationToken = default)
+        {
+            var modelAssets = Resources.LoadAll<ModelAsset>("Models");
+            if (modelAssets == null || modelAssets.Length == 0)
+            {
+                throw new PiperException(
+                    "No model assets found in Resources/Models/. " +
+                    "Please import a voice model (.onnx) into Assets/uPiper/Resources/Models/.");
+            }
+
+            ModelAsset selectedModel = null;
+            PiperVoiceConfig voiceConfig = null;
+
+            foreach (var modelAsset in modelAssets)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Try to load matching JSON config
+                var configPath = $"Models/{modelAsset.name}.onnx";
+                var configJson = Resources.Load<TextAsset>(configPath);
+
+                voiceConfig = BuildVoiceConfigFromAsset(modelAsset, configJson);
+                if (voiceConfig != null)
+                {
+                    selectedModel = modelAsset;
+                    break;
+                }
+            }
+
+            if (selectedModel == null || voiceConfig == null)
+            {
+                throw new PiperException(
+                    $"Found {modelAssets.Length} model asset(s) in Resources/Models/, " +
+                    "but none could be loaded. Ensure a matching .onnx.json config file exists.");
+            }
+
+            PiperLogger.LogInfo("Auto-selected default voice: {0}", voiceConfig.VoiceId);
+
+            await InitializeWithInferenceAsync(selectedModel, voiceConfig, cancellationToken);
+        }
+
+        /// <summary>
+        /// ModelAsset と オプションのJSON TextAsset から PiperVoiceConfig を構築する。
+        /// </summary>
+        private static PiperVoiceConfig BuildVoiceConfigFromAsset(ModelAsset modelAsset, TextAsset configJson)
+        {
+            if (modelAsset == null) return null;
+
+            var voiceId = modelAsset.name;
+
+            if (configJson != null)
+            {
+                try
+                {
+                    return ParseModelConfig(voiceId, configJson.text);
+                }
+                catch (Exception ex)
+                {
+                    PiperLogger.LogWarning(
+                        "Failed to parse config for model '{0}': {1}. Trying next model.",
+                        voiceId, ex.Message);
+                    return null;
+                }
+            }
+
+            PiperLogger.LogWarning(
+                "No config JSON found for model '{0}'. Using default voice config.", voiceId);
+            return PiperVoiceConfig.FromModelPath(voiceId, null);
+        }
+
+        /// <summary>
+        /// モデルJSON設定ファイルをパースしてPiperVoiceConfigを構築する。
+        /// InferenceEngineDemo.ParseConfig の共通化版。
+        /// </summary>
+        internal static PiperVoiceConfig ParseModelConfig(string voiceId, string json)
+        {
+            var config = new PiperVoiceConfig
+            {
+                VoiceId = voiceId,
+                DisplayName = voiceId,
+                Language = "ja",
+                SampleRate = 22050,
+                PhonemeIdMap = new Dictionary<string, int[]>()
+            };
+
+            var jsonObj = JObject.Parse(json);
+
+            if (jsonObj["language"]?["code"] != null)
+                config.Language = jsonObj["language"]["code"].ToString();
+
+            if (jsonObj["audio"]?["sample_rate"] != null)
+                config.SampleRate = jsonObj["audio"]["sample_rate"].ToObject<int>();
+
+            if (jsonObj["inference"]?["noise_scale"] != null)
+                config.NoiseScale = jsonObj["inference"]["noise_scale"].ToObject<float>();
+
+            if (jsonObj["inference"]?["length_scale"] != null)
+                config.LengthScale = jsonObj["inference"]["length_scale"].ToObject<float>();
+
+            if (jsonObj["inference"]?["noise_w"] != null)
+                config.NoiseW = jsonObj["inference"]["noise_w"].ToObject<float>();
+
+            if (jsonObj["phoneme_type"] != null)
+                config.PhonemeType = jsonObj["phoneme_type"].ToString();
+            else
+                config.PhonemeType = "espeak";
+
+            if (jsonObj["phoneme_id_map"] is JObject phonemeIdMap)
+            {
+                foreach (var kvp in phonemeIdMap)
+                {
+                    if (kvp.Value is JArray idArray && idArray.Count > 0)
+                        config.PhonemeIdMap[kvp.Key] = idArray.ToObject<int[]>();
+                }
+            }
+
+            if (jsonObj["num_speakers"] != null)
+                config.NumSpeakers = jsonObj["num_speakers"].ToObject<int>();
+
+            if (jsonObj["speaker_id_map"] is JObject speakerIdMap)
+            {
+                config.SpeakerIdMap = new Dictionary<string, int>();
+                foreach (var kvp in speakerIdMap)
+                    config.SpeakerIdMap[kvp.Key] = kvp.Value.ToObject<int>();
+            }
+
+            if (jsonObj["num_languages"] != null)
+                config.NumLanguages = jsonObj["num_languages"].ToObject<int>();
+
+            if (jsonObj["language_id_map"] is JObject languageIdMap)
+            {
+                config.LanguageIdMap = new Dictionary<string, int>();
+                foreach (var kvp in languageIdMap)
+                    config.LanguageIdMap[kvp.Key] = kvp.Value.ToObject<int>();
+            }
+
+            return config;
         }
 
         /// <summary>
