@@ -46,6 +46,9 @@ namespace uPiper.Core
             {
                 PiperLogger.LogDebug($"Initializing PiperTTS with Inference model: {modelAsset.name}");
 
+                // Initialize platform-specific audio session (iOS)
+                InitializePlatformAudioSession();
+
                 // 既存のリソースをクリーンアップ
                 DisposeInferenceResources();
 
@@ -238,7 +241,17 @@ namespace uPiper.Core
                             _currentVoiceConfig.LanguageIdMap.TryGetValue(detectedLang, out var detectedId))
                         {
                             resolvedLanguageId = detectedId;
-                            PiperLogger.LogDebug($"[MultilingualTTS] Resolved language '{detectedLang}' → lid={resolvedLanguageId}");
+                            PiperLogger.LogDebug(
+                                $"[MultilingualTTS] Resolved language '{detectedLang}' → lid={resolvedLanguageId}");
+                        }
+                        else
+                        {
+                            resolvedLanguageId = ResolveLanguageId(detectedLang);
+                            PiperLogger.LogWarning(
+                                $"[MultilingualTTS] Detected language '{detectedLang}' is not in " +
+                                $"model's LanguageIdMap. Falling back to lid={resolvedLanguageId}. " +
+                                $"Supported languages: " +
+                                $"{string.Join(", ", _currentVoiceConfig?.LanguageIdMap?.Keys ?? Array.Empty<string>())}");
                         }
                     }
                 }
@@ -342,6 +355,13 @@ namespace uPiper.Core
                         _currentVoiceConfig.LanguageIdMap.TryGetValue(detectedLang, out var detectedId))
                     {
                         resolvedLanguageId = detectedId;
+                    }
+                    else
+                    {
+                        resolvedLanguageId = ResolveLanguageId(detectedLang);
+                        PiperLogger.LogWarning(
+                            $"[PhonemizeAsync] Detected language '{detectedLang}' is not in " +
+                            $"model's LanguageIdMap. Falling back to lid={resolvedLanguageId}.");
                     }
                 }
 

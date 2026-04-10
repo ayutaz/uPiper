@@ -296,6 +296,9 @@ namespace uPiper.Core
                 // Validate runtime environment first (must be on main thread)
                 ValidateRuntimeEnvironment();
 
+                // Initialize platform-specific audio session (iOS)
+                InitializePlatformAudioSession();
+
                 // Initialize Inference Engine backend
                 await InitializeInferenceEngineAsync(cancellationToken);
 
@@ -568,13 +571,14 @@ namespace uPiper.Core
 
             if (_phonemizer == null)
             {
-                PiperLogger.LogWarning("No phonemizer available, returning empty phoneme result");
-                return new PhonemeResult
-                {
-                    OriginalText = text,
-                    Phonemes = Array.Empty<string>(),
-                    Language = CurrentVoice?.Language ?? "ja"
-                };
+                PiperLogger.LogError(
+                    "Phonemizer is not initialized. Ensure InitializeAsync or " +
+                    "InitializeWithInferenceAsync has been called successfully.");
+                throw new PiperPhonemizationException(
+                    text,
+                    CurrentVoice?.Language ?? "ja",
+                    "Phonemizer is not initialized. Call InitializeAsync or " +
+                    "InitializeWithInferenceAsync before calling GetPhonemesAsync.");
             }
 
             var language = CurrentVoice?.Language ?? "ja";
@@ -1253,6 +1257,29 @@ namespace uPiper.Core
 
             // Small delay to simulate async operation
             await Task.Yield();
+        }
+
+        /// <summary>
+        /// Initialize platform-specific audio session.
+        /// On iOS, configures AVAudioSession for Playback category.
+        /// On other platforms, this is a no-op.
+        /// </summary>
+        private static void InitializePlatformAudioSession()
+        {
+#if UNITY_IOS && !UNITY_EDITOR
+            try
+            {
+                Platform.IOSAudioSessionHelper.Initialize();
+                PiperLogger.LogInfo("iOS AVAudioSession initialized automatically");
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogWarning(
+                    $"Failed to initialize iOS AVAudioSession: {ex.Message}. " +
+                    "Audio playback may not work correctly. " +
+                    "If audio is silent, call IOSAudioSessionHelper.Initialize() manually before PiperTTS initialization.");
+            }
+#endif
         }
 
         /// <summary>
