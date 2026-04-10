@@ -34,6 +34,7 @@ namespace uPiper.Core
         private event Action<PiperException> _onError;
         private event Action<float> _onProcessingProgress;
         private Action<string> _onLanguageDetected;
+        private Action<UnsupportedLanguageEventArgs> _onUnsupportedLanguageDetected;
 
         // Inference Engine related
         private BackendType _inferenceBackend;
@@ -219,6 +220,13 @@ namespace uPiper.Core
             remove => _onLanguageDetected -= value;
         }
 
+        /// <inheritdoc/>
+        public event Action<UnsupportedLanguageEventArgs> OnUnsupportedLanguageDetected
+        {
+            add => _onUnsupportedLanguageDetected += value;
+            remove => _onUnsupportedLanguageDetected -= value;
+        }
+
         /// <summary>
         /// Event fired to report processing progress
         /// </summary>
@@ -312,6 +320,20 @@ namespace uPiper.Core
                     tts.Dispose();
                 }
             }
+        }
+
+        /// <summary>
+        /// ScriptableObject設定アセットからPiperTTSを作成・初期化する。
+        /// 内部でディープコピーを作成するため、アセットのオリジナルデータは変更されない。
+        /// </summary>
+        public static async Task<PiperTTS> CreateAsync(
+            PiperConfigAsset configAsset,
+            CancellationToken cancellationToken = default)
+        {
+            if (configAsset == null)
+                throw new ArgumentNullException(nameof(configAsset));
+
+            return await CreateAsync(configAsset.CreateRuntimeCopy(), cancellationToken);
         }
 
         /// <summary>
@@ -1296,6 +1318,7 @@ namespace uPiper.Core
                     _onError = null;
                     _onProcessingProgress = null;
                     _onLanguageDetected = null;
+                    _onUnsupportedLanguageDetected = null;
 
                     // Clear voices
                     _voices.Clear();

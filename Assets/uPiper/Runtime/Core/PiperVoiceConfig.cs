@@ -145,23 +145,40 @@ namespace uPiper.Core
         [Header("Inference Parameters")]
 
         /// <summary>
-        /// Noise scale for inference
+        /// Noise scale for inference (VITS noise_scale).
+        /// Controls phoneme-level variation in pitch and timbre.
+        /// Higher values produce more expressive but less stable speech.
         /// </summary>
-        [Tooltip("Controls the randomness/variation in the generated speech")]
+        [Tooltip("音素レベルの声質・ピッチ変動 (VITS noise_scale)\n" +
+            "0.0 = 変動なし（単調・ロボット的）、0.667 = デフォルト（自然な変動）、1.0+ = 表現豊か（不安定になりうる）\n" +
+            "--- Phoneme-level pitch/timbre variation ---\n" +
+            "0.0 = no variation (flat/robotic), 0.667 = default (natural), 1.0+ = expressive (may be unstable)")]
         [Range(0.0f, 2.0f)]
         public float NoiseScale = 0.667f;
 
         /// <summary>
-        /// Length scale for inference
+        /// Length scale for inference (VITS length_scale).
+        /// Controls overall speaking speed by scaling phoneme durations.
         /// </summary>
-        [Tooltip("Controls the speaking speed (1.0 = normal, <1.0 = faster, >1.0 = slower)")]
+        [Tooltip("話速スケール (VITS length_scale)\n" +
+            "1.0 = 標準速度、0.5 = 2倍速、2.0 = 半分の速度\n" +
+            "推奨範囲: 0.7〜1.3（極端な値は音質劣化の原因）\n" +
+            "--- Speaking speed (phoneme duration scale) ---\n" +
+            "1.0 = normal, <1.0 = faster, >1.0 = slower. Recommended: 0.7-1.3")]
         [Range(0.1f, 2.0f)]
         public float LengthScale = 1.0f;
 
         /// <summary>
-        /// Noise W parameter for inference
+        /// Noise W parameter for inference (VITS noise_w).
+        /// Controls duration-level variation (phoneme length randomness).
+        /// Unlike NoiseScale (pitch/timbre), this affects timing/rhythm.
         /// </summary>
-        [Tooltip("Additional noise parameter for variation")]
+        [Tooltip("音素の発話時間の揺らぎ (VITS noise_w)\n" +
+            "0.0 = 均一なリズム（機械的）、0.8 = デフォルト（自然なリズム）、1.0+ = リズム変動大\n" +
+            "※ NoiseScale（声質変動）とは独立。リズム・間の自然さを制御\n" +
+            "--- Phoneme duration variation (rhythm/timing) ---\n" +
+            "0.0 = uniform rhythm, 0.8 = default (natural), 1.0+ = more rhythmic variation.\n" +
+            "Independent of NoiseScale (pitch/timbre); controls timing naturalness")]
         [Range(0.0f, 2.0f)]
         public float NoiseW = 0.8f;
 

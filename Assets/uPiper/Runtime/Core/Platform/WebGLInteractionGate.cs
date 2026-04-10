@@ -25,6 +25,11 @@ namespace uPiper.Core.Platform
         public event Action OnInteractionCompleted;
 
         /// <summary>
+        /// Custom overlay message. If set, overrides the auto-detected localized message.
+        /// </summary>
+        public string OverlayMessage { get; set; }
+
+        /// <summary>
         /// Whether the user interaction has been completed.
         /// </summary>
         public bool IsCompleted
@@ -160,7 +165,9 @@ namespace uPiper.Core.Platform
             textRect.offsetMax = Vector2.zero;
 
             var tmpText = textObject.AddComponent<TextMeshProUGUI>();
-            tmpText.text = "音声合成の準備ができました\nクリックして開始";
+            tmpText.text = !string.IsNullOrEmpty(OverlayMessage)
+                ? OverlayMessage
+                : WebGLLocalization.GetOverlayMessage();
             tmpText.fontSize = 36;
             tmpText.color = Color.white;
             tmpText.alignment = TextAlignmentOptions.Center;

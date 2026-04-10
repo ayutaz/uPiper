@@ -102,9 +102,14 @@ namespace uPiper.Core
                         Languages = supportedLanguages,
                         DefaultLatinLanguage = _config.DefaultLanguage ?? "en",
                         Handlers = handlers,
+                        FallbackLanguage = _config.FallbackLanguage,
                     };
                     _multilingualPhonemizer = new Phonemizers.Multilingual.MultilingualPhonemizer(phonemizerOptions);
                     await _multilingualPhonemizer.InitializeAsync(cancellationToken);
+                    _multilingualPhonemizer.OnUnsupportedLanguage = args =>
+                    {
+                        _onUnsupportedLanguageDetected?.Invoke(args);
+                    };
                 }
 
                 _isInitialized = true;

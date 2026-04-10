@@ -41,6 +41,18 @@ namespace uPiper.Core
         public bool AutoDetectLanguage = false;
 
         /// <summary>
+        /// Optional fallback language for unsupported language segments.
+        /// When a detected language has no registered G2P handler, the segment
+        /// will be processed using this language's handler instead of being skipped.
+        /// Set to null (default) to skip unsupported segments.
+        /// </summary>
+        [Header("Fallback Settings")]
+        [Tooltip("非対応言語セグメントのフォールバック言語（null = スキップ）\n" +
+            "検出された言語に対応するG2Pハンドラがない場合、この言語で処理する\n" +
+            "--- Fallback language for unsupported segments (null = skip) ---")]
+        public string FallbackLanguage;
+
+        /// <summary>
         /// Supported languages for multilingual mode.
         /// Used when AutoDetectLanguage is true.
         /// </summary>
@@ -86,7 +98,10 @@ namespace uPiper.Core
         /// <summary>
         /// 沈黙トークンによる句分割を有効にする
         /// </summary>
-        [Tooltip("Split phoneme sequences at silence tokens and insert silence between phrases")]
+        [Tooltip("沈黙トークンで音素列を分割し、句間に無音を挿入する\n" +
+            "有効にすると長文の自然さが向上（句切りで息継ぎ風の間を挿入）\n" +
+            "--- Split phoneme sequences at silence tokens ---\n" +
+            "Inserts pauses between phrases for more natural long-text speech")]
         public bool EnablePhonemeSilence = false;
 
         /// <summary>
@@ -94,7 +109,11 @@ namespace uPiper.Core
         /// 形式: "phoneme seconds" (カンマ区切りで複数指定可)
         /// 例: "_ 0.5" または "_ 0.5,# 0.3"
         /// </summary>
-        [Tooltip("Phoneme silence specification: '<phoneme> <seconds>' (comma-separated)")]
+        [Tooltip("沈黙トークンと無音秒数の指定\n" +
+            "形式: \"<音素> <秒数>\" カンマ区切りで複数指定可\n" +
+            "例: \"_ 0.5\" (読点で0.5秒) / \"_ 0.5,# 0.3\" (読点0.5秒+句点0.3秒)\n" +
+            "--- Silence specification: '<phoneme> <seconds>' (comma-separated) ---\n" +
+            "Example: '_ 0.5' or '_ 0.5,# 0.3'")]
         public string PhonemeSilenceSpec = "_ 0.5";
 
         [Header("Audio Settings")]

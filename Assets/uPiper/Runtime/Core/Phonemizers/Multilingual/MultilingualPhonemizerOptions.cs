@@ -34,6 +34,12 @@ namespace uPiper.Core.Phonemizers.Multilingual
         public bool EnableTrigramDetection { get; set; } = true;
 
         /// <summary>
+        /// Optional fallback language code for unsupported language segments.
+        /// Set to null (default) to skip unsupported segments (backward-compatible).
+        /// </summary>
+        public string FallbackLanguage { get; set; }
+
+        /// <summary>
         /// Validates the options, throwing if required properties are missing or invalid.
         /// </summary>
         /// <exception cref="ArgumentException">Thrown when Languages is null or empty.</exception>
@@ -64,6 +70,14 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     $"[MultilingualPhonemizerOptions] DefaultLatinLanguage " +
                     $"'{DefaultLatinLanguage}' " +
                     $"is not in Languages list. It may not be detected correctly.");
+            }
+
+            if (FallbackLanguage != null && Languages != null
+                && !ListContains(Languages, FallbackLanguage))
+            {
+                PiperLogger.LogWarning(
+                    $"[MultilingualPhonemizerOptions] FallbackLanguage '{FallbackLanguage}' " +
+                    "is not in Languages list. Fallback will not work.");
             }
         }
 

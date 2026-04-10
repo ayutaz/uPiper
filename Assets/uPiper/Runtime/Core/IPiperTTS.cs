@@ -142,6 +142,13 @@ namespace uPiper.Core
         /// </summary>
         public event Action<string> OnLanguageDetected;
 
+        /// <summary>
+        /// Event raised when an unsupported language is detected in the input text.
+        /// The event args contain the language code, the skipped text, supported languages,
+        /// and whether a fallback handler was used.
+        /// </summary>
+        public event Action<UnsupportedLanguageEventArgs> OnUnsupportedLanguageDetected;
+
         /// <summary>SynthesisRequestを直接指定して音声を生成する（低レベルAPI）。</summary>
         Task<AudioClip> SynthesizeAsync(
             SynthesisRequest request,

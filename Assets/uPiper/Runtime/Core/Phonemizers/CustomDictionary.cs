@@ -378,6 +378,66 @@ namespace uPiper.Core.Phonemizers
         }
 
         /// <summary>
+        /// 置換詳細情報
+        /// </summary>
+        public readonly struct ReplacementDetail
+        {
+            public string OriginalWord { get; init; }
+            public string Pronunciation { get; init; }
+            public int Priority { get; init; }
+            public int Position { get; init; }
+        }
+
+        /// <summary>
+        /// テキストに辞書を適用し、置換詳細を返す（Editor プレビュー用）
+        /// </summary>
+        public (string resultText, IReadOnlyList<ReplacementDetail> replacements) ApplyToTextWithDetails(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return (text, Array.Empty<ReplacementDetail>());
+
+            var replacements = new List<ReplacementDetail>();
+
+            // まず大文字小文字を区別するエントリを処理（長い順）
+            foreach (var kvp in _caseSensitiveEntries.OrderByDescending(x => x.Key.Length))
+            {
+                var pattern = GetWordPattern(kvp.Key, caseSensitive: true);
+                foreach (Match m in pattern.Matches(text))
+                {
+                    replacements.Add(new ReplacementDetail
+                    {
+                        OriginalWord = m.Value,
+                        Pronunciation = kvp.Value.Pronunciation,
+                        Priority = kvp.Value.Priority,
+                        Position = m.Index
+                    });
+                }
+
+                text = pattern.Replace(text, kvp.Value.Pronunciation);
+            }
+
+            // 次に大文字小文字を区別しないエントリを処理（長い順）
+            foreach (var kvp in _entries.OrderByDescending(x => x.Key.Length))
+            {
+                var pattern = GetWordPattern(kvp.Key, caseSensitive: false);
+                foreach (Match m in pattern.Matches(text))
+                {
+                    replacements.Add(new ReplacementDetail
+                    {
+                        OriginalWord = m.Value,
+                        Pronunciation = kvp.Value.Pronunciation,
+                        Priority = kvp.Value.Priority,
+                        Position = m.Index
+                    });
+                }
+
+                text = pattern.Replace(text, kvp.Value.Pronunciation);
+            }
+
+            return (text, replacements);
+        }
+
+        /// <summary>
         /// 単語の読みを取得
         /// </summary>
         public string GetPronunciation(string word)
