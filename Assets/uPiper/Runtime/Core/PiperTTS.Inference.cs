@@ -46,13 +46,16 @@ namespace uPiper.Core
             {
                 PiperLogger.LogDebug($"Initializing PiperTTS with Inference model: {modelAsset.name}");
 
-                // Run initialization validation
-                var validationResult = InitializationValidator.ValidateForInference(
-                    _config, (object)modelAsset, voiceConfig);
-                HandleValidationResult(validationResult);
+                // Skip validation and platform init if already initialized
+                // (e.g., when called from LoadDefaultVoiceAsync after InitializeAsync)
+                if (!_isInitialized)
+                {
+                    var validationResult = InitializationValidator.ValidateForInference(
+                        _config, (object)modelAsset, voiceConfig);
+                    HandleValidationResult(validationResult);
 
-                // Initialize platform-specific audio session (iOS)
-                InitializePlatformAudioSession();
+                    InitializePlatformAudioSession();
+                }
 
                 // 既存のリソースをクリーンアップ
                 DisposeInferenceResources();

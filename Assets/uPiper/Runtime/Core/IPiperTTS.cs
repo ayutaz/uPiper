@@ -77,9 +77,15 @@ namespace uPiper.Core
         public Task LoadVoiceAsync(PiperVoiceConfig voiceConfig, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Available voice configurations.
+        /// </summary>
+        public IReadOnlyList<PiperVoiceConfig> AvailableVoices { get; }
+
+        /// <summary>
         /// Get available voices
         /// </summary>
         /// <returns>List of available voice configurations</returns>
+        [Obsolete("Use AvailableVoices property instead. This method will be removed in v3.0.")]
         public IReadOnlyList<PiperVoiceConfig> GetAvailableVoices();
 
         /// <summary>

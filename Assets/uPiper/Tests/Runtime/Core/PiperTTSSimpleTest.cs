@@ -123,10 +123,10 @@ namespace uPiper.Tests.Runtime.Core
         }
 
         [Test]
-        public void GetAvailableVoices_ReturnsEmptyList()
+        public void AvailableVoices_ReturnsEmptyList()
         {
             // Act
-            var voices = _piperTTS.GetAvailableVoices();
+            var voices = _piperTTS.AvailableVoices;
 
             // Assert
             Assert.IsNotNull(voices);
