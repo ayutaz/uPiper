@@ -208,21 +208,33 @@ namespace uPiper.Core
 
         private static void ValidatePlatformSpecific(List<Entry> entries)
         {
-#if UNITY_IOS && !UNITY_EDITOR
-            entries.Add(new Entry(
-                ValidationCategory.Platform,
-                ValidationSeverity.Warning,
-                "iOS platform detected. AVAudioSession will be auto-initialized.",
-                "If audio is silent, check IOSAudioSessionHelper initialization logs."));
-#endif
+            RuntimePlatform platform;
+            try
+            {
+                platform = Application.platform;
+            }
+            catch (Exception)
+            {
+                // Test environment may not have Application available
+                return;
+            }
 
-#if UNITY_WEBGL && !UNITY_EDITOR
-            entries.Add(new Entry(
-                ValidationCategory.Platform,
-                ValidationSeverity.Warning,
-                "WebGL platform detected. AudioContext requires user interaction.",
-                "Ensure WebGLInteractionGate is used before audio playback."));
-#endif
+            if (platform == RuntimePlatform.IPhonePlayer)
+            {
+                entries.Add(new Entry(
+                    ValidationCategory.Platform,
+                    ValidationSeverity.Warning,
+                    "iOS platform detected. AVAudioSession will be auto-initialized.",
+                    "If audio is silent, check IOSAudioSessionHelper initialization logs."));
+            }
+            else if (platform == RuntimePlatform.WebGLPlayer)
+            {
+                entries.Add(new Entry(
+                    ValidationCategory.Platform,
+                    ValidationSeverity.Warning,
+                    "WebGL platform detected. AudioContext requires user interaction.",
+                    "Ensure WebGLInteractionGate is used before audio playback."));
+            }
         }
     }
 }
