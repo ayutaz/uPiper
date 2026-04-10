@@ -110,6 +110,10 @@ namespace uPiper.Core
 
                 PiperLogger.LogInfo($"PiperTTS initialized with Inference model: {modelAsset.name}");
             }
+            catch (PiperException)
+            {
+                throw;
+            }
             catch (Exception ex)
             {
                 var piperEx = new PiperException("Failed to initialize Inference", ex);

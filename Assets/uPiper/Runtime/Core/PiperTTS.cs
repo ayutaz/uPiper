@@ -407,6 +407,11 @@ namespace uPiper.Core
                 PiperLogger.LogWarning("PiperTTS initialization was cancelled");
                 throw;
             }
+            catch (PiperException)
+            {
+                // PiperInitializationException etc. — rethrow without wrapping
+                throw;
+            }
             catch (Exception ex)
             {
                 var piperEx = new PiperException("Failed to initialize PiperTTS", ex);
