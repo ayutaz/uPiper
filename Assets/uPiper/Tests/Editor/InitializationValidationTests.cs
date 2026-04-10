@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using uPiper.Core;
+using uPiper.Tests.Editor.TestHelpers;
 
 namespace uPiper.Tests.Editor
 {
@@ -101,7 +102,7 @@ namespace uPiper.Tests.Editor
             {
                 VoiceId = "test",
                 Language = "ja",
-                PhonemeIdMap = CreateMinimalPhonemeIdMap()
+                PhonemeIdMap = TestPhonemeIdMapFactory.CreateMinimal()
             };
 
             var result = InitializationValidator.ValidateForInference(config, null, voiceConfig);
@@ -172,7 +173,7 @@ namespace uPiper.Tests.Editor
             {
                 VoiceId = "test",
                 Language = "ja",
-                PhonemeIdMap = CreateMinimalPhonemeIdMap()
+                PhonemeIdMap = TestPhonemeIdMapFactory.CreateMinimal()
             };
 
             var result = InitializationValidator.ValidateForInference(
@@ -189,43 +190,13 @@ namespace uPiper.Tests.Editor
             {
                 VoiceId = "test-voice",
                 Language = "ja",
-                PhonemeIdMap = CreateFullPhonemeIdMap()
+                PhonemeIdMap = TestPhonemeIdMapFactory.CreateFull()
             };
 
             var result = InitializationValidator.ValidateForInference(
                 config, new object(), voiceConfig);
 
             Assert.That(result.HasErrors, Is.False);
-        }
-
-        #endregion
-
-        #region Helpers
-
-        private static Dictionary<string, int[]> CreateMinimalPhonemeIdMap()
-        {
-            return new Dictionary<string, int[]>
-            {
-                { "_", new[] { 0 } },
-                { "^", new[] { 1 } },
-                { "$", new[] { 2 } },
-            };
-        }
-
-        private static Dictionary<string, int[]> CreateFullPhonemeIdMap()
-        {
-            var map = new Dictionary<string, int[]>
-            {
-                { "_", new[] { 0 } },
-                { "^", new[] { 1 } },
-                { "$", new[] { 2 } },
-            };
-            // Add enough entries to pass the count check
-            for (var i = 3; i < 60; i++)
-            {
-                map[$"p{i}"] = new[] { i };
-            }
-            return map;
         }
 
         #endregion

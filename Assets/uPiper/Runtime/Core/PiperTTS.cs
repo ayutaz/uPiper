@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using Unity.InferenceEngine;
 using UnityEngine;
 using uPiper.Core.AudioGeneration;
@@ -282,6 +281,7 @@ namespace uPiper.Core
         /// </summary>
         public static async Task<PiperTTS> CreateAsync(CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return await CreateAsync(PiperConfig.CreateDefault(), cancellationToken);
         }
 
@@ -294,6 +294,7 @@ namespace uPiper.Core
         {
             if (config == null)
                 throw new ArgumentNullException(nameof(config));
+            cancellationToken.ThrowIfCancellationRequested();
 
             var tts = new PiperTTS(config);
             var success = false;
@@ -325,6 +326,7 @@ namespace uPiper.Core
                 throw new ArgumentNullException(nameof(config));
             if (voiceConfig == null)
                 throw new ArgumentNullException(nameof(voiceConfig));
+            cancellationToken.ThrowIfCancellationRequested();
 
             var tts = new PiperTTS(config);
             var success = false;
@@ -354,6 +356,7 @@ namespace uPiper.Core
         public async Task InitializeAsync(CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (_isInitialized)
             {
@@ -566,71 +569,11 @@ namespace uPiper.Core
 
         /// <summary>
         /// モデルJSON設定ファイルをパースしてPiperVoiceConfigを構築する。
-        /// InferenceEngineDemo.ParseConfig の共通化版。
+        /// 実装は <see cref="ModelConfigParser.Parse"/> に委譲。
         /// </summary>
         internal static PiperVoiceConfig ParseModelConfig(string voiceId, string json)
         {
-            var config = new PiperVoiceConfig
-            {
-                VoiceId = voiceId,
-                DisplayName = voiceId,
-                Language = "ja",
-                SampleRate = 22050,
-                PhonemeIdMap = new Dictionary<string, int[]>()
-            };
-
-            var jsonObj = JObject.Parse(json);
-
-            if (jsonObj["language"]?["code"] != null)
-                config.Language = jsonObj["language"]["code"].ToString();
-
-            if (jsonObj["audio"]?["sample_rate"] != null)
-                config.SampleRate = jsonObj["audio"]["sample_rate"].ToObject<int>();
-
-            if (jsonObj["inference"]?["noise_scale"] != null)
-                config.NoiseScale = jsonObj["inference"]["noise_scale"].ToObject<float>();
-
-            if (jsonObj["inference"]?["length_scale"] != null)
-                config.LengthScale = jsonObj["inference"]["length_scale"].ToObject<float>();
-
-            if (jsonObj["inference"]?["noise_w"] != null)
-                config.NoiseW = jsonObj["inference"]["noise_w"].ToObject<float>();
-
-            if (jsonObj["phoneme_type"] != null)
-                config.PhonemeType = jsonObj["phoneme_type"].ToString();
-            else
-                config.PhonemeType = "espeak";
-
-            if (jsonObj["phoneme_id_map"] is JObject phonemeIdMap)
-            {
-                foreach (var kvp in phonemeIdMap)
-                {
-                    if (kvp.Value is JArray idArray && idArray.Count > 0)
-                        config.PhonemeIdMap[kvp.Key] = idArray.ToObject<int[]>();
-                }
-            }
-
-            if (jsonObj["num_speakers"] != null)
-                config.NumSpeakers = jsonObj["num_speakers"].ToObject<int>();
-
-            if (jsonObj["speaker_id_map"] is JObject speakerIdMap)
-            {
-                config.SpeakerIdMap = new Dictionary<string, int>();
-                foreach (var kvp in speakerIdMap)
-                    config.SpeakerIdMap[kvp.Key] = kvp.Value.ToObject<int>();
-            }
-
-            if (jsonObj["num_languages"] != null)
-                config.NumLanguages = jsonObj["num_languages"].ToObject<int>();
-
-            if (jsonObj["language_id_map"] is JObject languageIdMap)
-            {
-                config.LanguageIdMap = new Dictionary<string, int>();
-                foreach (var kvp in languageIdMap)
-                    config.LanguageIdMap[kvp.Key] = kvp.Value.ToObject<int>();
-            }
-
-            return config;
+            return ModelConfigParser.Parse(voiceId, json);
         }
 
         /// <summary>
@@ -680,14 +623,11 @@ namespace uPiper.Core
         /// <summary>
         /// Get available voices
         /// </summary>
+        [Obsolete("Use AvailableVoices property instead. This method will be removed in v3.0.")]
         public IReadOnlyList<PiperVoiceConfig> GetAvailableVoices()
         {
             ThrowIfDisposed();
-
-            lock (_lockObject)
-            {
-                return new List<PiperVoiceConfig>(_voices.Values);
-            }
+            return AvailableVoices;
         }
 
         /// <inheritdoc/>
@@ -1523,7 +1463,7 @@ namespace uPiper.Core
             {
                 var errorSummary = result.FormatErrorSummary();
                 PiperLogger.LogError(errorSummary);
-                throw new PiperInitializationException(errorSummary);
+                throw new PiperInitializationException(errorSummary, result);
             }
         }
 
