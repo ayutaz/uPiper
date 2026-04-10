@@ -72,14 +72,16 @@ namespace uPiper.Tests.Editor
         public void IsInitialized_AfterConstruction_IsFalse()
         {
             using var tts = new PiperTTS(new PiperConfig());
-            Assert.That(tts.IsInitialized, Is.False);
+            Assert.That(tts.IsInitialized, Is.False,
+                "IsInitialized should be false after construction");
         }
 
         [Test]
         public void AvailableVoices_AfterConstruction_IsEmpty()
         {
             using var tts = new PiperTTS(new PiperConfig());
-            Assert.That(tts.AvailableVoices, Is.Empty);
+            Assert.That(tts.AvailableVoices, Is.Empty,
+                "AvailableVoices should be empty after construction");
         }
     }
 }

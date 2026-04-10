@@ -15,12 +15,18 @@ namespace uPiper.Tests.Editor
 
             var (resultText, replacements) = dict.ApplyToTextWithDetails("Dockerを使う");
 
-            Assert.AreEqual("ドッカーを使う", resultText);
-            Assert.AreEqual(1, replacements.Count);
-            Assert.AreEqual("Docker", replacements[0].OriginalWord);
-            Assert.AreEqual("ドッカー", replacements[0].Pronunciation);
-            Assert.AreEqual(9, replacements[0].Priority);
-            Assert.AreEqual(0, replacements[0].Position);
+            Assert.That(resultText, Is.EqualTo("ドッカーを使う"),
+                "Result text should have Docker replaced with pronunciation");
+            Assert.That(replacements.Count, Is.EqualTo(1),
+                "Should have exactly one replacement");
+            Assert.That(replacements[0].OriginalWord, Is.EqualTo("Docker"),
+                "OriginalWord should be 'Docker'");
+            Assert.That(replacements[0].Pronunciation, Is.EqualTo("ドッカー"),
+                "Pronunciation should be 'ドッカー'");
+            Assert.That(replacements[0].Priority, Is.EqualTo(9),
+                "Priority should be 9");
+            Assert.That(replacements[0].Position, Is.EqualTo(0),
+                "Position should be 0 for first match");
         }
 
         [Test]
@@ -32,16 +38,22 @@ namespace uPiper.Tests.Editor
 
             var (resultText, replacements) = dict.ApplyToTextWithDetails("DockerとGitHubを使った開発");
 
-            Assert.AreEqual("ドッカーとギットハブを使った開発", resultText);
-            Assert.AreEqual(2, replacements.Count);
+            Assert.That(resultText, Is.EqualTo("ドッカーとギットハブを使った開発"),
+                "Result text should have both words replaced");
+            Assert.That(replacements.Count, Is.EqualTo(2),
+                "Should have two replacements");
 
             var dockerDetail = replacements.FirstOrDefault(r => r.OriginalWord == "Docker");
             var gitHubDetail = replacements.FirstOrDefault(r => r.OriginalWord == "GitHub");
 
-            Assert.IsNotNull(dockerDetail.OriginalWord);
-            Assert.AreEqual("ドッカー", dockerDetail.Pronunciation);
-            Assert.IsNotNull(gitHubDetail.OriginalWord);
-            Assert.AreEqual("ギットハブ", gitHubDetail.Pronunciation);
+            Assert.That(dockerDetail.OriginalWord, Is.Not.Null,
+                "Docker replacement should be found");
+            Assert.That(dockerDetail.Pronunciation, Is.EqualTo("ドッカー"),
+                "Docker pronunciation should be 'ドッカー'");
+            Assert.That(gitHubDetail.OriginalWord, Is.Not.Null,
+                "GitHub replacement should be found");
+            Assert.That(gitHubDetail.Pronunciation, Is.EqualTo("ギットハブ"),
+                "GitHub pronunciation should be 'ギットハブ'");
         }
 
         [Test]
@@ -52,8 +64,10 @@ namespace uPiper.Tests.Editor
 
             var (resultText, replacements) = dict.ApplyToTextWithDetails("こんにちは");
 
-            Assert.AreEqual("こんにちは", resultText);
-            Assert.AreEqual(0, replacements.Count);
+            Assert.That(resultText, Is.EqualTo("こんにちは"),
+                "Text without dictionary words should remain unchanged");
+            Assert.That(replacements.Count, Is.EqualTo(0),
+                "Replacements should be empty when no words matched");
         }
 
         [Test]
@@ -68,7 +82,8 @@ namespace uPiper.Tests.Editor
             var expected = dict.ApplyToText(input);
             var (resultText, _) = dict.ApplyToTextWithDetails(input);
 
-            Assert.AreEqual(expected, resultText);
+            Assert.That(resultText, Is.EqualTo(expected),
+                "ApplyToTextWithDetails result should match ApplyToText result");
         }
 
         [Test]
@@ -78,8 +93,10 @@ namespace uPiper.Tests.Editor
 
             var (resultText, replacements) = dict.ApplyToTextWithDetails(null);
 
-            Assert.IsNull(resultText);
-            Assert.AreEqual(0, replacements.Count);
+            Assert.That(resultText, Is.Null,
+                "Null input should return null result text");
+            Assert.That(replacements.Count, Is.EqualTo(0),
+                "Null input should return empty replacements");
         }
 
         [Test]
@@ -89,8 +106,10 @@ namespace uPiper.Tests.Editor
 
             var (resultText, replacements) = dict.ApplyToTextWithDetails("");
 
-            Assert.AreEqual("", resultText);
-            Assert.AreEqual(0, replacements.Count);
+            Assert.That(resultText, Is.EqualTo(""),
+                "Empty input should return empty result text");
+            Assert.That(replacements.Count, Is.EqualTo(0),
+                "Empty input should return empty replacements");
         }
     }
 }

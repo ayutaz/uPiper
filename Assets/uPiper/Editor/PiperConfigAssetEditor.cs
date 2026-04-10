@@ -87,6 +87,9 @@ namespace uPiper.Editor
             }
         }
 
+        // NOTE: このメソッドは SerializedProperty 経由でリセットする（Undo 対応のため）。
+        // PiperConfig.Clone() には委譲できない。
+        // PiperConfig にフィールドを追加した場合はここも更新すること。
         private void ResetToDefault()
         {
             Undo.RecordObject(target, "Reset PiperConfigAsset to Default");

@@ -26,7 +26,8 @@ namespace uPiper.Tests.Editor
         public void Constructor_NullSkippedText_DefaultsToEmpty()
         {
             var args = new UnsupportedLanguageEventArgs("ko", null, new List<string> { "ja" });
-            Assert.AreEqual(string.Empty, args.SkippedText);
+            Assert.That(args.SkippedText, Is.EqualTo(string.Empty),
+                "Null skipped text should default to empty string");
         }
 
         [Test]
@@ -34,15 +35,19 @@ namespace uPiper.Tests.Editor
         {
             var longText = new string('a', 300);
             var args = new UnsupportedLanguageEventArgs("ko", longText, new List<string> { "ja" });
-            Assert.IsTrue(args.SkippedText.Length <= UnsupportedLanguageEventArgs.MaxTextLength + 3);
-            Assert.IsTrue(args.SkippedText.EndsWith("..."));
+            Assert.That(args.SkippedText.Length,
+                Is.LessThanOrEqualTo(UnsupportedLanguageEventArgs.MaxTextLength + 3),
+                "Long text should be truncated to MaxTextLength + ellipsis");
+            Assert.That(args.SkippedText, Does.EndWith("..."),
+                "Truncated text should end with '...'");
         }
 
         [Test]
         public void WasProcessedByFallback_NoFallback_ReturnsFalse()
         {
             var args = new UnsupportedLanguageEventArgs("ko", "text", new List<string> { "ja" });
-            Assert.IsFalse(args.WasProcessedByFallback);
+            Assert.That(args.WasProcessedByFallback, Is.False,
+                "WasProcessedByFallback should be false when no fallback is provided");
         }
 
         [Test]
@@ -50,8 +55,10 @@ namespace uPiper.Tests.Editor
         {
             var args = new UnsupportedLanguageEventArgs(
                 "ko", "text", new List<string> { "ja", "en" }, "en");
-            Assert.IsTrue(args.WasProcessedByFallback);
-            Assert.AreEqual("en", args.FallbackLanguageUsed);
+            Assert.That(args.WasProcessedByFallback, Is.True,
+                "WasProcessedByFallback should be true when fallback is provided");
+            Assert.That(args.FallbackLanguageUsed, Is.EqualTo("en"),
+                "FallbackLanguageUsed should match the provided fallback language");
         }
 
         [Test]
@@ -59,9 +66,12 @@ namespace uPiper.Tests.Editor
         {
             var langs = new List<string> { "ja", "en", "zh" };
             var args = new UnsupportedLanguageEventArgs("ko", "hello", langs);
-            Assert.AreEqual("ko", args.LanguageCode);
-            Assert.AreEqual("hello", args.SkippedText);
-            Assert.AreEqual(langs, args.SupportedLanguages);
+            Assert.That(args.LanguageCode, Is.EqualTo("ko"),
+                "LanguageCode should match constructor argument");
+            Assert.That(args.SkippedText, Is.EqualTo("hello"),
+                "SkippedText should match constructor argument");
+            Assert.That(args.SupportedLanguages, Is.EqualTo(langs),
+                "SupportedLanguages should match constructor argument");
         }
     }
 }

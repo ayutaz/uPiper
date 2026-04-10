@@ -5,6 +5,7 @@ using Unity.InferenceEngine;
 using UnityEngine;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
+using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Core
 {
@@ -389,11 +390,33 @@ namespace uPiper.Core
                     resolvedLanguageId);
             }
 
-            // フォールバック: 通常の音素化
+            // フォールバック: 通常の音素化（Prosody抽出付き）
+            if (_inferenceGenerator != null && _inferenceGenerator.SupportsProsody
+                && _phonemizer is DotNetG2PPhonemizer g2pPhonemizer)
+            {
+                var prosodyResult = g2pPhonemizer.PhonemizeWithProsody(text);
+                var a1 = prosodyResult.ProsodyA1 ?? Array.Empty<int>();
+                var a2 = prosodyResult.ProsodyA2 ?? Array.Empty<int>();
+                var a3 = prosodyResult.ProsodyA3 ?? Array.Empty<int>();
+                var prosodyFlat = PhonemeEncoder.FlattenProsody(
+                    a1, a2, a3, prosodyResult.Phonemes?.Length ?? 0);
+
+                return new PhonemizeResult(
+                    prosodyResult.Phonemes,
+                    prosodyFlat,
+                    "ja",
+                    0);
+            }
+
             var phonemeResult = await GetPhonemesAsync(text, cancellationToken);
+            // PhonemeResult default constructor sets ProsodyFlat to empty array;
+            // treat empty array as "no prosody" by passing null.
+            var resultProsody = phonemeResult?.ProsodyFlat is { Length: > 0 }
+                ? phonemeResult.ProsodyFlat
+                : null;
             return new PhonemizeResult(
                 phonemeResult?.Phonemes,
-                phonemeResult?.ProsodyFlat,
+                resultProsody,
                 phonemeResult?.Language ?? "ja",
                 0);
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using uPiper.Core.Phonemizers;
 
 namespace uPiper.Editor.DictionaryManager
 {
@@ -37,16 +38,11 @@ namespace uPiper.Editor.DictionaryManager
             }
 
             var json = File.ReadAllText(filePath, Encoding.UTF8);
-            var entriesContent = ExtractEntriesSection(json);
+            var entriesContent = DictionaryJsonParser.ExtractEntriesSection(json);
             if (string.IsNullOrEmpty(entriesContent))
                 return result;
 
-            var entryPattern = new Regex(
-                @"""([^""]+)""\s*:\s*(?:\{\s*""pronunciation""\s*:\s*""([^""]*)""\s*" +
-                @"(?:,\s*""priority""\s*:\s*(\d+))?\s*\}|""([^""]*)"")",
-                RegexOptions.Singleline);
-
-            foreach (Match match in entryPattern.Matches(entriesContent))
+            foreach (Match match in DictionaryJsonParser.EntryPattern.Matches(entriesContent))
             {
                 var word = match.Groups[1].Value;
 
@@ -164,36 +160,6 @@ namespace uPiper.Editor.DictionaryManager
                     $"File path contains path traversal pattern: {filePath}",
                     nameof(filePath));
             }
-        }
-
-        /// <summary>
-        /// JSONからentriesセクションの内容を抽出（括弧のバランスを考慮）
-        /// CustomDictionary.ExtractEntriesSectionと同じロジック
-        /// </summary>
-        private static string ExtractEntriesSection(string json)
-        {
-            var entriesIndex = json.IndexOf("\"entries\"", StringComparison.Ordinal);
-            if (entriesIndex < 0) return null;
-
-            var openBraceIndex = json.IndexOf('{', entriesIndex);
-            if (openBraceIndex < 0) return null;
-
-            var braceCount = 1;
-            var currentIndex = openBraceIndex + 1;
-
-            while (currentIndex < json.Length && braceCount > 0)
-            {
-                var c = json[currentIndex];
-                if (c == '{')
-                    braceCount++;
-                else if (c == '}')
-                    braceCount--;
-                currentIndex++;
-            }
-
-            if (braceCount != 0) return null;
-
-            return json.Substring(openBraceIndex + 1, currentIndex - openBraceIndex - 2);
         }
 
         /// <summary>

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.InferenceEngine;
@@ -33,8 +32,8 @@ namespace uPiper.Core
         private event Action<PiperVoiceConfig> _onVoiceLoaded;
         private event Action<PiperException> _onError;
         private event Action<float> _onProcessingProgress;
-        private Action<string> _onLanguageDetected;
-        private Action<UnsupportedLanguageEventArgs> _onUnsupportedLanguageDetected;
+        private event Action<string> _onLanguageDetected;
+        private event Action<UnsupportedLanguageEventArgs> _onUnsupportedLanguageDetected;
 
         // Inference Engine related
         private BackendType _inferenceBackend;
@@ -122,9 +121,10 @@ namespace uPiper.Core
         public bool IsProcessing { get; private set; }
 
         /// <summary>
-        /// Current configuration
+        /// Current configuration (defensive copy).
+        /// 外部から内部状態を変更されないよう、アクセスごとにコピーを返す。
         /// </summary>
-        public PiperConfig Configuration => _config;
+        public PiperConfig Configuration => _config?.Clone();
 
         /// <summary>
         /// Current cache size in bytes
@@ -216,15 +216,39 @@ namespace uPiper.Core
         /// <inheritdoc/>
         public event Action<string> OnLanguageDetected
         {
-            add => _onLanguageDetected += value;
-            remove => _onLanguageDetected -= value;
+            add
+            {
+                lock (_lockObject)
+                {
+                    _onLanguageDetected += value;
+                }
+            }
+            remove
+            {
+                lock (_lockObject)
+                {
+                    _onLanguageDetected -= value;
+                }
+            }
         }
 
         /// <inheritdoc/>
         public event Action<UnsupportedLanguageEventArgs> OnUnsupportedLanguageDetected
         {
-            add => _onUnsupportedLanguageDetected += value;
-            remove => _onUnsupportedLanguageDetected -= value;
+            add
+            {
+                lock (_lockObject)
+                {
+                    _onUnsupportedLanguageDetected += value;
+                }
+            }
+            remove
+            {
+                lock (_lockObject)
+                {
+                    _onUnsupportedLanguageDetected -= value;
+                }
+            }
         }
 
         /// <summary>
@@ -792,16 +816,8 @@ namespace uPiper.Core
             if (string.IsNullOrEmpty(_currentVoiceId))
                 throw new InvalidOperationException("No voice selected. Load a voice first.");
 
-            // Auto-route through multilingual path when model supports language IDs
-            if (_inferenceGenerator != null && _inferenceGenerator.SupportsLanguageId)
-            {
-                var detectedLang = DetectLanguage(text);
-                var languageId = ResolveLanguageId(detectedLang);
-
-                PiperLogger.LogDebug($"[AutoMultilingual] Detected language '{detectedLang}' (lid={languageId}) for text: {text}");
-                return await GenerateAudioWithMultilingualAsync(text, languageId, cancellationToken: cancellationToken);
-            }
-
+            // Unified pipeline: PhonemizeAsync → SynthesizeAsync via TTSSynthesisOrchestrator.
+            // This ensures all paths benefit from ShortTextMitigatingGenerator and AudioNormalizer.
             try
             {
                 IsProcessing = true;
@@ -809,142 +825,23 @@ namespace uPiper.Core
                     text.Length > 50 ? text[..50] + "..." : text,
                     text.Length);
 
-                // Report initial progress
                 _onProcessingProgress?.Invoke(0.1f);
 
-                // Note: Phoneme caching is now handled by PhonemeCache.Instance
-                // inside the phonemizer implementations for better accuracy and LRU eviction
-
-                _onProcessingProgress?.Invoke(0.3f);
-
-                // Perform phonemization
-                PiperLogger.LogInfo("Phonemizing text...");
-                PhonemeResult phonemeResult = null;
-
-                if (_phonemizer != null)
-                {
-                    phonemeResult = await _phonemizer.PhonemizeAsync(text);
-                    PiperLogger.LogInfo("Phonemization completed: {0} phonemes", phonemeResult.Phonemes?.Length ?? 0);
-
-                    // Log phonemes for debugging
-                    if (phonemeResult.Phonemes != null && phonemeResult.Phonemes.Length > 0)
-                    {
-                        PiperLogger.LogDebug("Phonemes: {0}", string.Join(" ", phonemeResult.Phonemes));
-                    }
-                }
-                else
-                {
-                    PiperLogger.LogWarning("No phonemizer available, using dummy phonemes");
-                }
+                var phonemizeResult = await PhonemizeAsync(text, cancellationToken);
 
                 _onProcessingProgress?.Invoke(0.5f);
 
-                AudioClip audioClip = null;
+                var hasProsody = phonemizeResult.ProsodyFlat != null
+                    && phonemizeResult.ProsodyFlat.Length > 0;
+                var request = hasProsody
+                    ? SynthesisRequest.FromPhonemesWithProsody(
+                        phonemizeResult.Phonemes, phonemizeResult.ProsodyFlat,
+                        languageId: phonemizeResult.ResolvedLanguageId)
+                    : SynthesisRequest.FromPhonemes(
+                        phonemizeResult.Phonemes,
+                        languageId: phonemizeResult.ResolvedLanguageId);
 
-                // Check if we have audio generator initialized
-                if (_inferenceGenerator != null && _inferenceGenerator.IsInitialized && _phonemeEncoder != null && phonemeResult != null)
-                {
-                    try
-                    {
-                        PiperLogger.LogInfo("Using InferenceAudioGenerator for audio synthesis");
-
-                        // Check if model supports prosody and we have a compatible phonemizer
-                        int[] prosodyFlat = null;
-                        var useProsody = _inferenceGenerator.SupportsProsody &&
-                            _phonemizer is DotNetG2PPhonemizer;
-
-                        if (useProsody)
-                        {
-                            PiperLogger.LogInfo("Model supports prosody, using PhonemizeWithProsody");
-                            var g2pPhonemizer = (DotNetG2PPhonemizer)_phonemizer;
-                            var prosodyResult = g2pPhonemizer.PhonemizeWithProsody(text);
-
-                            // Update phonemeResult with prosody data
-                            phonemeResult.Phonemes = prosodyResult.Phonemes;
-                            var a1 = prosodyResult.ProsodyA1 ?? Array.Empty<int>();
-                            var a2 = prosodyResult.ProsodyA2 ?? Array.Empty<int>();
-                            var a3 = prosodyResult.ProsodyA3 ?? Array.Empty<int>();
-                            prosodyFlat = AudioGeneration.PhonemeEncoder.FlattenProsody(
-                                a1, a2, a3, prosodyResult.Phonemes?.Length ?? 0);
-                            phonemeResult.ProsodyFlat = prosodyFlat;
-
-                            PiperLogger.LogInfo($"Prosody extracted: {prosodyResult.PhonemeCount} phonemes with prosody values");
-                        }
-
-                        // Encode phonemes to IDs (with prosody expansion if needed)
-                        int[] phonemeIds;
-                        int[] expandedProsodyFlat = null;
-
-                        if (useProsody && prosodyFlat != null)
-                        {
-                            // Prosody対応: 音素IDとProsody配列を同時に展開
-                            var encodingResult = _phonemeEncoder.EncodeWithProsody(
-                                phonemeResult.Phonemes, prosodyFlat);
-                            phonemeIds = encodingResult.PhonemeIds;
-                            expandedProsodyFlat = encodingResult.ExpandedProsodyFlat;
-                            PiperLogger.LogInfo($"Encoded with prosody: {phonemeResult.Phonemes.Length} phonemes -> {phonemeIds.Length} IDs");
-                        }
-                        else
-                        {
-                            phonemeIds = _phonemeEncoder.Encode(phonemeResult.Phonemes);
-                            PiperLogger.LogInfo($"Encoded {phonemeIds.Length} phoneme IDs");
-                        }
-
-                        _onProcessingProgress?.Invoke(0.6f);
-
-                        // Generate audio using inference (with or without prosody)
-                        Unity.Collections.NativeArray<float> audioData = default;
-                        try
-                        {
-                            if (useProsody && expandedProsodyFlat != null)
-                            {
-                                audioData = await _inferenceGenerator.GenerateAudioAsync(
-                                    phonemeIds, expandedProsodyFlat,
-                                    cancellationToken: cancellationToken);
-                            }
-                            else
-                            {
-                                audioData = await _inferenceGenerator.GenerateAudioAsync(
-                                    phonemeIds,
-                                    cancellationToken: cancellationToken);
-                            }
-                            PiperLogger.LogInfo($"Generated {audioData.Length} audio samples");
-
-                            _onProcessingProgress?.Invoke(0.7f);
-
-                            // Create AudioClip from generated data
-                            var audioBuilder = new AudioClipBuilder();
-                            audioClip = audioBuilder.BuildAudioClip(
-                                audioData,
-                                _inferenceGenerator.SampleRate,
-                                $"TTS_Output_{DateTime.Now:HHmmss}"
-                            );
-                            PiperLogger.LogInfo($"Created AudioClip: {audioClip.length:F2} seconds");
-                        }
-                        finally
-                        {
-                            if (audioData.IsCreated)
-                                audioData.Dispose();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        PiperLogger.LogError($"Failed to generate audio with InferenceAudioGenerator: {ex.Message}");
-                    }
-                }
-                else
-                {
-                    PiperLogger.LogWarning("InferenceAudioGenerator not available");
-                }
-
-                _onProcessingProgress?.Invoke(0.8f);
-
-                // Cache the result if enabled
-                if (_validatedConfig.Performance.EnablePhonemeCache && phonemeResult != null)
-                {
-                    var cacheKey = GenerateCacheKey(text, _currentVoiceId);
-                    // Caching is handled by the phonemizer's built-in cache
-                }
+                var audioClip = await SynthesizeAsync(request, cancellationToken);
 
                 _onProcessingProgress?.Invoke(1.0f);
                 PiperLogger.LogInfo("Audio generation completed");
@@ -969,68 +866,14 @@ namespace uPiper.Core
         }
 
         /// <summary>
-        /// Stream audio generation
+        /// Stream audio generation (not yet implemented).
         /// </summary>
-        public async IAsyncEnumerable<AudioChunk> StreamAudioAsync(
+        [Obsolete("Streaming is not yet implemented. This method returns silent audio. Will be implemented in a future release.")]
+        public IAsyncEnumerable<AudioChunk> StreamAudioAsync(
             string text,
-            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
-            ThrowIfNotInitialized();
-
-            if (string.IsNullOrWhiteSpace(text))
-                throw new ArgumentNullException(nameof(text));
-
-            if (string.IsNullOrEmpty(_currentVoiceId))
-                throw new InvalidOperationException("No voice selected. Load a voice first.");
-
-            PiperLogger.LogInfo("Starting audio streaming for text length: {0}", text.Length);
-
-            try
-            {
-                IsProcessing = true;
-
-                // Split text into chunks for streaming
-                var sentences = SplitIntoSentences(text);
-                var totalSentences = sentences.Count;
-                var processedSentences = 0;
-
-                foreach (var sentence in sentences)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    // Simulate processing delay
-                    await Task.Delay(100, cancellationToken);
-
-                    // Create a dummy audio chunk
-                    var audioData = new float[_validatedConfig.Audio.SampleRate / 10]; // 0.1 second of audio
-                    for (var i = 0; i < audioData.Length; i++)
-                    {
-                        audioData[i] = 0f; // Silence for now
-                    }
-
-                    var chunk = new AudioChunk(
-                        samples: audioData,
-                        sampleRate: _validatedConfig.Audio.SampleRate,
-                        channels: 1,
-                        chunkIndex: processedSentences,
-                        isFinal: (processedSentences == totalSentences - 1),
-                        textSegment: sentence,
-                        startTime: processedSentences * 0.1f
-                    );
-
-                    processedSentences++;
-                    _onProcessingProgress?.Invoke((float)processedSentences / totalSentences);
-
-                    yield return chunk;
-                }
-
-                PiperLogger.LogInfo("Audio streaming completed");
-            }
-            finally
-            {
-                IsProcessing = false;
-            }
+            throw new NotSupportedException("Streaming audio generation is not yet implemented.");
         }
 
         /// <summary>
@@ -1124,58 +967,15 @@ namespace uPiper.Core
         }
 
         /// <summary>
-        /// Stream audio generation with specific voice configuration
+        /// Stream audio generation with specific voice configuration (not yet implemented).
         /// </summary>
-        public async IAsyncEnumerable<AudioChunk> StreamAudioAsync(
+        [Obsolete("Streaming is not yet implemented. This method returns silent audio. Will be implemented in a future release.")]
+        public IAsyncEnumerable<AudioChunk> StreamAudioAsync(
             string text,
             PiperVoiceConfig voiceConfig,
-            [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
-            ThrowIfNotInitialized();
-
-            if (string.IsNullOrWhiteSpace(text))
-                throw new ArgumentNullException(nameof(text));
-
-            if (voiceConfig == null)
-                throw new ArgumentNullException(nameof(voiceConfig));
-
-            // Temporarily switch voice
-            var previousVoiceId = _currentVoiceId;
-
-            try
-            {
-                // Load voice if not already loaded
-                bool needsLoad;
-                lock (_lockObject)
-                {
-                    needsLoad = !_voices.ContainsKey(voiceConfig.VoiceId);
-                }
-
-                if (needsLoad)
-                {
-                    await LoadVoiceAsync(voiceConfig, cancellationToken);
-                }
-
-                lock (_lockObject)
-                {
-                    _currentVoiceId = voiceConfig.VoiceId;
-                }
-
-                // Stream audio with the specified voice
-                await foreach (var chunk in StreamAudioAsync(text, cancellationToken))
-                {
-                    yield return chunk;
-                }
-            }
-            finally
-            {
-                // Restore previous voice
-                lock (_lockObject)
-                {
-                    _currentVoiceId = previousVoiceId;
-                }
-            }
+            throw new NotSupportedException("Streaming audio generation is not yet implemented.");
         }
 
         /// <summary>
@@ -1540,58 +1340,6 @@ namespace uPiper.Core
             _cacheEvictionCount = 0;
 
             PiperLogger.LogInfo("Cache system initialized");
-        }
-
-        /// <summary>
-        /// Generate cache key for text and voice combination
-        /// </summary>
-        private string GenerateCacheKey(string text, string voiceId)
-        {
-            // Simple hash-based cache key
-            var combined = $"{text}|{voiceId}";
-            return combined.GetHashCode().ToString();
-        }
-
-        /// <summary>
-        /// Split text into sentences for streaming
-        /// </summary>
-        private List<string> SplitIntoSentences(string text)
-        {
-            var sentences = new List<string>();
-
-            // Simple sentence splitting (can be improved with proper NLP)
-            var sentenceEnders = new[] { '.', '!', '?', '。', '！', '？' };
-            var currentSentence = new System.Text.StringBuilder();
-
-            foreach (var c in text)
-            {
-                currentSentence.Append(c);
-
-                if (sentenceEnders.Contains(c))
-                {
-                    var trimmed = currentSentence.ToString().Trim();
-                    if (!string.IsNullOrEmpty(trimmed))
-                    {
-                        sentences.Add(trimmed);
-                    }
-                    currentSentence.Clear();
-                }
-            }
-
-            // Add any remaining text
-            var remaining = currentSentence.ToString().Trim();
-            if (!string.IsNullOrEmpty(remaining))
-            {
-                sentences.Add(remaining);
-            }
-
-            // If no sentences found, return the whole text
-            if (sentences.Count == 0 && !string.IsNullOrWhiteSpace(text))
-            {
-                sentences.Add(text);
-            }
-
-            return sentences;
         }
 
         #endregion

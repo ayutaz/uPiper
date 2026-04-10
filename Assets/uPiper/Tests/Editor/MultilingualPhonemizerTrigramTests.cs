@@ -15,7 +15,8 @@ namespace uPiper.Tests.Editor
             {
                 Languages = new List<string> { "ja", "en" }
             };
-            Assert.IsTrue(options.EnableTrigramDetection);
+            Assert.That(options.EnableTrigramDetection, Is.True,
+                "EnableTrigramDetection should default to true");
         }
 
         [Test]
@@ -27,8 +28,10 @@ namespace uPiper.Tests.Editor
             };
             using var phonemizer = new MultilingualPhonemizer(options);
             await phonemizer.InitializeAsync();
-            Assert.IsTrue(phonemizer.IsInitialized);
-            Assert.IsFalse(phonemizer.IsTrigramDetectionActive);
+            Assert.That(phonemizer.IsInitialized, Is.True,
+                "Phonemizer should be initialized after InitializeAsync");
+            Assert.That(phonemizer.IsTrigramDetectionActive, Is.False,
+                "Trigram detection should not be active with only one Latin language");
         }
 
         [Test]
@@ -40,8 +43,10 @@ namespace uPiper.Tests.Editor
             };
             using var phonemizer = new MultilingualPhonemizer(options);
             await phonemizer.InitializeAsync();
-            Assert.IsTrue(phonemizer.IsInitialized);
-            Assert.IsFalse(phonemizer.IsTrigramDetectionActive);
+            Assert.That(phonemizer.IsInitialized, Is.True,
+                "Phonemizer should be initialized after InitializeAsync");
+            Assert.That(phonemizer.IsTrigramDetectionActive, Is.False,
+                "Trigram detection should not be active with CJK-only languages");
         }
 
         [Test]
@@ -54,8 +59,10 @@ namespace uPiper.Tests.Editor
             };
             using var phonemizer = new MultilingualPhonemizer(options);
             await phonemizer.InitializeAsync();
-            Assert.IsTrue(phonemizer.IsInitialized);
-            Assert.IsFalse(phonemizer.IsTrigramDetectionActive);
+            Assert.That(phonemizer.IsInitialized, Is.True,
+                "Phonemizer should be initialized after InitializeAsync");
+            Assert.That(phonemizer.IsTrigramDetectionActive, Is.False,
+                "Trigram detection should not be active when explicitly disabled");
         }
 
         [Test]
@@ -70,8 +77,10 @@ namespace uPiper.Tests.Editor
             };
             using var phonemizer = new MultilingualPhonemizer(options);
             await phonemizer.InitializeAsync();
-            Assert.IsTrue(phonemizer.IsInitialized);
-            Assert.IsFalse(phonemizer.IsTrigramDetectionActive);
+            Assert.That(phonemizer.IsInitialized, Is.True,
+                "Phonemizer should be initialized after InitializeAsync");
+            Assert.That(phonemizer.IsTrigramDetectionActive, Is.False,
+                "Trigram detection should not be active with custom detector");
         }
 
         [Test]
@@ -84,7 +93,8 @@ namespace uPiper.Tests.Editor
             var phonemizer = new MultilingualPhonemizer(options);
             await phonemizer.InitializeAsync();
             phonemizer.Dispose();
-            Assert.IsFalse(phonemizer.IsTrigramDetectionActive);
+            Assert.That(phonemizer.IsTrigramDetectionActive, Is.False,
+                "Trigram detection should not be active after Dispose");
         }
 
         [Test]
@@ -94,7 +104,8 @@ namespace uPiper.Tests.Editor
             {
                 Languages = new List<string> { "ja", "en" }
             };
-            Assert.AreEqual("en", options.DefaultLatinLanguage);
+            Assert.That(options.DefaultLatinLanguage, Is.EqualTo("en"),
+                "DefaultLatinLanguage should default to 'en'");
         }
 
         [Test]
@@ -106,7 +117,8 @@ namespace uPiper.Tests.Editor
             };
             using var phonemizer = new MultilingualPhonemizer(options);
             await phonemizer.InitializeAsync();
-            Assert.IsTrue(phonemizer.IsInitialized);
+            Assert.That(phonemizer.IsInitialized, Is.True,
+                "Phonemizer should be initialized with multiple Latin languages");
             // IsTrigramDetectionActive depends on trigram_profiles.json availability
         }
     }

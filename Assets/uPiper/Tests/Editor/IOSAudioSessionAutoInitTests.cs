@@ -1,62 +1,64 @@
+using System.Threading.Tasks;
 using NUnit.Framework;
 using uPiper.Core;
 
-namespace uPiper.Tests.Editor;
-
-/// <summary>
-/// Tests for iOS AVAudioSession auto-initialization integration.
-/// Note: Actual iOS code paths are guarded by #if UNITY_IOS &amp;&amp; !UNITY_EDITOR,
-/// so these tests verify the non-iOS path (no-op) and structural correctness.
-/// Full iOS testing requires device/simulator builds.
-/// </summary>
-[TestFixture]
-public class IOSAudioSessionAutoInitTests
+namespace uPiper.Tests.Editor
 {
-    private PiperConfig _config;
-
-    [SetUp]
-    public void SetUp()
+    /// <summary>
+    /// Tests for iOS AVAudioSession auto-initialization integration.
+    /// Note: Actual iOS code paths are guarded by #if UNITY_IOS &amp;&amp; !UNITY_EDITOR,
+    /// so these tests verify the non-iOS path (no-op) and structural correctness.
+    /// Full iOS testing requires device/simulator builds.
+    /// </summary>
+    [TestFixture]
+    public class IOSAudioSessionAutoInitTests
     {
-        _config = new PiperConfig();
-    }
+        private PiperConfig _config;
 
-    [Test]
-    public void InitializeAsync_NonIOSPlatform_DoesNotThrowFromPlatformInit()
-    {
-        using var tts = new PiperTTS(_config);
+        [SetUp]
+        public void SetUp()
+        {
+            _config = new PiperConfig();
+        }
 
-        var ex = Assert.ThrowsAsync<PiperException>(
-            async () => await tts.InitializeAsync());
+        [Test]
+        public async Task InitializeAsync_NonIOSPlatform_DoesNotThrowFromPlatformInit()
+        {
+            using var tts = new PiperTTS(_config);
 
-        Assert.That(ex.InnerException,
-            Is.Not.TypeOf<System.DllNotFoundException>(),
-            "Should not attempt iOS P/Invoke on non-iOS platform");
-        Assert.That(ex.InnerException,
-            Is.Not.TypeOf<System.EntryPointNotFoundException>(),
-            "Should not attempt iOS P/Invoke on non-iOS platform");
-    }
+            var ex = await Assert.ThrowsAsync<PiperException>(
+                async () => await tts.InitializeAsync());
 
-    [Test]
-    public void InitializeAsync_FailsAtExpectedPoint_NotAtPlatformAudioSession()
-    {
-        using var tts = new PiperTTS(_config);
+            Assert.That(ex.InnerException,
+                Is.Not.TypeOf<System.DllNotFoundException>(),
+                "Should not attempt iOS P/Invoke on non-iOS platform");
+            Assert.That(ex.InnerException,
+                Is.Not.TypeOf<System.EntryPointNotFoundException>(),
+                "Should not attempt iOS P/Invoke on non-iOS platform");
+        }
 
-        var ex = Assert.ThrowsAsync<PiperException>(
-            async () => await tts.InitializeAsync());
+        [Test]
+        public async Task InitializeAsync_FailsAtExpectedPoint_NotAtPlatformAudioSession()
+        {
+            using var tts = new PiperTTS(_config);
 
-        StringAssert.DoesNotContain("AVAudioSession", ex.Message);
-        StringAssert.DoesNotContain("AudioSession", ex.Message);
-    }
+            var ex = await Assert.ThrowsAsync<PiperException>(
+                async () => await tts.InitializeAsync());
 
-    [Test]
-    public void InitializeAsync_CalledTwice_SecondCallIsSafe()
-    {
-        using var tts = new PiperTTS(_config);
+            StringAssert.DoesNotContain("AVAudioSession", ex.Message);
+            StringAssert.DoesNotContain("AudioSession", ex.Message);
+        }
 
-        Assert.ThrowsAsync<PiperException>(
-            async () => await tts.InitializeAsync());
+        [Test]
+        public async Task InitializeAsync_CalledTwice_SecondCallIsSafe()
+        {
+            using var tts = new PiperTTS(_config);
 
-        Assert.ThrowsAsync<PiperException>(
-            async () => await tts.InitializeAsync());
+            await Assert.ThrowsAsync<PiperException>(
+                async () => await tts.InitializeAsync());
+
+            await Assert.ThrowsAsync<PiperException>(
+                async () => await tts.InitializeAsync());
+        }
     }
 }

@@ -51,11 +51,16 @@ namespace uPiper.Tests.Editor
 
             var entries = DictionaryJsonEditor.ReadEntries(path);
 
-            Assert.AreEqual(2, entries.Count);
-            Assert.AreEqual("ドッカー", entries["Docker"].pronunciation);
-            Assert.AreEqual(9, entries["Docker"].priority);
-            Assert.AreEqual("ギットハブ", entries["GitHub"].pronunciation);
-            Assert.AreEqual(8, entries["GitHub"].priority);
+            Assert.That(entries.Count, Is.EqualTo(2),
+                "Should read 2 entries from valid JSON");
+            Assert.That(entries["Docker"].pronunciation, Is.EqualTo("ドッカー"),
+                "Docker pronunciation should be parsed correctly");
+            Assert.That(entries["Docker"].priority, Is.EqualTo(9),
+                "Docker priority should be parsed correctly");
+            Assert.That(entries["GitHub"].pronunciation, Is.EqualTo("ギットハブ"),
+                "GitHub pronunciation should be parsed correctly");
+            Assert.That(entries["GitHub"].priority, Is.EqualTo(8),
+                "GitHub priority should be parsed correctly");
         }
 
         [Test]
@@ -69,7 +74,8 @@ namespace uPiper.Tests.Editor
 
             var entries = DictionaryJsonEditor.ReadEntries(path);
 
-            Assert.AreEqual(0, entries.Count);
+            Assert.That(entries.Count, Is.EqualTo(0),
+                "Empty entries object should return 0 entries");
         }
 
         [Test]
@@ -87,8 +93,10 @@ namespace uPiper.Tests.Editor
 
             var entries = DictionaryJsonEditor.ReadEntries(path);
 
-            Assert.AreEqual(1, entries.Count);
-            Assert.IsTrue(entries.ContainsKey("Docker"));
+            Assert.That(entries.Count, Is.EqualTo(1),
+                "Comment keys should be skipped");
+            Assert.That(entries.ContainsKey("Docker"), Is.True,
+                "Non-comment entry should be present");
         }
 
         [Test]
@@ -98,7 +106,8 @@ namespace uPiper.Tests.Editor
 
             var entries = DictionaryJsonEditor.ReadEntries(path);
 
-            Assert.AreEqual(0, entries.Count);
+            Assert.That(entries.Count, Is.EqualTo(0),
+                "Non-existent file should return empty dictionary");
         }
 
         [Test]
@@ -114,7 +123,8 @@ namespace uPiper.Tests.Editor
 
             var entries = DictionaryJsonEditor.ReadEntries(path);
 
-            Assert.AreEqual(5, entries["Test"].priority);
+            Assert.That(entries["Test"].priority, Is.EqualTo(5),
+                "Default priority should be 5 when not specified");
         }
 
         [Test]
@@ -122,6 +132,22 @@ namespace uPiper.Tests.Editor
         {
             Assert.Throws<System.ArgumentException>(
                 () => DictionaryJsonEditor.ReadEntries("../../../etc/passwd"));
+        }
+
+        [Test]
+        public void ReadEntries_OversizedFile_ThrowsArgumentException()
+        {
+            var path = TempFile("oversized.json");
+            // 10MB + 1 byte のダミーファイルを作成
+            using (var fs = File.Create(path))
+            {
+                fs.SetLength(10 * 1024 * 1024 + 1);
+            }
+
+            Assert.That(
+                () => DictionaryJsonEditor.ReadEntries(path),
+                Throws.TypeOf<System.ArgumentException>()
+                    .With.Message.Contains("too large"));
         }
 
         // --- UpsertEntry ---
@@ -140,9 +166,12 @@ namespace uPiper.Tests.Editor
             DictionaryJsonEditor.UpsertEntry(path, "Kubernetes", "クバネティス", 8);
 
             var entries = DictionaryJsonEditor.ReadEntries(path);
-            Assert.AreEqual(2, entries.Count);
-            Assert.AreEqual("クバネティス", entries["Kubernetes"].pronunciation);
-            Assert.AreEqual(8, entries["Kubernetes"].priority);
+            Assert.That(entries.Count, Is.EqualTo(2),
+                "Should have 2 entries after upsert");
+            Assert.That(entries["Kubernetes"].pronunciation, Is.EqualTo("クバネティス"),
+                "New entry pronunciation should be set correctly");
+            Assert.That(entries["Kubernetes"].priority, Is.EqualTo(8),
+                "New entry priority should be set correctly");
         }
 
         [Test]
@@ -159,9 +188,12 @@ namespace uPiper.Tests.Editor
             DictionaryJsonEditor.UpsertEntry(path, "Docker", "ドッカ", 7);
 
             var entries = DictionaryJsonEditor.ReadEntries(path);
-            Assert.AreEqual(1, entries.Count);
-            Assert.AreEqual("ドッカ", entries["Docker"].pronunciation);
-            Assert.AreEqual(7, entries["Docker"].priority);
+            Assert.That(entries.Count, Is.EqualTo(1),
+                "Entry count should remain 1 after updating existing entry");
+            Assert.That(entries["Docker"].pronunciation, Is.EqualTo("ドッカ"),
+                "Pronunciation should be updated");
+            Assert.That(entries["Docker"].priority, Is.EqualTo(7),
+                "Priority should be updated");
         }
 
         [Test]
@@ -171,10 +203,13 @@ namespace uPiper.Tests.Editor
 
             DictionaryJsonEditor.UpsertEntry(path, "Hello", "ハロー", 5);
 
-            Assert.IsTrue(File.Exists(path));
+            Assert.That(File.Exists(path), Is.True,
+                "Upsert on non-existent file should create the file");
             var entries = DictionaryJsonEditor.ReadEntries(path);
-            Assert.AreEqual(1, entries.Count);
-            Assert.AreEqual("ハロー", entries["Hello"].pronunciation);
+            Assert.That(entries.Count, Is.EqualTo(1),
+                "Newly created file should contain 1 entry");
+            Assert.That(entries["Hello"].pronunciation, Is.EqualTo("ハロー"),
+                "Entry pronunciation should be set correctly in new file");
         }
 
         // --- RemoveEntry ---
@@ -193,11 +228,15 @@ namespace uPiper.Tests.Editor
 
             var removed = DictionaryJsonEditor.RemoveEntry(path, "Docker");
 
-            Assert.IsTrue(removed);
+            Assert.That(removed, Is.True,
+                "RemoveEntry should return true for existing entry");
             var entries = DictionaryJsonEditor.ReadEntries(path);
-            Assert.AreEqual(1, entries.Count);
-            Assert.IsFalse(entries.ContainsKey("Docker"));
-            Assert.IsTrue(entries.ContainsKey("GitHub"));
+            Assert.That(entries.Count, Is.EqualTo(1),
+                "Should have 1 entry after removal");
+            Assert.That(entries.ContainsKey("Docker"), Is.False,
+                "Docker should no longer be present");
+            Assert.That(entries.ContainsKey("GitHub"), Is.True,
+                "GitHub should still be present");
         }
 
         [Test]
@@ -213,7 +252,8 @@ namespace uPiper.Tests.Editor
 
             var removed = DictionaryJsonEditor.RemoveEntry(path, "NonExistent");
 
-            Assert.IsFalse(removed);
+            Assert.That(removed, Is.False,
+                "RemoveEntry should return false for non-existing entry");
         }
 
         [Test]
@@ -223,7 +263,8 @@ namespace uPiper.Tests.Editor
 
             var removed = DictionaryJsonEditor.RemoveEntry(path, "Docker");
 
-            Assert.IsFalse(removed);
+            Assert.That(removed, Is.False,
+                "RemoveEntry should return false when file does not exist");
         }
 
         // --- ExportToJson ---
@@ -242,12 +283,16 @@ namespace uPiper.Tests.Editor
             DictionaryJsonEditor.ExportToJson(path, original);
             var readBack = DictionaryJsonEditor.ReadEntries(path);
 
-            Assert.AreEqual(original.Count, readBack.Count);
+            Assert.That(readBack.Count, Is.EqualTo(original.Count),
+                "Round-trip should preserve entry count");
             foreach (var kvp in original)
             {
-                Assert.IsTrue(readBack.ContainsKey(kvp.Key), $"Missing key: {kvp.Key}");
-                Assert.AreEqual(kvp.Value.pronunciation, readBack[kvp.Key].pronunciation);
-                Assert.AreEqual(kvp.Value.priority, readBack[kvp.Key].priority);
+                Assert.That(readBack.ContainsKey(kvp.Key), Is.True,
+                    $"Missing key after round-trip: {kvp.Key}");
+                Assert.That(readBack[kvp.Key].pronunciation, Is.EqualTo(kvp.Value.pronunciation),
+                    $"Pronunciation mismatch for {kvp.Key}");
+                Assert.That(readBack[kvp.Key].priority, Is.EqualTo(kvp.Value.priority),
+                    $"Priority mismatch for {kvp.Key}");
             }
         }
 
@@ -262,8 +307,8 @@ namespace uPiper.Tests.Editor
 
             var bytes = File.ReadAllBytes(path);
             // UTF-8 BOM is EF BB BF; first byte should NOT be 0xEF
-            Assert.IsFalse(bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF,
-                "File should not have UTF-8 BOM");
+            Assert.That(bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF,
+                Is.False, "File should not have UTF-8 BOM");
         }
 
         [Test]
@@ -276,8 +321,10 @@ namespace uPiper.Tests.Editor
             });
 
             var json = File.ReadAllText(path);
-            StringAssert.Contains("\"version\": \"2.0\"", json);
-            StringAssert.Contains("\"entries\"", json);
+            Assert.That(json, Does.Contain("\"version\": \"2.0\""),
+                "Exported JSON should contain version field");
+            Assert.That(json, Does.Contain("\"entries\""),
+                "Exported JSON should contain entries field");
         }
     }
 }

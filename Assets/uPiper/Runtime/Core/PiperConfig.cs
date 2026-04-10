@@ -203,6 +203,24 @@ namespace uPiper.Core
         }
 
         /// <summary>
+        /// ディープコピーを作成する。
+        /// ScriptableObject のオリジナルデータを保護するためのランタイムコピー用。
+        /// </summary>
+        /// <remarks>
+        /// MemberwiseClone() によりプリミティブ/string/enum フィールドは自動コピーされる。
+        /// フィールド追加時も漏れが生じない。参照型のみ明示的にディープコピーする。
+        /// </remarks>
+        public PiperConfig Clone()
+        {
+            var copy = (PiperConfig)MemberwiseClone();
+            // 参照型フィールドのディープコピー
+            copy.SupportedLanguages = new List<string>(SupportedLanguages ?? new List<string>());
+            if (GPUSettings != null)
+                copy.GPUSettings = new GPUInferenceSettings { MaxMemoryMB = GPUSettings.MaxMemoryMB };
+            return copy;
+        }
+
+        /// <summary>
         /// 設定値を検証する（例外スローのみ）。フィールドは一切変更しない。
         /// <para>
         /// クランプ・正規化・自動検出のロジックは <see cref="ValidatedPiperConfig"/> コンストラクタに移動済み。

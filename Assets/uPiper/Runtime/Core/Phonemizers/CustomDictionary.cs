@@ -200,16 +200,11 @@ namespace uPiper.Core.Phonemizers
             try
             {
                 // "entries" セクションを抽出（括弧のバランスを考慮）
-                var entriesContent = ExtractEntriesSection(json);
+                var entriesContent = DictionaryJsonParser.ExtractEntriesSection(json);
                 if (string.IsNullOrEmpty(entriesContent)) return;
 
                 // 各エントリを解析
-                // "key": { "pronunciation": "value", "priority": 9 } または "key": "value"
-                var entryPattern = new Regex(
-                    @"""([^""]+)""\s*:\s*(?:\{\s*""pronunciation""\s*:\s*""([^""]+)""(?:\s*,\s*""priority""\s*:\s*(\d+))?\s*\}|""([^""]+)"")",
-                    RegexOptions.Singleline);
-
-                foreach (Match match in entryPattern.Matches(entriesContent))
+                foreach (Match match in DictionaryJsonParser.EntryPattern.Matches(entriesContent))
                 {
                     var word = match.Groups[1].Value;
 
@@ -241,39 +236,6 @@ namespace uPiper.Core.Phonemizers
             {
                 PiperLogger.LogWarning($"[CustomDictionary] Failed to parse JSON: {ex.Message}");
             }
-        }
-
-        /// <summary>
-        /// JSONからentriesセクションの内容を抽出（括弧のバランスを考慮）
-        /// </summary>
-        private string ExtractEntriesSection(string json)
-        {
-            // "entries" : { の位置を見つける
-            var entriesIndex = json.IndexOf("\"entries\"", StringComparison.Ordinal);
-            if (entriesIndex < 0) return null;
-
-            // 開始括弧 { を見つける
-            var openBraceIndex = json.IndexOf('{', entriesIndex);
-            if (openBraceIndex < 0) return null;
-
-            // 対応する閉じ括弧 } を見つける（括弧のネストを考慮）
-            var braceCount = 1;
-            var currentIndex = openBraceIndex + 1;
-
-            while (currentIndex < json.Length && braceCount > 0)
-            {
-                var c = json[currentIndex];
-                if (c == '{')
-                    braceCount++;
-                else if (c == '}')
-                    braceCount--;
-                currentIndex++;
-            }
-
-            if (braceCount != 0) return null;
-
-            // 括弧の中身を返す（開始括弧の次から閉じ括弧の前まで）
-            return json.Substring(openBraceIndex + 1, currentIndex - openBraceIndex - 2);
         }
 
         /// <summary>
