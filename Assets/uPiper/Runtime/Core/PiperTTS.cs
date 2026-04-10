@@ -293,6 +293,10 @@ namespace uPiper.Core
             {
                 PiperLogger.LogInfo("Starting PiperTTS initialization...");
 
+                // Run initialization validation
+                var validationResult = InitializationValidator.ValidateForInitialize(_config);
+                HandleValidationResult(validationResult);
+
                 // Validate runtime environment first (must be on main thread)
                 ValidateRuntimeEnvironment();
 
@@ -1280,6 +1284,24 @@ namespace uPiper.Core
                     "If audio is silent, call IOSAudioSessionHelper.Initialize() manually before PiperTTS initialization.");
             }
 #endif
+        }
+
+        /// <summary>
+        /// Process validation result: throw on errors, log warnings.
+        /// </summary>
+        private void HandleValidationResult(InitializationValidationResult result)
+        {
+            if (result.HasWarnings)
+            {
+                PiperLogger.LogWarning(result.FormatWarningSummary());
+            }
+
+            if (result.HasErrors)
+            {
+                var errorSummary = result.FormatErrorSummary();
+                PiperLogger.LogError(errorSummary);
+                throw new PiperInitializationException(errorSummary);
+            }
         }
 
         /// <summary>
