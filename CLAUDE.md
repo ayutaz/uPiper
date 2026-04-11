@@ -110,6 +110,7 @@ AudioClip出力 (22050Hz, float32)
 | `ValidatedPiperConfig` | `Runtime/Core/` | PiperConfig バリデーション後の不変スナップショット（IPiperConfigReadOnly実装、6 readonly record struct） |
 | `InitializationValidator` | `Runtime/Core/` | InitializeAsync用の一括バリデーター |
 | `PiperConfigAsset` | `Runtime/Core/` | PiperConfig の ScriptableObject ラッパー（CreateAssetMenu対応） |
+| `PiperConfigPresets` | `Runtime/Core/` | 設定プリセット（Fast/Natural/HighQuality） |
 | `SynthesisRequest` | `Runtime/Core/AudioGeneration/` | 音声合成リクエスト（public readonly struct）。音素・ProsodyFlat(stride=3)・合成パラメータを集約。ファクトリ: `FromPhonemes` / `FromPhonemesWithProsody` |
 | `PhonemizeResult` | `Runtime/Core/AudioGeneration/` | PhonemizeAsync戻り値（public sealed class）。Phonemes[], ProsodyFlat[], DetectedLanguage, ResolvedLanguageId |
 
@@ -268,7 +269,8 @@ StreamingAssets/uPiper/     # 実行時データ（辞書）
 |-----------------|----------------------|
 | Windows/Linux | GPUPixel（VRAM 512MB以上+ComputeShader対応時、それ以外はCPU） |
 | macOS | CPU（Metal非対応） |
-| iOS/Android | GPUPixel |
+| iOS | CPU（Metal非対応） |
+| Android | GPUPixel（ComputeShader対応時、それ以外はCPU） |
 | WebGL | GPUPixel / GPUCompute（Phase 1-4完了。WebGPU時はGPUCompute自動選択、WebGL2時はGPUPixel） |
 
 ## 定義シンボル
@@ -405,10 +407,21 @@ var result = phonemizer.PhonemizeWithProsody("DockerとGitHubを使った開発"
 - パストラバーサル拒否: ファイルパスに `..` セグメントが含まれる場合に `ArgumentException` で拒否
 - JSONパースエラー: `JsonUtility.FromJson` 失敗時は警告ログ + 手動パースにフォールバック。手動パースも失敗時は警告ログで処理
 
+### DictionaryPriority 定数
+`CustomDictionary.DictionaryPriority` static class で優先度レベルを定義:
+- `Low = 3`, `Default = 5`, `High = 7`, `Override = 9`, `Always = 10`
+- 同一単語の上書き時は警告ログを出力
+
 ### 動的追加
 ```csharp
 var dict = new CustomDictionary();
 dict.AddWord("MyTerm", "マイターム", priority: 10);
+
+// バッチAPI（パターンキャッシュ再構築を末尾まで遅延）
+dict.AddWords(new[] {
+    ("Term1", "ターム1", DictionaryPriority.High),
+    ("Term2", "ターム2", DictionaryPriority.Default),
+});
 ```
 
 ## 音素エンコーディング

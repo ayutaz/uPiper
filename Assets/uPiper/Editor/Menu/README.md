@@ -20,15 +20,11 @@ uPiper/
 │   ├── Configure IL2CPP Settings
 │   └── Verify IL2CPP Configuration
 ├── Tools/
-│   ├── OpenJTalk Phonemizer Test
+│   ├── Dictionary Manager
 │   ├── GPU Inference Test
 │   └── IL2CPP Benchmark Runner
 ├── Debug/
 │   ├── Check Compilation
-│   ├── OpenJTalk/
-│   │   ├── Show Status
-│   │   ├── Toggle Enabled State
-│   │   └── Check Library
 │   ├── DLL/
 │   │   ├── Check Search Path
 │   │   ├── Check Architecture
@@ -106,5 +102,5 @@ private static void NewTool()
 
 - The system maintains backward compatibility by keeping original menu items
 - Menu separators appear between different priority groups
-- Submenu items (e.g., Debug/OpenJTalk/) group related functionality
+- Submenu items (e.g., Debug/DLL/) group related functionality
 - The Help section includes quick access to documentation and support

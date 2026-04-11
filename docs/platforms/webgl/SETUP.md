@@ -2,7 +2,7 @@
 
 ## 前提条件
 
-- Unity 2022.3 LTS 以降
+- Unity 6000.0 (Unity 6) 以降
 - Sentis パッケージ（Unity.InferenceEngine）2.5.0 以降
 - 対応ブラウザ:
   - Chrome 90+ / Edge 90+（WebGL2）

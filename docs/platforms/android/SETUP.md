@@ -2,9 +2,9 @@
 
 ## 前提条件
 
-- Unity 2022.3 LTS 以降
+- Unity 6000.0 (Unity 6) 以降
 - Android SDK / NDK（Unity Hub 経由で自動インストール推奨）
-- Android 7.0 (API 24) 以降のターゲットデバイス
+- Android 5.0 (API 21) 以降のターゲットデバイス
 - Sentis パッケージ（Unity.InferenceEngine）がインストール済み
 
 ## 推論バックエンド
@@ -45,7 +45,7 @@ var config = new PiperConfig
 | Scripting Backend | IL2CPP | パフォーマンスと互換性のため必須 |
 | Api Compatibility Level | .NET Standard 2.1 | |
 | Target Architectures | ARM64 | 64-bit 必須。ARMv7 は任意 |
-| Minimum API Level | Android 7.0 (API 24) | |
+| Minimum API Level | Android 5.0 (API 21) | |
 | Target API Level | 最新の安定版 | Google Play 要件に準拠 |
 
 #### Configuration

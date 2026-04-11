@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### アーキテクチャ・コアAPI
 - ILanguageG2PHandler Strategy パターンによる7言語G2Pプラグイン化
 - ILanguageDetector インターフェース + HybridLanguageDetector (Unicode+Trigram統合)
 - N-gram言語検出（en/es/fr/pt のラテン文字言語識別、Trigramプロファイル300エントリ×4言語）
@@ -17,13 +18,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PiperTTS.SynthesizeAsync(SynthesisRequest) 低レベルAPI
 - PiperTTS.PhonemizeAsync(string) public化 + PhonemizeResult型
 - IPiperConfigReadOnly インターフェース
-- ValidatedPiperConfig ネスト構造化（6 readonly record struct）
+- ValidatedPiperConfig ネスト構造化（6 readonly record struct）— 不変設定スナップショット
 - AudioNormalizer static class（AudioClipBuilderから分離）
 - BackendSelector + PlatformInfo（プリプロセッサ封じ込め、テスタビリティ向上）
 - NativeArray&lt;float&gt; パイプライン統一（GCアロケーション削減）
 - AudioClipBuilder NativeArray オーバーロード
 - AudioNormalizer NativeArray オーバーロード
 - Android StreamingAssets対応（WebGLStreamingAssetsLoader UNITY_ANDROID分岐）
+
+#### Phase 1: クリティカル修正
+- `PiperTTS.CreateAsync()` ファクトリメソッド（4オーバーロード、PiperConfigAsset対応含む）
+- `InitializationValidator` — InitializeAsync バリデーションパイプライン統合
+- `ModelConfigParser` — ParseModelConfig 抽出によるモデル設定解析の分離
+- `TTSSynthesisOrchestrator` — 音素列→AudioClip変換の統一パイプライン管理（internal sealed class）
+- iOS AVAudioSession 自動初期化（InitializeAsync内で自動呼び出し）
+
+#### Phase 2: UX向上
+- `PiperConfigAsset` — ScriptableObject設定ラッパー（Inspector上でノーコード設定）
+- `PiperConfigPresets` — Fast/Natural/HighQuality 設定プリセット
+- `DictionaryManagerWindow` / `DictionaryJsonEditor` — Editor辞書管理ウィンドウ（uPiper > Tools > Dictionary Manager）
+- `OnUnsupportedLanguageDetected` イベント（IPiperTTS）— 未対応言語セグメント検出通知
+- WebGL対話ゲート多言語化（7言語対応、navigator.language自動判定）
+- Trigram検出デフォルト有効化（EnableTrigramDetection = true）
+- CJK言語検出をセグメントレベル改善（±10文字ウィンドウによる仮名検出精緻化）
+
+#### Phase 3: 品質・信頼性
+- `AudioSynthesisCache` — LRU音声キャッシュ（エントリ数上限 + メモリ上限のデュアルエビクション）
+- `ISplitInferenceOrchestrator` — SplitInferenceOrchestratorのDIインターフェース
+- `BackendSelector.LogSelectionSummary()` — プラットフォーム初期化ログ（検出プラットフォーム・選択バックエンド・GPU情報）
+- `PlatformInfo.FromCurrentEnvironment()` — プラットフォーム検出ファクトリ
+- `ShortTextMitigatingGenerator` — 短テキスト緩和デコレータ（Strategy A: 音素IDパディング+無音トリム、Strategy B: noise scale動的低減）
+- `DictionaryPriority` 定数クラス（Low/Default/High/Override/Always）
+- `CustomDictionary.AddWords()` バッチ追加API
+- 辞書重複上書き時の優先度比較ログ出力
+- 54以上の新規テストファイル（AsyncLifecycleTests, CancellationTests, AudioSynthesisCacheTests, PlatformInitLoggingTests 等）
+
+#### Phase 4: ドキュメント
+- docs/TROUBLESHOOTING.md — トラブルシューティングガイド
+- docs/PERFORMANCE_TUNING.md — パフォーマンスチューニングガイド
+- docs/CONFIG_REFERENCE.md — 設定パラメータリファレンス
+- docs/platforms/{ios,webgl,android,macos}/SETUP.md — プラットフォーム別セットアップガイド
 
 ### Changed
 
@@ -37,10 +71,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - IInferenceAudioGenerator.GenerateAudioAsync: Task&lt;float[]&gt; → Task&lt;NativeArray&lt;float&gt;&gt;
 - PhonemeEncoder.ProsodyStride: internal → public
 - C# LangVersion: 9.0 → 10.0 (csc.rsp明示)
+- NoiseScale/NoiseW/LengthScale の Tooltip を実用的な説明に更新（推奨範囲・効果の具体的記述）
+- 辞書ロードエラーにファイル名・成功/失敗件数を含むメッセージを出力
+- モデルロード失敗時に利用可能モデル一覧を含む詳細メッセージを出力
+- PlatformInitLoggingTests を値アサーション付きに書き直し
+- AudioSynthesisCache の `[Obsolete]` API → NativeArray対応
+- BitConverter.GetBytes → union struct（GCフリー化）
 
 ### Deprecated
 
-- PiperConfig.Validate() — Use ToValidated() instead (v3.0削除予定)
 - GPUInferenceSettings.Validate() — Clamp moved to ValidatedPiperConfig
 - AudioClipBuilder.BuildAudioClip(float[]) — Use NativeArray overload
 - GenerateAudioWithInferenceAsync — Use SynthesizeAsync(SynthesisRequest)
@@ -55,6 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - InferenceAudioGenerator.DetermineBackendType (→ BackendSelector.Determine)
 - AudioClipBuilder.NormalizeAudio/NormalizeAudioInPlace (→ AudioNormalizer)
 - #pragma warning disable CS0618 (Runtime/Demo/InferenceEngineDemo.csの1件を除き全除去)
+- `StreamAudioAsync` を IPiperTTS から削除（API汚染防止）
+- `PiperConfig.Validate()` [Obsolete] メソッド削除（ToValidated()に完全移行）
 
 ### Fixed
 
@@ -64,6 +105,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - EosLikeTokens PUA文字のPhonemeEncoder/MultilingualPhonemizer間不一致
 - LoadFromJson スレッドセーフティ（copy-on-write方式）
 - PhonemeSilence 二重パース
+- PiperException派生クラスの二重ラッピング防止
 
 ## [1.4.0] - 2026/03/21
 

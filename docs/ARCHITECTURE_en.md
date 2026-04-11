@@ -179,6 +179,14 @@ public interface IPiperConfigReadOnly
 }
 ```
 
+#### PiperConfigPresets
+- **Location**: `Runtime/Core/PiperConfigPresets.cs` (`public static class`)
+- **Role**: Static factory providing commonly used configuration presets
+- **API**:
+  - `Fast()` -- Low-latency, high-speed synthesis (enables AudioCache and Warmup)
+  - `Natural()` -- Balanced quality and speed (equivalent to default settings)
+  - `HighQuality()` -- High-quality narration (enables audio normalization)
+
 #### ValidatedPiperConfig
 - **Location**: `Runtime/Core/ValidatedPiperConfig.cs`
 - **Role**: An immutable configuration snapshot generated via `PiperConfig.ToValidated()`. Implements `IPiperConfigReadOnly`
@@ -476,6 +484,32 @@ Dictionaries are placed in `StreamingAssets/uPiper/Dictionaries/`:
 }
 ```
 
+### DictionaryPriority
+
+Priority level constants for dictionary entries (`public static class`, nested within `CustomDictionary`):
+
+| Constant | Value | Usage |
+|----------|-------|-------|
+| `Low` | 3 | Low priority (fallback) |
+| `Default` | 5 | Standard priority |
+| `High` | 7 | High priority |
+| `Override` | 9 | Override (for cross-dictionary overwriting) |
+| `Always` | 10 | Highest priority (always applied) |
+
+### Batch Add API
+
+```csharp
+// Add a single word
+dict.AddWord("MyTerm", "マイターム", priority: DictionaryPriority.High);
+
+// Batch add multiple words
+dict.AddWords(new[]
+{
+    ("Docker", "ドッカー", DictionaryPriority.Override),
+    ("GitHub", "ギットハブ", DictionaryPriority.Override),
+});
+```
+
 ## Design Decisions
 
 ### 1. Decision Not to Use HTS Engine
@@ -682,3 +716,14 @@ public interface ILanguageDetector
 - No personal data collection
 - Models and dictionaries are read-only
 - Sandboxed execution in Unity environment
+
+## Related Documentation
+
+- [Troubleshooting](TROUBLESHOOTING.md)
+- [Performance Tuning](PERFORMANCE_TUNING.md)
+- [Config Reference](CONFIG_REFERENCE.md)
+- Platform Setup Guides:
+  - [iOS](platforms/ios/SETUP.md)
+  - [Android](platforms/android/SETUP.md)
+  - [macOS](platforms/macos/SETUP.md)
+  - [WebGL](platforms/webgl/SETUP.md)

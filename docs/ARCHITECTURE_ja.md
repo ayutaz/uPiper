@@ -177,6 +177,14 @@ public interface IPiperConfigReadOnly
 }
 ```
 
+#### PiperConfigPresets
+- **場所**: `Runtime/Core/PiperConfigPresets.cs`（`public static class`）
+- **役割**: よく使う設定のプリセットを提供するスタティックファクトリ
+- **API**:
+  - `Fast()` — 低レイテンシ・高速合成向け（AudioCache・Warmup有効化）
+  - `Natural()` — 品質と速度のバランス型（デフォルト設定と同等）
+  - `HighQuality()` — 高品質・ナレーション向け（音声正規化有効化）
+
 #### ValidatedPiperConfig
 - **場所**: `Runtime/Core/ValidatedPiperConfig.cs`
 - **役割**: `PiperConfig.ToValidated()` で生成される不変（immutable）の設定スナップショット。`IPiperConfigReadOnly` を実装
@@ -476,6 +484,32 @@ dot-net-g2p音素化
 }
 ```
 
+### DictionaryPriority
+
+辞書エントリの優先度レベル定数（`public static class`、`CustomDictionary` 内のネストクラス）:
+
+| 定数 | 値 | 用途 |
+|------|---|------|
+| `Low` | 3 | 低優先度（フォールバック） |
+| `Default` | 5 | 標準優先度 |
+| `High` | 7 | 高優先度 |
+| `Override` | 9 | オーバーライド（辞書間の上書き用） |
+| `Always` | 10 | 最高優先度（常に適用） |
+
+### バッチ追加API
+
+```csharp
+// 単語を個別に追加
+dict.AddWord("MyTerm", "マイターム", priority: DictionaryPriority.High);
+
+// 複数単語を一括追加
+dict.AddWords(new[]
+{
+    ("Docker", "ドッカー", DictionaryPriority.Override),
+    ("GitHub", "ギットハブ", DictionaryPriority.Override),
+});
+```
+
 ## 重要な設計判断の根拠
 
 ### 1. HTS Engine非使用の判断
@@ -682,3 +716,14 @@ public interface ILanguageDetector
 - 個人データの収集なし
 - モデルと辞書は読み取り専用
 - Unity環境内でサンドボックス実行
+
+## 関連ドキュメント
+
+- [トラブルシューティング](TROUBLESHOOTING.md)
+- [パフォーマンスチューニング](PERFORMANCE_TUNING.md)
+- [設定リファレンス](CONFIG_REFERENCE.md)
+- プラットフォーム別セットアップガイド:
+  - [iOS](platforms/ios/SETUP.md)
+  - [Android](platforms/android/SETUP.md)
+  - [macOS](platforms/macos/SETUP.md)
+  - [WebGL](platforms/webgl/SETUP.md)
