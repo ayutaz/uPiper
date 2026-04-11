@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Unity.InferenceEngine;
@@ -515,7 +516,19 @@ namespace uPiper.Core
                 {
                     await Task.Delay(1);
                 }
-                var modelAsset = request.asset as ModelAsset ?? throw new PiperException($"Model asset not found: {modelPath}");
+                if (request.asset is not ModelAsset modelAsset)
+                {
+                    // Enumerate available models for a helpful error message
+                    var availableModels = Resources.LoadAll<ModelAsset>("Models");
+                    var availableNames = availableModels != null && availableModels.Length > 0
+                        ? string.Join(", ", availableModels.Select(m => m.name))
+                        : "(none)";
+                    throw new PiperException(
+                        $"Model asset not found: '{modelPath}'. " +
+                        $"Expected location: Assets/uPiper/Resources/Models/{voice.VoiceId}.onnx. " +
+                        $"Available models: {availableNames}. " +
+                        "Verify the model is imported via uPiper > Setup > Check Setup Status.");
+                }
 
                 // Initialize audio generator if not already done
                 _inferenceGenerator ??= new InferenceAudioGenerator();
@@ -562,7 +575,8 @@ namespace uPiper.Core
             {
                 throw new PiperException(
                     "No model assets found in Resources/Models/. " +
-                    "Please import a voice model (.onnx) into Assets/uPiper/Resources/Models/.");
+                    "Expected location: Assets/uPiper/Resources/Models/<model-name>.onnx. " +
+                    "Verify the model is imported via uPiper > Setup > Check Setup Status.");
             }
 
             ModelAsset selectedModel = null;
@@ -586,9 +600,13 @@ namespace uPiper.Core
 
             if (selectedModel == null || voiceConfig == null)
             {
+                var modelNames = string.Join(", ", modelAssets.Select(m => m.name));
                 throw new PiperException(
-                    $"Found {modelAssets.Length} model asset(s) in Resources/Models/, " +
-                    "but none could be loaded. Ensure a matching .onnx.json config file exists.");
+                    $"Found {modelAssets.Length} model asset(s) in Resources/Models/ " +
+                    $"[{modelNames}], but none could be loaded. " +
+                    "Ensure a matching .onnx.json config file exists for each model " +
+                    "(e.g., Assets/uPiper/Resources/Models/<model-name>.onnx.json). " +
+                    "Verify the model is imported via uPiper > Setup > Check Setup Status.");
             }
 
             PiperLogger.LogInfo("Auto-selected default voice: {0}", voiceConfig.VoiceId);

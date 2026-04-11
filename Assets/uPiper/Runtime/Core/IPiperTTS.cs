@@ -52,7 +52,9 @@ namespace uPiper.Core
         public Task<AudioClip> GenerateAudioAsync(string text, PiperVoiceConfig voiceConfig, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Load a voice model
+        /// Load a voice model.
+        /// If no current voice is set, the loaded voice is automatically
+        /// selected as the active voice.
         /// </summary>
         /// <param name="voiceConfig">Voice configuration to load</param>
         /// <param name="cancellationToken">Cancellation token</param>

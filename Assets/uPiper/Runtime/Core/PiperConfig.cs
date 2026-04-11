@@ -10,15 +10,6 @@ namespace uPiper.Core
     [Serializable]
     public class PiperConfig
     {
-        #region Constants
-
-        // Constants are now defined in ValidatedPiperConfig.
-        // These aliases exist for backward compatibility within this class.
-        private const int MinSampleRate = ValidatedPiperConfig.MinSampleRate;
-        private const int MaxSampleRate = ValidatedPiperConfig.MaxSampleRate;
-
-        #endregion
-
         [Header("General Settings")]
 
         /// <summary>
@@ -235,52 +226,6 @@ namespace uPiper.Core
             if (GPUSettings != null)
                 copy.GPUSettings = new GPUInferenceSettings { MaxMemoryMB = GPUSettings.MaxMemoryMB };
             return copy;
-        }
-
-        /// <summary>
-        /// 設定値を検証する（例外スローのみ）。フィールドは一切変更しない。
-        /// <para>
-        /// クランプ・正規化・自動検出のロジックは <see cref="ValidatedPiperConfig"/> コンストラクタに移動済み。
-        /// バリデーション済みの不変設定を取得するには <see cref="ToValidated()"/> を使用すること。
-        /// </para>
-        /// </summary>
-        [Obsolete("Use ToValidated() instead. Validate() no longer modifies fields. Will be removed in v3.0.")]
-        public void Validate()
-        {
-            ValidateThrowOnly();
-        }
-
-        /// <summary>
-        /// 例外チェックのみ実施する内部メソッド。フィールドは一切変更しない。
-        /// </summary>
-        private void ValidateThrowOnly()
-        {
-            if (string.IsNullOrWhiteSpace(DefaultLanguage))
-                throw new PiperException("DefaultLanguage cannot be null or empty");
-
-            if (SampleRate < MinSampleRate || SampleRate > MaxSampleRate)
-            {
-                throw new PiperException(
-                    $"Invalid sample rate: {SampleRate}Hz. Must be between {MinSampleRate}-{MaxSampleRate}Hz");
-            }
-
-            if (WorkerThreads < 0)
-                throw new PiperException($"Invalid WorkerThreads: {WorkerThreads}. Must be >= 0");
-
-            if (TimeoutMs < 0)
-                throw new PiperException($"Invalid TimeoutMs: {TimeoutMs}. Must be >= 0");
-
-            if (EnablePhonemeSilence)
-            {
-                try
-                {
-                    AudioGeneration.PhonemeSilenceProcessor.Parse(PhonemeSilenceSpec);
-                }
-                catch (ArgumentException ex)
-                {
-                    throw new PiperException($"Invalid PhonemeSilenceSpec: {ex.Message}", ex);
-                }
-            }
         }
 
         /// <summary>

@@ -24,12 +24,29 @@ namespace uPiper.Core.Phonemizers
         internal const int MaxDictFileSize = 10 * 1024 * 1024; // 10 MB
 
         /// <summary>
+        /// 辞書エントリの優先度レベル定数。
+        /// </summary>
+        public static class DictionaryPriority
+        {
+            /// <summary>低優先度（フォールバック）</summary>
+            public const int Low = 3;
+            /// <summary>標準優先度</summary>
+            public const int Default = 5;
+            /// <summary>高優先度</summary>
+            public const int High = 7;
+            /// <summary>オーバーライド（辞書間の上書き用）</summary>
+            public const int Override = 9;
+            /// <summary>最高優先度（常に適用）</summary>
+            public const int Always = 10;
+        }
+
+        /// <summary>
         /// 辞書エントリ
         /// </summary>
         public class DictionaryEntry
         {
             public string Pronunciation { get; set; }
-            public int Priority { get; set; } = 5;
+            public int Priority { get; set; } = DictionaryPriority.Default;
         }
 
         // 大文字小文字を区別しないエントリ（正規化済み）
@@ -120,7 +137,7 @@ namespace uPiper.Core.Phonemizers
                 try
                 {
                     var json = await WebGLStreamingAssetsLoader.LoadTextAsync(relativePath, cancellationToken);
-                    LoadFromJson(json);
+                    LoadFromJson(json, fileName);
                     PiperLogger.LogInfo($"[CustomDictionary] Loaded: {fileName}");
                 }
                 catch (Exception e)
@@ -164,77 +181,109 @@ namespace uPiper.Core.Phonemizers
             }
 
             var json = File.ReadAllText(filePath);
-            LoadFromJson(json);
+            LoadFromJson(json, Path.GetFileName(filePath));
         }
 
         /// <summary>
         /// JSON文字列から辞書を読み込む
         /// </summary>
-        public void LoadFromJson(string json)
+        /// <param name="json">辞書JSON文字列</param>
+        /// <param name="sourceFileName">ログ出力用のソースファイル名（任意）</param>
+        public void LoadFromJson(string json, string sourceFileName = null)
         {
+            var source = sourceFileName ?? "(inline)";
             try
             {
                 var data = JsonUtility.FromJson<DictionaryJsonWrapper>(json);
                 if (data == null)
                 {
                     // JsonUtilityが失敗した場合、手動パース
-                    ParseJsonManually(json);
+                    ParseJsonManually(json, source);
                     return;
                 }
             }
             catch (Exception ex)
             {
                 PiperLogger.LogWarning(
-                    $"[CustomDictionary] JsonUtility parse failed, falling back to manual parse: {ex.Message}");
+                    $"[CustomDictionary] JsonUtility parse failed for '{source}', " +
+                    $"falling back to manual parse: {ex.Message}");
             }
 
             // JsonUtilityはDictionary非対応のため手動パース
-            ParseJsonManually(json);
+            ParseJsonManually(json, source);
         }
 
         /// <summary>
         /// JSONを手動でパース（Unity JsonUtilityの制限を回避）
         /// </summary>
-        private void ParseJsonManually(string json)
+        /// <param name="json">辞書JSON文字列</param>
+        /// <param name="source">ログ出力用のソース識別名</param>
+        private void ParseJsonManually(string json, string source)
         {
             try
             {
                 // "entries" セクションを抽出（括弧のバランスを考慮）
                 var entriesContent = DictionaryJsonParser.ExtractEntriesSection(json);
-                if (string.IsNullOrEmpty(entriesContent)) return;
+                if (string.IsNullOrEmpty(entriesContent))
+                {
+                    PiperLogger.LogWarning(
+                        $"[CustomDictionary] No 'entries' section found in '{source}'");
+                    return;
+                }
+
+                var successCount = 0;
+                var failCount = 0;
 
                 // 各エントリを解析
                 foreach (Match match in DictionaryJsonParser.EntryPattern.Matches(entriesContent))
                 {
-                    var word = match.Groups[1].Value;
-
-                    // コメント行をスキップ
-                    if (word.StartsWith("//")) continue;
-
-                    string pronunciation;
-                    var priority = 5;
-
-                    if (!string.IsNullOrEmpty(match.Groups[2].Value))
+                    try
                     {
-                        // 詳細形式: { "pronunciation": "...", "priority": N }
-                        pronunciation = match.Groups[2].Value;
-                        if (!string.IsNullOrEmpty(match.Groups[3].Value))
+                        var word = match.Groups[1].Value;
+
+                        // コメント行をスキップ
+                        if (word.StartsWith("//")) continue;
+
+                        string pronunciation;
+                        var priority = DictionaryPriority.Default;
+
+                        if (!string.IsNullOrEmpty(match.Groups[2].Value))
                         {
-                            int.TryParse(match.Groups[3].Value, out priority);
+                            // 詳細形式: { "pronunciation": "...", "priority": N }
+                            pronunciation = match.Groups[2].Value;
+                            if (!string.IsNullOrEmpty(match.Groups[3].Value))
+                            {
+                                int.TryParse(match.Groups[3].Value, out priority);
+                            }
                         }
-                    }
-                    else
-                    {
-                        // 簡易形式: "value"
-                        pronunciation = match.Groups[4].Value;
-                    }
+                        else
+                        {
+                            // 簡易形式: "value"
+                            pronunciation = match.Groups[4].Value;
+                        }
 
-                    AddEntry(word, new DictionaryEntry { Pronunciation = pronunciation, Priority = priority });
+                        AddEntry(word, new DictionaryEntry { Pronunciation = pronunciation, Priority = priority });
+                        successCount++;
+                    }
+                    catch (Exception entryEx)
+                    {
+                        failCount++;
+                        PiperLogger.LogWarning(
+                            $"[CustomDictionary] Failed to parse entry in '{source}': {entryEx.Message}");
+                    }
+                }
+
+                if (failCount > 0)
+                {
+                    PiperLogger.LogError(
+                        $"[CustomDictionary] Partially loaded '{source}': " +
+                        $"{successCount} succeeded, {failCount} failed");
                 }
             }
             catch (Exception ex)
             {
-                PiperLogger.LogWarning($"[CustomDictionary] Failed to parse JSON: {ex.Message}");
+                PiperLogger.LogError(
+                    $"[CustomDictionary] Failed to parse dictionary '{source}': {ex.Message}");
             }
         }
 
@@ -246,6 +295,22 @@ namespace uPiper.Core.Phonemizers
             // 大文字小文字が混在している場合は区別する
             if (word != word.ToLower() && word != word.ToUpper())
             {
+                if (_caseSensitiveEntries.TryGetValue(word, out var existingCs))
+                {
+                    if (entry.Priority < existingCs.Priority)
+                    {
+                        PiperLogger.LogInfo(
+                            $"[CustomDictionary] Skipping '{word}': existing entry has higher priority " +
+                            $"({existingCs.Priority} > {entry.Priority})");
+                        return;
+                    }
+
+                    PiperLogger.LogWarning(
+                        $"[CustomDictionary] Overwriting '{word}': '{existingCs.Pronunciation}' " +
+                        $"(priority={existingCs.Priority}) → '{entry.Pronunciation}' " +
+                        $"(priority={entry.Priority})");
+                }
+
                 _caseSensitiveEntries[word] = entry;
             }
             else
@@ -255,10 +320,18 @@ namespace uPiper.Core.Phonemizers
                 // 既存エントリとの優先度比較
                 if (_entries.TryGetValue(normalizedWord, out var existing))
                 {
-                    if (entry.Priority <= existing.Priority)
+                    if (entry.Priority < existing.Priority)
                     {
-                        return; // 既存の方が優先度が高い
+                        PiperLogger.LogInfo(
+                            $"[CustomDictionary] Skipping '{word}': existing entry has higher priority " +
+                            $"({existing.Priority} > {entry.Priority})");
+                        return;
                     }
+
+                    PiperLogger.LogWarning(
+                        $"[CustomDictionary] Overwriting '{word}': '{existing.Pronunciation}' " +
+                        $"(priority={existing.Priority}) → '{entry.Pronunciation}' " +
+                        $"(priority={entry.Priority})");
                 }
 
                 _entries[normalizedWord] = entry;
@@ -422,10 +495,30 @@ namespace uPiper.Core.Phonemizers
         /// <summary>
         /// 単語を動的に追加
         /// </summary>
-        public void AddWord(string word, string pronunciation, int priority = 5)
+        public void AddWord(string word, string pronunciation, int priority = DictionaryPriority.Default)
         {
             AddEntry(word, new DictionaryEntry { Pronunciation = pronunciation, Priority = priority });
             _patternCache.Clear(); // キャッシュをクリア
+        }
+
+        /// <summary>
+        /// 複数エントリを一括追加する。パターンキャッシュの再構築は最後に1回だけ実行。
+        /// </summary>
+        public void AddWords(IEnumerable<(string word, string pronunciation, int priority)> entries)
+        {
+            var count = 0;
+            foreach (var (word, pronunciation, priority) in entries)
+            {
+                AddEntry(word, new DictionaryEntry { Pronunciation = pronunciation, Priority = priority });
+                count++;
+            }
+
+            if (count > 0)
+            {
+                _patternCache.Clear();
+            }
+
+            PiperLogger.LogInfo($"[CustomDictionary] Batch added {count} entries");
         }
 
         /// <summary>
