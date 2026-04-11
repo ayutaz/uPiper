@@ -21,6 +21,7 @@ uPiperは、Unity環境でPiper TTSを使用するためのプラグインです
                                                            ↓
                         ┌──────────────────────────────────────────────┐
                         │ TTSSynthesisOrchestrator                     │
+                        │   → AudioSynthesisCache (LRU, FNV-1a)      │
                         │   → IInferenceAudioGenerator (NativeArray)  │
                         │   → AudioNormalizer → AudioClipBuilder      │
                         └──────────────────────────────────────────────┘
@@ -150,7 +151,17 @@ public class MultilingualPhonemizeResult
   - 多言語判定: `_isMultilingualModel` で `phoneme_type: "multilingual"` を検出
   - 多言語モデルではPUA文字パススルー（IPA/PUA変換なし）
 
-### 3.5 設定管理層
+### 3.5 初期化バリデーション
+
+#### InitializationValidator
+- **場所**: `Runtime/Core/InitializationValidator.cs`（`internal static class`）
+- **役割**: `InitializeAsync` / `InitializeWithInferenceAsync` 開始時の事前バリデーションを一元化
+- **API**:
+  - `ValidateForInitialize(config)` — 軽量初期化パス用バリデーション
+  - `ValidateForInference(config, modelAsset, voiceConfig)` — モデル付きフル初期化用バリデーション
+- **検証カテゴリ**: RuntimeEnvironment, Model, VoiceConfig, PhonemeIdMap, StreamingAssets, Dictionary, Platform
+
+### 3.6 設定管理層
 
 #### IPiperConfigReadOnly
 
@@ -197,6 +208,7 @@ public interface IPiperConfigReadOnly
 #### BackendSelector + PlatformInfo
 - **場所**: `Runtime/Core/AudioGeneration/BackendSelector.cs`
 - **BackendSelector**: 推論バックエンド選択ロジック（`public static class`）。`Determine(requested, platform, gpuMemoryThresholdMB)` → `BackendType`
+- **LogSelectionSummary**: `InitializeAsync` 完了後に呼び出し、選択理由を一元的にログ出力するメソッド。`LogSelectionSummary(requested, actual, platform)` で要求値・実際のバックエンド・プラットフォーム情報を出力
 - **PlatformInfo**: プラットフォーム依存情報カプセル化（`public readonly struct`）。`FromCurrentEnvironment()` ファクトリでプリプロセッサ条件を閉じ込め
 - **プリプロセッサフリー**: `Determine()` は `PlatformInfo` のフィールドのみで分岐。テスト容易
 
@@ -215,13 +227,15 @@ public interface IPiperConfigReadOnly
 #### TTSSynthesisOrchestrator
 - **場所**: `Runtime/Core/AudioGeneration/TTSSynthesisOrchestrator.cs`（`internal sealed`）
 - **役割**: 音素列 → `AudioClip` 変換パイプライン全体を一元管理
-- **コンストラクタ**: `IInferenceAudioGenerator`, `SplitInferenceOrchestrator`, `PhonemeEncoder`, `AudioClipBuilder`, `IPiperConfigReadOnly`（nullable）, `PiperVoiceConfig` を受け取る
+- **コンストラクタ**: `IInferenceAudioGenerator`, `ISplitInferenceOrchestrator`, `PhonemeEncoder`, `AudioClipBuilder`, `IPiperConfigReadOnly`（nullable）, `PiperVoiceConfig`, `AudioSynthesisCache`（nullable） を受け取る
+- **キャッシュ統合**: `AudioSynthesisCache` が注入されている場合、エンコード後の音素ID+合成パラメータでキャッシュを検索し、ヒット時はONNX推論をスキップしてAudioClip構築のみ行う
 - **NativeArrayパイプライン**:
   1. **PhonemeEncoder** — 音素をIDにエンコード（`EncodeWithProsody` / `Encode`）
-  2. **IInferenceAudioGenerator** — ONNX推論 → `NativeArray<float>`
-  3. **AudioNormalizer** — `NativeArray<float>` in-place正規化（設定で無効化可能）
-  4. **AudioClipBuilder** — `NativeArray<float>` → `AudioClip`（managed marshallingなし）
-  5. **NativeArray Dispose** — `finally` で `audioData.Dispose()`（AudioClip.SetDataはコピー済み）
+  2. **AudioSynthesisCache** — キャッシュヒット時は推論スキップ（オプション）
+  3. **IInferenceAudioGenerator** — ONNX推論 → `NativeArray<float>`
+  4. **AudioNormalizer** — `NativeArray<float>` in-place正規化（設定で無効化可能）
+  5. **AudioClipBuilder** — `NativeArray<float>` → `AudioClip`（managed marshallingなし）
+  6. **NativeArray Dispose** — `finally` で `audioData.Dispose()`（AudioClip.SetDataはコピー済み）
 
 #### SynthesisRequest（public readonly struct）
 
@@ -257,10 +271,23 @@ public sealed class PhonemizeResult
 }
 ```
 
-#### SplitInferenceOrchestrator
-- **場所**: `Runtime/Core/AudioGeneration/SplitInferenceOrchestrator.cs`（`internal class`）
+#### ISplitInferenceOrchestrator / SplitInferenceOrchestrator
+- **インターフェース場所**: `Runtime/Core/AudioGeneration/ISplitInferenceOrchestrator.cs`（`internal interface`）
+- **実装場所**: `Runtime/Core/AudioGeneration/SplitInferenceOrchestrator.cs`（`internal class`）
 - **役割**: 沈黙句分割のオーケストレーション。音素列を沈黙トークンの位置で分割し、句ごとに独立推論を行い、句間にゼロサンプルの無音区間を挿入して結合する
+- **DI改善**: `ISplitInferenceOrchestrator`インターフェース導入により、TTSSynthesisOrchestratorからの依存を抽象化。テスト容易性が向上
 - **パラメータ**: `phonemeSilence` は `GenerateWithSilenceSplitAsync()` メソッドの引数として `IReadOnlyDictionary<string, float>` で受け取る（コンストラクタ引数ではない）
+
+#### AudioSynthesisCache
+- **場所**: `Runtime/Core/AudioGeneration/AudioSynthesisCache.cs`（`internal sealed`）
+- **役割**: LRUベースの音声合成結果キャッシュ。音素ID列+合成パラメータをキーとして推論結果をキャッシュし、キャッシュヒット時はONNX推論をスキップ
+- **ハッシュ**: FNV-1a 64ビットハッシュ。音素ID・ProsodyFlat・合成パラメータ（lengthScale, noiseScale, noiseW, speakerId, languageId）を入力
+- **二重エビクション**: エントリ数上限（デフォルト50）とメモリ予算上限（デフォルト100MB）の両方でLRUエビクション
+- **API**:
+  - `GenerateKey(phonemeIds, prosodyFlat, ...)` — FNV-1aキャッシュキー生成（`static`）
+  - `TryGet(key, out samples, out sampleRate)` — キャッシュ検索（LRU更新）
+  - `Set(key, samples, sampleRate)` — キャッシュ登録（自動エビクション）
+  - `Clear()` — 全キャッシュクリア（統計ログ出力）
 
 #### AudioNormalizer
 - **場所**: `Runtime/Core/AudioGeneration/AudioNormalizer.cs`
@@ -606,10 +633,10 @@ public static bool IsWebGPU =>
 - 合計レイテンシー: ほとんどのケースで <1秒
 
 ### 最適化戦略
-1. **音素キャッシュ**: 頻繁に使用されるテキストをキャッシュ
+1. **音声合成キャッシュ**: `AudioSynthesisCache`によるLRUキャッシュ（FNV-1aハッシュ、二重エビクション）
 2. **モデル量子化**: オプションでINT8量子化
 3. **GPUアクセラレーション**: Unity AI Inference Engine経由でサポート
-4. **ストリーミング**: 長いテキストのチャンク処理
+4. **沈黙句分割**: `ISplitInferenceOrchestrator`による長テキストの句単位分割推論
 
 ## 拡張ポイント
 
