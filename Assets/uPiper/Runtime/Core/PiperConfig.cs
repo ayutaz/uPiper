@@ -81,6 +81,23 @@ namespace uPiper.Core
         public bool EnablePhonemeCache = true;
 
         /// <summary>
+        /// Enable audio synthesis result caching.
+        /// When enabled, repeated synthesis with the same text/parameters skips ONNX inference.
+        /// </summary>
+        [Tooltip("音声合成結果をキャッシュし、同一テキスト・パラメータでの再合成時にONNX推論をスキップする\n" +
+            "--- Cache synthesis results to skip inference for repeated text ---")]
+        public bool EnableAudioCache = true;
+
+        /// <summary>
+        /// Maximum number of audio synthesis cache entries.
+        /// Each entry stores float[] audio samples. Memory usage depends on audio length.
+        /// </summary>
+        [Tooltip("音声合成キャッシュの最大エントリ数（各エントリはfloat[]音声データを保持）\n" +
+            "--- Max audio cache entries (each stores float[] audio data) ---")]
+        [Range(1, 200)]
+        public int MaxAudioCacheEntries = 50;
+
+        /// <summary>
         /// Number of worker threads for parallel processing
         /// </summary>
         [Tooltip("Number of worker threads (0 = auto-detect)")]

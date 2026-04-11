@@ -22,6 +22,7 @@ namespace uPiper.Core
         private ModelAsset _currentModelAsset;
         private PiperVoiceConfig _currentVoiceConfig;
         private Phonemizers.Multilingual.MultilingualPhonemizer _multilingualPhonemizer;
+        private AudioSynthesisCache _audioSynthesisCache;
 
         /// <summary>
         /// Unity.InferenceEngineモデルを使用してTTSを初期化する
@@ -72,7 +73,7 @@ namespace uPiper.Core
                 _audioClipBuilder = new AudioClipBuilder();
                 _orchestrator = new TTSSynthesisOrchestrator(
                     mitigatingGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
-                    _validatedConfig, voiceConfig);
+                    _validatedConfig, voiceConfig, _audioSynthesisCache);
                 _currentModelAsset = modelAsset;
 
                 // Inferenceジェネレーターを初期化

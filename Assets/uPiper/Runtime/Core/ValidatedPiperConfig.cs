@@ -30,6 +30,8 @@ namespace uPiper.Core
     public readonly record struct PerformanceSettings(
         int MaxCacheSizeMB,
         bool EnablePhonemeCache,
+        bool EnableAudioCache,
+        int MaxAudioCacheEntries,
         int WorkerThreads,
         bool EnableMultiThreadedInference,
         int InferenceBatchSize);
@@ -111,6 +113,10 @@ namespace uPiper.Core
 
         // Timeout limits
         internal const int MinRecommendedTimeoutMs = 1000;
+
+        // Audio cache limits
+        internal const int MinAudioCacheEntries = 1;
+        internal const int MaxAudioCacheEntriesThreshold = 200;
 
         // Batch size limits
         internal const int MinBatchSize = 1;
@@ -194,6 +200,8 @@ namespace uPiper.Core
             Performance = new PerformanceSettings(
                 MaxCacheSizeMB: Mathf.Clamp(source.MaxCacheSizeMB, MinCacheSizeMB, MaxCacheSizeMBThreshold),
                 EnablePhonemeCache: source.EnablePhonemeCache,
+                EnableAudioCache: source.EnableAudioCache,
+                MaxAudioCacheEntries: Mathf.Clamp(source.MaxAudioCacheEntries, MinAudioCacheEntries, MaxAudioCacheEntriesThreshold),
                 WorkerThreads: source.WorkerThreads == 0
                     ? Mathf.Max(1, SystemInfo.processorCount - 1)
                     : Mathf.Clamp(source.WorkerThreads, 1, MaxWorkerThreads),

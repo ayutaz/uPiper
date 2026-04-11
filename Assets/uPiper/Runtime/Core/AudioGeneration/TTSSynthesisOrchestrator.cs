@@ -21,6 +21,7 @@ namespace uPiper.Core.AudioGeneration
         private readonly AudioClipBuilder _audioClipBuilder;
         private readonly IPiperConfigReadOnly _config;
         private readonly PiperVoiceConfig _voiceConfig;
+        private readonly AudioSynthesisCache _audioCache;
 
         /// <summary>
         /// Initializes the orchestrator with the specified dependencies.
@@ -34,13 +35,16 @@ namespace uPiper.Core.AudioGeneration
         /// This allows SynthesizeAsync to work without a PiperConfig when only basic
         /// synthesis is needed.</param>
         /// <param name="voiceConfig">Voice config with phoneme ID map (optional, required for silence split).</param>
+        /// <param name="audioCache">Optional audio synthesis cache. When non-null, inference results
+        /// are cached and reused for identical phonemeIds + parameters.</param>
         public TTSSynthesisOrchestrator(
             IInferenceAudioGenerator generator,
             SplitInferenceOrchestrator splitOrchestrator,
             PhonemeEncoder phonemeEncoder,
             AudioClipBuilder audioClipBuilder,
             IPiperConfigReadOnly config,
-            PiperVoiceConfig voiceConfig)
+            PiperVoiceConfig voiceConfig,
+            AudioSynthesisCache audioCache = null)
         {
             _generator = generator ?? throw new ArgumentNullException(nameof(generator));
             _splitOrchestrator = splitOrchestrator ?? throw new ArgumentNullException(nameof(splitOrchestrator));
@@ -48,6 +52,7 @@ namespace uPiper.Core.AudioGeneration
             _audioClipBuilder = audioClipBuilder ?? throw new ArgumentNullException(nameof(audioClipBuilder));
             _config = config; // nullable: defaults to normalization ON, silence split OFF
             _voiceConfig = voiceConfig;
+            _audioCache = audioCache;
         }
 
         /// <summary>
@@ -81,7 +86,29 @@ namespace uPiper.Core.AudioGeneration
                 phonemeIds = _phonemeEncoder.Encode(request.Phonemes);
             }
 
-            // 2. 音声を生成（句分割あり/なし）
+            // 2. キャッシュチェック（エンコード後のphonemeIds + パラメータでキーを生成）
+            long cacheKey = 0;
+            if (_audioCache != null)
+            {
+                cacheKey = AudioSynthesisCache.GenerateKey(
+                    phonemeIds, expandedProsodyFlat,
+                    request.LengthScale, request.NoiseScale, request.NoiseW,
+                    request.SpeakerId, request.LanguageId);
+
+                if (_audioCache.TryGet(cacheKey, out var cachedSamples, out var cachedSampleRate))
+                {
+                    PiperLogger.LogInfo(
+                        "[TTSSynthesisOrchestrator] Cache hit — skipping inference ({0} samples)",
+                        cachedSamples.Length);
+#pragma warning disable CS0618 // float[] overload is [Obsolete] but needed for cached data
+                    return _audioClipBuilder.BuildAudioClip(
+                        cachedSamples, cachedSampleRate,
+                        $"TTS_{Guid.NewGuid():N}");
+#pragma warning restore CS0618
+                }
+            }
+
+            // 3. 音声を生成（句分割あり/なし）
             var silenceParsed = _config?.Silence.ParsedPhonemeSilence;
             var useSilenceSplit = _config != null
                 && _config.Silence.EnablePhonemeSilence
@@ -111,11 +138,18 @@ namespace uPiper.Core.AudioGeneration
                         cancellationToken);
                 }
 
-                // 3. 正規化してAudioClipを構築（設定で無効化可能、後方互換のためnull時は正規化）
+                // 4. 正規化してAudioClipを構築（設定で無効化可能、後方互換のためnull時は正規化）
                 if (_config == null || _config.Audio.NormalizeAudio)
                 {
                     AudioNormalizer.NormalizeInPlace(audioData, 0.95f);
                 }
+
+                // キャッシュに保存（NativeArray Dispose前にmanaged配列へコピー）
+                if (_audioCache != null && audioData.IsCreated)
+                {
+                    _audioCache.Set(cacheKey, audioData.ToArray(), _generator.SampleRate);
+                }
+
                 var clip = _audioClipBuilder.BuildAudioClip(
                     audioData,
                     _generator.SampleRate,

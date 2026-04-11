@@ -146,6 +146,15 @@ namespace uPiper.Core
         /// </summary>
         public long CacheEvictionCount => _cacheEvictionCount;
 
+        /// <summary>Audio synthesis cache hit count</summary>
+        public long AudioCacheHitCount => _audioSynthesisCache?.HitCount ?? 0;
+
+        /// <summary>Audio synthesis cache miss count</summary>
+        public long AudioCacheMissCount => _audioSynthesisCache?.MissCount ?? 0;
+
+        /// <summary>Audio synthesis cache entry count</summary>
+        public int AudioCacheEntryCount => _audioSynthesisCache?.Count ?? 0;
+
         #endregion
 
         #region Events
@@ -413,6 +422,9 @@ namespace uPiper.Core
             try
             {
                 PiperLogger.LogInfo("Starting PiperTTS initialization...");
+
+                // Platform information summary
+                LogPlatformInfo();
 
                 // Run initialization validation
                 var validationResult = InitializationValidator.ValidateForInitialize(_config);
@@ -1066,6 +1078,9 @@ namespace uPiper.Core
                 _phonemeCache.Clear();
                 _currentCacheSize = 0;
 
+                // Clear audio synthesis cache
+                _audioSynthesisCache?.Clear();
+
                 PiperLogger.LogInfo("Cache cleared");
             }
         }
@@ -1130,6 +1145,10 @@ namespace uPiper.Core
                     _cacheMissCount = 0;
                     _cacheEvictionCount = 0;
 
+                    // Clear audio synthesis cache
+                    _audioSynthesisCache?.Clear();
+                    _audioSynthesisCache = null;
+
                     // Dispose phonemizer
                     _phonemizer?.Dispose();
                     _phonemizer = null;
@@ -1187,6 +1206,19 @@ namespace uPiper.Core
             // Backend validation is handled by InferenceAudioGenerator
 
             PiperLogger.LogInfo("Inference Engine initialized with backend: {0}", _inferenceBackend);
+
+            // Log backend selection summary for diagnostics
+            try
+            {
+                var platform = PlatformInfo.FromCurrentEnvironment();
+                BackendSelector.LogSelectionSummary(
+                    _validatedConfig.Inference.Backend, _inferenceBackend, platform);
+            }
+            catch (Exception ex)
+            {
+                PiperLogger.LogWarning(
+                    "Could not log backend selection summary: {0}", ex.Message);
+            }
 
             // Small delay to simulate async operation
             await Task.Yield();
@@ -1291,6 +1323,32 @@ namespace uPiper.Core
         }
 
         /// <summary>
+        /// Log platform and hardware information for diagnostics.
+        /// </summary>
+        private static void LogPlatformInfo()
+        {
+            try
+            {
+                var platform = PlatformInfo.FromCurrentEnvironment();
+                PiperLogger.LogInfo("[PiperTTS] Platform Summary:");
+                PiperLogger.LogInfo("[PiperTTS]   Graphics: {0}", platform.GraphicsDeviceType);
+                PiperLogger.LogInfo("[PiperTTS]   Compute Shaders: {0}", platform.SupportsComputeShaders);
+                PiperLogger.LogInfo("[PiperTTS]   GPU Memory: {0} MB", platform.GraphicsMemorySize);
+                if (platform.IsWebGL)
+                    PiperLogger.LogInfo("[PiperTTS]   WebGL Mode: {0}",
+                        platform.IsWebGPU ? "WebGPU" : "WebGL2");
+                if (platform.IsMobile)
+                    PiperLogger.LogInfo("[PiperTTS]   Mobile Platform: true");
+            }
+            catch (Exception ex)
+            {
+                // SystemInfo access can fail in test environments
+                PiperLogger.LogWarning("[PiperTTS] Could not retrieve platform info: {0}",
+                    ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Validate runtime environment
         /// </summary>
         private void ValidateRuntimeEnvironment()
@@ -1338,6 +1396,20 @@ namespace uPiper.Core
             _cacheHitCount = 0;
             _cacheMissCount = 0;
             _cacheEvictionCount = 0;
+
+            // Initialize audio synthesis cache
+            if (_validatedConfig.Performance.EnableAudioCache)
+            {
+                _audioSynthesisCache = new AudioGeneration.AudioSynthesisCache(
+                    _validatedConfig.Performance.MaxAudioCacheEntries,
+                    _validatedConfig.Performance.MaxCacheSizeMB);
+                PiperLogger.LogInfo("Audio synthesis cache initialized (max {0} entries)",
+                    _validatedConfig.Performance.MaxAudioCacheEntries);
+            }
+            else
+            {
+                _audioSynthesisCache = null;
+            }
 
             PiperLogger.LogInfo("Cache system initialized");
         }
