@@ -30,12 +30,12 @@
 
 | ID | タイトル | 種別 | 状態 | 依存 | チケット |
 |----|---------|------|------|------|---------|
-| P2-1 | IInferenceAudioGenerator 戻り値型変更 | impl | todo | P1-2 | [P2-1.md](./P2-1.md) |
-| P2-2 | InferenceAudioGenerator durations 読み取り | impl | todo | P2-1 | [P2-2.md](./P2-2.md) |
-| P2-3 | ShortTextMitigatingGenerator 追従 | impl | todo | P2-1, P2-2 | [P2-3.md](./P2-3.md) |
-| P2-4 | StubInferenceAudioGenerator durations 対応 | impl | todo | P2-1 | [P2-4.md](./P2-4.md) |
-| T2-1 | ShortTextMitigatingGenerator PAD 除去テスト | test | todo | P2-3, P2-4 | [T2-1.md](./T2-1.md) |
-| T2-2 | InferenceOutput Dispose テスト | test | todo | P1-2 | [T2-2.md](./T2-2.md) |
+| P2-1 | IInferenceAudioGenerator 戻り値型変更 | impl | done | P1-2 | [P2-1.md](./P2-1.md) |
+| P2-2 | InferenceAudioGenerator durations 読み取り | impl | done | P2-1 | [P2-2.md](./P2-2.md) |
+| P2-3 | ShortTextMitigatingGenerator 追従 | impl | done | P2-1, P2-2 | [P2-3.md](./P2-3.md) |
+| P2-4 | StubInferenceAudioGenerator durations 対応 | impl | done | P2-1 | [P2-4.md](./P2-4.md) |
+| T2-1 | ShortTextMitigatingGenerator PAD 除去テスト | test | done | P2-3, P2-4 | [T2-1.md](./T2-1.md) |
+| T2-2 | InferenceOutput Dispose テスト | test | done | P1-2 | [T2-2.md](./T2-2.md) |
 
 ## Phase 3: オーケストレーション
 
@@ -70,8 +70,8 @@
 
 | Phase | 実装 | テスト | 完了率 |
 |-------|------|--------|--------|
-| Phase 1 | 0/4 | 0/5 | 0% |
-| Phase 2 | 0/4 | 0/2 | 0% |
+| Phase 1 | 4/4 | 5/5 | 100% |
+| Phase 2 | 4/4 | 2/2 | 100% |
 | Phase 3 | 0/3 | 0/3 | 0% |
 | Phase 4 | 0/2 | 0/5 | 0% |
-| **合計** | **0/13** | **0/15** | **0%** |
+| **合計** | **8/13** | **7/15** | **54%** |

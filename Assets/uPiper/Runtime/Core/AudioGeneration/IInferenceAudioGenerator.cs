@@ -1,16 +1,14 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Unity.Collections;
 using Unity.InferenceEngine;
-using UnityEngine;
 
 namespace uPiper.Core.AudioGeneration
 {
     /// <summary>
     /// Unity.InferenceEngineを使用した音声生成のインターフェース
     /// </summary>
-    public interface IInferenceAudioGenerator : IDisposable
+    internal interface IInferenceAudioGenerator : IDisposable
     {
         /// <summary>
         /// 音声生成モデルを初期化する
@@ -43,8 +41,8 @@ namespace uPiper.Core.AudioGeneration
         /// <param name="speakerId">スピーカーID</param>
         /// <param name="languageId">言語ID</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
-        /// <remarks>Caller owns and must Dispose the returned NativeArray.</remarks>
-        public Task<NativeArray<float>> GenerateAudioAsync(
+        /// <remarks>Caller owns and must Dispose the returned <see cref="InferenceOutput"/>.</remarks>
+        public Task<InferenceOutput> GenerateAudioAsync(
             int[] phonemeIds,
             int[] prosodyFlat = null,
             float lengthScale = 1.0f,
@@ -60,23 +58,8 @@ namespace uPiper.Core.AudioGeneration
         public bool IsInitialized { get; }
 
         /// <summary>
-        /// 現在のモデルのサンプルレート
+        /// モデルのケイパビリティ（推論能力）を返す。
         /// </summary>
-        public int SampleRate { get; }
-
-        /// <summary>
-        /// モデルがprosody_featuresをサポートするかどうか
-        /// </summary>
-        public bool SupportsProsody { get; }
-
-        /// <summary>
-        /// モデルがマルチスピーカー（sid入力）をサポートするかどうか
-        /// </summary>
-        public bool SupportsMultiSpeaker { get; }
-
-        /// <summary>
-        /// モデルが多言語（lid入力）をサポートするかどうか
-        /// </summary>
-        public bool SupportsLanguageId { get; }
+        public IModelCapabilities Capabilities { get; }
     }
 }

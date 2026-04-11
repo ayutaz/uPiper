@@ -130,18 +130,21 @@ namespace uPiper.Core.AudioGeneration
                         phonemeIds, expandedProsodyFlat,
                         silenceParsed,
                         _voiceConfig.PhonemeIdMap,
-                        _generator.SampleRate,
+                        _generator.Capabilities.SampleRate,
                         request.LengthScale, request.NoiseScale, request.NoiseW,
                         request.SpeakerId, request.LanguageId,
                         cancellationToken: cancellationToken);
                 }
                 else
                 {
-                    audioData = await _generator.GenerateAudioAsync(
+                    var output = await _generator.GenerateAudioAsync(
                         phonemeIds, expandedProsodyFlat,
                         request.LengthScale, request.NoiseScale, request.NoiseW,
                         request.SpeakerId, request.LanguageId,
                         cancellationToken);
+                    audioData = output.DetachAudio();
+                    // INTERIM(P3-2): Durations は破棄。P3-2 で TimingCalculator 統合予定。
+                    output.Dispose();
                 }
 
                 // 4. 正規化してAudioClipを構築（設定で無効化可能、後方互換のためnull時は正規化）
@@ -153,12 +156,12 @@ namespace uPiper.Core.AudioGeneration
                 // キャッシュに保存（NativeArray Dispose前にmanaged配列へコピー）
                 if (_audioCache != null && audioData.IsCreated)
                 {
-                    _audioCache.Set(cacheKey, audioData.ToArray(), _generator.SampleRate);
+                    _audioCache.Set(cacheKey, audioData.ToArray(), _generator.Capabilities.SampleRate);
                 }
 
                 var clip = _audioClipBuilder.BuildAudioClip(
                     audioData,
-                    _generator.SampleRate,
+                    _generator.Capabilities.SampleRate,
                     $"TTS_{Guid.NewGuid():N}");
 
                 PiperLogger.LogInfo(

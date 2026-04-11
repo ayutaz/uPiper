@@ -77,11 +77,14 @@ namespace uPiper.Core.AudioGeneration
 
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var phraseAudio = await _generator.GenerateAudioAsync(
+                    var phraseOutput = await _generator.GenerateAudioAsync(
                         phrase.PhonemeIds, phrase.ProsodyFlat,
                         lengthScale, noiseScale, noiseW,
                         speakerId, languageId,
                         cancellationToken);
+                    var phraseAudio = phraseOutput.DetachAudio();
+                    // INTERIM(P3-1): Durations は破棄。P3-1 で句ごと durations 結合を実装予定。
+                    phraseOutput.Dispose();
 
                     segments.Add((phraseAudio, phrase.SilenceSamples));
                     totalLength += phraseAudio.Length + phrase.SilenceSamples;

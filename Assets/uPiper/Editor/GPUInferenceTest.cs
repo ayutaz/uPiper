@@ -118,14 +118,11 @@ namespace uPiper.Editor
                     // Test inference
                     var testPhonemes = new int[] { 1, 2, 3, 4, 5, 0 }; // Simple test sequence
                     startTime = DateTime.Now;
-                    var audio = await generator.GenerateAudioAsync(testPhonemes);
+                    using var output = await generator.GenerateAudioAsync(testPhonemes);
                     var inferenceTime = (DateTime.Now - startTime).TotalMilliseconds;
 
                     _testResult += $"✓ Inference successful in {inferenceTime:F1}ms\n";
-                    _testResult += $"  Generated {audio.Length} audio samples\n";
-
-                    if (audio.IsCreated)
-                        audio.Dispose();
+                    _testResult += $"  Generated {output.Audio.Length} audio samples\n";
 
                     generator.Dispose();
                 }

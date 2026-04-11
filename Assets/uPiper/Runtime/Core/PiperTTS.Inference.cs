@@ -253,7 +253,7 @@ namespace uPiper.Core
                     prosodyFlat = multiResult.ProsodyFlat;
 
                     // 言語IDを自動解決
-                    if (languageId < 0 && _inferenceGenerator.SupportsLanguageId)
+                    if (languageId < 0 && _inferenceGenerator.Capabilities.SupportsLanguageId)
                     {
                         var detectedLang = multiResult.DetectedPrimaryLanguage;
                         if (_currentVoiceConfig?.LanguageIdMap != null &&
@@ -367,7 +367,7 @@ namespace uPiper.Core
                     text, cancellationToken);
 
                 int resolvedLanguageId = 0;
-                if (_inferenceGenerator != null && _inferenceGenerator.SupportsLanguageId)
+                if (_inferenceGenerator != null && _inferenceGenerator.Capabilities.SupportsLanguageId)
                 {
                     var detectedLang = multiResult.DetectedPrimaryLanguage;
                     if (_currentVoiceConfig?.LanguageIdMap != null &&
@@ -392,7 +392,7 @@ namespace uPiper.Core
             }
 
             // フォールバック: 通常の音素化（Prosody抽出付き）
-            if (_inferenceGenerator != null && _inferenceGenerator.SupportsProsody
+            if (_inferenceGenerator != null && _inferenceGenerator.Capabilities.SupportsProsody
                 && _phonemizer is DotNetG2PPhonemizer g2pPhonemizer)
             {
                 var prosodyResult = g2pPhonemizer.PhonemizeWithProsody(text);

@@ -13,7 +13,7 @@ namespace uPiper.Core.AudioGeneration
     /// <summary>
     /// Unity.InferenceEngineを使用した音声生成の実装
     /// </summary>
-    public class InferenceAudioGenerator : IInferenceAudioGenerator
+    internal class InferenceAudioGenerator : IInferenceAudioGenerator, IModelCapabilities
     {
         /// <summary>
         /// Length of the dummy phoneme input used during warmup.
@@ -52,9 +52,14 @@ namespace uPiper.Core.AudioGeneration
         private bool _supportsMultiSpeaker;
         private bool _supportsLanguageId;
         private string _cachedOutputName;
+        private string _cachedDurationsOutputName;
+        private bool _supportsDurations;
 
         /// <inheritdoc/>
         public bool IsInitialized => _isInitialized;
+
+        /// <inheritdoc/>
+        public IModelCapabilities Capabilities => this;
 
         /// <inheritdoc/>
         public int SampleRate => _voiceConfig?.SampleRate ?? 22050;
@@ -72,6 +77,12 @@ namespace uPiper.Core.AudioGeneration
 
         /// <inheritdoc/>
         public bool SupportsLanguageId => _supportsLanguageId;
+
+        /// <summary>
+        /// モデルが durations 出力テンソルをサポートするかどうか。
+        /// <c>model.outputs.Count &gt;= 2</c> の場合に <c>true</c>。
+        /// </summary>
+        public bool SupportsDurations => _supportsDurations;
 
         /// <inheritdoc/>
         public async Task InitializeAsync(ModelAsset modelAsset, PiperVoiceConfig config, CancellationToken cancellationToken = default)
@@ -181,6 +192,20 @@ namespace uPiper.Core.AudioGeneration
                         }
                         _cachedOutputName = _model.outputs[0].name;
 
+                        if (_model.outputs.Count >= 2)
+                        {
+                            _cachedDurationsOutputName = _model.outputs[1].name;
+                            _supportsDurations = true;
+                            PiperLogger.LogInfo(
+                                $"[InferenceAudioGenerator] Durations output detected: '{_cachedDurationsOutputName}'");
+                        }
+                        else
+                        {
+                            _supportsDurations = false;
+                            PiperLogger.LogInfo(
+                                "[InferenceAudioGenerator] Model has no durations output (single output model)");
+                        }
+
                         // Check model capability inputs
                         _supportsProsody = _model.inputs.Any(input => input.name == "prosody_features");
                         _supportsMultiSpeaker = _model.inputs.Any(input => input.name == "sid");
@@ -231,7 +256,7 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <inheritdoc/>
-        public async Task<NativeArray<float>> GenerateAudioAsync(
+        public async Task<InferenceOutput> GenerateAudioAsync(
             int[] phonemeIds,
             int[] prosodyFlat = null,
             float lengthScale = 1.0f,
@@ -333,8 +358,8 @@ namespace uPiper.Core.AudioGeneration
         /// <summary>
         /// Execute inference with the given inputs (facade for 3-stage pipeline).
         /// </summary>
-        /// <remarks>Caller owns and must Dispose the returned NativeArray.</remarks>
-        private NativeArray<float> ExecuteInference(
+        /// <remarks>Caller owns and must Dispose the returned <see cref="InferenceOutput"/>.</remarks>
+        private InferenceOutput ExecuteInference(
             int[] phonemeIds,
             int[] prosodyFlat,
             float lengthScale,
@@ -347,7 +372,7 @@ namespace uPiper.Core.AudioGeneration
             using var ctx = PrepareInputs(phonemeIds, prosodyFlat,
                 lengthScale, noiseScale, noiseW, speakerId, languageId);
 
-            NativeArray<float> audioData = default;
+            InferenceOutput output = null;
             try
             {
                 var prepareMs = sw.Elapsed.TotalMilliseconds;
@@ -357,21 +382,20 @@ namespace uPiper.Core.AudioGeneration
                 var scheduleMs = sw.Elapsed.TotalMilliseconds;
 
                 sw.Restart();
-                audioData = ExtractResults();
+                output = ExtractResults();
                 var extractMs = sw.Elapsed.TotalMilliseconds;
 
                 var totalMs = prepareMs + scheduleMs + extractMs;
                 PiperLogger.LogInfo(
                     $"[InferenceAudioGenerator] Inference took {totalMs:F1}ms " +
-                    $"(prepare: {prepareMs:F1}ms, schedule: {scheduleMs:F1}ms, readback: {extractMs:F1}ms)");
+                    $"(prepare: {prepareMs:F1}ms, schedule: {scheduleMs:F1}ms, readback: {extractMs:F1}ms)" +
+                    $"{(output.HasDurations ? " [durations: available]" : "")}");
 
-                return audioData;
+                return output;
             }
             catch (Exception ex)
             {
-                // Dispose NativeArray on exception before ownership is transferred
-                if (audioData.IsCreated)
-                    audioData.Dispose();
+                output?.Dispose();
                 PiperLogger.LogError($"[InferenceAudioGenerator] Failed to execute inference: {ex.Message}");
                 throw;
             }
@@ -428,32 +452,90 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// 推論結果を取得し、NativeArray&lt;float&gt;として返す。
-        /// outputTensorはWorker所有のため呼び出し元がDisposeしてはならない。
-        /// readableTensorはこのメソッド内でDisposeする。
+        /// 推論結果を取得し、InferenceOutput として返す。
         /// </summary>
-        /// <remarks>Caller owns and must Dispose the returned NativeArray.</remarks>
-        private NativeArray<float> ExtractResults()
+        /// <remarks>Caller owns and must Dispose the returned InferenceOutput.</remarks>
+        private InferenceOutput ExtractResults()
         {
-            var outputTensor = GetOutputTensor(); // Worker-owned; do not Dispose
+            var audioData = ExtractAudioData();
+
+            NativeArray<float> durations = default;
+            if (_supportsDurations)
+            {
+                try
+                {
+                    durations = ExtractDurationsData();
+                }
+                catch (Exception ex)
+                {
+                    PiperLogger.LogWarning(
+                        $"[InferenceAudioGenerator] Failed to read durations output: {ex.Message}. " +
+                        "Continuing without timing data.");
+                    if (durations.IsCreated)
+                        durations.Dispose();
+                    durations = default;
+                }
+            }
+
+            return new InferenceOutput(audioData, durations);
+        }
+
+        /// <summary>
+        /// Audio 出力テンソルから NativeArray&lt;float&gt; を抽出する。
+        /// </summary>
+        private NativeArray<float> ExtractAudioData()
+        {
+            var outputTensor = GetOutputTensor();
             var readableTensor = outputTensor.ReadbackAndClone();
             NativeArray<float> audioData = default;
             try
             {
                 var audioLength = readableTensor.shape.length;
                 audioData = new NativeArray<float>(audioLength, Allocator.Persistent);
-
-                // Bulk copy: DownloadToNativeArray() returns internal buffer (Allocator.None).
-                // NativeArray<float>.Copy performs memcpy-equivalent, replacing element-wise loop.
                 var src = readableTensor.DownloadToNativeArray();
                 NativeArray<float>.Copy(src, audioData, audioLength);
-
                 return audioData;
             }
             catch
             {
                 if (audioData.IsCreated)
                     audioData.Dispose();
+                throw;
+            }
+            finally
+            {
+                readableTensor.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Durations 出力テンソルから NativeArray&lt;float&gt; を抽出する。
+        /// </summary>
+        private NativeArray<float> ExtractDurationsData()
+        {
+            if (string.IsNullOrEmpty(_cachedDurationsOutputName))
+                throw new InvalidOperationException(
+                    "Durations output name not cached. Ensure InitializeAsync completed.");
+
+            var durationsTensor = _worker.PeekOutput(_cachedDurationsOutputName) as Tensor<float>;
+            if (durationsTensor == null)
+                throw new InvalidOperationException(
+                    $"Failed to get durations output '{_cachedDurationsOutputName}' from model");
+
+            var readableTensor = durationsTensor.ReadbackAndClone();
+            NativeArray<float> durations = default;
+            try
+            {
+                var durLength = readableTensor.shape.length;
+                durations = new NativeArray<float>(durLength, Allocator.Persistent);
+                var src = readableTensor.DownloadToNativeArray();
+                NativeArray<float>.Copy(src, durations, durLength);
+                return durations;
+            }
+            catch
+            {
+                if (durations.IsCreated)
+                    durations.Dispose();
                 throw;
             }
             finally
@@ -574,6 +656,8 @@ namespace uPiper.Core.AudioGeneration
                 _worker = null;
                 _isInitialized = false;
                 _cachedOutputName = null;
+                _cachedDurationsOutputName = null;
+                _supportsDurations = false;
                 PiperLogger.LogDebug("InferenceAudioGenerator worker disposed");
             }
         }
