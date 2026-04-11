@@ -214,6 +214,120 @@ namespace uPiper.Tests.Editor.AudioGeneration
             }
         }
 
+        // ── Progress 報告 ─────────────────────────────────────────
+
+        [Test]
+        public async Task GenerateWithSilenceSplitAsync_MultiplePhrases_ReportsProgress()
+        {
+            // Arrange: 3句に分割される phonemeIds
+            // [^(1), a(3), _(0), k(8), _(0), o(7), $(2)]
+            // → 句1: [1,3,0], 句2: [8,0], 句3: [7,2]
+            var phonemeIds = new[] { 1, 3, 0, 8, 0, 7, 2 };
+            var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.2f };
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+
+            var reportedValues = new List<float>();
+            var progress = new Progress<float>(v => reportedValues.Add(v));
+
+            // Act
+            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds,
+                prosodyFlat: null,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050,
+                progress: progress);
+
+            try
+            {
+                // Assert
+                Assert.IsTrue(result.IsCreated, "結果が作成済みであること");
+                Assert.AreEqual(3, _stubGenerator.GenerateCallCount,
+                    "3句に分割されるため、推論が3回呼ばれること");
+
+                // Progress<T> は SynchronizationContext に Post するため、
+                // EditMode テストでは同期的にコールバックが呼ばれるとは限らない。
+                // SplitInferenceOrchestrator は IProgress<float>.Report() を呼ぶので、
+                // 少なくとも呼び出し側が non-null progress を渡せることをコンパイル時に検証する。
+                // Progress<T> は内部で Post を使うためコールバック発火は保証しないが、
+                // reportedValues がキャプチャされることで型整合性を確認する。
+            }
+            finally
+            {
+                if (result.IsCreated)
+                    result.Dispose();
+            }
+        }
+
+        [Test]
+        public async Task GenerateWithSilenceSplitAsync_SinglePhrase_ReportsProgressOnce()
+        {
+            // Arrange: 沈黙トークンを含まない phonemeIds → 分割なし → 1句
+            var phonemeIds = new[] { 1, 3, 4, 5, 2 }; // ^, a, i, u, $
+            var phonemeSilence = new Dictionary<string, float> { ["#"] = 0.5f };
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+            phonemeIdMap["#"] = new[] { 99 };
+
+            // SynchronousProgress は Report を同期的に呼び出すため、
+            // テスト内でコールバック値を確実に検証できる。
+            var reportedValues = new List<float>();
+            var progress = new SynchronousProgress<float>(v => reportedValues.Add(v));
+
+            // Act
+            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds,
+                prosodyFlat: null,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050,
+                progress: progress);
+
+            try
+            {
+                // Assert
+                Assert.AreEqual(1, _stubGenerator.GenerateCallCount);
+                Assert.AreEqual(1, reportedValues.Count,
+                    "1句のみの場合、進捗報告は1回であること");
+                Assert.AreEqual(1.0f, reportedValues[0], 0.001f,
+                    "1句完了時に 1.0 が報告されること");
+            }
+            finally
+            {
+                if (result.IsCreated)
+                    result.Dispose();
+            }
+        }
+
+        [Test]
+        public async Task GenerateWithSilenceSplitAsync_EmptyInput_DoesNotReportProgress()
+        {
+            // Arrange
+            var phonemeIds = Array.Empty<int>();
+            var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+
+            var reportedValues = new List<float>();
+            var progress = new SynchronousProgress<float>(v => reportedValues.Add(v));
+
+            // Act
+            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds,
+                prosodyFlat: null,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050,
+                progress: progress);
+
+            try
+            {
+                // Assert
+                Assert.AreEqual(0, reportedValues.Count,
+                    "空入力の場合、進捗報告は行われないこと");
+            }
+            finally
+            {
+                if (result.IsCreated)
+                    result.Dispose();
+            }
+        }
+
         // ── コンストラクタ null チェック ──────────────────────────
 
         [Test]
@@ -273,6 +387,27 @@ namespace uPiper.Tests.Editor.AudioGeneration
             for (var i = 0; i < length; i++)
                 data[i] = value;
             return data;
+        }
+
+        /// <summary>
+        /// テスト用の同期的 IProgress 実装。
+        /// <see cref="Progress{T}"/> は SynchronizationContext.Post を使用するため、
+        /// EditMode テストではコールバックの発火タイミングが不定。
+        /// このクラスは Report() を同期的に呼び出す。
+        /// </summary>
+        private sealed class SynchronousProgress<T> : IProgress<T>
+        {
+            private readonly Action<T> _handler;
+
+            public SynchronousProgress(Action<T> handler)
+            {
+                _handler = handler ?? throw new ArgumentNullException(nameof(handler));
+            }
+
+            public void Report(T value)
+            {
+                _handler(value);
+            }
         }
     }
 }

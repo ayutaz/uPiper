@@ -133,7 +133,7 @@ namespace uPiper.Core.AudioGeneration
                         _generator.SampleRate,
                         request.LengthScale, request.NoiseScale, request.NoiseW,
                         request.SpeakerId, request.LanguageId,
-                        cancellationToken);
+                        cancellationToken: cancellationToken);
                 }
                 else
                 {

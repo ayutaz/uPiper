@@ -117,26 +117,55 @@ namespace uPiper.Core.Phonemizers
         }
 
         /// <summary>
-        /// デフォルト辞書を非同期で読み込む（WebGL対応）
-        /// WebGLではディレクトリ列挙ができないため、既知の辞書ファイル名リストを使用する
+        /// 既知の辞書ファイル名一覧。
+        /// WebGL/Androidではディレクトリ列挙ができないため、この一覧を使用する。
+        /// </summary>
+        internal static readonly string[] KnownDictionaryFiles =
+        {
+            "additional_tech_dict.json",
+            "default_common_dict.json",
+            "default_tech_dict.json",
+            "user_custom_dict.json"
+        };
+
+        /// <summary>
+        /// デフォルト辞書を非同期で読み込む（WebGL/Android対応）
+        /// WebGL/Androidではディレクトリ列挙ができないため、既知の辞書ファイル名リストを使用する。
+        /// Android上では初回起動時にStreamingAssetsからpersistentDataPathへキャッシュし、
+        /// 2回目以降はローカルファイルシステムから高速読み込みする。
         /// </summary>
         public async Task LoadDefaultDictionariesAsync(CancellationToken cancellationToken = default)
         {
-            var dictionaryFiles = new[]
-            {
-                "additional_tech_dict.json",
-                "default_common_dict.json",
-                "default_tech_dict.json",
-                "user_custom_dict.json"
-            };
+#if UNITY_ANDROID && !UNITY_EDITOR
+            // Android: StreamingAssets→persistentDataPathへのプリキャッシュ
+            await AndroidDictionaryCache.EnsureCachedAsync(KnownDictionaryFiles, cancellationToken);
+#endif
 
-            foreach (var fileName in dictionaryFiles)
+            foreach (var fileName in KnownDictionaryFiles)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var relativePath = $"uPiper/Dictionaries/{fileName}";
                 try
                 {
-                    var json = await WebGLStreamingAssetsLoader.LoadTextAsync(relativePath, cancellationToken);
+                    string json;
+#if UNITY_ANDROID && !UNITY_EDITOR
+                    // Android: キャッシュからの読み込みを優先
+                    var cachedPath = AndroidDictionaryCache.GetCachedPath(fileName);
+                    if (cachedPath != null)
+                    {
+                        json = File.ReadAllText(cachedPath);
+                    }
+                    else
+                    {
+                        // キャッシュミス → WebGLStreamingAssetsLoader経由でフォールバック
+                        var relativePath = $"uPiper/Dictionaries/{fileName}";
+                        json = await WebGLStreamingAssetsLoader.LoadTextAsync(
+                            relativePath, cancellationToken);
+                    }
+#else
+                    var relativePath = $"uPiper/Dictionaries/{fileName}";
+                    json = await WebGLStreamingAssetsLoader.LoadTextAsync(
+                        relativePath, cancellationToken);
+#endif
                     LoadFromJson(json, fileName);
                     PiperLogger.LogInfo($"[CustomDictionary] Loaded: {fileName}");
                 }

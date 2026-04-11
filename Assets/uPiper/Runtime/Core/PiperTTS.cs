@@ -156,6 +156,31 @@ namespace uPiper.Core
         /// <summary>Audio synthesis cache entry count</summary>
         public int AudioCacheEntryCount => _audioSynthesisCache?.Count ?? 0;
 
+        /// <summary>
+        /// 現在選択されている推論バックエンド。未初期化時はnull。
+        /// </summary>
+        public BackendType? SelectedBackend
+        {
+            get
+            {
+                if (!_isInitialized)
+                    return null;
+
+                try
+                {
+                    var platform = PlatformInfo.FromCurrentEnvironment();
+                    return BackendSelector.Determine(
+                        _validatedConfig.Inference.Backend, platform);
+                }
+                catch (Exception ex)
+                {
+                    PiperLogger.LogWarning(
+                        "[PiperTTS] Could not determine backend: {0}", ex.Message);
+                    return null;
+                }
+            }
+        }
+
         #endregion
 
         #region Events
@@ -493,6 +518,7 @@ namespace uPiper.Core
         /// <remarks>
         /// カレントボイスが未設定の場合、最初にロードされたボイスが
         /// 自動的にカレントボイスとして選択される。
+        /// モデル検索は完全一致 → 大文字小文字無視 → 部分一致の順でフォールバックする。
         /// </remarks>
         public async Task LoadVoiceAsync(PiperVoiceConfig voice, CancellationToken cancellationToken = default)
         {
@@ -508,23 +534,15 @@ namespace uPiper.Core
             {
                 PiperLogger.LogInfo("Loading voice: {0}", voice.VoiceId);
 
-                // Load model asset asynchronously to avoid blocking the main thread
-                var modelPath = $"Models/{voice.VoiceId}";
-                var request = Resources.LoadAsync<ModelAsset>(modelPath);
-                // Use polling loop for Unity version compatibility (await ResourceRequest may not work in all versions)
-                while (!request.isDone)
+                var modelAsset = await TryResolveModelAssetAsync(voice.VoiceId);
+                if (modelAsset == null)
                 {
-                    await Task.Delay(1);
-                }
-                if (request.asset is not ModelAsset modelAsset)
-                {
-                    // Enumerate available models for a helpful error message
                     var availableModels = Resources.LoadAll<ModelAsset>("Models");
                     var availableNames = availableModels != null && availableModels.Length > 0
                         ? string.Join(", ", availableModels.Select(m => m.name))
                         : "(none)";
                     throw new PiperException(
-                        $"Model asset not found: '{modelPath}'. " +
+                        $"Model asset not found: 'Models/{voice.VoiceId}'. " +
                         $"Expected location: Assets/uPiper/Resources/Models/{voice.VoiceId}.onnx. " +
                         $"Available models: {availableNames}. " +
                         "Verify the model is imported via uPiper > Setup > Check Setup Status.");
@@ -1179,6 +1197,58 @@ namespace uPiper.Core
         {
             if (!_isInitialized)
                 throw new InvalidOperationException("PiperTTS is not initialized. Call InitializeAsync first.");
+        }
+
+        /// <summary>
+        /// VoiceIdからModelAssetを解決する。
+        /// 完全一致 → 大文字小文字無視 → 部分一致の順でフォールバックする。
+        /// </summary>
+        /// <param name="voiceId">検索するVoiceId</param>
+        /// <returns>見つかったModelAsset。見つからない場合はnull。</returns>
+        private async Task<ModelAsset> TryResolveModelAssetAsync(string voiceId)
+        {
+            // 1. Exact match
+            var modelPath = $"Models/{voiceId}";
+            var request = Resources.LoadAsync<ModelAsset>(modelPath);
+            while (!request.isDone)
+            {
+                await Task.Delay(1);
+            }
+
+            if (request.asset is ModelAsset exactMatch)
+                return exactMatch;
+
+            // 2. Scan all available models for fuzzy matching
+            var allModels = Resources.LoadAll<ModelAsset>("Models");
+            if (allModels == null || allModels.Length == 0)
+                return null;
+
+            // 2a. Case-insensitive match
+            foreach (var m in allModels)
+            {
+                if (string.Equals(m.name, voiceId, StringComparison.OrdinalIgnoreCase))
+                {
+                    PiperLogger.LogInfo(
+                        "[PiperTTS] Model resolved via case-insensitive match: '{0}' -> '{1}'",
+                        voiceId, m.name);
+                    return m;
+                }
+            }
+
+            // 2b. Partial match (voiceId is substring of model name, or vice versa)
+            foreach (var m in allModels)
+            {
+                if (m.name.Contains(voiceId, StringComparison.OrdinalIgnoreCase)
+                    || voiceId.Contains(m.name, StringComparison.OrdinalIgnoreCase))
+                {
+                    PiperLogger.LogInfo(
+                        "[PiperTTS] Model resolved via partial match: '{0}' -> '{1}'",
+                        voiceId, m.name);
+                    return m;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

@@ -23,6 +23,7 @@ namespace uPiper.Core.AudioGeneration
 
         /// <summary>
         /// 沈黙句分割付きで音声を生成する。
+        /// 句ごとにIProgress&lt;float&gt;で進捗(0.0〜1.0)を報告する。
         /// </summary>
         /// <remarks>Caller owns and must Dispose the returned NativeArray.</remarks>
         public async Task<NativeArray<float>> GenerateWithSilenceSplitAsync(
@@ -36,6 +37,7 @@ namespace uPiper.Core.AudioGeneration
             float noiseW = 0.8f,
             int speakerId = 0,
             int languageId = 0,
+            IProgress<float> progress = null,
             CancellationToken cancellationToken = default)
         {
             var phrases = PhonemeSilenceProcessor.SplitAtPhonemeSilence(
@@ -51,11 +53,21 @@ namespace uPiper.Core.AudioGeneration
                 return new NativeArray<float>(0, Allocator.Persistent);
             }
 
+            // Count non-empty phrases for accurate progress reporting
+            var totalPhrases = 0;
+            for (var i = 0; i < phrases.Count; i++)
+            {
+                var ph = phrases[i];
+                if (ph.PhonemeIds != null && ph.PhonemeIds.Length > 0)
+                    totalPhrases++;
+            }
+
             var segments = new List<(NativeArray<float> Audio, int SilenceSamples)>();
             NativeArray<float> combined = default;
             try
             {
                 var totalLength = 0;
+                var completedPhrases = 0;
 
                 for (var p = 0; p < phrases.Count; p++)
                 {
@@ -73,9 +85,16 @@ namespace uPiper.Core.AudioGeneration
 
                     segments.Add((phraseAudio, phrase.SilenceSamples));
                     totalLength += phraseAudio.Length + phrase.SilenceSamples;
+                    completedPhrases++;
+
+                    // Report per-phrase progress (0.0 to 1.0)
+                    if (totalPhrases > 0)
+                    {
+                        progress?.Report((float)completedPhrases / totalPhrases);
+                    }
 
                     PiperLogger.LogDebug(
-                        $"[SplitInferenceOrchestrator] Phrase {p + 1}/{phrases.Count}: " +
+                        $"[SplitInferenceOrchestrator] Phrase {completedPhrases}/{totalPhrases}: " +
                         $"{phraseAudio.Length} samples + {phrase.SilenceSamples} silence");
                 }
 

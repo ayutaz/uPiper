@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.InferenceEngine;
 using UnityEngine;
 using uPiper.Core.AudioGeneration;
 
@@ -21,6 +22,11 @@ namespace uPiper.Core
         /// Whether the TTS engine is initialized and ready
         /// </summary>
         public bool IsInitialized { get; }
+
+        /// <summary>
+        /// 現在選択されている推論バックエンド。未初期化時はnull。
+        /// </summary>
+        public BackendType? SelectedBackend { get; }
 
         /// <summary>
         /// Currently loaded voice configuration
