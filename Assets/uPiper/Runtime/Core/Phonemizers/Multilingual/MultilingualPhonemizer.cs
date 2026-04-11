@@ -86,7 +86,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
             _defaultLatinLanguage = options.DefaultLatinLanguage ?? "en";
             _enableTrigramDetection = options.EnableTrigramDetection;
             _customDetector = options.LanguageDetector;
-            _fallbackLanguage = options.FallbackLanguage;
+            _fallbackLanguage = string.IsNullOrWhiteSpace(options.FallbackLanguage)
+                ? null
+                : options.FallbackLanguage;
 
             // Detector will be resolved in InitializeAsync().
             // Use the custom detector if provided, otherwise default to UnicodeLanguageDetector.

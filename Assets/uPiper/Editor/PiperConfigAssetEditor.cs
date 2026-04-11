@@ -105,8 +105,9 @@ namespace uPiper.Editor
                 defaultConfig.AutoDetectLanguage;
 
             // Fallback Settings
+            // Unity serializes null strings as "", so use "" explicitly for "no fallback".
             _configProperty.FindPropertyRelative("FallbackLanguage").stringValue =
-                defaultConfig.FallbackLanguage;
+                defaultConfig.FallbackLanguage ?? "";
 
             // Multilingual Settings
             var supportedLangsProp =
@@ -127,6 +128,10 @@ namespace uPiper.Editor
                 defaultConfig.MaxCacheSizeMB;
             _configProperty.FindPropertyRelative("EnablePhonemeCache").boolValue =
                 defaultConfig.EnablePhonemeCache;
+            _configProperty.FindPropertyRelative("EnableAudioCache").boolValue =
+                defaultConfig.EnableAudioCache;
+            _configProperty.FindPropertyRelative("MaxAudioCacheEntries").intValue =
+                defaultConfig.MaxAudioCacheEntries;
             _configProperty.FindPropertyRelative("WorkerThreads").intValue =
                 defaultConfig.WorkerThreads;
             _configProperty.FindPropertyRelative("Backend").enumValueIndex =

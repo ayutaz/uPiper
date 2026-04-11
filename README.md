@@ -221,14 +221,15 @@ var validated = config.ToValidated();
 ```csharp
 // シンプルな使い方（2ステップ）
 var config = new PiperConfig { Backend = InferenceBackend.Auto };
-var tts = await PiperTTS.CreateAsync(config, cancellationToken);
-var clip = await tts.GenerateAudioAsync("こんにちは", cancellationToken);
+var tts = await PiperTTS.CreateAsync(config);
+var clip = await tts.GenerateAudioAsync("こんにちは");
 AudioSource.PlayClipAtPoint(clip, Vector3.zero);
 
-// 詳細制御（音素パイプライン）
-var result = await tts.PhonemizeAsync("こんにちは");
+// 詳細制御（音素パイプライン + CancellationToken）
+var cts = new CancellationTokenSource();
+var result = await tts.PhonemizeAsync("こんにちは", cts.Token);
 var request = SynthesisRequest.FromPhonemesWithProsody(result.Phonemes, result.ProsodyFlat);
-var clip = await tts.SynthesizeAsync(request);
+var clip = await tts.SynthesizeAsync(request, cts.Token);
 ```
 
 ## 詳細ドキュメント

@@ -221,14 +221,15 @@ See the [GPU Inference Guide](docs/features/gpu/gpu-inference.md) for details.
 ```csharp
 // Simple usage (2 steps)
 var config = new PiperConfig { Backend = InferenceBackend.Auto };
-var tts = await PiperTTS.CreateAsync(config, cancellationToken);
-var clip = await tts.GenerateAudioAsync("Hello, world!", cancellationToken);
+var tts = await PiperTTS.CreateAsync(config);
+var clip = await tts.GenerateAudioAsync("Hello, world!");
 AudioSource.PlayClipAtPoint(clip, Vector3.zero);
 
-// Advanced (phoneme pipeline)
-var result = await tts.PhonemizeAsync("Hello, world!");
+// Advanced (phoneme pipeline + CancellationToken)
+var cts = new CancellationTokenSource();
+var result = await tts.PhonemizeAsync("Hello, world!", cts.Token);
 var request = SynthesisRequest.FromPhonemesWithProsody(result.Phonemes, result.ProsodyFlat);
-var clip = await tts.SynthesizeAsync(request);
+var clip = await tts.SynthesizeAsync(request, cts.Token);
 ```
 
 ## Documentation

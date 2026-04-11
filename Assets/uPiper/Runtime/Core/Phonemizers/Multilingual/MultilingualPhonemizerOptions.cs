@@ -72,7 +72,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
                     $"is not in Languages list. It may not be detected correctly.");
             }
 
-            if (FallbackLanguage != null && Languages != null
+            if (!string.IsNullOrWhiteSpace(FallbackLanguage) && Languages != null
                 && !ListContains(Languages, FallbackLanguage))
             {
                 PiperLogger.LogWarning(

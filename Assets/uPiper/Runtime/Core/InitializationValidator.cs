@@ -54,7 +54,8 @@ namespace uPiper.Core
             try
             {
                 var unityVersion = Application.unityVersion;
-                if (!string.IsNullOrEmpty(unityVersion) && unityVersion.CompareTo("2022.3") < 0)
+                if (!string.IsNullOrEmpty(unityVersion)
+                    && IsUnityVersionBelow(unityVersion, 2022, 3))
                 {
                     entries.Add(new Entry(
                         ValidationCategory.RuntimeEnvironment,
@@ -71,6 +72,19 @@ namespace uPiper.Core
                     $"Could not verify runtime environment: {ex.Message}",
                     "This is typically harmless in test environments."));
             }
+        }
+
+        private static bool IsUnityVersionBelow(string version, int minMajor, int minMinor)
+        {
+            var parts = version.Split('.');
+            if (parts.Length >= 2
+                && int.TryParse(parts[0], out var major)
+                && int.TryParse(parts[1], out var minor))
+            {
+                return major < minMajor || (major == minMajor && minor < minMinor);
+            }
+
+            return false; // Can't parse, assume OK
         }
 
         private static void ValidateModelAsset(List<Entry> entries, object modelAsset)
