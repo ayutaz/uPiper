@@ -14,15 +14,15 @@
 
 | ID | タイトル | 種別 | 状態 | 依存 | チケット |
 |----|---------|------|------|------|---------|
-| P1-1 | PhonemeTimingEntry 定義 | impl | todo | - | [P1-1.md](./P1-1.md) |
-| P1-2 | InferenceOutput 定義 | impl | todo | - | [P1-2.md](./P1-2.md) |
-| P1-3 | SynthesisWithTimingResult 定義 | impl | todo | P1-1 | [P1-3.md](./P1-3.md) |
-| P1-4 | TimingCalculator 実装 | impl | todo | P1-1 | [P1-4.md](./P1-4.md) |
-| T1-1 | TimingCalculator 基本計算テスト | test | todo | P1-4 | [T1-1.md](./T1-1.md) |
-| T1-2 | 特殊トークンスキップテスト | test | todo | P1-4 | [T1-2.md](./T1-2.md) |
-| T1-3 | PUA 逆引きテスト | test | todo | P1-4 | [T1-3.md](./T1-3.md) |
-| T1-4 | エッジケーステスト | test | todo | P1-4 | [T1-4.md](./T1-4.md) |
-| T1-5 | PhonemeTimingEntry 構造テスト | test | todo | P1-1 | [T1-5.md](./T1-5.md) |
+| P1-1 | PhonemeTimingEntry 定義 | impl | done | - | [P1-1.md](./P1-1.md) |
+| P1-2 | InferenceOutput 定義 | impl | done | - | [P1-2.md](./P1-2.md) |
+| P1-3 | SynthesisWithTimingResult 定義 | impl | done | P1-1 | [P1-3.md](./P1-3.md) |
+| P1-4 | TimingCalculator 実装 | impl | done | P1-1 | [P1-4.md](./P1-4.md) |
+| T1-1 | TimingCalculator 基本計算テスト | test | done | P1-4 | [T1-1.md](./T1-1.md) |
+| T1-2 | 特殊トークンスキップテスト | test | done | P1-4 | [T1-2.md](./T1-2.md) |
+| T1-3 | PUA 逆引きテスト | test | done | P1-4 | [T1-3.md](./T1-3.md) |
+| T1-4 | エッジケーステスト | test | done | P1-4 | [T1-4.md](./T1-4.md) |
+| T1-5 | PhonemeTimingEntry 構造テスト | test | done | P1-1 | [T1-5.md](./T1-5.md) |
 
 ## Phase 2: 推論レイヤー
 
