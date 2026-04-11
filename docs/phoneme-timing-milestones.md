@@ -2,6 +2,7 @@
 
 **作成日**: 2026-04-11
 **参照**: `phoneme-timing-spec.md`, `phoneme-timing-investigation.md`, `phoneme-timing-requirements.md`
+**チケット一覧**: [tickets/index.md](./tickets/index.md)
 
 ---
 
@@ -22,7 +23,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 
 ### 実装タスク
 
-#### P1-1: PhonemeTimingEntry 定義
+#### P1-1: PhonemeTimingEntry 定義 ([ticket](./tickets/P1-1.md))
 
 - **新規**: `Assets/uPiper/Runtime/Core/AudioGeneration/PhonemeTimingResult.cs`
 - **内容**:
@@ -32,7 +33,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 - **依存**: なし
 - **完了条件**: コンパイル通過、readonly struct として定義済み
 
-#### P1-2: InferenceOutput 定義
+#### P1-2: InferenceOutput 定義 ([ticket](./tickets/P1-2.md))
 
 - **新規**: `Assets/uPiper/Runtime/Core/AudioGeneration/InferenceOutput.cs`
 - **内容**:
@@ -43,7 +44,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 - **依存**: なし
 - **完了条件**: コンパイル通過、IDisposable パターン実装
 
-#### P1-3: SynthesisWithTimingResult 定義
+#### P1-3: SynthesisWithTimingResult 定義 ([ticket](./tickets/P1-3.md))
 
 - **新規**: `Assets/uPiper/Runtime/Core/AudioGeneration/SynthesisWithTimingResult.cs`
 - **内容**:
@@ -53,7 +54,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 - **依存**: P1-1
 - **完了条件**: コンパイル通過
 
-#### P1-4: TimingCalculator 実装
+#### P1-4: TimingCalculator 実装 ([ticket](./tickets/P1-4.md))
 
 - **新規**: `Assets/uPiper/Runtime/Core/AudioGeneration/TimingCalculator.cs`
 - **内容**:
@@ -69,33 +70,33 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 
 ### テストタスク
 
-#### T1-1: TimingCalculator 基本計算テスト
+#### T1-1: TimingCalculator 基本計算テスト ([ticket](./tickets/T1-1.md))
 
 - **新規**: `Assets/uPiper/Tests/Editor/AudioGeneration/TimingCalculatorTests.cs`
 - **検証**: durations `[10.0, 5.0]` × `frameLength` で `startSeconds`/`endSeconds` が正確
 - **依存**: P1-4
 - **完了条件**: piper-plus TimingWriterTests と同等の精度検証パス
 
-#### T1-2: 特殊トークンスキップテスト
+#### T1-2: 特殊トークンスキップテスト ([ticket](./tickets/T1-2.md))
 
 - **ファイル**: 同上
 - **検証**: PAD(0), BOS(1), EOS(2) がエントリ生成せず時間のみ進行
 - **依存**: P1-4
 
-#### T1-3: PUA 逆引きテスト
+#### T1-3: PUA 逆引きテスト ([ticket](./tickets/T1-3.md))
 
 - **ファイル**: 同上
 - **検証**: PUA 文字 `\uE000` → `"a:"` 等、未知 ID → `"?"` フォールバック
 - **依存**: P1-4
 
-#### T1-4: エッジケーステスト
+#### T1-4: エッジケーステスト ([ticket](./tickets/T1-4.md))
 
 - **ファイル**: 同上
 - **検証**: 空入力、null 入力、長さ不一致、負 durations、sampleRate/hopSize == 0
 - **依存**: P1-4
 - **完了条件**: 全エッジケース(E2-E8)で例外またはグレースフル動作
 
-#### T1-5: PhonemeTimingEntry 構造テスト
+#### T1-5: PhonemeTimingEntry 構造テスト ([ticket](./tickets/T1-5.md))
 
 - **ファイル**: 同上
 - **検証**: readonly struct の値一致、`DurationSeconds == EndSeconds - StartSeconds`
@@ -115,7 +116,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 
 ### 実装タスク
 
-#### P2-1: IInferenceAudioGenerator 戻り値型変更
+#### P2-1: IInferenceAudioGenerator 戻り値型変更 ([ticket](./tickets/P2-1.md))
 
 - **変更**: `Assets/uPiper/Runtime/Core/AudioGeneration/IInferenceAudioGenerator.cs` (L47)
 - **内容**:
@@ -124,7 +125,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 - **依存**: P1-2
 - **完了条件**: インターフェース変更済み（コンパイルエラーは後続タスクで解消）
 
-#### P2-2: InferenceAudioGenerator durations 読み取り
+#### P2-2: InferenceAudioGenerator durations 読み取り ([ticket](./tickets/P2-2.md))
 
 - **変更**: `Assets/uPiper/Runtime/Core/AudioGeneration/InferenceAudioGenerator.cs`
 - **内容**:
@@ -140,7 +141,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 - **依存**: P2-1
 - **完了条件**: durations あり/なしモデル両方で正常動作
 
-#### P2-3: ShortTextMitigatingGenerator 追従
+#### P2-3: ShortTextMitigatingGenerator 追従 ([ticket](./tickets/P2-3.md))
 
 - **変更**: `Assets/uPiper/Runtime/Core/AudioGeneration/ShortTextMitigatingGenerator.cs` (L53-92)
 - **内容**:
@@ -151,7 +152,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 - **依存**: P2-1, P2-2
 - **完了条件**: 短テキスト（phonemeIds < 40）で元の音素数と一致する durations が返却
 
-#### P2-4: StubInferenceAudioGenerator durations 対応
+#### P2-4: StubInferenceAudioGenerator durations 対応 ([ticket](./tickets/P2-4.md))
 
 - **変更**: `Assets/uPiper/Tests/Editor/AudioGeneration/StubInferenceAudioGenerator.cs`
 - **内容**:
@@ -163,14 +164,14 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 
 ### テストタスク
 
-#### T2-1: ShortTextMitigatingGenerator PAD 除去テスト
+#### T2-1: ShortTextMitigatingGenerator PAD 除去テスト ([ticket](./tickets/T2-1.md))
 
 - **新規**: `Assets/uPiper/Tests/Editor/AudioGeneration/ShortTextMitigatingGeneratorTimingTests.cs`
 - **検証**: パディング 5→40 のケースで durations 要素が正しくフィルタされ、除去後エントリ数 == 元の実音素数
 - **依存**: P2-3, P2-4
 - **完了条件**: パディング挿入/除去の往復で音素対応が維持
 
-#### T2-2: InferenceOutput Dispose テスト
+#### T2-2: InferenceOutput Dispose テスト ([ticket](./tickets/T2-2.md))
 
 - **新規**: `Assets/uPiper/Tests/Editor/AudioGeneration/InferenceOutputTests.cs`
 - **検証**: Audio/Durations 両方の NativeArray が Dispose される。Durations 未作成時も安全に Dispose
@@ -192,7 +193,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 
 ### 実装タスク
 
-#### P3-1: SplitInferenceOrchestrator durations 結合
+#### P3-1: SplitInferenceOrchestrator durations 結合 ([ticket](./tickets/P3-1.md))
 
 - **変更**: `Assets/uPiper/Runtime/Core/AudioGeneration/SplitInferenceOrchestrator.cs`, `ISplitInferenceOrchestrator.cs`
 - **内容**:
@@ -204,7 +205,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 - **依存**: P2-1, P2-3
 - **完了条件**: 2句以上の入力で、結合後の durations 長が各句の合計と一致
 
-#### P3-2: TTSSynthesisOrchestrator タイミング計算統合
+#### P3-2: TTSSynthesisOrchestrator タイミング計算統合 ([ticket](./tickets/P3-2.md))
 
 - **変更**: `Assets/uPiper/Runtime/Core/AudioGeneration/TTSSynthesisOrchestrator.cs`
 - **内容**:
@@ -219,7 +220,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 - **依存**: P1-4, P3-1
 - **完了条件**: タイミング付き合成で `Timings` が非 null、既存 `SynthesizeAsync` が AudioClip のみ返却
 
-#### P3-3: AudioSynthesisCache タイミング格納拡張
+#### P3-3: AudioSynthesisCache タイミング格納拡張 ([ticket](./tickets/P3-3.md))
 
 - **変更**: `Assets/uPiper/Runtime/Core/AudioGeneration/AudioSynthesisCache.cs`
 - **内容**:
@@ -233,19 +234,19 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 
 ### テストタスク
 
-#### T3-1: SplitInferenceOrchestrator 句分割タイミングテスト
+#### T3-1: SplitInferenceOrchestrator 句分割タイミングテスト ([ticket](./tickets/T3-1.md))
 
 - **変更**: `Assets/uPiper/Tests/Editor/AudioGeneration/SplitInferenceOrchestratorTests.cs`
 - **検証**: 2句分の `InferenceOutput` を Stub で返し、結合後の Audio.Length と Durations.Length を検証。句間無音オフセットが累積
 - **依存**: P3-1, P2-4
 
-#### T3-2: AudioSynthesisCache タイミング格納テスト
+#### T3-2: AudioSynthesisCache タイミング格納テスト ([ticket](./tickets/T3-2.md))
 
 - **変更**: `Assets/uPiper/Tests/Editor/AudioGeneration/AudioSynthesisCacheTests.cs`
 - **検証**: `Set`(with timings) → `TryGet` で timings が復元されること
 - **依存**: P3-3
 
-#### T3-3: durations 非対応モデルテスト
+#### T3-3: durations 非対応モデルテスト ([ticket](./tickets/T3-3.md))
 
 - **変更**: `Assets/uPiper/Tests/Editor/AudioGeneration/TTSSynthesisOrchestratorTests.cs`
 - **検証**: Stub の Durations を `default` にして `Timings == null`、例外なし
@@ -267,7 +268,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 
 ### 実装タスク
 
-#### P4-1: IPiperTTS インターフェース拡張
+#### P4-1: IPiperTTS インターフェース拡張 ([ticket](./tickets/P4-1.md))
 
 - **変更**: `Assets/uPiper/Runtime/Core/IPiperTTS.cs`
 - **内容**:
@@ -277,7 +278,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 - **依存**: P1-3
 - **完了条件**: インターフェースがコンパイル通過
 
-#### P4-2: PiperTTS.Inference.cs 実装
+#### P4-2: PiperTTS.Inference.cs 実装 ([ticket](./tickets/P4-2.md))
 
 - **変更**: `Assets/uPiper/Runtime/Core/PiperTTS.Inference.cs`
 - **内容**:
@@ -289,7 +290,7 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
 
 ### テストタスク
 
-#### T4-1: 統合テスト — タイミング付き合成
+#### T4-1: 統合テスト — タイミング付き合成 ([ticket](./tickets/T4-1.md))
 
 - **新規**: `Assets/uPiper/Tests/Editor/PiperTTSSynthesizeWithTimingTests.cs`
 - **検証**:
@@ -297,25 +298,25 @@ Phase 4: 公開API             ← Phase 1, 2, 3 に依存
   - `StartSeconds` / `EndSeconds` の値が妥当
 - **依存**: P4-2, P2-4
 
-#### T4-2: 統合テスト — タイミング精度
+#### T4-2: 統合テスト — タイミング精度 ([ticket](./tickets/T4-2.md))
 
 - **ファイル**: 同上
 - **検証**: 最終エントリの `EndSeconds` と `AudioClip.length` の差が 50ms 以内
 - **依存**: P4-2
 
-#### T4-3: 統合テスト — キャッシュ整合
+#### T4-3: 統合テスト — キャッシュ整合 ([ticket](./tickets/T4-3.md))
 
 - **ファイル**: 同上
 - **検証**: 1回目 miss → 2回目 hit でタイミングが同一
 - **依存**: P4-2, P3-3
 
-#### T4-4: 統合テスト — durations 非対応
+#### T4-4: 統合テスト — durations 非対応 ([ticket](./tickets/T4-4.md))
 
 - **ファイル**: 同上
 - **検証**: Stub の Durations を `default` にして `Timings == null`、例外なし
 - **依存**: P4-2
 
-#### T4-5: リグレッションテスト
+#### T4-5: リグレッションテスト ([ticket](./tickets/T4-5.md))
 
 - **ファイル**: 既存テスト全体
 - **検証**: 既存の `SynthesizeAsync` / `GenerateAudioAsync` の動作に変更がないこと
