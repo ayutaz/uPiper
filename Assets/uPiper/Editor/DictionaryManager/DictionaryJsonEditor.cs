@@ -11,7 +11,7 @@ namespace uPiper.Editor.DictionaryManager
     /// Editor専用の辞書JSONファイル読み書きヘルパー。
     /// Newtonsoft.Jsonを使わず手動パース（CustomDictionaryの既存パターンに合わせる）。
     /// </summary>
-    internal static class DictionaryJsonEditor
+    public static class DictionaryJsonEditor
     {
         /// <summary>
         /// 辞書ファイルの最大サイズ（10MB）

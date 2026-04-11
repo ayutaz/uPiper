@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using NUnit.Framework;
 using uPiper.Core;
 
@@ -22,11 +21,11 @@ namespace uPiper.Tests.Editor
         }
 
         [Test]
-        public async Task InitializeAsync_NonIOSPlatform_DoesNotThrowFromPlatformInit()
+        public void InitializeAsync_NonIOSPlatform_DoesNotThrowFromPlatformInit()
         {
             using var tts = new PiperTTS(_config);
 
-            var ex = await Assert.ThrowsAsync<PiperException>(
+            var ex = Assert.ThrowsAsync<PiperException>(
                 async () => await tts.InitializeAsync());
 
             Assert.That(ex.InnerException,
@@ -38,11 +37,11 @@ namespace uPiper.Tests.Editor
         }
 
         [Test]
-        public async Task InitializeAsync_FailsAtExpectedPoint_NotAtPlatformAudioSession()
+        public void InitializeAsync_FailsAtExpectedPoint_NotAtPlatformAudioSession()
         {
             using var tts = new PiperTTS(_config);
 
-            var ex = await Assert.ThrowsAsync<PiperException>(
+            var ex = Assert.ThrowsAsync<PiperException>(
                 async () => await tts.InitializeAsync());
 
             StringAssert.DoesNotContain("AVAudioSession", ex.Message);
@@ -50,14 +49,14 @@ namespace uPiper.Tests.Editor
         }
 
         [Test]
-        public async Task InitializeAsync_CalledTwice_SecondCallIsSafe()
+        public void InitializeAsync_CalledTwice_SecondCallIsSafe()
         {
             using var tts = new PiperTTS(_config);
 
-            await Assert.ThrowsAsync<PiperException>(
+            Assert.ThrowsAsync<PiperException>(
                 async () => await tts.InitializeAsync());
 
-            await Assert.ThrowsAsync<PiperException>(
+            Assert.ThrowsAsync<PiperException>(
                 async () => await tts.InitializeAsync());
         }
     }

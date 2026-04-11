@@ -270,7 +270,7 @@ namespace uPiper.Core
                                 $"[MultilingualTTS] Detected language '{detectedLang}' is not in " +
                                 $"model's LanguageIdMap. Falling back to lid={resolvedLanguageId}. " +
                                 $"Supported languages: " +
-                                $"{string.Join(", ", _currentVoiceConfig?.LanguageIdMap?.Keys ?? Array.Empty<string>())}");
+                                $"{(_currentVoiceConfig?.LanguageIdMap != null ? string.Join(", ", _currentVoiceConfig.LanguageIdMap.Keys) : "none")}");
                         }
                     }
                 }
