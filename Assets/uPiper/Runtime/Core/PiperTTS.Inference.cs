@@ -5,6 +5,7 @@ using Unity.InferenceEngine;
 using UnityEngine;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Logging;
+using uPiper.Core.Phonemizers.Implementations;
 
 namespace uPiper.Core
 {
@@ -21,6 +22,7 @@ namespace uPiper.Core
         private ModelAsset _currentModelAsset;
         private PiperVoiceConfig _currentVoiceConfig;
         private Phonemizers.Multilingual.MultilingualPhonemizer _multilingualPhonemizer;
+        private AudioSynthesisCache _audioSynthesisCache;
 
         /// <summary>
         /// Unity.InferenceEngineモデルを使用してTTSを初期化する
@@ -46,6 +48,17 @@ namespace uPiper.Core
             {
                 PiperLogger.LogDebug($"Initializing PiperTTS with Inference model: {modelAsset.name}");
 
+                // Skip validation and platform init if already initialized
+                // (e.g., when called from LoadDefaultVoiceAsync after InitializeAsync)
+                if (!_isInitialized)
+                {
+                    var validationResult = InitializationValidator.ValidateForInference(
+                        _config, (object)modelAsset, voiceConfig);
+                    HandleValidationResult(validationResult);
+
+                    InitializePlatformAudioSession();
+                }
+
                 // 既存のリソースをクリーンアップ
                 DisposeInferenceResources();
 
@@ -60,7 +73,7 @@ namespace uPiper.Core
                 _audioClipBuilder = new AudioClipBuilder();
                 _orchestrator = new TTSSynthesisOrchestrator(
                     mitigatingGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
-                    _validatedConfig, voiceConfig);
+                    _validatedConfig, voiceConfig, _audioSynthesisCache);
                 _currentModelAsset = modelAsset;
 
                 // Inferenceジェネレーターを初期化
@@ -91,9 +104,14 @@ namespace uPiper.Core
                         Languages = supportedLanguages,
                         DefaultLatinLanguage = _config.DefaultLanguage ?? "en",
                         Handlers = handlers,
+                        FallbackLanguage = _config.FallbackLanguage,
                     };
                     _multilingualPhonemizer = new Phonemizers.Multilingual.MultilingualPhonemizer(phonemizerOptions);
                     await _multilingualPhonemizer.InitializeAsync(cancellationToken);
+                    _multilingualPhonemizer.OnUnsupportedLanguage = args =>
+                    {
+                        _onUnsupportedLanguageDetected?.Invoke(args);
+                    };
                 }
 
                 _isInitialized = true;
@@ -101,6 +119,10 @@ namespace uPiper.Core
                 _onInitialized?.Invoke(true);
 
                 PiperLogger.LogInfo($"PiperTTS initialized with Inference model: {modelAsset.name}");
+            }
+            catch (PiperException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -238,7 +260,17 @@ namespace uPiper.Core
                             _currentVoiceConfig.LanguageIdMap.TryGetValue(detectedLang, out var detectedId))
                         {
                             resolvedLanguageId = detectedId;
-                            PiperLogger.LogDebug($"[MultilingualTTS] Resolved language '{detectedLang}' → lid={resolvedLanguageId}");
+                            PiperLogger.LogDebug(
+                                $"[MultilingualTTS] Resolved language '{detectedLang}' → lid={resolvedLanguageId}");
+                        }
+                        else
+                        {
+                            resolvedLanguageId = ResolveLanguageId(detectedLang);
+                            PiperLogger.LogWarning(
+                                $"[MultilingualTTS] Detected language '{detectedLang}' is not in " +
+                                $"model's LanguageIdMap. Falling back to lid={resolvedLanguageId}. " +
+                                $"Supported languages: " +
+                                $"{(_currentVoiceConfig?.LanguageIdMap != null ? string.Join(", ", _currentVoiceConfig.LanguageIdMap.Keys) : "none")}");
                         }
                     }
                 }
@@ -343,6 +375,13 @@ namespace uPiper.Core
                     {
                         resolvedLanguageId = detectedId;
                     }
+                    else
+                    {
+                        resolvedLanguageId = ResolveLanguageId(detectedLang);
+                        PiperLogger.LogWarning(
+                            $"[PhonemizeAsync] Detected language '{detectedLang}' is not in " +
+                            $"model's LanguageIdMap. Falling back to lid={resolvedLanguageId}.");
+                    }
                 }
 
                 return new PhonemizeResult(
@@ -352,11 +391,33 @@ namespace uPiper.Core
                     resolvedLanguageId);
             }
 
-            // フォールバック: 通常の音素化
+            // フォールバック: 通常の音素化（Prosody抽出付き）
+            if (_inferenceGenerator != null && _inferenceGenerator.SupportsProsody
+                && _phonemizer is DotNetG2PPhonemizer g2pPhonemizer)
+            {
+                var prosodyResult = g2pPhonemizer.PhonemizeWithProsody(text);
+                var a1 = prosodyResult.ProsodyA1 ?? Array.Empty<int>();
+                var a2 = prosodyResult.ProsodyA2 ?? Array.Empty<int>();
+                var a3 = prosodyResult.ProsodyA3 ?? Array.Empty<int>();
+                var prosodyFlat = PhonemeEncoder.FlattenProsody(
+                    a1, a2, a3, prosodyResult.Phonemes?.Length ?? 0);
+
+                return new PhonemizeResult(
+                    prosodyResult.Phonemes,
+                    prosodyFlat,
+                    "ja",
+                    0);
+            }
+
             var phonemeResult = await GetPhonemesAsync(text, cancellationToken);
+            // PhonemeResult default constructor sets ProsodyFlat to empty array;
+            // treat empty array as "no prosody" by passing null.
+            var resultProsody = phonemeResult?.ProsodyFlat is { Length: > 0 }
+                ? phonemeResult.ProsodyFlat
+                : null;
             return new PhonemizeResult(
                 phonemeResult?.Phonemes,
-                phonemeResult?.ProsodyFlat,
+                resultProsody,
                 phonemeResult?.Language ?? "ja",
                 0);
         }

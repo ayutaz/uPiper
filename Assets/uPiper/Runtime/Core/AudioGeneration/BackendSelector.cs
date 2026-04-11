@@ -167,6 +167,69 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
+        /// バックエンド選択結果のサマリログを出力する。
+        /// InitializeAsync完了後に呼び出すことで、選択理由を一元的に確認できる。
+        /// </summary>
+        public static void LogSelectionSummary(
+            InferenceBackend requested,
+            BackendType actual,
+            PlatformInfo platform)
+        {
+            PiperLogger.LogInfo(
+                "[BackendSelector] Selection Summary: Requested={0}, Actual={1}, " +
+                "Graphics={2}, ComputeShaders={3}, VRAM={4}MB",
+                requested, actual,
+                platform.GraphicsDeviceType,
+                platform.SupportsComputeShaders,
+                platform.GraphicsMemorySize);
+
+            if (requested == InferenceBackend.Auto)
+            {
+                PiperLogger.LogInfo("[BackendSelector] Auto-selection reason: {0}",
+                    GetAutoSelectionReason(actual, platform));
+            }
+            else if (IsBackendOverridden(requested, actual))
+            {
+                PiperLogger.LogWarning(
+                    "[BackendSelector] Backend was overridden from {0} to {1} " +
+                    "due to platform constraints",
+                    requested, actual);
+            }
+        }
+
+        private static string GetAutoSelectionReason(
+            BackendType actual, PlatformInfo platform)
+        {
+            if (platform.GraphicsDeviceType == GraphicsDeviceType.Metal)
+                return "Metal detected — GPU backends have known shader compilation issues";
+            if (platform.IsWebGL && platform.IsWebGPU
+                && actual == BackendType.GPUCompute)
+                return "WebGPU supports compute shaders natively";
+            if (platform.IsWebGL && !platform.IsWebGPU
+                && actual == BackendType.GPUPixel)
+                return "WebGL2 uses GPUPixel for VITS compatibility";
+            if (platform.IsMobile && actual == BackendType.GPUPixel)
+                return "Mobile with compute shader support — GPUPixel preferred for VITS";
+            if (platform.IsMobile && actual == BackendType.CPU)
+                return "Mobile without compute shader support";
+            if (actual == BackendType.GPUPixel)
+                return $"Desktop with compute shaders and {platform.GraphicsMemorySize}MB VRAM";
+            return "Desktop fallback to CPU";
+        }
+
+        private static bool IsBackendOverridden(
+            InferenceBackend requested, BackendType actual)
+        {
+            return requested switch
+            {
+                InferenceBackend.GPUCompute => actual != BackendType.GPUCompute,
+                InferenceBackend.GPUPixel => actual != BackendType.GPUPixel,
+                InferenceBackend.CPU => actual != BackendType.CPU,
+                _ => false
+            };
+        }
+
+        /// <summary>
         /// Auto選択時のバックエンド決定ロジック。
         /// </summary>
         private static BackendType DetermineAutoBackend(

@@ -46,14 +46,30 @@ namespace uPiper.Core.Phonemizers.Multilingual
         private readonly string _defaultLatinLanguage;
         private readonly bool _enableTrigramDetection;
         private readonly ILanguageDetector _customDetector;
+        private readonly string _fallbackLanguage;
         private volatile bool _isInitialized;
+        private volatile bool _isTrigramDetectionActive;
         private bool _disposed;
 
         /// <summary>Whether the phonemizer has been initialized.</summary>
         public bool IsInitialized => _isInitialized;
 
+        /// <summary>
+        /// Whether trigram-based language detection is currently active.
+        /// Returns true only after <see cref="InitializeAsync"/> completes successfully
+        /// and trigram profiles were loaded. When false, Latin-script language detection
+        /// falls back to the default language (typically "en").
+        /// </summary>
+        public bool IsTrigramDetectionActive => _isTrigramDetectionActive;
+
         /// <summary>Supported language codes.</summary>
         public IReadOnlyList<string> Languages => _languages;
+
+        /// <summary>
+        /// Callback invoked when an unsupported language is detected during phonemization.
+        /// Set by PiperTTS to bubble the event up to the public API.
+        /// </summary>
+        internal Action<UnsupportedLanguageEventArgs> OnUnsupportedLanguage { get; set; }
 
         /// <summary>
         /// Creates a MultilingualPhonemizer using an options object.
@@ -70,6 +86,9 @@ namespace uPiper.Core.Phonemizers.Multilingual
             _defaultLatinLanguage = options.DefaultLatinLanguage ?? "en";
             _enableTrigramDetection = options.EnableTrigramDetection;
             _customDetector = options.LanguageDetector;
+            _fallbackLanguage = string.IsNullOrWhiteSpace(options.FallbackLanguage)
+                ? null
+                : options.FallbackLanguage;
 
             // Detector will be resolved in InitializeAsync().
             // Use the custom detector if provided, otherwise default to UnicodeLanguageDetector.
@@ -136,7 +155,10 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 }
 
                 _isInitialized = true;
-                PiperLogger.LogInfo($"[MultilingualPhonemizer] Initialized for languages: [{string.Join(", ", _languages)}]");
+                var detectorType = _isTrigramDetectionActive ? "Hybrid (Unicode + Trigram)" : "Unicode-only";
+                PiperLogger.LogInfo(
+                    $"[MultilingualPhonemizer] Initialized for languages: [{string.Join(", ", _languages)}], " +
+                    $"detector: {detectorType}");
             }
             finally
             {
@@ -225,23 +247,40 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 string[] segPhonemes = null;
                 int[] segProsodyFlat = null;
 
-                if (_handlers.TryGetValue(lang, out var entry))
+                if (_handlers.TryGetValue(lang, out var entry) && entry.Handler != null)
                 {
-                    if (entry.Handler == null)
-                    {
-                        PiperLogger.LogWarning(
-                            $"[MultilingualPhonemizer] Null handler for '{lang}', " +
-                            $"skipping segment.");
-                        continue;
-                    }
                     (segPhonemes, segProsodyFlat) = entry.Handler.Process(segText);
                     segProsodyFlat ??= Array.Empty<int>();
                 }
                 else
                 {
-                    PiperLogger.LogWarning(
-                        $"[MultilingualPhonemizer] Unsupported language '{lang}', skipping segment: \"{segText}\"");
-                    continue;
+                    var fallbackUsed = false;
+                    if (_fallbackLanguage != null
+                        && _fallbackLanguage != lang
+                        && _handlers.TryGetValue(_fallbackLanguage, out var fallbackEntry)
+                        && fallbackEntry.Handler != null)
+                    {
+                        PiperLogger.LogWarning(
+                            $"[MultilingualPhonemizer] Unsupported language '{lang}', " +
+                            $"using fallback language '{_fallbackLanguage}' for segment: \"{segText}\"");
+                        (segPhonemes, segProsodyFlat) = fallbackEntry.Handler.Process(segText);
+                        segProsodyFlat ??= Array.Empty<int>();
+                        fallbackUsed = true;
+                    }
+                    else
+                    {
+                        PiperLogger.LogWarning(
+                            $"[MultilingualPhonemizer] Unsupported language '{lang}', " +
+                            $"skipping segment: \"{segText}\"");
+                    }
+
+                    OnUnsupportedLanguage?.Invoke(
+                        new UnsupportedLanguageEventArgs(
+                            lang, segText, _languages,
+                            fallbackUsed ? _fallbackLanguage : null));
+
+                    if (!fallbackUsed)
+                        continue;
                 }
 
                 if (segPhonemes.Length == 0)
@@ -296,6 +335,7 @@ namespace uPiper.Core.Phonemizers.Multilingual
             if (_disposed)
                 return;
             _disposed = true;
+            _isTrigramDetectionActive = false;
 
             // Dispose order matters: handlers first, then _initLock last.
             // _initLock must outlive handler disposal because a concurrent InitializeAsync()
@@ -330,9 +370,10 @@ namespace uPiper.Core.Phonemizers.Multilingual
 
             if (latinCount < 2)
             {
-                PiperLogger.LogDebug(
-                    "[MultilingualPhonemizer] Trigram detection skipped: " +
-                    $"only {latinCount} Latin language(s) configured.");
+                PiperLogger.LogInfo(
+                    "[MultilingualPhonemizer] Trigram detection not needed: " +
+                    $"only {latinCount} Latin language(s) configured " +
+                    "(requires 2+ for disambiguation). Using Unicode-only detection.");
                 return;
             }
 
@@ -342,8 +383,11 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 if (profiles == null || profiles.Count == 0)
                 {
                     PiperLogger.LogWarning(
-                        "[MultilingualPhonemizer] Trigram profiles not found. " +
-                        "Falling back to Unicode-only detection.");
+                        "[MultilingualPhonemizer] Trigram profiles not found at " +
+                        "StreamingAssets/uPiper/LanguageProfiles/trigram_profiles.json. " +
+                        "Falling back to Unicode-only detection. " +
+                        "All Latin-script text will be treated as the default language. " +
+                        "To enable Latin language disambiguation, ensure the trigram profiles file exists.");
                     return;
                 }
 
@@ -354,15 +398,19 @@ namespace uPiper.Core.Phonemizers.Multilingual
                 _detector = new HybridLanguageDetector(
                     unicodeDetector, trigramDetector, _languages, _defaultLatinLanguage);
 
+                _isTrigramDetectionActive = true;
                 PiperLogger.LogInfo(
                     "[MultilingualPhonemizer] Upgraded to HybridLanguageDetector " +
-                    $"with {profiles.Count} language profile(s).");
+                    $"with {profiles.Count} language profile(s): " +
+                    $"[{string.Join(", ", profiles.Keys)}]. " +
+                    "Latin-script language disambiguation is now active.");
             }
             catch (Exception ex)
             {
                 PiperLogger.LogWarning(
                     "[MultilingualPhonemizer] Failed to load trigram profiles: " +
-                    $"{ex.Message}. Falling back to Unicode-only detection.");
+                    $"{ex.Message}. Falling back to Unicode-only detection. " +
+                    "Latin-script language disambiguation will not be available.");
             }
         }
     }

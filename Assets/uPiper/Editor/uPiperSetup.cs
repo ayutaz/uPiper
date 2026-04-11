@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-
-#if UPIPER_DEVELOPMENT
-using System.IO.Compression;
-#endif
 
 namespace uPiper.Editor
 {
@@ -30,9 +27,11 @@ namespace uPiper.Editor
         [InitializeOnLoadMethod]
         private static void CheckFirstTimeSetup()
         {
+            // Auto-extract dictionary zips on every Editor startup (independent of UPIPER_DEVELOPMENT)
+            EditorApplication.delayCall += AutoExtractDictionaryZips;
+
 #if UPIPER_DEVELOPMENT
-            // Development environment: auto-extract dictionary from zip
-            EditorApplication.delayCall += ExtractDevelopmentDictionary;
+            // Development-only: no additional setup wizard needed
 #else
             EditorApplication.delayCall += () =>
             {
@@ -576,49 +575,101 @@ namespace uPiper.Editor
             return false;
         }
 
-#if UPIPER_DEVELOPMENT
         /// <summary>
-        /// Automatically extracts the OpenJTalk dictionary from zip file for development environment.
-        /// Called on Editor startup when UPIPER_DEVELOPMENT is defined.
+        /// Automatically extracts dictionary zip files on Editor startup.
+        /// Scans StreamingAssets/uPiper/ for known zip files and extracts them
+        /// if the target directory does not already exist.
+        /// Independent of UPIPER_DEVELOPMENT symbol.
         /// </summary>
-        private static void ExtractDevelopmentDictionary()
+        private static void AutoExtractDictionaryZips()
         {
-            var zipPath = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "naist_jdic.zip");
-            var extractBasePath = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper", "OpenJTalk", "naist_jdic");
-            var extractPath = Path.Combine(extractBasePath, "open_jtalk_dic_utf_8-1.11");
-
-            // Skip if zip doesn't exist or dictionary already extracted
-            if (!File.Exists(zipPath))
+            var upiperStreamingAssets = Path.Combine(Application.dataPath, "StreamingAssets", "uPiper");
+            if (!Directory.Exists(upiperStreamingAssets))
             {
                 return;
             }
 
-            if (Directory.Exists(extractPath))
+            // Known zip → extraction target mappings
+            // Each entry: (zipPath, extractionTargetDirectory)
+            var zipTargets = new (string zipPath, string extractPath)[]
             {
-                return;
+                (
+                    Path.Combine(upiperStreamingAssets, "OpenJTalk", "naist_jdic.zip"),
+                    Path.Combine(upiperStreamingAssets, "OpenJTalk", "naist_jdic", "open_jtalk_dic_utf_8-1.11")
+                ),
+            };
+
+            var extractedAny = false;
+
+            foreach (var (zipPath, extractPath) in zipTargets)
+            {
+                if (!File.Exists(zipPath))
+                {
+                    continue;
+                }
+
+                if (Directory.Exists(extractPath))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    Debug.Log($"[uPiper] Auto-extracting dictionary files from {Path.GetFileName(zipPath)}...");
+
+                    var extractBasePath = Path.GetDirectoryName(extractPath);
+                    Directory.CreateDirectory(extractBasePath);
+
+                    SafeExtractToDirectory(zipPath, extractPath);
+
+                    Debug.Log($"[uPiper] Dictionary extracted successfully to: {extractPath}");
+                    extractedAny = true;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning(
+                        $"[uPiper] Failed to auto-extract {Path.GetFileName(zipPath)}: {ex.Message}");
+                }
             }
 
-            try
+            if (extractedAny)
             {
-                Debug.Log("[uPiper] Extracting development dictionary from zip...");
-
-                // Create base directory
-                Directory.CreateDirectory(extractBasePath);
-
-                // Extract to target path
-                SafeExtractToDirectory(zipPath, extractPath);
-
-                Debug.Log($"[uPiper] Development dictionary extracted successfully to: {extractPath}");
-
-                // Refresh AssetDatabase to recognize new files
                 AssetDatabase.Refresh();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[uPiper] Failed to extract development dictionary: {ex.Message}\n{ex.StackTrace}");
             }
         }
 
+        /// <summary>
+        /// Safely extracts a zip file, validating that no entries escape the target directory.
+        /// </summary>
+        private static void SafeExtractToDirectory(string zipPath, string destinationPath)
+        {
+            var fullDestination = Path.GetFullPath(destinationPath);
+            Directory.CreateDirectory(fullDestination);
+
+            using var archive = ZipFile.OpenRead(zipPath);
+            foreach (var entry in archive.Entries)
+            {
+                var entryDestination = Path.GetFullPath(Path.Combine(fullDestination, entry.FullName));
+                if (!entryDestination.StartsWith(fullDestination + Path.DirectorySeparatorChar)
+                    && entryDestination != fullDestination)
+                {
+                    throw new IOException(
+                        $"Zip entry '{entry.FullName}' would extract outside target directory.");
+                }
+
+                if (string.IsNullOrEmpty(entry.Name))
+                {
+                    Directory.CreateDirectory(entryDestination);
+                }
+                else
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(entryDestination));
+                    entry.ExtractToFile(entryDestination, true);
+                }
+            }
+        }
+
+#if UPIPER_DEVELOPMENT
         /// <summary>
         /// Manual menu item to extract or re-extract the OpenJTalk dictionary from zip.
         /// </summary>
@@ -687,36 +738,6 @@ namespace uPiper.Editor
                     $"Failed to extract dictionary:\n{ex.Message}",
                     "OK");
                 Debug.LogError($"[uPiper] Failed to extract dictionary: {ex.Message}\n{ex.StackTrace}");
-            }
-        }
-
-        /// <summary>
-        /// Safely extracts a zip file, validating that no entries escape the target directory.
-        /// </summary>
-        private static void SafeExtractToDirectory(string zipPath, string destinationPath)
-        {
-            var fullDestination = Path.GetFullPath(destinationPath);
-            Directory.CreateDirectory(fullDestination);
-
-            using var archive = ZipFile.OpenRead(zipPath);
-            foreach (var entry in archive.Entries)
-            {
-                var entryDestination = Path.GetFullPath(Path.Combine(fullDestination, entry.FullName));
-                if (!entryDestination.StartsWith(fullDestination + Path.DirectorySeparatorChar)
-                    && entryDestination != fullDestination)
-                {
-                    throw new IOException($"Zip entry '{entry.FullName}' would extract outside target directory.");
-                }
-
-                if (string.IsNullOrEmpty(entry.Name))
-                {
-                    Directory.CreateDirectory(entryDestination);
-                }
-                else
-                {
-                    Directory.CreateDirectory(Path.GetDirectoryName(entryDestination));
-                    entry.ExtractToFile(entryDestination, true);
-                }
             }
         }
 #endif

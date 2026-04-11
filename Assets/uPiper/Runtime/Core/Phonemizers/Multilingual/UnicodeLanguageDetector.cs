@@ -139,6 +139,13 @@ namespace uPiper.Core.Phonemizers.Multilingual
         // ── Instance methods ──────────────────────────────────────────────────
 
         /// <summary>
+        /// Half-width of the local context window used for segment-level CJK disambiguation.
+        /// When both ja and zh are supported, CJK characters check for kana within
+        /// [index - WindowRadius, index + WindowRadius] instead of the entire text.
+        /// </summary>
+        internal const int WindowRadius = 10;
+
+        /// <summary>
         /// Scans the entire text to check if it contains any Kana characters.
         /// Used to resolve CJK ambiguity (Japanese vs Chinese).
         /// </summary>
@@ -149,6 +156,29 @@ namespace uPiper.Core.Phonemizers.Multilingual
             if (string.IsNullOrEmpty(text))
                 return false;
             for (var i = 0; i < text.Length; i++)
+            {
+                if (IsKana(text[i]))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Checks whether kana exists within a local window around the given index.
+        /// Used for segment-level CJK disambiguation: CJK characters near kana are
+        /// classified as Japanese kanji, while isolated CJK characters (no nearby kana)
+        /// are classified as Chinese.
+        /// </summary>
+        /// <param name="text">Full input text.</param>
+        /// <param name="index">Center index to search around.</param>
+        /// <param name="radius">Half-width of the search window (default: <see cref="WindowRadius"/>).</param>
+        /// <returns>True if kana is found within [index - radius, index + radius].</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool HasKanaNearby(string text, int index, int radius = WindowRadius)
+        {
+            var start = Math.Max(0, index - radius);
+            var end = Math.Min(text.Length - 1, index + radius);
+            for (var i = start; i <= end; i++)
             {
                 if (IsKana(text[i]))
                     return true;
@@ -234,8 +264,14 @@ namespace uPiper.Core.Phonemizers.Multilingual
             if (string.IsNullOrEmpty(text))
                 return result;
 
-            // Pre-scan for Kana to resolve CJK ambiguity
-            var contextHasKana = _hasJa && HasKana(text);
+            // When both ja and zh are supported, use segment-level context:
+            // check for kana in a local window around each CJK character instead
+            // of a single global flag. This prevents "kana anywhere in the text"
+            // from pulling all CJK characters into Japanese.
+            // When only one of ja/zh is supported, no disambiguation is needed —
+            // use a fast global flag (true for ja-only, false for zh-only).
+            var needsLocalContext = _hasJa && _hasZh;
+            var globalContextHasKana = !needsLocalContext && _hasJa;
 
             string currentLang = null;
             var currentText = new StringBuilder();
@@ -243,6 +279,15 @@ namespace uPiper.Core.Phonemizers.Multilingual
             for (var i = 0; i < text.Length; i++)
             {
                 var ch = text[i];
+
+                // For CJK/CjkPunct characters when both ja and zh are supported,
+                // compute a per-character contextHasKana by scanning nearby chars.
+                var contextHasKana = globalContextHasKana;
+                if (needsLocalContext && (IsCJK(ch) || IsCjkPunct(ch)))
+                {
+                    contextHasKana = HasKanaNearby(text, i);
+                }
+
                 var lang = DetectChar(ch, contextHasKana);
 
                 if (lang == null)

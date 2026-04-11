@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Unity.InferenceEngine;
 using UnityEngine;
 using uPiper.Core.AudioGeneration;
 
@@ -21,6 +22,11 @@ namespace uPiper.Core
         /// Whether the TTS engine is initialized and ready
         /// </summary>
         public bool IsInitialized { get; }
+
+        /// <summary>
+        /// 現在選択されている推論バックエンド。未初期化時はnull。
+        /// </summary>
+        public BackendType? SelectedBackend { get; }
 
         /// <summary>
         /// Currently loaded voice configuration
@@ -52,24 +58,9 @@ namespace uPiper.Core
         public Task<AudioClip> GenerateAudioAsync(string text, PiperVoiceConfig voiceConfig, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Stream audio generation for long text
-        /// </summary>
-        /// <param name="text">Input text</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Async enumerable of audio chunks</returns>
-        public IAsyncEnumerable<AudioChunk> StreamAudioAsync(string text, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Stream audio generation with specific voice configuration
-        /// </summary>
-        /// <param name="text">Input text</param>
-        /// <param name="voiceConfig">Voice configuration to use</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Async enumerable of audio chunks</returns>
-        public IAsyncEnumerable<AudioChunk> StreamAudioAsync(string text, PiperVoiceConfig voiceConfig, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Load a voice model
+        /// Load a voice model.
+        /// If no current voice is set, the loaded voice is automatically
+        /// selected as the active voice.
         /// </summary>
         /// <param name="voiceConfig">Voice configuration to load</param>
         /// <param name="cancellationToken">Cancellation token</param>
@@ -77,9 +68,15 @@ namespace uPiper.Core
         public Task LoadVoiceAsync(PiperVoiceConfig voiceConfig, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Available voice configurations.
+        /// </summary>
+        public IReadOnlyList<PiperVoiceConfig> AvailableVoices { get; }
+
+        /// <summary>
         /// Get available voices
         /// </summary>
         /// <returns>List of available voice configurations</returns>
+        [Obsolete("Use AvailableVoices property instead. This method will be removed in v3.0.")]
         public IReadOnlyList<PiperVoiceConfig> GetAvailableVoices();
 
         /// <summary>
@@ -135,6 +132,13 @@ namespace uPiper.Core
         /// The string argument is the detected language code.
         /// </summary>
         public event Action<string> OnLanguageDetected;
+
+        /// <summary>
+        /// Event raised when an unsupported language is detected in the input text.
+        /// The event args contain the language code, the skipped text, supported languages,
+        /// and whether a fallback handler was used.
+        /// </summary>
+        public event Action<UnsupportedLanguageEventArgs> OnUnsupportedLanguageDetected;
 
         /// <summary>SynthesisRequestを直接指定して音声を生成する（低レベルAPI）。</summary>
         Task<AudioClip> SynthesizeAsync(

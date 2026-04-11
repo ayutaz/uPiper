@@ -23,6 +23,7 @@ uPiper is a plugin for using Piper TTS in Unity environments. It employs neural 
                                                            ↓
                         ┌──────────────────────────────────────────────┐
                         │ TTSSynthesisOrchestrator                     │
+                        │   → AudioSynthesisCache (LRU, FNV-1a)      │
                         │   → IInferenceAudioGenerator (NativeArray)  │
                         │   → AudioNormalizer → AudioClipBuilder      │
                         └──────────────────────────────────────────────┘
@@ -152,7 +153,17 @@ Maps multi-character phonemes to single Unicode PUA characters:
   - Multilingual detection: `_isMultilingualModel` flags `phoneme_type: "multilingual"` models
   - Multilingual models use PUA character passthrough (no IPA/PUA conversion)
 
-### 3.5 Configuration Management Layer
+### 3.5 Initialization Validation
+
+#### InitializationValidator
+- **Location**: `Runtime/Core/InitializationValidator.cs` (`internal static class`)
+- **Role**: Consolidated up-front validation at the start of `InitializeAsync` / `InitializeWithInferenceAsync`
+- **API**:
+  - `ValidateForInitialize(config)` -- Validation for lightweight initialization path
+  - `ValidateForInference(config, modelAsset, voiceConfig)` -- Validation for full initialization with model
+- **Validation categories**: RuntimeEnvironment, Model, VoiceConfig, PhonemeIdMap, StreamingAssets, Dictionary, Platform
+
+### 3.6 Configuration Management Layer
 
 #### IPiperConfigReadOnly
 
@@ -167,6 +178,14 @@ public interface IPiperConfigReadOnly
     GeneralSettings General { get; }
 }
 ```
+
+#### PiperConfigPresets
+- **Location**: `Runtime/Core/PiperConfigPresets.cs` (`public static class`)
+- **Role**: Static factory providing commonly used configuration presets
+- **API**:
+  - `Fast()` -- Low-latency, high-speed synthesis (enables AudioCache and Warmup)
+  - `Natural()` -- Balanced quality and speed (equivalent to default settings)
+  - `HighQuality()` -- High-quality narration (enables audio normalization)
 
 #### ValidatedPiperConfig
 - **Location**: `Runtime/Core/ValidatedPiperConfig.cs`
@@ -199,6 +218,7 @@ Phoneme IDs -> TextEncoder -> Duration Predictor -> Flow Decoder -> Audio Wavefo
 #### BackendSelector + PlatformInfo
 - **Location**: `Runtime/Core/AudioGeneration/BackendSelector.cs`
 - **BackendSelector**: Inference backend selection logic (`public static class`). `Determine(requested, platform, gpuMemoryThresholdMB)` -> `BackendType`
+- **LogSelectionSummary**: Called after `InitializeAsync` completes, outputs a summary log of the selection rationale. `LogSelectionSummary(requested, actual, platform)` logs the requested value, actual backend, and platform info
 - **PlatformInfo**: Platform-dependent info encapsulation (`public readonly struct`). `FromCurrentEnvironment()` factory confines preprocessor directives
 - **Preprocessor-free**: `Determine()` branches solely on `PlatformInfo` fields. Easily testable
 
@@ -217,13 +237,15 @@ Phoneme IDs -> TextEncoder -> Duration Predictor -> Flow Decoder -> Audio Wavefo
 #### TTSSynthesisOrchestrator
 - **Location**: `Runtime/Core/AudioGeneration/TTSSynthesisOrchestrator.cs` (`internal sealed`)
 - **Role**: Centrally manages the entire phoneme-to-`AudioClip` conversion pipeline
-- **Constructor**: Receives `IInferenceAudioGenerator`, `SplitInferenceOrchestrator`, `PhonemeEncoder`, `AudioClipBuilder`, `IPiperConfigReadOnly` (nullable), `PiperVoiceConfig`
+- **Constructor**: Receives `IInferenceAudioGenerator`, `ISplitInferenceOrchestrator`, `PhonemeEncoder`, `AudioClipBuilder`, `IPiperConfigReadOnly` (nullable), `PiperVoiceConfig`, `AudioSynthesisCache` (nullable)
+- **Cache integration**: When `AudioSynthesisCache` is injected, looks up the cache using encoded phoneme IDs + synthesis parameters after encoding; on hit, skips ONNX inference and proceeds directly to AudioClip construction
 - **NativeArray Pipeline**:
   1. **PhonemeEncoder** -- Encodes phonemes to model IDs (`EncodeWithProsody` / `Encode`)
-  2. **IInferenceAudioGenerator** -- ONNX inference -> `NativeArray<float>`
-  3. **AudioNormalizer** -- `NativeArray<float>` in-place normalization (configurable via settings)
-  4. **AudioClipBuilder** -- `NativeArray<float>` -> `AudioClip` (no managed marshalling)
-  5. **NativeArray Dispose** -- `finally` block calls `audioData.Dispose()` (AudioClip.SetData has already copied the data)
+  2. **AudioSynthesisCache** -- Skip inference on cache hit (optional)
+  3. **IInferenceAudioGenerator** -- ONNX inference -> `NativeArray<float>`
+  4. **AudioNormalizer** -- `NativeArray<float>` in-place normalization (configurable via settings)
+  5. **AudioClipBuilder** -- `NativeArray<float>` -> `AudioClip` (no managed marshalling)
+  6. **NativeArray Dispose** -- `finally` block calls `audioData.Dispose()` (AudioClip.SetData has already copied the data)
 
 #### SynthesisRequest (public readonly struct)
 
@@ -259,10 +281,23 @@ public sealed class PhonemizeResult
 }
 ```
 
-#### SplitInferenceOrchestrator
-- **Location**: `Runtime/Core/AudioGeneration/SplitInferenceOrchestrator.cs` (`internal class`)
+#### ISplitInferenceOrchestrator / SplitInferenceOrchestrator
+- **Interface location**: `Runtime/Core/AudioGeneration/ISplitInferenceOrchestrator.cs` (`internal interface`)
+- **Implementation location**: `Runtime/Core/AudioGeneration/SplitInferenceOrchestrator.cs` (`internal class`)
 - **Role**: Orchestrates silence-based phrase splitting. Splits the phoneme sequence at silence token positions, performs independent inference per phrase, and inserts zero-sample silence intervals between phrases before concatenation
+- **DI improvement**: The `ISplitInferenceOrchestrator` interface abstracts the dependency from TTSSynthesisOrchestrator, improving testability
 - **Parameter type**: `phonemeSilence` is received as `IReadOnlyDictionary<string, float>` via the `GenerateWithSilenceSplitAsync()` method argument (not a constructor parameter)
+
+#### AudioSynthesisCache
+- **Location**: `Runtime/Core/AudioGeneration/AudioSynthesisCache.cs` (`internal sealed`)
+- **Role**: LRU-based audio synthesis result cache. Caches inference results keyed by phoneme IDs + synthesis parameters, skipping ONNX inference on cache hits
+- **Hash**: FNV-1a 64-bit hash. Inputs: phoneme IDs, ProsodyFlat, synthesis parameters (lengthScale, noiseScale, noiseW, speakerId, languageId)
+- **Dual eviction**: LRU eviction by both entry count limit (default 50) and memory budget limit (default 100MB)
+- **API**:
+  - `GenerateKey(phonemeIds, prosodyFlat, ...)` -- FNV-1a cache key generation (`static`)
+  - `TryGet(key, out samples, out sampleRate)` -- Cache lookup (updates LRU order)
+  - `Set(key, samples, sampleRate)` -- Cache insertion (auto-eviction)
+  - `Clear()` -- Clear all cached entries (logs statistics)
 
 #### AudioNormalizer
 - **Location**: `Runtime/Core/AudioGeneration/AudioNormalizer.cs`
@@ -449,6 +484,32 @@ Dictionaries are placed in `StreamingAssets/uPiper/Dictionaries/`:
 }
 ```
 
+### DictionaryPriority
+
+Priority level constants for dictionary entries (`public static class`, nested within `CustomDictionary`):
+
+| Constant | Value | Usage |
+|----------|-------|-------|
+| `Low` | 3 | Low priority (fallback) |
+| `Default` | 5 | Standard priority |
+| `High` | 7 | High priority |
+| `Override` | 9 | Override (for cross-dictionary overwriting) |
+| `Always` | 10 | Highest priority (always applied) |
+
+### Batch Add API
+
+```csharp
+// Add a single word
+dict.AddWord("MyTerm", "マイターム", priority: DictionaryPriority.High);
+
+// Batch add multiple words
+dict.AddWords(new[]
+{
+    ("Docker", "ドッカー", DictionaryPriority.Override),
+    ("GitHub", "ギットハブ", DictionaryPriority.Override),
+});
+```
+
 ## Design Decisions
 
 ### 1. Decision Not to Use HTS Engine
@@ -606,10 +667,10 @@ When `GPUCompute` is explicitly specified, it is allowed on WebGPU environments,
 - Total latency: <1 second for most use cases
 
 ### Optimization Strategies
-1. **Phoneme Caching**: Frequently used text cached
+1. **Audio Synthesis Caching**: LRU cache via `AudioSynthesisCache` (FNV-1a hash, dual eviction)
 2. **Model Quantization**: Optional INT8 quantization
 3. **GPU Acceleration**: Supported via Unity AI Inference Engine
-4. **Streaming**: Chunk-based processing for long texts
+4. **Silence-based Splitting**: Per-phrase inference via `ISplitInferenceOrchestrator` for long texts
 
 ## Extension Points
 
@@ -655,3 +716,14 @@ public interface ILanguageDetector
 - No personal data collection
 - Models and dictionaries are read-only
 - Sandboxed execution in Unity environment
+
+## Related Documentation
+
+- [Troubleshooting](TROUBLESHOOTING.md)
+- [Performance Tuning](PERFORMANCE_TUNING.md)
+- [Config Reference](CONFIG_REFERENCE.md)
+- Platform Setup Guides:
+  - [iOS](platforms/ios/SETUP.md)
+  - [Android](platforms/android/SETUP.md)
+  - [macOS](platforms/macos/SETUP.md)
+  - [WebGL](platforms/webgl/SETUP.md)

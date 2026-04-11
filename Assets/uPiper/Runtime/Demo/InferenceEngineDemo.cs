@@ -116,6 +116,8 @@ namespace uPiper.Demo
 
 #if !UNITY_WEBGL && !UNITY_EDITOR
 #if UNITY_IOS
+            // NOTE: PiperTTS.InitializeWithInferenceAsync() now calls this automatically.
+            // This explicit call is retained for backward compatibility and early initialization.
             uPiper.Core.Platform.IOSAudioSessionHelper.Initialize();
 #endif
 #endif

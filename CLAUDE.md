@@ -80,6 +80,10 @@ PhonemeEncoder (ProsodyFlat stride=3 対応)
 │   • PUA文字パススルー（IPA/PUA変換なし）              │
 └──────────────────────────────────────────────────────┘
     ↓
+AudioSynthesisCache (LRUキャッシュ、FNV-1a 64bitハッシュ)
+    • キャッシュヒット時はAudioClipを即返却
+    • ミス時は以下の推論パイプラインを実行
+    ↓
 TTSSynthesisOrchestrator (internal sealed class)
     → BackendSelector + PlatformInfo でバックエンド決定
     → IInferenceAudioGenerator (ONNX推論, NativeArray<float>出力)
@@ -100,10 +104,13 @@ AudioClip出力 (22050Hz, float32)
 
 | コンポーネント | 場所 | 役割 |
 |--------------|------|------|
-| `IPiperTTS` / `PiperTTS` | `Runtime/Core/` | メインインターフェース |
+| `IPiperTTS` / `PiperTTS` | `Runtime/Core/` | メインインターフェース。`CreateAsync()`ファクトリ(4オーバーロード、PiperConfigAsset対応)、`PhonemizeAsync()` + `SynthesizeAsync(SynthesisRequest)`主要API、`ClearCache()`、`OnUnsupportedLanguageDetected`イベント |
 | `PiperConfig` | `Runtime/Core/` | 設定管理（GPU, キャッシュ, バックエンド選択） |
 | `IPiperConfigReadOnly` | `Runtime/Core/` | バリデーション済み設定の読み取り専用インターフェース（6ネスト record struct プロパティ: Language, Performance, Inference, Audio, Silence, General） |
 | `ValidatedPiperConfig` | `Runtime/Core/` | PiperConfig バリデーション後の不変スナップショット（IPiperConfigReadOnly実装、6 readonly record struct） |
+| `InitializationValidator` | `Runtime/Core/` | InitializeAsync用の一括バリデーター |
+| `PiperConfigAsset` | `Runtime/Core/` | PiperConfig の ScriptableObject ラッパー（CreateAssetMenu対応） |
+| `PiperConfigPresets` | `Runtime/Core/` | 設定プリセット（Fast/Natural/HighQuality） |
 | `SynthesisRequest` | `Runtime/Core/AudioGeneration/` | 音声合成リクエスト（public readonly struct）。音素・ProsodyFlat(stride=3)・合成パラメータを集約。ファクトリ: `FromPhonemes` / `FromPhonemesWithProsody` |
 | `PhonemizeResult` | `Runtime/Core/AudioGeneration/` | PhonemizeAsync戻り値（public sealed class）。Phonemes[], ProsodyFlat[], DetectedLanguage, ResolvedLanguageId |
 
@@ -132,7 +139,7 @@ AudioClip出力 (22050Hz, float32)
 |--------------|------|------|
 | `ILanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | 言語検出インターフェース（public）。SegmentText() → `IReadOnlyList<(string language, string text)>` |
 | `HybridLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Unicode+Trigram複合言語検出（internal sealed）。Latin言語の曖昧さをTrigramで解消 |
-| `UnicodeLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Unicode文字範囲ベース言語検出（CJK, Hangul, Latin等） |
+| `UnicodeLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Unicode文字範囲ベース言語検出（CJK, Hangul, Latin等）。セグメントレベルのローカルウィンドウ（±10文字）によるCJK言語判定 |
 | `TrigramLanguageDetector` | `Runtime/Core/Phonemizers/Multilingual/` | Trigram頻度分析による言語検出（internal sealed class）。en/es/fr/pt区別 |
 | `LatinSegmentRefiner` | `Runtime/Core/Phonemizers/Multilingual/` | Latin文字セグメントのTrigram精緻化（internal） |
 | `LanguageConstants` | `Runtime/Core/Phonemizers/Multilingual/` | 言語ID/コード定数、IsLatinLanguage判定 |
@@ -155,7 +162,9 @@ AudioClip出力 (22050Hz, float32)
 | `TTSSynthesisOrchestrator` | `Runtime/Core/AudioGeneration/` | 音素列→AudioClip変換パイプライン一元管理（internal sealed）。IPiperConfigReadOnly/PiperVoiceConfigをコンストラクタ注入 |
 | `IInferenceAudioGenerator` | `Runtime/Core/AudioGeneration/` | ONNX推論インターフェース。GenerateAudioAsync(phonemeIds, prosodyFlat, ...) → NativeArray&lt;float&gt; |
 | `InferenceAudioGenerator` | `Runtime/Core/AudioGeneration/` | ONNX推論実装（InferenceContext, ArrayPool, NativeArray出力） |
-| `SplitInferenceOrchestrator` | `Runtime/Core/AudioGeneration/` | 沈黙句分割→反復推論→結合（internal class） |
+| `ISplitInferenceOrchestrator` | `Runtime/Core/AudioGeneration/` | 沈黙句分割のDI用インターフェース |
+| `SplitInferenceOrchestrator` | `Runtime/Core/AudioGeneration/` | ISplitInferenceOrchestrator実装。沈黙句分割→反復推論→結合（internal class） |
+| `AudioSynthesisCache` | `Runtime/Core/AudioGeneration/` | LRUベースの音声合成結果キャッシュ（FNV-1a 64bitハッシュ、エントリ数+メモリデュアル退避） |
 | `AudioNormalizer` | `Runtime/Core/AudioGeneration/` | 音声正規化（public static class）。NativeArray&lt;float&gt; / float[] in-place正規化。GCアロケーションなし |
 | `AudioClipBuilder` | `Runtime/Core/AudioGeneration/` | NativeArray&lt;float&gt;→AudioClip変換。float[]版は[Obsolete] |
 | `BackendSelector` | `Runtime/Core/AudioGeneration/` | 推論バックエンド選択ロジック（public static class）。プリプロセッサフリー |
@@ -173,6 +182,13 @@ AudioClip出力 (22050Hz, float32)
 | `PortugueseG2PEngine` | DotNetG2P.Portuguese | ポルトガル語G2P |
 | `ChineseG2PEngine` | DotNetG2P.Chinese | 中国語G2P（44K文字辞書） |
 | `KoreanG2PEngine` | DotNetG2P.Korean | 韓国語G2P（Hangul分解 + 音韻規則） |
+
+#### エディタツール
+
+| コンポーネント | 場所 | 役割 |
+|--------------|------|------|
+| `DictionaryManagerWindow` | `Editor/DictionaryManager/` | カスタム辞書管理ウィンドウ |
+| `DictionaryJsonEditor` | `Editor/DictionaryManager/` | 辞書JSON編集GUI |
 
 #### デモ・その他
 
@@ -200,6 +216,7 @@ Assets/uPiper/
 │   └── Demo/               # デモ・テストUI
 ├── Resources/Models/       # ONNXモデルファイル（*.onnx, *.onnx.json）
 ├── Editor/                 # エディタツール
+│   ├── DictionaryManager/     # カスタム辞書管理GUI
 │   └── WebGL/                 # WebGLビルドツール
 │       ├── WebGLSplitDataProcessor.cs  # 大容量ファイル自動分割
 │       ├── split-file-loader.js        # 分割ファイル結合ローダー
@@ -252,7 +269,8 @@ StreamingAssets/uPiper/     # 実行時データ（辞書）
 |-----------------|----------------------|
 | Windows/Linux | GPUPixel（VRAM 512MB以上+ComputeShader対応時、それ以外はCPU） |
 | macOS | CPU（Metal非対応） |
-| iOS/Android | GPUPixel |
+| iOS | CPU（Metal非対応） |
+| Android | GPUPixel（ComputeShader対応時、それ以外はCPU） |
 | WebGL | GPUPixel / GPUCompute（Phase 1-4完了。WebGPU時はGPUCompute自動選択、WebGL2時はGPUPixel） |
 
 ## 定義シンボル
@@ -389,10 +407,21 @@ var result = phonemizer.PhonemizeWithProsody("DockerとGitHubを使った開発"
 - パストラバーサル拒否: ファイルパスに `..` セグメントが含まれる場合に `ArgumentException` で拒否
 - JSONパースエラー: `JsonUtility.FromJson` 失敗時は警告ログ + 手動パースにフォールバック。手動パースも失敗時は警告ログで処理
 
+### DictionaryPriority 定数
+`CustomDictionary.DictionaryPriority` static class で優先度レベルを定義:
+- `Low = 3`, `Default = 5`, `High = 7`, `Override = 9`, `Always = 10`
+- 同一単語の上書き時は警告ログを出力
+
 ### 動的追加
 ```csharp
 var dict = new CustomDictionary();
 dict.AddWord("MyTerm", "マイターム", priority: 10);
+
+// バッチAPI（パターンキャッシュ再構築を末尾まで遅延）
+dict.AddWords(new[] {
+    ("Term1", "ターム1", DictionaryPriority.High),
+    ("Term2", "ターム2", DictionaryPriority.Default),
+});
 ```
 
 ## 音素エンコーディング

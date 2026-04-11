@@ -95,57 +95,81 @@ using uPiper.Core;
 
 public class TTSExample : MonoBehaviour
 {
-    private IPiperTTS piperTTS;
+    private IPiperTTS _piperTTS;
 
     async void Start()
     {
-        // 初期化
-        piperTTS = new PiperTTS();
-        await piperTTS.InitializeAsync();
+        // 初期化（CreateAsync でモデル自動ロードまで完了）
+        _piperTTS = await PiperTTS.CreateAsync();
 
         // 音声生成
-        AudioClip clip = await piperTTS.GenerateAudioAsync("こんにちは、世界！");
+        AudioClip clip = await _piperTTS.GenerateAudioAsync("こんにちは、世界！");
 
         // 再生
         var audioSource = GetComponent<AudioSource>();
         audioSource.clip = clip;
         audioSource.Play();
     }
+
+    void OnDestroy()
+    {
+        _piperTTS?.Dispose();
+    }
 }
 ```
 
-## Prosody API（韻律情報取得）
+### PhonemizeAsync / SynthesizeAsync API
 
-dot-net-g2p（MeCab辞書）から韻律情報（A1/A2/A3値）を取得できます。
+`PhonemizeAsync` で音素・Prosody情報を取得し、`SynthesizeAsync` で音声を生成する2段階APIです。
+音素の加工やProsodyパラメータの調整など、より細かい制御が必要な場合に使用します。
 
 ```csharp
-using uPiper.Core.Phonemizers.Implementations;
+// 音素化（Prosody情報付き）
+PhonemizeResult result = await _piperTTS.PhonemizeAsync("こんにちは");
+// result.Phonemes:        音素配列
+// result.ProsodyFlat:     stride=3 フラット配列 [a1_0,a2_0,a3_0, a1_1,a2_1,a3_1, ...]
+// result.DetectedLanguage: "ja"
 
-// DotNetG2PPhonemizer を直接使用
-var phonemizer = new DotNetG2PPhonemizer();
+// Prosody付きリクエストを構築して合成
+var request = SynthesisRequest.FromPhonemesWithProsody(
+    result.Phonemes, result.ProsodyFlat, lengthScale: 0.8f);
+AudioClip clip = await _piperTTS.SynthesizeAsync(request);
 
-// 韻律情報付きで音素化
-var result = phonemizer.PhonemizeWithProsody("今日は良い天気です");
-
-// 結果にアクセス
-Debug.Log($"音素数: {result.PhonemeCount}");
-for (int i = 0; i < result.PhonemeCount; i++)
-{
-    Debug.Log($"{result.Phonemes[i]}: A1={result.ProsodyA1[i]}, A2={result.ProsodyA2[i]}, A3={result.ProsodyA3[i]}");
-}
-
-phonemizer.Dispose();
+// 音素直接入力（Prosodyなし）
+var request2 = SynthesisRequest.FromPhonemes(
+    new[] { "k", "o", "N_uvular", "n", "i", "ch", "w", "a" });
+AudioClip clip2 = await _piperTTS.SynthesizeAsync(request2);
 ```
 
-### 韻律値の説明
+## Prosody（韻律情報）
 
-| 値 | 説明 |
-|----|------|
-| **A1** | アクセント核からの相対位置（負の値も可） |
-| **A2** | アクセント句内のモーラ位置（1-based） |
-| **A3** | アクセント句内の総モーラ数 |
+Prosody対応モデルでは、dot-net-g2p（MeCab辞書）から取得したアクセント情報を使用してより自然なイントネーションの音声を生成できます。
+Prosodyデータは **ProsodyFlat** (stride=3) 形式で管理されます。
 
-これらの値は日本語の自然なイントネーション生成に使用できます。
+```csharp
+// PhonemizeAsync で Prosody 付き音素を取得
+var result = await _piperTTS.PhonemizeAsync("今日は良い天気です");
+
+// ProsodyFlat: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, ...]
+// Length = Phonemes.Length * 3
+Debug.Log($"音素数: {result.Phonemes.Length}");
+Debug.Log($"Prosody有無: {result.HasProsody}");
+
+// Prosody付きリクエストを構築して合成
+var request = SynthesisRequest.FromPhonemesWithProsody(
+    result.Phonemes, result.ProsodyFlat, lengthScale: 0.8f);
+AudioClip clip = await _piperTTS.SynthesizeAsync(request);
+```
+
+### Prosodyパラメータ（stride=3）
+
+| パラメータ | 日本語 | 英語 | 中国語 |
+|-----------|--------|------|--------|
+| **A1** | モーラ位置 | 0 | tone(1-5) |
+| **A2** | アクセント核位置 | 0 | 音節位置 |
+| **A3** | アクセント句位置 | 0 | 単語長 |
+
+これらの値は自然なイントネーション生成に使用されます。対応言語: ja/en/zh/es/fr/pt/ko
 
 ## サンプル
 
@@ -169,15 +193,22 @@ Package Managerからサンプルをインポートできます：
 
 ```
 uPiper/
-├── Runtime/          # ランタイムコード
-│   ├── Core/        # コア API
-│   ├── Phonemizers/ # 音素化システム
-│   ├── Synthesis/   # 音声合成エンジン
-│   ├── Models/      # モデル管理
-│   └── Utils/       # ユーティリティ
-├── Editor/          # エディタ拡張
-├── Models/          # TTS モデルファイル
-└── Samples~/        # サンプルプロジェクト
+├── Runtime/
+│   ├── Core/                    # コア API
+│   │   ├── AudioGeneration/     # AudioClip生成、ONNX推論、PhonemeEncoder
+│   │   ├── Phonemizers/         # 音素化システム
+│   │   │   ├── Backend/         # 共有型（PhonemeOptions）
+│   │   │   ├── Implementations/ # G2P実装（DotNetG2PPhonemizer）
+│   │   │   └── Multilingual/    # 多言語対応（PuaTokenMapper、言語検出）
+│   │   │       └── Handlers/    # 7言語G2Pハンドラ
+│   │   ├── IL2CPP/              # IL2CPP互換レイヤー
+│   │   └── Platform/            # プラットフォーム固有コード
+│   └── Demo/                    # デモUI
+├── Editor/                      # エディタ拡張
+├── Resources/Models/            # ONNXモデルファイル
+├── Plugins/                     # プラットフォーム固有プラグイン
+├── Tests/                       # テスト（Editor/Runtime）
+└── Samples~/                    # サンプルデータ
 ```
 
 ## 必要要件

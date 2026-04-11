@@ -47,6 +47,12 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         public const int ProsodyStride = 3;
 
+        /// <summary>
+        /// Threshold ratio of unknown phonemes to total phonemes that triggers an error.
+        /// If more than this fraction of phonemes are unknown, a PiperConfigurationException is thrown.
+        /// </summary>
+        private const float UnknownPhonemeErrorThreshold = 0.5f;
+
         // EOS-like tokens: These tokens act as sentence terminators (piper-plus #210)
         // When the last phoneme is one of these, we don't add a separate EOS token
         private static readonly HashSet<string> EosLikeTokens =
@@ -191,6 +197,7 @@ namespace uPiper.Core.AudioGeneration
 
             // 各音素をIDに変換
             var phonemeIndex = 0;
+            var unknownPhonemeCount = 0;
             foreach (var phoneme in phonemes)
             {
                 if (string.IsNullOrEmpty(phoneme))
@@ -237,6 +244,7 @@ namespace uPiper.Core.AudioGeneration
                 }
                 else
                 {
+                    unknownPhonemeCount++;
                     LogUnknownPhoneme(phoneme, phonemeToLookup);
                 }
 
@@ -265,6 +273,30 @@ namespace uPiper.Core.AudioGeneration
                 expandedProsody.Add(0);
                 expandedProsody.Add(0);
                 expandedProsody.Add(0);
+            }
+
+            // Check unknown phoneme ratio and escalate if too high
+            if (unknownPhonemeCount > 0)
+            {
+                var unknownRatio = (float)unknownPhonemeCount / phonemes.Length;
+                if (unknownRatio > UnknownPhonemeErrorThreshold)
+                {
+                    PiperLogger.LogError(
+                        $"[PhonemeEncoder] {unknownPhonemeCount}/{phonemes.Length} phonemes " +
+                        $"({unknownRatio:P0}) were unknown and skipped. " +
+                        $"This indicates a phoneme mapping mismatch. " +
+                        $"Model PhonemeType: {_config.PhonemeType}, IPA mode: {_useIpaMapping}");
+                    throw new PiperConfigurationException(
+                        $"Phoneme encoding failed: {unknownPhonemeCount} of {phonemes.Length} " +
+                        $"phonemes are unknown to the model. Check that the model's phoneme_id_map " +
+                        $"matches the G2P backend output.");
+                }
+                else
+                {
+                    PiperLogger.LogWarning(
+                        $"[PhonemeEncoder] {unknownPhonemeCount}/{phonemes.Length} phonemes " +
+                        $"were unknown and skipped. Output quality may be degraded.");
+                }
             }
 
             var modelType = !needsInterspersePad ? "Japanese/OpenJTalk" : (_isMultilingualModel ? "Multilingual" : "eSpeak");
@@ -488,7 +520,7 @@ namespace uPiper.Core.AudioGeneration
             // 設定から音素マッピングを読み込む（ids[0]を抽出）
             // PhonemeIdMap は Dictionary<string, int[]> だが、内部の _phonemeToId は
             // Dictionary<string, int> のまま維持。複数ID展開は将来タスク（P2-1b）。
-            if (_config.PhonemeIdMap != null)
+            if (_config.PhonemeIdMap != null && _config.PhonemeIdMap.Count > 0)
             {
                 foreach (var kvp in _config.PhonemeIdMap)
                 {
@@ -505,11 +537,17 @@ namespace uPiper.Core.AudioGeneration
             }
             else
             {
-                // デフォルトの音素マッピングを作成
-                LoadDefaultPhonemeMapping();
+                PiperLogger.LogError(
+                    "[PhonemeEncoder] PhonemeIdMap is null or empty in voice config. " +
+                    "The model's .onnx.json configuration file may be missing or corrupted.");
+                throw new PiperConfigurationException(
+                    "PhonemeIdMap is missing from voice configuration. " +
+                    "Ensure the model's .onnx.json file contains a valid 'phoneme_id_map' field. " +
+                    $"Voice ID: {_config.VoiceId ?? "(unknown)"}");
             }
         }
 
+        [Obsolete("Default phoneme mapping produces low quality output. Use a proper PhonemeIdMap from model config.")]
         private void LoadDefaultPhonemeMapping()
         {
             // 基本的な音素セット（Piper TTS標準）

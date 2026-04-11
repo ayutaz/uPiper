@@ -10,15 +10,6 @@ namespace uPiper.Core
     [Serializable]
     public class PiperConfig
     {
-        #region Constants
-
-        // Constants are now defined in ValidatedPiperConfig.
-        // These aliases exist for backward compatibility within this class.
-        private const int MinSampleRate = ValidatedPiperConfig.MinSampleRate;
-        private const int MaxSampleRate = ValidatedPiperConfig.MaxSampleRate;
-
-        #endregion
-
         [Header("General Settings")]
 
         /// <summary>
@@ -39,6 +30,18 @@ namespace uPiper.Core
         /// </summary>
         [Tooltip("Automatically detect language from text (requires multilingual model)")]
         public bool AutoDetectLanguage = false;
+
+        /// <summary>
+        /// Optional fallback language for unsupported language segments.
+        /// When a detected language has no registered G2P handler, the segment
+        /// will be processed using this language's handler instead of being skipped.
+        /// Set to null (default) to skip unsupported segments.
+        /// </summary>
+        [Header("Fallback Settings")]
+        [Tooltip("非対応言語セグメントのフォールバック言語（null = スキップ）\n" +
+            "検出された言語に対応するG2Pハンドラがない場合、この言語で処理する\n" +
+            "--- Fallback language for unsupported segments (null = skip) ---")]
+        public string FallbackLanguage;
 
         /// <summary>
         /// Supported languages for multilingual mode.
@@ -69,6 +72,23 @@ namespace uPiper.Core
         public bool EnablePhonemeCache = true;
 
         /// <summary>
+        /// Enable audio synthesis result caching.
+        /// When enabled, repeated synthesis with the same text/parameters skips ONNX inference.
+        /// </summary>
+        [Tooltip("音声合成結果をキャッシュし、同一テキスト・パラメータでの再合成時にONNX推論をスキップする\n" +
+            "--- Cache synthesis results to skip inference for repeated text ---")]
+        public bool EnableAudioCache = true;
+
+        /// <summary>
+        /// Maximum number of audio synthesis cache entries.
+        /// Each entry stores float[] audio samples. Memory usage depends on audio length.
+        /// </summary>
+        [Tooltip("音声合成キャッシュの最大エントリ数（各エントリはfloat[]音声データを保持）\n" +
+            "--- Max audio cache entries (each stores float[] audio data) ---")]
+        [Range(1, 200)]
+        public int MaxAudioCacheEntries = 50;
+
+        /// <summary>
         /// Number of worker threads for parallel processing
         /// </summary>
         [Tooltip("Number of worker threads (0 = auto-detect)")]
@@ -86,7 +106,10 @@ namespace uPiper.Core
         /// <summary>
         /// 沈黙トークンによる句分割を有効にする
         /// </summary>
-        [Tooltip("Split phoneme sequences at silence tokens and insert silence between phrases")]
+        [Tooltip("沈黙トークンで音素列を分割し、句間に無音を挿入する\n" +
+            "有効にすると長文の自然さが向上（句切りで息継ぎ風の間を挿入）\n" +
+            "--- Split phoneme sequences at silence tokens ---\n" +
+            "Inserts pauses between phrases for more natural long-text speech")]
         public bool EnablePhonemeSilence = false;
 
         /// <summary>
@@ -94,7 +117,11 @@ namespace uPiper.Core
         /// 形式: "phoneme seconds" (カンマ区切りで複数指定可)
         /// 例: "_ 0.5" または "_ 0.5,# 0.3"
         /// </summary>
-        [Tooltip("Phoneme silence specification: '<phoneme> <seconds>' (comma-separated)")]
+        [Tooltip("沈黙トークンと無音秒数の指定\n" +
+            "形式: \"<音素> <秒数>\" カンマ区切りで複数指定可\n" +
+            "例: \"_ 0.5\" (読点で0.5秒) / \"_ 0.5,# 0.3\" (読点0.5秒+句点0.3秒)\n" +
+            "--- Silence specification: '<phoneme> <seconds>' (comma-separated) ---\n" +
+            "Example: '_ 0.5' or '_ 0.5,# 0.3'")]
         public string PhonemeSilenceSpec = "_ 0.5";
 
         [Header("Audio Settings")]
@@ -184,49 +211,21 @@ namespace uPiper.Core
         }
 
         /// <summary>
-        /// 設定値を検証する（例外スローのみ）。フィールドは一切変更しない。
-        /// <para>
-        /// クランプ・正規化・自動検出のロジックは <see cref="ValidatedPiperConfig"/> コンストラクタに移動済み。
-        /// バリデーション済みの不変設定を取得するには <see cref="ToValidated()"/> を使用すること。
-        /// </para>
+        /// ディープコピーを作成する。
+        /// ScriptableObject のオリジナルデータを保護するためのランタイムコピー用。
         /// </summary>
-        [Obsolete("Use ToValidated() instead. Validate() no longer modifies fields. Will be removed in v3.0.")]
-        public void Validate()
+        /// <remarks>
+        /// MemberwiseClone() によりプリミティブ/string/enum フィールドは自動コピーされる。
+        /// フィールド追加時も漏れが生じない。参照型のみ明示的にディープコピーする。
+        /// </remarks>
+        public PiperConfig Clone()
         {
-            ValidateThrowOnly();
-        }
-
-        /// <summary>
-        /// 例外チェックのみ実施する内部メソッド。フィールドは一切変更しない。
-        /// </summary>
-        private void ValidateThrowOnly()
-        {
-            if (string.IsNullOrWhiteSpace(DefaultLanguage))
-                throw new PiperException("DefaultLanguage cannot be null or empty");
-
-            if (SampleRate < MinSampleRate || SampleRate > MaxSampleRate)
-            {
-                throw new PiperException(
-                    $"Invalid sample rate: {SampleRate}Hz. Must be between {MinSampleRate}-{MaxSampleRate}Hz");
-            }
-
-            if (WorkerThreads < 0)
-                throw new PiperException($"Invalid WorkerThreads: {WorkerThreads}. Must be >= 0");
-
-            if (TimeoutMs < 0)
-                throw new PiperException($"Invalid TimeoutMs: {TimeoutMs}. Must be >= 0");
-
-            if (EnablePhonemeSilence)
-            {
-                try
-                {
-                    AudioGeneration.PhonemeSilenceProcessor.Parse(PhonemeSilenceSpec);
-                }
-                catch (ArgumentException ex)
-                {
-                    throw new PiperException($"Invalid PhonemeSilenceSpec: {ex.Message}", ex);
-                }
-            }
+            var copy = (PiperConfig)MemberwiseClone();
+            // 参照型フィールドのディープコピー
+            copy.SupportedLanguages = new List<string>(SupportedLanguages ?? new List<string>());
+            if (GPUSettings != null)
+                copy.GPUSettings = new GPUInferenceSettings { MaxMemoryMB = GPUSettings.MaxMemoryMB };
+            return copy;
         }
 
         /// <summary>

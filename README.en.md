@@ -219,16 +219,17 @@ See the [GPU Inference Guide](docs/features/gpu/gpu-inference.md) for details.
 ## Quick Start
 
 ```csharp
-// Initialize
+// Simple usage (2 steps)
 var config = new PiperConfig { Backend = InferenceBackend.Auto };
-var tts = new PiperTTS(config);
-await tts.InitializeWithInferenceAsync(modelAsset, voiceConfig);
-
-// Generate audio from text (v2.0 recommended API)
-var result = await tts.PhonemizeAsync("Hello, world!");
-var request = SynthesisRequest.FromPhonemesWithProsody(result.Phonemes, result.ProsodyFlat);
-var clip = await tts.SynthesizeAsync(request);
+var tts = await PiperTTS.CreateAsync(config);
+var clip = await tts.GenerateAudioAsync("Hello, world!");
 AudioSource.PlayClipAtPoint(clip, Vector3.zero);
+
+// Advanced (phoneme pipeline + CancellationToken)
+var cts = new CancellationTokenSource();
+var result = await tts.PhonemizeAsync("Hello, world!", cts.Token);
+var request = SynthesisRequest.FromPhonemesWithProsody(result.Phonemes, result.ProsodyFlat);
+var clip = await tts.SynthesizeAsync(request, cts.Token);
 ```
 
 ## Documentation
@@ -236,6 +237,10 @@ AudioSource.PlayClipAtPoint(clip, Vector3.zero);
 - [Setup Guide](docs/setup-guide.md) - Installation and initial configuration
 - [Architecture](docs/ARCHITECTURE_en.md) - Design and technical details
 - [GPU Inference Guide](docs/features/gpu/gpu-inference.md) - GPU inference configuration and troubleshooting
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
+- [Performance Tuning](docs/PERFORMANCE_TUNING.md) - Optimizing inference speed and memory
+- [Config Reference](docs/CONFIG_REFERENCE.md) - Full PiperConfig parameter details
+- [Platform Setup](docs/platforms/) - Android / iOS / macOS / WebGL
 
 ## License
 

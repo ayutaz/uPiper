@@ -219,16 +219,17 @@ var validated = config.ToValidated();
 ## 基本的な使い方
 
 ```csharp
-// 初期化
+// シンプルな使い方（2ステップ）
 var config = new PiperConfig { Backend = InferenceBackend.Auto };
-var tts = new PiperTTS(config);
-await tts.InitializeWithInferenceAsync(modelAsset, voiceConfig);
-
-// テキストから音声を生成（v2.0 推奨API）
-var result = await tts.PhonemizeAsync("こんにちは");
-var request = SynthesisRequest.FromPhonemesWithProsody(result.Phonemes, result.ProsodyFlat);
-var clip = await tts.SynthesizeAsync(request);
+var tts = await PiperTTS.CreateAsync(config);
+var clip = await tts.GenerateAudioAsync("こんにちは");
 AudioSource.PlayClipAtPoint(clip, Vector3.zero);
+
+// 詳細制御（音素パイプライン + CancellationToken）
+var cts = new CancellationTokenSource();
+var result = await tts.PhonemizeAsync("こんにちは", cts.Token);
+var request = SynthesisRequest.FromPhonemesWithProsody(result.Phonemes, result.ProsodyFlat);
+var clip = await tts.SynthesizeAsync(request, cts.Token);
 ```
 
 ## 詳細ドキュメント
@@ -236,6 +237,10 @@ AudioSource.PlayClipAtPoint(clip, Vector3.zero);
 - [セットアップガイド](docs/setup-guide.md) - インストール手順と初期設定
 - [アーキテクチャ](docs/ARCHITECTURE_ja.md) - 設計と技術的な詳細
 - [GPU推論ガイド](docs/features/gpu/gpu-inference.md) - GPU推論の設定とトラブルシューティング
+- [トラブルシューティング](docs/TROUBLESHOOTING.md) - よくある問題と解決方法
+- [パフォーマンスチューニング](docs/PERFORMANCE_TUNING.md) - 推論速度・メモリの最適化
+- [設定パラメータリファレンス](docs/CONFIG_REFERENCE.md) - PiperConfig 全パラメータの詳細
+- [プラットフォーム別セットアップ](docs/platforms/) - Android / iOS / macOS / WebGL
 
 ## ライセンス
 

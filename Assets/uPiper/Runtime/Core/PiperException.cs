@@ -53,11 +53,23 @@ namespace uPiper.Core
     /// </summary>
     public class PiperInitializationException : PiperException
     {
+        /// <summary>
+        /// バリデーション結果（初期化バリデーション失敗時に設定される）。
+        /// </summary>
+        public InitializationValidationResult ValidationResult { get; }
+
         public PiperInitializationException(string message)
             : base(PiperErrorCode.InitializationFailed, message) { }
 
         public PiperInitializationException(string message, Exception innerException)
             : base(PiperErrorCode.InitializationFailed, message, innerException) { }
+
+        public PiperInitializationException(
+            string message, InitializationValidationResult validationResult)
+            : base(PiperErrorCode.InitializationFailed, message)
+        {
+            ValidationResult = validationResult;
+        }
     }
 
     /// <summary>
