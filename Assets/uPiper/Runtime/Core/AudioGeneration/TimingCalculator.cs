@@ -16,6 +16,18 @@ namespace uPiper.Core.AudioGeneration
         private const int BosId = 1;
         private const int EosId = 2;
 
+        // ASCII フォールバック用キャッシュ (piper-plus s_asciiStrings と同等)
+        // ResolvePhonemeString で未知 ID のフォールバック時に毎回 ToString() を避ける
+        private static readonly string[] AsciiStrings = InitAsciiStrings();
+
+        private static string[] InitAsciiStrings()
+        {
+            var arr = new string[128];
+            for (int i = 0; i < 128; i++)
+                arr[i] = ((char)i).ToString();
+            return arr;
+        }
+
         /// <summary>
         /// 音素 ID 配列と durations 配列からタイミング情報を算出する。
         /// </summary>
@@ -102,11 +114,11 @@ namespace uPiper.Core.AudioGeneration
                 int id = phonemeIds[i];
                 float frameDuration = durations[i];
 
-                // 負の duration はクランプ
-                if (frameDuration < 0f)
+                // 負値・NaN・Infinity はクランプ（ONNX テンソル不正時の全エントリ NaN 汚染を防止）
+                if (frameDuration < 0f || float.IsNaN(frameDuration) || float.IsInfinity(frameDuration))
                 {
                     PiperLogger.LogWarning(
-                        $"[TimingCalculator] Negative duration ({frameDuration}) " +
+                        $"[TimingCalculator] Invalid duration ({frameDuration}) " +
                         $"at index {i} (phonemeId={id}). Clamping to 0.");
                     frameDuration = 0f;
                 }
@@ -151,6 +163,8 @@ namespace uPiper.Core.AudioGeneration
                 string display = phonemeStr;
 
                 // PUA 単文字キーを多文字トークンに逆引き
+                // PUA コードポイント (U+E000-U+F8FF) は常に BMP 内なので
+                // Length==1 で正しく PUA 文字を判別できる（サロゲートペア不要）
                 if (phonemeStr.Length == 1 && puaTokenMapper != null)
                 {
                     var token = puaTokenMapper.UnmapChar(phonemeStr[0]);
@@ -177,9 +191,9 @@ namespace uPiper.Core.AudioGeneration
             if (idToString.TryGetValue(id, out var str))
                 return str;
 
-            // フォールバック: 印字可能 ASCII 範囲なら文字そのもの
+            // フォールバック: ASCII 範囲 (3-127) ならキャッシュ済み文字列を返す
             if (id is > 2 and < 128)
-                return ((char)id).ToString();
+                return AsciiStrings[id];
 
             return "?";
         }

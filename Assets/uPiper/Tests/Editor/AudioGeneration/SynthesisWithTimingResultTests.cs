@@ -145,5 +145,50 @@ namespace uPiper.Tests.Editor.AudioGeneration
                     Object.DestroyImmediate(clip);
             }
         }
+        [Test]
+        public void AudioClip_ReturnsSameInstance()
+        {
+            AudioClip clip = null;
+            try
+            {
+                clip = AudioClip.Create("test", 1024, 1, 22050);
+                var result = new SynthesisWithTimingResult(clip, null, 0f);
+
+                Assert.AreSame(clip, result.AudioClip);
+            }
+            finally
+            {
+                if (clip != null)
+                    Object.DestroyImmediate(clip);
+            }
+        }
+
+        [Test]
+        public void Constructor_WithTimings_PreservesEntryValues()
+        {
+            AudioClip clip = null;
+            try
+            {
+                clip = AudioClip.Create("test", 1024, 1, 22050);
+                var timings = new List<PhonemeTimingEntry>
+                {
+                    new PhonemeTimingEntry("a", 0.1f, 0.5f),
+                    new PhonemeTimingEntry("k", 0.5f, 0.8f),
+                };
+                var result = new SynthesisWithTimingResult(clip, timings, 0.8f);
+
+                Assert.AreEqual("a", result.Timings[0].Phoneme);
+                Assert.AreEqual(0.1f, result.Timings[0].StartSeconds, 1e-7f);
+                Assert.AreEqual(0.5f, result.Timings[0].EndSeconds, 1e-7f);
+                Assert.AreEqual("k", result.Timings[1].Phoneme);
+                Assert.AreEqual(0.5f, result.Timings[1].StartSeconds, 1e-7f);
+                Assert.AreEqual(0.8f, result.Timings[1].EndSeconds, 1e-7f);
+            }
+            finally
+            {
+                if (clip != null)
+                    Object.DestroyImmediate(clip);
+            }
+        }
     }
 }

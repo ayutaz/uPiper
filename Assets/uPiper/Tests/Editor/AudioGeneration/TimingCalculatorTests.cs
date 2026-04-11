@@ -435,6 +435,108 @@ namespace uPiper.Tests.Editor.AudioGeneration
 
             Assert.IsFalse(float.IsNaN(entries[0].EndSeconds));
             Assert.IsFalse(float.IsInfinity(entries[0].EndSeconds));
+            Assert.IsFalse(float.IsNaN(entries[1].StartSeconds));
+            Assert.IsFalse(float.IsInfinity(entries[1].StartSeconds));
+            Assert.IsFalse(float.IsNaN(entries[1].EndSeconds));
+            Assert.IsFalse(float.IsInfinity(entries[1].EndSeconds));
+        }
+
+        [Test]
+        public void Calculate_NaNDuration_ClampsToZero()
+        {
+            var map = CreateTimingTestPhonemeIdMap();
+            var phonemeIds = new[] { 10, 12 };
+            var durations = new[] { float.NaN, 3.0f };
+            var frameLength = (float)HopSize / SampleRate;
+
+            var entries = TimingCalculator.Calculate(
+                phonemeIds, durations, map, null, SampleRate, HopSize);
+
+            Assert.AreEqual(0f, entries[0].DurationSeconds, 1e-5f);
+            Assert.IsFalse(float.IsNaN(entries[1].StartSeconds));
+            Assert.AreEqual(3 * frameLength, entries[1].DurationSeconds, 1e-5f);
+        }
+
+        [Test]
+        public void Calculate_InfinityDuration_ClampsToZero()
+        {
+            var map = CreateTimingTestPhonemeIdMap();
+            var phonemeIds = new[] { 10, 12 };
+            var durations = new[] { float.PositiveInfinity, 3.0f };
+            var frameLength = (float)HopSize / SampleRate;
+
+            var entries = TimingCalculator.Calculate(
+                phonemeIds, durations, map, null, SampleRate, HopSize);
+
+            Assert.AreEqual(0f, entries[0].DurationSeconds, 1e-5f);
+            Assert.IsFalse(float.IsInfinity(entries[1].StartSeconds));
+            Assert.AreEqual(3 * frameLength, entries[1].DurationSeconds, 1e-5f);
+        }
+
+        // ================================================================
+        // Review: BuildReverseIdMap Direct Tests
+        // ================================================================
+
+        [Test]
+        public void BuildReverseIdMap_EmptyIntArray_SkipsEntry()
+        {
+            var map = new Dictionary<string, int[]>
+            {
+                ["_"] = new[] { 0 },
+                ["a"] = new int[0],
+                ["k"] = new[] { 12 },
+            };
+
+            var reverse = TimingCalculator.BuildReverseIdMap(map, null);
+
+            Assert.IsFalse(reverse.ContainsKey(-1));
+            Assert.IsTrue(reverse.ContainsKey(0));
+            Assert.IsTrue(reverse.ContainsKey(12));
+            Assert.AreEqual(2, reverse.Count);
+        }
+
+        [Test]
+        public void BuildReverseIdMap_NullMapper_PuaCharKeptAsIs()
+        {
+            var map = new Dictionary<string, int[]>
+            {
+                ["\uE000"] = new[] { 17 },
+            };
+
+            var reverse = TimingCalculator.BuildReverseIdMap(map, null);
+
+            Assert.AreEqual("\uE000", reverse[17]);
+        }
+
+        [Test]
+        public void BuildReverseIdMap_WithMapper_PuaCharResolved()
+        {
+            var map = new Dictionary<string, int[]>
+            {
+                ["\uE000"] = new[] { 17 },
+            };
+            var puaTokenMapper = new PuaTokenMapper();
+
+            var reverse = TimingCalculator.BuildReverseIdMap(map, puaTokenMapper);
+
+            Assert.AreEqual("a:", reverse[17]);
+        }
+
+        // ================================================================
+        // Review: ResolvePhonemeString Boundary Tests
+        // ================================================================
+
+        [Test]
+        public void Calculate_Id128_ReturnsQuestionMark()
+        {
+            var map = CreateTimingTestPhonemeIdMap();
+            var phonemeIds = new[] { 128 };
+            var durations = new[] { 5.0f };
+
+            var entries = TimingCalculator.Calculate(
+                phonemeIds, durations, map, null, SampleRate, HopSize);
+
+            Assert.AreEqual("?", entries[0].Phoneme);
         }
 
         // ================================================================
@@ -479,6 +581,8 @@ namespace uPiper.Tests.Editor.AudioGeneration
         [Test]
         public void PhonemeTimingEntry_EqualityByValue()
         {
+            // readonly struct はデフォルトの ValueType.Equals (リフレクション) を使用。
+            // IEquatable<T> 未実装のため、ボクシング経由のフィールド比較に依存する。
             var entry1 = new PhonemeTimingEntry("a", 0.1f, 0.2f);
             var entry2 = new PhonemeTimingEntry("a", 0.1f, 0.2f);
 
