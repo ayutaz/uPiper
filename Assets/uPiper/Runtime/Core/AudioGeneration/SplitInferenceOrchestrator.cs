@@ -12,7 +12,7 @@ namespace uPiper.Core.AudioGeneration
     /// 音素列を沈黙トークンの位置で分割し、句ごとに独立推論を行い、
     /// 句間にゼロサンプルの無音区間を挿入して結合する。
     /// </summary>
-    internal class SplitInferenceOrchestrator
+    internal class SplitInferenceOrchestrator : ISplitInferenceOrchestrator
     {
         private readonly IInferenceAudioGenerator _generator;
 

@@ -12,7 +12,7 @@ namespace uPiper.Tests.Editor
         #region LogSelectionSummary Tests
 
         [Test]
-        public void LogSelectionSummary_AutoCpu_DoesNotThrow()
+        public void LogSelectionSummary_AutoCpu_SelectsCpuForDesktopWithoutComputeShaders()
         {
             var platform = new PlatformInfo(
                 graphicsDeviceType: GraphicsDeviceType.Direct3D11,
@@ -22,13 +22,15 @@ namespace uPiper.Tests.Editor
                 isWebGL: false,
                 isMobile: false);
 
-            Assert.DoesNotThrow(() =>
-                BackendSelector.LogSelectionSummary(
-                    InferenceBackend.Auto, BackendType.CPU, platform));
+            var actual = BackendSelector.Determine(InferenceBackend.Auto, platform);
+            Assert.AreEqual(BackendType.CPU, actual);
+
+            // LogSelectionSummary should not throw
+            BackendSelector.LogSelectionSummary(InferenceBackend.Auto, actual, platform);
         }
 
         [Test]
-        public void LogSelectionSummary_AutoGpuPixelDesktop_DoesNotThrow()
+        public void LogSelectionSummary_AutoGpuPixelDesktop_SelectsGpuPixelForDesktopWithVram()
         {
             var platform = new PlatformInfo(
                 graphicsDeviceType: GraphicsDeviceType.Direct3D11,
@@ -38,13 +40,14 @@ namespace uPiper.Tests.Editor
                 isWebGL: false,
                 isMobile: false);
 
-            Assert.DoesNotThrow(() =>
-                BackendSelector.LogSelectionSummary(
-                    InferenceBackend.Auto, BackendType.GPUPixel, platform));
+            var actual = BackendSelector.Determine(InferenceBackend.Auto, platform);
+            Assert.AreEqual(BackendType.GPUPixel, actual);
+
+            BackendSelector.LogSelectionSummary(InferenceBackend.Auto, actual, platform);
         }
 
         [Test]
-        public void LogSelectionSummary_AutoMobileGpuPixel_DoesNotThrow()
+        public void LogSelectionSummary_AutoMobileGpuPixel_SelectsGpuPixelForMobileWithCompute()
         {
             var platform = new PlatformInfo(
                 graphicsDeviceType: GraphicsDeviceType.OpenGLES3,
@@ -54,13 +57,14 @@ namespace uPiper.Tests.Editor
                 isWebGL: false,
                 isMobile: true);
 
-            Assert.DoesNotThrow(() =>
-                BackendSelector.LogSelectionSummary(
-                    InferenceBackend.Auto, BackendType.GPUPixel, platform));
+            var actual = BackendSelector.Determine(InferenceBackend.Auto, platform);
+            Assert.AreEqual(BackendType.GPUPixel, actual);
+
+            BackendSelector.LogSelectionSummary(InferenceBackend.Auto, actual, platform);
         }
 
         [Test]
-        public void LogSelectionSummary_AutoMobileCpu_DoesNotThrow()
+        public void LogSelectionSummary_AutoMobileCpu_SelectsCpuForMobileWithoutCompute()
         {
             var platform = new PlatformInfo(
                 graphicsDeviceType: GraphicsDeviceType.OpenGLES3,
@@ -70,13 +74,14 @@ namespace uPiper.Tests.Editor
                 isWebGL: false,
                 isMobile: true);
 
-            Assert.DoesNotThrow(() =>
-                BackendSelector.LogSelectionSummary(
-                    InferenceBackend.Auto, BackendType.CPU, platform));
+            var actual = BackendSelector.Determine(InferenceBackend.Auto, platform);
+            Assert.AreEqual(BackendType.CPU, actual);
+
+            BackendSelector.LogSelectionSummary(InferenceBackend.Auto, actual, platform);
         }
 
         [Test]
-        public void LogSelectionSummary_AutoWebGPU_DoesNotThrow()
+        public void LogSelectionSummary_AutoWebGPU_SelectsGpuComputeForWebGPU()
         {
             var platform = new PlatformInfo(
                 graphicsDeviceType: GraphicsDeviceType.OpenGLES3,
@@ -86,13 +91,14 @@ namespace uPiper.Tests.Editor
                 isWebGL: true,
                 isMobile: false);
 
-            Assert.DoesNotThrow(() =>
-                BackendSelector.LogSelectionSummary(
-                    InferenceBackend.Auto, BackendType.GPUCompute, platform));
+            var actual = BackendSelector.Determine(InferenceBackend.Auto, platform);
+            Assert.AreEqual(BackendType.GPUCompute, actual);
+
+            BackendSelector.LogSelectionSummary(InferenceBackend.Auto, actual, platform);
         }
 
         [Test]
-        public void LogSelectionSummary_AutoWebGL2_DoesNotThrow()
+        public void LogSelectionSummary_AutoWebGL2_SelectsGpuPixelForWebGL2()
         {
             var platform = new PlatformInfo(
                 graphicsDeviceType: GraphicsDeviceType.OpenGLES3,
@@ -102,13 +108,14 @@ namespace uPiper.Tests.Editor
                 isWebGL: true,
                 isMobile: false);
 
-            Assert.DoesNotThrow(() =>
-                BackendSelector.LogSelectionSummary(
-                    InferenceBackend.Auto, BackendType.GPUPixel, platform));
+            var actual = BackendSelector.Determine(InferenceBackend.Auto, platform);
+            Assert.AreEqual(BackendType.GPUPixel, actual);
+
+            BackendSelector.LogSelectionSummary(InferenceBackend.Auto, actual, platform);
         }
 
         [Test]
-        public void LogSelectionSummary_AutoMetal_DoesNotThrow()
+        public void LogSelectionSummary_AutoMetal_SelectsCpuDueToMetalIssues()
         {
             var platform = new PlatformInfo(
                 graphicsDeviceType: GraphicsDeviceType.Metal,
@@ -118,9 +125,10 @@ namespace uPiper.Tests.Editor
                 isWebGL: false,
                 isMobile: false);
 
-            Assert.DoesNotThrow(() =>
-                BackendSelector.LogSelectionSummary(
-                    InferenceBackend.Auto, BackendType.CPU, platform));
+            var actual = BackendSelector.Determine(InferenceBackend.Auto, platform);
+            Assert.AreEqual(BackendType.CPU, actual);
+
+            BackendSelector.LogSelectionSummary(InferenceBackend.Auto, actual, platform);
         }
 
         #endregion
@@ -128,7 +136,7 @@ namespace uPiper.Tests.Editor
         #region Override Detection Tests
 
         [Test]
-        public void LogSelectionSummary_GpuComputeOverriddenToGpuPixel_DoesNotThrow()
+        public void Determine_GpuComputeOnDesktop_OverridesToGpuPixelForVitsCompat()
         {
             var platform = new PlatformInfo(
                 graphicsDeviceType: GraphicsDeviceType.Direct3D11,
@@ -138,14 +146,17 @@ namespace uPiper.Tests.Editor
                 isWebGL: false,
                 isMobile: false);
 
-            // GPUCompute requested but got GPUPixel (VITS compatibility override)
-            Assert.DoesNotThrow(() =>
-                BackendSelector.LogSelectionSummary(
-                    InferenceBackend.GPUCompute, BackendType.GPUPixel, platform));
+            // GPUCompute requested but overridden to GPUPixel (VITS compatibility)
+            var actual = BackendSelector.Determine(
+                InferenceBackend.GPUCompute, platform);
+            Assert.AreEqual(BackendType.GPUPixel, actual);
+
+            BackendSelector.LogSelectionSummary(
+                InferenceBackend.GPUCompute, actual, platform);
         }
 
         [Test]
-        public void LogSelectionSummary_GpuPixelOnMetal_OverriddenToCpu_DoesNotThrow()
+        public void Determine_GpuPixelOnMetal_OverridesToCpu()
         {
             var platform = new PlatformInfo(
                 graphicsDeviceType: GraphicsDeviceType.Metal,
@@ -156,13 +167,16 @@ namespace uPiper.Tests.Editor
                 isMobile: false);
 
             // GPUPixel requested on Metal, overridden to CPU
-            Assert.DoesNotThrow(() =>
-                BackendSelector.LogSelectionSummary(
-                    InferenceBackend.GPUPixel, BackendType.CPU, platform));
+            var actual = BackendSelector.Determine(
+                InferenceBackend.GPUPixel, platform);
+            Assert.AreEqual(BackendType.CPU, actual);
+
+            BackendSelector.LogSelectionSummary(
+                InferenceBackend.GPUPixel, actual, platform);
         }
 
         [Test]
-        public void LogSelectionSummary_ExplicitCpuNotOverridden_DoesNotThrow()
+        public void Determine_ExplicitCpu_ReturnsWithoutOverride()
         {
             var platform = new PlatformInfo(
                 graphicsDeviceType: GraphicsDeviceType.Direct3D11,
@@ -173,9 +187,12 @@ namespace uPiper.Tests.Editor
                 isMobile: false);
 
             // CPU requested and CPU returned — no override
-            Assert.DoesNotThrow(() =>
-                BackendSelector.LogSelectionSummary(
-                    InferenceBackend.CPU, BackendType.CPU, platform));
+            var actual = BackendSelector.Determine(
+                InferenceBackend.CPU, platform);
+            Assert.AreEqual(BackendType.CPU, actual);
+
+            BackendSelector.LogSelectionSummary(
+                InferenceBackend.CPU, actual, platform);
         }
 
         #endregion
@@ -183,7 +200,7 @@ namespace uPiper.Tests.Editor
         #region BackendSelector.Determine Tests
 
         [Test]
-        public void Determine_AllInferenceBackendValues_DoesNotThrow(
+        public void Determine_AllInferenceBackendValues_ReturnsValidBackendType(
             [Values] InferenceBackend backend)
         {
             var platform = new PlatformInfo(
@@ -194,8 +211,9 @@ namespace uPiper.Tests.Editor
                 isWebGL: false,
                 isMobile: false);
 
-            Assert.DoesNotThrow(() =>
-                BackendSelector.Determine(backend, platform));
+            var actual = BackendSelector.Determine(backend, platform);
+            Assert.That(System.Enum.IsDefined(typeof(BackendType), actual),
+                $"Determine({backend}) returned undefined BackendType: {actual}");
         }
 
         #endregion

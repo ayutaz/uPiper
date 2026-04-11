@@ -52,25 +52,6 @@ namespace uPiper.Core
         public Task<AudioClip> GenerateAudioAsync(string text, PiperVoiceConfig voiceConfig, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Stream audio generation for long text
-        /// </summary>
-        /// <param name="text">Input text</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Async enumerable of audio chunks</returns>
-        [Obsolete("Streaming is not yet implemented. This method returns silent audio. Will be implemented in a future release.")]
-        public IAsyncEnumerable<AudioChunk> StreamAudioAsync(string text, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Stream audio generation with specific voice configuration
-        /// </summary>
-        /// <param name="text">Input text</param>
-        /// <param name="voiceConfig">Voice configuration to use</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Async enumerable of audio chunks</returns>
-        [Obsolete("Streaming is not yet implemented. This method returns silent audio. Will be implemented in a future release.")]
-        public IAsyncEnumerable<AudioChunk> StreamAudioAsync(string text, PiperVoiceConfig voiceConfig, CancellationToken cancellationToken = default);
-
-        /// <summary>
         /// Load a voice model
         /// </summary>
         /// <param name="voiceConfig">Voice configuration to load</param>

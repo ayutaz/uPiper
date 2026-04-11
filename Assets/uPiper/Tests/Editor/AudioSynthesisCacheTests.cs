@@ -231,5 +231,68 @@ namespace uPiper.Tests.Editor
             Assert.AreEqual(2, cache.HitCount);
             Assert.AreEqual(1, cache.MissCount);
         }
+
+        // ================================================================
+        // Memory limit eviction tests
+        // ================================================================
+
+        [Test]
+        public void Set_ExceedsMaxMemory_EvictsLRU()
+        {
+            // Each float[125000] entry: 125000 * 4 + 64 = 500,064 bytes
+            // maxMemoryMB=1 → 1,048,576 bytes budget
+            // Two entries: 1,000,128 bytes (fits)
+            // Three entries: 1,500,192 bytes (exceeds budget → evicts LRU)
+            var cache = new AudioSynthesisCache(maxEntries: 100, maxMemoryMB: 1);
+
+            var big1 = new float[125000];
+            var big2 = new float[125000];
+            var big3 = new float[125000];
+
+            cache.Set(1L, big1, 22050);
+            cache.Set(2L, big2, 22050);
+            Assert.AreEqual(2, cache.Count);
+
+            cache.Set(3L, big3, 22050);
+
+            Assert.IsFalse(cache.TryGet(1L, out _, out _)); // evicted
+            Assert.IsTrue(cache.TryGet(2L, out _, out _));  // kept
+            Assert.IsTrue(cache.TryGet(3L, out _, out _));  // new
+            Assert.AreEqual(2, cache.Count);
+        }
+
+        [Test]
+        public void Set_SingleEntryExceedsMemoryBudget_DoesNotCache()
+        {
+            // maxMemoryMB=1 → 1,048,576 bytes budget
+            // float[300000]: 300000 * 4 + 64 = 1,200,064 bytes > budget
+            var cache = new AudioSynthesisCache(maxEntries: 100, maxMemoryMB: 1);
+
+            var huge = new float[300000];
+            cache.Set(1L, huge, 22050);
+
+            Assert.AreEqual(0, cache.Count);
+            Assert.AreEqual(0, cache.CurrentMemoryBytes);
+            Assert.IsFalse(cache.TryGet(1L, out _, out _));
+        }
+
+        [Test]
+        public void Set_MemoryTrackingAccurate_AfterAddAndEvict()
+        {
+            // Each float[125000] entry: 125000 * 4 + 64 = 500,064 bytes
+            const long expectedEntryBytes = 125000L * sizeof(float) + 64;
+            var cache = new AudioSynthesisCache(maxEntries: 100, maxMemoryMB: 1);
+
+            cache.Set(1L, new float[125000], 22050);
+            Assert.AreEqual(expectedEntryBytes, cache.CurrentMemoryBytes);
+
+            cache.Set(2L, new float[125000], 22050);
+            Assert.AreEqual(expectedEntryBytes * 2, cache.CurrentMemoryBytes);
+
+            // Adding a third triggers eviction of entry 1
+            cache.Set(3L, new float[125000], 22050);
+            Assert.AreEqual(expectedEntryBytes * 2, cache.CurrentMemoryBytes);
+            Assert.AreEqual(1, cache.EvictionCount);
+        }
     }
 }

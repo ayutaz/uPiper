@@ -10,13 +10,13 @@ namespace uPiper.Core.AudioGeneration
     /// <summary>
     /// 音素列→AudioClip変換パイプラインを一元管理する。
     /// PhonemeEncoder（エンコード）・IInferenceAudioGenerator（推論）・
-    /// SplitInferenceOrchestrator（句分割）・AudioClipBuilder（AudioClip構築）を組み合わせる。
+    /// ISplitInferenceOrchestrator（句分割）・AudioClipBuilder（AudioClip構築）を組み合わせる。
     /// PiperTTS.Inference.csの2メソッドにあった重複ロジックを排除する。
     /// </summary>
     internal sealed class TTSSynthesisOrchestrator
     {
         private readonly IInferenceAudioGenerator _generator;
-        private readonly SplitInferenceOrchestrator _splitOrchestrator;
+        private readonly ISplitInferenceOrchestrator _splitOrchestrator;
         private readonly PhonemeEncoder _phonemeEncoder;
         private readonly AudioClipBuilder _audioClipBuilder;
         private readonly IPiperConfigReadOnly _config;
@@ -39,7 +39,7 @@ namespace uPiper.Core.AudioGeneration
         /// are cached and reused for identical phonemeIds + parameters.</param>
         public TTSSynthesisOrchestrator(
             IInferenceAudioGenerator generator,
-            SplitInferenceOrchestrator splitOrchestrator,
+            ISplitInferenceOrchestrator splitOrchestrator,
             PhonemeEncoder phonemeEncoder,
             AudioClipBuilder audioClipBuilder,
             IPiperConfigReadOnly config,
@@ -100,11 +100,17 @@ namespace uPiper.Core.AudioGeneration
                     PiperLogger.LogInfo(
                         "[TTSSynthesisOrchestrator] Cache hit — skipping inference ({0} samples)",
                         cachedSamples.Length);
-#pragma warning disable CS0618 // float[] overload is [Obsolete] but needed for cached data
-                    return _audioClipBuilder.BuildAudioClip(
-                        cachedSamples, cachedSampleRate,
-                        $"TTS_{Guid.NewGuid():N}");
-#pragma warning restore CS0618
+                    var tempArray = new NativeArray<float>(cachedSamples, Allocator.Temp);
+                    try
+                    {
+                        return _audioClipBuilder.BuildAudioClip(
+                            tempArray, cachedSampleRate,
+                            $"TTS_{Guid.NewGuid():N}");
+                    }
+                    finally
+                    {
+                        tempArray.Dispose();
+                    }
                 }
             }
 

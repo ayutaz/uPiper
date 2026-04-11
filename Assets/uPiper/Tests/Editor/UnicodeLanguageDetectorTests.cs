@@ -607,5 +607,177 @@ namespace uPiper.Tests.Editor
             Assert.AreEqual(1, segments.Count);
             Assert.AreEqual("ko", segments[0].language);
         }
+
+        // ── Segment-level CJK disambiguation (ja vs zh) ────────────────────
+
+        [Test]
+        public void SegmentText_MixedJaZh_JapanesePartHasKanaNearby()
+        {
+            // Separate Japanese and Chinese parts by more than WindowRadius characters
+            // so the Chinese CJK characters have no kana in their local window.
+            // "漢字のテスト" (ja, 6 chars) + 12 spaces + "中文内容测试" (zh, 6 chars)
+            // The rightmost kana ト is at index 5; the leftmost Chinese 中 is at index 18.
+            // Distance = 18 - 5 = 13 > WindowRadius(10), so 中 has no nearby kana.
+            var detector = new UnicodeLanguageDetector(new[] { "ja", "en", "zh" });
+            var segments = detector.SegmentText("漢字のテスト            中文内容测试");
+
+            // Expect at least one ja segment and one zh segment
+            var hasJa = false;
+            var hasZh = false;
+            foreach (var seg in segments)
+            {
+                if (seg.language == "ja") hasJa = true;
+                if (seg.language == "zh") hasZh = true;
+            }
+            Assert.IsTrue(hasJa, "Expected Japanese segment for kanji near kana");
+            Assert.IsTrue(hasZh, "Expected Chinese segment for isolated CJK");
+        }
+
+        [Test]
+        public void SegmentText_PureChinese_ClassifiedAsZh()
+        {
+            // "中文内容测试" — no kana anywhere → all CJK classified as zh
+            var detector = new UnicodeLanguageDetector(new[] { "ja", "en", "zh" });
+            var segments = detector.SegmentText("中文内容测试");
+
+            Assert.AreEqual(1, segments.Count);
+            Assert.AreEqual("zh", segments[0].language);
+            Assert.AreEqual("中文内容测试", segments[0].text);
+        }
+
+        [Test]
+        public void SegmentText_JapaneseKanjiWithKana_ClassifiedAsJa()
+        {
+            // "漢字のテスト" — kanji adjacent to kana → ja
+            var detector = new UnicodeLanguageDetector(new[] { "ja", "en", "zh" });
+            var segments = detector.SegmentText("漢字のテスト");
+
+            Assert.AreEqual(1, segments.Count);
+            Assert.AreEqual("ja", segments[0].language);
+            Assert.AreEqual("漢字のテスト", segments[0].text);
+        }
+
+        [Test]
+        public void SegmentText_KanjiOnlyNoKana_ClassifiedAsZh()
+        {
+            // "漢字" — no kana nearby, both ja+zh supported → zh
+            // This is the edge case: standalone kanji without kana context
+            // defaults to Chinese when zh is available.
+            var detector = new UnicodeLanguageDetector(new[] { "ja", "en", "zh" });
+            var segments = detector.SegmentText("漢字");
+
+            Assert.AreEqual(1, segments.Count);
+            Assert.AreEqual("zh", segments[0].language);
+        }
+
+        [Test]
+        public void SegmentText_KanjiOnlyNoKana_JaOnlyLanguage_ClassifiedAsJa()
+        {
+            // "漢字" — no zh in language list → always ja regardless of kana context
+            var detector = new UnicodeLanguageDetector(new[] { "ja", "en" });
+            var segments = detector.SegmentText("漢字");
+
+            Assert.AreEqual(1, segments.Count);
+            Assert.AreEqual("ja", segments[0].language);
+        }
+
+        [Test]
+        public void SegmentText_ChineseWithJapaneseProperNoun()
+        {
+            // Chinese text with a Japanese proper noun (kana) embedded.
+            // Separate the Chinese portion from the kana by more than WindowRadius
+            // so the Chinese CJK characters are not influenced by the kana.
+            // "中文内容测试中文内容测试" (12 CJK) + "さくら" (3 kana)
+            // 中(0)..试(11), さ(12)..ら(14)
+            // Characters at index 0-1 are > 10 away from さ(12), so classified as zh.
+            // Characters at indices 2-11 are within 10 of さ(12), so classified as ja.
+            // We use a longer prefix to ensure some chars fall outside the window.
+            // "中文内容测试再来一些中文" (12 chars, indices 0-11) + "さくら" (indices 12-14)
+            // Index 0: distance to さ(12) = 12 > 10 → zh
+            // Index 1: distance to さ(12) = 11 > 10 → zh
+            // Index 2: distance to さ(12) = 10 = WindowRadius → ja (inclusive)
+            // So only indices 0-1 are zh. Let's verify the logic works.
+            var detector = new UnicodeLanguageDetector(new[] { "ja", "en", "zh" });
+            var segments = detector.SegmentText("中文内容测试再来一些中文さくら");
+
+            // Must have at least one ja segment (さくら + nearby CJK) and at least one zh segment
+            var hasJa = false;
+            var hasZh = false;
+            foreach (var seg in segments)
+            {
+                if (seg.language == "ja") hasJa = true;
+                if (seg.language == "zh") hasZh = true;
+            }
+            Assert.IsTrue(hasJa, "Expected Japanese segment for kana proper noun");
+            Assert.IsTrue(hasZh, "Expected Chinese segment for CJK far from kana");
+        }
+
+        [Test]
+        public void SegmentText_FarSeparatedJaAndZh_CorrectlyDisambiguated()
+        {
+            // Japanese kana at start, then enough spacing so that CJK chars
+            // at the end are beyond WindowRadius from any kana.
+            // "あいう" (indices 0-2) + 20 spaces (indices 3-22) + "中文" (indices 23-24)
+            // Distance from う(2) to 中(23) = 21 > WindowRadius(10).
+            var detector = new UnicodeLanguageDetector(new[] { "ja", "en", "zh" });
+            var input = "あいう" + new string(' ', 20) + "中文";
+
+            var segments = detector.SegmentText(input);
+
+            // Last segment should be zh (中文 is far from kana)
+            var lastSegment = segments[segments.Count - 1];
+            Assert.AreEqual("zh", lastSegment.language,
+                "CJK chars far from kana should be classified as zh");
+        }
+
+        [Test]
+        public void HasKanaNearby_KanaAtExactRadius_ReturnsTrue()
+        {
+            // Place kana at exactly WindowRadius distance from the CJK character
+            var text = new string(' ', UnicodeLanguageDetector.WindowRadius) + "漢"
+                       + new string(' ', UnicodeLanguageDetector.WindowRadius - 1) + "あ";
+            var kanjiIndex = UnicodeLanguageDetector.WindowRadius;
+            var kanaIndex = kanjiIndex + UnicodeLanguageDetector.WindowRadius;
+
+            // kana is at exactly WindowRadius away — should be found
+            Assert.IsTrue(UnicodeLanguageDetector.HasKanaNearby(text, kanjiIndex));
+        }
+
+        [Test]
+        public void HasKanaNearby_KanaBeyondRadius_ReturnsFalse()
+        {
+            // Place kana just beyond WindowRadius
+            var text = new string(' ', UnicodeLanguageDetector.WindowRadius) + "漢"
+                       + new string(' ', UnicodeLanguageDetector.WindowRadius) + "あ";
+            var kanjiIndex = UnicodeLanguageDetector.WindowRadius;
+
+            // kana is at WindowRadius + 1 away — should NOT be found
+            Assert.IsFalse(UnicodeLanguageDetector.HasKanaNearby(text, kanjiIndex));
+        }
+
+        [Test]
+        public void HasKanaNearby_KanaBeforeTarget_ReturnsTrue()
+        {
+            // "あ漢" — kana is 1 char before the CJK character
+            Assert.IsTrue(UnicodeLanguageDetector.HasKanaNearby("あ漢", 1));
+        }
+
+        [Test]
+        public void HasKanaNearby_NoKana_ReturnsFalse()
+        {
+            Assert.IsFalse(UnicodeLanguageDetector.HasKanaNearby("中文内容", 0));
+        }
+
+        [Test]
+        public void SegmentText_ZhOnlyLanguage_CjkAlwaysZh()
+        {
+            // When only zh is supported (no ja), all CJK → zh regardless of kana
+            // (kana would not be detected anyway since _hasJa is false)
+            var detector = new UnicodeLanguageDetector(new[] { "zh", "en" });
+            var segments = detector.SegmentText("中文内容测试");
+
+            Assert.AreEqual(1, segments.Count);
+            Assert.AreEqual("zh", segments[0].language);
+        }
     }
 }

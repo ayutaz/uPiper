@@ -92,12 +92,12 @@ namespace uPiper.Core.AudioGeneration
                     }
                 }
 
-                // Hash synthesis parameters
-                hash ^= BitConverter.ToInt32(BitConverter.GetBytes(lengthScale), 0);
+                // Hash synthesis parameters (allocation-free via union struct)
+                hash ^= FloatToInt32Bits(lengthScale);
                 hash *= prime;
-                hash ^= BitConverter.ToInt32(BitConverter.GetBytes(noiseScale), 0);
+                hash ^= FloatToInt32Bits(noiseScale);
                 hash *= prime;
-                hash ^= BitConverter.ToInt32(BitConverter.GetBytes(noiseW), 0);
+                hash ^= FloatToInt32Bits(noiseW);
                 hash *= prime;
                 hash ^= speakerId;
                 hash *= prime;
@@ -196,6 +196,27 @@ namespace uPiper.Core.AudioGeneration
             _currentMemoryBytes -= last.Value.Entry.MemoryBytes;
             _lruList.RemoveLast();
             _evictionCount++;
+        }
+
+        /// <summary>
+        /// Reinterpret a float as int without GC allocation.
+        /// Uses LayoutKind.Explicit union to avoid unsafe keyword.
+        /// </summary>
+        [System.Runtime.InteropServices.StructLayout(
+            System.Runtime.InteropServices.LayoutKind.Explicit)]
+        private struct FloatIntUnion
+        {
+            [System.Runtime.InteropServices.FieldOffset(0)]
+            public float FloatValue;
+
+            [System.Runtime.InteropServices.FieldOffset(0)]
+            public int IntValue;
+        }
+
+        private static int FloatToInt32Bits(float value)
+        {
+            var union = new FloatIntUnion { FloatValue = value };
+            return union.IntValue;
         }
     }
 }

@@ -878,17 +878,6 @@ namespace uPiper.Core
         }
 
         /// <summary>
-        /// Stream audio generation (not yet implemented).
-        /// </summary>
-        [Obsolete("Streaming is not yet implemented. This method returns silent audio. Will be implemented in a future release.")]
-        public IAsyncEnumerable<AudioChunk> StreamAudioAsync(
-            string text,
-            CancellationToken cancellationToken = default)
-        {
-            throw new NotSupportedException("Streaming audio generation is not yet implemented.");
-        }
-
-        /// <summary>
         /// Generate audio from text with specific voice configuration (asynchronous)
         /// </summary>
         public async Task<AudioClip> GenerateAudioAsync(string text, PiperVoiceConfig voiceConfig, CancellationToken cancellationToken = default)
@@ -976,18 +965,6 @@ namespace uPiper.Core
 
             // Non-inference fallback
             return await GenerateAudioAsync(text, cancellationToken);
-        }
-
-        /// <summary>
-        /// Stream audio generation with specific voice configuration (not yet implemented).
-        /// </summary>
-        [Obsolete("Streaming is not yet implemented. This method returns silent audio. Will be implemented in a future release.")]
-        public IAsyncEnumerable<AudioChunk> StreamAudioAsync(
-            string text,
-            PiperVoiceConfig voiceConfig,
-            CancellationToken cancellationToken = default)
-        {
-            throw new NotSupportedException("Streaming audio generation is not yet implemented.");
         }
 
         /// <summary>
