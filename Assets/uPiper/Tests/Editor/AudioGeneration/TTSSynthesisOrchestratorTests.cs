@@ -310,6 +310,181 @@ namespace uPiper.Tests.Editor.AudioGeneration
             Assert.AreEqual(1, _stubGenerator.GenerateCallCount);
         }
 
+        // ── SynthesizeWithTimingAsync ──────────────────────────────
+
+        [Test]
+        public async Task SynthesizeWithTimingAsync_NoDurations_TimingsIsNull()
+        {
+            // Arrange: DurationsToReturn = null (default), enableSilence: false
+            var config = CreateValidatedConfig(enableSilence: false);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            var request = new SynthesisRequest(
+                new[] { "k", "o", "N" },
+                null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
+
+            // Act
+            var result = await orchestrator.SynthesizeWithTimingAsync(request);
+
+            // Assert
+            Assert.IsNull(result.Timings,
+                "durations非対応時は Timings が null であること");
+            Assert.IsFalse(result.HasTimings,
+                "durations非対応時は HasTimings が false であること");
+            Assert.IsNotNull(result.AudioClip,
+                "durations非対応でも AudioClip を返すこと");
+        }
+
+        [Test]
+        public void SynthesizeWithTimingAsync_NoDurations_NoException()
+        {
+            // Arrange
+            var config = CreateValidatedConfig(enableSilence: false);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            var request = new SynthesisRequest(
+                new[] { "k", "o", "N" },
+                null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
+
+            // Act & Assert
+            Assert.DoesNotThrowAsync(async () =>
+                await orchestrator.SynthesizeWithTimingAsync(request));
+        }
+
+        [Test]
+        public async Task SynthesizeWithTimingAsync_NoDurations_GenerateCallCountIsOne()
+        {
+            // Arrange
+            var config = CreateValidatedConfig(enableSilence: false);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            var request = new SynthesisRequest(
+                new[] { "k", "o", "N" },
+                null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
+
+            // Act
+            await orchestrator.SynthesizeWithTimingAsync(request);
+
+            // Assert
+            Assert.AreEqual(1, _stubGenerator.GenerateCallCount,
+                "GenerateAudioAsync が1回呼ばれること");
+        }
+
+        [Test]
+        public async Task SynthesizeWithTimingAsync_NoDurations_WithProsody_TimingsIsNull()
+        {
+            // Arrange: Prosody付きでもdurations非対応ならTimingsはnull
+            _stubGenerator.SupportsProsody = true;
+            var config = CreateValidatedConfig(enableSilence: false);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            // stride=3 flat: [a1_0, a2_0, a3_0, a1_1, a2_1, a3_1, a1_2, a2_2, a3_2]
+            var prosodyFlat = new[] { 0, 1, 0, 1, 1, 0, 2, 1, 0 };
+            var request = new SynthesisRequest(
+                new[] { "k", "o", "N" },
+                prosodyFlat,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
+
+            // Act
+            var result = await orchestrator.SynthesizeWithTimingAsync(request);
+
+            // Assert
+            Assert.IsNull(result.Timings,
+                "Prosody付きでもdurations非対応時は Timings が null であること");
+            Assert.IsNotNull(_stubGenerator.LastProsodyFlat,
+                "Prosodyありの場合、prosodyFlat が渡されること");
+        }
+
+        [Test]
+        public async Task SynthesizeWithTimingAsync_NoDurations_WithSilenceSplit_TimingsIsNull()
+        {
+            // Arrange: 句分割使用時はTimingsがnull
+            var config = CreateValidatedConfig(enableSilence: true, silenceSpec: "_ 0.5");
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            var request = new SynthesisRequest(
+                new[] { "a", "_", "k", "o" },
+                null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
+
+            // Act
+            var result = await orchestrator.SynthesizeWithTimingAsync(request);
+
+            // Assert
+            Assert.IsNull(result.Timings,
+                "句分割使用時は Timings が null であること");
+            Assert.IsNotNull(result.AudioClip,
+                "句分割使用時でも AudioClip を返すこと");
+        }
+
+        [Test]
+        public async Task SynthesizeWithTimingAsync_WithDurations_TimingsIsNotNull()
+        {
+            // Arrange: durations対応モデル
+            // phonemes = ["k", "o", "N"]
+            // PhonemeEncoder (intersperse PAD あり):
+            //   [^(BOS), _(PAD), k, _(PAD), o, _(PAD), N, _(PAD), $(EOS)] = 9要素
+            _stubGenerator.SupportsDurations = true;
+            _stubGenerator.DurationsToReturn = new float[] { 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f };
+            var config = CreateValidatedConfig(enableSilence: false);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            var request = new SynthesisRequest(
+                new[] { "k", "o", "N" },
+                null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
+
+            // Act
+            var result = await orchestrator.SynthesizeWithTimingAsync(request);
+
+            // Assert
+            Assert.IsTrue(result.HasTimings,
+                "durations対応モデルでは HasTimings が true であること");
+            Assert.IsNotNull(result.Timings,
+                "durations対応モデルでは Timings が null でないこと");
+            Assert.Greater(result.Timings.Count, 0,
+                "durations対応モデルでは Timings に1件以上のエントリがあること");
+        }
+
+        [Test]
+        public async Task SynthesizeAsync_NoDurations_StillReturnsAudioClip()
+        {
+            // Arrange: 既存SynthesizeAsyncのリグレッションテスト
+            var config = CreateValidatedConfig(enableSilence: false);
+            var orchestrator = new TTSSynthesisOrchestrator(
+                _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
+                config, _voiceConfig);
+            var request = new SynthesisRequest(
+                new[] { "k", "o", "N" },
+                null,
+                1.0f, 0.667f, 0.8f,
+                0, 0);
+
+            // Act
+            var clip = await orchestrator.SynthesizeAsync(request);
+
+            // Assert
+            Assert.IsNotNull(clip,
+                "durations非対応でも SynthesizeAsync は AudioClip を返すこと");
+            Assert.AreEqual(1, _stubGenerator.GenerateCallCount,
+                "GenerateAudioAsync が1回呼ばれること");
+        }
+
         // ── ヘルパー ─────────────────────────────────────────────
 
         /// <summary>

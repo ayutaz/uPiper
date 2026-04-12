@@ -43,12 +43,12 @@
 
 | ID | タイトル | 種別 | 状態 | 依存 | チケット |
 |----|---------|------|------|------|---------|
-| P3-1 | SplitInferenceOrchestrator durations 結合 | impl | todo | P2-1, P2-3 | [P3-1.md](./P3-1.md) |
-| P3-2 | TTSSynthesisOrchestrator タイミング計算統合 | impl | todo | P1-4, P3-1 | [P3-2.md](./P3-2.md) |
-| P3-3 | AudioSynthesisCache タイミング格納拡張 | impl | todo | P1-1 | [P3-3.md](./P3-3.md) |
-| T3-1 | SplitInferenceOrchestrator 句分割タイミングテスト | test | todo | P3-1, P2-4 | [T3-1.md](./T3-1.md) |
-| T3-2 | AudioSynthesisCache タイミング格納テスト | test | todo | P3-3 | [T3-2.md](./T3-2.md) |
-| T3-3 | durations 非対応モデルテスト | test | todo | P3-2, P2-4 | [T3-3.md](./T3-3.md) |
+| P3-1 | SplitInferenceOrchestrator durations 結合 | impl | done | P2-1, P2-3 | [P3-1.md](./P3-1.md) |
+| P3-2 | TTSSynthesisOrchestrator タイミング計算統合 | impl | done | P1-4, P3-1 | [P3-2.md](./P3-2.md) |
+| P3-3 | AudioSynthesisCache タイミング格納拡張 | impl | done | P1-1 | [P3-3.md](./P3-3.md) |
+| T3-1 | SplitInferenceOrchestrator 句分割タイミングテスト | test | done | P3-1, P2-4 | [T3-1.md](./T3-1.md) |
+| T3-2 | AudioSynthesisCache タイミング格納テスト | test | done | P3-3 | [T3-2.md](./T3-2.md) |
+| T3-3 | durations 非対応モデルテスト | test | done | P3-2, P2-4 | [T3-3.md](./T3-3.md) |
 
 ## Phase 4: 公開API
 
@@ -72,6 +72,6 @@
 |-------|------|--------|--------|
 | Phase 1 | 4/4 | 5/5 | 100% |
 | Phase 2 | 4/4 | 2/2 | 100% |
-| Phase 3 | 0/3 | 0/3 | 0% |
+| Phase 3 | 3/3 | 3/3 | 100% |
 | Phase 4 | 0/2 | 0/5 | 0% |
-| **合計** | **8/13** | **7/15** | **54%** |
+| **合計** | **11/13** | **10/15** | **75%** |

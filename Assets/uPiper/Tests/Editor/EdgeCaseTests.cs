@@ -81,7 +81,7 @@ namespace uPiper.Tests.Editor
                 cache.Set(long.MaxValue, audio, 22050);
             }, "long.MaxValue as key should not throw");
 
-            Assert.IsTrue(cache.TryGet(long.MaxValue, out var samples, out var sampleRate),
+            Assert.IsTrue(cache.TryGet(long.MaxValue, out var samples, out var sampleRate, out _),
                 "Should retrieve entry with long.MaxValue key");
             Assert.AreEqual(audio, samples);
             Assert.AreEqual(22050, sampleRate);
@@ -91,7 +91,7 @@ namespace uPiper.Tests.Editor
                 cache.Set(long.MinValue, audio, 22050);
             }, "long.MinValue as key should not throw");
 
-            Assert.IsTrue(cache.TryGet(long.MinValue, out _, out _),
+            Assert.IsTrue(cache.TryGet(long.MinValue, out _, out _, out _),
                 "Should retrieve entry with long.MinValue key");
         }
 

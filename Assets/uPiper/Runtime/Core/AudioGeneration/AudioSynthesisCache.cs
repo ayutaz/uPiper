@@ -11,18 +11,30 @@ namespace uPiper.Core.AudioGeneration
     /// </summary>
     internal sealed class AudioSynthesisCache
     {
-        // Cache entry: audio samples + sample rate
+        // Cache entry: audio samples + sample rate + optional timing
         private readonly struct CacheEntry
         {
             public readonly float[] Samples;
             public readonly int SampleRate;
+            public readonly PhonemeTimingEntry[] Timings;
             public readonly long MemoryBytes;
 
-            public CacheEntry(float[] samples, int sampleRate)
+            public CacheEntry(float[] samples, int sampleRate, PhonemeTimingEntry[] timings = null)
             {
                 Samples = samples;
                 SampleRate = sampleRate;
-                MemoryBytes = samples.Length * sizeof(float) + 64; // 64 bytes overhead
+                Timings = timings;
+                MemoryBytes = CalculateMemoryBytes(samples, timings);
+            }
+
+            private static long CalculateMemoryBytes(float[] samples, PhonemeTimingEntry[] timings)
+            {
+                long bytes = samples.Length * sizeof(float) + 64;
+                if (timings != null)
+                {
+                    bytes += timings.Length * 32L + 64;
+                }
+                return bytes;
             }
         }
 
@@ -109,9 +121,18 @@ namespace uPiper.Core.AudioGeneration
         }
 
         /// <summary>
-        /// Try to get cached audio data.
+        /// Try to get cached audio data and optional timing information.
         /// </summary>
-        public bool TryGet(long key, out float[] samples, out int sampleRate)
+        /// <param name="key">Cache key (FNV-1a hash).</param>
+        /// <param name="samples">Cached audio samples, or null on miss.</param>
+        /// <param name="sampleRate">Cached sample rate, or 0 on miss.</param>
+        /// <param name="timings">Cached timing entries, or null if not available or on miss.</param>
+        /// <returns>true if cache hit, false if miss.</returns>
+        public bool TryGet(
+            long key,
+            out float[] samples,
+            out int sampleRate,
+            out PhonemeTimingEntry[] timings)
         {
             if (_cache.TryGetValue(key, out var node))
             {
@@ -121,24 +142,31 @@ namespace uPiper.Core.AudioGeneration
                 _hitCount++;
                 samples = node.Value.Entry.Samples;
                 sampleRate = node.Value.Entry.SampleRate;
+                timings = node.Value.Entry.Timings;
                 return true;
             }
 
             _missCount++;
             samples = null;
             sampleRate = 0;
+            timings = null;
             return false;
         }
 
         /// <summary>
-        /// Add audio data to the cache. Evicts LRU entries if needed.
+        /// Add audio data and optional timing information to the cache.
+        /// Evicts LRU entries if needed.
         /// </summary>
-        public void Set(long key, float[] samples, int sampleRate)
+        /// <param name="key">Cache key (FNV-1a hash).</param>
+        /// <param name="samples">Audio samples to cache.</param>
+        /// <param name="sampleRate">Audio sample rate.</param>
+        /// <param name="timings">Optional timing entries. null for no timing data.</param>
+        public void Set(long key, float[] samples, int sampleRate, PhonemeTimingEntry[] timings = null)
         {
             if (samples == null || samples.Length == 0)
                 return;
 
-            var entry = new CacheEntry(samples, sampleRate);
+            var entry = new CacheEntry(samples, sampleRate, timings);
 
             // Don't cache if single entry exceeds memory budget
             if (entry.MemoryBytes > _maxMemoryBytes)

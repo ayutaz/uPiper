@@ -61,7 +61,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             phonemeIdMap["#"] = new[] { 99 }; // phonemeSilence のキー用（phonemeIds に含まれない）
 
             // Act
-            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
                 phonemeIds,
                 prosodyFlat: null,
                 phonemeSilence, phonemeIdMap,
@@ -70,17 +70,16 @@ namespace uPiper.Tests.Editor.AudioGeneration
             try
             {
                 // Assert
-                Assert.IsTrue(result.IsCreated, "結果が作成済みであること");
+                Assert.IsTrue(output.Audio.IsCreated, "結果が作成済みであること");
                 Assert.AreEqual(1, _stubGenerator.GenerateCallCount,
                     "分割なしの場合、推論は1回のみ呼ばれること");
                 // 単一句なので、返却データはスタブの固定データと同じ長さ
-                Assert.AreEqual(50, result.Length,
+                Assert.AreEqual(50, output.Audio.Length,
                     "単一句のオーディオデータ長が一致すること");
             }
             finally
             {
-                if (result.IsCreated)
-                    result.Dispose();
+                output.Dispose();
             }
         }
 
@@ -100,7 +99,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             var expectedSilenceSamples = (int)(0.5f * 22050);
 
             // Act
-            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
                 phonemeIds,
                 prosodyFlat: null,
                 phonemeSilence, phonemeIdMap,
@@ -109,27 +108,26 @@ namespace uPiper.Tests.Editor.AudioGeneration
             try
             {
                 // Assert
-                Assert.IsTrue(result.IsCreated, "結果が作成済みであること");
+                Assert.IsTrue(output.Audio.IsCreated, "結果が作成済みであること");
                 Assert.AreEqual(2, _stubGenerator.GenerateCallCount,
                     "2句に分割されるため、推論が2回呼ばれること");
 
                 // 合計長 = 句1のオーディオ(50) + 無音(11025) + 句2のオーディオ(50)
                 var expectedTotalLength = 50 + expectedSilenceSamples + 50;
-                Assert.AreEqual(expectedTotalLength, result.Length,
+                Assert.AreEqual(expectedTotalLength, output.Audio.Length,
                     "合計サンプル数が句のオーディオ+無音の合計と一致すること");
 
                 // 無音区間が0.0fで埋められていることを確認
                 // 句1のオーディオ(50サンプル)の後から無音区間が始まる
                 for (var i = 50; i < 50 + expectedSilenceSamples; i++)
                 {
-                    Assert.AreEqual(0.0f, result[i],
+                    Assert.AreEqual(0.0f, output.Audio[i],
                         $"無音区間のサンプル[{i}]が 0.0f であること");
                 }
             }
             finally
             {
-                if (result.IsCreated)
-                    result.Dispose();
+                output.Dispose();
             }
         }
 
@@ -146,7 +144,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             var phonemeIdMap = CreateMinimalPhonemeIdMap();
 
             // Act
-            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
                 phonemeIds,
                 prosodyFlat: null,
                 phonemeSilence, phonemeIdMap,
@@ -155,18 +153,17 @@ namespace uPiper.Tests.Editor.AudioGeneration
             try
             {
                 // Assert
-                Assert.IsTrue(result.IsCreated, "結果が作成済みであること");
+                Assert.IsTrue(output.Audio.IsCreated, "結果が作成済みであること");
                 // 空の Phrase のみが生成され、PhonemeIds が空のためスキップされる
                 // → totalLength は 0 になるが、結果配列自体は空（長さ0）
                 Assert.AreEqual(0, _stubGenerator.GenerateCallCount,
                     "空入力に対して推論が呼ばれないこと");
-                Assert.AreEqual(0, result.Length,
+                Assert.AreEqual(0, output.Audio.Length,
                     "空入力に対して空のオーディオデータが返ること");
             }
             finally
             {
-                if (result.IsCreated)
-                    result.Dispose();
+                output.Dispose();
             }
         }
 
@@ -191,7 +188,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             var phonemeIdMap = CreateMinimalPhonemeIdMap();
 
             // Act
-            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
                 phonemeIds,
                 prosodyFlat,
                 phonemeSilence, phonemeIdMap,
@@ -200,7 +197,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             try
             {
                 // Assert
-                Assert.IsTrue(result.IsCreated);
+                Assert.IsTrue(output.Audio.IsCreated);
                 Assert.AreEqual(2, _stubGenerator.GenerateCallCount,
                     "Prosody付きでも2句に分割されること");
                 // 最後の呼び出しの prosodyFlat が non-null であることを確認
@@ -209,8 +206,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             }
             finally
             {
-                if (result.IsCreated)
-                    result.Dispose();
+                output.Dispose();
             }
         }
 
@@ -230,7 +226,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             var progress = new Progress<float>(v => reportedValues.Add(v));
 
             // Act
-            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
                 phonemeIds,
                 prosodyFlat: null,
                 phonemeSilence, phonemeIdMap,
@@ -240,7 +236,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             try
             {
                 // Assert
-                Assert.IsTrue(result.IsCreated, "結果が作成済みであること");
+                Assert.IsTrue(output.Audio.IsCreated, "結果が作成済みであること");
                 Assert.AreEqual(3, _stubGenerator.GenerateCallCount,
                     "3句に分割されるため、推論が3回呼ばれること");
 
@@ -253,8 +249,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             }
             finally
             {
-                if (result.IsCreated)
-                    result.Dispose();
+                output.Dispose();
             }
         }
 
@@ -273,7 +268,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             var progress = new SynchronousProgress<float>(v => reportedValues.Add(v));
 
             // Act
-            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
                 phonemeIds,
                 prosodyFlat: null,
                 phonemeSilence, phonemeIdMap,
@@ -291,8 +286,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             }
             finally
             {
-                if (result.IsCreated)
-                    result.Dispose();
+                output.Dispose();
             }
         }
 
@@ -308,7 +302,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             var progress = new SynchronousProgress<float>(v => reportedValues.Add(v));
 
             // Act
-            var result = await _orchestrator.GenerateWithSilenceSplitAsync(
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
                 phonemeIds,
                 prosodyFlat: null,
                 phonemeSilence, phonemeIdMap,
@@ -323,8 +317,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             }
             finally
             {
-                if (result.IsCreated)
-                    result.Dispose();
+                output.Dispose();
             }
         }
 
@@ -352,7 +345,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             var orchestrator = new SplitInferenceOrchestrator(wrappedGenerator);
 
             // Act
-            var result = await orchestrator.GenerateWithSilenceSplitAsync(
+            var output = await orchestrator.GenerateWithSilenceSplitAsync(
                 phonemeIds,
                 prosodyFlat: null,
                 phonemeSilence, phonemeIdMap,
@@ -361,7 +354,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             try
             {
                 // Assert
-                Assert.IsTrue(result.IsCreated, "結果が作成済みであること");
+                Assert.IsTrue(output.Audio.IsCreated, "結果が作成済みであること");
                 Assert.AreEqual(1, _stubGenerator.GenerateCallCount,
                     "分割なしの場合、推論は1回のみ呼ばれること");
                 // ShortTextProcessor が適用され、phonemeIds が MinPhonemeIds 以上にパディングされていること
@@ -371,8 +364,242 @@ namespace uPiper.Tests.Editor.AudioGeneration
             }
             finally
             {
-                if (result.IsCreated)
-                    result.Dispose();
+                output.Dispose();
+            }
+        }
+
+        // ── Durations 結合テスト ─────────────────────────────────
+
+        [Test]
+        public async Task GenerateWithSilenceSplitAsync_TwoPhrases_CombinedDurationsLengthCorrect()
+        {
+            // Arrange: 2句分割、各句で durations 3要素を返す
+            _stubGenerator.DurationsToReturn = new float[] { 1f, 2f, 3f };
+            var phonemeIds = new[] { 1, 3, 0, 8, 7, 2 }; // ^,a,_,k,o,$
+            var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+
+            // Act
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds,
+                prosodyFlat: null,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050);
+
+            try
+            {
+                // Assert: 3 durations/phrase * 2 phrases = 6
+                Assert.AreEqual(6, output.Durations.Length,
+                    "結合 Durations の長さが句数 × 句あたり durations 数と一致すること");
+                Assert.IsTrue(output.HasDurations,
+                    "Durations が利用可能であること");
+            }
+            finally
+            {
+                output.Dispose();
+            }
+        }
+
+        [Test]
+        public async Task GenerateWithSilenceSplitAsync_TwoPhrases_DurationsValuesPreserved()
+        {
+            // Arrange: 各句で同じ durations を返す
+            _stubGenerator.DurationsToReturn = new float[] { 10f, 20f, 30f };
+            var phonemeIds = new[] { 1, 3, 0, 8, 7, 2 };
+            var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+
+            // Act
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds,
+                prosodyFlat: null,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050);
+
+            try
+            {
+                // Assert: [10, 20, 30, 10, 20, 30]
+                var expected = new float[] { 10f, 20f, 30f, 10f, 20f, 30f };
+                Assert.AreEqual(expected.Length, output.Durations.Length);
+                for (var i = 0; i < expected.Length; i++)
+                {
+                    Assert.AreEqual(expected[i], output.Durations[i], 1e-5f,
+                        $"Durations[{i}] の値が保存されていること");
+                }
+            }
+            finally
+            {
+                output.Dispose();
+            }
+        }
+
+        [Test]
+        public async Task GenerateWithSilenceSplitAsync_ThreePhrases_DurationsAndAudioCorrect()
+        {
+            // Arrange: 3句分割、各句で durations 2要素・audio 30サンプル
+            _stubGenerator.DurationsToReturn = new float[] { 1f, 2f };
+            _stubGenerator.AudioDataToReturn = CreateFixedAudioData(30, 0.3f);
+            var phonemeIds = new[] { 1, 3, 0, 8, 0, 7, 2 }; // ^,a,_,k,_,o,$
+            var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.2f };
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+
+            var expectedSilenceSamples = (int)(0.2f * 22050);
+
+            // Act
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds,
+                prosodyFlat: null,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050);
+
+            try
+            {
+                // Assert: Durations = 2 * 3 phrases = 6
+                Assert.AreEqual(6, output.Durations.Length,
+                    "3句×2 durations = 6 であること");
+
+                // Audio = 30 + silence + 30 + silence + 30
+                var expectedAudioLength = 30 + expectedSilenceSamples
+                    + 30 + expectedSilenceSamples + 30;
+                Assert.AreEqual(expectedAudioLength, output.Audio.Length,
+                    "3句のオーディオ＋無音の合計長が一致すること");
+            }
+            finally
+            {
+                output.Dispose();
+            }
+        }
+
+        [Test]
+        public async Task GenerateWithSilenceSplitAsync_SinglePhrase_DurationsUnchanged()
+        {
+            // Arrange: 分割なし
+            _stubGenerator.DurationsToReturn = new float[] { 1f, 2f, 3f, 4f, 5f };
+            var phonemeIds = new[] { 1, 3, 4, 5, 2 }; // ^,a,i,u,$
+            var phonemeSilence = new Dictionary<string, float> { ["#"] = 0.5f };
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+            phonemeIdMap["#"] = new[] { 99 };
+
+            // Act
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds,
+                prosodyFlat: null,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050);
+
+            try
+            {
+                // Assert: 分割なしなので durations はそのまま
+                Assert.AreEqual(5, output.Durations.Length,
+                    "単一句の Durations 長が一致すること");
+                var expected = new float[] { 1f, 2f, 3f, 4f, 5f };
+                for (var i = 0; i < expected.Length; i++)
+                {
+                    Assert.AreEqual(expected[i], output.Durations[i], 1e-5f,
+                        $"Durations[{i}] の値が一致すること");
+                }
+            }
+            finally
+            {
+                output.Dispose();
+            }
+        }
+
+        [Test]
+        public async Task GenerateWithSilenceSplitAsync_NoDurations_HasDurationsFalse()
+        {
+            // Arrange: DurationsToReturn = null → durations なし
+            _stubGenerator.DurationsToReturn = null;
+            var phonemeIds = new[] { 1, 3, 0, 8, 7, 2 };
+            var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+
+            // Act
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds,
+                prosodyFlat: null,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050);
+
+            try
+            {
+                // Assert: durations なし
+                Assert.IsFalse(output.HasDurations,
+                    "DurationsToReturn が null の場合 HasDurations は false であること");
+
+                // Audio 結合は正常に動作すること
+                var expectedSilenceSamples = (int)(0.5f * 22050);
+                Assert.AreEqual(50 + expectedSilenceSamples + 50, output.Audio.Length,
+                    "Audio 結合が正常に行われること");
+            }
+            finally
+            {
+                output.Dispose();
+            }
+        }
+
+        [Test]
+        public async Task GenerateWithSilenceSplitAsync_EmptyInput_NoDurations()
+        {
+            // Arrange: 空 phonemeIds
+            var phonemeIds = Array.Empty<int>();
+            var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+            _stubGenerator.DurationsToReturn = new float[] { 1f, 2f };
+
+            // Act
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds,
+                prosodyFlat: null,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050);
+
+            try
+            {
+                // Assert: 空入力 → audio/durations ともに空
+                Assert.AreEqual(0, output.Audio.Length,
+                    "空入力で Audio 長が 0 であること");
+                Assert.IsFalse(output.HasDurations,
+                    "空入力で HasDurations が false であること");
+            }
+            finally
+            {
+                output.Dispose();
+            }
+        }
+
+        [Test]
+        public async Task GenerateWithSilenceSplitAsync_TwoPhrases_CombinedAudioLengthWithDurations()
+        {
+            // Arrange: durations 設定 + 2句分割
+            _stubGenerator.DurationsToReturn = new float[] { 5f, 10f };
+            _stubGenerator.AudioDataToReturn = CreateFixedAudioData(50, 0.5f);
+            var phonemeIds = new[] { 1, 3, 0, 8, 7, 2 };
+            var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+
+            var expectedSilenceSamples = (int)(0.5f * 22050);
+
+            // Act
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds,
+                prosodyFlat: null,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050);
+
+            try
+            {
+                // Assert: Audio = 50 + 11025 + 50
+                Assert.AreEqual(50 + expectedSilenceSamples + 50, output.Audio.Length,
+                    "durations 付き2句の合計 Audio 長が一致すること");
+                Assert.IsTrue(output.HasDurations,
+                    "HasDurations が true であること");
+                Assert.AreEqual(4, output.Durations.Length,
+                    "2句×2 durations = 4 であること");
+            }
+            finally
+            {
+                output.Dispose();
             }
         }
 

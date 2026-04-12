@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Unity.Collections;
 
 namespace uPiper.Core.AudioGeneration
 {
@@ -13,6 +12,7 @@ namespace uPiper.Core.AudioGeneration
     {
         /// <summary>
         /// 沈黙句分割付きで音声を生成する。
+        /// 句ごとの推論結果（Audio + Durations）を結合した <see cref="InferenceOutput"/> を返す。
         /// </summary>
         /// <param name="phonemeIds">音素ID配列</param>
         /// <param name="prosodyFlat">Prosodyフラット配列 (stride=3), or null</param>
@@ -26,8 +26,12 @@ namespace uPiper.Core.AudioGeneration
         /// <param name="languageId">言語ID</param>
         /// <param name="progress">句単位の進捗コールバック (0.0〜1.0)。null許容。</param>
         /// <param name="cancellationToken">キャンセルトークン</param>
-        /// <remarks>Caller owns and must Dispose the returned NativeArray.</remarks>
-        Task<NativeArray<float>> GenerateWithSilenceSplitAsync(
+        /// <remarks>
+        /// Caller owns and must Dispose the returned <see cref="InferenceOutput"/>.
+        /// Durations は句ごとの durations を結合した配列（句間無音は含まない）。
+        /// 1句でも durations があれば HasDurations == true。
+        /// </remarks>
+        Task<InferenceOutput> GenerateWithSilenceSplitAsync(
             int[] phonemeIds,
             int[] prosodyFlat,
             IReadOnlyDictionary<string, float> phonemeSilence,
