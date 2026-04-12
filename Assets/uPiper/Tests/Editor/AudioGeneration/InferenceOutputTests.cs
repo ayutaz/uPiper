@@ -29,8 +29,11 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 var output = new InferenceOutput(audio, durations);
                 output.Dispose();
 
-                Assert.IsFalse(audio.IsCreated, "Audio NativeArray should be disposed");
-                Assert.IsFalse(durations.IsCreated, "Durations NativeArray should be disposed");
+                // NativeArray は struct のため、output 内部の _audio/_durations が Dispose されても
+                // ローカル変数 audio/durations のコピーには反映されない。
+                // output.Audio / output.Durations プロパティで内部状態を確認する。
+                Assert.IsFalse(output.Audio.IsCreated, "Audio NativeArray should be disposed");
+                Assert.IsFalse(output.Durations.IsCreated, "Durations NativeArray should be disposed");
             }
             catch
             {
@@ -52,7 +55,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 var output = new InferenceOutput(audio, default);
 
                 Assert.DoesNotThrow(() => output.Dispose());
-                Assert.IsFalse(audio.IsCreated, "Audio NativeArray should be disposed");
+                Assert.IsFalse(output.Audio.IsCreated, "Audio NativeArray should be disposed");
             }
             catch
             {
@@ -73,7 +76,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 var output = new InferenceOutput(default, durations);
 
                 Assert.DoesNotThrow(() => output.Dispose());
-                Assert.IsFalse(durations.IsCreated, "Durations NativeArray should be disposed");
+                Assert.IsFalse(output.Durations.IsCreated, "Durations NativeArray should be disposed");
             }
             catch
             {
@@ -272,7 +275,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 output.Dispose();
                 Assert.IsTrue(detached.IsCreated,
                     "Dispose 後も detached Audio は有効であること");
-                Assert.IsFalse(durations.IsCreated,
+                Assert.IsFalse(output.Durations.IsCreated,
                     "Dispose で Durations は解放されること");
             }
             finally
@@ -307,7 +310,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 output.Dispose();
                 Assert.IsTrue(detached.IsCreated,
                     "Dispose 後も detached Durations は有効であること");
-                Assert.IsFalse(audio.IsCreated,
+                Assert.IsFalse(output.Audio.IsCreated,
                     "Dispose で Audio は解放されること");
             }
             finally
