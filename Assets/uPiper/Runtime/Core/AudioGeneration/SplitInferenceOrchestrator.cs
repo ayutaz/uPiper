@@ -11,8 +11,11 @@ namespace uPiper.Core.AudioGeneration
     /// 沈黙句分割のオーケストレーションを担当する。
     /// 音素列を沈黙トークンの位置で分割し、句ごとに独立推論を行い、
     /// 句間にゼロサンプルの無音区間を挿入して結合する。
-    /// 句ごとの Durations も結合して返す（句間無音は含まない）。
     /// </summary>
+    /// <remarks>
+    /// 句分割時の durations 結合は TTSSynthesisOrchestrator が使用しないため除外。
+    /// 将来の句単位タイミング対応では SplitInferenceResult 型を導入予定。
+    /// </remarks>
     internal class SplitInferenceOrchestrator : ISplitInferenceOrchestrator
     {
         private readonly IInferenceAudioGenerator _generator;
@@ -28,7 +31,7 @@ namespace uPiper.Core.AudioGeneration
         /// </summary>
         /// <remarks>
         /// Caller owns and must Dispose the returned <see cref="InferenceOutput"/>.
-        /// Durations は句ごとの durations を結合した配列（句間無音は含まない）。
+        /// Durations is always <c>default</c> (not combined across phrases).
         /// </remarks>
         public async Task<InferenceOutput> GenerateWithSilenceSplitAsync(
             int[] phonemeIds,
@@ -68,10 +71,7 @@ namespace uPiper.Core.AudioGeneration
             }
 
             var segments = new List<(NativeArray<float> Audio, int SilenceSamples)>();
-            var allDurations = new List<float>();
-            var hasDurations = false;
             NativeArray<float> combinedAudio = default;
-            NativeArray<float> combinedDurations = default;
             try
             {
                 var totalLength = 0;
@@ -91,21 +91,7 @@ namespace uPiper.Core.AudioGeneration
                         speakerId, languageId,
                         cancellationToken);
                     var phraseAudio = phraseOutput.DetachAudio();
-                    try
-                    {
-                        // Read durations before Dispose
-                        if (phraseOutput.HasDurations)
-                        {
-                            hasDurations = true;
-                            var dur = phraseOutput.Durations;
-                            for (var d = 0; d < dur.Length; d++)
-                                allDurations.Add(dur[d]);
-                        }
-                    }
-                    finally
-                    {
-                        phraseOutput.Dispose();
-                    }
+                    phraseOutput.Dispose();
 
                     segments.Add((phraseAudio, phrase.SilenceSamples));
                     totalLength += phraseAudio.Length + phrase.SilenceSamples;
@@ -133,27 +119,15 @@ namespace uPiper.Core.AudioGeneration
                     offset += silenceSamples; // Zero-initialized (silence)
                 }
 
-                // Build combined durations NativeArray
-                if (hasDurations)
-                {
-                    combinedDurations = new NativeArray<float>(
-                        allDurations.Count, Allocator.Persistent);
-                    for (var i = 0; i < allDurations.Count; i++)
-                        combinedDurations[i] = allDurations[i];
-                }
-
                 PiperLogger.LogInfo(
                     $"[SplitInferenceOrchestrator] Silence split complete: " +
-                    $"{totalLength} total samples ({segments.Count} phrases), " +
-                    $"durations: {(hasDurations ? allDurations.Count.ToString() : "none")}");
-                return new InferenceOutput(combinedAudio, combinedDurations);
+                    $"{totalLength} total samples ({segments.Count} phrases)");
+                return new InferenceOutput(combinedAudio, default);
             }
             catch
             {
                 if (combinedAudio.IsCreated)
                     combinedAudio.Dispose();
-                if (combinedDurations.IsCreated)
-                    combinedDurations.Dispose();
                 throw;
             }
             finally

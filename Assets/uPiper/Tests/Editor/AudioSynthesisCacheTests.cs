@@ -439,6 +439,55 @@ namespace uPiper.Tests.Editor
         }
 
         // ================================================================
+        // Timing memory calculation tests
+        // ================================================================
+
+        [Test]
+        public void Set_WithTimings_CurrentMemoryBytesIncludesTimings()
+        {
+            // Arrange
+            var cache = new AudioSynthesisCache();
+            var key = AudioSynthesisCache.GenerateKey(SamplePhonemeIds, null, 1f, 0.667f, 0.8f, 0, 0);
+            var timings = CreateSampleTimings(); // 3 entries
+
+            // Act: タイミングなしで保存
+            var keyNoTimings = AudioSynthesisCache.GenerateKey(
+                new[] { 1, 2 }, null, 1f, 0.667f, 0.8f, 0, 0);
+            cache.Set(keyNoTimings, SampleAudio, 22050);
+            var memWithout = cache.CurrentMemoryBytes;
+
+            // タイミング付きで保存
+            cache.Set(key, SampleAudio, 22050, timings);
+            var memWith = cache.CurrentMemoryBytes;
+
+            // Assert: タイミング付きの方がメモリ消費が大きい
+            Assert.Greater(memWith, memWithout,
+                "タイミング付きエントリはタイミングなしより多くのメモリを消費すること");
+        }
+
+        [Test]
+        public void Set_WithTimings_EvictLRU_MemoryBytesDecreases()
+        {
+            // Arrange: maxEntries=1
+            var cache = new AudioSynthesisCache(maxEntries: 1);
+            var key1 = AudioSynthesisCache.GenerateKey(SamplePhonemeIds, null, 1f, 0.667f, 0.8f, 0, 0);
+            var key2 = AudioSynthesisCache.GenerateKey(new[] { 9, 9 }, null, 1f, 0.667f, 0.8f, 0, 0);
+            var timings = CreateSampleTimings();
+
+            // Act
+            cache.Set(key1, SampleAudio, 22050, timings);
+            var memAfterFirst = cache.CurrentMemoryBytes;
+
+            cache.Set(key2, new float[] { 0.1f }, 22050); // timingsなし、小さいaudio
+            var memAfterEviction = cache.CurrentMemoryBytes;
+
+            // Assert
+            Assert.Less(memAfterEviction, memAfterFirst,
+                "LRU退避後にメモリ消費が減少すること");
+            Assert.AreEqual(1, cache.Count);
+        }
+
+        // ================================================================
         // Timing helpers
         // ================================================================
 

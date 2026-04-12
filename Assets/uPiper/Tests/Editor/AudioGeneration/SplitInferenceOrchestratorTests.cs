@@ -321,6 +321,39 @@ namespace uPiper.Tests.Editor.AudioGeneration
             }
         }
 
+        [Test]
+        public async Task GenerateWithSilenceSplitAsync_ThreePhrases_ReportsProgressSynchronously()
+        {
+            // Arrange: 3句に分割
+            var phonemeIds = new[] { 1, 3, 0, 8, 0, 7, 2 };
+            var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.2f };
+            var phonemeIdMap = CreateMinimalPhonemeIdMap();
+
+            var reportedValues = new List<float>();
+            var progress = new SynchronousProgress<float>(v => reportedValues.Add(v));
+
+            // Act
+            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
+                phonemeIds, prosodyFlat: null,
+                phonemeSilence, phonemeIdMap,
+                sampleRate: 22050,
+                progress: progress);
+
+            try
+            {
+                // Assert
+                Assert.AreEqual(3, _stubGenerator.GenerateCallCount, "3句分割");
+                Assert.AreEqual(3, reportedValues.Count, "3回進捗報告");
+                Assert.AreEqual(1f / 3, reportedValues[0], 0.01f, "1/3 完了");
+                Assert.AreEqual(2f / 3, reportedValues[1], 0.01f, "2/3 完了");
+                Assert.AreEqual(1.0f, reportedValues[2], 0.01f, "3/3 完了");
+            }
+            finally
+            {
+                output.Dispose();
+            }
+        }
+
         // ── コンストラクタ null チェック ──────────────────────────
 
         [Test]
@@ -368,12 +401,12 @@ namespace uPiper.Tests.Editor.AudioGeneration
             }
         }
 
-        // ── Durations 結合テスト ─────────────────────────────────
+        // ── Durations 非結合テスト ────────────────────────────────
 
         [Test]
-        public async Task GenerateWithSilenceSplitAsync_TwoPhrases_CombinedDurationsLengthCorrect()
+        public async Task GenerateWithSilenceSplitAsync_TwoPhrases_SplitPath_HasDurationsFalse()
         {
-            // Arrange: 2句分割、各句で durations 3要素を返す
+            // Arrange: 2句分割、生成器は durations を返すが分割パスでは結合しない
             _stubGenerator.DurationsToReturn = new float[] { 1f, 2f, 3f };
             var phonemeIds = new[] { 1, 3, 0, 8, 7, 2 }; // ^,a,_,k,o,$
             var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
@@ -388,11 +421,9 @@ namespace uPiper.Tests.Editor.AudioGeneration
 
             try
             {
-                // Assert: 3 durations/phrase * 2 phrases = 6
-                Assert.AreEqual(6, output.Durations.Length,
-                    "結合 Durations の長さが句数 × 句あたり durations 数と一致すること");
-                Assert.IsTrue(output.HasDurations,
-                    "Durations が利用可能であること");
+                // Assert: 句分割パスでは durations を結合しない
+                Assert.IsFalse(output.HasDurations,
+                    "句分割パスでは HasDurations が false であること");
             }
             finally
             {
@@ -401,40 +432,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         }
 
         [Test]
-        public async Task GenerateWithSilenceSplitAsync_TwoPhrases_DurationsValuesPreserved()
-        {
-            // Arrange: 各句で同じ durations を返す
-            _stubGenerator.DurationsToReturn = new float[] { 10f, 20f, 30f };
-            var phonemeIds = new[] { 1, 3, 0, 8, 7, 2 };
-            var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
-            var phonemeIdMap = CreateMinimalPhonemeIdMap();
-
-            // Act
-            var output = await _orchestrator.GenerateWithSilenceSplitAsync(
-                phonemeIds,
-                prosodyFlat: null,
-                phonemeSilence, phonemeIdMap,
-                sampleRate: 22050);
-
-            try
-            {
-                // Assert: [10, 20, 30, 10, 20, 30]
-                var expected = new float[] { 10f, 20f, 30f, 10f, 20f, 30f };
-                Assert.AreEqual(expected.Length, output.Durations.Length);
-                for (var i = 0; i < expected.Length; i++)
-                {
-                    Assert.AreEqual(expected[i], output.Durations[i], 1e-5f,
-                        $"Durations[{i}] の値が保存されていること");
-                }
-            }
-            finally
-            {
-                output.Dispose();
-            }
-        }
-
-        [Test]
-        public async Task GenerateWithSilenceSplitAsync_ThreePhrases_DurationsAndAudioCorrect()
+        public async Task GenerateWithSilenceSplitAsync_ThreePhrases_AudioCorrectAndNoDurations()
         {
             // Arrange: 3句分割、各句で durations 2要素・audio 30サンプル
             _stubGenerator.DurationsToReturn = new float[] { 1f, 2f };
@@ -454,9 +452,9 @@ namespace uPiper.Tests.Editor.AudioGeneration
 
             try
             {
-                // Assert: Durations = 2 * 3 phrases = 6
-                Assert.AreEqual(6, output.Durations.Length,
-                    "3句×2 durations = 6 であること");
+                // Assert: 句分割パスでは durations を結合しない
+                Assert.IsFalse(output.HasDurations,
+                    "句分割パスでは HasDurations が false であること");
 
                 // Audio = 30 + silence + 30 + silence + 30
                 var expectedAudioLength = 30 + expectedSilenceSamples
@@ -471,9 +469,9 @@ namespace uPiper.Tests.Editor.AudioGeneration
         }
 
         [Test]
-        public async Task GenerateWithSilenceSplitAsync_SinglePhrase_DurationsUnchanged()
+        public async Task GenerateWithSilenceSplitAsync_SinglePhrase_SplitPath_HasDurationsFalse()
         {
-            // Arrange: 分割なし
+            // Arrange: 分割なし、生成器は durations を返すが分割パスでは破棄される
             _stubGenerator.DurationsToReturn = new float[] { 1f, 2f, 3f, 4f, 5f };
             var phonemeIds = new[] { 1, 3, 4, 5, 2 }; // ^,a,i,u,$
             var phonemeSilence = new Dictionary<string, float> { ["#"] = 0.5f };
@@ -489,15 +487,9 @@ namespace uPiper.Tests.Editor.AudioGeneration
 
             try
             {
-                // Assert: 分割なしなので durations はそのまま
-                Assert.AreEqual(5, output.Durations.Length,
-                    "単一句の Durations 長が一致すること");
-                var expected = new float[] { 1f, 2f, 3f, 4f, 5f };
-                for (var i = 0; i < expected.Length; i++)
-                {
-                    Assert.AreEqual(expected[i], output.Durations[i], 1e-5f,
-                        $"Durations[{i}] の値が一致すること");
-                }
+                // Assert: 分割なしでも SplitInferenceOrchestrator 経由なら HasDurations == false
+                Assert.IsFalse(output.HasDurations,
+                    "分割パス経由では HasDurations が false であること");
             }
             finally
             {
@@ -569,9 +561,9 @@ namespace uPiper.Tests.Editor.AudioGeneration
         }
 
         [Test]
-        public async Task GenerateWithSilenceSplitAsync_TwoPhrases_CombinedAudioLengthWithDurations()
+        public async Task GenerateWithSilenceSplitAsync_TwoPhrases_AudioCorrectWhenGeneratorHasDurations()
         {
-            // Arrange: durations 設定 + 2句分割
+            // Arrange: 生成器が durations を返す場合でも audio 結合は正常に動作すること
             _stubGenerator.DurationsToReturn = new float[] { 5f, 10f };
             _stubGenerator.AudioDataToReturn = CreateFixedAudioData(50, 0.5f);
             var phonemeIds = new[] { 1, 3, 0, 8, 7, 2 };
@@ -591,11 +583,9 @@ namespace uPiper.Tests.Editor.AudioGeneration
             {
                 // Assert: Audio = 50 + 11025 + 50
                 Assert.AreEqual(50 + expectedSilenceSamples + 50, output.Audio.Length,
-                    "durations 付き2句の合計 Audio 長が一致すること");
-                Assert.IsTrue(output.HasDurations,
-                    "HasDurations が true であること");
-                Assert.AreEqual(4, output.Durations.Length,
-                    "2句×2 durations = 4 であること");
+                    "durations 付き生成器でも Audio 長が正しいこと");
+                Assert.IsFalse(output.HasDurations,
+                    "句分割パスでは HasDurations が false であること");
             }
             finally
             {

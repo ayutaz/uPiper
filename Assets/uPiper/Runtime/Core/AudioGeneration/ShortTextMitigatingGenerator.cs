@@ -103,38 +103,51 @@ namespace uPiper.Core.AudioGeneration
 
         /// <summary>
         /// PAD 挿入後の推論結果を処理する。
-        /// Audio は無音トリムを適用し、Durations は PAD 挿入位置のエントリを除去する。
-        /// 例外時は本メソッドで新規作成したリソース（trimmedAudio, cleanedDurations）のみ解放し、
-        /// 元の <paramref name="output"/> の解放は呼び出し元の catch に委ねる。
+        /// <see cref="InferenceOutput.DetachAudio"/>/<see cref="InferenceOutput.DetachDurations"/>
+        /// で全所有権を先に移転し、元 <paramref name="output"/> を安全に Dispose してから
+        /// Audio の無音トリムと Durations の PAD 除去を行う。
         /// </summary>
         private static InferenceOutput ProcessPaddedOutput(
             InferenceOutput output, int afterBos, int beforeEos)
         {
+            // 1. 元の InferenceOutput から全リソースの所有権を移転
+            var audio = output.DetachAudio();
+            var durations = output.HasDurations
+                ? output.DetachDurations()
+                : default;
+            output.Dispose(); // 空になった InferenceOutput を安全に Dispose
+
+            // 2. Audio: 無音トリム / Durations: PAD 除去
             NativeArray<float> trimmedAudio = default;
             NativeArray<float> cleanedDurations = default;
             try
             {
-                trimmedAudio = ShortTextProcessor.TrimSilence(output.Audio);
+                trimmedAudio = ShortTextProcessor.TrimSilence(audio);
+                // TrimSilence が新配列を返した場合、audio は既に Dispose 済み
+                // TrimSilence がトリム不要で元配列を返した場合、audio == trimmedAudio
 
-                if (output.HasDurations)
+                if (durations.IsCreated)
                 {
                     cleanedDurations = RemovePadDurations(
-                        output.Durations, afterBos, beforeEos);
-                    if (output.Durations.IsCreated)
-                        output.Durations.Dispose();
+                        durations, afterBos, beforeEos);
+                    durations.Dispose();
+                    durations = default;
                 }
 
                 return new InferenceOutput(trimmedAudio, cleanedDurations);
             }
             catch
             {
-                // TrimSilence が元の Audio を Dispose して新しいものを返した可能性がある。
-                // trimmedAudio が新規作成されていた場合のみ Dispose する。
+                // 例外時: 新規作成したリソースのみクリーンアップ
+                // trimmedAudio が audio と同一（トリム不要）の場合は audio 経由で解放
                 if (trimmedAudio.IsCreated)
                     trimmedAudio.Dispose();
+                else if (audio.IsCreated)
+                    audio.Dispose();
                 if (cleanedDurations.IsCreated)
                     cleanedDurations.Dispose();
-                // 元の output は呼び出し元の catch で Dispose される
+                if (durations.IsCreated)
+                    durations.Dispose();
                 throw;
             }
         }
