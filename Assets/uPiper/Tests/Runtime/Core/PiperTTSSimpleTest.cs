@@ -33,7 +33,11 @@ namespace uPiper.Tests.Runtime.Core
         {
             // Assert
             Assert.IsNotNull(_piperTTS);
-            Assert.AreEqual(_config, _piperTTS.Configuration);
+            // Configuration returns a defensive copy, so compare by value
+            var returnedConfig = _piperTTS.Configuration;
+            Assert.IsNotNull(returnedConfig);
+            Assert.AreEqual(_config.SampleRate, returnedConfig.SampleRate);
+            Assert.AreEqual(_config.DefaultLanguage, returnedConfig.DefaultLanguage);
             Assert.IsFalse(_piperTTS.IsInitialized);
             Assert.IsFalse(_piperTTS.IsProcessing);
             Assert.IsNull(_piperTTS.CurrentVoiceId);
@@ -65,8 +69,13 @@ namespace uPiper.Tests.Runtime.Core
         [Test]
         public void Configuration_ReturnsProvidedConfig()
         {
-            // Assert
-            Assert.AreEqual(_config, _piperTTS.Configuration);
+            // Configuration returns a defensive copy, so compare by value
+            var returnedConfig = _piperTTS.Configuration;
+            Assert.IsNotNull(returnedConfig);
+            Assert.AreEqual(_config.SampleRate, returnedConfig.SampleRate);
+            Assert.AreEqual(_config.DefaultLanguage, returnedConfig.DefaultLanguage);
+            Assert.AreEqual(_config.MaxCacheSizeMB, returnedConfig.MaxCacheSizeMB);
+            Assert.AreEqual(_config.Backend, returnedConfig.Backend);
         }
 
         [Test]

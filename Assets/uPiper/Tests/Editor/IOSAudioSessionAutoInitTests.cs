@@ -25,15 +25,9 @@ namespace uPiper.Tests.Editor
         {
             using var tts = new PiperTTS(_config);
 
-            var ex = Assert.ThrowsAsync<PiperException>(
-                async () => await tts.InitializeAsync());
-
-            Assert.That(ex.InnerException,
-                Is.Not.TypeOf<System.DllNotFoundException>(),
-                "Should not attempt iOS P/Invoke on non-iOS platform");
-            Assert.That(ex.InnerException,
-                Is.Not.TypeOf<System.EntryPointNotFoundException>(),
-                "Should not attempt iOS P/Invoke on non-iOS platform");
+            // On non-iOS platforms, InitializePlatformAudioSession is a no-op
+            // and InitializeAsync completes without iOS P/Invoke errors.
+            Assert.DoesNotThrowAsync(async () => await tts.InitializeAsync());
         }
 
         [Test]
@@ -41,11 +35,9 @@ namespace uPiper.Tests.Editor
         {
             using var tts = new PiperTTS(_config);
 
-            var ex = Assert.ThrowsAsync<PiperException>(
-                async () => await tts.InitializeAsync());
-
-            StringAssert.DoesNotContain("AVAudioSession", ex.Message);
-            StringAssert.DoesNotContain("AudioSession", ex.Message);
+            // On non-iOS platforms, the iOS audio session step is compiled out,
+            // so InitializeAsync succeeds without any AVAudioSession-related error.
+            Assert.DoesNotThrowAsync(async () => await tts.InitializeAsync());
         }
 
         [Test]
@@ -53,11 +45,11 @@ namespace uPiper.Tests.Editor
         {
             using var tts = new PiperTTS(_config);
 
-            Assert.ThrowsAsync<PiperException>(
-                async () => await tts.InitializeAsync());
+            // First call succeeds normally
+            Assert.DoesNotThrowAsync(async () => await tts.InitializeAsync());
 
-            Assert.ThrowsAsync<PiperException>(
-                async () => await tts.InitializeAsync());
+            // Second call returns early (already initialized) without throwing
+            Assert.DoesNotThrowAsync(async () => await tts.InitializeAsync());
         }
     }
 }

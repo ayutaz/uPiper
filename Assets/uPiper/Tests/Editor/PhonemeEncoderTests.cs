@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestTools;
 using uPiper.Core;
 using uPiper.Core.AudioGeneration;
 using uPiper.Core.Phonemizers.Multilingual;
@@ -26,6 +29,8 @@ namespace uPiper.Tests.Editor
         {
             var config = new PiperVoiceConfig { PhonemeIdMap = null };
 
+            LogAssert.Expect(LogType.Error,
+                new Regex("PhonemeIdMap is null or empty"));
             Assert.Throws<PiperConfigurationException>(() =>
                 new PhonemeEncoder(config, _mapper));
         }
@@ -38,6 +43,8 @@ namespace uPiper.Tests.Editor
                 PhonemeIdMap = new Dictionary<string, int[]>()
             };
 
+            LogAssert.Expect(LogType.Error,
+                new Regex("PhonemeIdMap is null or empty"));
             Assert.Throws<PiperConfigurationException>(() =>
                 new PhonemeEncoder(config, _mapper));
         }
@@ -117,6 +124,8 @@ namespace uPiper.Tests.Editor
             var config = TestVoiceConfigFactory.CreateValid();
             var encoder = new PhonemeEncoder(config, _mapper);
 
+            LogAssert.Expect(LogType.Error,
+                new Regex(@"phonemes.*were unknown and skipped"));
             Assert.Throws<PiperConfigurationException>(() =>
                 encoder.EncodeWithProsody(new[] { "a", "xxx", "yyy" }, null));
         }
@@ -131,6 +140,8 @@ namespace uPiper.Tests.Editor
             var encoder = new PhonemeEncoder(config, _mapper);
 
             // 3 phonemes, none in the minimal map -> 100% unknown -> should throw
+            LogAssert.Expect(LogType.Error,
+                new Regex(@"phonemes.*were unknown and skipped"));
             var ex = Assert.Throws<PiperConfigurationException>(() =>
                 encoder.EncodeWithProsody(new[] { "zzz", "yyy", "xxx" }, null));
 
