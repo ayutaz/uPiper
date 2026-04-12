@@ -22,35 +22,6 @@ namespace uPiper.Tests.Editor.AudioGeneration
         private AudioClipBuilder _audioClipBuilder;
         private PiperVoiceConfig _voiceConfig;
 
-        /// <summary>
-        /// PhonemeEncoder が動作する最小限の PhonemeIdMap を構築する。
-        /// PAD=0, BOS=1, EOS=2 の特殊トークンに加え、基本音素を含む。
-        /// </summary>
-        private static Dictionary<string, int[]> CreateMinimalPhonemeIdMap()
-        {
-            return new Dictionary<string, int[]>
-            {
-                ["_"] = new[] { 0 },  // PAD
-                ["^"] = new[] { 1 },  // BOS
-                ["$"] = new[] { 2 },  // EOS
-                ["a"] = new[] { 3 },
-                ["i"] = new[] { 4 },
-                ["u"] = new[] { 5 },
-                ["e"] = new[] { 6 },
-                ["o"] = new[] { 7 },
-                ["k"] = new[] { 8 },
-                ["s"] = new[] { 9 },
-                ["t"] = new[] { 10 },
-                ["n"] = new[] { 11 },
-                ["h"] = new[] { 12 },
-                ["m"] = new[] { 13 },
-                ["r"] = new[] { 14 },
-                ["w"] = new[] { 15 },
-                ["N"] = new[] { 16 },
-                [" "] = new[] { 17 },
-            };
-        }
-
         [SetUp]
         public void SetUp()
         {
@@ -62,7 +33,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             {
                 VoiceId = "test-voice",
                 Language = "ja",
-                PhonemeIdMap = CreateMinimalPhonemeIdMap(),
+                PhonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap(),
                 // PhonemeType が null かつ VoiceId に "ja_JP" を含まない場合、
                 // intersperse PAD あり（NeedsInterspersePadding() = true）
                 PhonemeType = null,
@@ -76,7 +47,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public async Task SynthesizeAsync_NoProsody_ReturnsAudioClip()
         {
             // Arrange
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -104,7 +75,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         {
             // Arrange
             _stubGenerator.SupportsProsody = true;
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -133,7 +104,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public async Task SynthesizeAsync_WithSilenceSplit_UsesOrchestrator()
         {
             // Arrange: 沈黙トークン "_" に0.5秒の無音を設定
-            var config = CreateValidatedConfig(enableSilence: true, silenceSpec: "_ 0.5");
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: true, silenceSpec: "_ 0.5");
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -160,7 +131,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public void SynthesizeAsync_NullPhonemes_ThrowsArgumentException()
         {
             // Arrange
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -179,7 +150,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public void SynthesizeAsync_EmptyPhonemes_ThrowsArgumentException()
         {
             // Arrange
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -234,7 +205,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public async Task SynthesizeAsync_CustomParams_PropagatedToGenerator()
         {
             // Arrange: 非デフォルトパラメータを設定
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -261,7 +232,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public async Task SynthesizeAsync_NoProsody_EncodesPhonemeIdsCorrectly()
         {
             // Arrange
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -316,7 +287,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public async Task SynthesizeWithTimingAsync_NoDurations_TimingsIsNull()
         {
             // Arrange: DurationsToReturn = null (default), enableSilence: false
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -342,7 +313,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public void SynthesizeWithTimingAsync_NoDurations_NoException()
         {
             // Arrange
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -361,7 +332,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public async Task SynthesizeWithTimingAsync_NoDurations_GenerateCallCountIsOne()
         {
             // Arrange
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -384,7 +355,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         {
             // Arrange: Prosody付きでもdurations非対応ならTimingsはnull
             _stubGenerator.SupportsProsody = true;
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -410,7 +381,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public async Task SynthesizeWithTimingAsync_NoDurations_WithSilenceSplit_TimingsIsNull()
         {
             // Arrange: 句分割使用時はTimingsがnull
-            var config = CreateValidatedConfig(enableSilence: true, silenceSpec: "_ 0.5");
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: true, silenceSpec: "_ 0.5");
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -439,7 +410,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             //   [^(BOS), _(PAD), k, _(PAD), o, _(PAD), N, _(PAD), $(EOS)] = 9要素
             _stubGenerator.SupportsDurations = true;
             _stubGenerator.DurationsToReturn = new float[] { 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f };
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -465,7 +436,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public async Task SynthesizeAsync_NoDurations_StillReturnsAudioClip()
         {
             // Arrange: 既存SynthesizeAsyncのリグレッションテスト
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var orchestrator = new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
                 config, _voiceConfig);
@@ -483,24 +454,6 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 "durations非対応でも SynthesizeAsync は AudioClip を返すこと");
             Assert.AreEqual(1, _stubGenerator.GenerateCallCount,
                 "GenerateAudioAsync が1回呼ばれること");
-        }
-
-        // ── ヘルパー ─────────────────────────────────────────────
-
-        /// <summary>
-        /// テスト用 IPiperConfigReadOnly を生成する。
-        /// ToValidated() で WorkerThreads=0 が自動検出されるため、手動で1以上を設定する。
-        /// </summary>
-        private static IPiperConfigReadOnly CreateValidatedConfig(
-            bool enableSilence, string silenceSpec = "_ 0.5")
-        {
-            var piperConfig = new PiperConfig
-            {
-                EnablePhonemeSilence = enableSilence,
-                PhonemeSilenceSpec = silenceSpec,
-                WorkerThreads = 1,
-            };
-            return piperConfig.ToValidated();
         }
 
         // ── IPiperConfigReadOnly 型検証 ─────────────────────────────
@@ -538,7 +491,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         public void TTSSynthesisOrchestrator_AcceptsIPiperConfigReadOnly()
         {
             // Arrange
-            IPiperConfigReadOnly config = CreateValidatedConfig(enableSilence: false);
+            IPiperConfigReadOnly config = TestHelpers.CreateValidatedConfig(enableSilence: false);
 
             // Act & Assert: IPiperConfigReadOnly 型でコンストラクタに渡せること
             Assert.DoesNotThrow(() =>
@@ -554,7 +507,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         {
             // Arrange: 5音素 → エンコード後もMinPhonemeIds(40)未満 → パディングが適用される
             // ShortTextMitigatingGenerator デコレータ経由で短テキスト緩和が適用される
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var mitigating = new ShortTextMitigatingGenerator(_stubGenerator);
             var splitOrchestrator = new SplitInferenceOrchestrator(mitigating);
             var orchestrator = new TTSSynthesisOrchestrator(
@@ -583,7 +536,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
         {
             // Arrange: 50音素 → エンコード後にMinPhonemeIds(40)以上 → パディングなし
             // ShortTextMitigatingGenerator でラップしても、長い音素列にはパディングが適用されない
-            var config = CreateValidatedConfig(enableSilence: false);
+            var config = TestHelpers.CreateValidatedConfig(enableSilence: false);
             var mitigating = new ShortTextMitigatingGenerator(_stubGenerator);
             var splitOrchestrator = new SplitInferenceOrchestrator(mitigating);
             var orchestrator = new TTSSynthesisOrchestrator(

@@ -43,10 +43,19 @@ namespace uPiper.Core.AudioGeneration
                 stream: false
             );
 
-            // データを設定
-            if (!audioClip.SetData(audioData, 0))
+            try
             {
-                throw new InvalidOperationException("Failed to set audio data to AudioClip");
+                // データを設定
+                if (!audioClip.SetData(audioData, 0))
+                {
+                    throw new InvalidOperationException("Failed to set audio data to AudioClip");
+                }
+            }
+            catch
+            {
+                if (audioClip != null)
+                    Object.DestroyImmediate(audioClip);
+                throw;
             }
 
             PiperLogger.LogDebug($"Created AudioClip: {name}, {audioData.Length} samples, {sampleRate}Hz");
@@ -89,10 +98,19 @@ namespace uPiper.Core.AudioGeneration
                 stream: false
             );
 
-            // NativeArray版SetDataでmanaged marshallingを回避
-            if (!audioClip.SetData(audioData, 0))
+            try
             {
-                throw new InvalidOperationException("Failed to set audio data to AudioClip");
+                // NativeArray版SetDataでmanaged marshallingを回避
+                if (!audioClip.SetData(audioData, 0))
+                {
+                    throw new InvalidOperationException("Failed to set audio data to AudioClip");
+                }
+            }
+            catch
+            {
+                if (audioClip != null)
+                    Object.DestroyImmediate(audioClip);
+                throw;
             }
 
             PiperLogger.LogDebug($"Created AudioClip: {name}, {audioData.Length} samples, {sampleRate}Hz");

@@ -37,57 +37,13 @@ namespace uPiper.Tests.Editor
             {
                 VoiceId = "test-voice",
                 Language = "ja",
-                PhonemeIdMap = CreateMinimalPhonemeIdMap(),
+                PhonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap(),
                 PhonemeType = null, // intersperse PAD あり
             };
             _phonemeEncoder = new PhonemeEncoder(_voiceConfig, _puaTokenMapper);
         }
 
         // ── ヘルパー ─────────────────────────────────────────────
-
-        /// <summary>
-        /// PhonemeEncoder が動作する最小限の PhonemeIdMap を構築する。
-        /// PAD=0, BOS=1, EOS=2 の特殊トークンに加え、基本音素を含む。
-        /// </summary>
-        private static Dictionary<string, int[]> CreateMinimalPhonemeIdMap()
-        {
-            return new Dictionary<string, int[]>
-            {
-                ["_"] = new[] { 0 },  // PAD
-                ["^"] = new[] { 1 },  // BOS
-                ["$"] = new[] { 2 },  // EOS
-                ["a"] = new[] { 3 },
-                ["i"] = new[] { 4 },
-                ["u"] = new[] { 5 },
-                ["e"] = new[] { 6 },
-                ["o"] = new[] { 7 },
-                ["k"] = new[] { 8 },
-                ["s"] = new[] { 9 },
-                ["t"] = new[] { 10 },
-                ["n"] = new[] { 11 },
-                ["h"] = new[] { 12 },
-                ["m"] = new[] { 13 },
-                ["r"] = new[] { 14 },
-                ["w"] = new[] { 15 },
-                ["N"] = new[] { 16 },
-                [" "] = new[] { 17 },
-            };
-        }
-
-        /// <summary>
-        /// テスト用 IPiperConfigReadOnly を生成する。
-        /// </summary>
-        private static IPiperConfigReadOnly CreateValidatedConfig(
-            bool enableSilence, string silenceSpec = "_ 0.5")
-        {
-            var piperConfig = new PiperConfig
-            {
-                EnablePhonemeSilence = enableSilence,
-                PhonemeSilenceSpec = silenceSpec,
-                WorkerThreads = 1,
-            };
-            return piperConfig.ToValidated();
-        }
 
         /// <summary>
         /// TTSSynthesisOrchestrator を生成する共通ヘルパー。
@@ -98,7 +54,7 @@ namespace uPiper.Tests.Editor
             return new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator,
                 _phonemeEncoder, _audioClipBuilder,
-                CreateValidatedConfig(enableSilence: false),
+                TestHelpers.CreateValidatedConfig(enableSilence: false),
                 _voiceConfig,
                 cache,
                 _puaTokenMapper);
