@@ -37,7 +37,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             // phonemeSilence に "#" を設定するが、phonemeIds には "#" の ID が無いため分割されない
             var phonemeIds = new[] { 1, 3, 4, 5, 2 }; // ^, a, i, u, $
             var phonemeSilence = new Dictionary<string, float> { ["#"] = 0.5f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
             phonemeIdMap["#"] = new[] { 99 }; // phonemeSilence のキー用（phonemeIds に含まれない）
 
             // Act
@@ -73,7 +73,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             // "_" の位置で分割される → 句1: [1,3,0], 句2: [8,7,2]
             var phonemeIds = new[] { 1, 3, 0, 8, 7, 2 };
             var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
 
             // 0.5秒 × 22050Hz = 11025 サンプルの無音が挿入される
             var expectedSilenceSamples = (int)(0.5f * 22050);
@@ -121,7 +121,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             // GenerateWithSilenceSplitAsync は PhonemeIds が空の Phrase をスキップする
             var phonemeIds = Array.Empty<int>();
             var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
 
             // Act
             var output = await _orchestrator.GenerateWithSilenceSplitAsync(
@@ -165,7 +165,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
                 0, 0, 0   // phoneme 5: a1=0, a2=0, a3=0
             };
             var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
 
             // Act
             var output = await _orchestrator.GenerateWithSilenceSplitAsync(
@@ -200,7 +200,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             // → 句1: [1,3,0], 句2: [8,0], 句3: [7,2]
             var phonemeIds = new[] { 1, 3, 0, 8, 0, 7, 2 };
             var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.2f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
 
             var reportedValues = new List<float>();
             var progress = new Progress<float>(v => reportedValues.Add(v));
@@ -239,7 +239,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             // Arrange: 沈黙トークンを含まない phonemeIds → 分割なし → 1句
             var phonemeIds = new[] { 1, 3, 4, 5, 2 }; // ^, a, i, u, $
             var phonemeSilence = new Dictionary<string, float> { ["#"] = 0.5f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
             phonemeIdMap["#"] = new[] { 99 };
 
             // SynchronousProgress は Report を同期的に呼び出すため、
@@ -276,7 +276,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             // Arrange
             var phonemeIds = Array.Empty<int>();
             var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
 
             var reportedValues = new List<float>();
             var progress = new SynchronousProgress<float>(v => reportedValues.Add(v));
@@ -307,7 +307,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             // Arrange: 3句に分割
             var phonemeIds = new[] { 1, 3, 0, 8, 0, 7, 2 };
             var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.2f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
 
             var reportedValues = new List<float>();
             var progress = new SynchronousProgress<float>(v => reportedValues.Add(v));
@@ -351,7 +351,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             // Arrange: 短い phonemeIds（5要素 < MinPhonemeIds=40）
             var phonemeIds = new[] { 1, 5, 6, 7, 2 }; // ^, u, ?, ?, $
             var phonemeSilence = new Dictionary<string, float>(); // 空 → 分割なし
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
 
             // StubをShortTextMitigatingGeneratorでラップ
             var wrappedGenerator = new ShortTextMitigatingGenerator(_stubGenerator);
@@ -390,7 +390,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             _stubGenerator.DurationsToReturn = new float[] { 1f, 2f, 3f };
             var phonemeIds = new[] { 1, 3, 0, 8, 7, 2 }; // ^,a,_,k,o,$
             var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
 
             // Act
             var output = await _orchestrator.GenerateWithSilenceSplitAsync(
@@ -419,7 +419,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             _stubGenerator.AudioDataToReturn = CreateFixedAudioData(30, 0.3f);
             var phonemeIds = new[] { 1, 3, 0, 8, 0, 7, 2 }; // ^,a,_,k,_,o,$
             var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.2f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
 
             var expectedSilenceSamples = (int)(0.2f * 22050);
 
@@ -455,7 +455,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             _stubGenerator.DurationsToReturn = new float[] { 1f, 2f, 3f, 4f, 5f };
             var phonemeIds = new[] { 1, 3, 4, 5, 2 }; // ^,a,i,u,$
             var phonemeSilence = new Dictionary<string, float> { ["#"] = 0.5f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
             phonemeIdMap["#"] = new[] { 99 };
 
             // Act
@@ -484,7 +484,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             _stubGenerator.DurationsToReturn = null;
             var phonemeIds = new[] { 1, 3, 0, 8, 7, 2 };
             var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
 
             // Act
             var output = await _orchestrator.GenerateWithSilenceSplitAsync(
@@ -516,7 +516,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             // Arrange: 空 phonemeIds
             var phonemeIds = Array.Empty<int>();
             var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
             _stubGenerator.DurationsToReturn = new float[] { 1f, 2f };
 
             // Act
@@ -548,7 +548,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             _stubGenerator.AudioDataToReturn = CreateFixedAudioData(50, 0.5f);
             var phonemeIds = new[] { 1, 3, 0, 8, 7, 2 };
             var phonemeSilence = new Dictionary<string, float> { ["_"] = 0.5f };
-            var phonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap();
+            var phonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap();
 
             var expectedSilenceSamples = (int)(0.5f * 22050);
 

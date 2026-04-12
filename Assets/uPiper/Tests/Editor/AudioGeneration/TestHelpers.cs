@@ -8,7 +8,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
     /// <summary>
     /// 複数テストクラスで共有されるヘルパーメソッド・ユーティリティ。
     /// </summary>
-    internal static class TestHelpers
+    internal static class PhonemeTimingTestHelpers
     {
         /// <summary>
         /// PhonemeEncoder が動作する最小限の PhonemeIdMap を構築する。

@@ -37,7 +37,7 @@ namespace uPiper.Tests.Editor
             {
                 VoiceId = "test-voice",
                 Language = "ja",
-                PhonemeIdMap = TestHelpers.CreateMinimalPhonemeIdMap(),
+                PhonemeIdMap = PhonemeTimingTestHelpers.CreateMinimalPhonemeIdMap(),
                 PhonemeType = null, // intersperse PAD あり
             };
             _phonemeEncoder = new PhonemeEncoder(_voiceConfig, _puaTokenMapper);
@@ -54,7 +54,7 @@ namespace uPiper.Tests.Editor
             return new TTSSynthesisOrchestrator(
                 _stubGenerator, _splitOrchestrator,
                 _phonemeEncoder, _audioClipBuilder,
-                TestHelpers.CreateValidatedConfig(enableSilence: false),
+                PhonemeTimingTestHelpers.CreateValidatedConfig(enableSilence: false),
                 _voiceConfig,
                 cache,
                 _puaTokenMapper);

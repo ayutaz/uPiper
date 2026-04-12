@@ -22,7 +22,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             AudioClip clip = null;
             try
             {
-                clip = AudioClip.Create("test", 1024, 1, 22050);
+                clip = AudioClip.Create("test", 1024, 1, 22050, false);
                 var result = new SynthesisWithTimingResult(clip, null, 0f);
 
                 Assert.IsFalse(result.HasTimings);
@@ -31,7 +31,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             finally
             {
                 if (clip != null)
-                    Object.DestroyImmediate(clip);
+                    UnityEngine.Object.DestroyImmediate(clip);
             }
         }
 
@@ -41,7 +41,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             AudioClip clip = null;
             try
             {
-                clip = AudioClip.Create("test", 1024, 1, 22050);
+                clip = AudioClip.Create("test", 1024, 1, 22050, false);
                 var timings = new List<PhonemeTimingEntry>
                 {
                     new PhonemeTimingEntry("a", 0f, 0.5f),
@@ -55,7 +55,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             finally
             {
                 if (clip != null)
-                    Object.DestroyImmediate(clip);
+                    UnityEngine.Object.DestroyImmediate(clip);
             }
         }
 
@@ -65,7 +65,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             AudioClip clip = null;
             try
             {
-                clip = AudioClip.Create("test", 1024, 1, 22050);
+                clip = AudioClip.Create("test", 1024, 1, 22050, false);
                 var timings = new List<PhonemeTimingEntry>
                 {
                     new PhonemeTimingEntry("a", 0f, 0.5f),
@@ -80,7 +80,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             finally
             {
                 if (clip != null)
-                    Object.DestroyImmediate(clip);
+                    UnityEngine.Object.DestroyImmediate(clip);
             }
         }
 
@@ -90,7 +90,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             AudioClip clip = null;
             try
             {
-                clip = AudioClip.Create("test", 1024, 1, 22050);
+                clip = AudioClip.Create("test", 1024, 1, 22050, false);
                 var timings = new List<PhonemeTimingEntry>
                 {
                     new PhonemeTimingEntry("a", 0f, 0.5f),
@@ -104,7 +104,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             finally
             {
                 if (clip != null)
-                    Object.DestroyImmediate(clip);
+                    UnityEngine.Object.DestroyImmediate(clip);
             }
         }
 
@@ -114,7 +114,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             AudioClip clip = null;
             try
             {
-                clip = AudioClip.Create("test", 1024, 1, 22050);
+                clip = AudioClip.Create("test", 1024, 1, 22050, false);
                 var result = new SynthesisWithTimingResult(clip, null, 3.14f);
 
                 Assert.AreEqual(3.14f, result.TotalDurationSeconds);
@@ -122,7 +122,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             finally
             {
                 if (clip != null)
-                    Object.DestroyImmediate(clip);
+                    UnityEngine.Object.DestroyImmediate(clip);
             }
         }
 
@@ -132,7 +132,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             AudioClip clip = null;
             try
             {
-                clip = AudioClip.Create("test", 1024, 1, 22050);
+                clip = AudioClip.Create("test", 1024, 1, 22050, false);
                 var timings = new List<PhonemeTimingEntry>();
                 var result = new SynthesisWithTimingResult(clip, timings, 0f);
 
@@ -142,7 +142,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             finally
             {
                 if (clip != null)
-                    Object.DestroyImmediate(clip);
+                    UnityEngine.Object.DestroyImmediate(clip);
             }
         }
         [Test]
@@ -151,7 +151,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             AudioClip clip = null;
             try
             {
-                clip = AudioClip.Create("test", 1024, 1, 22050);
+                clip = AudioClip.Create("test", 1024, 1, 22050, false);
                 var result = new SynthesisWithTimingResult(clip, null, 0f);
 
                 Assert.AreSame(clip, result.AudioClip);
@@ -159,7 +159,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             finally
             {
                 if (clip != null)
-                    Object.DestroyImmediate(clip);
+                    UnityEngine.Object.DestroyImmediate(clip);
             }
         }
 
@@ -169,7 +169,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             AudioClip clip = null;
             try
             {
-                clip = AudioClip.Create("test", 1024, 1, 22050);
+                clip = AudioClip.Create("test", 1024, 1, 22050, false);
                 var timings = new List<PhonemeTimingEntry>
                 {
                     new PhonemeTimingEntry("a", 0.1f, 0.5f),
@@ -187,7 +187,7 @@ namespace uPiper.Tests.Editor.AudioGeneration
             finally
             {
                 if (clip != null)
-                    Object.DestroyImmediate(clip);
+                    UnityEngine.Object.DestroyImmediate(clip);
             }
         }
     }
