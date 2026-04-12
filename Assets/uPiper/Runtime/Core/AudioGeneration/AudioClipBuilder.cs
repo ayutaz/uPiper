@@ -54,7 +54,12 @@ namespace uPiper.Core.AudioGeneration
             catch
             {
                 if (audioClip != null)
-                    Object.DestroyImmediate(audioClip);
+                {
+                    if (Application.isPlaying)
+                        Object.Destroy(audioClip);
+                    else
+                        Object.DestroyImmediate(audioClip);
+                }
                 throw;
             }
 
@@ -109,7 +114,12 @@ namespace uPiper.Core.AudioGeneration
             catch
             {
                 if (audioClip != null)
-                    Object.DestroyImmediate(audioClip);
+                {
+                    if (Application.isPlaying)
+                        Object.Destroy(audioClip);
+                    else
+                        Object.DestroyImmediate(audioClip);
+                }
                 throw;
             }
 
