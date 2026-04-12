@@ -73,7 +73,7 @@ namespace uPiper.Core
                 _audioClipBuilder = new AudioClipBuilder();
                 _orchestrator = new TTSSynthesisOrchestrator(
                     mitigatingGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
-                    _validatedConfig, voiceConfig, _audioSynthesisCache);
+                    _validatedConfig, voiceConfig, _audioSynthesisCache, _tokenMapper);
                 _currentModelAsset = modelAsset;
 
                 // Inferenceジェネレーターを初期化
@@ -333,6 +333,28 @@ namespace uPiper.Core
                     "Inference is not initialized. Call InitializeWithInferenceAsync first.");
 
             return await _orchestrator.SynthesizeAsync(request, cancellationToken);
+        }
+
+        /// <summary>
+        /// SynthesisRequestを直接指定してタイミング情報付き音声を生成する（低レベルAPI）。
+        /// </summary>
+        /// <param name="request">音声合成リクエスト（音素・Prosody・合成パラメータを集約）。</param>
+        /// <param name="cancellationToken">キャンセルトークン。</param>
+        /// <returns>タイミング情報付き音声合成結果。</returns>
+        /// <exception cref="ObjectDisposedException">インスタンスがDispose済みの場合。</exception>
+        /// <exception cref="InvalidOperationException">Inferenceが初期化されていない場合。</exception>
+        public async Task<SynthesisWithTimingResult> SynthesizeWithTimingAsync(
+            SynthesisRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(PiperTTS));
+
+            if (!_isInitialized || _orchestrator == null)
+                throw new InvalidOperationException(
+                    "Inference is not initialized. Call InitializeWithInferenceAsync first.");
+
+            return await _orchestrator.SynthesizeWithTimingAsync(request, cancellationToken);
         }
 
         /// <summary>
