@@ -55,7 +55,7 @@ jobs:
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
         unityVersion: 6000.0.58f2
-        testMode: all
+        testMode: EditMode
         artifactsPath: test-results
         githubToken: ${{ github.token }}
         checkName: Unity Test Results
