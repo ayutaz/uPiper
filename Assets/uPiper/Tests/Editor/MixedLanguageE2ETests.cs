@@ -21,7 +21,7 @@ namespace uPiper.Tests.Editor
         private MultilingualPhonemizer _phonemizer;
 
         [OneTimeSetUp]
-        public async Task OneTimeSetUp()
+        public void OneTimeSetUp()
         {
             try
             {
@@ -32,7 +32,10 @@ namespace uPiper.Tests.Editor
                         DefaultLatinLanguage = "en",
                         EnableTrigramDetection = true
                     });
-                await _phonemizer.InitializeAsync();
+                // Use Task.Run + GetAwaiter().GetResult() to avoid Unity SynchronizationContext deadlock.
+                // async Task OneTimeSetUp + await hangs because NUnit blocks the main thread while awaiting
+                // the Task, but the Task's continuations try to post back to the blocked main thread.
+                Task.Run(async () => await _phonemizer.InitializeAsync()).GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
