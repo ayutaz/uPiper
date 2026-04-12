@@ -73,7 +73,7 @@ namespace uPiper.Core
                 _audioClipBuilder = new AudioClipBuilder();
                 _orchestrator = new TTSSynthesisOrchestrator(
                     mitigatingGenerator, _splitOrchestrator, _phonemeEncoder, _audioClipBuilder,
-                    _validatedConfig, voiceConfig, _audioSynthesisCache);
+                    _validatedConfig, voiceConfig, _audioSynthesisCache, _tokenMapper);
                 _currentModelAsset = modelAsset;
 
                 // Inferenceジェネレーターを初期化
@@ -253,7 +253,7 @@ namespace uPiper.Core
                     prosodyFlat = multiResult.ProsodyFlat;
 
                     // 言語IDを自動解決
-                    if (languageId < 0 && _inferenceGenerator.SupportsLanguageId)
+                    if (languageId < 0 && _inferenceGenerator.Capabilities.SupportsLanguageId)
                     {
                         var detectedLang = multiResult.DetectedPrimaryLanguage;
                         if (_currentVoiceConfig?.LanguageIdMap != null &&
@@ -336,6 +336,28 @@ namespace uPiper.Core
         }
 
         /// <summary>
+        /// SynthesisRequestを直接指定してタイミング情報付き音声を生成する（低レベルAPI）。
+        /// </summary>
+        /// <param name="request">音声合成リクエスト（音素・Prosody・合成パラメータを集約）。</param>
+        /// <param name="cancellationToken">キャンセルトークン。</param>
+        /// <returns>タイミング情報付き音声合成結果。</returns>
+        /// <exception cref="ObjectDisposedException">インスタンスがDispose済みの場合。</exception>
+        /// <exception cref="InvalidOperationException">Inferenceが初期化されていない場合。</exception>
+        public async Task<SynthesisWithTimingResult> SynthesizeWithTimingAsync(
+            SynthesisRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(PiperTTS));
+
+            if (!_isInitialized || _orchestrator == null)
+                throw new InvalidOperationException(
+                    "Inference is not initialized. Call InitializeWithInferenceAsync first.");
+
+            return await _orchestrator.SynthesizeWithTimingAsync(request, cancellationToken);
+        }
+
+        /// <summary>
         /// テキストを音素化し、Prosody情報付きの結果を返す。
         /// 多言語Phonemizerが利用可能な場合はそちらを優先する。
         /// 結果は <see cref="SynthesisRequest.FromPhonemesWithProsody"/> でリクエスト構築に使用できる。
@@ -367,7 +389,7 @@ namespace uPiper.Core
                     text, cancellationToken);
 
                 int resolvedLanguageId = 0;
-                if (_inferenceGenerator != null && _inferenceGenerator.SupportsLanguageId)
+                if (_inferenceGenerator != null && _inferenceGenerator.Capabilities.SupportsLanguageId)
                 {
                     var detectedLang = multiResult.DetectedPrimaryLanguage;
                     if (_currentVoiceConfig?.LanguageIdMap != null &&
@@ -392,7 +414,7 @@ namespace uPiper.Core
             }
 
             // フォールバック: 通常の音素化（Prosody抽出付き）
-            if (_inferenceGenerator != null && _inferenceGenerator.SupportsProsody
+            if (_inferenceGenerator != null && _inferenceGenerator.Capabilities.SupportsProsody
                 && _phonemizer is DotNetG2PPhonemizer g2pPhonemizer)
             {
                 var prosodyResult = g2pPhonemizer.PhonemizeWithProsody(text);

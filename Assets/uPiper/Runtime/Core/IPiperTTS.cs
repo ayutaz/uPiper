@@ -145,6 +145,22 @@ namespace uPiper.Core
             SynthesisRequest request,
             CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// SynthesisRequestを直接指定してタイミング情報付き音声を生成する（低レベルAPI）。
+        /// 音素列は事前に <see cref="PhonemizeAsync"/> または外部G2Pで取得・構築済みであること。
+        /// </summary>
+        /// <param name="request">音声合成リクエスト（音素・Prosody・合成パラメータを集約）。</param>
+        /// <param name="cancellationToken">キャンセルトークン。</param>
+        /// <returns>
+        /// タイミング情報付き音声合成結果。
+        /// <see cref="SynthesisWithTimingResult.HasTimings"/> が false の場合、
+        /// モデルが durations テンソルを出力しない（非対応モデル）か、
+        /// 句分割推論が使用されたことを意味する。その場合でも AudioClip は有効。
+        /// </returns>
+        Task<SynthesisWithTimingResult> SynthesizeWithTimingAsync(
+            SynthesisRequest request,
+            CancellationToken cancellationToken = default);
+
         /// <summary>テキストから音素情報を取得する。</summary>
         Task<PhonemizeResult> PhonemizeAsync(
             string text,

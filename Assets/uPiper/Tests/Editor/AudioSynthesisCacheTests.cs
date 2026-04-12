@@ -72,7 +72,7 @@ namespace uPiper.Tests.Editor
             var key = AudioSynthesisCache.GenerateKey(
                 SamplePhonemeIds, null, 1.0f, 0.667f, 0.8f, 0, 0);
 
-            var result = cache.TryGet(key, out var samples, out var sampleRate);
+            var result = cache.TryGet(key, out var samples, out var sampleRate, out _);
 
             Assert.IsFalse(result);
             Assert.IsNull(samples);
@@ -91,7 +91,7 @@ namespace uPiper.Tests.Editor
                 SamplePhonemeIds, null, 1.0f, 0.667f, 0.8f, 0, 0);
 
             cache.Set(key, SampleAudio, 22050);
-            var result = cache.TryGet(key, out var samples, out var sampleRate);
+            var result = cache.TryGet(key, out var samples, out var sampleRate, out _);
 
             Assert.IsTrue(result);
             Assert.AreEqual(SampleAudio, samples);
@@ -112,9 +112,9 @@ namespace uPiper.Tests.Editor
             cache.Set(key3, new float[] { 0.3f }, 22050);
 
             // key1 should have been evicted (LRU)
-            Assert.IsFalse(cache.TryGet(key1, out _, out _));
-            Assert.IsTrue(cache.TryGet(key2, out _, out _));
-            Assert.IsTrue(cache.TryGet(key3, out _, out _));
+            Assert.IsFalse(cache.TryGet(key1, out _, out _, out _));
+            Assert.IsTrue(cache.TryGet(key2, out _, out _, out _));
+            Assert.IsTrue(cache.TryGet(key3, out _, out _, out _));
             Assert.AreEqual(1, cache.EvictionCount);
         }
 
@@ -131,14 +131,14 @@ namespace uPiper.Tests.Editor
             cache.Set(key2, new float[] { 0.2f }, 22050);
 
             // Access key1 to move it to front
-            cache.TryGet(key1, out _, out _);
+            cache.TryGet(key1, out _, out _, out _);
 
             // Now add key3 — should evict key2 (not key1)
             cache.Set(key3, new float[] { 0.3f }, 22050);
 
-            Assert.IsTrue(cache.TryGet(key1, out _, out _));
-            Assert.IsFalse(cache.TryGet(key2, out _, out _));
-            Assert.IsTrue(cache.TryGet(key3, out _, out _));
+            Assert.IsTrue(cache.TryGet(key1, out _, out _, out _));
+            Assert.IsFalse(cache.TryGet(key2, out _, out _, out _));
+            Assert.IsTrue(cache.TryGet(key3, out _, out _, out _));
         }
 
         // ================================================================
@@ -152,8 +152,8 @@ namespace uPiper.Tests.Editor
             var key = 1L;
 
             cache.Set(key, SampleAudio, 22050);
-            cache.TryGet(key, out _, out _);
-            cache.TryGet(999L, out _, out _);
+            cache.TryGet(key, out _, out _, out _);
+            cache.TryGet(999L, out _, out _, out _);
             cache.Clear();
 
             Assert.AreEqual(0, cache.Count);
@@ -196,7 +196,7 @@ namespace uPiper.Tests.Editor
             cache.Set(1L, audio2, 22050);
 
             Assert.AreEqual(1, cache.Count);
-            cache.TryGet(1L, out var samples, out _);
+            cache.TryGet(1L, out var samples, out _, out _);
             Assert.AreEqual(audio2, samples);
         }
 
@@ -224,9 +224,9 @@ namespace uPiper.Tests.Editor
             var cache = new AudioSynthesisCache();
             cache.Set(1L, SampleAudio, 22050);
 
-            cache.TryGet(1L, out _, out _);   // hit
-            cache.TryGet(1L, out _, out _);   // hit
-            cache.TryGet(999L, out _, out _); // miss
+            cache.TryGet(1L, out _, out _, out _);   // hit
+            cache.TryGet(1L, out _, out _, out _);   // hit
+            cache.TryGet(999L, out _, out _, out _); // miss
 
             Assert.AreEqual(2, cache.HitCount);
             Assert.AreEqual(1, cache.MissCount);
@@ -255,9 +255,9 @@ namespace uPiper.Tests.Editor
 
             cache.Set(3L, big3, 22050);
 
-            Assert.IsFalse(cache.TryGet(1L, out _, out _)); // evicted
-            Assert.IsTrue(cache.TryGet(2L, out _, out _));  // kept
-            Assert.IsTrue(cache.TryGet(3L, out _, out _));  // new
+            Assert.IsFalse(cache.TryGet(1L, out _, out _, out _)); // evicted
+            Assert.IsTrue(cache.TryGet(2L, out _, out _, out _));  // kept
+            Assert.IsTrue(cache.TryGet(3L, out _, out _, out _));  // new
             Assert.AreEqual(2, cache.Count);
         }
 
@@ -273,7 +273,7 @@ namespace uPiper.Tests.Editor
 
             Assert.AreEqual(0, cache.Count);
             Assert.AreEqual(0, cache.CurrentMemoryBytes);
-            Assert.IsFalse(cache.TryGet(1L, out _, out _));
+            Assert.IsFalse(cache.TryGet(1L, out _, out _, out _));
         }
 
         [Test]
@@ -293,6 +293,212 @@ namespace uPiper.Tests.Editor
             cache.Set(3L, new float[125000], 22050);
             Assert.AreEqual(expectedEntryBytes * 2, cache.CurrentMemoryBytes);
             Assert.AreEqual(1, cache.EvictionCount);
+        }
+
+        // ================================================================
+        // Timing storage tests
+        // ================================================================
+
+        [Test]
+        public void Set_WithTimings_TryGetRestoresTimings()
+        {
+            var cache = new AudioSynthesisCache();
+            var key = 1L;
+            var timings = CreateSampleTimings();
+
+            cache.Set(key, SampleAudio, 22050, timings);
+            var result = cache.TryGet(key, out var samples, out var sampleRate, out var outTimings);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(SampleAudio, samples);
+            Assert.AreEqual(22050, sampleRate);
+            Assert.IsNotNull(outTimings);
+            Assert.AreEqual(timings.Length, outTimings.Length);
+            for (var i = 0; i < timings.Length; i++)
+            {
+                Assert.AreEqual(timings[i].Phoneme, outTimings[i].Phoneme,
+                    $"Timings[{i}].Phoneme が復元されること");
+                Assert.AreEqual(timings[i].StartSeconds, outTimings[i].StartSeconds, 1e-5f,
+                    $"Timings[{i}].StartSeconds が復元されること");
+                Assert.AreEqual(timings[i].EndSeconds, outTimings[i].EndSeconds, 1e-5f,
+                    $"Timings[{i}].EndSeconds が復元されること");
+            }
+        }
+
+        [Test]
+        public void Set_WithoutTimings_TryGetReturnsNullTimings()
+        {
+            var cache = new AudioSynthesisCache();
+            var key = 1L;
+
+            cache.Set(key, SampleAudio, 22050);
+            var result = cache.TryGet(key, out _, out _, out var outTimings);
+
+            Assert.IsTrue(result);
+            Assert.IsNull(outTimings, "timings なし Set の場合 TryGet で null が返ること");
+        }
+
+        [Test]
+        public void Set_WithNullTimings_TryGetReturnsNullTimings()
+        {
+            var cache = new AudioSynthesisCache();
+            var key = 1L;
+
+            cache.Set(key, SampleAudio, 22050, timings: null);
+            var result = cache.TryGet(key, out _, out _, out var outTimings);
+
+            Assert.IsTrue(result);
+            Assert.IsNull(outTimings, "明示的 null timings の場合 TryGet で null が返ること");
+        }
+
+        [Test]
+        public void Set_WithTimings_EvictsLRU_TimingsAlsoEvicted()
+        {
+            var cache = new AudioSynthesisCache(maxEntries: 2, maxMemoryMB: 100);
+            var timings1 = CreateSampleTimings();
+
+            cache.Set(1L, new float[] { 0.1f }, 22050, timings1);
+            cache.Set(2L, new float[] { 0.2f }, 22050);
+            cache.Set(3L, new float[] { 0.3f }, 22050);
+
+            // key1 が LRU 退避されていること
+            Assert.IsFalse(cache.TryGet(1L, out _, out _, out var evictedTimings),
+                "LRU 退避された key1 は TryGet で false を返すこと");
+            Assert.IsNull(evictedTimings,
+                "退避済みエントリの timings は null であること");
+
+            // key2, key3 は残っていること
+            Assert.IsTrue(cache.TryGet(2L, out _, out _, out _));
+            Assert.IsTrue(cache.TryGet(3L, out _, out _, out _));
+        }
+
+        [Test]
+        public void Set_WithTimings_DuplicateKey_UpdatesTimings()
+        {
+            var cache = new AudioSynthesisCache();
+            var key = 1L;
+            var timings1 = CreateSampleTimings();
+            var timings2 = new[]
+            {
+                new PhonemeTimingEntry("a", 0.0f, 0.100f),
+                new PhonemeTimingEntry("i", 0.100f, 0.200f),
+            };
+
+            cache.Set(key, SampleAudio, 22050, timings1);
+            cache.Set(key, SampleAudio, 22050, timings2);
+
+            Assert.AreEqual(1, cache.Count);
+            cache.TryGet(key, out _, out _, out var outTimings);
+            Assert.IsNotNull(outTimings);
+            Assert.AreEqual(2, outTimings.Length,
+                "上書き後の timings 長が新しい値と一致すること");
+            Assert.AreEqual("a", outTimings[0].Phoneme);
+            Assert.AreEqual("i", outTimings[1].Phoneme);
+        }
+
+        [Test]
+        public void Set_WithTimings_Clear_RemovesTimings()
+        {
+            var cache = new AudioSynthesisCache();
+            var key = 1L;
+
+            cache.Set(key, SampleAudio, 22050, CreateSampleTimings());
+            cache.Clear();
+
+            var result = cache.TryGet(key, out _, out _, out var outTimings);
+            Assert.IsFalse(result, "Clear 後は TryGet で false を返すこと");
+            Assert.IsNull(outTimings, "Clear 後の timings は null であること");
+        }
+
+        [Test]
+        public void TryGet_EmptyCache_TimingsIsNull()
+        {
+            var cache = new AudioSynthesisCache();
+            var key = 999L;
+
+            var result = cache.TryGet(key, out _, out _, out var outTimings);
+
+            Assert.IsFalse(result);
+            Assert.IsNull(outTimings, "空キャッシュの TryGet で timings は null であること");
+        }
+
+        [Test]
+        public void Set_WithTimings_TryGetIgnoresTimingsViaDiscard()
+        {
+            var cache = new AudioSynthesisCache();
+            var key = 1L;
+
+            cache.Set(key, SampleAudio, 22050, CreateSampleTimings());
+
+            // out _ で timings を破棄しても正常に動作すること
+            var result = cache.TryGet(key, out var samples, out var sampleRate, out _);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(SampleAudio, samples);
+            Assert.AreEqual(22050, sampleRate);
+        }
+
+        // ================================================================
+        // Timing memory calculation tests
+        // ================================================================
+
+        [Test]
+        public void Set_WithTimings_CurrentMemoryBytesIncludesTimings()
+        {
+            // Arrange
+            var cache = new AudioSynthesisCache();
+            var key = AudioSynthesisCache.GenerateKey(SamplePhonemeIds, null, 1f, 0.667f, 0.8f, 0, 0);
+            var timings = CreateSampleTimings(); // 3 entries
+
+            // Act: タイミングなしで保存
+            var keyNoTimings = AudioSynthesisCache.GenerateKey(
+                new[] { 1, 2 }, null, 1f, 0.667f, 0.8f, 0, 0);
+            cache.Set(keyNoTimings, SampleAudio, 22050);
+            var memWithout = cache.CurrentMemoryBytes;
+
+            // タイミング付きで保存
+            cache.Set(key, SampleAudio, 22050, timings);
+            var memWith = cache.CurrentMemoryBytes;
+
+            // Assert: タイミング付きの方がメモリ消費が大きい
+            Assert.Greater(memWith, memWithout,
+                "タイミング付きエントリはタイミングなしより多くのメモリを消費すること");
+        }
+
+        [Test]
+        public void Set_WithTimings_EvictLRU_MemoryBytesDecreases()
+        {
+            // Arrange: maxEntries=1
+            var cache = new AudioSynthesisCache(maxEntries: 1);
+            var key1 = AudioSynthesisCache.GenerateKey(SamplePhonemeIds, null, 1f, 0.667f, 0.8f, 0, 0);
+            var key2 = AudioSynthesisCache.GenerateKey(new[] { 9, 9 }, null, 1f, 0.667f, 0.8f, 0, 0);
+            var timings = CreateSampleTimings();
+
+            // Act
+            cache.Set(key1, SampleAudio, 22050, timings);
+            var memAfterFirst = cache.CurrentMemoryBytes;
+
+            cache.Set(key2, new float[] { 0.1f }, 22050); // timingsなし、小さいaudio
+            var memAfterEviction = cache.CurrentMemoryBytes;
+
+            // Assert
+            Assert.Less(memAfterEviction, memAfterFirst,
+                "LRU退避後にメモリ消費が減少すること");
+            Assert.AreEqual(1, cache.Count);
+        }
+
+        // ================================================================
+        // Timing helpers
+        // ================================================================
+
+        private static PhonemeTimingEntry[] CreateSampleTimings()
+        {
+            return new[]
+            {
+                new PhonemeTimingEntry("k", 0.0f, 0.058f),
+                new PhonemeTimingEntry("o", 0.058f, 0.128f),
+                new PhonemeTimingEntry("N", 0.128f, 0.186f),
+            };
         }
     }
 }

@@ -650,7 +650,7 @@ namespace uPiper.Editor
             foreach (var entry in archive.Entries)
             {
                 var entryDestination = Path.GetFullPath(Path.Combine(fullDestination, entry.FullName));
-                if (!entryDestination.StartsWith(fullDestination + Path.DirectorySeparatorChar)
+                if (!entryDestination.StartsWith(fullDestination + Path.DirectorySeparatorChar, StringComparison.Ordinal)
                     && entryDestination != fullDestination)
                 {
                     throw new IOException(

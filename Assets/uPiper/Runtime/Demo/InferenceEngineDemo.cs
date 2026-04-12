@@ -809,19 +809,25 @@ namespace uPiper.Demo
                 Unity.Collections.NativeArray<float> nativeAudioData = default;
                 try
                 {
+                    InferenceOutput inferenceOutput;
                     if (useProsody && expandedProsodyFlat != null)
                     {
                         PiperLogger.LogDebug($"Calling GenerateAudioAsync with prosody (languageId={languageId})...");
-                        nativeAudioData = await _generator.GenerateAudioAsync(
+                        inferenceOutput = await _generator.GenerateAudioAsync(
                             phonemeIds, expandedProsodyFlat,
                             languageId: languageId);
                     }
                     else
                     {
                         PiperLogger.LogDebug($"Calling GenerateAudioAsync (languageId={languageId})...");
-                        nativeAudioData = await _generator.GenerateAudioAsync(
+                        inferenceOutput = await _generator.GenerateAudioAsync(
                             phonemeIds, languageId: languageId);
                     }
+                    nativeAudioData = new Unity.Collections.NativeArray<float>(
+                        inferenceOutput.Audio.Length, Unity.Collections.Allocator.Persistent);
+                    Unity.Collections.NativeArray<float>.Copy(inferenceOutput.Audio, nativeAudioData);
+                    inferenceOutput.Dispose();
+
                     timings["Synthesis"] = synthesisStopwatch.ElapsedMilliseconds;
                     PiperLogger.LogInfo($"Audio generated: {nativeAudioData.Length} samples");
 

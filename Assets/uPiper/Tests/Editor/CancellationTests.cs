@@ -88,8 +88,9 @@ namespace uPiper.Tests.Editor
             using var cts = new CancellationTokenSource();
             cts.Cancel();
 
-            Assert.ThrowsAsync<OperationCanceledException>(
-                async () => await PiperTTS.CreateAsync(cts.Token));
+            Assert.That(
+                async () => await PiperTTS.CreateAsync(cts.Token),
+                Throws.InstanceOf<OperationCanceledException>());
         }
 
         [Test]
@@ -100,8 +101,9 @@ namespace uPiper.Tests.Editor
 
             var voice = new PiperVoiceConfig { VoiceId = "test" };
 
-            Assert.ThrowsAsync<OperationCanceledException>(
-                async () => await PiperTTS.CreateAsync(new PiperConfig(), voice, cts.Token));
+            Assert.That(
+                async () => await PiperTTS.CreateAsync(new PiperConfig(), voice, cts.Token),
+                Throws.InstanceOf<OperationCanceledException>());
         }
 
         // ================================================================

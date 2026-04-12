@@ -91,5 +91,32 @@ namespace uPiper.Tests.Editor
             Assert.ThrowsAsync<InvalidOperationException>(
                 async () => await tts.PhonemizeAsync(""));
         }
+
+        // ================================================================
+        // SynthesizeWithTimingAsync -- guard clauses
+        // ================================================================
+
+        [Test]
+        public void SynthesizeWithTimingAsync_NotInitialized_ThrowsInvalidOperationException()
+        {
+            using var tts = new PiperTTS(_config);
+            var request = SynthesisRequest.FromPhonemes(new[] { "k", "o", "N" });
+
+            var ex = Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await tts.SynthesizeWithTimingAsync(request));
+            StringAssert.Contains("not initialized", ex.Message, "Should mention not initialized");
+        }
+
+        [Test]
+        public void SynthesizeWithTimingAsync_Disposed_ThrowsObjectDisposedException()
+        {
+            var tts = new PiperTTS(_config);
+            tts.Dispose();
+
+            var request = SynthesisRequest.FromPhonemes(new[] { "k", "o", "N" });
+
+            Assert.ThrowsAsync<ObjectDisposedException>(
+                async () => await tts.SynthesizeWithTimingAsync(request));
+        }
     }
 }

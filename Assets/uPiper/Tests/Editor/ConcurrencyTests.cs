@@ -166,7 +166,7 @@ namespace uPiper.Tests.Editor
             var getTasks = Enumerable.Range(0, taskCount)
                 .Select(i => Task.Run(() =>
                 {
-                    if (cache.TryGet(keys[i], out var samples, out var sampleRate))
+                    if (cache.TryGet(keys[i], out var samples, out var sampleRate, out _))
                     {
                         Assert.That(sampleRate, Is.EqualTo(22050),
                             $"SampleRate corrupted for key index {i}");

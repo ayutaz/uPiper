@@ -28,10 +28,7 @@ namespace uPiper.Core.AudioGeneration
         // ── IInferenceAudioGenerator プロパティ委譲 ──
 
         public bool IsInitialized => _inner.IsInitialized;
-        public int SampleRate => _inner.SampleRate;
-        public bool SupportsProsody => _inner.SupportsProsody;
-        public bool SupportsMultiSpeaker => _inner.SupportsMultiSpeaker;
-        public bool SupportsLanguageId => _inner.SupportsLanguageId;
+        public IModelCapabilities Capabilities => _inner.Capabilities;
 
         // ── InitializeAsync 委譲 ──
 
@@ -50,7 +47,7 @@ namespace uPiper.Core.AudioGeneration
 
         // ── GenerateAudioAsync: 短テキスト緩和を適用 ──
 
-        public async Task<NativeArray<float>> GenerateAudioAsync(
+        public async Task<InferenceOutput> GenerateAudioAsync(
             int[] phonemeIds,
             int[] prosodyFlat = null,
             float lengthScale = 1.0f,
@@ -66,8 +63,14 @@ namespace uPiper.Core.AudioGeneration
             var originalCount = phonemeIds.Length;
             var wasPadded = ShortTextProcessor.NeedsPadding(phonemeIds);
 
+            int afterBos = 0;
+            int beforeEos = 0;
             if (wasPadded)
             {
+                var deficit = ShortTextProcessor.MinPhonemeIds - phonemeIds.Length;
+                afterBos = deficit / 2;
+                beforeEos = deficit - afterBos;
+
                 (phonemeIds, prosodyFlat) = ShortTextProcessor.PadPhonemeIds(
                     phonemeIds, prosodyFlat);
             }
@@ -78,17 +81,117 @@ namespace uPiper.Core.AudioGeneration
                     originalCount, noiseScale, noiseW);
             }
 
-            var audio = await _inner.GenerateAudioAsync(
+            var output = await _inner.GenerateAudioAsync(
                 phonemeIds, prosodyFlat,
                 lengthScale, noiseScale, noiseW,
                 speakerId, languageId, cancellationToken);
-
-            if (wasPadded)
+            try
             {
-                audio = ShortTextProcessor.TrimSilence(audio);
-            }
+                if (wasPadded)
+                {
+                    output = ProcessPaddedOutput(output, afterBos, beforeEos);
+                }
 
-            return audio;
+                return output;
+            }
+            catch
+            {
+                output?.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// PAD 挿入後の推論結果を処理する。
+        /// <see cref="InferenceOutput.DetachAudio"/>/<see cref="InferenceOutput.DetachDurations"/>
+        /// で全所有権を先に移転し、元 <paramref name="output"/> を安全に Dispose してから
+        /// Audio の無音トリムと Durations の PAD 除去を行う。
+        /// </summary>
+        private static InferenceOutput ProcessPaddedOutput(
+            InferenceOutput output, int afterBos, int beforeEos)
+        {
+            // 1. 元の InferenceOutput から全リソースの所有権を移転
+            var audio = output.DetachAudio();
+            var durations = output.HasDurations
+                ? output.DetachDurations()
+                : default;
+            output.Dispose(); // 空になった InferenceOutput を安全に Dispose
+
+            // 2. Audio: 無音トリム / Durations: PAD 除去
+            NativeArray<float> trimmedAudio = default;
+            NativeArray<float> cleanedDurations = default;
+            try
+            {
+                trimmedAudio = ShortTextProcessor.TrimSilence(audio);
+                // TrimSilence が新配列を返した場合、audio は既に Dispose 済み
+                // TrimSilence がトリム不要で元配列を返した場合、audio == trimmedAudio
+
+                if (durations.IsCreated)
+                {
+                    cleanedDurations = RemovePadDurations(
+                        durations, afterBos, beforeEos);
+                    durations.Dispose();
+                    durations = default;
+                }
+
+                return new InferenceOutput(trimmedAudio, cleanedDurations);
+            }
+            catch
+            {
+                // 例外時: 新規作成したリソースのみクリーンアップ
+                // trimmedAudio が audio と同一（トリム不要）の場合は audio 経由で解放
+                if (trimmedAudio.IsCreated)
+                    trimmedAudio.Dispose();
+                else if (audio.IsCreated)
+                    audio.Dispose();
+                if (cleanedDurations.IsCreated)
+                    cleanedDurations.Dispose();
+                if (durations.IsCreated)
+                    durations.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// PAD 挿入位置に対応する durations エントリを除去する。
+        /// </summary>
+        private static NativeArray<float> RemovePadDurations(
+            NativeArray<float> durations, int afterBos, int beforeEos)
+        {
+            var totalPadCount = afterBos + beforeEos;
+            if (totalPadCount <= 0 || !durations.IsCreated)
+                return durations;
+
+            var originalLength = durations.Length;
+            var newLength = originalLength - totalPadCount;
+            if (newLength <= 0)
+                return new NativeArray<float>(0, Allocator.Persistent);
+
+            var cleaned = new NativeArray<float>(newLength, Allocator.Persistent);
+            try
+            {
+                // BOS（インデックス 0）をコピー
+                cleaned[0] = durations[0];
+
+                // Body（PAD をスキップした本体部分）をコピー
+                var bodyStart = 1 + afterBos;
+                var bodyLength = originalLength - 1 - afterBos - beforeEos - 1;
+                if (bodyLength > 0)
+                {
+                    NativeArray<float>.Copy(durations, bodyStart, cleaned, 1, bodyLength);
+                }
+
+                // EOS（最後の要素）をコピー
+                cleaned[newLength - 1] = durations[originalLength - 1];
+
+                return cleaned;
+            }
+            catch
+            {
+                if (cleaned.IsCreated)
+                    cleaned.Dispose();
+                throw;
+            }
         }
 
         // ── Dispose: デコレータは inner を Dispose しない ──

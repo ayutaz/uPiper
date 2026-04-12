@@ -12,6 +12,10 @@ namespace uPiper.Core.AudioGeneration
     /// 音素列を沈黙トークンの位置で分割し、句ごとに独立推論を行い、
     /// 句間にゼロサンプルの無音区間を挿入して結合する。
     /// </summary>
+    /// <remarks>
+    /// 句分割時の durations 結合は TTSSynthesisOrchestrator が使用しないため除外。
+    /// 将来の句単位タイミング対応では SplitInferenceResult 型を導入予定。
+    /// </remarks>
     internal class SplitInferenceOrchestrator : ISplitInferenceOrchestrator
     {
         private readonly IInferenceAudioGenerator _generator;
@@ -25,8 +29,11 @@ namespace uPiper.Core.AudioGeneration
         /// 沈黙句分割付きで音声を生成する。
         /// 句ごとにIProgress&lt;float&gt;で進捗(0.0〜1.0)を報告する。
         /// </summary>
-        /// <remarks>Caller owns and must Dispose the returned NativeArray.</remarks>
-        public async Task<NativeArray<float>> GenerateWithSilenceSplitAsync(
+        /// <remarks>
+        /// Caller owns and must Dispose the returned <see cref="InferenceOutput"/>.
+        /// Durations is always <c>default</c> (not combined across phrases).
+        /// </remarks>
+        public async Task<InferenceOutput> GenerateWithSilenceSplitAsync(
             int[] phonemeIds,
             int[] prosodyFlat,
             IReadOnlyDictionary<string, float> phonemeSilence,
@@ -50,7 +57,8 @@ namespace uPiper.Core.AudioGeneration
             if (phrases.Count == 0)
             {
                 PiperLogger.LogWarning("[SplitInferenceOrchestrator] No phrases after silence split");
-                return new NativeArray<float>(0, Allocator.Persistent);
+                return new InferenceOutput(
+                    new NativeArray<float>(0, Allocator.Persistent), default);
             }
 
             // Count non-empty phrases for accurate progress reporting
@@ -63,7 +71,7 @@ namespace uPiper.Core.AudioGeneration
             }
 
             var segments = new List<(NativeArray<float> Audio, int SilenceSamples)>();
-            NativeArray<float> combined = default;
+            NativeArray<float> combinedAudio = default;
             try
             {
                 var totalLength = 0;
@@ -77,11 +85,13 @@ namespace uPiper.Core.AudioGeneration
 
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var phraseAudio = await _generator.GenerateAudioAsync(
+                    var phraseOutput = await _generator.GenerateAudioAsync(
                         phrase.PhonemeIds, phrase.ProsodyFlat,
                         lengthScale, noiseScale, noiseW,
                         speakerId, languageId,
                         cancellationToken);
+                    var phraseAudio = phraseOutput.DetachAudio();
+                    phraseOutput.Dispose();
 
                     segments.Add((phraseAudio, phrase.SilenceSamples));
                     totalLength += phraseAudio.Length + phrase.SilenceSamples;
@@ -99,12 +109,12 @@ namespace uPiper.Core.AudioGeneration
                 }
 
                 // ClearMemory ensures silence gaps are zero-initialized
-                combined = new NativeArray<float>(
+                combinedAudio = new NativeArray<float>(
                     totalLength, Allocator.Persistent, NativeArrayOptions.ClearMemory);
                 var offset = 0;
                 foreach (var (audio, silenceSamples) in segments)
                 {
-                    NativeArray<float>.Copy(audio, 0, combined, offset, audio.Length);
+                    NativeArray<float>.Copy(audio, 0, combinedAudio, offset, audio.Length);
                     offset += audio.Length;
                     offset += silenceSamples; // Zero-initialized (silence)
                 }
@@ -112,12 +122,12 @@ namespace uPiper.Core.AudioGeneration
                 PiperLogger.LogInfo(
                     $"[SplitInferenceOrchestrator] Silence split complete: " +
                     $"{totalLength} total samples ({segments.Count} phrases)");
-                return combined;
+                return new InferenceOutput(combinedAudio, default);
             }
             catch
             {
-                if (combined.IsCreated)
-                    combined.Dispose();
+                if (combinedAudio.IsCreated)
+                    combinedAudio.Dispose();
                 throw;
             }
             finally

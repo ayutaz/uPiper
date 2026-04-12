@@ -1285,8 +1285,6 @@ namespace uPiper.Core
                     "Could not log backend selection summary: {0}", ex.Message);
             }
 
-            // Small delay to simulate async operation
-            await Task.Yield();
         }
 
         /// <summary>
@@ -1320,8 +1318,6 @@ namespace uPiper.Core
                     PiperLogger.LogWarning("No phonemizer available for language: {0}. Text-to-speech will use fallback mode.", _config.DefaultLanguage);
                 }
 
-                // Small delay to simulate async operation
-                await Task.Yield();
             }
             catch (Exception ex)
             {
@@ -1341,9 +1337,6 @@ namespace uPiper.Core
             // For now, just log the intention
 
             PiperLogger.LogInfo("Worker pool initialization completed");
-
-            // Small delay to simulate async operation
-            await Task.Yield();
         }
 
         /// <summary>
