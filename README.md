@@ -210,3 +210,41 @@ var config = new PiperConfig
   - Copyright 2014-2021 Adobe (http://www.adobe.com/)
   - TextMeshProでの日本語表示に使用
   - 詳細は `Assets/Fonts/LICENSE.txt` を参照
+
+---
+
+## Camb AI クラウドバックエンド (Cloud Backend)
+
+ローカルのONNX推論に加えて、[Camb AI](https://docs.camb.ai) のREST APIを
+バックエンドとして使用できます。クラウド側でG2Pと音声合成を行うため、
+ローカルでは辞書もONNXモデルも不要です。
+
+### セットアップ
+
+1. Unity Editorで `Assets > Create > uPiper > Camb AI Settings` を選択し、
+   `CambSettings.asset` を作成。
+2. インスペクタでAPIキーを貼り付ける
+   （空欄のままなら環境変数 `CAMB_API_KEY` が使用されます）。
+3. モデルは低レイテンシ向けの `mars-flash` がデフォルト。
+
+### 使用例
+
+```csharp
+using uPiper.Core;
+using uPiper.Core.Backends;
+
+var config = PiperConfig.CreateDefault();
+config.Backend = InferenceBackend.Cloud;
+
+// cambSettings は Resources.Load<CambSettings>(...) もしくは
+// [SerializeField] CambSettings cambSettings; で注入
+IPiperTTS tts = PiperBackendFactory.Create(config, cambSettings);
+await tts.InitializeAsync();
+
+AudioClip clip = await tts.GenerateAudioAsync("Hello from Camb AI!");
+audioSource.PlayOneShot(clip);
+```
+
+クラウドバックエンドはローカルのG2P / 音素キャッシュ / ONNXをスキップし、
+`UnityWebRequest` で `POST {endpoint}` (`x-api-key` ヘッダ) を呼び出し、
+返された WAV/PCM を Unity `AudioClip` にデコードします。

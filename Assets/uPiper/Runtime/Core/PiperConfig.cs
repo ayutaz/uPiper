@@ -293,7 +293,13 @@ namespace uPiper.Core
         /// <summary>
         /// GPU Pixel backend
         /// </summary>
-        GPUPixel
+        GPUPixel,
+
+        /// <summary>
+        /// Cloud backend (Camb AI REST). Skips local ONNX/G2P and calls the
+        /// Camb AI TTS service. Requires <see cref="uPiper.Core.Backends.CambSettings"/>.
+        /// </summary>
+        Cloud
     }
 
     /// <summary>
