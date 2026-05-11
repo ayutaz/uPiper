@@ -132,7 +132,7 @@ jobs:
 
     # Build Unity project
     - name: Build Unity project with ${{ matrix.scriptingBackend }}
-      uses: game-ci/unity-builder@v4
+      uses: game-ci/unity-builder@v5
       env:
         CI: "true"
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
