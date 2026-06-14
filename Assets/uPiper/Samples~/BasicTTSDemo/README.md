@@ -23,7 +23,7 @@ This sample demonstrates text-to-speech functionality using uPiper with multilin
 
 ## Requirements
 
-- Unity 6000.0.58f2 or later
+- Unity 6000.3.11f1 or later
 - Unity AI Inference Engine 2.5.0
 - Multilingual ONNX model (multilingual-test-medium.onnx)
 - dot-net-g2p dictionary (included)
