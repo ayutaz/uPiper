@@ -213,7 +213,7 @@ uPiper/
 
 ## 必要要件
 
-- Unity 6000.0.58f2 以降
+- Unity 6000.3.11f1 以降
 - Unity AI Inference Engine (com.unity.ai.inference) 2.5.0
 - 各プラットフォームの要件:
   - Windows: Windows 10 以降（x64のみ）

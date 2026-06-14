@@ -54,7 +54,7 @@
 | multilingual-test-medium | 多言語(6言語: ja/en/zh/es/fr/pt) | Yes | 多言語対応モデル（Prosody対応） |
 
 ## Requirements
-* Unity 6000.0.58f2
+* Unity 6000.3.11f1
 * Unity AI Inference Engine (com.unity.ai.inference) 2.5.0
 * C# 10.0（csc.rsp で LangVersion 10.0 を指定）
 

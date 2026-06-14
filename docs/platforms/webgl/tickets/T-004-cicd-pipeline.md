@@ -29,7 +29,7 @@ WebGLInputはpublicなGitリポジトリからのUPM Git URL参照（`https://gi
 - EditModeテスト全件パス確認
 - WebGLInputパッケージの追加がテスト実行に影響しないことを確認
 - トリガー: branches: main, develop
-- Unity: 6000.0.58f2
+- Unity: 6000.3.11f1
 
 #### 2. unity-build.yml — マルチプラットフォームビルド
 

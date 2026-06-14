@@ -11,7 +11,7 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 
 **特徴**:
 - Windows/Linux/macOS/WebGL向けビルド
-- Unity 6000.0.58f2使用
+- Unity 6000.3.11f1使用
 - Mono2x/IL2CPPバックエンド対応
 - 自動リリース作成（タグプッシュ時）
 - `.unitypackage`自動エクスポート・リリース添付（タグプッシュ時）

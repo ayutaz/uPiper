@@ -77,6 +77,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PlatformInitLoggingTests を値アサーション付きに書き直し
 - AudioSynthesisCache の `[Obsolete]` API → NativeArray対応
 - BitConverter.GetBytes → union struct（GCフリー化）
+- Unity Editor 6000.0.58f2 → 6000.3.11f1 にアップグレード（CIワークフロー・ドキュメントの版数表記も更新）
+- uLoopMCP 0.50.0 → 2.1.8、Unityパッケージ更新（inputsystem/test-framework/visualstudio/codecoverage 等）、WebGLInput 追加
 
 ### Deprecated
 
