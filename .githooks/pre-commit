@@ -8,7 +8,8 @@
 #       尊重するため、末尾改行は「削除」方向で検出され house style を壊さない。
 #   [2] .meta 欠落/孤立ガード — Unity アセット/フォルダの .meta 欠落・孤立を検出。
 #       Unity 起動不要のファイル存在チェックのみ。.meta は生成しない(GUID整合は Unity の責務)。
-#       .gitignore で意図的に除外された .meta(naist_jdic 等)はスキップ。
+#       .gitignore で意図的に除外された .meta(naist_jdic 等)、および Unity 隠蔽フォルダ
+#       (末尾 ~ = Samples~ 等。Unity は .meta を生成しない)配下はスキップ。
 #
 # 緊急バイパス: EMERGENCY_SKIP_HOOKS=1 git commit ...   または   git commit --no-verify
 # 配布:        git config core.hooksPath .githooks
@@ -79,6 +80,7 @@ check_meta() {
     case "$status" in R*|C*) IFS= read -r -d '' newpath; path="$newpath" ;; esac
     case "$path" in "$ASSET_ROOT"*) : ;; *) continue ;; esac
     case "$path" in *.meta) continue ;; esac
+    case "$path" in *~/*) continue ;; esac   # Unity 隠蔽フォルダ(Samples~ 等・末尾~)は .meta を持たないためスキップ
     case "$status" in
       A*|M*|R*|C*)
         meta="${path}.meta"
@@ -115,6 +117,7 @@ check_meta() {
   while IFS= read -r -d '' status && IFS= read -r -d '' metapath; do
     case "$status" in R*|C*) IFS= read -r -d '' metapath ;; esac
     case "$metapath" in "$ASSET_ROOT"*.meta) : ;; *) continue ;; esac
+    case "$metapath" in *~/*) continue ;; esac   # Unity 隠蔽フォルダ(Samples~ 等)配下はスキップ
     case "$status" in A*|M*|R*|C*) : ;; *) continue ;; esac
     is_ignored "$metapath" && continue
     base="${metapath%.meta}"
