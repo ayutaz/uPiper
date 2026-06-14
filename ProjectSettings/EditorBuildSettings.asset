@@ -9,5 +9,6 @@ EditorBuildSettings:
     path: Assets/uPiper/Scenes/InferenceEngineDemo.unity
     guid: 42f763f68be95459baf75cfe448b13e4
   m_configObjects:
+    com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

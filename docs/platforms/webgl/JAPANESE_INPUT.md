@@ -44,7 +44,7 @@ TMP_InputField（Unity 側）
 | パッケージ名 | `com.github.kou-yeung` |
 | namespace | `WebGLSupport` |
 | パッケージサイズ | 18KB |
-| Unity 要件 | 2023.2+（uPiper: 6000.0.58f2 で互換性あり） |
+| Unity 要件 | 2023.2+（uPiper: 6000.3.11f1 で互換性あり） |
 | 依存パッケージ | `com.unity.ugui: 1.0.0~` のみ（uPiper で導入済み） |
 | TMP_InputField 対応 | あり（`WrappedTMPInputField`、Unity 2018.2+ で自動有効） |
 
