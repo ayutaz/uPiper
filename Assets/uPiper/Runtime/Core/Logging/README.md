@@ -23,7 +23,6 @@ PiperLogger.LogInfo("Loading model {0} for language {1}", modelPath, language);
 - **Info**: 一般的な情報
 - **Warning**: 警告（動作は継続）
 - **Error**: エラー（処理失敗）
-- **Fatal**: 致命的エラー（復旧不可）
 
 ## 設定
 

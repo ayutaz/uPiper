@@ -2,11 +2,11 @@
 
 ## 前提条件
 
-- Unity 6000.0 (Unity 6) 以降
+- Unity 6000.3.11f1（Unity 6）以降
 - Xcode 15 以降
 - iOS 11.0 以降のターゲットデバイス
 - Apple Developer アカウント（実機テスト時）
-- Sentis パッケージ（Unity.InferenceEngine）がインストール済み
+- Unity AI Inference Engine（`com.unity.ai.inference` 2.5.0）がインストール済み
 
 ## 推論バックエンド
 
@@ -30,7 +30,7 @@ var config = new PiperConfig
 
 ### Metal が使えない理由
 
-Unity.InferenceEngine（Sentis）の Metal バックエンドには、VITS モデルのシェーダーコンパイルで既知の問題があります。`'metal_stdlib' file not found` エラーが発生し、GPU 推論で破損した音声が出力されます。この問題は Unity / Sentis 側の制限であり、uPiper 側では対応できません。
+Unity AI Inference Engine（`Unity.InferenceEngine`）の Metal バックエンドには、VITS モデルのシェーダーコンパイルで既知の問題があります。`'metal_stdlib' file not found` エラーが発生し、GPU 推論で破損した音声が出力されます。この問題は Unity AI Inference Engine 側の制限であり、uPiper 側では対応できません。
 
 ## セットアップ手順
 

@@ -224,7 +224,7 @@ Assets/uPiper/
 ├── Tests/                  # テスト
 │   ├── Editor/             # EditModeテスト
 │   └── Runtime/            # PlayModeテスト
-├── Plugins/                # プラットフォーム固有プラグイン（Android Sentis等）
+├── Plugins/                # プラットフォーム固有プラグイン（Android Manifest, WebGL .jslib等）
 │   └── WebGL/                 # WebGLネイティブプラグイン
 │       └── IndexedDBCache.jslib        # IndexedDB JS interop
 └── Samples~/               # サンプルデータ

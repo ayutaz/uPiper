@@ -1,5 +1,12 @@
 # eSpeak-NG Unity Native Plugin
 
+> **Note (legacy/unused):** The current uPiper architecture performs G2P entirely in
+> managed C# via [dot-net-g2p](https://github.com/ayutaz/dot-net-g2p). This eSpeak-NG
+> native plugin is **not referenced** by `Packages/manifest.json`, any `.asmdef`, or the
+> runtime/build pipeline, and the build sources described below (`src/`, `external/`,
+> `scripts/`, `build.bat`, `build.sh`) are no longer present in this directory. This
+> document is retained for historical reference only.
+
 This directory contains the eSpeak-NG integration for uPiper, providing high-quality English and multilingual phonemization.
 
 ## Overview

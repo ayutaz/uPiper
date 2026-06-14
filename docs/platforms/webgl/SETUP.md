@@ -3,7 +3,7 @@
 ## 前提条件
 
 - Unity 6000.0 (Unity 6) 以降
-- Sentis パッケージ（Unity.InferenceEngine）2.5.0 以降
+- Unity AI Inference Engine パッケージ（`com.unity.ai.inference`、C# 名前空間 `Unity.InferenceEngine`、旧称 Sentis）2.5.0 以降
 - 対応ブラウザ:
   - Chrome 90+ / Edge 90+（WebGL2）
   - Chrome 113+（WebGPU、`chrome://flags` で有効化が必要な場合あり）

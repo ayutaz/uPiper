@@ -31,7 +31,7 @@
 
 | 言語 | G2Pバックエンド |
 |------|----------------|
-| 日本語 | DotNetG2P.Japanese (MeCab辞書) |
+| 日本語 | DotNetG2P.MeCab (MeCab辞書) |
 | 英語 | DotNetG2P.English (CMU dict + LTS) |
 | 中国語 | DotNetG2P.Chinese (44K文字辞書) |
 | スペイン語 | DotNetG2P.Spanish |

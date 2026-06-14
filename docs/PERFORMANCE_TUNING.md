@@ -310,7 +310,7 @@ VITSモデルでは音素IDが40未満の短テキストで品質劣化が発生
 - `noiseScale *= max(0.5, ratio)`, `noiseW *= max(0.4, ratio)`
 - length_scale は調整しない
 
-これらの処理は `ShortTextMitigatingGenerator` がINNX推論の前後に透過的に適用するため、`TTSSynthesisOrchestrator` や `SplitInferenceOrchestrator` は短テキスト処理を意識しない。
+これらの処理は `ShortTextMitigatingGenerator` がONNX推論の前後に透過的に適用するため、`TTSSynthesisOrchestrator` や `SplitInferenceOrchestrator` は短テキスト処理を意識しない。
 
 ---
 
