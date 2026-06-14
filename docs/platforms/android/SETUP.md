@@ -2,10 +2,10 @@
 
 ## 前提条件
 
-- Unity 6000.0 (Unity 6) 以降
+- Unity 6000.3 (Unity 6) 以降（検証バージョン: 6000.3.11f1）
 - Android SDK / NDK（Unity Hub 経由で自動インストール推奨）
 - Android 5.0 (API 21) 以降のターゲットデバイス
-- Sentis パッケージ（Unity.InferenceEngine）がインストール済み
+- Unity AI Inference Engine（com.unity.ai.inference 2.5.0、名前空間 Unity.InferenceEngine）がインストール済み
 
 ## 推論バックエンド
 
@@ -94,9 +94,9 @@ StreamingAssets/
     └── pua.json             # PUAマッピング
 ```
 
-### 5. Sentis プラグイン
+### 5. Unity AI Inference Engine プラグイン
 
-Android 向けの Sentis プラグインは Unity パッケージに含まれており、追加の設定は不要です。
+Android 向けの Unity AI Inference Engine（com.unity.ai.inference）プラグインは Unity パッケージに含まれており、追加の設定は不要です。
 
 ### 6. ビルドと実行
 

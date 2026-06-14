@@ -10,7 +10,14 @@ These are kept outside of the Unity Assets folder to avoid:
 
 Japanese text-to-phoneme conversion library.
 
-### Building
+> **Note (legacy):** The native OpenJTalk phonemizer is **no longer used** by the current
+> architecture. Japanese G2P is now handled by the pure C# `dot-net-g2p` package
+> (`com.dotnetg2p.mecab`, see `Packages/manifest.json`), so no native `openjtalk_wrapper`
+> binary is built or referenced by the Unity build. The build steps below are retained for
+> historical reference. The **naist_jdic dictionary** (see "Dictionary Files" below) is still
+> used at runtime by `dot-net-g2p` (MeCab) and remains current.
+
+### Building (legacy / unused)
 
 ```bash
 cd OpenJTalk

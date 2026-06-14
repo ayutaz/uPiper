@@ -100,7 +100,7 @@ await piperTTS.InitializeAsync();
 
 **症状**: macOSでGPU推論を指定すると、音声が破損する（ノイズ、無音、異常な音声）。
 
-**原因**: Unity.InferenceEngine (Sentis) の Metal バックエンドにはシェーダコンパイルの既知の問題があり、GPU推論が正常に動作しない。
+**原因**: Unity AI Inference Engine (com.unity.ai.inference / namespace `Unity.InferenceEngine`) の Metal バックエンドにはシェーダコンパイルの既知の問題があり、GPU推論が正常に動作しない。
 
 **解決策**:
 
@@ -323,7 +323,7 @@ WebGLでは `IndexedDBCache` を使用してモデルデータをブラウザに
 
 ### 5.2 macOSでGPUが使えない
 
-**原因**: Unity.InferenceEngine (Sentis) の Metal バックエンドに既知のシェーダコンパイル問題があり、GPU推論が破損した音声を生成する。
+**原因**: Unity AI Inference Engine (com.unity.ai.inference / namespace `Unity.InferenceEngine`) の Metal バックエンドに既知のシェーダコンパイル問題があり、GPU推論が破損した音声を生成する。
 
 **解決策**: macOSでは `InferenceBackend.Auto` を使用する（自動的にCPUが選択される）。CPUバックエンドでも実用的な速度で動作する。
 

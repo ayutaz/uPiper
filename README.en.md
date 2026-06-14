@@ -31,7 +31,7 @@ A Unity plugin for [piper-plus](https://github.com/ayutaz/piper-plus) - High-qua
 
 | Language | G2P Backend |
 |----------|-------------|
-| Japanese | DotNetG2P.Japanese (MeCab dictionary) |
+| Japanese | DotNetG2P.MeCab (MeCab dictionary) |
 | English | DotNetG2P.English (CMU dict + LTS) |
 | Chinese | DotNetG2P.Chinese (44K character dictionary) |
 | Spanish | DotNetG2P.Spanish |

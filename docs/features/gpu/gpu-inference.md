@@ -108,7 +108,7 @@ config.GPUSettings.MaxMemoryMB = 1024;  // 1GB制限
 
 ### 問題: GPU Computeで日本語音声が「ぶー」音になる
 **症状**: GPU Computeバックエンドで日本語音声が正しく生成されない（「ぶー」という短音になる）
-**原因**: Unity Inference Engine (Sentis)のGPU ComputeバックエンドとVITSモデルの互換性問題
+**原因**: Unity AI Inference Engine (com.unity.ai.inference) のGPU ComputeバックエンドとVITSモデルの互換性問題
 **解決策**: 
 ```csharp
 // GPU PixelまたはCPUを使用
@@ -206,7 +206,7 @@ GPU初期化失敗時に自動的にCPUにフォールバックします。
 3. **WebGL**: WebGPU時はGPUCompute、WebGL2時はGPUPixelが自動選択
 4. **モバイル**: メモリ制限によりMaxMemoryMB調整が必要
 
-### Unity Inference Engine (Sentis)の既知の問題
+### Unity AI Inference Engine (com.unity.ai.inference) の既知の問題
 - **GPU Compute**: 特定のONNXオペレーターが未対応
 - **テンソル転送**: GPU-CPU間のデータ転送時にデータ破損の可能性
 - **VITSモデル**: GPU ComputeバックエンドでVITSアーキテクチャが正しく処理されない

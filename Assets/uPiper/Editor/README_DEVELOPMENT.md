@@ -2,27 +2,26 @@
 
 開発プロジェクトでは、Samples~フォルダがUnityエディタから見えないため、以下の方法でサンプルを使用してください。
 
-## 方法1: エディタメニューから自動作成（推奨）
+## 方法1: Package Managerからサンプルをインポート（推奨）
 
-1. Unityメニューから `uPiper > Development > Create Basic TTS Demo Scene` を選択
-2. シーン保存先を選択
-   - 推奨: `Assets/uPiper/Scenes/BasicTTSDemo.unity`
-   - または: `Assets/Scenes/BasicTTSDemo.unity`
-3. シーンが自動的に作成され、必要なコンポーネントが配置されます
-4. BasicTTSDemoコンポーネントのインスペクターで`Model Asset`フィールドにONNXモデルアセットを設定
-   - 通常は自動的に検出・設定されます
-   - 手動で設定する場合は、`Assets/uPiper/Resources/Models/multilingual-test-medium.onnx`を選択
+1. Window > Package Manager で uPiper パッケージを選択
+2. `Samples` から `BasicTTSDemo` をインポート
+3. インポートされた `BasicTTSDemo.unity` シーンを開いて Play
+   - シーンには `InferenceEngineDemo` コンポーネントが配置済みです
+   - 多言語モデル（multilingual-test-medium）で6言語（ja/en/zh/es/fr/pt）に対応
+4. 辞書・モデルデータが未インストールの場合は、`uPiper > Setup > Install from Samples` を実行
+   - ONNXモデルは `Assets/uPiper/Resources/Models/multilingual-test-medium.onnx`
 
-## 方法2: サンプルスクリプトのコピー
+## 方法2: 開発リポジトリ内のデモシーンを直接開く
 
-1. Unityメニューから `uPiper > Development > Copy Sample Scripts to Project` を選択
-2. `Assets/Samples/uPiper/BasicTTSDemo` にファイルがコピーされます
-3. コピーされたスクリプトを使用してシーンを手動で構築
+1. `Assets/uPiper/Scenes/InferenceEngineDemo.unity` を開いて Play
+   - `Samples~/BasicTTSDemo/BasicTTSDemo.unity` は同一シーンのコピーです
+2. デモのスクリプトは `Assets/uPiper/Runtime/Demo/InferenceEngineDemo.cs`
 
 ## 開発時の注意事項
 
-- BasicTTSDemoDev.csは開発用の簡略版です
-- 本番のサンプルコードはSamples~/BasicTTSDemo/BasicTTSDemo.csにあります
+- デモUIの実装は `Runtime/Demo/InferenceEngineDemo.cs` です
+- 配布用サンプルは `Samples~/BasicTTSDemo/` に配置されます（`InferenceEngineDemo.cs` を使用）
 - パッケージとして配布する際は、Samples~フォルダの内容が使用されます
 
 ## トラブルシューティング

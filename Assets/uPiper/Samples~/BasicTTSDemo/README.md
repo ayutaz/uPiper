@@ -42,7 +42,7 @@ This sample demonstrates text-to-speech functionality using uPiper with multilin
 ## Architecture
 
 The demo uses the complete TTS pipeline:
-1. Text Input → Phonemization (dot-net-g2p/Flite LTS)
+1. Text Input → Phonemization (dot-net-g2p)
 2. Phoneme Encoding → PUA character mapping
 3. Neural Synthesis → VITS model inference
 4. Audio Output → Unity AudioSource

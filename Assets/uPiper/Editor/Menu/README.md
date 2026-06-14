@@ -8,67 +8,54 @@ This directory contains the centralized menu system for uPiper. All menu items a
 
 ```
 uPiper/
-├── Demo/
-│   ├── Open Inference Demo Scene
-│   ├── Create Inference Demo Scene
-│   ├── Open WebGL Demo Scene
-│   ├── Copy All Samples to Assets
-│   └── Add All Scenes to Build Settings
+├── Setup/
+│   ├── Install from Samples
+│   └── Check Setup Status
 ├── Build/
 │   ├── Configure Build Settings
 │   ├── Build All Platforms
 │   ├── Configure IL2CPP Settings
 │   └── Verify IL2CPP Configuration
+├── Package/
+│   ├── Export Unity Package (.unitypackage)
+│   ├── Export UPM Package (.tgz)
+│   ├── Export Unity Package (No Dependencies)
+│   ├── Export Both Formats
+│   └── Open Export Directory
 ├── Tools/
-│   ├── Dictionary Manager
 │   ├── GPU Inference Test
-│   └── IL2CPP Benchmark Runner
-├── Debug/
-│   ├── Check Compilation
-│   ├── DLL/
-│   │   ├── Check Search Path
-│   │   ├── Check Architecture
-│   │   └── Force Reimport
-│   └── ONNX/
-│       ├── Inspect Model
-│       └── Test Simple Inference
-├── Android/
-│   ├── Setup Android Libraries
-│   ├── Verify Android Setup
-│   ├── Validate Native Libraries
-│   ├── Fix Library Import Settings
-│   ├── Check Encoding Settings
-│   └── Fix Text Asset Encoding
-├── Settings/
-│   └── (Reserved for future use)
-└── Help/
-    ├── Documentation
-    ├── Report Issue
-    └── About uPiper
+│   ├── IL2CPP Benchmark Runner
+│   └── Check DLL Architecture
+├── Dictionary Manager
+├── Development/
+│   ├── Extract Dictionary from Zip
+│   └── Prepare WebGL for GitHub Pages
+├── Documentation
+└── Report Issue
 ```
 
 ## Implementation
 
-The menu system is implemented in `uPiperMenuItems.cs` which:
+The menu system is implemented as follows:
 
-1. Defines all menu paths and priorities
-2. Wraps existing functionality by calling the original menu items
-3. Provides a consistent structure and organization
+1. `uPiperMenuStructure.cs` defines the shared priority constants (`PRIORITY_DEMO`, `PRIORITY_BUILD`, `PRIORITY_TOOLS`, `PRIORITY_DEBUG`, `PRIORITY_ANDROID`, `PRIORITY_HELP`) and the Help menu items (Documentation, Report Issue).
+2. Each individual menu item is declared via `[MenuItem("uPiper/...")]` attributes in its own Editor script (e.g. `DictionaryManagerWindow.cs`, `GPUInferenceTest.cs`, `IL2CPPBuildSettings.cs`, `PackageExporter.cs`), referencing the shared priority constants where appropriate.
+
+> Note: `uPiperMenuItems.cs` is intentionally empty/disabled. Menu items are no longer centralized there; they live in their respective Editor scripts.
 
 ## Menu Priorities
 
-Menu items are grouped by priority ranges:
-- 100-199: Demo & Samples
-- 200-299: Build
-- 300-399: Tools
-- 400-499: Debug
-- 500-599: Android
-- 600-699: Settings
-- 700-799: Help
+Menu items are grouped by priority ranges (constants defined in `uPiperMenuStructure.cs`):
+- 100-199: Demo & Samples (`PRIORITY_DEMO`)
+- 200-299: Build (`PRIORITY_BUILD`)
+- 300-399: Tools (`PRIORITY_TOOLS`)
+- 400-499: Debug (`PRIORITY_DEBUG`)
+- 500-599: Android (`PRIORITY_ANDROID`)
+- 600-699: Help (`PRIORITY_HELP`)
 
 ## Migration from Old Structure
 
-The old menu items are preserved for backward compatibility. They are called internally by the new menu system using `EditorApplication.ExecuteMenuItem()`.
+Scattered menu items were consolidated under the single `uPiper/` top-level menu. Each item is now declared directly in its own Editor script with a `[MenuItem("uPiper/...")]` attribute, rather than being wrapped or re-routed through a central dispatcher.
 
 ### Old Menu Locations:
 - `Window/uPiper/` - Previously contained GPU Inference Test
@@ -85,22 +72,21 @@ The old menu items are preserved for backward compatibility. They are called int
 To add a new menu item:
 
 1. Choose the appropriate section (Demo, Build, Tools, Debug, etc.)
-2. Add a new MenuItem attribute with the correct path and priority
-3. Implement the functionality or call existing methods
-4. Follow the naming convention: `SECTION_[CATEGORY] + "Item Name"`
+2. Add a `[MenuItem]` attribute in the relevant Editor script with the full `"uPiper/Section/Item Name"` path
+3. Set the priority by referencing the matching constant from `uPiperMenuStructure` (with an optional offset)
+4. Implement the functionality directly in the method
 
 Example:
 ```csharp
-[MenuItem(SECTION_TOOLS + "New Tool", false, PRIORITY_TOOLS + 30)]
+[MenuItem("uPiper/Tools/New Tool", false, uPiperMenuStructure.PRIORITY_TOOLS + 30)]
 private static void NewTool()
 {
-    // Implementation or ExecuteMenuItem() call
+    // Implementation
 }
 ```
 
 ## Notes
 
-- The system maintains backward compatibility by keeping original menu items
-- Menu separators appear between different priority groups
-- Submenu items (e.g., Debug/DLL/) group related functionality
-- The Help section includes quick access to documentation and support
+- Visual menu separators are not used; gaps in priority values group items instead (Unity menu separators are unreliable with caching, see `uPiperMenuStructure.cs`)
+- Submenu items (e.g., `uPiper/Tools/...`, `uPiper/Build/...`) group related functionality
+- The Help section (`uPiper/Documentation`, `uPiper/Report Issue`) provides quick access to documentation and issue reporting

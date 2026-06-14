@@ -2,9 +2,9 @@
 
 ## 前提条件
 
-- Unity 6000.0 (Unity 6) 以降
+- Unity 6000.3 (Unity 6) 以降（開発環境: 6000.3.11f1）
 - macOS 12 (Monterey) 以降
-- Sentis パッケージ（Unity.InferenceEngine）がインストール済み
+- Unity AI Inference Engine パッケージ（com.unity.ai.inference, API 名前空間 Unity.InferenceEngine）がインストール済み
 
 ## 推論バックエンド
 
@@ -18,12 +18,12 @@ macOS では **CPU バックエンドのみ**が使用されます。Metal バ�
 
 ### GPU が使えない理由
 
-macOS の Graphics API は Metal のみです。Unity.InferenceEngine（Sentis）の Metal バックエンドには、VITS モデルで使用されるシェーダーのコンパイルに既知の問題があります。
+macOS の Graphics API は Metal のみです。Unity AI Inference Engine（com.unity.ai.inference）の Metal バックエンドには、VITS モデルで使用されるシェーダーのコンパイルに既知の問題があります。
 
 具体的な問題:
 - `'metal_stdlib' file not found` エラーが発生
 - GPU 推論で音声データが破損する
-- これは Unity / Sentis 側の Metal 対応の制限であり、uPiper 側で回避不可能
+- これは Unity / Unity AI Inference Engine 側の Metal 対応の制限であり、uPiper 側で回避不可能
 
 `BackendSelector` は Metal デバイスを検出すると、要求されたバックエンドに関わらず CPU に切り替えます:
 
