@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+# uPiper pre-commit hook — CI を赤くしないためのローカル先回りゲート。
+#
+# チェック:
+#   [1] whitespace ゲート — ステージ済み C# に CI(dotnet-format.yml)と完全同一の
+#       `dotnet format whitespace . --folder --verify-no-changes` をかける。
+#       .editorconfig の insert_final_newline=false / end_of_line=lf を dotnet format が
+#       尊重するため、末尾改行は「削除」方向で検出され house style を壊さない。
+#   [2] .meta 欠落/孤立ガード — Unity アセット/フォルダの .meta 欠落・孤立を検出。
+#       Unity 起動不要のファイル存在チェックのみ。.meta は生成しない(GUID整合は Unity の責務)。
+#       .gitignore で意図的に除外された .meta(naist_jdic 等)はスキップ。
+#
+# 緊急バイパス: EMERGENCY_SKIP_HOOKS=1 git commit ...   または   git commit --no-verify
+# 配布:        git config core.hooksPath .githooks
+#              (クローン後に scripts/install-git-hooks.sh または .ps1 を1回実行)
+# 互換性: bash 3.2 以上 (macOS 既定 bash を含む)。Windows は Git Bash で動作。
+
+set -uo pipefail
+
+if [ "${EMERGENCY_SKIP_HOOKS:-0}" = "1" ]; then
+  echo "[pre-commit] EMERGENCY_SKIP_HOOKS=1 のため全チェックをスキップしました。" >&2
+  exit 0
+fi
+
+FAILED=0
+
+is_ignored() { git check-ignore -q "$1" 2>/dev/null; }
+
+# ---- [1] whitespace ゲート (C# のみ / CI と同一基準) ----
+check_whitespace() {
+  # ステージ済み C# (追加 A / コピー C / 変更 M) のみ。削除・リネーム旧名は除外。
+  local staged=()
+  while IFS= read -r f; do
+    [ -n "$f" ] && staged+=("$f")
+  done < <(git diff --cached --name-only --diff-filter=ACM -- '*.cs')
+  [ "${#staged[@]}" -eq 0 ] && return 0
+
+  if ! command -v dotnet >/dev/null 2>&1; then
+    echo "[pre-commit] dotnet が見つからないため whitespace 検証をスキップします（CI で検証されます）。" >&2
+    return 0
+  fi
+
+  # 検証修正: --include のカンマ区切りは false-pass する。ファイルごとに反復付与する。
+  local include_args=()
+  local f
+  for f in "${staged[@]}"; do
+    include_args+=(--include "$f")
+  done
+
+  echo "[pre-commit] whitespace 検証中 (${#staged[@]} C# ファイル)..." >&2
+  # 検証修正: CI(dotnet-format.yml)と完全同一の `. --folder` フォルダモード（高速・restore 不要）。
+  if dotnet format whitespace . --folder \
+       "${include_args[@]}" \
+       --exclude "**/Library/**" --exclude "**/Temp/**" \
+       --exclude "**/Packages/**" --exclude "**/obj/**" \
+       --verify-no-changes; then
+    return 0
+  fi
+
+  echo "" >&2
+  echo "[pre-commit] ✖ whitespace 違反があります（末尾改行 / CRLF / 末尾空白など）。" >&2
+  echo "             下記で自動修正できます（--verify-no-changes を外す）:" >&2
+  echo "               dotnet format whitespace . --folder \\" >&2
+  echo "                 ${include_args[*]} \\" >&2
+  echo "                 --exclude \"**/Library/**\" --exclude \"**/Temp/**\" \\" >&2
+  echo "                 --exclude \"**/Packages/**\" --exclude \"**/obj/**\"" >&2
+  echo "             修正後に再度 git add → git commit してください。" >&2
+  return 1
+}
+
+# ---- [2] .meta 欠落/孤立ガード (Assets/ 配下のみ / Unity 起動不要) ----
+check_meta() {
+  local ASSET_ROOT="Assets/"
+  local errors=0 missing_meta="" orphan_meta="" missing_dir_meta=""
+  local status path newpath meta dir dmeta base metapath
+
+  # 追加/変更/リネーム/コピーされたアセットに対応する .meta が無いか検証。
+  while IFS= read -r -d '' status && IFS= read -r -d '' path; do
+    case "$status" in R*|C*) IFS= read -r -d '' newpath; path="$newpath" ;; esac
+    case "$path" in "$ASSET_ROOT"*) : ;; *) continue ;; esac
+    case "$path" in *.meta) continue ;; esac
+    case "$status" in
+      A*|M*|R*|C*)
+        meta="${path}.meta"
+        if ! is_ignored "$meta" \
+           && ! git ls-files --error-unmatch -- "$meta" >/dev/null 2>&1 \
+           && [ ! -e "$meta" ]; then
+          missing_meta="${missing_meta}\n  ${path}  ->  欠落: ${meta}"; errors=1
+        fi
+        dir="$(dirname "$path")"
+        while [ "$dir" != "." ] && [ "$dir" != "${ASSET_ROOT%/}" ] && [ "$dir" != "/" ]; do
+          dmeta="${dir}.meta"
+          if ! is_ignored "$dmeta" \
+             && ! git ls-files --error-unmatch -- "$dmeta" >/dev/null 2>&1 \
+             && [ ! -e "$dmeta" ]; then
+            case "$missing_dir_meta" in
+              *"$dmeta"*) : ;;
+              *) missing_dir_meta="${missing_dir_meta}\n  ${dir}/  ->  欠落: ${dmeta}"; errors=1 ;;
+            esac
+          fi
+          dir="$(dirname "$dir")"
+        done
+        ;;
+      D*)
+        meta="${path}.meta"
+        if ! is_ignored "$meta" \
+           && { git ls-files --error-unmatch -- "$meta" >/dev/null 2>&1 || [ -e "$meta" ]; }; then
+          orphan_meta="${orphan_meta}\n  削除: ${path}  ->  残存(孤立): ${meta}"; errors=1
+        fi
+        ;;
+    esac
+  done < <(git diff --cached -z --name-status --diff-filter=ACMRD --)
+
+  # 追加/変更/リネームされた .meta に対応するアセット/フォルダが無いか検証（孤立 .meta）。
+  while IFS= read -r -d '' status && IFS= read -r -d '' metapath; do
+    case "$status" in R*|C*) IFS= read -r -d '' metapath ;; esac
+    case "$metapath" in "$ASSET_ROOT"*.meta) : ;; *) continue ;; esac
+    case "$status" in A*|M*|R*|C*) : ;; *) continue ;; esac
+    is_ignored "$metapath" && continue
+    base="${metapath%.meta}"
+    if [ ! -e "$base" ] && ! git ls-files --error-unmatch -- "$base" >/dev/null 2>&1; then
+      if [ -d "$base" ] || git ls-files --error-unmatch -- "${base}/*" >/dev/null 2>&1; then :;
+      else orphan_meta="${orphan_meta}\n  孤立 .meta: ${metapath}  ->  対応アセット/フォルダなし"; errors=1; fi
+    fi
+  done < <(git diff --cached -z --name-status --diff-filter=ACMR -- "*.meta")
+
+  [ "$errors" -eq 0 ] && return 0
+
+  {
+    echo ""
+    echo "[meta-guard] Unity .meta の不整合を検出しました。"
+    [ -n "$missing_meta" ] && { echo ""; echo "■ .meta が欠落しているアセット(Unity Editor で開くと自動生成):"; printf '%b\n' "$missing_meta"; }
+    [ -n "$missing_dir_meta" ] && { echo ""; echo "■ .meta が欠落しているフォルダ:"; printf '%b\n' "$missing_dir_meta"; }
+    [ -n "$orphan_meta" ] && { echo ""; echo "■ 孤立した .meta(対応アセット/フォルダなし=削除し忘れの可能性):"; printf '%b\n' "$orphan_meta"; }
+    echo ""
+    echo "対処: 欠落 → Unity でアセットを認識させ、生成された .meta を git add。"
+    echo "      孤立 → git rm <metaパス> で削除。.meta の中身は手書きせず Unity に生成させる。"
+  } >&2
+  return 1
+}
+
+check_meta || FAILED=1
+check_whitespace || FAILED=1
+
+if [ "$FAILED" -ne 0 ]; then
+  echo "" >&2
+  echo "[pre-commit] コミットを中止しました。緊急回避: EMERGENCY_SKIP_HOOKS=1 git commit ... または git commit --no-verify" >&2
+  exit 1
+fi
+exit 0
