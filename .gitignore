@@ -9,14 +9,27 @@
 # Ignore entire .idea directory
 .idea/
 
-# Ignore Claude configuration
-.claude/
+# Claude Code: ignore personal/local state by default, but SHARE team config
+# (settings.json / hooks / skills / commands) so the whole team gets the same setup.
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
+!.claude/skills/
+!.claude/commands/
+# ...but NOT the uLoopMCP auto-generated skills (tool-managed, regenerated from the package version)
+.claude/skills/uloop-*/
 
 # Claude Code MCP configuration (local development only)
 .mcp.json
 
+# uLoop CLI/MCP local tool config (per-developer security settings; not shared)
+.uloop/
+
 # VS Code settings
 .vscode/
+
+# Accidentally committed CI log dumps (huge GitHub Actions logs; never track these)
+/ci-log*.txt
 
 # Windows special files
 nul

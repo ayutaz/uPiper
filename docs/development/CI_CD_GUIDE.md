@@ -47,7 +47,7 @@ uPiperプロジェクトでは、GitHub Actionsを使用して継続的インテ
 **特徴**:
 - `feature/webgl-support`ブランチへのpush時に自動実行（将来的にdevelop/mainへ統合予定）
 - workflow_dispatch（手動実行）対応
-- dot-net-g2pサブリポジトリの自動checkout
+- dot-net-g2pはUPMがmanifest.jsonのGit URL（`#v1.8.2`）で直接取得（個別checkout+sedのCI手順は廃止済み）
 - game-ci/unity-builder@v4によるWebGLビルド
 - 100MB超ファイルの90MBチャンク自動分割（GitHub Pages制限対応）
 - split-file-loader.js / github-pages-adapter.jsの自動注入

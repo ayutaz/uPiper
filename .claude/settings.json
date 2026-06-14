@@ -1,0 +1,67 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet format:*)",
+      "Bash(uv run:*)",
+      "Bash(uv add:*)",
+      "Bash(uv pip install:*)",
+      "Bash(uv pip show:*)",
+      "Bash(uloop launch:*)",
+      "Bash(uloop list:*)",
+      "Bash(uloop compile:*)",
+      "Bash(uloop sync:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(mkdir:*)",
+      "Bash(wc:*)",
+      "Bash(tail:*)",
+      "Bash(head:*)",
+      "Bash(xargs:*)",
+      "Bash(echo:*)",
+      "mcp__uLoopMCP__compile",
+      "mcp__uLoopMCP__get-logs",
+      "mcp__uLoopMCP__run-tests",
+      "mcp__uLoopMCP__clear-console",
+      "mcp__uLoopMCP__unity-search",
+      "mcp__uLoopMCP__find-game-objects",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:docs.unity3d.com)",
+      "WebFetch(domain:discussions.unity.com)",
+      "WebFetch(domain:game.ci)",
+      "WebFetch(domain:onnxruntime.ai)",
+      "WebFetch(domain:openupm.com)",
+      "WebFetch(domain:package.openupm.com)",
+      "WebFetch(domain:www.nuget.org)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "uLoopMCP"
+  ],
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/whitespace-preflight.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

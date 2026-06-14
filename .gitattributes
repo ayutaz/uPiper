@@ -26,6 +26,9 @@ Samples~/**/*.cs text eol=lf
 # Shell scripts should use LF
 *.sh text eol=lf
 
+# Git hooks are extensionless shell scripts; keep them LF so the shebang stays valid
+/.githooks/** text eol=lf
+
 # Documentation
 *.md text eol=lf
 *.txt text eol=lf
