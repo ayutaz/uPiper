@@ -50,11 +50,11 @@ jobs:
           # - Android  # Temporarily disabled due to Unity licensing issues
     
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
         lfs: true
 
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
         repository: ayutaz/dot-net-g2p
         ref: v1.8.2
@@ -65,7 +65,7 @@ jobs:
       run: sed -i 's|file:../../dot-net-g2p/src|file:../dot-net-g2p/src|g' Packages/manifest.json
 
     - name: Cache Library
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: Library
         key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
